@@ -1,0 +1,20 @@
+[build-system]
+requires = ["hatchling>=1.21"]
+build-backend = "hatchling.build"
+
+[project]
+name = "messages"
+version = "0.0.0"
+description = "i18n message catalog loader (tr/en) shared across services and workers."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = { text = "Proprietary" }
+authors = [{ name = "Multi-Service Scaffold" }]
+dependencies = []
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/messages"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/messages/tr/messages.json" = "messages/tr/messages.json"
+"src/messages/en/messages.json" = "messages/en/messages.json"

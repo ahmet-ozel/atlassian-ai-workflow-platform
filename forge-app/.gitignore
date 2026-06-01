@@ -1,0 +1,5 @@
+# Forge add-on build cache and Node dependencies. See README for context.
+node_modules/
+.forge/
+
+# Lockfiles are intentionally tracked when present; nothing else needed here.

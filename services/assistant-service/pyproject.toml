@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "assistant-service"
+version = "0.0.0"
+description = "Assistant HTTP service (chat + LLM orchestration). Scaffold skeleton; business logic intentionally absent."
+requires-python = ">=3.12,<3.13"
+readme = "README.md"
+license = { text = "Proprietary" }
+authors = [{ name = "yeni_atlassian" }]
+dependencies = [
+    "fastapi",
+    "pydantic>=2,<3",
+    "pydantic-settings>=2,<3",
+    "uvicorn[standard]",
+    "temporalio",
+    "httpx",
+    "redis",
+    "asyncpg",
+    # Workspace path dependency on the shared HTTP / logging utilities.
+    # ``http-shared`` ships the secret-redaction logging filter wired
+    # in ``src/main.py`` (Requirement 6.10, task 9.1).
+    "http-shared @ file:../../libs/http-shared",
+    # platform-gap-fill task 7.2 — :class:`observability.TraceMiddleware`
+    # is mounted on the FastAPI app for end-to-end trace_id propagation
+    # (Requirement 8.2 — assistant-service trace boundary).
+    "observability @ file:../../libs/observability",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "hypothesis",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]

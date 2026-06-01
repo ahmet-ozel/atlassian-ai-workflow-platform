@@ -1,0 +1,116 @@
+{
+  "title": "Workflows Overview",
+  "uid": "platform-workflows-overview",
+  "tags": ["platform-mimari-ops", "workflows", "ops"],
+  "timezone": "utc",
+  "schemaVersion": 36,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-6h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "dept_id",
+        "label": "Department",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "query": "label_values(workflow_execution_duration_seconds_count, dept_id)",
+        "includeAll": true,
+        "multi": true,
+        "refresh": 2
+      },
+      {
+        "name": "workflow_type",
+        "label": "Workflow type",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "query": "label_values(workflow_execution_duration_seconds_count, workflow_type)",
+        "includeAll": true,
+        "multi": true,
+        "refresh": 2
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Workflow duration (p50 / p95) by type",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum by (workflow_type, le) (rate(workflow_execution_duration_seconds_bucket{dept_id=~\"$dept_id\",workflow_type=~\"$workflow_type\"}[5m])))",
+          "legendFormat": "p50 {{workflow_type}}"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (workflow_type, le) (rate(workflow_execution_duration_seconds_bucket{dept_id=~\"$dept_id\",workflow_type=~\"$workflow_type\"}[5m])))",
+          "legendFormat": "p95 {{workflow_type}}"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Workflows / hour",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(increase(workflow_execution_duration_seconds_count{dept_id=~\"$dept_id\"}[1h]))"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Capability denied (24h)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(increase(capability_denied_total{dept_id=~\"$dept_id\"}[24h]))"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Workflow result rate (completed / failed / partial)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "targets": [
+        {
+          "expr": "sum by (result) (rate(workflow_execution_duration_seconds_count{dept_id=~\"$dept_id\",workflow_type=~\"$workflow_type\"}[5m]))",
+          "legendFormat": "{{result}}"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "MCP tool latency (p95)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (tool, le) (rate(mcp_latency_seconds_bucket[5m])))",
+          "legendFormat": "{{tool}}"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Queue depth",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "targets": [
+        {
+          "expr": "queue_depth{dept_id=~\"$dept_id\",workflow_type=~\"$workflow_type\"}",
+          "legendFormat": "{{dept_id}} / {{workflow_type}}"
+        }
+      ]
+    }
+  ]
+}

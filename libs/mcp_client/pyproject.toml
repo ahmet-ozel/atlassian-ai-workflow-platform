@@ -1,0 +1,26 @@
+[build-system]
+requires = ["hatchling>=1.21"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mcp_client"
+version = "0.0.0"
+description = "MCP client library — banned tool filter and PR draft enforcement (MIMARI §1 Rules 9 & 10, R1.8/R1.9)."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = { text = "Proprietary" }
+authors = [{ name = "Multi-Service Scaffold" }]
+dependencies = []
+
+[project.optional-dependencies]
+audit = ["audit-logger"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mcp_client"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/mcp_client",
+    "README.md",
+    "pyproject.toml",
+]

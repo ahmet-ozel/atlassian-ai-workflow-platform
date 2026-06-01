@@ -1,0 +1,66 @@
+# quick_actions.yaml
+#
+# Streamlit chat sayfasindaki (pages/1_chat.py) sik kullanilan komut chip'lerini
+# tanimlar. Her chip kullaniciya hazir bir prompt sunar; chip'e basildiginda
+# `prompt_template` chat input'una yazilir ve assistant-service uzerinden
+# gonderilir.
+#
+# `required_capabilities` listesi dept'in capability set'inde tam karsiligi
+# yoksa chip gri + tooltip ile gosterilir (R3.12 — dept_probe denied → chip
+# gri). Capability vocabulary 'platform-mimari-foundation'
+# libs/temporal-shared.capabilities WORKFLOW_TYPE_CAPABILITIES ile tutarlidir:
+# jira_read, jira_write, bitbucket_read, bitbucket_write, confluence_read,
+# confluence_write, execution, web_search.
+#
+# Schema: platform/config/quick_actions.schema.json (JSON Schema 2020-12).
+# Loader: streamlit-app tarafindan boot anida valide edilir; sema dishi
+# girisler veya tekrarlanan id'ler boot'u keser.
+#
+# Referans:
+#   - requirements.md R3.1 (6 sayfa + Quick Action chips)
+#   - requirements.md R3.12 (dept_probe denied chip gri)
+#   - design.md Component 'streamlit-ui/pages/1_chat.py'
+
+version: 1
+
+chips:
+  - id: summarize_pr
+    label: "PR'i ozetle"
+    prompt_template: >-
+      Lutfen belirtilen pull request'in degisikliklerini ozetle: amaci,
+      etkilenen dosyalar, riskli alanlar ve gozden gecirenin dikkat etmesi
+      gereken noktalar. PR URL'sini veya repo+id bilgisini sana asagida
+      verecegim.
+    required_capabilities:
+      - jira_read
+      - bitbucket_read
+
+  - id: open_issue
+    label: "Issue'yu ac"
+    prompt_template: >-
+      Acmak istedigim Jira issue'sunu birlikte hazirlayalim. Once kisa baslik,
+      sonra aciklama (problem, beklenen davranis, kabul kriterleri) ve uygunsa
+      etiketler. Yazma aksiyonu chat'ten yapilmaz; hazir olunca beni Task
+      Creator'a yonlendir.
+    required_capabilities:
+      - jira_read
+      - jira_write
+
+  - id: search_confluence
+    label: "Confluence'ta ara"
+    prompt_template: >-
+      Confluence space'lerinde arama yap ve ilk 5 sonucun basligini, space
+      key'ini ve kisa ozetini listele. Aranacak ifade veya anahtar kelimeleri
+      asagida verecegim.
+    required_capabilities:
+      - confluence_read
+
+  - id: run_tests
+    label: "Test calistir"
+    prompt_template: >-
+      Belirtilen repo + branch icin testleri calistir ve ozet sonucu (gecen,
+      kalan, sure) bana donder. Yazma aksiyonu chat'ten yapilmaz; gerekirse
+      Task Creator'a yonlendir.
+    required_capabilities:
+      - bitbucket_read
+      - execution

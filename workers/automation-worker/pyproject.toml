@@ -1,0 +1,52 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "automation-worker"
+version = "0.0.0"
+description = "Temporal worker hosting AutomationWorkflow, BotBranchRetention, and AuditPruneWorkflow on the automation-tq task queue (platform-mimari-ops Spec 3 task 13)."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = { text = "Proprietary" }
+authors = [
+    { name = "Multi-Service Scaffold" },
+]
+dependencies = [
+    "temporalio>=1.7,<2",
+    # platform-gap-fill task 2.2 — YAML front-matter parsing in the
+    # description_parser activity. ``safe_load`` only; we never run
+    # ``yaml.load`` on user-supplied content.
+    "pyyaml>=6,<7",
+    # platform-gap-fill task 7.2 — ``observability`` ships
+    # :class:`TraceLogFilter`, :func:`set_trace_id` and
+    # :func:`get_trace_id` which the worker installs at boot
+    # (``main.py``) and the activities consult at entry to carry the
+    # inbound ``trace_id`` through every log record (Requirement
+    # 8.3).
+    "observability @ file:../../libs/observability",
+    "notification @ file:../../libs/notification",
+    "llm-orchestrator @ file:../../libs/llm-orchestrator",
+    "messages @ file:../../libs/messages",
+    "aiohttp>=3.9,<4",
+    "asyncpg>=0.29,<1",
+]
+
+# Opt in to PEP 508 ``@ file:`` direct references so the
+# ``observability`` workspace path dependency is accepted at
+# metadata-build time.
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[project.scripts]
+automation-worker = "automation_worker.main:run"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/automation_worker"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/automation_worker",
+    "README.md",
+    "pyproject.toml",
+]

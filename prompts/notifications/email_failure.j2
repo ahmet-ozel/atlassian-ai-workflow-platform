@@ -1,0 +1,69 @@
+{#-
+  Email Failure Notification Template
+  ------------------------------------
+  Channel: Email (HTML body with subject block)
+  Triggered when a workflow execution fails.
+
+  Context variables:
+    - workflow_id      : str   — Temporal workflow identifier
+    - dept_id          : str   — department identifier
+    - task_title       : str   — Jira issue summary / task title
+    - issue_key        : str   — Jira issue key (e.g. "PAY-123")
+    - error            : str   — error message or traceback summary
+    - result_summary   : str   — short human-readable failure summary
+    - failed_at        : str   — ISO-8601 timestamp of failure
+    - dashboard_url    : str   — link to /admin/workflows/<id> panel
+-#}
+{% block subject %}[Workflow Başarısız] {{ issue_key }} — {{ task_title }}{% endblock %}
+{% block body %}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Workflow Başarısız</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+  <div style="background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+    <h2 style="margin: 0 0 8px 0; color: #721c24;">🛑 Workflow Başarısız</h2>
+    <p style="margin: 0; color: #721c24;">{{ result_summary }}</p>
+  </div>
+
+  <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+    <tr>
+      <td style="padding: 8px 12px; border-bottom: 1px solid #eee; font-weight: bold;">Issue</td>
+      <td style="padding: 8px 12px; border-bottom: 1px solid #eee;"><code>{{ issue_key }}</code></td>
+    </tr>
+    <tr>
+      <td style="padding: 8px 12px; border-bottom: 1px solid #eee; font-weight: bold;">Başlık</td>
+      <td style="padding: 8px 12px; border-bottom: 1px solid #eee;">{{ task_title }}</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px 12px; border-bottom: 1px solid #eee; font-weight: bold;">Departman</td>
+      <td style="padding: 8px 12px; border-bottom: 1px solid #eee;"><code>{{ dept_id }}</code></td>
+    </tr>
+    <tr>
+      <td style="padding: 8px 12px; border-bottom: 1px solid #eee; font-weight: bold;">Workflow ID</td>
+      <td style="padding: 8px 12px; border-bottom: 1px solid #eee;"><code>{{ workflow_id }}</code></td>
+    </tr>
+    <tr>
+      <td style="padding: 8px 12px; border-bottom: 1px solid #eee; font-weight: bold;">Başarısız Olma Zamanı</td>
+      <td style="padding: 8px 12px; border-bottom: 1px solid #eee;">{{ failed_at }}</td>
+    </tr>
+  </table>
+
+  <div style="background: #f4f4f4; border: 1px solid #ddd; border-radius: 4px; padding: 12px; margin-bottom: 20px;">
+    <strong>Hata:</strong>
+    <pre style="margin: 8px 0 0 0; white-space: pre-wrap; word-wrap: break-word; font-size: 13px;">{{ error }}</pre>
+  </div>
+
+  <p>
+    <a href="{{ dashboard_url }}" style="display: inline-block; background: #dc3545; color: #fff; padding: 10px 20px; border-radius: 4px; text-decoration: none;">🔍 Detayları Gör ve Yeniden Dene</a>
+  </p>
+
+  <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+  <p style="font-size: 12px; color: #888;">
+    Bu bildirim otomatik olarak gönderildi. Workflow'u yeniden denemek için admin panelini kullanın.
+  </p>
+</body>
+</html>
+{% endblock %}

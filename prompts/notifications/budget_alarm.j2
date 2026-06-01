@@ -1,0 +1,169 @@
+{#-
+  Budget Alarm Notification Template
+  -----------------------------------
+  Channels: Slack (Block Kit JSON) + Email (HTML body)
+  Triggered when dept spend crosses the configured threshold_pct
+  before hitting the hard 100% cap.
+
+  Context variables:
+    - dept_id        : str   — department identifier
+    - period         : str   — "weekly" | "monthly"
+    - scope          : str   — "user" | "dept"
+    - current_usd    : str   — current spend formatted (e.g. "42.50")
+    - cap_usd        : str   — budget cap formatted (e.g. "60.00")
+    - threshold_pct  : int   — configured alarm threshold (e.g. 70)
+    - pct_used       : int   — actual percentage used (e.g. 72)
+    - notify_channel : str   — "slack" | "email" | "teams"
+    - dashboard_url  : str   — link to /admin/costs panel
+-#}
+
+{%- if notify_channel == "slack" -%}
+{
+  "blocks": [
+    {
+      "type": "header",
+      "text": {
+        "type": "plain_text",
+        "text": "⚠️ Bütçe Alarm Eşiği Aşıldı",
+        "emoji": true
+      }
+    },
+    {
+      "type": "section",
+      "fields": [
+        {
+          "type": "mrkdwn",
+          "text": "*Departman:*\n`{{ dept_id }}`"
+        },
+        {
+          "type": "mrkdwn",
+          "text": "*Periyot:*\n{{ period }}"
+        },
+        {
+          "type": "mrkdwn",
+          "text": "*Kapsam:*\n{{ scope }}"
+        },
+        {
+          "type": "mrkdwn",
+          "text": "*Kullanım:*\n${{ current_usd }} / ${{ cap_usd }}"
+        }
+      ]
+    },
+    {
+      "type": "section",
+      "text": {
+        "type": "mrkdwn",
+        "text": "📊 Bütçenin *%{{ pct_used }}*'i kullanıldı (alarm eşiği: %{{ threshold_pct }}).\n\nHard limit (%100) aşıldığında yeni workflow başlatma reddedilecektir."
+      }
+    },
+    {
+      "type": "divider"
+    },
+    {
+      "type": "actions",
+      "elements": [
+        {
+          "type": "button",
+          "text": {
+            "type": "plain_text",
+            "text": "📈 Costs Panelini Aç",
+            "emoji": true
+          },
+          "url": "{{ dashboard_url }}",
+          "action_id": "open_costs_panel"
+        }
+      ]
+    },
+    {
+      "type": "context",
+      "elements": [
+        {
+          "type": "mrkdwn",
+          "text": "Bu alarm `BudgetCapPolicy` tarafından otomatik tetiklendi. Eşik değerini değiştirmek için admin-dashboard → Costs → Bütçe Alarmları sekmesini kullanın."
+        }
+      ]
+    }
+  ]
+}
+{%- elif notify_channel == "email" -%}
+{% block subject %}[Bütçe Alarmı] {{ dept_id }} — %{{ pct_used }} kullanım (eşik: %{{ threshold_pct }}){% endblock %}
+{% block body %}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Bütçe Alarmı</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+  <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+    <h2 style="margin: 0 0 8px 0; color: #856404;">⚠️ Bütçe Alarm Eşiği Aşıldı</h2>
+    <p style="margin: 0; color: #856404;">Departman bütçesinin %{{ threshold_pct }} eşiği geçildi.</p>
+  </div>
+
+  <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+    <tr>
+      <td style="padding: 8px 12px; border-bottom: 1px solid #eee; font-weight: bold;">Departman</td>
+      <td style="padding: 8px 12px; border-bottom: 1px solid #eee;"><code>{{ dept_id }}</code></td>
+    </tr>
+    <tr>
+      <td style="padding: 8px 12px; border-bottom: 1px solid #eee; font-weight: bold;">Periyot</td>
+      <td style="padding: 8px 12px; border-bottom: 1px solid #eee;">{{ period }}</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px 12px; border-bottom: 1px solid #eee; font-weight: bold;">Kapsam</td>
+      <td style="padding: 8px 12px; border-bottom: 1px solid #eee;">{{ scope }}</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px 12px; border-bottom: 1px solid #eee; font-weight: bold;">Mevcut Harcama</td>
+      <td style="padding: 8px 12px; border-bottom: 1px solid #eee;">${{ current_usd }} / ${{ cap_usd }}</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px 12px; border-bottom: 1px solid #eee; font-weight: bold;">Kullanım Oranı</td>
+      <td style="padding: 8px 12px; border-bottom: 1px solid #eee;"><strong>%{{ pct_used }}</strong> (alarm eşiği: %{{ threshold_pct }})</td>
+    </tr>
+  </table>
+
+  <p>Hard limit (%100) aşıldığında yeni workflow başlatma <code>BudgetCapPolicy</code> tarafından reddedilecektir (HTTP 429).</p>
+
+  <p>
+    <a href="{{ dashboard_url }}" style="display: inline-block; background: #0d6efd; color: #fff; padding: 10px 20px; border-radius: 4px; text-decoration: none;">📈 Costs Panelini Aç</a>
+  </p>
+
+  <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+  <p style="font-size: 12px; color: #888;">
+    Bu alarm <code>BudgetCapPolicy</code> tarafından otomatik tetiklendi.
+    Eşik değerini değiştirmek için admin-dashboard → Costs → Bütçe Alarmları sekmesini kullanın.
+  </p>
+</body>
+</html>
+{% endblock %}
+{%- elif notify_channel == "teams" -%}
+{
+  "@type": "MessageCard",
+  "@context": "http://schema.org/extensions",
+  "themeColor": "FFC107",
+  "summary": "Bütçe Alarmı — {{ dept_id }}",
+  "sections": [
+    {
+      "activityTitle": "⚠️ Bütçe Alarm Eşiği Aşıldı",
+      "facts": [
+        { "name": "Departman", "value": "`{{ dept_id }}`" },
+        { "name": "Periyot", "value": "{{ period }}" },
+        { "name": "Kapsam", "value": "{{ scope }}" },
+        { "name": "Kullanım", "value": "${{ current_usd }} / ${{ cap_usd }}" },
+        { "name": "Oran", "value": "%{{ pct_used }} (eşik: %{{ threshold_pct }})" }
+      ],
+      "markdown": true
+    }
+  ],
+  "potentialAction": [
+    {
+      "@type": "OpenUri",
+      "name": "Costs Panelini Aç",
+      "targets": [
+        { "os": "default", "uri": "{{ dashboard_url }}" }
+      ]
+    }
+  ]
+}
+{%- endif -%}

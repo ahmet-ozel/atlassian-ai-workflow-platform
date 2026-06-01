@@ -1,0 +1,16 @@
+[build-system]
+requires = ["hatchling>=1.21"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pii-shared"
+version = "0.0.0"
+description = "Deterministic PII (TR TC, TR phone, RFC 5322 email, Luhn-valid credit card) regex masker shared across services."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = { text = "Proprietary" }
+authors = [{ name = "Multi-Service Scaffold" }]
+dependencies = []
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pii_shared"]

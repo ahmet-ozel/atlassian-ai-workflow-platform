@@ -1,0 +1,49 @@
+[build-system]
+requires = ["hatchling>=1.21"]
+build-backend = "hatchling.build"
+
+[project]
+name = "automation-service"
+version = "0.0.0"
+description = "Automation HTTP service skeleton (FastAPI on :8080) for the multi-service scaffold."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = { text = "Proprietary" }
+authors = [{ name = "Multi-Service Scaffold" }]
+dependencies = [
+    "fastapi",
+    "pydantic>=2,<3",
+    "pydantic-settings>=2,<3",
+    "temporalio",
+    "httpx",
+    "jsonschema",
+    "asyncpg",
+    "mcp",
+    # Workspace path dependency on the shared HTTP / logging utilities.
+    # ``http-shared`` ships the secret-redaction logging filter wired
+    # in ``src/main.py`` (Requirement 6.10, task 9.1). ``hatchling``
+    # accepts PEP 508 direct references when ``allow-direct-references``
+    # is enabled below.
+    "http-shared @ file:libs/http-shared",
+    # platform-gap-fill task 7.2 — :class:`observability.TraceMiddleware`
+    # is mounted on the FastAPI app to extract / generate the
+    # ``X-Trace-Id`` header for end-to-end correlation
+    # (Requirement 8.2 — automation-service trace boundary).
+    "observability @ file:libs/observability",
+]
+
+# Opt in to PEP 508 ``@ file:`` direct references so the
+# ``http-shared`` workspace path dependency is accepted at
+# metadata-build time.
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+# ``src`` keeps the legacy ``src.main`` / ``src.webhooks`` / ``src.decision``
+# entry points working (Dockerfile, existing tests). ``src/automation_service``
+# is the canonical package per the platform-mimari-foundation design and is
+# remapped to the top-level ``automation_service`` import path.
+packages = ["src", "src/automation_service"]
+
+[tool.hatch.build.targets.wheel.sources]
+"src/automation_service" = "automation_service"

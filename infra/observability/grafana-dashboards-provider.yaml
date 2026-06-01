@@ -1,0 +1,22 @@
+# Grafana dashboard provisioning manifest — loaded at boot by the
+# `grafana` service in `infra/docker-compose.observability.yml`. The
+# JSON files referenced live under `infra/observability/grafana-dashboards/`
+# and are produced by `platform-mimari-ops` task 14.2.
+#
+# Folder mapping mirrors `tags` on each dashboard so an operator can
+# pivot between cost / health / workflows views from the Grafana home
+# page without manual import.
+
+apiVersion: 1
+providers:
+  - name: platform-mimari-ops
+    orgId: 1
+    folder: Platform
+    type: file
+    disableDeletion: false
+    editable: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: false
+    options:
+      path: /var/lib/grafana/dashboards
+      foldersFromFilesStructure: false

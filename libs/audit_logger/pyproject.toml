@@ -1,0 +1,26 @@
+[build-system]
+requires = ["hatchling>=1.21"]
+build-backend = "hatchling.build"
+
+[project]
+name = "audit-logger"
+version = "0.0.0"
+description = "Audit event dataclass and writer (MIMARI §15, design.md §audit_logger). actor_role is mandatory and enforced at write-time."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = { text = "Proprietary" }
+authors = [{ name = "Multi-Service Scaffold" }]
+dependencies = []
+
+[project.optional-dependencies]
+db = ["db-shared"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/audit_logger"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/audit_logger",
+    "README.md",
+    "pyproject.toml",
+]

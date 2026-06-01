@@ -1,0 +1,26 @@
+# agent-runner-worker — Docker build context exclusions.
+# Keeps the build context small and prevents secrets / dev artifacts from
+# leaking into the image. Note: README.md is excluded here too — the
+# Dockerfile explicitly COPYs it during the builder stage because
+# pyproject.toml references it via `readme = "README.md"`.
+
+__pycache__/
+*.pyc
+
+# Tests are not needed at runtime.
+tests/
+
+# Local environment files must never enter the image.
+.env
+.env.local
+
+# Python virtualenv and tooling caches.
+.venv/
+.pytest_cache/
+.hypothesis/
+
+# Markdown docs bloat the image and are not needed at runtime. README.md is
+# re-included via the negated pattern below because pyproject.toml declares
+# `readme = "README.md"` and pip needs it during the builder stage install.
+*.md
+!README.md

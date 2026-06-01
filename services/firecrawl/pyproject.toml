@@ -1,0 +1,21 @@
+[build-system]
+requires = ["hatchling>=1.21"]
+build-backend = "hatchling.build"
+
+[project]
+name = "firecrawl-egress"
+version = "0.0.0"
+description = "Egress-allowlisted web scrape/search wrapper around Firecrawl (Requirement 10.3)."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = { text = "Proprietary" }
+authors = [{ name = "Multi-Service Scaffold" }]
+dependencies = [
+    "fastapi",
+    "pydantic>=2,<3",
+    "pydantic-settings>=2,<3",
+    "httpx>=0.27,<1",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/firecrawl"]

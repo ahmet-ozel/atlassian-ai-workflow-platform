@@ -1,0 +1,30 @@
+# Node dependencies — reinstalled inside the builder stage
+node_modules/
+
+# Next.js build output — produced by `npm run build` in the builder stage
+.next/
+out/
+
+# Local environment files (secrets) — `.env.example` MAY ship for reference
+.env
+.env.local
+.env.*.local
+
+# Tests don't ship into the runtime image
+tests/
+__tests__/
+
+# Tooling caches
+.eslintcache
+.npm
+.cache/
+
+# Coverage / build / dist artefacts
+coverage/
+build/
+dist/
+
+# Editor/OS noise
+.DS_Store
+.idea/
+.vscode/

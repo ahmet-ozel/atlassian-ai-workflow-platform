@@ -1,0 +1,23 @@
+{
+  "name": "ai-bot-task-forge-app",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Atlassian Forge add-on that ships the 'AI Bot Task' issue type with mandatory custom fields (AI Görev Tipi, Hedef Repo, Branch, Output Hedefi, Cleanup Policy). Opt-in behind FEATURE_FLAG_FORGE_ADDON_ENABLED.",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "deploy": "forge deploy",
+    "install:dev": "forge install --site $FORGE_SITE --product jira",
+    "tunnel": "forge tunnel",
+    "lint": "echo \"(lint placeholder — wire up eslint when first real handler lands)\""
+  },
+  "dependencies": {
+    "@forge/api": "5.4.0"
+  },
+  "devDependencies": {
+    "@forge/cli": "11.5.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

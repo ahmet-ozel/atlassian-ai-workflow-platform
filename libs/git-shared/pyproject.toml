@@ -1,0 +1,31 @@
+[build-system]
+requires = ["hatchling>=1.21"]
+build-backend = "hatchling.build"
+
+[project]
+name = "git-shared"
+version = "0.0.0"
+description = "GitPython-backed adapter for prompt CRUD/PR flows (platform-mimari-ops task 6.1)."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = { text = "Proprietary" }
+authors = [{ name = "Multi-Service Scaffold" }]
+dependencies = [
+    "GitPython>=3.1,<4",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "hypothesis",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/git_shared"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/git_shared",
+    "README.md",
+    "pyproject.toml",
+]

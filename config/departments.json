@@ -1,0 +1,85 @@
+{
+  "version": 1,
+  "departments": [
+    {
+      "id": "test",
+      "display_name": "Test Departmanı",
+      "jira_project_keys": [],
+      "confluence_space_keys": [],
+      "bitbucket_workspace": "example_workspace",
+      "default_language": "tr",
+      "web_search_enabled": true,
+      "mode": "active",
+      "bot": {
+        "jira": {
+          "credential_ref": "vault:atlassian/test/jira",
+          "account_id": "",
+          "username": ""
+        },
+        "bitbucket": {
+          "credential_ref": "vault:atlassian/test/bitbucket",
+          "account_id": "",
+          "username": "",
+          "deployment": "cloud"
+        },
+        "confluence": {
+          "credential_ref": "vault:atlassian/test/confluence",
+          "account_id": "",
+          "username": ""
+        }
+      },
+      "llm_overrides": {
+        "primary": {
+          "provider": "openai",
+          "base_url": null,
+          "model": "gpt-4o-mini",
+          "api_key_ref": "vault:llm/test/openai_key"
+        },
+        "fallback": {
+          "provider": "vllm",
+          "base_url": null,
+          "model": null,
+          "api_key_ref": "vault:llm/test/vllm"
+        }
+      },
+      "repo_mappings": [
+        {
+          "bitbucket_workspace": "example_workspace",
+          "bitbucket_repo": "smoke-test",
+          "jira_project_key": "",
+          "default_branch": "main"
+        }
+      ],
+      "budget_caps": {
+        "weekly_usd_dept": 500.0,
+        "weekly_usd_user": 50.0,
+        "monthly_usd_dept": 1800.0,
+        "monthly_usd_user": 150.0
+      },
+      "approval_required_paths": [],
+      "approvers": [],
+      "status_mapping": {
+        "todo": "To Do",
+        "in_progress": "In Progress",
+        "review": "Code Review",
+        "done": "Done",
+        "out_of_scope": "Won't Do"
+      },
+      "branch_pattern_rules": [],
+      "ssh_workspace_quota_mb": 10240,
+      "docker_defaults": {
+        "cpu_limit": 2.0,
+        "memory_limit_mb": 2048,
+        "default_timeout_seconds": 1800,
+        "max_timeout_seconds": 7200,
+        "cleanup_policy": "on_success"
+      },
+      "notify_on_success": false,
+      "notify_channels": [],
+      "slack_webhook_ref": null,
+      "notify_email": null,
+      "teams_webhook_ref": null,
+      "feature_flag_overrides": {}
+    }
+  ]
+}

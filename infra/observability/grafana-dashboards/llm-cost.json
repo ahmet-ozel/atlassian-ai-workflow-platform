@@ -1,0 +1,115 @@
+{
+  "title": "LLM Cost",
+  "uid": "platform-llm-cost",
+  "tags": ["platform-mimari-ops", "cost", "llm"],
+  "timezone": "utc",
+  "schemaVersion": 36,
+  "version": 1,
+  "refresh": "1m",
+  "time": { "from": "now-7d", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "dept_id",
+        "label": "Department",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "query": "label_values(llm_token_cost_usd_total, dept_id)",
+        "includeAll": true,
+        "multi": true,
+        "refresh": 2
+      },
+      {
+        "name": "model",
+        "label": "Model",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "query": "label_values(llm_token_cost_usd_total, model)",
+        "includeAll": true,
+        "multi": true,
+        "refresh": 2
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Cost / week (production only)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(increase(llm_token_cost_usd_total{dept_id=~\"$dept_id\",model=~\"$model\",cost_tag=\"production\"}[7d]))"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "currencyUSD" } }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Budget exceeded (24h)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(increase(budget_exceeded_total{dept_id=~\"$dept_id\"}[24h]))"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Sandbox cost (excluded from budgets)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(increase(llm_token_cost_usd_total{dept_id=~\"$dept_id\",cost_tag=\"sandbox\"}[7d]))"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "currencyUSD" } }
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Cost per dept × model (production)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 4 },
+      "targets": [
+        {
+          "expr": "sum by (dept_id, model) (rate(cost_usd_total{dept_id=~\"$dept_id\",model=~\"$model\"}[5m]))",
+          "legendFormat": "{{dept_id}} · {{model}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "currencyUSD" } }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "LLM provider fallback rate",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "targets": [
+        {
+          "expr": "sum by (primary, fallback, reason) (rate(llm_provider_fallback_total[5m]))",
+          "legendFormat": "{{primary}}→{{fallback}} ({{reason}})"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Token cost by tag (production / sandbox / probe)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "targets": [
+        {
+          "expr": "sum by (cost_tag) (rate(llm_token_cost_usd_total{dept_id=~\"$dept_id\"}[5m]))",
+          "legendFormat": "{{cost_tag}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "currencyUSD" } }
+    }
+  ]
+}

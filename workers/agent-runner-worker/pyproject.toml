@@ -1,0 +1,38 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "agent-runner-worker"
+version = "0.0.0"
+description = "Temporal worker that hosts AgentRunnerWorkflow and the Jira/Bitbucket/Confluence/LLM/artifact/opencode activities for the multi-service scaffold."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = { text = "Proprietary" }
+authors = [
+    { name = "Multi-Service Scaffold" },
+]
+dependencies = [
+    "temporalio>=1.7,<2",
+    "httpx>=0.27,<1",
+    "jinja2>=3.1,<4",
+    "aiobotocore>=2.13,<3",
+]
+
+[project.scripts]
+agent-runner-worker = "agent_runner.main:run"
+
+[tool.hatch.build.targets.wheel]
+# Both packages ship in the wheel during the platform-mimari-workflows
+# spec migration: the legacy ``src.*`` namespace (older tests still
+# import via ``from src.workflows...``) and the canonical
+# ``agent_runner.*`` namespace introduced by task 2.2 / task 2.5.
+packages = ["src", "src/agent_runner"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src",
+    "prompts",
+    "README.md",
+    "pyproject.toml",
+]

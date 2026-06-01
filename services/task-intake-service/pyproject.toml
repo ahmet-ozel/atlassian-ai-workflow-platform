@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "task-intake-service"
+version = "0.0.0"
+description = "Multi-channel task intake (email, Slack, web form) for the Atlassian automation platform. Scaffold only; profile-gated in Compose."
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi",
+    "pydantic>=2,<3",
+    "pydantic-settings>=2,<3",
+    "temporalio",
+    "httpx",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "httpx",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]

@@ -1,0 +1,21 @@
+[build-system]
+requires = ["hatchling>=1.21"]
+build-backend = "hatchling.build"
+
+[project]
+name = "db-shared"
+version = "0.0.0"
+description = "Tenant-aware (RLS) database session helpers and shared data models for HTTP services and workers."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = { text = "Proprietary" }
+authors = [{ name = "Multi-Service Scaffold" }]
+dependencies = [
+    "sqlalchemy>=2.0.0",
+]
+
+[project.optional-dependencies]
+pg = ["psycopg2-binary>=2.9"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/db_shared"]

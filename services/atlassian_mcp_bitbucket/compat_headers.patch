@@ -1,0 +1,78 @@
+diff --git a/src/mcp_atlassian/servers/dependencies.py b/src/mcp_atlassian/servers/dependencies.py
+index 25f07db..5301615 100644
+--- a/src/mcp_atlassian/servers/dependencies.py
++++ b/src/mcp_atlassian/servers/dependencies.py
+@@ -530,6 +530,38 @@ async def _get_fetcher(ctx: Context, spec: _ServiceSpec) -> Any:
+         service_headers = getattr(request.state, "atlassian_service_headers", {})
+         url_header_val = service_headers.get(spec.url_header)
+         token_header_val = service_headers.get(spec.token_header)
++        username_header_val = request.headers.get(
++            f"X-Atlassian-{spec.name}-Username"
++        )
++        api_token_header_val = request.headers.get(
++            f"X-Atlassian-{spec.name}-Api-Token"
++        )
++
++        if url_header_val and username_header_val and api_token_header_val:
++            logger.info(
++                f"Creating header-based {spec.name}Fetcher "
++                f"with URL: {url_header_val} and basic auth"
++            )
++            header_config = spec.config_class(
++                url=url_header_val,
++                auth_type="basic",
++                username=username_header_val,
++                api_token=api_token_header_val,
++                ssl_verify=True,
++                http_proxy=None,
++                https_proxy=None,
++                no_proxy=None,
++                socks_proxy=None,
++                custom_headers=None,
++                **spec.filter_kwargs,
++            )
++            return _create_and_validate(
++                request,
++                spec,
++                header_config,
++                "header_basic",
++                user_email=username_header_val,
++            )
+
+         # --- Branch 1: header-based PAT ---
+         if (
+@@ -740,9 +772,32 @@ async def get_bitbucket_fetcher(ctx: Context) -> BitbucketClient:
+         # Check for header-based auth
+         service_headers = getattr(request.state, "atlassian_service_headers", {})
+         bb_url = service_headers.get("X-Atlassian-Bitbucket-Url")
++        if not bb_url:
++            bb_url = request.headers.get("X-Atlassian-Bitbucket-Url")
+         bb_token = service_headers.get("X-Atlassian-Bitbucket-Personal-Token")
+-
+-        if bb_url and bb_token:
++        if not bb_token:
++            bb_token = request.headers.get("X-Atlassian-Bitbucket-Personal-Token")
++        bb_username = request.headers.get("X-Atlassian-Bitbucket-Username")
++        bb_app_password = request.headers.get(
++            "X-Atlassian-Bitbucket-App-Password"
++        ) or request.headers.get("X-Atlassian-Bitbucket-Api-Token")
++
++        if bb_url and bb_username and bb_app_password:
++            logger.info(
++                f"{fn_name}: Creating header-based BitbucketClient "
++                f"with URL: {bb_url} and basic auth"
++            )
++            header_config = BitbucketConfig(
++                url=bb_url,
++                auth_type="basic",
++                username=bb_username,
++                app_password=bb_app_password,
++                ssl_verify=True,
++            )
++            client = BitbucketClient(config=header_config)
++            request.state.bitbucket_client = client
++            return client
++        elif bb_url and bb_token:
+             logger.info(
+                 f"{fn_name}: Creating header-based BitbucketClient with URL: {bb_url}"
+             )

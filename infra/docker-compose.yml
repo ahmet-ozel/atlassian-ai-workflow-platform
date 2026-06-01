@@ -1,0 +1,939 @@
+# =============================================================================
+# infra/docker-compose.yml — Multi-Service Scaffold base stack
+# =============================================================================
+# Compose v2 convention: no top-level `version:` key.
+#
+# Default Boot_Bundle (platform-gap-fill Requirement 7.1, Property 20):
+# bringing up the stack with no `--profile` flag starts ONLY the four
+# bootstrap services — admin-dashboard-ui, admin-dashboard-api,
+# postgres, and vault. Every other service is profile-gated and is
+# activated on demand by the dashboard's Setup Wizard (Compose_Manager,
+# Requirements 7.2-7.6) using the `compose_profile` value declared in
+# `config/services.manifest.json`.
+#
+# Bring up the bootstrap-only stack:
+#   docker compose -f infra/docker-compose.yml up -d
+#
+# Activate an additional service profile on demand (example):
+#   docker compose -f infra/docker-compose.yml --profile automation-service up -d
+#
+# Bring up the legacy `task-intake-service`:
+#   docker compose -f infra/docker-compose.yml --profile task-intake up -d
+#
+# Live-reload dev mode (overrides bind-mount source dirs):
+#   docker compose -f infra/docker-compose.yml -f infra/docker-compose.dev.yml up -d
+#
+# Notes
+# -----
+# - `vllm` is NOT packaged here; consumers reach it via VLLM_BASE_URL
+#   (Requirement 8.10). Run vLLM separately on the host or use OpenAI
+#   as the default cloud provider.
+# - All credentials below are dev-only placeholders. See `.env.example`
+#   files at the workspace root and per component for the values that
+#   substitute into the `${VAR}` references via Compose's default `.env`
+#   lookup or each service's `env_file:`.
+# - `atlassian-mcp` builds the jellythomas/mcp-atlassian-with-bitbucket
+#   fork at a pinned commit so Jira, Confluence and Bitbucket share the
+#   same stateless HTTP MCP surface.
+# =============================================================================
+
+x-default-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+# Compose-level healthcheck shape applied to every HTTP service
+# (Requirement 12.5, Property 4.4: interval ∈ [5s, 30s], retries ≤ 3).
+x-http-healthcheck: &http-healthcheck
+  interval: 10s
+  timeout: 3s
+  retries: 3
+  start_period: 5s
+
+services:
+  # ───────────────────────────────────────────────────────────────────────────
+  # Edge Layer — TLS Reverse Proxy (Requirement 3.1, 3.4, 3.6)
+  # ───────────────────────────────────────────────────────────────────────────
+
+  traefik:
+    image: traefik:v3.1
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # Docker socket for container discovery (label-based routing)
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Static configuration
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      # Dynamic routing rules directory
+      - ./traefik/dynamic:/etc/traefik/dynamic:ro
+      # ACME certificate storage (persisted)
+      - ./traefik/acme:/etc/traefik/acme
+    environment:
+      ACME_EMAIL: ${ACME_EMAIL:-admin@example.com}
+    networks:
+      # Traefik bridges public (default) and internal networks.
+      # It is the ONLY service with a foot in both networks, enforcing
+      # that external traffic must flow through the proxy (Req 3.6).
+      - default
+      - internal
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: "0.25"
+    restart: unless-stopped
+    logging: *default-logging
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Infrastructure
+  # ───────────────────────────────────────────────────────────────────────────
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ai}
+      # ⚠ DEV-ONLY weak password (Requirement 11.5).
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ai_dev_only}
+      POSTGRES_DB: ${POSTGRES_DB:-ai}
+    ports:
+      - "${POSTGRES_HOST_PORT:-5433}:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      # Init scripts (Requirement 6.1, 6.2, 6.6) — read-only mount so
+      # postgres only runs them on first boot of an empty data volume.
+      - ./postgres:/docker-entrypoint-initdb.d:ro
+    networks:
+      - internal
+    # Postgres init scripts (mounted above) configure RLS-enabled tables
+    # for the foundation spec (Requirement 2.10): `ENABLE ROW LEVEL
+    # SECURITY` and `dept_isolation` policies on `departments`,
+    # `audit_events`, `probe_artifacts` (design §"Postgres şeması").
+    # Boot_Bundle: postgres carries no `profiles:` so the default
+    # `docker compose up -d` includes it (admin-dashboard-control-plane
+    # Requirement 2.4).
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ai} -d ${POSTGRES_DB:-ai}"]
+      # Foundation Requirement 2.5 / Property 1 (f): healthcheck shape
+      # MUST satisfy interval ∈ [5s, 30s], retries ≤ 3,
+      # timeout < interval. retries was 5 prior to task 10.1.
+      interval: 5s
+      timeout: 3s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: "1.0"
+    restart: unless-stopped
+    logging: *default-logging
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - internal
+    # O3 fix (GEREKSINIM_ANALIZI.md): redis is listed under both its
+    # own profile AND ``assistant-service`` so that starting the
+    # assistant profile auto-starts redis (assistant-service has
+    # ``depends_on: redis: condition: service_healthy``). Without this,
+    # operators activating only the ``assistant-service`` profile saw
+    # the service stuck waiting for an unhealthy redis dependency.
+    profiles: ["redis", "assistant-service"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.25"
+    restart: unless-stopped
+    logging: *default-logging
+
+  vault:
+    image: hashicorp/vault:1.16
+    cap_add:
+      - IPC_LOCK
+    environment:
+      # ⚠ DEV-ONLY root token (Requirement 11.5, 18.5).
+      VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_TOKEN:-dev-token-not-for-prod}
+      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+    ports:
+      - "8200:8200"
+    networks:
+      - internal
+    healthcheck:
+      # The /v1/sys/health endpoint returns 200 when initialised+unsealed.
+      # In `-dev` mode the server is unsealed at boot.
+      test: ["CMD", "wget", "-qO-", "http://0.0.0.0:8200/v1/sys/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.25"
+    restart: unless-stopped
+    logging: *default-logging
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio}
+      # ⚠ DEV-ONLY (Requirement 11.5).
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-miniosecret_dev_only}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - internal
+    profiles: ["minio", "agent-runner-worker", "execution-runner-worker", "automation-worker", "workers"]
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+    restart: unless-stopped
+    logging: *default-logging
+
+  temporal:
+    image: temporalio/auto-setup:1.24
+    entrypoint: ["/bin/sh", "-lc"]
+    command:
+      - |
+        mkdir -p /tmp/temporal-dynamicconfig
+        cat > /tmp/temporal-dynamicconfig/development-sql.yaml <<'YAML'
+        frontend.enableClientVersionCheck:
+          - value: false
+            constraints: {}
+        YAML
+        exec /etc/temporal/entrypoint.sh autosetup
+    ports:
+      - "7233:7233"
+    environment:
+      DB: postgres12
+      DB_PORT: "5432"
+      POSTGRES_USER: ${POSTGRES_USER:-ai}
+      POSTGRES_PWD: ${POSTGRES_PASSWORD:-ai_dev_only}
+      POSTGRES_SEEDS: postgres
+      DYNAMIC_CONFIG_FILE_PATH: /tmp/temporal-dynamicconfig/development-sql.yaml
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - internal
+    profiles: ["temporal", "automation-service", "task-intake-service", "agent-runner-worker", "execution-runner-worker", "automation-worker", "workers"]
+    healthcheck:
+      test: ["CMD-SHELL", "tctl --address temporal:7233 cluster health | grep -q SERVING"]
+      # Foundation Requirement 2.5 / Property 1 (f): healthcheck shape
+      # MUST satisfy interval ∈ [5s, 30s], retries ≤ 3,
+      # timeout < interval. retries was 5 prior to task 10.1.
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    restart: unless-stopped
+    logging: *default-logging
+
+  temporal-ui:
+    image: temporalio/ui:2.27.0
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_CORS_ORIGINS: http://localhost:3000
+    ports:
+      - "8233:8080"
+    depends_on:
+      - temporal
+    networks:
+      - internal
+    profiles: ["temporal-ui"]
+    restart: unless-stopped
+    logging: *default-logging
+
+  # ─── Atlassian MCP (jellythomas/mcp-atlassian-with-bitbucket) ───
+  atlassian-mcp:
+    build:
+      context: ../services/atlassian_mcp_bitbucket
+      args:
+        MCP_ATLASSIAN_REF: 9face8350494dff9c0daf0c04754721f0ecf3848
+    command:
+      - --transport
+      - streamable-http
+      - --stateless
+      - --port
+      - "8090"
+      - --path
+      - /mcp
+    environment:
+      TRANSPORT: streamable-http
+      STATELESS: "true"
+      PORT: "8090"
+      STREAMABLE_HTTP_PATH: /mcp
+      READ_ONLY: "false"
+      READ_ONLY_MODE: "false"
+      TOOLSETS: ${MCP_TOOLSETS:-all}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "${ATLASSIAN_MCP_HOST_PORT:-18090}:8090"
+    networks:
+      - internal
+      # ``default`` so the host (and e2e tests) can reach :8090.
+      - default
+    profiles: ["atlassian-mcp", "streamlit-ui", "assistant-service", "task-intake-service", "agent-runner-worker", "workers"]
+    healthcheck:
+      # O2 fix (GEREKSINIM_ANALIZI.md): probe the actual ``/healthz``
+      # endpoint instead of a bare TCP socket connect. The previous TCP
+      # check flipped ``healthy`` as soon as the port was listening even
+      # if the FastMCP server returned 500 from ``/healthz``. The image
+      # has no ``curl`` (slim Python base) so we use ``urllib`` —
+      # exit code 0 only when /healthz returns 2xx.
+      test: ["CMD", "python", "-c", "import urllib.request,sys; r=urllib.request.urlopen('http://localhost:8090/healthz', timeout=3); sys.exit(0 if 200<=r.status<300 else 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+    restart: unless-stopped
+    logging: *default-logging
+
+  # ─── firecrawl (egress-allowlisted scrape/search wrapper) ───
+  # Built from `services/firecrawl/` rather than the upstream Mendable image
+  # so the FIRECRAWL_EGRESS_ALLOWLIST contract (Requirement 10.3, MIMARI Y3)
+  # is enforced before any external HTTP fetch leaves the container.
+  firecrawl:
+    build:
+      context: ../services/firecrawl
+    environment:
+      PORT: "3002"
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      # Closed-by-default. Operators set this to a comma-separated list of
+      # allow-listed host suffixes (e.g. "docs.python.org,wikipedia.org");
+      # an empty value rejects every external host with HTTP 403 +
+      # `egress_denied`.
+      FIRECRAWL_EGRESS_ALLOWLIST: ${FIRECRAWL_EGRESS_ALLOWLIST:-}
+      FIRECRAWL_UPSTREAM_BASE_URL: ${FIRECRAWL_UPSTREAM_BASE_URL:-}
+      FIRECRAWL_REQUEST_TIMEOUT_S: ${FIRECRAWL_REQUEST_TIMEOUT_S:-30}
+      FIRECRAWL_API_KEY: ${FIRECRAWL_API_KEY:-}
+    ports:
+      - "3002:3002"
+    networks:
+      - internal
+    profiles: ["firecrawl", "task-intake-service", "agent-runner-worker", "workers"]
+    healthcheck:
+      <<: *http-healthcheck
+      test: ["CMD", "curl", "-fsS", "http://localhost:3002/healthz"]
+    restart: unless-stopped
+    logging: *default-logging
+
+  # ─── OpenCode sidecar (code generation engine, internal-only) ───
+  opencode-sidecar:
+    image: ghcr.io/anomalyco/opencode:latest
+    working_dir: /tmp/workspace
+    entrypoint: ["/bin/sh", "-lc"]
+    command:
+      - |
+        mkdir -p /tmp/workspace/.opencode
+        cat > /tmp/workspace/.opencode/opencode.json <<'JSON'
+        {
+          "$$schema": "https://opencode.ai/config.json",
+          "model": "vllm/{env:LLM_MODEL_NAME}",
+          "provider": {
+            "vllm": {
+              "npm": "@ai-sdk/openai-compatible",
+              "name": "vLLM",
+              "options": {
+                "baseURL": "{env:VLLM_BASE_URL}",
+                "apiKey": "{env:VLLM_API_KEY}"
+              },
+              "models": {
+                "qwen2.5-coder": {
+                  "name": "Qwen 2.5 Coder"
+                }
+              }
+            }
+          }
+        }
+        JSON
+        exec opencode serve --port 4096 --hostname 0.0.0.0
+    env_file:
+      - path: ../workers/agent-runner-worker/.env
+        required: false
+    environment:
+      OPENCODE_CONFIG: /tmp/workspace/.opencode/opencode.json
+      LLM_MODEL_NAME: ${LLM_MODEL_NAME:-qwen2.5-coder}
+      VLLM_BASE_URL: ${VLLM_BASE_URL:-http://host.docker.internal:8000/v1}
+      VLLM_API_KEY: ${VLLM_API_KEY:-not-needed}
+    expose:
+      - "4096"
+    volumes:
+      - agent_workspace:/tmp/workspace
+    networks:
+      - internal
+      - default
+    profiles: ["opencode-sidecar", "agent-runner-worker", "workers"]
+    healthcheck:
+      # OpenCode image is BusyBox-based. ``localhost`` does not resolve
+      # in this image (no /etc/hosts entry for it); use the explicit
+      # loopback IPv4 address. ``wget --spider`` probes a TCP listener
+      # without touching the filesystem.
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:4096/"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+    logging: *default-logging
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Application HTTP services
+  # ───────────────────────────────────────────────────────────────────────────
+
+  automation-service:
+    build:
+      context: ..
+      dockerfile: services/automation-service/Dockerfile
+    env_file: ../services/automation-service/.env
+    environment:
+      # automation-service-wiring spec activated the production lifespan
+      # handler, which calls ``vault_factory.make_client(os.environ)``.
+      # The factory requires ``VAULT_BACKEND`` ∈ {hashicorp, local-dev}.
+      # We pin to ``hashicorp`` because the Compose stack already runs a
+      # Vault container (see service ``vault`` above) and the existing
+      # ``VAULT_ADDR``/``VAULT_TOKEN`` env values from the service .env
+      # already target it.
+      VAULT_BACKEND: ${VAULT_BACKEND:-hashicorp}
+      # ``OIDCConfig.from_env`` defaults to AUTH_PROVIDER=oidc which
+      # requires a live IdP; the e2e stack has no IdP container, so we
+      # flip to the dev-mode bypass that accepts any non-empty token.
+      AUTH_PROVIDER: ${AUTH_PROVIDER:-local}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+      temporal:
+        condition: service_healthy
+    volumes:
+      - ../config:/app/config:ro
+    ports:
+      - "8084:8080"
+    networks:
+      - internal
+      - default
+    profiles: ["automation-service"]
+    healthcheck:
+      <<: *http-healthcheck
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/healthz"]
+    deploy:
+      resources:
+        limits:
+          # Bumped from 512M after the automation-service-wiring spec
+          # activated the production lifespan handler — the new
+          # lifespan holds an asyncpg pool, a Temporal client, the
+          # shared httpx client, Vault + OIDC + audit logger + 8
+          # ``*EndpointDeps`` containers all at once, which pushes
+          # the steady-state RSS above 512M and triggers OOM-kill
+          # during long-running suites.
+          memory: 1024M
+          cpus: "0.5"
+    restart: unless-stopped
+    logging: *default-logging
+
+  assistant-service:
+    build:
+      context: ..
+      dockerfile: services/assistant-service/Dockerfile
+    env_file: ../services/assistant-service/.env
+    environment:
+      PORT: ${PORT:-8081}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      CLIENT_SOURCE: ${CLIENT_SOURCE:-assistant-service}
+      POSTGRES_DSN: ${POSTGRES_DSN:-postgresql://ai:ai_dev_only@postgres:5432/ai}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      MCP_BASE_URL: ${MCP_BASE_URL:-http://atlassian-mcp:8090}
+      OPENCODE_ENDPOINT: ${OPENCODE_ENDPOINT:-http://opencode-sidecar:4096}
+      AUTH_PROVIDER: ${AUTH_PROVIDER:-local}
+      OIDC_ISSUER_URL: ${OIDC_ISSUER_URL:-}
+      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-}
+      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-}
+      OIDC_AUDIENCE: ${OIDC_AUDIENCE:-}
+      OIDC_JWKS_URL: ${OIDC_JWKS_URL:-}
+      VAULT_BACKEND: ${VAULT_BACKEND:-hashicorp}
+      VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
+      VAULT_TOKEN: ${VAULT_TOKEN:-dev-token-not-for-prod}
+      LLM_PROVIDER: ${LLM_PROVIDER:-openai}
+      LLM_MODEL_NAME: ${LLM_MODEL_NAME:-gpt-4o-mini}
+      VLLM_BASE_URL: ${VLLM_BASE_URL:-http://host.docker.internal:8000/v1}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      atlassian-mcp:
+        condition: service_healthy
+    ports:
+      - "${ASSISTANT_SERVICE_HOST_PORT:-18081}:8081"
+    networks:
+      - internal
+      # default so the host bridge publishes 8081:8081 for E2E tests.
+      - default
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.assistant.rule=PathPrefix(`/assistant`)"
+      - "traefik.http.routers.assistant.entrypoints=websecure"
+      - "traefik.http.routers.assistant.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.assistant.middlewares=security-headers@file"
+      - "traefik.http.services.assistant.loadbalancer.server.port=8081"
+    profiles: ["assistant-service"]
+    healthcheck:
+      <<: *http-healthcheck
+      test: ["CMD", "curl", "-fsS", "http://localhost:8081/healthz"]
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+    restart: unless-stopped
+    logging: *default-logging
+
+  admin-dashboard-api:
+    build:
+      context: ..
+      dockerfile: services/admin-dashboard-api/Dockerfile
+    env_file: ../services/admin-dashboard-api/.env
+    environment:
+      PORT: ${PORT:-8082}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      POSTGRES_DSN: ${POSTGRES_DSN:-postgresql://ai:ai_dev_only@postgres:5432/ai}
+      VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
+      VAULT_TOKEN: ${VAULT_TOKEN:-dev-token-not-for-prod}
+      TEMPORAL_HOST: ${TEMPORAL_HOST:-temporal:7233}
+      WORKSPACE_ROOT: ${WORKSPACE_ROOT:-/app}
+      CLIENT_SOURCE: ${CLIENT_SOURCE:-admin-dashboard-api}
+      MCP_METRICS_URL: ${MCP_METRICS_URL:-http://atlassian-mcp:8090}
+      LLM_PROVIDER: ${LLM_PROVIDER:-openai}
+      LLM_MODEL_NAME: ${LLM_MODEL_NAME:-gpt-4o-mini}
+      VLLM_BASE_URL: ${VLLM_BASE_URL:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    # platform-gap-fill Requirement 7.1: admin-dashboard-api is part of
+    # the default Boot_Bundle (admin-dashboard-ui + admin-dashboard-api
+    # + postgres + vault) and MUST come up without any `--profile`
+    # flag. Its `depends_on` therefore lists only Boot_Bundle peers
+    # (postgres, vault); the Temporal/MCP/Automation tier is started
+    # lazily via the Compose_Manager (Setup Wizard, Requirements 7.2-
+    # 7.6) once the operator opts in. The api connects to Temporal at
+    # call time when workflow-control endpoints are invoked — a missing
+    # Temporal cluster surfaces as an HTTP 5xx on those endpoints
+    # rather than blocking platform boot.
+    depends_on:
+      postgres:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+    ports:
+      - "8082:8082"
+    volumes:
+      # DEV-ONLY: admin-dashboard-api restarts other containers
+      # (MIMARI §17). Removed in production.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # DEV-ONLY: the in-container Docker CLI needs the compose file
+      # and the relative paths used by infra/docker-compose.yml.
+      - .:/app/infra:ro
+      - ../services:/app/services:ro
+      - ../ui:/app/ui:ro
+      - ../workers:/app/workers:ro
+      - ../libs:/app/libs:ro
+      - ../scripts:/app/scripts:ro
+      # Config files (manifest, departments)
+      - ../config:/app/config
+      # Prompt catalog/editor surface reads platform/prompts inside the API
+      # container because WORKSPACE_ROOT is /app in Compose.
+      - ../prompts:/app/platform/prompts
+      # K1 fix (GEREKSINIM_ANALIZI.md Faz A): mount the unified SQL
+      # migration tree so the lifespan migration runner can apply
+      # un-applied files on every boot. Without this mount the
+      # ``infrastructure.ssh_runners``, ``llm_providers``, ``test_runs``
+      # etc. tables never exist on a fresh deployment.
+      - ./postgres/migrations:/app/migrations:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.admin-api.rule=PathPrefix(`/api`)"
+      - "traefik.http.routers.admin-api.entrypoints=websecure"
+      - "traefik.http.routers.admin-api.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.admin-api.middlewares=security-headers@file"
+      - "traefik.http.services.admin-api.loadbalancer.server.port=8082"
+    # platform-gap-fill Requirement 7.1 / Property 20: NO `profiles:`
+    # directive — Compose includes services without `profiles:` in the
+    # default profile-less `docker compose up -d` invocation. This
+    # supersedes the foundation spec's Requirement 2.1 inclusion of
+    # admin-dashboard-api in the profile-gated set.
+    networks:
+      - internal
+      - default
+    healthcheck:
+      <<: *http-healthcheck
+      test: ["CMD", "curl", "-fsS", "http://localhost:8082/healthz"]
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+    restart: unless-stopped
+    logging: *default-logging
+
+  admin-dashboard-ui:
+    build:
+      context: ..
+      dockerfile: ui/admin-dashboard/Dockerfile
+    env_file: ../ui/admin-dashboard/.env
+    environment:
+      NEXT_PUBLIC_ADMIN_API_BASE_URL: ${NEXT_PUBLIC_ADMIN_API_BASE_URL:-http://localhost:8082}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - admin-dashboard-api
+    networks:
+      - internal
+      - default
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.admin-ui.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.admin-ui.entrypoints=websecure"
+      - "traefik.http.routers.admin-ui.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.admin-ui.middlewares=security-headers@file"
+      - "traefik.http.routers.admin-ui.priority=1"
+      - "traefik.http.services.admin-ui.loadbalancer.server.port=3000"
+    # platform-gap-fill Requirement 7.1 / Property 20: NO `profiles:`
+    # directive — admin-dashboard-ui is part of the default Boot_Bundle
+    # together with admin-dashboard-api, postgres and vault. Operators
+    # bring up the platform with a bare `docker compose up -d` and use
+    # the dashboard's Setup Wizard (Compose_Manager) to activate the
+    # remaining profile-gated services on demand.
+    healthcheck:
+      <<: *http-healthcheck
+      # Next.js admin-dashboard-ui ships no /api/health route — pages
+      # render via the App Router. Probing / returns 200 as soon as
+      # the dev/preview server is listening, which is the right
+      # liveness signal for this UI container.
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/ || exit 1"]
+    restart: unless-stopped
+    logging: *default-logging
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # End-user UI (foundation 10-entry topology, kind=ui)
+  # ───────────────────────────────────────────────────────────────────────────
+
+  # streamlit-ui (foundation manifest entry — Requirement 1.1, 2.1).
+  # The compose service is intentionally named `streamlit-ui` (matches
+  # `services.manifest.json` `compose_service_name`); the build context
+  # remains `ui/streamlit-app/` per the existing scaffold path. UI
+  # components carry `health_endpoint=null` in the manifest (Requirement
+  # 1.10) so we omit a custom Compose healthcheck and rely on the
+  # Dockerfile's built-in `/_stcore/health` HEALTHCHECK directive.
+  streamlit-ui:
+    build:
+      # Streamlit Dockerfile is Standalone Mode (uses only requirements.txt
+      # + own files; no platform-lib deps).
+      context: ../ui/streamlit-app
+      dockerfile: Dockerfile
+    env_file: ../ui/streamlit-app/.env
+    environment:
+      ASSISTANT_BASE_URL: ${ASSISTANT_BASE_URL:-http://assistant-service:8081}
+      ASSISTANT_SERVICE_URL: ${ASSISTANT_SERVICE_URL:-http://assistant-service:8081}
+      MCP_BASE_URL: ${MCP_BASE_URL:-http://atlassian-mcp:8090}
+      LLM_PROVIDER: ${LLM_PROVIDER:-openai}
+      LLM_MODEL_NAME: ${LLM_MODEL_NAME:-gpt-4o-mini}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      VLLM_BASE_URL: ${VLLM_BASE_URL:-http://host.docker.internal:8000/v1}
+      VLLM_API_KEY: ${VLLM_API_KEY:-}
+    ports:
+      - "${STREAMLIT_HOST_PORT:-18501}:8501"
+    volumes:
+      - ../prompts:/app/prompts:ro
+    depends_on:
+      atlassian-mcp:
+        condition: service_healthy
+    networks:
+      - internal
+      # default so the host bridge avoids common 8501 collisions while
+      # keeping the in-container Streamlit port stable.
+      - default
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.streamlit.rule=PathPrefix(`/streamlit`)"
+      - "traefik.http.routers.streamlit.entrypoints=websecure"
+      - "traefik.http.routers.streamlit.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.streamlit.middlewares=security-headers@file"
+      - "traefik.http.services.streamlit.loadbalancer.server.port=8501"
+    # Foundation Requirement 2.1 / Property 1 (c): the `profiles:`
+    # list MUST contain the service's `compose_service_name`.
+    profiles: ["streamlit-ui"]
+    restart: unless-stopped
+    logging: *default-logging
+
+  # Profile-gated optional intake service (Requirement 16.2, 16.3).
+  task-intake-service:
+    build: ../services/task-intake-service
+    # O1 fix (GEREKSINIM_ANALIZI.md): point at ``.env.example`` by
+    # default and mark it ``required: false`` so the profile starts
+    # cleanly even when an operator has not yet customised the env.
+    # ``.env`` (if present) wins over ``.env.example`` because Compose
+    # evaluates env_file entries in order. Other services keep the
+    # single-``.env`` contract because their ``.env`` is created by
+    # the Setup Wizard's first run.
+    env_file:
+      - path: ../services/task-intake-service/.env
+        required: false
+      - ../services/task-intake-service/.env.example
+    environment:
+      PORT: ${PORT:-8083}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      POSTGRES_DSN: ${POSTGRES_DSN:-postgresql://ai:ai_dev_only@postgres:5432/ai}
+      TEMPORAL_HOST: ${TEMPORAL_HOST:-temporal:7233}
+      MCP_BASE_URL: ${MCP_BASE_URL:-http://atlassian-mcp:8090}
+      FIRECRAWL_BASE_URL: ${FIRECRAWL_BASE_URL:-http://firecrawl:3002}
+      CLIENT_SOURCE: ${CLIENT_SOURCE:-task-intake-service}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      temporal:
+        condition: service_healthy
+      atlassian-mcp:
+        condition: service_healthy
+      firecrawl:
+        condition: service_healthy
+    ports:
+      - "8083:8083"
+    networks:
+      - internal
+    profiles: ["task-intake", "task-intake-service"]
+    healthcheck:
+      <<: *http-healthcheck
+      test: ["CMD", "curl", "-fsS", "http://localhost:8083/healthz"]
+    restart: unless-stopped
+    logging: *default-logging
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Temporal workers (no published HTTP ports — Property 4.2)
+  # ───────────────────────────────────────────────────────────────────────────
+
+  agent-runner-worker:
+    build:
+      # The worker's activity modules import http_shared / observability /
+      # audit_logger / temporal_shared / mcp_client which are NOT
+      # declared in its pyproject.toml — platform-root context is
+      # needed so the Dockerfile can COPY the libs into the image.
+      context: ..
+      dockerfile: workers/agent-runner-worker/Dockerfile
+    env_file: ../workers/agent-runner-worker/.env
+    environment:
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      CLIENT_SOURCE: ${CLIENT_SOURCE:-agent-runner-worker}
+      TEMPORAL_HOST: ${TEMPORAL_HOST:-temporal:7233}
+      TEMPORAL_NAMESPACE: ${TEMPORAL_NAMESPACE:-default}
+      TEMPORAL_TASK_QUEUE: ${TEMPORAL_TASK_QUEUE:-agent-runner}
+      MCP_BASE_URL: ${MCP_BASE_URL:-http://atlassian-mcp:8090}
+      FIRECRAWL_BASE_URL: ${FIRECRAWL_BASE_URL:-http://firecrawl:3002}
+      FIRECRAWL_ENABLED: ${FIRECRAWL_ENABLED:-false}
+      VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
+      VAULT_BACKEND: ${VAULT_BACKEND:-hashicorp}
+      VAULT_TOKEN: ${VAULT_TOKEN:-}
+      LLM_PROVIDER: ${LLM_PROVIDER:-openai}
+      LLM_MODEL_NAME: ${LLM_MODEL_NAME:-gpt-4o-mini}
+      VLLM_BASE_URL: ${VLLM_BASE_URL:-http://host.docker.internal:8000/v1}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio:9000}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-miniosecret_dev_only}
+      OPENCODE_ENDPOINT: ${OPENCODE_ENDPOINT:-http://opencode-sidecar:4096}
+      OPENCODE_MODEL: ${OPENCODE_MODEL:-openai/gpt-4o-mini}
+      FEATURE_FLAG_AI_ENABLED: ${FEATURE_FLAG_AI_ENABLED:-true}
+      FEATURE_FLAG_FIRECRAWL_ENABLED: ${FEATURE_FLAG_FIRECRAWL_ENABLED:-false}
+    depends_on:
+      temporal:
+        condition: service_healthy
+      atlassian-mcp:
+        condition: service_healthy
+      firecrawl:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      opencode-sidecar:
+        condition: service_healthy
+    volumes:
+      # Shared workspace with opencode-sidecar (MIMARI §17).
+      - agent_workspace:/tmp/workspace
+    networks:
+      - internal
+    profiles: ["agent-runner-worker", "workers"]
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1.0"
+    restart: unless-stopped
+    logging: *default-logging
+
+  execution-runner-worker:
+    build:
+      # Worker imports temporal_shared without declaring it in
+      # pyproject.toml — platform-root context is needed so the
+      # Dockerfile can COPY libs/temporal-shared into the image.
+      context: ..
+      dockerfile: workers/execution-runner-worker/Dockerfile
+    env_file: ../workers/execution-runner-worker/.env
+    environment:
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      CLIENT_SOURCE: ${CLIENT_SOURCE:-execution-runner-worker}
+      TEMPORAL_HOST: ${TEMPORAL_HOST:-temporal:7233}
+      TEMPORAL_NAMESPACE: ${TEMPORAL_NAMESPACE:-default}
+      TEMPORAL_TASK_QUEUE: ${TEMPORAL_TASK_QUEUE:-execution-runner-tq}
+      VAULT_BACKEND: ${VAULT_BACKEND:-hashicorp}
+      VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
+      VAULT_TOKEN: ${VAULT_TOKEN:-dev-token-not-for-prod}
+      POSTGRES_DSN: ${POSTGRES_DSN:-postgresql://ai:ai_dev_only@postgres:5432/ai}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio:9000}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-miniosecret_dev_only}
+      SSH_HOST: ${SSH_HOST:-}
+      SSH_HOST_1: ${SSH_HOST_1:-}
+      SSH_HOST_2: ${SSH_HOST_2:-}
+      SSH_HOST_3: ${SSH_HOST_3:-}
+      SSH_USER_DEFAULT: ${SSH_USER_DEFAULT:-runner}
+      SSH_PORT_DEFAULT: ${SSH_PORT_DEFAULT:-22}
+      SSH_KEY_VAULT_PREFIX: ${SSH_KEY_VAULT_PREFIX:-vault:ssh/runners}
+      SSH_CONNECT_TIMEOUT_S: ${SSH_CONNECT_TIMEOUT_S:-15}
+      SSH_COMMAND_TIMEOUT_S: ${SSH_COMMAND_TIMEOUT_S:-1800}
+      SSH_KNOWN_HOSTS_PATH: ${SSH_KNOWN_HOSTS_PATH:-/etc/ssh/ssh_known_hosts}
+      RUNNER_BASE_PATH: ${RUNNER_BASE_PATH:-/var/ai-runner}
+      RUNNER_DISK_WARN_PCT: ${RUNNER_DISK_WARN_PCT:-80}
+      RUNNER_DISK_EVICT_PCT: ${RUNNER_DISK_EVICT_PCT:-90}
+      FEATURE_FLAG_EXECUTION_ENABLED: ${FEATURE_FLAG_EXECUTION_ENABLED:-true}
+      SSH_RUNNER_DEPT_PINNING_ENABLED: ${SSH_RUNNER_DEPT_PINNING_ENABLED:-false}
+      SSH_DEPT_QUOTA_ENABLED: ${SSH_DEPT_QUOTA_ENABLED:-false}
+    depends_on:
+      temporal:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    networks:
+      - internal
+      # Remote SSH runners live outside the compose-internal network.
+      - default
+    profiles: ["execution-runner-worker", "workers"]
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1.0"
+    restart: unless-stopped
+    logging: *default-logging
+
+  # automation-worker hosts the ``automation-tq`` task queue
+  # (workflows-spec Requirement 1.1, 1.2). It registers
+  # ``AutomationWorkflow`` (gateway), ``BotBranchRetention`` (daily cron
+  # for orphan ai/* branches), and ``AuditPruneWorkflow`` (Spec 3 task
+  # 13 — daily audit_events archive + delete with mandatory admin Slack
+  # alarm on failure). Like the other workers it publishes no TCP port
+  # and uses a Python one-shot Temporal client connect as its
+  # HEALTHCHECK (defined in the Dockerfile).
+  automation-worker:
+    build:
+      context: ..
+      dockerfile: workers/automation-worker/Dockerfile
+    env_file: ../workers/automation-worker/.env
+    environment:
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      CLIENT_SOURCE: ${CLIENT_SOURCE:-automation-worker}
+      TEMPORAL_HOST: ${TEMPORAL_HOST:-temporal:7233}
+      TEMPORAL_NAMESPACE: ${TEMPORAL_NAMESPACE:-default}
+      TEMPORAL_TASK_QUEUE: ${TEMPORAL_TASK_QUEUE:-automation-tq}
+      POSTGRES_DSN: ${POSTGRES_DSN:-postgresql://ai:ai_dev_only@postgres:5432/ai}
+      VAULT_BACKEND: ${VAULT_BACKEND:-hashicorp}
+      VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
+      VAULT_TOKEN: ${VAULT_TOKEN:-dev-token-not-for-prod}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio:9000}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-miniosecret_dev_only}
+      MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
+      MINIO_REGION: ${MINIO_REGION:-us-east-1}
+      RETENTION_DAYS: ${RETENTION_DAYS:-90}
+      SLACK_ADMIN_WEBHOOK: ${SLACK_ADMIN_WEBHOOK:-}
+    depends_on:
+      temporal:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    volumes:
+      - ../config:/app/config:ro
+      - ../workers/agent-runner-worker/prompts:/app/workers/agent-runner-worker/prompts:ro
+    networks:
+      - internal
+      # Jira attachment uploads go directly to Atlassian Cloud after the
+      # workflow downloads the result artifact from MinIO.
+      - default
+    profiles: ["automation-worker", "workers"]
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1.0"
+    restart: unless-stopped
+    logging: *default-logging
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Top-level named volumes (Property 4.5)
+# ─────────────────────────────────────────────────────────────────────────────
+volumes:
+  pg_data:
+  minio_data:
+  agent_workspace:
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Networks (Requirement 3.6 — Network Isolation)
+# ─────────────────────────────────────────────────────────────────────────────
+# `internal` network: backend services communicate here but have no direct
+# external access. Only Traefik bridges the public-facing `default` network
+# and the `internal` network, enforcing that all external traffic flows
+# through the reverse proxy.
+# ─────────────────────────────────────────────────────────────────────────────
+networks:
+  default:
+    # The default bridge network — Traefik binds ports 80/443 here.
+    driver: bridge
+  internal:
+    # Internal-only network — no published ports, no external access.
+    driver: bridge
+    internal: true

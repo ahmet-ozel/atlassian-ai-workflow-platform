@@ -1,0 +1,121 @@
+# Atlassian Forge Add-On manifest — "AI Bot Task" issue type with mandatory
+# custom fields for the AI bot pipeline.
+#
+# Spec: platform-mimari-uyumluluk Requirement 6 (R6 / Q3 forge-app branch).
+# Acceptance criteria reference: 6.1, 6.2.
+#
+# This skeleton ships with placeholder values; fill `app.id` after running
+# `forge register` against the target Atlassian developer account. The
+# add-on stays opt-in behind `FEATURE_FLAG_FORGE_ADDON_ENABLED` (default
+# false); see `platform/docs/forge-app-deployment.md` for deployment.
+
+modules:
+  jira:issueType:
+    - key: ai-bot-task
+      name: AI Bot Task
+      description: >-
+        Issue type optimised for AI bot consumption. Mandatory custom fields
+        (AI Görev Tipi, Hedef Repo, Branch, Output Hedefi, Cleanup Policy)
+        appear as a structured form so end-users cannot omit fields.
+      hierarchyLevel: 0
+      avatarId: 10318
+
+  jira:customField:
+    - key: ai-gorev-tipi
+      name: AI Görev Tipi
+      description: AI bot task category. Drives prompt selection and runner profile.
+      type: dropdown
+      readOnly: false
+      required: true
+      defaultValue: code_change
+      options:
+        - value: code_change
+          label: Code Change
+        - value: test_only
+          label: Test Only
+        - value: research
+          label: Research
+        - value: doc_update
+          label: Documentation Update
+        - value: script_execution
+          label: Script Execution
+
+    - key: hedef-repo
+      name: Hedef Repo
+      description: >-
+        Target repository slug. Options are populated at runtime from the
+        department's `bitbucket_repo_slugs` configuration.
+      type: dropdown
+      readOnly: false
+      required: true
+      # Options resolved dynamically by Forge function `populateHedefRepo`
+      # (see src/index.js); placeholder list ships empty.
+      options: []
+
+    - key: branch
+      name: Branch
+      description: Target branch the AI bot operates against.
+      type: text
+      readOnly: false
+      required: true
+      defaultValue: develop
+
+    - key: output-hedefi
+      name: Output Hedefi
+      description: >-
+        Where the AI bot should publish its outputs. Multiple targets allowed
+        (e.g. Bitbucket PR + Confluence page + Jira comment).
+      type: multi-select
+      readOnly: false
+      required: true
+      options:
+        - value: bitbucket_pr
+          label: Bitbucket PR
+        - value: confluence_page
+          label: Confluence Page
+        - value: jira_comment
+          label: Jira Comment
+        - value: jira_attachment
+          label: Jira Attachment
+
+    - key: cleanup-policy
+      name: Cleanup Policy
+      description: Whether the AI bot deletes its working branch after the workflow.
+      type: dropdown
+      readOnly: false
+      required: true
+      defaultValue: delete_on_success
+      options:
+        - value: delete_on_success
+          label: Delete on Success
+        - value: always
+          label: Always Delete
+        - value: never
+          label: Never Delete
+
+  function:
+    - key: ai-bot-task-handler
+      handler: index.handler
+    - key: populate-hedef-repo
+      handler: index.populateHedefRepo
+
+app:
+  # Replace with the real Forge application id after `forge register`.
+  # Format: ari:cloud:ecosystem::app/<uuid>
+  id: ari:cloud:ecosystem::app/00000000-0000-0000-0000-000000000000
+  runtime:
+    name: nodejs20.x
+
+# Minimum scopes for reading and writing AI Bot Task issues. Keep this list
+# tight; the add-on does not need admin scopes. See deployment runbook for
+# the rationale and review process.
+permissions:
+  scopes:
+    - read:jira-work
+    - write:jira-work
+
+environment:
+  definitions:
+    - key: development
+    - key: staging
+    - key: production

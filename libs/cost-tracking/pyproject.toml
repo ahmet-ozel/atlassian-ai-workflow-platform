@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cost-tracking"
+version = "0.1.0"
+description = "Idempotent cost insert + dept-vs-global cost predictor (platform-mimari-ops tasks 7.1/7.2)."
+requires-python = ">=3.11"
+dependencies = []
+
+[project.optional-dependencies]
+asyncpg = ["asyncpg>=0.29"]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

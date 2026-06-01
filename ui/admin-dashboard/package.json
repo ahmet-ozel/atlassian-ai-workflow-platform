@@ -1,0 +1,30 @@
+{
+  "name": "@yeni-atlassian/admin-dashboard",
+  "version": "0.0.0",
+  "description": "Admin dashboard UI (Next.js 14, App Router) for the multi-service scaffold. See MIMARI.md §2.",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test \"app/**/*.test.mjs\""
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "next": "^14",
+    "react": "^18",
+    "react-dom": "^18",
+    "@yeni-atlassian/web-shared": "file:../../libs/web-shared"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "fast-check": "^4.8.0",
+    "typescript": "^5.4.0"
+  }
+}

@@ -1,0 +1,359 @@
+"""MCP transport and LLM summarization helpers for Streamlit chat."""
+
+from __future__ import annotations
+
+import json
+import time
+from typing import Any, Callable, Sequence
+
+import httpx
+
+from config import Settings
+
+
+CredentialGetter = Callable[[str], Any | None]
+
+_MCP_TIMEOUT_SECONDS = 75.0
+_MCP_MAX_ATTEMPTS = 3
+_MCP_RETRY_DELAYS = (0.7, 1.6)
+
+_AUTH_ERROR_MARKERS = ("401", "403", "unauthorized", "forbidden", "permission", "izin", "yetki")
+_UNKNOWN_TOOL_MARKERS = ("unknown tool", "not listed")
+_TRANSIENT_ERROR_MARKERS = (
+    "timed out",
+    "timeout",
+    "readtimeout",
+    "connecttimeout",
+    "ssleoferror",
+    "unexpected_eof",
+    "connection reset",
+    "connection aborted",
+    "remote protocol error",
+    "temporarily unavailable",
+    "too many requests",
+    "bad gateway",
+    "gateway timeout",
+    "service unavailable",
+    "429",
+    "500",
+    "502",
+    "503",
+    "504",
+)
+_ERROR_TEXT_MARKERS = _AUTH_ERROR_MARKERS + _UNKNOWN_TOOL_MARKERS + _TRANSIENT_ERROR_MARKERS + (
+    "not available",
+    "error calling tool",
+    "validation error",
+)
+
+
+def _deployment(credential: Any) -> str:
+    return str(getattr(credential, "deployment", "cloud") or "cloud").lower()
+
+
+def _is_bitbucket_workspace_token(token: str) -> bool:
+    """Return whether a Bitbucket Cloud token should be sent as bearer/PAT.
+
+    Workspace access tokens are documented in the local credential file as
+    bearer tokens and currently use the ``ATCTT`` prefix. Atlassian account
+    API tokens use Basic auth with email + token.
+    """
+
+    return token.strip().startswith("ATCTT")
+
+
+def _mcp_headers(credential_for: CredentialGetter) -> dict[str, str]:
+    headers = {
+        "Accept": "application/json, text/event-stream",
+        "X-Client-Source": "streamlit-app",
+    }
+    jira = credential_for("jira")
+    if jira is not None:
+        headers["X-Atlassian-Jira-Url"] = jira.url
+        if _deployment(jira) == "server":
+            headers["X-Atlassian-Jira-Personal-Token"] = jira.api_token
+        else:
+            headers["X-Atlassian-Jira-Username"] = jira.email
+            headers["X-Atlassian-Jira-Api-Token"] = jira.api_token
+    confluence = credential_for("confluence")
+    if confluence is not None:
+        headers["X-Atlassian-Confluence-Url"] = confluence.url
+        if _deployment(confluence) == "server":
+            headers["X-Atlassian-Confluence-Personal-Token"] = confluence.api_token
+        else:
+            headers["X-Atlassian-Confluence-Username"] = confluence.email
+            headers["X-Atlassian-Confluence-Api-Token"] = confluence.api_token
+    bitbucket = credential_for("bitbucket")
+    if bitbucket is not None:
+        headers["X-Atlassian-Bitbucket-Url"] = bitbucket.url
+        if _deployment(bitbucket) == "server" or _is_bitbucket_workspace_token(
+            bitbucket.api_token
+        ):
+            headers["X-Atlassian-Bitbucket-Personal-Token"] = bitbucket.api_token
+        else:
+            headers["X-Atlassian-Bitbucket-Username"] = bitbucket.email
+            headers["X-Atlassian-Bitbucket-App-Password"] = bitbucket.api_token
+            headers["X-Atlassian-Bitbucket-Api-Token"] = bitbucket.api_token
+    return headers
+
+
+def _parse_mcp_response(text: str) -> Any:
+    for line in text.splitlines():
+        if not line.startswith("data:"):
+            continue
+        raw = line[5:].strip()
+        if not raw:
+            continue
+        payload = json.loads(raw)
+        if isinstance(payload, dict) and payload.get("error"):
+            raise RuntimeError(json.dumps(payload["error"], ensure_ascii=False))
+        return payload.get("result", payload)
+
+    payload = json.loads(text)
+    if isinstance(payload, dict) and payload.get("error"):
+        raise RuntimeError(json.dumps(payload["error"], ensure_ascii=False))
+    return payload.get("result", payload) if isinstance(payload, dict) else payload
+
+
+def _mcp_jsonrpc(
+    method: str,
+    credential_for: CredentialGetter,
+    params: dict[str, Any] | None = None,
+) -> Any:
+    base_url = Settings().mcp_base_url.rstrip("/")
+    payload = {
+        "jsonrpc": "2.0",
+        "id": method,
+        "method": method,
+        "params": params or {},
+    }
+    timeout = httpx.Timeout(_MCP_TIMEOUT_SECONDS, connect=10.0)
+    with httpx.Client(timeout=timeout) as client:
+        response = client.post(
+            f"{base_url}/mcp",
+            json=payload,
+            headers=_mcp_headers(credential_for),
+        )
+    response.raise_for_status()
+    return _parse_mcp_response(response.text)
+
+
+def _mcp_call(
+    tool_name: str,
+    credential_for: CredentialGetter,
+    arguments: dict[str, Any] | None = None,
+) -> Any:
+    return _mcp_jsonrpc(
+        "tools/call",
+        credential_for,
+        {"name": tool_name, "arguments": arguments or {}},
+    )
+
+
+def _looks_like_error_text(text: str) -> bool:
+    lowered = text.lower()
+    return any(marker in lowered for marker in _ERROR_TEXT_MARKERS)
+
+
+def _failure_message_from_payload(payload: Any) -> str | None:
+    if isinstance(payload, str):
+        stripped = payload.strip()
+        if not stripped:
+            return None
+        try:
+            return _failure_message_from_payload(json.loads(stripped))
+        except json.JSONDecodeError:
+            return stripped if _looks_like_error_text(stripped) else None
+
+    if not isinstance(payload, dict):
+        return None
+
+    if payload.get("success") is False:
+        detail = payload.get("error") or payload.get("message") or payload
+        return str(detail)
+
+    if payload.get("error"):
+        detail = payload["error"]
+        if isinstance(detail, dict):
+            return str(detail.get("message") or detail)
+        return str(detail)
+
+    content = payload.get("content")
+    if isinstance(content, list):
+        text_parts = [
+            str(item.get("text", ""))
+            for item in content
+            if isinstance(item, dict) and item.get("type") == "text"
+        ]
+        for text in text_parts:
+            message = _failure_message_from_payload(text)
+            if message:
+                return message
+        if payload.get("isError") is True and text_parts:
+            return "\n".join(text_parts)
+
+    structured = payload.get("structuredContent")
+    if isinstance(structured, dict):
+        message = _failure_message_from_payload(structured.get("result"))
+        if message:
+            return message
+
+    if payload.get("isError") is True:
+        return "MCP tool hata dondurdu."
+
+    return None
+
+
+def _is_authorization_failure(message: str) -> bool:
+    lowered = message.lower()
+    return any(marker in lowered for marker in _AUTH_ERROR_MARKERS)
+
+
+def _is_unknown_tool_failure(message: str) -> bool:
+    lowered = message.lower()
+    return any(marker in lowered for marker in _UNKNOWN_TOOL_MARKERS)
+
+
+def _is_transient_failure(message: str) -> bool:
+    lowered = message.lower()
+    return any(marker in lowered for marker in _TRANSIENT_ERROR_MARKERS)
+
+
+def _permission_denied_message(detail: str | None = None) -> str:
+    message = (
+        "Yetkiniz yok. Bu islem icin token gecersiz, suresi dolmus "
+        "veya gerekli Atlassian/Bitbucket izni yok."
+    )
+    if detail:
+        return f"{message} Detay: {detail[:300]}"
+    return message
+
+
+def _raise_if_authorization_failure(message: str) -> None:
+    if _is_authorization_failure(message):
+        raise PermissionError(_permission_denied_message(message))
+
+
+def friendly_http_error(exc: httpx.HTTPStatusError) -> str:
+    status_code = exc.response.status_code
+    if status_code in (401, 403):
+        return _permission_denied_message(f"HTTP {status_code}")
+    return str(exc)
+
+
+def _exception_message(exc: Exception) -> str:
+    text = str(exc).strip()
+    if text:
+        return f"{exc.__class__.__name__}: {text}"
+    return exc.__class__.__name__
+
+
+def _retry_delay(attempt: int) -> float:
+    if attempt < len(_MCP_RETRY_DELAYS):
+        return _MCP_RETRY_DELAYS[attempt]
+    return _MCP_RETRY_DELAYS[-1]
+
+
+def mcp_call_any(
+    candidates: Sequence[tuple[str, dict[str, Any]]],
+    credential_for: CredentialGetter,
+) -> tuple[str, Any]:
+    errors: list[str] = []
+    unknown_tool_errors: list[str] = []
+    for name, args in candidates:
+        for attempt in range(_MCP_MAX_ATTEMPTS):
+            try:
+                result = _mcp_call(name, credential_for, args)
+                failure_message = _failure_message_from_payload(result)
+                if not failure_message:
+                    return name, result
+
+                _raise_if_authorization_failure(failure_message)
+                formatted = f"{name}: {failure_message}"
+                if _is_unknown_tool_failure(failure_message):
+                    unknown_tool_errors.append(formatted)
+                    break
+                if _is_transient_failure(failure_message) and attempt < _MCP_MAX_ATTEMPTS - 1:
+                    time.sleep(_retry_delay(attempt))
+                    continue
+                errors.append(formatted)
+                break
+            except PermissionError:
+                raise
+            except httpx.HTTPStatusError as exc:
+                error_message = friendly_http_error(exc)
+                _raise_if_authorization_failure(error_message)
+                if _is_transient_failure(error_message) and attempt < _MCP_MAX_ATTEMPTS - 1:
+                    time.sleep(_retry_delay(attempt))
+                    continue
+                errors.append(f"{name}: {error_message}")
+                break
+            except Exception as exc:  # noqa: BLE001
+                error_message = _exception_message(exc)
+                _raise_if_authorization_failure(error_message)
+                if _is_transient_failure(error_message) and attempt < _MCP_MAX_ATTEMPTS - 1:
+                    time.sleep(_retry_delay(attempt))
+                    continue
+                if _is_unknown_tool_failure(error_message):
+                    unknown_tool_errors.append(f"{name}: {error_message}")
+                else:
+                    errors.append(f"{name}: {error_message}")
+                break
+    final_errors = errors or unknown_tool_errors
+    raise RuntimeError(" | ".join(final_errors[-3:]))
+
+
+def _llm_chat_url(settings: Settings) -> tuple[str, str]:
+    provider = settings.llm_provider
+    if provider == "vllm":
+        return settings.vllm_base_url.rstrip("/") + "/chat/completions", settings.vllm_api_key
+    return settings.openai_base_url.rstrip("/") + "/chat/completions", settings.openai_api_key
+
+
+def ask_llm(user_text: str, tool_name: str, tool_result: Any) -> str:
+    settings = Settings()
+    url, api_key = _llm_chat_url(settings)
+    if settings.llm_provider == "openai" and not api_key:
+        raw = json.dumps(tool_result, ensure_ascii=False, indent=2, default=str)[:4000]
+        return (
+            "LLM provider dashboard/env tarafinda bagli degil; MCP sonucu ham olarak donuyor:\n\n"
+            "```json\n" + raw + "\n```"
+        )
+
+    model = settings.llm_model_name
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                "Sen Streamlit icinde calisan Atlassian asistanisin. "
+                "Cevabi Turkce, kisa, net ver. MCP sonucuna dayan; uydurma. "
+                "Eksik bilgi varsa hangi bilginin eksik oldugunu soyle."
+            ),
+        },
+        {
+            "role": "user",
+            "content": (
+                f"Kullanici sorusu:\n{user_text}\n\n"
+                f"Kullanilan MCP tool: {tool_name}\n"
+                f"MCP sonucu JSON:\n"
+                f"{json.dumps(tool_result, ensure_ascii=False, default=str)[:12000]}"
+            ),
+        },
+    ]
+    headers = {"Content-Type": "application/json"}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+    with httpx.Client(timeout=60.0) as client:
+        response = client.post(
+            url,
+            headers=headers,
+            json={
+                "model": model,
+                "messages": messages,
+                "temperature": 0.1,
+                "max_tokens": 900,
+            },
+        )
+    response.raise_for_status()
+    data = response.json()
+    return data["choices"][0]["message"]["content"]

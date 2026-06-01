@@ -1,0 +1,4 @@
+streamlit
+httpx
+pyyaml
+streamlit-cookies-controller

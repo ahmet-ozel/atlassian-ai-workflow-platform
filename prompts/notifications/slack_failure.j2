@@ -1,0 +1,90 @@
+{#-
+  Slack Failure Notification Template
+  ------------------------------------
+  Channel: Slack (Block Kit JSON)
+  Triggered when a workflow execution fails.
+
+  Context variables:
+    - workflow_id      : str   — Temporal workflow identifier
+    - dept_id          : str   — department identifier
+    - task_title       : str   — Jira issue summary / task title
+    - issue_key        : str   — Jira issue key (e.g. "PAY-123")
+    - error            : str   — error message or traceback summary
+    - result_summary   : str   — short human-readable failure summary
+    - failed_at        : str   — ISO-8601 timestamp of failure
+    - dashboard_url    : str   — link to /admin/workflows/<id> panel
+-#}
+{
+  "blocks": [
+    {
+      "type": "header",
+      "text": {
+        "type": "plain_text",
+        "text": "🛑 Workflow Başarısız",
+        "emoji": true
+      }
+    },
+    {
+      "type": "section",
+      "fields": [
+        {
+          "type": "mrkdwn",
+          "text": "*Issue:*\n`{{ issue_key }}`"
+        },
+        {
+          "type": "mrkdwn",
+          "text": "*Departman:*\n`{{ dept_id }}`"
+        },
+        {
+          "type": "mrkdwn",
+          "text": "*Workflow:*\n`{{ workflow_id }}`"
+        },
+        {
+          "type": "mrkdwn",
+          "text": "*Zaman:*\n{{ failed_at }}"
+        }
+      ]
+    },
+    {
+      "type": "section",
+      "text": {
+        "type": "mrkdwn",
+        "text": "*Başlık:* {{ task_title }}\n\n*Özet:* {{ result_summary }}"
+      }
+    },
+    {
+      "type": "section",
+      "text": {
+        "type": "mrkdwn",
+        "text": "*Hata:*\n```{{ error }}```"
+      }
+    },
+    {
+      "type": "divider"
+    },
+    {
+      "type": "actions",
+      "elements": [
+        {
+          "type": "button",
+          "text": {
+            "type": "plain_text",
+            "text": "🔍 Detayları Gör",
+            "emoji": true
+          },
+          "url": "{{ dashboard_url }}",
+          "action_id": "open_workflow_detail"
+        }
+      ]
+    },
+    {
+      "type": "context",
+      "elements": [
+        {
+          "type": "mrkdwn",
+          "text": "Bu bildirim otomatik olarak gönderildi. Workflow'u yeniden denemek için admin panelini kullanın."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+title = "platform-secret-scan"
+
+[allowlist]
+description = "Generated caches, local evidence, and documented dev sentinels"
+paths = [
+  '''(^|/)\.mypy_cache/''',
+  '''(^|/)\.pytest_cache/''',
+  '''(^|/)__pycache__/''',
+  '''(^|/)services/atlassian_unified/\.venv/''',
+  '''(^|/)tests/e2e/results\.xml$''',
+  '''(^|/)test-results/''',
+  '''(^|/)playwright-report/''',
+]
+regexes = [
+  '''dev-token-not-for-prod''',
+  '''admin_dev_only''',
+  '''ai_dev_only''',
+  '''miniosecret_dev_only''',
+  '''not-needed''',
+]

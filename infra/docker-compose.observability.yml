@@ -1,0 +1,128 @@
+# =============================================================================
+# infra/docker-compose.observability.yml — opt-in observability stack
+# =============================================================================
+# `platform-mimari-ops` task 14.3 — adds Prometheus, Loki and Grafana to a
+# running platform stack without touching the foundation Compose file's
+# canonical service set (the multi-service-scaffold property test pins
+# EXPECTED_COMPOSE_SERVICES to a strict equality).
+#
+# Usage
+# -----
+#   docker compose \
+#       -f infra/docker-compose.yml \
+#       -f infra/docker-compose.dev.yml \
+#       -f infra/docker-compose.observability.yml \
+#       --profile observability up -d
+#
+# All three services live behind the ``observability`` Compose profile so
+# the default ``docker compose up`` does not start them — operators
+# explicitly opt in.
+#
+# Wiring
+# ------
+# * Prometheus scrapes MCP metrics directly and probes service health via
+#   blackbox-exporter, both configured in ``infra/observability/prometheus.yml``.
+# * Loki is the audit/log store; admin-dashboard-api proxies search
+#   queries through ``LokiSearchProxy`` (task 11.3).
+# * Grafana auto-loads the dashboards under
+#   ``infra/observability/grafana-dashboards/`` (task 14.2) via the
+#   provisioning sidecar mount.
+# =============================================================================
+
+services:
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    profiles: ["observability"]
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=15d"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.enable-lifecycle"
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/alert-rules.yml:/etc/prometheus/alert-rules.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    depends_on:
+      - blackbox-exporter
+      - alertmanager
+    networks:
+      - default
+      - internal
+    restart: unless-stopped
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    profiles: ["observability"]
+    command:
+      - "--config.file=/etc/alertmanager/alertmanager.yml"
+      - "--storage.path=/alertmanager"
+    volumes:
+      - ./observability/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    ports:
+      - "9093:9093"
+    networks:
+      - default
+      - internal
+    restart: unless-stopped
+
+  blackbox-exporter:
+    image: prom/blackbox-exporter:v0.25.0
+    profiles: ["observability"]
+    command:
+      - "--config.file=/etc/blackbox_exporter/config.yml"
+    volumes:
+      - ./observability/blackbox.yml:/etc/blackbox_exporter/config.yml:ro
+    ports:
+      - "9115:9115"
+    networks:
+      - default
+      - internal
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:3.0.0
+    profiles: ["observability"]
+    command: ["-config.file=/etc/loki/loki-config.yaml"]
+    volumes:
+      - ./observability/loki-config.yaml:/etc/loki/loki-config.yaml:ro
+      - loki_data:/loki
+    ports:
+      - "3100:3100"
+    networks:
+      - default
+      - internal
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    profiles: ["observability"]
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin_dev_only
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_PROVISIONING_DATASOURCES_PATH: /etc/grafana/provisioning/datasources
+      GF_PROVISIONING_DASHBOARDS_PATH: /etc/grafana/provisioning/dashboards
+    volumes:
+      - ./observability/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
+      - ./observability/grafana-dashboards:/var/lib/grafana/dashboards:ro
+      - ./observability/grafana-dashboards-provider.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3030:3000"
+    depends_on:
+      - prometheus
+      - loki
+    networks:
+      - default
+      - internal
+    restart: unless-stopped
+
+volumes:
+  prometheus_data:
+  alertmanager_data:
+  loki_data:
+  grafana_data:

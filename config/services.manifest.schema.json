@@ -1,0 +1,158 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "services-manifest-schema-v1",
+  "title": "Services Manifest",
+  "description": "Single-source-of-truth manifest enumerating every service surfaced by the admin-dashboard-api Control_Plane. The default Boot_Bundle is still started profile-less by Makefile/Compose; admin-dashboard-api/admin-dashboard-ui may appear here as observable services for health, logs, tests and links, while external infra such as postgres/vault may be referenced only from depends_on_services. Uniqueness of compose_service_name across entries is enforced by the Python loader (services/admin-dashboard-api/src/manifest.py) as a custom check, since uniqueItemProperties is not part of standard JSON Schema 2020-12.",
+  "type": "object",
+  "required": ["version", "services"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Manifest schema version. Only value 1 is currently accepted."
+    },
+    "services": {
+      "type": "array",
+      "description": "Ordered list of Managed_Service entries. Order is presentational only; the API treats this as a set keyed by name and compose_service_name.",
+      "items": { "$ref": "#/$defs/ManagedService" }
+    }
+  },
+  "$defs": {
+    "ManagedService": {
+      "type": "object",
+      "description": "A single Managed_Service entry that the Control_Plane can start, stop, restart, run tests for, probe for health and stream logs from. External services (kind='external') run outside the Compose stack and are probed via HTTP for status display only.",
+      "required": [
+        "name",
+        "kind"
+      ],
+      "additionalProperties": false,
+      "$comment": "depends_on_services and feature_flag_dependency are optional with default []. Schema-level cycle detection is not possible across array entries; the boot validator (platform/scripts/check_services_manifest_schema.py) and the Python loader perform DFS-based cycle detection at runtime over the full set of entries. For kind='external' entries, compose_service_name/compose_profile/env_example_path/health_endpoint/test_command are not required; instead base_url_env/base_url_default/probe_path/probe_method/probe_expected_status are used.",
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{1,40}$",
+          "description": "Stable, URL-safe identifier used by the REST API path /admin/services/{name}. Must start with a lowercase letter, may contain lowercase letters, digits, and hyphens. Length 2..41 characters."
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["http_service", "worker", "ui", "infra", "sidecar", "external"],
+          "description": "Drives kind-aware behavior in HealthProbe and the UI: http_service polls /healthz + /readyz over the Compose network; worker uses Temporal client ping; sidecar exposes HTTP only on the Compose internal network and is treated like a worker by HealthProbe (Compose-internal probe only); ui and infra fall back to assume-running when health_endpoint is null. external services run outside the Compose stack (e.g. vLLM, OpenAI, Anthropic) and are probed via HTTP for admin-dashboard status display."
+        },
+        "compose_service_name": {
+          "type": "string",
+          "description": "Exact key under services: in infra/docker-compose.yml. Used as the argv argument for docker compose up/stop/exec/logs."
+        },
+        "compose_profile": {
+          "type": "string",
+          "description": "Compose profile activated by the lifecycle handler (docker compose --profile <value>). By convention equal to name."
+        },
+        "env_example_path": {
+          "type": "string",
+          "description": "Workspace-root-relative path to the .env.example file whose left-hand-side (LHS) keys drive the Start form schema. For atlassian-mcp this points into services/atlassian_unified/ which is read-only per the scaffold immutability guarantee."
+        },
+        "health_endpoint": {
+          "description": "HTTP path probed by HealthProbe for http_service entries (e.g. /healthz). null for worker/infra/ui entries that do not expose an HTTP health endpoint.",
+          "anyOf": [
+            { "type": "string", "pattern": "^/[A-Za-z0-9_/-]*$" },
+            { "type": "null" }
+          ]
+        },
+        "test_command": {
+          "description": "Full command string used by POST /admin/services/{name}/test (typically of the form 'docker compose -f infra/docker-compose.yml exec <svc> pytest tests/integration/ -v'). null when the service has no integration tests; the endpoint then returns 409.",
+          "anyOf": [
+            { "type": "string", "minLength": 1 },
+            { "type": "null" }
+          ]
+        },
+        "depends_on_services": {
+          "type": "array",
+          "description": "Names of services this entry depends on for cascade healthcheck and auto-start dependency-chain orchestration (Q11, N20, T17). Strings may reference other Managed_Service entries (by name) OR Boot_Bundle / external infra components (e.g. postgres, vault, temporal, atlassian_unified) which do not appear as manifest entries. Cycle detection cannot be expressed at JSON Schema level across array entries; the Python loader and boot validator (platform/scripts/check_services_manifest_schema.py) reject manifests whose intra-manifest depends_on_services edges form a cycle. Default [].",
+          "default": [],
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_-]{1,40}$"
+          },
+          "uniqueItems": true
+        },
+        "feature_flag_dependency": {
+          "type": "array",
+          "description": "Names of feature flags whose enabled state must be true before the Control_Plane will start this service (Q12). The lifecycle handler resolves each flag against feature_flags.yaml; if any required flag is disabled, start returns HTTP 409 with reason 'feature_flag_disabled' instead of running docker compose up. Default [].",
+          "default": [],
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_]{1,80}$"
+          },
+          "uniqueItems": true
+        },
+        "optional": {
+          "type": "boolean",
+          "default": false,
+          "description": "Marks an external provider as optional. Optional external providers are hidden and not probed until configured via their base_url_env/base_url_default or explicitly enabled via enabled_env."
+        },
+        "enabled_env": {
+          "type": "string",
+          "description": "Optional environment variable that enables an optional external provider when set to a truthy value such as 1/true/yes/on.",
+          "pattern": "^[A-Z][A-Z0-9_]{1,80}$"
+        },
+        "smoke_test_command": {
+          "description": "Full command string used for smoke testing (typically a quick pytest run with --timeout). null when the service has no smoke tests.",
+          "default": null,
+          "anyOf": [
+            { "type": "string", "minLength": 1 },
+            { "type": "null" }
+          ]
+        },
+        "connectivity_probe_command": {
+          "description": "Optional subprocess argv string (e.g. 'python -m src.scripts.probe_atlassian') executed by LifecycleService.start as Step 9.5 — after _wait_for_healthy returns healthy and before the final audit (R9, Q10). exit_code=0 marks credentials_status='ok'; non-zero stores the trimmed stderr in credentials_probe_detail and emits service_connectivity_probe_failed audit. The service is still considered 'running' regardless of probe outcome; the result drives the dashboard credentials banner only. Default null (no probe).",
+          "default": null,
+          "anyOf": [
+            { "type": "string", "minLength": 1 },
+            { "type": "null" }
+          ]
+        },
+        "base_url_env": {
+          "type": "string",
+          "description": "Environment variable name that holds the base URL for an external service (e.g. 'VLLM_BASE_URL'). Used by the external probe helper to resolve the target URL at runtime. Applicable only to kind='external' entries.",
+          "pattern": "^[A-Z][A-Z0-9_]{1,80}$"
+        },
+        "base_url_default": {
+          "type": "string",
+          "format": "uri",
+          "description": "Default base URL for an external service when the env var (base_url_env) is not set or when no env var is specified (e.g. 'https://api.openai.com/v1'). Applicable only to kind='external' entries."
+        },
+        "probe_path": {
+          "type": "string",
+          "pattern": "^/[A-Za-z0-9_/.%-]*$",
+          "description": "HTTP path appended to the resolved base URL for liveness probing of an external service (e.g. '/models', '/messages'). Applicable only to kind='external' entries."
+        },
+        "probe_method": {
+          "type": "string",
+          "enum": ["GET", "HEAD"],
+          "default": "GET",
+          "description": "HTTP method used for the external service probe request. Defaults to 'GET'. Applicable only to kind='external' entries."
+        },
+        "probe_expected_status": {
+          "type": "integer",
+          "default": 200,
+          "minimum": 100,
+          "maximum": 599,
+          "description": "Expected HTTP status code from a successful probe of an external service. Defaults to 200. Applicable only to kind='external' entries."
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "kind": { "const": "external" } }
+          },
+          "then": {
+            "required": ["name", "kind", "probe_path"]
+          },
+          "else": {
+            "required": ["name", "kind", "compose_service_name", "compose_profile", "env_example_path", "health_endpoint", "test_command"]
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,91 @@
+[build-system]
+requires = ["hatchling>=1.21"]
+build-backend = "hatchling.build"
+
+[project]
+name = "admin-dashboard-api"
+version = "0.0.0"
+description = "Admin Dashboard API — FastAPI service backing the operator UI (scaffold)."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = { text = "Proprietary" }
+authors = [{ name = "Multi-Service Scaffold" }]
+dependencies = [
+    "fastapi",
+    "pydantic>=2,<3",
+    "pydantic-settings>=2,<3",
+    "temporalio",
+    "httpx",
+    "python-jose",
+    "jsonschema>=4,<5",
+    "asyncpg>=0.29,<1",
+    # Rate limiting middleware (production-hardening Requirement 8.4).
+    "slowapi>=0.1.9,<1",
+    # platform-gap-fill task 8.3 — :class:`McpMetricsClient` parses the
+    # MCP server's Prometheus exposition (``mcp_requests_total``) for
+    # the admin-dashboard traffic view (Requirement 9.5).
+    "prometheus-client>=0.20,<1",
+    # Workspace path dependency on the shared OIDC validator. The
+    # ``auth_shared`` Python package lives in ``libs/auth-shared/`` and
+    # is installed from the local checkout via PEP 508 direct references.
+    # ``pip install`` resolves the path relative to the project root,
+    # which is the same directory as this ``pyproject.toml``. The
+    # ``--config-settings editable_mode=compat`` or
+    # ``--no-build-isolation`` flags are NOT required because
+    # ``auth-shared`` declares a ``hatchling`` build backend that builds
+    # cleanly in isolation.
+    "auth-shared @ file:../../libs/auth-shared",
+    # ``http-shared`` ships the secret-redaction logging filter
+    # (Requirement 6.10, task 9.1). Same workspace-path pattern as
+    # ``auth-shared`` above.
+    "http-shared @ file:../../libs/http-shared",
+    # platform-gap-fill task 7.2 — :class:`observability.TraceMiddleware`
+    # is mounted on the FastAPI app for end-to-end trace_id propagation
+    # (Requirement 8.2 — admin-dashboard-api trace boundary).
+    "observability @ file:../../libs/observability",
+    # ``audit-logger`` ships the frozen ``AuditEvent`` dataclass and the
+    # ``AuditLogger`` write surface used by the AdminProxy (task 8.2,
+    # Requirement 7.5/7.7) when an RBAC check rejects a request: a
+    # single ``AuditEvent(action="rbac_denied", result="denied")`` row
+    # is emitted before the proxy returns HTTP 403.
+    "audit-logger @ file:../../libs/audit_logger",
+    # ``git-shared`` ships the ``GitRepo`` adapter used by the
+    # ``PromptsGitRouter`` (platform-mimari-ops task 6.1, Requirement
+    # 2.2). The lib wraps GitPython for the read / draft-branch /
+    # commit / diff flow and never touches the repo's working tree.
+    "git-shared @ file:../../libs/git-shared",
+    # ``prompts`` ships the ``validate_template_format`` helper that
+    # the PromptsGitRouter calls before every write (Requirement 2.9 —
+    # template format escape). The library is a workspace path
+    # dependency for the same reason as the other ``libs/*``.
+    "prompts @ file:../../libs/prompts",
+    # ``db-shared`` ships boot-time config validation and the
+    # idempotent SQL migration runner used by the production readiness
+    # gate. It must be present in the image, not only test PYTHONPATH.
+    "db-shared @ file:../../libs/db-shared",
+    # Webhook/SSH secret rotation cards use the shared Vault helpers
+    # for dual-slot rotation metadata.
+    "vault-client @ file:../../libs/vault_client",
+    # Department detail/capability-matrix endpoints import the shared
+    # workflow capability map at runtime.
+    "temporal-shared @ file:../../libs/temporal-shared",
+    # Live capability probes use Paramiko for SSH authentication and
+    # Docker-on-SSH checks from the admin dashboard.
+    "paramiko>=3.4,<4",
+]
+
+[project.optional-dependencies]
+dev = [
+    "uvicorn[standard]",
+    "pytest",
+    "hypothesis",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+# Hatchling rejects PEP 508 direct references by default; opt in
+# explicitly so the ``auth-shared @ file:../../libs/auth-shared``
+# workspace path dependency above is accepted at metadata-build time.
+[tool.hatch.metadata]
+allow-direct-references = true

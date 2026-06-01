@@ -1,0 +1,29 @@
+groups:
+  - name: platform-health
+    rules:
+      - alert: PlatformHealthProbeDown
+        expr: probe_success{job="platform-http-health"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Platform health probe failed"
+          description: "The {{ $labels.service }} health endpoint has failed for 2 minutes."
+
+      - alert: PlatformScrapeTargetDown
+        expr: up{job=~"atlassian-mcp|blackbox-exporter|prometheus"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Prometheus scrape target is down"
+          description: "{{ $labels.job }} / {{ $labels.instance }} has not been scrapeable for 2 minutes."
+
+      - alert: PlatformMcpRequestFailures
+        expr: increase(mcp_requests_total{status!="success"}[5m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "MCP request failures detected"
+          description: "MCP tool {{ $labels.tool }} from {{ $labels.client_source }} reported non-success requests."

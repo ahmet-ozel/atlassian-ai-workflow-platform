@@ -1,0 +1,16 @@
+[build-system]
+requires = ["hatchling>=1.21"]
+build-backend = "hatchling.build"
+
+[project]
+name = "llm-orchestrator"
+version = "0.0.0"
+description = "Provider-agnostic LLM orchestrator factory for OpenAI, Anthropic, and vLLM."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = { text = "Proprietary" }
+authors = [{ name = "Multi-Service Scaffold" }]
+dependencies = []
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/llm_orchestrator"]

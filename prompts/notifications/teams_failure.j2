@@ -1,0 +1,50 @@
+{#-
+  Teams Failure Notification Template
+  ------------------------------------
+  Channel: Microsoft Teams (MessageCard JSON)
+  Triggered when a workflow execution fails.
+
+  Context variables:
+    - workflow_id      : str   — Temporal workflow identifier
+    - dept_id          : str   — department identifier
+    - task_title       : str   — Jira issue summary / task title
+    - issue_key        : str   — Jira issue key (e.g. "PAY-123")
+    - error            : str   — error message or traceback summary
+    - result_summary   : str   — short human-readable failure summary
+    - failed_at        : str   — ISO-8601 timestamp of failure
+    - dashboard_url    : str   — link to /admin/workflows/<id> panel
+-#}
+{
+  "@type": "MessageCard",
+  "@context": "http://schema.org/extensions",
+  "themeColor": "DC3545",
+  "summary": "Workflow Başarısız — {{ issue_key }}",
+  "sections": [
+    {
+      "activityTitle": "🛑 Workflow Başarısız",
+      "activitySubtitle": "{{ task_title }}",
+      "facts": [
+        { "name": "Issue", "value": "`{{ issue_key }}`" },
+        { "name": "Departman", "value": "`{{ dept_id }}`" },
+        { "name": "Workflow", "value": "`{{ workflow_id }}`" },
+        { "name": "Zaman", "value": "{{ failed_at }}" },
+        { "name": "Özet", "value": "{{ result_summary }}" }
+      ],
+      "markdown": true
+    },
+    {
+      "activityTitle": "Hata Detayı",
+      "text": "```{{ error }}```",
+      "markdown": true
+    }
+  ],
+  "potentialAction": [
+    {
+      "@type": "OpenUri",
+      "name": "🔍 Detayları Gör",
+      "targets": [
+        { "os": "default", "uri": "{{ dashboard_url }}" }
+      ]
+    }
+  ]
+}

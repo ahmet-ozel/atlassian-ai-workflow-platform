@@ -1,0 +1,26 @@
+# Test dependency manifest for the multi-service-scaffold workspace.
+#
+# Mirrors the ``[project.dependencies]`` block in ``tests/pyproject.toml``;
+# this file exists so the suite can be installed without a PEP-517 build
+# step via:
+#
+#     pip install -r tests/requirements.txt
+#
+# Pins follow design §6.8 (multi-service-scaffold) and the task 13.2
+# notes in ``tasks.md``. All ranges use compatible-major upper bounds so
+# property tests stay reproducible across CI runs.
+
+# --- Core test runner / property engine -------------------------------------
+pytest>=8,<9
+hypothesis>=6,<7
+
+# --- Schema + structural fixture parsing ------------------------------------
+jsonschema>=4,<5
+pyyaml>=6,<7
+# Optional Dockerfile parser; tests fall back to regex when unavailable.
+dockerfile-parse>=2,<3
+
+# --- ASGI test clients for FastAPI services ---------------------------------
+httpx>=0.27,<1
+fastapi>=0.115,<1
+pydantic>=2,<3

@@ -1,0 +1,690 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "departments-schema-v1",
+  "title": "departments.json",
+  "description": "AI bot departman tanimlari sema. automation-service ve admin-dashboard tarafindan startup ve admin endpoint'lerinde valide edilir. Referans: MIMARI.md sec 2.5 ve sec 16.9 E3. JSON Schema 2020-12 spec ile valide edin.",
+  "type": "object",
+  "required": [
+    "version",
+    "departments"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1
+    },
+    "departments": {
+      "type": "array",
+      "minItems": 0,
+      "items": {
+        "$ref": "#/$defs/Department"
+      }
+    }
+  },
+  "$defs": {
+    "Department": {
+      "type": "object",
+      "required": [
+        "id",
+        "display_name",
+        "jira_project_keys",
+        "bot",
+        "budget_caps"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{1,30}$",
+          "description": "Slug. Kebab-case. Lowercase, harf-rakam-tire (alt cizgi yasak)."
+        },
+        "display_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "jira_project_keys": {
+          "type": "array",
+          "minItems": 0,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_]{1,9}$"
+          },
+          "uniqueItems": true
+        },
+        "confluence_space_keys": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50
+          },
+          "uniqueItems": true
+        },
+        "bitbucket_workspace": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,62}$"
+        },
+        "default_confluence_space": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "default_language": {
+          "type": "string",
+          "enum": [
+            "tr",
+            "en"
+          ],
+          "default": "tr"
+        },
+        "web_search_enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "active",
+            "shadow",
+            "disabled"
+          ],
+          "default": "active",
+          "description": "Departman calisma modu. 'active': normal operasyon. 'shadow': bot plan uretir ama output_actions execute edilmez (sec 16.6.49). 'disabled': capability gate departmandan gelen tum workflow start cagrilarini reddeder, acik workflow'lar drain edilir. Bk. requirements R3.2 ve R10.10; design 'mode enum migration' karari."
+        },
+        "approval_required_paths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Bu regex'lere uyan dosyalara commit oncesi Jira'da [approve] beklenir. Bk. sec 16.6.93."
+        },
+        "approvers": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "default": [],
+          "description": "Approval Gate icin yetkili Jira account ID listesi. approval_required_paths ile birlikte kullanilir. Bk. platform-completion requirements R11.1, R11.6."
+        },
+        "pr_draft_strategy": {
+          "type": "string",
+          "enum": [
+            "always_draft",
+            "open_after_test_pass",
+            "always_open"
+          ],
+          "default": "always_draft"
+        },
+        "notification_on_failure": {
+          "type": "string",
+          "enum": [
+            "jira_only",
+            "jira_and_mention",
+            "jira_and_email"
+          ],
+          "default": "jira_and_mention"
+        },
+        "max_concurrent_workflows": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 50,
+          "description": "Departman bazli paralel is limiti. Bk. sec 16.9 E6."
+        },
+        "ssh_workspace_quota_mb": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 100,
+          "deprecated": true,
+          "description": "DEPRECATED (single-runner canonical contract — G1). Per-department disk kotası artık kullanılmıyor; tek SSH runner host'u tüm departmanlarca paylaşılır ve disk yönetimi global ``RUNNER_DISK_WARN_PCT`` / ``RUNNER_DISK_EVICT_PCT`` eşikleri üzerinden ``WorkspaceCleanupSchedulerWorkflow`` (G2) tarafından yapılır. Mevcut JSON dosyalarındaki değerler schema validasyonu için kabul edilmeye devam eder ancak runtime tarafından yok sayılır. Gelecekteki bir release'de schema'dan kaldırılacaktır. Eski referans: sec 16.6.84."
+        },
+        "docker_defaults": {
+          "$ref": "#/$defs/DockerDefaults",
+          "description": "Docker container calistirma varsayilan ayarlari. cpu_limit, memory_limit_mb, timeout ve cleanup policy. Bk. platform-completion requirements R1.3, R1.5, R1.6."
+        },
+        "pii_filter": {
+          "type": "boolean"
+        },
+        "llm": {
+          "$ref": "#/$defs/LLMConfig"
+        },
+        "llm_overrides": {
+          "type": ["object", "null"],
+          "description": "Departman bazli LLM provider override. primary ve fallback provider tanimlari icerir. Bk. design sec 3.6.",
+          "additionalProperties": false,
+          "properties": {
+            "primary": {
+              "$ref": "#/$defs/LLMConfig"
+            },
+            "fallback": {
+              "$ref": "#/$defs/LLMConfig"
+            }
+          }
+        },
+        "llm_overrides_by_activity": {
+          "type": "object",
+          "description": "Activity bazli LLM override. Bk. sec 16.8.5 (G4).",
+          "additionalProperties": {
+            "$ref": "#/$defs/LLMConfig"
+          }
+        },
+        "bot": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": false,
+          "properties": {
+            "jira": {
+              "$ref": "#/$defs/BotEntry"
+            },
+            "bitbucket": {
+              "$ref": "#/$defs/BotEntry"
+            },
+            "confluence": {
+              "$ref": "#/$defs/BotEntry"
+            }
+          },
+          "anyOf": [
+            {
+              "required": [
+                "jira"
+              ]
+            },
+            {
+              "required": [
+                "bitbucket"
+              ]
+            },
+            {
+              "required": [
+                "confluence"
+              ]
+            }
+          ],
+          "description": "En az bir servis (jira/bitbucket/confluence) tanimlanmalidir. Bk. design sec 3.6."
+        },
+        "repo_mappings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RepoMapping"
+          }
+        },
+        "branch_pattern_rules": {
+          "type": "array",
+          "default": [],
+          "description": "Hotfix/release branch routing kurallari (U6, R7.9). Her giris bir glob + denied_workflow_types XOR allowed_workflow_types tasir; AutomationWorkflow router LLM cikan workflow_type ile birlikte ilk eslesen kuralin kararini uygular. Default bos liste; bu durumda branch routing acik default ile gecer (no_rule_matched). Bk. design 'branch_pattern_rules bir saf fonksiyon'.",
+          "items": {
+            "$ref": "#/$defs/BranchPatternRule"
+          },
+          "uniqueItems": false
+        },
+        "notifications": {
+          "$ref": "#/$defs/NotificationConfig"
+        },
+        "status_mapping": {
+          "type": "object",
+          "description": "Jira project'inde kullanilan gercek status adlarina esleme. Bk. sec 16.9 E13.",
+          "additionalProperties": false,
+          "properties": {
+            "todo": {
+              "type": "string"
+            },
+            "in_progress": {
+              "type": "string"
+            },
+            "review": {
+              "type": "string"
+            },
+            "done": {
+              "type": "string"
+            },
+            "out_of_scope": {
+              "type": "string"
+            }
+          }
+        },
+        "budget_caps": {
+          "$ref": "#/$defs/BudgetCaps"
+        },
+        "notify_on_success": {
+          "type": "boolean",
+          "default": false,
+          "description": "Workflow basarili tamamlandiginda bildirim gonderilsin mi. Default false (sec 16.13 S8: failure her zaman, success opsiyonel). Bk. platform-mimari-ops requirements R5.2."
+        },
+        "notify_channels": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "slack",
+              "email",
+              "teams"
+            ]
+          },
+          "uniqueItems": true,
+          "default": [],
+          "description": "Bu departman icin etkin bildirim kanallari. Failure bildirimleri dept config'den bagimsiz Slack'e her zaman gider; bu liste success-gated bildirimler ve ek kanallar (email/teams) icin. Bk. platform-mimari-ops requirements R5.1, R5.2."
+        },
+        "slack_webhook_ref": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^vault:[a-zA-Z0-9/_-]+$",
+          "description": "Departmanin Slack webhook URL'sini iceren Vault path'i. Plain-text webhook URL JSON'a yazilmaz. Bk. platform-mimari-ops requirements R5.1."
+        },
+        "notify_email": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "email",
+          "description": "RFC 5322 formatinda bildirim e-posta adresi. SMTP credential ayri Vault path'inden cozulur (vault:notifications/smtp/credential). Bk. platform-mimari-ops requirements R5.1."
+        },
+        "teams_webhook_ref": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^vault:[a-zA-Z0-9/_-]+$",
+          "description": "MS Teams webhook URL'sini iceren Vault path'i. notify_channels icinde 'teams' varsa bu ref cozulerek bildirim gonderilir. Bk. platform-completion requirements R18.1."
+        },
+        "feature_flag_overrides": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "boolean"
+          },
+          "default": {},
+          "description": "Departman bazli feature flag override'lari (free-form bool map). Global feature_flags tablosundaki default degeri override eder. Bk. platform-mimari-ops requirements R4.10."
+        }
+      }
+    },
+    "BotEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "credential_ref": {
+          "type": "string",
+          "pattern": "^vault:[a-zA-Z0-9/_-]+$",
+          "description": "Vault path. Ornek: vault:atlassian/payment/jira"
+        },
+        "account_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Atlassian accountId. Bossa probe ile auto-fetch. Bk. sec 2.5.4."
+        },
+        "username": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "deployment": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "cloud",
+            "server",
+            null
+          ],
+          "description": "Yalnizca service=bitbucket icin anlamli. Bk. sec 16.6.52."
+        },
+        "email": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Atlassian hesabinin email adresi (api_token_ref ile birlikte; alternatif: credential_ref)."
+        },
+        "api_token_ref": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^vault:[a-zA-Z0-9/_-]+$",
+          "description": "Atlassian API token icin Vault path (email ile birlikte; alternatif: credential_ref)."
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "credential_ref"
+          ]
+        },
+        {
+          "required": [
+            "email",
+            "api_token_ref"
+          ]
+        }
+      ],
+      "description": "Bot servis kimligi. Vault tabanli kimlik icin 'credential_ref' (MIMARI sec 2.5.2) ya da inline kimlik icin 'email' + 'api_token_ref' (Requirement 7.5). En az biri zorunludur."
+    },
+    "LLMConfig": {
+      "type": "object",
+      "required": [
+        "provider"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "provider": {
+          "type": "string",
+          "enum": [
+            "vllm",
+            "openai",
+            "anthropic"
+          ]
+        },
+        "base_url": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "model": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "api_key_ref": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^vault:[a-zA-Z0-9/_-]+$"
+        },
+        "fallback_provider": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "vllm",
+            "openai",
+            "anthropic",
+            null
+          ]
+        },
+        "fallback_base_url": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "fallback_model": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "fallback_api_key_ref": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^vault:[a-zA-Z0-9/_-]+$"
+        }
+      }
+    },
+    "RepoMapping": {
+      "type": "object",
+      "required": [
+        "bitbucket_repo",
+        "jira_project_key"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "bitbucket_workspace": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "bitbucket_repo": {
+          "type": "string",
+          "minLength": 1
+        },
+        "jira_project_key": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]{1,9}$"
+        },
+        "default_branch": {
+          "type": "string",
+          "default": "develop"
+        }
+      }
+    },
+    "BranchPatternRule": {
+      "type": "object",
+      "required": [
+        "glob"
+      ],
+      "additionalProperties": false,
+      "description": "Tek bir branch-pattern routing kurali. glob ile eslesn dallarda denied_workflow_types XOR allowed_workflow_types uygulanir. Bk. design 'branch_pattern_rules', requirements R7.9 (MIMARI sec 16.15.6 U6).",
+      "properties": {
+        "glob": {
+          "type": "string",
+          "minLength": 1,
+          "description": "fnmatch-tarzi case-sensitive glob (ornek: 'hotfix/*', 'release/*', 'feature/AUTH-*')."
+        },
+        "denied_workflow_types": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "code_change_with_test",
+              "code_change_commit_only",
+              "pr_review",
+              "remote_ssh_test_only",
+              "script_execute",
+              "confluence_doc_update",
+              "confluence_doc_create",
+              "research_publish_confluence",
+              "research_summary_jira",
+              "research_basic",
+              "research_with_web",
+              "multi_step",
+              "noop_test"
+            ]
+          },
+          "uniqueItems": true,
+          "default": [],
+          "description": "Eslesn dalda reddedilecek workflow type'lari. allowed_workflow_types ile birlikte kullanilamaz."
+        },
+        "allowed_workflow_types": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "code_change_with_test",
+              "code_change_commit_only",
+              "pr_review",
+              "remote_ssh_test_only",
+              "script_execute",
+              "confluence_doc_update",
+              "confluence_doc_create",
+              "research_publish_confluence",
+              "research_summary_jira",
+              "research_basic",
+              "research_with_web",
+              "multi_step",
+              "noop_test"
+            ]
+          },
+          "uniqueItems": true,
+          "default": [],
+          "description": "Eslesn dalda yalnizca izinli workflow type'lari. denied_workflow_types ile birlikte kullanilamaz."
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "description": "Kararla birlikte audit'e yazilan kisa snake_case token (ornek: 'hotfix_requires_pr', 'release_branch_restricted'). Bos birakilirsa default uygulanir."
+        }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "denied_workflow_types": {
+              "type": "array",
+              "minItems": 1
+            }
+          },
+          "required": [
+            "denied_workflow_types"
+          ],
+          "not": {
+            "anyOf": [
+              {
+                "properties": {
+                  "allowed_workflow_types": {
+                    "type": "array",
+                    "minItems": 1
+                  }
+                },
+                "required": [
+                  "allowed_workflow_types"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "properties": {
+            "allowed_workflow_types": {
+              "type": "array",
+              "minItems": 1
+            }
+          },
+          "required": [
+            "allowed_workflow_types"
+          ],
+          "not": {
+            "anyOf": [
+              {
+                "properties": {
+                  "denied_workflow_types": {
+                    "type": "array",
+                    "minItems": 1
+                  }
+                },
+                "required": [
+                  "denied_workflow_types"
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "NotificationConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "slack_webhook_url": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^vault:[a-zA-Z0-9/_-]+$"
+        },
+        "pr_reviewer_account_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "BudgetCaps": {
+      "type": "object",
+      "required": [
+        "weekly_usd_dept",
+        "weekly_usd_user",
+        "monthly_usd_dept",
+        "monthly_usd_user"
+      ],
+      "additionalProperties": false,
+      "description": "Departman ve kullanici bazli haftalik/aylik USD harcama limitleri. Tum alanlar zorunlu ve >= 0. Asildiginda yeni workflow start cagrilari HTTP 429 + audit budget_exceeded ile reddedilir. Bk. platform-mimari-ops requirements R5.5; design Property 7.",
+      "properties": {
+        "weekly_usd_dept": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Departman bazli haftalik USD limiti."
+        },
+        "weekly_usd_user": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Kullanici bazli haftalik USD limiti."
+        },
+        "monthly_usd_dept": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Departman bazli aylik USD limiti."
+        },
+        "monthly_usd_user": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Kullanici bazli aylik USD limiti."
+        }
+      }
+    },
+    "DockerDefaults": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Docker container calistirma varsayilan ayarlari. Departman bazli kaynak limitleri, timeout ve cleanup policy tanimlar. Bk. platform-completion requirements R1.3, R1.5, R1.6, R1.7.",
+      "properties": {
+        "cpu_limit": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 16.0,
+          "default": 2.0,
+          "description": "Container CPU limiti (core sayisi). Varsayilan 2.0, maksimum 16.0."
+        },
+        "memory_limit_mb": {
+          "type": "integer",
+          "minimum": 128,
+          "maximum": 32768,
+          "default": 2048,
+          "description": "Container bellek limiti (MB). Varsayilan 2048, maksimum 32768."
+        },
+        "default_timeout_seconds": {
+          "type": "integer",
+          "minimum": 60,
+          "maximum": 7200,
+          "default": 1800,
+          "description": "Gorev bazli varsayilan zaman asimi (saniye). Varsayilan 1800."
+        },
+        "max_timeout_seconds": {
+          "type": "integer",
+          "minimum": 60,
+          "maximum": 14400,
+          "default": 7200,
+          "description": "Maksimum izin verilen zaman asimi (saniye). Varsayilan 7200."
+        },
+        "cleanup_policy": {
+          "type": "string",
+          "enum": ["on_success", "always", "never"],
+          "default": "on_success",
+          "description": "Container temizleme politikasi. 'on_success': basarili gorevde temizle, 'always': her zaman temizle, 'never': temizleme."
+        }
+      }
+    }
+  }
+}

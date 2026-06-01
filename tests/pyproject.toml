@@ -1,0 +1,48 @@
+# Test package manifest for the multi-service-scaffold workspace.
+#
+# This ``pyproject.toml`` is intentionally scoped to the ``tests/`` tree
+# so the property and unit suites can be installed and run without
+# pulling in any of the in-scope service / worker / library packages.
+# Each Component under ``services/``, ``workers/``, ``libs/`` ships its
+# own ``pyproject.toml`` and is consumed by tests via ``sys.path``
+# (configured in the workspace-root ``pytest.ini``).
+#
+# Source of truth for the dependency set is design §6.8; this file and
+# ``tests/requirements.txt`` MUST stay in sync.
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "multi-service-scaffold-tests"
+version = "0.0.0"
+description = "Property, unit, and integration tests for the multi-service scaffold."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = { text = "Proprietary" }
+dependencies = [
+    # Core test runner and property engine.
+    "pytest>=8,<9",
+    "hypothesis>=6,<7",
+    # Schema and structural fixture parsing.
+    "jsonschema>=4,<5",
+    "pyyaml>=6,<7",
+    "dockerfile-parse>=2,<3",
+    # ASGI test clients for FastAPI service health-contract tests.
+    "httpx>=0.27,<1",
+    "fastapi>=0.115,<1",
+    "pydantic>=2,<3",
+]
+
+[project.optional-dependencies]
+# Reserved for integration smoke tests that boot Docker Compose. These
+# are not required for the property / unit waves and stay opt-in so the
+# default ``pip install`` footprint stays minimal.
+docker = []
+
+[tool.setuptools]
+# The tests directory is not a distributable Python package; we keep
+# packaging metadata minimal and disable auto-discovery to avoid
+# accidentally shipping property tests as a wheel.
+packages = []

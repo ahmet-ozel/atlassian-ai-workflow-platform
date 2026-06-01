@@ -1,0 +1,44 @@
+# =============================================================================
+# Traefik Dynamic Configuration — Security Headers Middleware
+# =============================================================================
+# Production Hardening — Requirements 3.5, 3.6, 13.4, 13.6
+#
+# This file defines HTTP middlewares for security headers applied at the
+# reverse proxy level. Application-level headers (X-Frame-Options, etc.)
+# are handled by each FastAPI service's SecurityHeadersMiddleware.
+#
+# Middlewares defined here:
+#   - security-headers: HSTS + CSP headers (applied to all HTTPS routers)
+# =============================================================================
+
+http:
+  middlewares:
+    # ─────────────────────────────────────────────────────────────────────────
+    # HSTS — Strict-Transport-Security (Requirement 13.4)
+    # Forces browsers to only connect via HTTPS for 1 year, including
+    # subdomains.
+    # ─────────────────────────────────────────────────────────────────────────
+    hsts:
+      headers:
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+        forceSTSHeader: true
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # CSP — Content-Security-Policy (Requirement 13.6)
+    # Basic policy: default-src 'self' with unsafe-inline for styles
+    # (required by Streamlit's inline style injection).
+    # ─────────────────────────────────────────────────────────────────────────
+    csp:
+      headers:
+        contentSecurityPolicy: "default-src 'self'; style-src 'self' 'unsafe-inline'"
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # Combined security headers chain (convenience grouping)
+    # Routers can reference this single middleware to get both HSTS + CSP.
+    # ─────────────────────────────────────────────────────────────────────────
+    security-headers:
+      chain:
+        middlewares:
+          - hsts
+          - csp

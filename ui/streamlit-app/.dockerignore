@@ -1,0 +1,29 @@
+# Caches & bytecode
+__pycache__/
+*.pyc
+*.pyo
+
+# Tests don't ship into the runtime image
+tests/
+
+# Local environment files (secrets) — `.env.example` MAY ship for reference
+.env
+.env.local
+
+# Local virtualenvs and tooling caches
+.venv/
+venv/
+.pytest_cache/
+.hypothesis/
+.mypy_cache/
+.ruff_cache/
+
+# Build/dist artifacts
+build/
+dist/
+*.egg-info/
+
+# Editor/OS noise
+.DS_Store
+.idea/
+.vscode/

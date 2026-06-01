@@ -1,0 +1,132 @@
+# =============================================================================
+# infra/docker-compose.dev.yml — Local-dev override (live reload)
+# =============================================================================
+# Usage:
+#   docker compose -f infra/docker-compose.yml -f infra/docker-compose.dev.yml up -d
+#
+# This override layers developer-machine conveniences on top of the base
+# `infra/docker-compose.yml` (Requirement 2.2):
+#
+#   * Bind-mounts each Component's source tree into the container so edits
+#     on the host are reflected immediately inside the container.
+#   * Replaces the production `CMD` of every FastAPI HTTP service with
+#     `uvicorn ... --reload`, which restarts the ASGI app whenever a file
+#     under `/app/src` changes.
+#   * Forces `LOG_LEVEL=DEBUG` on every Component so developers see verbose
+#     output regardless of the value baked into the per-service `.env`.
+#   * Re-asserts `restart: unless-stopped` on every Component so a crashing
+#     container during development comes back automatically while still
+#     respecting an explicit `docker compose stop`.
+#   * Bind-mounts `ui/admin-dashboard` and runs Next.js in dev mode
+#     (`npm run dev`) so the Next dev server picks up source changes via
+#     its built-in HMR.
+#
+# Notes
+# -----
+# * Compose v2 convention: no top-level `version:` key.
+# * Bind-mount paths are relative to this file's directory (`infra/`),
+#   so the workspace-root sources resolve as `../services/...`,
+#   `../workers/...`, and `../ui/...`.
+# * Only services already defined in the base Compose file may appear
+#   here — Compose `merge` semantics extend, not introduce.
+# * Workers (`agent-runner-worker`, `execution-runner-worker`) do not
+#   expose HTTP ports and run a long-lived Temporal worker entrypoint;
+#   this override only refreshes their source mount + LOG_LEVEL, leaving
+#   the base `command` (or Dockerfile `CMD`) intact. Restart the worker
+#   container after editing source to pick up the change.
+# * `atlassian_unified/` is immutable (Requirement 2.4) and intentionally
+#   has no override stanza here — its `LOG_LEVEL` continues to be sourced
+#   from the base file's `${LOG_LEVEL:-INFO}` interpolation.
+# =============================================================================
+
+services:
+  # ───────────────────────────────────────────────────────────────────────────
+  # Application HTTP services — uvicorn --reload + bind-mounted src/
+  # ───────────────────────────────────────────────────────────────────────────
+
+  automation-service:
+    volumes:
+      - ../services/automation-service/src:/app/src
+    environment:
+      LOG_LEVEL: DEBUG
+    command: ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8080", "--reload"]
+    restart: unless-stopped
+
+  assistant-service:
+    volumes:
+      - ../services/assistant-service/src:/app/src
+    environment:
+      LOG_LEVEL: DEBUG
+    command: ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8081", "--reload"]
+    restart: unless-stopped
+
+  admin-dashboard-api:
+    volumes:
+      # Preserve the docker-socket bind from the base file by re-declaring it
+      # alongside the dev source mount (Compose merges `volumes:` lists by
+      # concatenation, but listing both keeps intent explicit).
+      - ../services/admin-dashboard-api/src:/app/src
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      LOG_LEVEL: DEBUG
+    command: ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8082", "--reload"]
+    restart: unless-stopped
+
+  task-intake-service:
+    volumes:
+      - ../services/task-intake-service/src:/app/src
+    environment:
+      LOG_LEVEL: DEBUG
+    command: ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8083", "--reload"]
+    restart: unless-stopped
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Temporal workers — bind-mount src/ only (no HTTP, no --reload semantics)
+  # ───────────────────────────────────────────────────────────────────────────
+
+  agent-runner-worker:
+    volumes:
+      - ../workers/agent-runner-worker/src:/app/src
+    environment:
+      LOG_LEVEL: DEBUG
+    restart: unless-stopped
+
+  execution-runner-worker:
+    volumes:
+      - ../workers/execution-runner-worker/src:/app/src
+    environment:
+      LOG_LEVEL: DEBUG
+    restart: unless-stopped
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Sidecars / supporting infra — LOG_LEVEL only (image-built, no source mount)
+  # ───────────────────────────────────────────────────────────────────────────
+
+  firecrawl:
+    environment:
+      LOG_LEVEL: DEBUG
+    restart: unless-stopped
+
+  opencode-sidecar:
+    environment:
+      LOG_LEVEL: DEBUG
+    restart: unless-stopped
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Admin dashboard UI — Next.js dev server with HMR
+  # ───────────────────────────────────────────────────────────────────────────
+
+  admin-dashboard-ui:
+    # Re-mount the whole project so Next.js can watch `app/`, `components/`,
+    # `lib/`, `next.config.mjs`, etc. The anonymous volume on `/app/node_modules`
+    # keeps the image-installed deps from being shadowed by an empty/host
+    # node_modules folder on first boot.
+    volumes:
+      - ../ui/admin-dashboard:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      NODE_ENV: development
+      LOG_LEVEL: DEBUG
+    command: ["npm", "run", "dev"]
+    restart: unless-stopped

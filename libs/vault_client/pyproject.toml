@@ -1,0 +1,23 @@
+[build-system]
+requires = ["hatchling>=1.21"]
+build-backend = "hatchling.build"
+
+[project]
+name = "vault_client"
+version = "0.0.0"
+description = "Vault KV / SSH dual-slot rotation client (MIMARI §13, R6)."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = { text = "Proprietary" }
+authors = [{ name = "Multi-Service Scaffold" }]
+dependencies = [
+    "httpx>=0.27,<1",
+    # Local-dev backend uses libsodium (NaCl) authenticated encryption.
+    # Plain-text storage is rejected at write time (R6.6).
+    "pynacl>=1.5,<2",
+    # SSH key generation (Ed25519) for dual-slot rotation (R8.2).
+    "cryptography>=42.0,<44",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/vault_client"]

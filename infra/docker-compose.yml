@@ -28,10 +28,8 @@
 # - `vllm` is NOT packaged here; consumers reach it via VLLM_BASE_URL
 #   (Requirement 8.10). Run vLLM separately on the host or use OpenAI
 #   as the default cloud provider.
-# - All credentials below are dev-only placeholders. See `.env.example`
-#   files at the workspace root and per component for the values that
-#   substitute into the `${VAR}` references via Compose's default `.env`
-#   lookup or each service's `env_file:`.
+# - All credentials below are dev-only placeholders. Runtime values come
+#   from `.env` files or `${VAR}` defaults.
 # - `atlassian-mcp` builds the jellythomas/mcp-atlassian-with-bitbucket
 #   fork at a pinned commit so Jira, Confluence and Bitbucket share the
 #   same stateless HTTP MCP surface.
@@ -88,6 +86,7 @@ services:
         limits:
           memory: 128M
           cpus: "0.25"
+    profiles: ["traefik"]
     restart: unless-stopped
     logging: *default-logging
 
@@ -411,7 +410,9 @@ services:
     build:
       context: ..
       dockerfile: services/automation-service/Dockerfile
-    env_file: ../services/automation-service/.env
+    env_file:
+      - path: ../services/automation-service/.env
+        required: false
     environment:
       # automation-service-wiring spec activated the production lifespan
       # handler, which calls ``vault_factory.make_client(os.environ)``.
@@ -462,7 +463,9 @@ services:
     build:
       context: ..
       dockerfile: services/assistant-service/Dockerfile
-    env_file: ../services/assistant-service/.env
+    env_file:
+      - path: ../services/assistant-service/.env
+        required: false
     environment:
       PORT: ${PORT:-8081}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
@@ -521,7 +524,9 @@ services:
     build:
       context: ..
       dockerfile: services/admin-dashboard-api/Dockerfile
-    env_file: ../services/admin-dashboard-api/.env
+    env_file:
+      - path: ../services/admin-dashboard-api/.env
+        required: false
     environment:
       PORT: ${PORT:-8082}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
@@ -607,7 +612,9 @@ services:
     build:
       context: ..
       dockerfile: ui/admin-dashboard/Dockerfile
-    env_file: ../ui/admin-dashboard/.env
+    env_file:
+      - path: ../ui/admin-dashboard/.env
+        required: false
     environment:
       NEXT_PUBLIC_ADMIN_API_BASE_URL: ${NEXT_PUBLIC_ADMIN_API_BASE_URL:-http://localhost:8082}
     ports:
@@ -658,7 +665,9 @@ services:
       # + own files; no platform-lib deps).
       context: ../ui/streamlit-app
       dockerfile: Dockerfile
-    env_file: ../ui/streamlit-app/.env
+    env_file:
+      - path: ../ui/streamlit-app/.env
+        required: false
     environment:
       ASSISTANT_BASE_URL: ${ASSISTANT_BASE_URL:-http://assistant-service:8081}
       ASSISTANT_SERVICE_URL: ${ASSISTANT_SERVICE_URL:-http://assistant-service:8081}
@@ -697,17 +706,9 @@ services:
   # Profile-gated optional intake service (Requirement 16.2, 16.3).
   task-intake-service:
     build: ../services/task-intake-service
-    # O1 fix (GEREKSINIM_ANALIZI.md): point at ``.env.example`` by
-    # default and mark it ``required: false`` so the profile starts
-    # cleanly even when an operator has not yet customised the env.
-    # ``.env`` (if present) wins over ``.env.example`` because Compose
-    # evaluates env_file entries in order. Other services keep the
-    # single-``.env`` contract because their ``.env`` is created by
-    # the Setup Wizard's first run.
     env_file:
       - path: ../services/task-intake-service/.env
         required: false
-      - ../services/task-intake-service/.env.example
     environment:
       PORT: ${PORT:-8083}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
@@ -748,7 +749,9 @@ services:
       # needed so the Dockerfile can COPY the libs into the image.
       context: ..
       dockerfile: workers/agent-runner-worker/Dockerfile
-    env_file: ../workers/agent-runner-worker/.env
+    env_file:
+      - path: ../workers/agent-runner-worker/.env
+        required: false
     environment:
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       CLIENT_SOURCE: ${CLIENT_SOURCE:-agent-runner-worker}
@@ -805,7 +808,9 @@ services:
       # Dockerfile can COPY libs/temporal-shared into the image.
       context: ..
       dockerfile: workers/execution-runner-worker/Dockerfile
-    env_file: ../workers/execution-runner-worker/.env
+    env_file:
+      - path: ../workers/execution-runner-worker/.env
+        required: false
     environment:
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       CLIENT_SOURCE: ${CLIENT_SOURCE:-execution-runner-worker}
@@ -869,7 +874,9 @@ services:
     build:
       context: ..
       dockerfile: workers/automation-worker/Dockerfile
-    env_file: ../workers/automation-worker/.env
+    env_file:
+      - path: ../workers/automation-worker/.env
+        required: false
     environment:
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       CLIENT_SOURCE: ${CLIENT_SOURCE:-automation-worker}

@@ -207,13 +207,36 @@ def _first_secret_value(payload: Mapping[str, str]) -> str:
     return ""
 
 
-def _openai_chat_completions_url(base_url: str) -> str:
+def _openai_responses_url(base_url: str) -> str:
     clean = (base_url or "https://api.openai.com/v1").rstrip("/")
-    if clean.endswith("/chat/completions"):
+    if clean.endswith("/responses"):
         return clean
     if clean.endswith("/v1"):
-        return f"{clean}/chat/completions"
-    return f"{clean}/v1/chat/completions"
+        return f"{clean}/responses"
+    return f"{clean}/v1/responses"
+
+
+def _extract_responses_text(data: Any) -> str:
+    """Pull assistant text out of an OpenAI Responses API payload."""
+    if not isinstance(data, dict):
+        return ""
+    output_text = data.get("output_text")
+    if isinstance(output_text, str) and output_text:
+        return output_text
+    if isinstance(output_text, list):
+        joined = "".join(p for p in output_text if isinstance(p, str))
+        if joined:
+            return joined
+    chunks: list[str] = []
+    for item in data.get("output", []) or []:
+        if not isinstance(item, dict) or item.get("type") != "message":
+            continue
+        for part in item.get("content", []) or []:
+            if isinstance(part, dict) and part.get("type") in ("output_text", "text"):
+                text = part.get("text")
+                if isinstance(text, str):
+                    chunks.append(text)
+    return "".join(chunks)
 
 
 async def _llm_decision(
@@ -244,22 +267,20 @@ async def _llm_decision(
         "workflow_type, needs_ssh, needs_docker, outputs."
     )
     response = await _http(request).post(
-        _openai_chat_completions_url(base_url),
+        _openai_responses_url(base_url),
         headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
         json={
             "model": model,
             "temperature": 0,
-            "response_format": {"type": "json_object"},
-            "messages": [
-                {"role": "system", "content": "You are a workflow router. Return strict JSON."},
-                {"role": "user", "content": f"{prompt}\nissue_key={issue_key}"},
-            ],
+            "text": {"format": {"type": "json_object"}},
+            "instructions": "You are a workflow router. Return strict JSON.",
+            "input": f"{prompt}\nissue_key={issue_key}",
         },
         timeout=60,
     )
     await _expect(response, step="openai workflow decision")
     data = response.json()
-    content = str(data["choices"][0]["message"]["content"])
+    content = _extract_responses_text(data)
     try:
         parsed = json.loads(content)
     except json.JSONDecodeError:
@@ -267,8 +288,8 @@ async def _llm_decision(
     usage = data.get("usage") if isinstance(data, dict) else {}
     if isinstance(usage, Mapping):
         parsed["usage"] = {
-            "token_in": int(usage.get("prompt_tokens") or 0),
-            "token_out": int(usage.get("completion_tokens") or 0),
+            "token_in": int(usage.get("input_tokens") or 0),
+            "token_out": int(usage.get("output_tokens") or 0),
         }
     parsed["model"] = model
     return parsed

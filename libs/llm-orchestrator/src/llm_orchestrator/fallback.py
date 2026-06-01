@@ -81,6 +81,42 @@ class LLMServerError(Exception):
 
 
 # ---------------------------------------------------------------------------
+# Responses API helper
+# ---------------------------------------------------------------------------
+
+
+def _extract_responses_text(data: Any) -> str:
+    """Extract assistant text from an OpenAI Responses API payload.
+
+    Prefers the convenience ``output_text`` field; otherwise walks the
+    structured ``output[].content[].text`` array of assistant messages.
+    """
+    if not isinstance(data, dict):
+        return ""
+
+    output_text = data.get("output_text")
+    if isinstance(output_text, str) and output_text:
+        return output_text
+    if isinstance(output_text, list):
+        joined = "".join(part for part in output_text if isinstance(part, str))
+        if joined:
+            return joined
+
+    chunks: list[str] = []
+    for item in data.get("output", []) or []:
+        if not isinstance(item, dict) or item.get("type") != "message":
+            continue
+        for part in item.get("content", []) or []:
+            if not isinstance(part, dict):
+                continue
+            if part.get("type") in ("output_text", "text"):
+                text = part.get("text")
+                if isinstance(text, str):
+                    chunks.append(text)
+    return "".join(chunks)
+
+
+# ---------------------------------------------------------------------------
 # Protocol
 # ---------------------------------------------------------------------------
 
@@ -500,26 +536,53 @@ class _HttpLLMProvider:
     def __init__(self, config: LLMProviderConfig) -> None:
         self._config = config
 
+    def _is_openai(self) -> bool:
+        """Return True when this config targets the OpenAI cloud API.
+
+        OpenAI must be driven through the Responses API; vLLM and other
+        OpenAI-compatible self-hosted endpoints keep the Chat Completions
+        surface. We detect OpenAI by provider name or the canonical host.
+        """
+        name = (self._config.name or "").strip().lower()
+        base = (self._config.base_url or "").lower()
+        return name == "openai" or "api.openai.com" in base
+
     async def complete(self, prompt: str, **kwargs: Any) -> str:
-        """Send completion request via HTTP POST."""
+        """Send completion request via HTTP POST.
+
+        OpenAI is routed to ``/v1/responses`` (Responses API); every other
+        OpenAI-compatible endpoint (vLLM, etc.) uses ``/chat/completions``.
+        """
         import httpx
 
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self._config.api_key}",
         }
-        payload: dict[str, Any] = {
-            "model": kwargs.get("model", "default"),
-            "messages": [{"role": "user", "content": prompt}],
-            "max_tokens": kwargs.get("max_tokens", 2048),
-            "temperature": kwargs.get("temperature", 0.2),
-        }
+
+        base = self._config.base_url.rstrip("/")
+        if self._is_openai():
+            url = f"{base}/responses" if base else "https://api.openai.com/v1/responses"
+            payload: dict[str, Any] = {
+                "model": kwargs.get("model", "default"),
+                "input": prompt,
+                "max_output_tokens": kwargs.get("max_tokens", 2048),
+                "temperature": kwargs.get("temperature", 0.2),
+            }
+        else:
+            url = f"{base}/chat/completions"
+            payload = {
+                "model": kwargs.get("model", "default"),
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": kwargs.get("max_tokens", 2048),
+                "temperature": kwargs.get("temperature", 0.2),
+            }
 
         async with httpx.AsyncClient(
             timeout=self._config.timeout_seconds
         ) as client:
             response = await client.post(
-                f"{self._config.base_url}/chat/completions",
+                url,
                 json=payload,
                 headers=headers,
             )
@@ -532,6 +595,8 @@ class _HttpLLMProvider:
 
         response.raise_for_status()
         data = response.json()
+        if self._is_openai():
+            return _extract_responses_text(data)
         choices = data.get("choices", [])
         if choices:
             return choices[0].get("message", {}).get("content", "")

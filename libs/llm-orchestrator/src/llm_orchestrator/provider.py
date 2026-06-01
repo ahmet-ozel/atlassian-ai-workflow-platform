@@ -36,6 +36,42 @@ __all__ = [
 _LOG = logging.getLogger(__name__)
 
 
+def _extract_responses_text(data: Any) -> str:
+    """Extract assistant text from an OpenAI Responses API payload.
+
+    The Responses API returns the generated text in two equivalent
+    shapes. The SDK-style convenience field ``output_text`` is preferred
+    when present; otherwise we walk the structured ``output`` array and
+    concatenate every ``output_text`` content part of the assistant
+    ``message`` items (Responses API ``output[].content[].text``).
+    """
+    if not isinstance(data, dict):
+        return ""
+
+    # 1. Convenience aggregate field (string or list of strings).
+    output_text = data.get("output_text")
+    if isinstance(output_text, str) and output_text:
+        return output_text
+    if isinstance(output_text, list):
+        joined = "".join(part for part in output_text if isinstance(part, str))
+        if joined:
+            return joined
+
+    # 2. Structured ``output`` array walk.
+    chunks: list[str] = []
+    for item in data.get("output", []) or []:
+        if not isinstance(item, dict) or item.get("type") != "message":
+            continue
+        for part in item.get("content", []) or []:
+            if not isinstance(part, dict):
+                continue
+            if part.get("type") in ("output_text", "text"):
+                text = part.get("text")
+                if isinstance(text, str):
+                    chunks.append(text)
+    return "".join(chunks)
+
+
 # ---------------------------------------------------------------------------
 # Protocol
 # ---------------------------------------------------------------------------
@@ -184,8 +220,10 @@ class VLLMProvider:
 class OpenAIProvider:
     """OpenAI cloud provider.
 
-    Uses the OpenAI chat completions API. Serves as the default
-    fallback when vLLM is unavailable.
+    Uses the OpenAI **Responses API** (``POST /v1/responses``). Serves as
+    the default fallback when vLLM is unavailable. The legacy Chat
+    Completions surface is intentionally NOT used — every OpenAI call in
+    this codebase goes through the Responses API.
     """
 
     name: str = "openai"
@@ -202,7 +240,7 @@ class OpenAIProvider:
             self.api_key = os.environ.get("OPENAI_API_KEY", "")
 
     def complete(self, prompt: str) -> str:
-        """Synchronous completion via OpenAI API."""
+        """Synchronous completion via the OpenAI Responses API."""
         import httpx
 
         if not self.api_key:
@@ -215,15 +253,15 @@ class OpenAIProvider:
         }
         payload = {
             "model": self.model_name,
-            "messages": [{"role": "user", "content": prompt}],
-            "max_tokens": self.max_tokens,
+            "input": prompt,
+            "max_output_tokens": self.max_tokens,
             "temperature": self.temperature,
         }
 
         try:
             with httpx.Client(timeout=self.timeout) as client:
                 response = client.post(
-                    "https://api.openai.com/v1/chat/completions",
+                    "https://api.openai.com/v1/responses",
                     json=payload,
                     headers=headers,
                 )
@@ -245,7 +283,7 @@ class OpenAIProvider:
             response.raise_for_status()
             self._last_healthy = time.monotonic()
             data = response.json()
-            return data["choices"][0]["message"]["content"]
+            return _extract_responses_text(data)
 
         except httpx.RequestError as exc:
             self._last_error_time = time.monotonic()

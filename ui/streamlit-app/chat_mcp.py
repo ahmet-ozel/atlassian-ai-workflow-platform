@@ -303,16 +303,52 @@ def mcp_call_any(
     raise RuntimeError(" | ".join(final_errors[-3:]))
 
 
-def _llm_chat_url(settings: Settings) -> tuple[str, str]:
+def _llm_chat_url(settings: Settings) -> tuple[str, str, str]:
+    """Return (url, api_key, api_kind) for the active provider.
+
+    ``api_kind`` is ``"responses"`` for OpenAI (Responses API) and
+    ``"chat"`` for vLLM (OpenAI-compatible Chat Completions).
+    """
     provider = settings.llm_provider
     if provider == "vllm":
-        return settings.vllm_base_url.rstrip("/") + "/chat/completions", settings.vllm_api_key
-    return settings.openai_base_url.rstrip("/") + "/chat/completions", settings.openai_api_key
+        return (
+            settings.vllm_base_url.rstrip("/") + "/chat/completions",
+            settings.vllm_api_key,
+            "chat",
+        )
+    return (
+        settings.openai_base_url.rstrip("/") + "/responses",
+        settings.openai_api_key,
+        "responses",
+    )
+
+
+def _extract_responses_text(data: Any) -> str:
+    """Pull assistant text out of an OpenAI Responses API payload."""
+    if not isinstance(data, dict):
+        return ""
+    output_text = data.get("output_text")
+    if isinstance(output_text, str) and output_text:
+        return output_text
+    if isinstance(output_text, list):
+        joined = "".join(p for p in output_text if isinstance(p, str))
+        if joined:
+            return joined
+    chunks: list[str] = []
+    for item in data.get("output", []) or []:
+        if not isinstance(item, dict) or item.get("type") != "message":
+            continue
+        for part in item.get("content", []) or []:
+            if isinstance(part, dict) and part.get("type") in ("output_text", "text"):
+                text = part.get("text")
+                if isinstance(text, str):
+                    chunks.append(text)
+    return "".join(chunks)
 
 
 def ask_llm(user_text: str, tool_name: str, tool_result: Any) -> str:
     settings = Settings()
-    url, api_key = _llm_chat_url(settings)
+    url, api_key, api_kind = _llm_chat_url(settings)
     if settings.llm_provider == "openai" and not api_key:
         raw = json.dumps(tool_result, ensure_ascii=False, indent=2, default=str)[:4000]
         return (
@@ -321,39 +357,44 @@ def ask_llm(user_text: str, tool_name: str, tool_result: Any) -> str:
         )
 
     model = settings.llm_model_name
-    messages = [
-        {
-            "role": "system",
-            "content": (
-                "Sen Streamlit icinde calisan Atlassian asistanisin. "
-                "Cevabi Turkce, kisa, net ver. MCP sonucuna dayan; uydurma. "
-                "Eksik bilgi varsa hangi bilginin eksik oldugunu soyle."
-            ),
-        },
-        {
-            "role": "user",
-            "content": (
-                f"Kullanici sorusu:\n{user_text}\n\n"
-                f"Kullanilan MCP tool: {tool_name}\n"
-                f"MCP sonucu JSON:\n"
-                f"{json.dumps(tool_result, ensure_ascii=False, default=str)[:12000]}"
-            ),
-        },
-    ]
+    system_prompt = (
+        "Sen Streamlit icinde calisan Atlassian asistanisin. "
+        "Cevabi Turkce, kisa, net ver. MCP sonucuna dayan; uydurma. "
+        "Eksik bilgi varsa hangi bilginin eksik oldugunu soyle."
+    )
+    user_prompt = (
+        f"Kullanici sorusu:\n{user_text}\n\n"
+        f"Kullanilan MCP tool: {tool_name}\n"
+        f"MCP sonucu JSON:\n"
+        f"{json.dumps(tool_result, ensure_ascii=False, default=str)[:12000]}"
+    )
     headers = {"Content-Type": "application/json"}
     if api_key:
         headers["Authorization"] = f"Bearer {api_key}"
+
+    if api_kind == "responses":
+        payload = {
+            "model": model,
+            "instructions": system_prompt,
+            "input": user_prompt,
+            "temperature": 0.1,
+            "max_output_tokens": 900,
+        }
+    else:
+        payload = {
+            "model": model,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            "temperature": 0.1,
+            "max_tokens": 900,
+        }
+
     with httpx.Client(timeout=60.0) as client:
-        response = client.post(
-            url,
-            headers=headers,
-            json={
-                "model": model,
-                "messages": messages,
-                "temperature": 0.1,
-                "max_tokens": 900,
-            },
-        )
+        response = client.post(url, headers=headers, json=payload)
     response.raise_for_status()
     data = response.json()
+    if api_kind == "responses":
+        return _extract_responses_text(data)
     return data["choices"][0]["message"]["content"]

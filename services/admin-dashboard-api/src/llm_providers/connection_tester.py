@@ -208,7 +208,7 @@ class ConnectionTester:
         self, req: TestRequest, start: float
     ) -> ConnectionTestResult:
         base = (req.base_url or _DEFAULT_OPENAI_BASE).rstrip("/")
-        url = f"{base}/v1/chat/completions"
+        url = f"{base}/v1/responses"
         headers: dict[str, str] = {
             "Authorization": f"Bearer {req.api_key or ''}",
             "Content-Type": "application/json",
@@ -217,8 +217,8 @@ class ConnectionTester:
             headers["OpenAI-Organization"] = req.org_id
         body = {
             "model": req.model,
-            "messages": [{"role": "user", "content": TEST_PROMPT}],
-            "max_tokens": TOKEN_CAP,
+            "input": TEST_PROMPT,
+            "max_output_tokens": TOKEN_CAP,
         }
         response = await self._safe_request(
             "POST", url, headers=headers, json=body

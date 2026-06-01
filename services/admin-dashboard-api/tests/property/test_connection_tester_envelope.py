@@ -102,7 +102,7 @@ def test_vllm_uses_get_models_with_optional_bearer(api_key: str) -> None:
 def test_openai_envelope_carries_credentials_and_token_cap(
     api_key: str, org_id: str | None
 ) -> None:
-    """OpenAI probe: POST /v1/chat/completions with fixed prompt + cap."""
+    """OpenAI probe: POST /v1/responses with fixed prompt + cap."""
 
     req = TestRequest(
         provider_type="openai",
@@ -116,7 +116,7 @@ def test_openai_envelope_carries_credentials_and_token_cap(
     assert result.success is True
     sent = captured[0]
     assert sent.method == "POST"
-    assert str(sent.url) == "https://api.openai.com/v1/chat/completions"
+    assert str(sent.url) == "https://api.openai.com/v1/responses"
     assert sent.headers.get("Authorization") == f"Bearer {api_key}"
     if org_id:
         assert sent.headers.get("OpenAI-Organization") == org_id
@@ -124,10 +124,8 @@ def test_openai_envelope_carries_credentials_and_token_cap(
         assert "OpenAI-Organization" not in sent.headers
     body = json.loads(sent.content)
     assert body["model"] == "gpt-4o-mini"
-    assert body["max_tokens"] == TOKEN_CAP
-    assert body["messages"] == [
-        {"role": "user", "content": TEST_PROMPT}
-    ]
+    assert body["max_output_tokens"] == TOKEN_CAP
+    assert body["input"] == TEST_PROMPT
 
 
 @given(api_key=st.sampled_from(["sk-ant-abcdef1234567890ABCDEF"]))

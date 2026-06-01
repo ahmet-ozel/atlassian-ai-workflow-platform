@@ -6,7 +6,7 @@ the gpt-4o-mini model with a minimal prompt. Verifies response structure,
 token usage, and cost guardrails.
 
 This test uses:
-- httpx for direct OpenAI API calls (https://api.openai.com/v1/chat/completions)
+- httpx for direct OpenAI API calls (https://api.openai.com/v1/responses)
 - credentials fixture for openai_api_key (from CREDENTIALS.md)
 - evidence_collector fixture for emitting JSON evidence
 - Retry logic for 429 rate limit and 401 auth errors
@@ -25,7 +25,7 @@ import pytest
 # Constants
 # ---------------------------------------------------------------------------
 
-OPENAI_API_URL = "https://api.openai.com/v1/chat/completions"
+OPENAI_API_URL = "https://api.openai.com/v1/responses"
 MODEL = "gpt-4o-mini"
 MAX_TOTAL_TOKENS = 5000  # Cost guardrail
 RETRY_DELAY_SECONDS = 5
@@ -42,13 +42,36 @@ EVIDENCE_FILENAME = "12-openai.json"
 # Helpers
 # ---------------------------------------------------------------------------
 
+def _extract_responses_text(data: dict[str, Any]) -> str:
+    """Pull assistant text out of an OpenAI Responses API payload."""
+    if not isinstance(data, dict):
+        return ""
+    output_text = data.get("output_text")
+    if isinstance(output_text, str) and output_text:
+        return output_text
+    if isinstance(output_text, list):
+        joined = "".join(p for p in output_text if isinstance(p, str))
+        if joined:
+            return joined
+    chunks: list[str] = []
+    for item in data.get("output", []) or []:
+        if not isinstance(item, dict) or item.get("type") != "message":
+            continue
+        for part in item.get("content", []) or []:
+            if isinstance(part, dict) and part.get("type") in ("output_text", "text"):
+                text = part.get("text")
+                if isinstance(text, str):
+                    chunks.append(text)
+    return "".join(chunks)
+
+
 def _make_openai_request(
     api_key: str,
     prompt: str = MINIMAL_PROMPT,
     model: str = MODEL,
     timeout: int = REQUEST_TIMEOUT_SECONDS,
 ) -> httpx.Response:
-    """Make a single OpenAI chat completion request.
+    """Make a single OpenAI Responses API request.
 
     Args:
         api_key: OpenAI API key (Bearer token).
@@ -66,10 +89,8 @@ def _make_openai_request(
 
     payload = {
         "model": model,
-        "messages": [
-            {"role": "user", "content": prompt}
-        ],
-        "max_tokens": 50,  # Keep response short to minimize cost
+        "input": prompt,
+        "max_output_tokens": 50,  # Keep response short to minimize cost
     }
 
     with httpx.Client(timeout=timeout) as client:
@@ -151,10 +172,7 @@ class TestOpenAILLMCall:
         )
 
         data = response.json()
-        choices = data.get("choices", [])
-        assert len(choices) > 0, "OpenAI response has no choices."
-
-        content = choices[0].get("message", {}).get("content", "")
+        content = _extract_responses_text(data)
         assert content.strip(), (
             "OpenAI response content is empty. "
             f"Full response: {data}"
@@ -191,15 +209,15 @@ class TestOpenAIModelAndTokens:
         data = response.json()
         usage = data.get("usage", {})
 
-        prompt_tokens = usage.get("prompt_tokens", 0)
-        completion_tokens = usage.get("completion_tokens", 0)
+        prompt_tokens = usage.get("input_tokens", 0)
+        completion_tokens = usage.get("output_tokens", 0)
 
         assert prompt_tokens > 0, (
-            f"Expected non-zero prompt_tokens, got {prompt_tokens}. "
+            f"Expected non-zero input_tokens, got {prompt_tokens}. "
             f"Usage: {usage}"
         )
         assert completion_tokens > 0, (
-            f"Expected non-zero completion_tokens, got {completion_tokens}. "
+            f"Expected non-zero output_tokens, got {completion_tokens}. "
             f"Usage: {usage}"
         )
 
@@ -284,17 +302,12 @@ class TestOpenAIEvidence:
         if response.status_code == 200:
             data = response.json()
             usage = data.get("usage", {})
-            choices = data.get("choices", [])
-            content = (
-                choices[0].get("message", {}).get("content", "")
-                if choices
-                else ""
-            )
+            content = _extract_responses_text(data)
 
             # Cost estimate: gpt-4o-mini pricing
             # Input: $0.15 per 1M tokens, Output: $0.60 per 1M tokens
-            prompt_tokens = usage.get("prompt_tokens", 0)
-            completion_tokens = usage.get("completion_tokens", 0)
+            prompt_tokens = usage.get("input_tokens", 0)
+            completion_tokens = usage.get("output_tokens", 0)
             total_tokens = usage.get("total_tokens", 0)
             cost_estimate_usd = (
                 (prompt_tokens * 0.15 / 1_000_000)
@@ -305,16 +318,12 @@ class TestOpenAIEvidence:
                 "model": data.get("model", "unknown"),
                 "content_preview": content[:200],
                 "usage": {
-                    "prompt_tokens": prompt_tokens,
-                    "completion_tokens": completion_tokens,
+                    "input_tokens": prompt_tokens,
+                    "output_tokens": completion_tokens,
                     "total_tokens": total_tokens,
                 },
                 "cost_estimate_usd": round(cost_estimate_usd, 6),
-                "finish_reason": (
-                    choices[0].get("finish_reason", "unknown")
-                    if choices
-                    else "no_choices"
-                ),
+                "status": data.get("status", "unknown"),
             }
 
             # Determine verdict

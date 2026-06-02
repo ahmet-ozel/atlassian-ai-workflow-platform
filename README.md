@@ -1,4 +1,4 @@
-# Platform
+﻿# Platform
 
 An Atlassian-based, multi-department AI workflow automation platform. Webhook
 gateway, Temporal workers, MCP integration, an admin dashboard and a Streamlit
@@ -45,7 +45,7 @@ or, on a POSIX shell:
 Every service always listens on a fixed **container** port internally; only the
 **host**-published port is configurable, so a deployment can avoid clashes with
 other software on the same machine. All host ports are defined once in
-`infra/.env` (`*_HOST_PORT` variables) — change a value there and re-run
+`infra/.env` (`*_HOST_PORT` variables) - change a value there and re-run
 `docker compose up -d`. Never edit the Compose file or application source.
 
 | Service | Host port | Env variable |
@@ -64,7 +64,7 @@ other software on the same machine. All host ports are defined once in
 | Temporal UI | `38233` | `TEMPORAL_UI_HOST_PORT` |
 | Firecrawl | `33002` | `FIRECRAWL_HOST_PORT` |
 | MinIO (API / console) | `39000` / `39001` | `MINIO_HOST_PORT` / `MINIO_CONSOLE_HOST_PORT` |
-| Traefik (HTTP / HTTPS) | `8044` / `8444` | — (edit Compose) |
+| Traefik (HTTP / HTTPS) | `8044` / `8444` | - (edit Compose) |
 
 For day-to-day use you only need **`33000`** (dashboard) and **`38501`**
 (Streamlit chat).
@@ -73,7 +73,7 @@ For day-to-day use you only need **`33000`** (dashboard) and **`38501`**
 
 | Command | Behavior |
 |---|---|
-| `make boot` | Bootstrap-only (default — postgres, vault, admin-dashboard). |
+| `make boot` | Bootstrap-only (default - postgres, vault, admin-dashboard). |
 | `make up` | Alias for `make boot` (backward compatibility). |
 | `make up-all` | Start every service at once (CI / debug). Not for production. |
 | `make ps` | List running services. |
@@ -84,7 +84,7 @@ For day-to-day use you only need **`33000`** (dashboard) and **`38501`**
 | `make help` | Show all targets and their descriptions. |
 
 > **Note on `make up-all`:** it starts all services at once (for CI tests and
-> full-stack debugging). Do not use it on the first boot — launching 12
+> full-stack debugging). Do not use it on the first boot - launching 12
 > services in parallel before credentials are entered produces
 > "started in the wrong order" errors. Follow the `make boot` + Setup Wizard
 > flow instead.
@@ -94,12 +94,12 @@ For day-to-day use you only need **`33000`** (dashboard) and **`38501`**
 | Path | Contents |
 |---|---|
 | `infra/` | Docker Compose files (`docker-compose.yml`, `docker-compose.dev.yml`) and Postgres migrations. |
-| `services/` | HTTP services — `automation-service`, `assistant-service`, `admin-dashboard-api`, `atlassian-mcp` (gateway). |
-| `workers/` | Temporal workers — `automation-worker`, `agent-runner-worker`, `execution-runner-worker`. |
-| `ui/` | Front ends — `admin-dashboard` (Next.js), `streamlit-app` (Streamlit). |
+| `services/` | HTTP services - `automation-service`, `assistant-service`, `admin-dashboard-api`, `atlassian-mcp` (gateway). |
+| `workers/` | Temporal workers - `automation-worker`, `agent-runner-worker`, `execution-runner-worker`. |
+| `ui/` | Front ends - `admin-dashboard` (Next.js), `streamlit-app` (Streamlit). |
 | `libs/` | Shared Python libraries (vault_client, audit, llm_client, etc.). |
-| `config/` | Manifest files — `services.manifest.json`, `departments.json` and their schemas. |
-| `prompts/` | LLM prompts — task_creation_assistant, assistant_chat, notification templates. |
+| `config/` | Manifest files - `services.manifest.json`, `departments.json` and their schemas. |
+| `prompts/` | LLM prompts - task_creation_assistant, assistant_chat, notification templates. |
 | `docs/` | Runbooks, user guide, env reference. |
 | `tests/` | Cross-service property/integration tests (each service also has its own `tests/`). |
 | `scripts/` | `up.sh`, `up.ps1` wrappers + maintenance scripts. |
@@ -115,4 +115,4 @@ For day-to-day use you only need **`33000`** (dashboard) and **`38501`**
 ## License / Contributing
 
 This repository is for private use. For the development workflow, read the spec
-documents under `.kiro/specs/` and the architecture decisions in `MIMARI.md`.
+documents under and the architecture decisions in.

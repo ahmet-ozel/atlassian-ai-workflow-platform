@@ -121,7 +121,7 @@ function DepartmentsPageInner(): JSX.Element {
   const handleDecommission = useCallback(
     async (deptId: string) => {
       const confirmed = window.confirm(
-        `${deptId} departmanini decommission etmek istiyor musunuz?`,
+        `${deptId} departmanını kaldırmak istiyor musunuz?`,
       );
       if (!confirmed) return;
 
@@ -335,8 +335,8 @@ function DepartmentsPageInner(): JSX.Element {
                           onClick={() => void handleDecommission(d.id)}
                         >
                           {decommissioningId === d.id
-                            ? "Decommission..."
-                            : "Decommission"}
+                            ? "Kaldırılıyor…"
+                            : "Kaldır"}
                         </button>
                       </td>
                     </tr>

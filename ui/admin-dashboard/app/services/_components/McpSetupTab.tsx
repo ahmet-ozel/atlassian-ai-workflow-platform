@@ -22,12 +22,12 @@ const jiraConfluenceCloudVars: EnvVarRow[] = [
   {
     name: "JIRA_USERNAME",
     required: "Jira",
-    description: "Atlassian hesap e-postasi.",
+    description: "Atlassian hesap e-postası.",
   },
   {
     name: "JIRA_API_TOKEN",
     required: "Jira",
-    description: "Atlassian API token. Confluence ile ayni token kullanilabilir.",
+    description: "Atlassian API token. Confluence ile aynı token kullanılabilir.",
   },
   {
     name: "CONFLUENCE_URL",
@@ -37,12 +37,12 @@ const jiraConfluenceCloudVars: EnvVarRow[] = [
   {
     name: "CONFLUENCE_USERNAME",
     required: "Confluence",
-    description: "Atlassian hesap e-postasi.",
+    description: "Atlassian hesap e-postası.",
   },
   {
     name: "CONFLUENCE_API_TOKEN",
     required: "Confluence",
-    description: "Atlassian API token. Jira tokeniyle ayni olabilir.",
+    description: "Atlassian API token. Jira token'ıyla aynı olabilir.",
   },
 ];
 
@@ -55,7 +55,7 @@ const jiraConfluenceServerVars: EnvVarRow[] = [
   {
     name: "JIRA_PERSONAL_TOKEN",
     required: "Jira",
-    description: "Jira profil ayarlarindan uretilen Personal Access Token.",
+    description: "Jira profil ayarlarından üretilen Personal Access Token.",
   },
   {
     name: "CONFLUENCE_URL",
@@ -65,7 +65,7 @@ const jiraConfluenceServerVars: EnvVarRow[] = [
   {
     name: "CONFLUENCE_PERSONAL_TOKEN",
     required: "Confluence",
-    description: "Confluence profil ayarlarindan uretilen Personal Access Token.",
+    description: "Confluence profil ayarlarından üretilen Personal Access Token.",
   },
 ];
 
@@ -78,22 +78,22 @@ const bitbucketCloudVars: EnvVarRow[] = [
   {
     name: "BITBUCKET_USERNAME",
     required: "Evet",
-    description: "API token kullanirken Atlassian e-postasi; app password kullanirken Bitbucket kullanici adi.",
+    description: "API token kullanırken Atlassian e-postası; app password kullanırken Bitbucket kullanıcı adı.",
   },
   {
     name: "BITBUCKET_API_TOKEN",
-    required: "Token secilirse",
-    description: "Bitbucket tarafindan uretilen scoped API token. Jira/Confluence tokeni degildir.",
+    required: "Biri şart",
+    description: "Bitbucket tarafından üretilen scoped API token. Jira/Confluence token'ı değildir.",
   },
   {
     name: "BITBUCKET_APP_PASSWORD",
-    required: "Legacy secilirse",
-    description: "Eski app password. Yeni kurulumda API token tercih edilir.",
+    required: "Biri şart",
+    description: "Legacy app password. BITBUCKET_API_TOKEN yoksa alternatif olarak kullanılır.",
   },
   {
     name: "BITBUCKET_WORKSPACE",
-    required: "Evet",
-    description: "Cloud icin workspace slug. Ornek: example_workspace.",
+    required: "Opsiyonel",
+    description: "Cloud workspace slug. Varsayılan workspace için kullanılır; chat sorusunda da verilebilir.",
   },
 ];
 
@@ -106,22 +106,22 @@ const bitbucketServerVars: EnvVarRow[] = [
   {
     name: "BITBUCKET_PERSONAL_TOKEN",
     required: "Evet",
-    description: "Bitbucket Server/DC profilinden uretilen Personal Access Token.",
+    description: "Bitbucket Server/DC profilinden üretilen Personal Access Token.",
   },
   {
     name: "BITBUCKET_PROJECT_KEY",
     required: "Opsiyonel",
-    description: "Server/DC icin varsayilan project key; zorunlu degildir.",
+    description: "Server/DC için varsayılan project key; zorunlu değildir.",
   },
   {
     name: "BITBUCKET_SSL_VERIFY",
     required: "Opsiyonel",
-    description: "Varsayilan true. Internal sertifika sorunlarinda bilincli degistirilir.",
+    description: "Varsayılan true. Internal sertifika sorunlarında bilinçli değiştirilir.",
   },
   {
     name: "BITBUCKET_TIMEOUT",
     required: "Opsiyonel",
-    description: "Varsayilan 75 saniye.",
+    description: "Varsayılan 75 saniye.",
   },
 ];
 
@@ -133,7 +133,7 @@ const bitbucketScopeRows = [
   },
   {
     scope: "Repositories: Write",
-    use: "Repo olusturma, guncelleme, fork",
+    use: "Repo oluşturma, güncelleme, fork",
     toolset: "bitbucket_repositories",
   },
   {
@@ -143,7 +143,7 @@ const bitbucketScopeRows = [
   },
   {
     scope: "Pull requests: Write",
-    use: "PR olusturma, approve, merge, yorum ekleme",
+    use: "PR oluşturma, approve, merge, yorum ekleme",
     toolset: "bitbucket_pull_requests",
   },
   {
@@ -153,12 +153,12 @@ const bitbucketScopeRows = [
   },
   {
     scope: "Webhooks: Read / Write",
-    use: "Webhook listeleme, olusturma, guncelleme",
+    use: "Webhook listeleme, oluşturma, güncelleme",
     toolset: "bitbucket_webhooks",
   },
   {
     scope: "Projects / Workspace membership: Read",
-    use: "Project, uye ve default reviewer bilgileri",
+    use: "Project, üye ve default reviewer bilgileri",
     toolset: "bitbucket_workspace",
   },
 ];
@@ -173,13 +173,13 @@ const smokePrompts = [
 ];
 
 const setupSteps = [
-  "Cloud veya Server/Data Center kurulum tipini sec.",
-  "Jira ve Confluence icin Atlassian API token veya Personal Access Token olustur.",
-  "Bitbucket icin Cloud API token ya da Server/DC Personal Access Token olustur.",
-  "Credential alanlarini Streamlit Credentials ekranindan gir.",
-  "OpenAI veya vLLM provider secimini LLM Providers ekranindan yap.",
-  "Admin Servisler ekranindan atlassian-mcp servisinin calistigini kontrol et.",
-  "Streamlit Chat icinde Jira, Confluence ve Bitbucket promptlariyla smoke test yap.",
+  "Cloud veya Server/Data Center kurulum tipini seçin.",
+  "Jira ve Confluence için Atlassian API token veya Personal Access Token oluşturun.",
+  "Bitbucket için Cloud API token ya da Server/DC Personal Access Token oluşturun.",
+  "Credential alanlarını Streamlit Kimlik bilgileri ekranından girin.",
+  "OpenAI veya vLLM provider seçimini AI modelleri ekranından yapın.",
+  "Servisler ekranından atlassian-mcp servisinin çalıştığını kontrol edin.",
+  "Streamlit Chat içinde Jira, Confluence ve Bitbucket promptlarıyla smoke test yapın.",
 ];
 
 function EnvTable({ rows }: { rows: EnvVarRow[] }) {
@@ -188,9 +188,9 @@ function EnvTable({ rows }: { rows: EnvVarRow[] }) {
       <table className="table">
         <thead>
           <tr>
-            <th>Degisken</th>
+            <th>Değişken</th>
             <th>Gerekli</th>
-            <th>Aciklama</th>
+            <th>Açıklama</th>
           </tr>
         </thead>
         <tbody>
@@ -277,38 +277,38 @@ export default function McpSetupTab() {
         <span className="banner__icon">i</span>
         <div className="banner__body">
           Aktif MCP hedefi <strong>jellythomas/mcp-atlassian-with-bitbucket</strong>.
-          Jira, Confluence ve Bitbucket Cloud/Server/DC icin stateless MCP akisi
-          kullanilir. Bu ekranda gercek token tutulmaz; sadece hangi bilginin
-          nereden alinacagi anlatilir.
+          Jira, Confluence ve Bitbucket Cloud/Server/DC için stateless MCP akışı
+          kullanılır. Bu ekranda gerçek token tutulmaz; sadece hangi bilginin
+          nereden alınacağı anlatılır.
         </div>
       </div>
 
       <McpDeploymentSelector />
 
-      <section className="grid-2" aria-label="MCP hizli ozet">
+      <section className="grid-2" aria-label="MCP hızlı özet">
         <div className="stat-card">
-          <div className="stat-card__label">Kimlik dogrulama</div>
+          <div className="stat-card__label">Kimlik doğrulama</div>
           <div className="stat-card__value" style={{ fontSize: "1.15rem" }}>
-            Header tabanli stateless
+            Header tabanlı stateless
           </div>
           <div className="stat-card__delta">
-            Credential degerleri Streamlit tarafindan MCP request header'larina eklenir.
+            Credential değerleri Streamlit tarafından MCP istek header'larına eklenir.
           </div>
         </div>
         <div className="stat-card">
-          <div className="stat-card__label">Varsayilan toolset</div>
+          <div className="stat-card__label">Varsayılan toolset</div>
           <div className="stat-card__value" style={{ fontSize: "1.15rem" }}>
             TOOLSETS=all
           </div>
           <div className="stat-card__delta">
-            Jira, Confluence ve Bitbucket araclari ayni MCP servisinden gelir.
+            Jira, Confluence ve Bitbucket araçları aynı MCP servisinden gelir.
           </div>
         </div>
       </section>
 
       <SectionCard
-        title="Kurulum Akisi"
-        subtitle="Sifirdan kurulumda izlenecek en kisa ve net yol."
+        title="Kurulum Akışı"
+        subtitle="Sıfırdan kurulumda izlenecek en kısa ve net yol."
       >
         <ol
           style={{
@@ -329,14 +329,14 @@ export default function McpSetupTab() {
         <div className="card__header">
           <div>
             <div className="card__title">Uyumluluk</div>
-            <div className="card__sub">Desteklenen Atlassian urunleri ve deployment tipleri.</div>
+            <div className="card__sub">Desteklenen Atlassian ürünleri ve deployment tipleri.</div>
           </div>
         </div>
         <div className="card__body card__body--flush">
           <table className="table">
             <thead>
               <tr>
-                <th>Urun</th>
+                <th>Ürün</th>
                 <th>Deployment</th>
                 <th>Destek</th>
               </tr>
@@ -365,8 +365,17 @@ export default function McpSetupTab() {
             </div>
           </div>
           <EnvTable rows={jiraConfluenceCloudVars} />
+          <div className="card__body">
+            <CompactList
+              items={[
+                "API token id.atlassian.com/manage-profile/security/api-tokens ekranından Create API token ile oluşturulur.",
+                "JIRA_USERNAME ve CONFLUENCE_USERNAME Atlassian hesap e-postasıdır.",
+                "JIRA_API_TOKEN ve CONFLUENCE_API_TOKEN için aynı token kullanılabilir.",
+              ]}
+            />
+          </div>
           <div className="card__footer text-sm muted">
-            Tek Atlassian API token Jira ve Confluence icin birlikte kullanilabilir.
+            Tek Atlassian API token Jira ve Confluence için birlikte kullanılabilir.
           </div>
         </section>
 
@@ -374,7 +383,7 @@ export default function McpSetupTab() {
           <div className="card__header">
             <div>
               <div className="card__title">Jira & Confluence Server/DC</div>
-              <div className="card__sub">Token profil ayarlarindan Personal Access Token olarak alinir.</div>
+              <div className="card__sub">Token profil ayarlarından Personal Access Token olarak alınır.</div>
             </div>
           </div>
           <EnvTable rows={jiraConfluenceServerVars} />
@@ -386,16 +395,17 @@ export default function McpSetupTab() {
           <div className="card__header">
             <div>
               <div className="card__title">Bitbucket Cloud</div>
-              <div className="card__sub">Onerilen yontem: scoped Bitbucket API Token.</div>
+              <div className="card__sub">Önerilen yöntem: scoped Bitbucket API Token.</div>
             </div>
           </div>
           <EnvTable rows={bitbucketCloudVars} />
           <div className="card__body">
             <CompactList
               items={[
-                "Token Bitbucket icinden avatar > Personal settings > Security > API tokens ekranindan olusturulur.",
-                "Workspace slug Cloud repo URL'sindeki bitbucket.org/{workspace}/{repo} bolumunden alinip ayri girilir.",
-                "App password legacy yontemdir; yeni kurulumda API token secilmeli.",
+                "Token Bitbucket içinden avatar > Personal settings > Security > API tokens ekranından oluşturulur.",
+                "BITBUCKET_API_TOKEN veya BITBUCKET_APP_PASSWORD alanlarından biri şarttır.",
+                "BITBUCKET_WORKSPACE opsiyoneldir; repo URL'sindeki bitbucket.org/{workspace}/{repo} bölümünden alınabilir.",
+                "App password legacy yöntemdir; yeni kurulumda API token seçilmeli.",
               ]}
             />
           </div>
@@ -410,7 +420,7 @@ export default function McpSetupTab() {
           </div>
           <EnvTable rows={bitbucketServerVars} />
           <div className="card__footer text-sm muted">
-            PAT icin Project Read ve Repository Admin izinleri gerekir.
+            PAT için Project Read ve Repository Admin izinleri gerekir.
           </div>
         </section>
       </div>
@@ -420,7 +430,7 @@ export default function McpSetupTab() {
           <div>
             <div className="card__title">Bitbucket Cloud Scope Tablosu</div>
             <div className="card__sub">
-              Read-only PR izleme icin minimum: Repositories: Read + Pull requests: Read.
+              Read-only PR izleme için minimum: Repositories: Read + Pull requests: Read.
             </div>
           </div>
         </div>
@@ -429,7 +439,7 @@ export default function McpSetupTab() {
             <thead>
               <tr>
                 <th>Scope</th>
-                <th>Ne icin</th>
+                <th>Ne için</th>
                 <th>Toolset</th>
               </tr>
             </thead>
@@ -447,7 +457,7 @@ export default function McpSetupTab() {
       </section>
 
       <div className="grid-2">
-        <SectionCard title="Ornek Credential Bloklari">
+        <SectionCard title="Örnek Credential Blokları">
           <div className="stack">
             <CodeBlock>{`JIRA_URL=https://your-company.atlassian.net
 JIRA_USERNAME=your.email@company.com
@@ -459,38 +469,43 @@ CONFLUENCE_API_TOKEN=ATATT3x...`}</CodeBlock>
             <CodeBlock>{`BITBUCKET_URL=https://bitbucket.org
 BITBUCKET_USERNAME=your.email@company.com
 BITBUCKET_API_TOKEN=bb_pat_xxxxxxxxxxxx
-BITBUCKET_WORKSPACE=your_workspace`}</CodeBlock>
+BITBUCKET_WORKSPACE=your_workspace  # opsiyonel
+
+BITBUCKET_URL=https://bitbucket.your-company.com
+BITBUCKET_PERSONAL_TOKEN=your_pat
+BITBUCKET_PROJECT_KEY=PROJ          # opsiyonel
+BITBUCKET_SSL_VERIFY=true           # opsiyonel`}</CodeBlock>
           </div>
         </SectionCard>
 
-        <SectionCard title="Chat Smoke Test Sorulari">
+        <SectionCard title="Chat Smoke Test Soruları">
           <CompactList items={smokePrompts} />
         </SectionCard>
       </div>
 
       <SectionCard
-        title="Global MCP Ayarlari"
-        subtitle="Servis davranisini etkileyen ana ortam degiskenleri."
+        title="Global MCP Ayarları"
+        subtitle="Servis davranışını etkileyen ana ortam değişkenleri."
       >
         <div className="grid-3">
           <div>
             <div className="badge badge--brand">TOOLSETS</div>
             <p className="text-sm muted">
-              <code>all</code> tum Jira, Confluence ve Bitbucket toolsetlerini acar.
-              Daha dar kurulumlarda virgulle ayrilmis toolset listesi verilebilir.
+              <code>all</code> tüm Jira, Confluence ve Bitbucket toolset'lerini açar.
+              Daha dar kurulumlarda virgülle ayrılmış toolset listesi verilebilir.
             </p>
           </div>
           <div>
             <div className="badge badge--warn">READ_ONLY_MODE</div>
             <p className="text-sm muted">
-              <code>false</code> yazma islemlerine izin verir. Sadece okuma testi
-              icin <code>true</code> kullanilir.
+              <code>false</code> yazma işlemlerine izin verir. Sadece okuma testi
+              için <code>true</code> kullanılır.
             </p>
           </div>
           <div>
             <div className="badge badge--info">MCP_VERBOSE</div>
             <p className="text-sm muted">
-              <code>true</code> detayli log acar. Normal calismada <code>false</code>
+              <code>true</code> detaylı log açar. Normal çalışmada <code>false</code>
               kalabilir.
             </p>
           </div>

@@ -72,6 +72,22 @@ $compose = if ($env:COMPOSE) { $env:COMPOSE } else { 'docker compose' }
 $composeBase = Join-Path $platformDir 'infra\docker-compose.yml'
 $composeDev  = Join-Path $platformDir 'infra\docker-compose.dev.yml'
 $manifest    = Join-Path $platformDir 'config\services.manifest.json'
+# Root .env carries the Boot_Bundle values (POSTGRES_*, VAULT_*, OPENAI_API_KEY,
+# LLM_*, etc.). When the compose files are passed by absolute path, Compose's
+# default ``.env`` lookup happens in the compose-file directory (``infra/``),
+# NOT ``platform/`` — so the root .env would be silently ignored and keys like
+# OPENAI_API_KEY arrive EMPTY in the containers. Pass it explicitly via
+# --env-file so the bundle is wired correctly regardless of the caller's CWD.
+# (The project name stays ``infra`` because --project-directory still defaults
+# to the first compose file's directory.)
+$envFile     = Join-Path $platformDir '.env'
+# Root .env is the single Compose bootstrap source (see platform/.env header).
+# Because we pass the compose files by ABSOLUTE path, Compose's default `.env`
+# lookup happens in the compose-file directory (infra/), NOT platform/. Without
+# an explicit --env-file the root .env (OPENAI_API_KEY, LLM_*, POSTGRES_*, …)
+# never reaches the containers. Pass it explicitly so values resolve while the
+# computed project name stays `infra`.
+$envFile     = Join-Path $platformDir '.env'
 
 if (-not (Test-Path -LiteralPath $manifest)) {
     Write-Error "up.ps1: manifest not found: $manifest"
@@ -128,7 +144,9 @@ $composeExe  = $composeArgv[0]
 $composeHead = if ($composeArgv.Length -gt 1) { $composeArgv[1..($composeArgv.Length - 1)] } else { @() }
 
 # Boot bundle prefix: base + dev override, NO --profile flags.
-$bootPrefixArgs = @() + $composeHead + @('-f', $composeBase, '-f', $composeDev)
+# --env-file MUST precede the -f flags so the root .env resolves (see above).
+$envFileArgs = if (Test-Path -LiteralPath $envFile) { @('--env-file', $envFile) } else { @() }
+$bootPrefixArgs = @() + $composeHead + $envFileArgs + @('-f', $composeBase, '-f', $composeDev)
 
 # Full-stack prefix: same plus every manifest profile.
 $fullPrefixArgs = $bootPrefixArgs + $profileFlags

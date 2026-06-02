@@ -35,11 +35,12 @@ Design references
 
 from __future__ import annotations
 
+import asyncio
 import os
 import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any, Final, Literal, Protocol
+from typing import Any, Final, Literal, Mapping, Protocol
 from uuid import uuid4
 
 import httpx
@@ -204,12 +205,16 @@ class VaultCredentialReader:
             return None
 
 
-def _resolve_credential_from_env(provider: str) -> str | None:
+def _resolve_credential_from_env(
+    provider: str,
+    env: Mapping[str, str] | None = None,
+) -> str | None:
     """Resolve API key from environment variable for the given provider."""
     env_var = _CREDENTIAL_ENV_MAP.get(provider)
     if env_var is None:
         return None
-    value = os.environ.get(env_var, "").strip()
+    source = os.environ if env is None else env
+    value = source.get(env_var, "").strip()
     return value if value else None
 
 
@@ -227,15 +232,19 @@ def _build_auth_headers(provider: str, api_key: str) -> dict[str, str]:
 # ---------------------------------------------------------------------------
 
 
-def _resolve_base_url(entry: dict[str, Any]) -> str | None:
+def _resolve_base_url(
+    entry: dict[str, Any],
+    env: Mapping[str, str] | None = None,
+) -> str | None:
     """Resolve the base URL for an external manifest entry.
 
     Priority: environment variable (``base_url_env``) > default
     (``base_url_default``). Returns ``None`` if neither is available.
     """
+    source = os.environ if env is None else env
     base_url_env = entry.get("base_url_env")
     if base_url_env:
-        url = os.environ.get(base_url_env, "").strip()
+        url = source.get(base_url_env, "").strip()
         if url:
             return url.rstrip("/")
 
@@ -261,12 +270,29 @@ def _map_status(
     return "unreachable"
 
 
+def _sync_probe_request(
+    *,
+    method: str,
+    url: str,
+    headers: dict[str, str],
+) -> httpx.Response:
+    """Run a one-shot provider probe with the sync transport as a fallback."""
+    with httpx.Client(trust_env=True) as client:
+        return client.request(
+            method=method,
+            url=url,
+            headers=headers,
+            timeout=httpx.Timeout(_PROBE_TIMEOUT_SECONDS),
+        )
+
+
 async def probe_external(
     entry: dict[str, Any],
     *,
     http_client: httpx.AsyncClient | None = None,
     vault_reader: VaultCredentialReader | None = None,
     bypass_cache: bool = False,
+    env: Mapping[str, str] | None = None,
 ) -> ExternalProbeResult:
     """Probe a single external provider and return the result.
 
@@ -301,7 +327,7 @@ async def probe_external(
             return cached
 
     # --- Resolve base URL ---
-    base_url = _resolve_base_url(entry)
+    base_url = _resolve_base_url(entry, env=env)
     if base_url is None:
         result = ExternalProbeResult(
             name=name,
@@ -315,7 +341,7 @@ async def probe_external(
         return result
 
     # --- Resolve credentials ---
-    api_key = _resolve_credential_from_env(name)
+    api_key = _resolve_credential_from_env(name, env=env)
     if api_key is None and vault_reader is not None:
         api_key = await vault_reader.read_api_key(name)
 
@@ -344,7 +370,7 @@ async def probe_external(
 
     # --- Execute probe ---
     owns_client = http_client is None
-    client = http_client or httpx.AsyncClient()
+    client = http_client or httpx.AsyncClient(trust_env=True)
     try:
         start_time = time.monotonic()
         try:
@@ -373,25 +399,71 @@ async def probe_external(
                 last_probed_at=time.time(),
             )
 
-        except httpx.TimeoutException as exc:
-            result = ExternalProbeResult(
-                name=name,
-                status="unreachable",
-                base_url=base_url,
-                latency_ms=None,
-                error=f"Timeout after {_PROBE_TIMEOUT_SECONDS}s: {type(exc).__name__}",
-                last_probed_at=time.time(),
-            )
+        except (httpx.TimeoutException, httpx.HTTPError) as exc:
+            if not owns_client:
+                error_prefix = (
+                    f"Timeout after {_PROBE_TIMEOUT_SECONDS}s"
+                    if isinstance(exc, httpx.TimeoutException)
+                    else "Connection error"
+                )
+                result = ExternalProbeResult(
+                    name=name,
+                    status="unreachable",
+                    base_url=base_url,
+                    latency_ms=None,
+                    error=f"{error_prefix}: {type(exc).__name__}",
+                    last_probed_at=time.time(),
+                )
+            else:
+                try:
+                    response = await asyncio.to_thread(
+                        _sync_probe_request,
+                        method=probe_method,
+                        url=url,
+                        headers=headers,
+                    )
+                    elapsed_ms = (time.monotonic() - start_time) * 1000.0
 
-        except httpx.HTTPError as exc:
-            result = ExternalProbeResult(
-                name=name,
-                status="unreachable",
-                base_url=base_url,
-                latency_ms=None,
-                error=f"Connection error: {type(exc).__name__}",
-                last_probed_at=time.time(),
-            )
+                    status = _map_status(
+                        response.status_code,
+                        probe_expected_status,
+                    )
+                    error_msg = None
+                    if status != "ok":
+                        error_msg = (
+                            f"HTTP {response.status_code} from {url} "
+                            f"(expected {probe_expected_status})"
+                        )
+
+                    result = ExternalProbeResult(
+                        name=name,
+                        status=status,
+                        base_url=base_url,
+                        latency_ms=round(elapsed_ms, 2),
+                        error=error_msg,
+                        last_probed_at=time.time(),
+                    )
+                except httpx.TimeoutException as fallback_exc:
+                    result = ExternalProbeResult(
+                        name=name,
+                        status="unreachable",
+                        base_url=base_url,
+                        latency_ms=None,
+                        error=(
+                            f"Timeout after {_PROBE_TIMEOUT_SECONDS}s: "
+                            f"{type(fallback_exc).__name__}"
+                        ),
+                        last_probed_at=time.time(),
+                    )
+                except httpx.HTTPError as fallback_exc:
+                    result = ExternalProbeResult(
+                        name=name,
+                        status="unreachable",
+                        base_url=base_url,
+                        latency_ms=None,
+                        error=f"Connection error: {type(fallback_exc).__name__}",
+                        last_probed_at=time.time(),
+                    )
 
     finally:
         if owns_client:

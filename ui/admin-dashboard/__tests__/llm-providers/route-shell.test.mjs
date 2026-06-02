@@ -42,8 +42,8 @@ describe("/admin/llm-providers route shell (R14.1)", () => {
       "page must expose llm-provider-add-button testid",
     );
     assert.ok(
-      source.includes("Add Provider"),
-      "page must render the Add Provider label",
+      source.includes("Provider ekle"),
+      "page must render the Provider ekle label",
     );
   });
 

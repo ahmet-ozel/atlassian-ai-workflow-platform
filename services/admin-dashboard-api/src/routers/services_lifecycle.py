@@ -215,6 +215,35 @@ def _detail_from_entry(
     )
 
 
+async def _refresh_manifest_health_cache(svc: LifecycleService) -> None:
+    manifest = getattr(svc, "manifest", ())
+    if not manifest:
+        return
+    results = await asyncio.gather(
+        *(svc.health_of(name=entry.name) for entry in manifest),
+        return_exceptions=True,
+    )
+    for entry, result in zip(manifest, results):
+        if isinstance(result, Exception):
+            logger.debug(
+                "background health refresh failed for %s: %s",
+                entry.name,
+                result,
+            )
+
+
+def _schedule_health_refresh(svc: LifecycleService) -> None:
+    task = asyncio.create_task(_refresh_manifest_health_cache(svc))
+
+    def _consume_result(done: asyncio.Task[None]) -> None:
+        try:
+            done.result()
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("background health refresh crashed: %s", exc)
+
+    task.add_done_callback(_consume_result)
+
+
 # ---------------------------------------------------------------------------
 # GET /admin/services
 # ---------------------------------------------------------------------------
@@ -226,16 +255,19 @@ def _detail_from_entry(
     summary="List Managed_Service summaries",
 )
 async def list_services(
+    refresh: bool = Query(
+        default=False,
+        description="When true, wait for a fresh health refresh before listing.",
+    ),
     svc: LifecycleService = Depends(get_lifecycle_service),
 ) -> list[ServiceSummary]:
     """Return one row per Managed_Service (Requirement 6.1)."""
 
     manifest = getattr(svc, "manifest", ())
-    if manifest:
-        await asyncio.gather(
-            *(svc.health_of(name=entry.name) for entry in manifest),
-            return_exceptions=True,
-        )
+    if manifest and refresh:
+        await _refresh_manifest_health_cache(svc)
+    elif manifest:
+        _schedule_health_refresh(svc)
     summaries = await svc.list_summaries()
     return [
         ServiceSummary.model_validate(s, from_attributes=True)

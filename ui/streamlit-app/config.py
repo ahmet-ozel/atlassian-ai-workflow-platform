@@ -56,6 +56,10 @@ class Settings:
             "VLLM_BASE_URL", "http://host.docker.internal:8000/v1"
         )
         self.vllm_api_key: str = os.environ.get("VLLM_API_KEY", "")
+        self.anthropic_api_key: str = os.environ.get("ANTHROPIC_API_KEY", "")
+        self.anthropic_base_url: str = os.environ.get(
+            "ANTHROPIC_BASE_URL", "https://api.anthropic.com/v1"
+        )
         self.log_level: str = os.environ.get("LOG_LEVEL", "INFO")
         self.default_language: str = os.environ.get(
             "DEFAULT_LANGUAGE", "tr"

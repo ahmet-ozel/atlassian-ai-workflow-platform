@@ -19,6 +19,27 @@ _TOPIC_NOISE_RE = re.compile(
     r"private|public|bilgi\w*|dondur|don|cevap\w*|ve|ile|icin|mi)\b"
 )
 _SIMPLE_REPO_TERM_RE = re.compile(r"[A-Za-z0-9_.-]{2,64}")
+_JIRA_SUMMARY_MAX_CHARS = 255
+_FIELD_NAMES = {
+    "summary": {"baslik", "summary", "title", "ozet"},
+    "description": {"aciklama", "description", "desc"},
+}
+_ALL_FIELD_NAMES = sorted({name for names in _FIELD_NAMES.values() for name in names})
+_PROJECT_KEY_STOPWORDS = {
+    "ACIKLAMA",
+    "BASLIK",
+    "CREATE",
+    "EKSIK",
+    "ISSUE",
+    "JIRA",
+    "OLUSTUR",
+    "PROJECT",
+    "PROJE",
+    "SON",
+    "TASK",
+    "TITLE",
+    "YENI",
+}
 
 
 def _fold_text(text: str) -> str:
@@ -51,14 +72,160 @@ def _extract_topic(text: str, fallback: str = "") -> str:
 
 
 def _extract_field(text: str, names: set[str]) -> str:
-    for line in text.splitlines():
-        folded_line = _fold_text(line)
-        if not any(name in folded_line for name in names):
-            continue
-        parts = re.split(r"[:=]", line, maxsplit=1)
-        if len(parts) == 2 and parts[1].strip():
-            return parts[1].strip()
+    folded = _fold_text(text)
+    labels = "|".join(re.escape(name) for name in sorted(names))
+    all_labels = "|".join(re.escape(name) for name in _ALL_FIELD_NAMES)
+    match = re.search(
+        rf"(?:^|[\s,.;])(?:{labels})\s*[:=]\s*(.+?)"
+        rf"(?=(?:[\s,.;]+(?:{all_labels})\s*[:=])|$)",
+        folded,
+        flags=re.DOTALL,
+    )
+    if match:
+        return text[match.start(1) : match.end(1)].strip(" \t\r\n,.;")
     return ""
+
+
+def _strip_followup_instruction(text: str) -> str:
+    folded = _fold_text(text)
+    markers = (
+        "olusturdugun issue",
+        "olusturulan issue",
+        "issue key",
+        "durumunu soyle",
+        "created issue",
+    )
+    positions = [folded.find(marker) for marker in markers if folded.find(marker) >= 0]
+    if positions:
+        text = text[: min(positions)]
+    return text.strip(" \t\r\n,.;")
+
+
+def _trim_jira_summary(summary: str) -> str:
+    summary = _strip_followup_instruction(" ".join(summary.split()))
+    if len(summary) <= _JIRA_SUMMARY_MAX_CHARS:
+        return summary
+    return summary[: _JIRA_SUMMARY_MAX_CHARS - 3].rstrip(" ,.;") + "..."
+
+
+def _derive_jira_summary(text: str) -> str:
+    cleaned = re.sub(
+        r"\b(?:jira|task|issue|olustur|create|project|proje(?:si|sinde|sindeki)?)\b",
+        " ",
+        _fold_text(text),
+        flags=re.IGNORECASE,
+    )
+    cleaned = re.sub(r"\b[A-Z][A-Z0-9_]{1,10}\b", " ", cleaned)
+    cleaned = re.sub(r"[^\w\s./-]", " ", cleaned)
+    cleaned = " ".join(cleaned.split())
+    return _trim_jira_summary(cleaned)
+
+
+def _normalise_project_candidate(value: str) -> str:
+    candidate = value.strip(" \t\r\n,.;:'\"()[]{}")
+    if not re.fullmatch(r"[A-Za-z][A-Za-z0-9_]{1,10}", candidate):
+        return ""
+    project_key = candidate.upper()
+    if project_key in _PROJECT_KEY_STOPWORDS:
+        return ""
+    return project_key
+
+
+def _strip_field_values_for_project_search(text: str) -> str:
+    folded = _fold_text(text)
+    labels = "|".join(re.escape(name) for name in _ALL_FIELD_NAMES)
+    spans: list[tuple[int, int]] = []
+    for match in re.finditer(
+        rf"(?:^|[\s,.;])(?:{labels})\s*[:=]\s*(.+?)"
+        rf"(?=(?:[\s,.;]+(?:{labels})\s*[:=])|$)",
+        folded,
+        flags=re.DOTALL,
+    ):
+        spans.append((match.start(1), match.end(1)))
+    if not spans:
+        return text
+    chunks: list[str] = []
+    cursor = 0
+    for start, end in spans:
+        chunks.append(text[cursor:start])
+        cursor = end
+    chunks.append(text[cursor:])
+    return " ".join("".join(chunks).split())
+
+
+def _extract_jira_project_key(text: str) -> str:
+    project_text = _strip_field_values_for_project_search(text)
+    prefix_match = re.search(
+        r"(?i:\b(?:project\s+key|proje\s+key|project|proje)\b\s*[:=]?\s*)"
+        r"([A-Za-z][A-Za-z0-9_]{1,10})\b",
+        project_text,
+    )
+    if prefix_match:
+        project_key = _normalise_project_candidate(prefix_match.group(1))
+        if project_key:
+            return project_key
+
+    suffix_patterns = (
+        r"\b([A-Z][A-Z0-9_]{1,10})\b\s+"
+        r"(?i:proje(?:si|sindeki|sinde|sine|sinin|deki|de|nin|leri|ler)?|project)\b",
+        r"\b([A-Z][A-Z0-9_]{1,10})(?:'?(?:da|de|ta|te|daki|deki|dan|den))\b"
+        r"(?=.*(?i:\b(?:jira|task|issue|olustur|create)\b))",
+    )
+    for pattern in suffix_patterns:
+        match = re.search(pattern, project_text)
+        if not match:
+            continue
+        project_key = _normalise_project_candidate(match.group(1))
+        if project_key:
+            return project_key
+    return ""
+
+
+def _extract_limit(text: str, default: int = 5, maximum: int = 25) -> int:
+    folded = _fold_text(text)
+    match = re.search(r"\b(?:ilk|son|top|limit)\s*[:=]?\s*(\d{1,2})\b", folded)
+    if not match:
+        return default
+    return max(1, min(int(match.group(1)), maximum))
+
+
+_SPACE_KEY_STOPWORDS = {
+    "VE",
+    "KEY",
+    "ID",
+    "SPACE",
+    "PAGE",
+    "SAYFA",
+    "BILGISINI",
+    "BILGI",
+    "ICIN",
+    "ILE",
+    "ADI",
+    "ISMI",
+    "NAME",
+    "KISA",
+    "DETAY",
+}
+
+
+def _extract_confluence_space_key(text: str) -> str:
+    # The ``space`` keyword may appear in any case ("Space"/"space"), but the
+    # key token itself must be uppercase AS WRITTEN — real Confluence space
+    # keys are uppercase (E2ETEST, KAN, JOH). Using ``re.IGNORECASE`` on the
+    # whole pattern previously captured lowercase prose words such as
+    # "space bilgisini" -> "BILGISINI" or "space key" -> "KEY", which then
+    # produced a CQL filter on a non-existent space and returned zero pages.
+    match = re.search(
+        r"[Ss][Pp][Aa][Cc][Ee]\s*[:=]?\s*([A-Z][A-Z0-9_]{1,20})\b|"
+        r"\b([A-Z][A-Z0-9_]{1,20})\s+[Ss][Pp][Aa][Cc][Ee]\b",
+        text,
+    )
+    if not match:
+        return ""
+    candidate = next((item for item in match.groups() if item), "").upper()
+    if candidate in _SPACE_KEY_STOPWORDS:
+        return ""
+    return candidate
 
 
 def _is_jira_create_request(lowered: str) -> bool:
@@ -103,19 +270,23 @@ def plan_and_call_mcp(text: str, credential_for: CredentialGetter) -> tuple[str,
     lowered = _fold_text(text)
 
     if _is_jira_create_request(lowered):
-        project_match = re.search(
-            r"\bproject\s*[:=]?\s*([A-Z][A-Z0-9]{1,10})\b",
-            text,
-            re.IGNORECASE,
-        )
-        project_key = project_match.group(1).upper() if project_match else ""
+        project_key = _extract_jira_project_key(text)
         if not project_key:
             raise ValueError(
-                "Jira task olusturmak icin project key belirtmelisiniz. "
-                "Ornek: project ABC, baslik: ..., aciklama: ..."
+                "Jira task olusturmak icin project key eksik. "
+                "Lutfen su bilgiyi verin: project ABC veya ABC projesinde."
             )
 
-        summary = _extract_field(text, {"baslik", "summary"}) or text[:80]
+        summary = _extract_field(text, _FIELD_NAMES["summary"]) or _derive_jira_summary(text)
+        summary = _trim_jira_summary(summary)
+        if not summary:
+            raise ValueError(
+                "Jira task olusturmak icin baslik/ozet eksik. "
+                "Ornek: project ABC, baslik: Kisa task basligi, aciklama: ..."
+            )
+        description = _strip_followup_instruction(
+            _extract_field(text, _FIELD_NAMES["description"]) or text
+        )
         return mcp_call_any(
             [
                 (
@@ -123,7 +294,7 @@ def plan_and_call_mcp(text: str, credential_for: CredentialGetter) -> tuple[str,
                     {
                         "project_key": project_key,
                         "summary": summary,
-                        "description": text,
+                        "description": description,
                         "issue_type": "Task",
                     },
                 ),
@@ -132,7 +303,7 @@ def plan_and_call_mcp(text: str, credential_for: CredentialGetter) -> tuple[str,
                     {
                         "project_key": project_key,
                         "summary": summary,
-                        "description": text,
+                        "description": description,
                         "issue_type": "Task",
                     },
                 ),
@@ -142,21 +313,31 @@ def plan_and_call_mcp(text: str, credential_for: CredentialGetter) -> tuple[str,
 
     if "confluence" in lowered or "conf" in lowered or "sayfa" in lowered:
         topic = _extract_topic(text, "")
+        limit = _extract_limit(text)
+        space_key = _extract_confluence_space_key(text)
         cql = "type=page order by lastmodified desc"
         candidates: list[tuple[str, dict[str, Any]]] = []
-        if topic and not any(word in lowered for word in ("son", "guncel", "guncellenen")):
+        if space_key:
+            cql = f'space = "{space_key}" and type=page order by lastmodified desc'
+            candidates.extend(
+                [
+                    ("confluence_cql_search", {"cql": cql, "limit": limit}),
+                    ("cql_search", {"cql": cql, "limit": limit}),
+                ]
+            )
+        elif topic and not any(word in lowered for word in ("son", "guncel", "guncellenen")):
             quoted = topic.replace('"', '\\"')
             cql = f'type=page and (title ~ "{quoted}" or text ~ "{quoted}") order by lastmodified desc'
             candidates = [
-                ("confluence_search", {"query": topic, "limit": 5}),
-                ("search", {"query": topic, "limit": 5}),
+                ("confluence_search", {"query": topic, "limit": limit}),
+                ("search", {"query": topic, "limit": limit}),
             ]
         candidates.extend(
             [
-                ("confluence_search", {"query": cql, "limit": 5}),
-                ("search", {"query": cql, "limit": 5}),
-                ("confluence_cql_search", {"cql": cql, "limit": 5}),
-                ("cql_search", {"cql": cql, "limit": 5}),
+                ("confluence_search", {"query": cql, "limit": limit}),
+                ("search", {"query": cql, "limit": limit}),
+                ("confluence_cql_search", {"cql": cql, "limit": limit}),
+                ("cql_search", {"cql": cql, "limit": limit}),
             ]
         )
         return mcp_call_any(candidates, credential_for)
@@ -173,7 +354,8 @@ def plan_and_call_mcp(text: str, credential_for: CredentialGetter) -> tuple[str,
         is_pr_request = "pull request" in lowered or " pr " in f" {lowered} "
         if is_pr_request and repo:
             project_key, repo_slug = repo
-            workspace = _bitbucket_workspace_from_credential(credential_for) or project_key
+            workspace = project_key
+            limit = _extract_limit(text, default=10)
             return mcp_call_any(
                 [
                     (
@@ -182,7 +364,7 @@ def plan_and_call_mcp(text: str, credential_for: CredentialGetter) -> tuple[str,
                             "workspace": workspace,
                             "repo_slug": repo_slug,
                             "state": "OPEN",
-                            "max_results": 10,
+                            "max_results": limit,
                         },
                     ),
                     (
@@ -191,7 +373,7 @@ def plan_and_call_mcp(text: str, credential_for: CredentialGetter) -> tuple[str,
                             "project_key": project_key,
                             "repo_slug": repo_slug,
                             "state": "OPEN",
-                            "max_results": 10,
+                            "max_results": limit,
                         },
                     ),
                 ],
@@ -204,16 +386,17 @@ def plan_and_call_mcp(text: str, credential_for: CredentialGetter) -> tuple[str,
             )
         if "commit" in lowered and repo:
             project_key, repo_slug = repo
-            workspace = _bitbucket_workspace_from_credential(credential_for) or project_key
+            workspace = project_key
+            limit = _extract_limit(text, default=5)
             return mcp_call_any(
                 [
                     (
                         "bitbucket_list_commits",
-                        {"workspace": workspace, "repo_slug": repo_slug, "max_results": 5},
+                        {"workspace": workspace, "repo_slug": repo_slug, "max_results": limit},
                     ),
                     (
                         "bitbucket_list_commits",
-                        {"project_key": project_key, "repo_slug": repo_slug, "limit": 5},
+                        {"project_key": project_key, "repo_slug": repo_slug, "limit": limit},
                     ),
                 ],
                 credential_for,
@@ -247,22 +430,17 @@ def plan_and_call_mcp(text: str, credential_for: CredentialGetter) -> tuple[str,
             credential_for,
         )
 
-    project_match = re.search(
-        r"\bproject\s*[:=]?\s*([A-Z][A-Z0-9_]{1,10})\b|"
-        r"\b([A-Z][A-Z0-9_]{1,10})\s+proje(?:si|sindeki|sinde|deki|de|nin|leri|ler)?\b",
-        text,
-        re.IGNORECASE,
-    )
-    project_key = next((item for item in project_match.groups() if item), "") if project_match else ""
+    project_key = _extract_jira_project_key(text)
     jql = f"project = {project_key.upper()}" if project_key else "assignee = currentUser()"
     if "acik" in lowered or "open" in lowered:
         jql += " AND statusCategory != Done"
     jql += " ORDER BY updated DESC"
+    limit = _extract_limit(text, default=10)
     return mcp_call_any(
         [
-            ("jira_search", {"jql": jql, "limit": 10}),
-            ("jira_search_issues", {"jql": jql, "limit": 10}),
-            ("search", {"jql": jql, "limit": 10}),
+            ("jira_search", {"jql": jql, "limit": limit}),
+            ("jira_search_issues", {"jql": jql, "limit": limit}),
+            ("search", {"jql": jql, "limit": limit}),
         ],
         credential_for,
     )

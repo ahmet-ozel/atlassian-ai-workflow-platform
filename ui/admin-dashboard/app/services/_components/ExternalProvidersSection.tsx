@@ -1,10 +1,10 @@
 "use client";
 
 /**
- * ExternalProvidersSection — External provider downtime widget (R10, task 10.5).
+ * ExternalProvidersSection — AI model provider status widget (R10, task 10.5).
  *
- * Renders a card-based section above the managed services table showing the
- * live status of external providers (vLLM, OpenAI, Anthropic, Firecrawl).
+ * Renders a compact section above the managed services table showing the
+ * live status of explicitly configured AI model providers.
  *
  * Each provider displays:
  * - Name
@@ -13,8 +13,8 @@
  * - Latency (ms)
  * - "Şimdi Test Et" (Test Now) button for on-demand re-probe
  *
- * When a provider is `unreachable`, a contextual error message is shown
- * (e.g. vLLM host down warning).
+ * When no AI provider is configured, the section renders a neutral grey
+ * "AI model tanimli degil" state instead of red provider failures.
  *
  * Requirements: 10.5, 10.6
  */
@@ -46,6 +46,8 @@ type ExternalProvider = {
 type ExternalServicesResponse = {
   services: ExternalProvider[];
 };
+
+const AI_PROVIDER_NAMES = new Set(["openai", "vllm", "anthropic"]);
 
 // --------------------------------------------------------------------------
 // Status badge configuration
@@ -272,6 +274,60 @@ function ProviderCard({ provider, onTestNow, testing }: ProviderCardProps) {
   );
 }
 
+function NoModelCard() {
+  return (
+    <div
+      style={{
+        border: "1px solid #d1d5db",
+        borderRadius: "0.5rem",
+        padding: "1rem",
+        background: "#f9fafb",
+        minWidth: "220px",
+        flex: "1 1 220px",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: "0.5rem",
+        }}
+      >
+        <span
+          style={{
+            fontWeight: 600,
+            fontSize: "0.95rem",
+            fontFamily:
+              "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+          }}
+        >
+          ai-model
+        </span>
+        <span
+          style={{
+            display: "inline-block",
+            padding: "0.15rem 0.5rem",
+            borderRadius: "0.75rem",
+            fontSize: "0.8rem",
+            fontWeight: 600,
+            background: "#e5e7eb",
+            color: "#374151",
+            whiteSpace: "nowrap",
+          }}
+          data-status="not-configured"
+        >
+          Tanimli degil
+        </span>
+      </div>
+      <div style={{ color: "#6b7280", fontSize: "0.82rem", lineHeight: 1.4 }}>
+        AI model tanımlı değil. OpenAI, vLLM veya Anthropic bilgisi girilince
+        bu alan test sonucuna göre yeşil ya da kırmızı olur.
+      </div>
+    </div>
+  );
+}
+
 // --------------------------------------------------------------------------
 // Main section component
 // --------------------------------------------------------------------------
@@ -329,10 +385,9 @@ export default function ExternalProvidersSection() {
     [fetchProviders],
   );
 
-  // Don't render the section if there are no external providers configured
-  if (!loading && !error && providers.length === 0) {
-    return null;
-  }
+  const aiProviders = providers.filter((provider) =>
+    AI_PROVIDER_NAMES.has(provider.name.toLowerCase()),
+  );
 
   return (
     <section
@@ -348,12 +403,12 @@ export default function ExternalProvidersSection() {
           color: "#111827",
         }}
       >
-        External Providers
+        AI Model
       </h2>
 
       {loading && (
         <p style={{ color: "#6b7280", fontSize: "0.9rem" }}>
-          External provider statuses are loading...
+          AI model status is loading...
         </p>
       )}
 
@@ -369,11 +424,11 @@ export default function ExternalProvidersSection() {
             marginBottom: "0.75rem",
           }}
         >
-          External provider details could not be loaded: {error}
+          AI model status could not be loaded: {error}
         </div>
       )}
 
-      {!loading && !error && providers.length > 0 && (
+      {!loading && !error && aiProviders.length === 0 && (
         <div
           style={{
             display: "flex",
@@ -381,7 +436,19 @@ export default function ExternalProvidersSection() {
             gap: "0.75rem",
           }}
         >
-          {providers.map((provider) => (
+          <NoModelCard />
+        </div>
+      )}
+
+      {!loading && !error && aiProviders.length > 0 && (
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "0.75rem",
+          }}
+        >
+          {aiProviders.map((provider) => (
             <ProviderCard
               key={provider.name}
               provider={provider}

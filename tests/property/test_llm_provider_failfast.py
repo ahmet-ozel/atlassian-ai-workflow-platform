@@ -122,6 +122,7 @@ def _make_settings(
     openai_api_key: str = "",
     anthropic_api_key: str = "",
     vllm_base_url: str = "",
+    vllm_api_key: str = "",
 ) -> Settings:
     """Construct a Settings instance with explicit field values.
 
@@ -133,6 +134,7 @@ def _make_settings(
         openai_api_key=openai_api_key,
         anthropic_api_key=anthropic_api_key,
         vllm_base_url=vllm_base_url,
+        vllm_api_key=vllm_api_key,
     )
 
 
@@ -218,8 +220,8 @@ class TestVllmCredentialFailFast:
     """**Validates: Requirements 1.4**
 
     For any empty, whitespace-only, or invalid URL value for
-    VLLM_BASE_URL when LLM_PROVIDER=vllm, validate_provider_credentials()
-    SHALL raise ConfigurationError.
+    VLLM_BASE_URL or VLLM_API_KEY when LLM_PROVIDER=vllm,
+    validate_provider_credentials() SHALL raise ConfigurationError.
     """
 
     @settings(
@@ -247,10 +249,30 @@ class TestVllmCredentialFailFast:
     def test_vllm_valid_url_does_not_raise(self) -> None:
         """Sanity: vLLM provider + valid URL → no error."""
         s = _make_settings(
-            llm_provider="vllm", vllm_base_url="http://localhost:8000/v1"
+            llm_provider="vllm",
+            vllm_base_url="http://localhost:8000/v1",
+            vllm_api_key="not-needed",
         )
         # Should not raise
         s.validate_provider_credentials()
+
+    @settings(
+        max_examples=100,
+        deadline=2000,
+        suppress_health_check=(HealthCheck.too_slow,),
+    )
+    @given(api_key=_empty_or_whitespace)
+    def test_vllm_empty_api_key_raises_configuration_error(
+        self, api_key: str
+    ) -> None:
+        """R1.4: vLLM provider + empty/whitespace API key â†’ ConfigurationError."""
+        s = _make_settings(
+            llm_provider="vllm",
+            vllm_base_url="http://localhost:8000/v1",
+            vllm_api_key=api_key,
+        )
+        with pytest.raises(ConfigurationError):
+            s.validate_provider_credentials()
 
     def test_vllm_empty_string_raises(self) -> None:
         """R1.4: vLLM provider + empty string → ConfigurationError."""

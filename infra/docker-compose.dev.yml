@@ -123,6 +123,13 @@ services:
     # node_modules folder on first boot.
     volumes:
       - ../ui/admin-dashboard:/app
+      # ``node_modules/@yeni-atlassian/web-shared`` is a ``file:`` symlink
+      # resolving to ``/app/libs/web-shared``. The dev bind-mount above only
+      # maps ``ui/admin-dashboard`` into ``/app``, so without this mount the
+      # symlink dangles and Next.js dev fails to resolve the package
+      # (``Module not found: @yeni-atlassian/web-shared``). Mount the built
+      # lib at the path the symlink points to.
+      - ../libs/web-shared:/app/libs/web-shared:ro
       - /app/node_modules
       - /app/.next
     environment:

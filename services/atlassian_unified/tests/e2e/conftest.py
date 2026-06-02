@@ -81,7 +81,7 @@ def _get_missing_bitbucket_cloud_env_vars() -> list[str]:
     Required:
     - BITBUCKET_CLOUD_URL (or BITBUCKET_URL pointing to a Cloud host)
     - BITBUCKET_WORKSPACE
-    - At least one of: BITBUCKET_APP_PASSWORD, BITBUCKET_CLOUD_ACCESS_TOKEN
+    - At least one of: BITBUCKET_API_TOKEN, BITBUCKET_APP_PASSWORD, BITBUCKET_CLOUD_ACCESS_TOKEN
     """
     missing: list[str] = []
 
@@ -93,10 +93,14 @@ def _get_missing_bitbucket_cloud_env_vars() -> list[str]:
     if not os.environ.get("BITBUCKET_WORKSPACE"):
         missing.append("BITBUCKET_WORKSPACE")
 
-    if not os.environ.get("BITBUCKET_APP_PASSWORD") and not os.environ.get(
-        "BITBUCKET_CLOUD_ACCESS_TOKEN"
+    if (
+        not os.environ.get("BITBUCKET_API_TOKEN")
+        and not os.environ.get("BITBUCKET_APP_PASSWORD")
+        and not os.environ.get("BITBUCKET_CLOUD_ACCESS_TOKEN")
     ):
-        missing.append("BITBUCKET_APP_PASSWORD or BITBUCKET_CLOUD_ACCESS_TOKEN")
+        missing.append(
+            "BITBUCKET_API_TOKEN or BITBUCKET_APP_PASSWORD or BITBUCKET_CLOUD_ACCESS_TOKEN"
+        )
 
     return missing
 

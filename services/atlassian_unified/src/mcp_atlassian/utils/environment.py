@@ -399,11 +399,12 @@ def get_available_services(
         personal_token = os.getenv("BITBUCKET_PERSONAL_TOKEN")
         username = os.getenv("BITBUCKET_USERNAME")
         password = os.getenv("BITBUCKET_PASSWORD")
+        api_token = os.getenv("BITBUCKET_API_TOKEN")
         app_password = os.getenv("BITBUCKET_APP_PASSWORD")
         cloud_access_token = os.getenv("BITBUCKET_CLOUD_ACCESS_TOKEN")
         if is_cloud_host(bitbucket_url):
-            # Cloud: OAuth 2.0 bearer, or Username + App Password.
-            if cloud_access_token or (username and app_password):
+            # Cloud: OAuth 2.0 bearer, or Username + API token / App Password.
+            if cloud_access_token or (username and (api_token or app_password)):
                 bitbucket_is_setup = True
                 logger.info("Using Bitbucket Cloud authentication")
         else:

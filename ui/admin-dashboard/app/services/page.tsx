@@ -19,8 +19,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api-client";
 
 import ExternalProvidersSection from "./_components/ExternalProvidersSection";
-import LogsViewer from "./_components/LogsViewer";
 import McpSetupTab from "./_components/McpSetupTab";
+import ServiceQuickStart from "./_components/ServiceQuickStart";
 import StartFormModal from "./_components/StartFormModal";
 import StateBadge, { type ServiceState } from "./_components/StateBadge";
 import StopConfirmationModal from "./_components/StopConfirmationModal";
@@ -102,11 +102,11 @@ function disabledReason(state: ServiceState, action: ActionKind): string {
   if (actionEnabled(state, action)) return "";
   switch (action) {
     case "start":
-      return `Cannot start while state=${state}; only stopped or failed services can start.`;
+      return `Başlatılamaz: durum=${state}; yalnızca durmuş veya hatalı servisler başlatılabilir.`;
     case "stop":
-      return `Cannot stop while state=${state}; only running, unhealthy, or starting services can stop.`;
+      return `Durdurulamaz: durum=${state}; yalnızca çalışan, sağlıksız veya başlatılan servisler durdurulabilir.`;
     case "restart":
-      return `Cannot restart while state=${state}; only running or unhealthy services can restart.`;
+      return `Yeniden başlatılamaz: durum=${state}; yalnızca çalışan veya sağlıksız servisler yeniden başlatılabilir.`;
   }
 }
 
@@ -206,9 +206,12 @@ function useServiceCatalog(pollIntervalSec: number) {
   const [state, setState] = useState<ListState>({ kind: "idle" });
   const cancelledRef = useRef(false);
 
-  const fetchOnce = useCallback(async () => {
+  const fetchOnce = useCallback(async (options?: { refreshHealth?: boolean }) => {
     try {
-      const res = await apiFetch("/admin/services");
+      const path = options?.refreshHealth
+        ? "/admin/services?refresh=true"
+        : "/admin/services";
+      const res = await apiFetch(path);
       if (cancelledRef.current) return;
       if (!res.ok) {
         const text = await res.text().catch(() => "");
@@ -243,8 +246,8 @@ function useServiceCatalog(pollIntervalSec: number) {
     };
   }, [pollIntervalSec, fetchOnce]);
 
-  const refresh = useCallback(() => {
-    void fetchOnce();
+  const refresh = useCallback((refreshHealth = false) => {
+    void fetchOnce({ refreshHealth });
   }, [fetchOnce]);
 
   return { state, refresh };
@@ -277,7 +280,6 @@ type ModalState =
   | { kind: "none" }
   | { kind: "start"; serviceName: string }
   | { kind: "stop"; serviceName: string }
-  | { kind: "logs"; serviceName: string }
   | { kind: "tests"; serviceName: string }
   | { kind: "feature_flag_disabled"; blockingFlag: string };
 
@@ -359,14 +361,14 @@ function ServiceRow({
         <td className="muted text-sm">{formatTimestamp(svc.last_started_at)}</td>
         <td>
           <div className="row" style={{ gap: 6 }}>
-            <ActionButton label="Start" enabled={startEnabled} disabledReason={disabledReason(svc.state, "start")} onClick={() => onStart(svc.name)} />
-            <ActionButton label="Stop" enabled={stopEnabled} disabledReason={disabledReason(svc.state, "stop")} onClick={() => onStop(svc.name)} />
-            <ActionButton label="Restart" enabled={restartEnabled} disabledReason={disabledReason(svc.state, "restart")} onClick={() => onRestart(svc.name)} />
+            <ActionButton label="Başlat" enabled={startEnabled} disabledReason={disabledReason(svc.state, "start")} onClick={() => onStart(svc.name)} />
+            <ActionButton label="Durdur" danger enabled={stopEnabled} disabledReason={disabledReason(svc.state, "stop")} onClick={() => onStop(svc.name)} />
+            <ActionButton label="Yeniden başlat" enabled={restartEnabled} disabledReason={disabledReason(svc.state, "restart")} onClick={() => onRestart(svc.name)} />
             <ActionButton label="Loglar" enabled={!busy} disabledReason="" onClick={() => onViewLogs(svc.name)} />
             <ActionButton
               label="Test"
               enabled={runTestsEnabled}
-              disabledReason={runTestsEnabled ? "" : `Tests require state=running; current state=${svc.state}.`}
+              disabledReason={runTestsEnabled ? "" : `Test için servis çalışır durumda olmalı; mevcut durum=${svc.state}.`}
               onClick={() => onRunTests(svc.name)}
             />
           </div>
@@ -404,11 +406,11 @@ type ActionButtonProps = {
   enabled: boolean;
   disabledReason: string;
   onClick: () => void;
+  danger?: boolean;
 };
 
-function ActionButton({ label, enabled, disabledReason, onClick }: ActionButtonProps) {
-  const isDanger = label === "Stop";
-  const className = `btn btn--sm${isDanger && enabled ? " btn--danger" : ""}`;
+function ActionButton({ label, enabled, disabledReason, onClick, danger = false }: ActionButtonProps) {
+  const className = `btn btn--sm${danger && enabled ? " btn--danger" : ""}`;
   return (
     <button
       type="button"
@@ -486,7 +488,7 @@ export default function ServicesPage() {
 
   const handleViewLogs = useCallback((name: string) => {
     setActionError(null);
-    setModal({ kind: "logs", serviceName: name });
+    window.location.assign(`/logs?service=${encodeURIComponent(name)}`);
   }, []);
 
   const handleRunTests = useCallback((name: string) => {
@@ -533,13 +535,13 @@ export default function ServicesPage() {
           <div>
             <h1>Servisler</h1>
             <p className="page-header__lede">
-              Manifest&apos;te tanımlı tüm yönetilen servisler. Health
+              Manifest&apos;te tanımlı tüm yönetilen servisler. Sağlık
               durumu her {pollInterval} saniyede bir tazelenir; son
               yenileme: {lastRefreshedLabel}.
             </p>
           </div>
           <div className="page-header__actions">
-            <button className="btn" onClick={refresh}>
+            <button className="btn" onClick={() => refresh(true)}>
               Yenile
             </button>
           </div>
@@ -568,6 +570,15 @@ export default function ServicesPage() {
           <div className="stat-card__delta">Müdahale gerekli</div>
         </div>
       </div>
+
+      {state.kind === "ok" && (
+        <ServiceQuickStart
+          services={state.rows}
+          busyServices={busyServices}
+          onStart={handleStart}
+          onRestart={handleRestart}
+        />
+      )}
 
       <div className="tabs" role="tablist" aria-label="Services panel sections">
         {TAB_DEFINITIONS.map((tab) => (
@@ -679,9 +690,6 @@ export default function ServicesPage() {
           onClose={handleCloseModal}
           onConfirmed={() => handleStopConfirmed(modal.serviceName)}
         />
-      )}
-      {modal.kind === "logs" && (
-        <LogsViewer serviceName={modal.serviceName} onClose={handleCloseModal} />
       )}
       {modal.kind === "tests" && (
         <TestRunnerPanel serviceName={modal.serviceName} onClose={handleCloseModal} />

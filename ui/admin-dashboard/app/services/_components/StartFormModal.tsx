@@ -203,6 +203,49 @@ const buttonRowStyle: React.CSSProperties = {
   marginTop: "1rem",
 };
 
+const LLM_SECRET_KEYS = new Set([
+  "OPENAI_API_KEY",
+  "ANTHROPIC_API_KEY",
+  "VLLM_API_KEY",
+]);
+
+const LLM_PROVIDER_OPTIONS = [
+  { value: "openai", label: "OpenAI" },
+  { value: "anthropic", label: "Anthropic" },
+  { value: "vllm", label: "vLLM" },
+];
+
+function normalizeProvider(
+  value: FormDataEntryValue | string | null,
+  fallback = "openai",
+): string {
+  const normalized = String(value ?? "").trim().toLowerCase();
+  return normalized.length > 0 ? normalized : fallback;
+}
+
+function llmSecretRequired(key: string, provider: string): boolean {
+  if (key === "OPENAI_API_KEY") return provider === "openai";
+  if (key === "ANTHROPIC_API_KEY") return provider === "anthropic";
+  if (key === "VLLM_API_KEY") return provider === "vllm";
+  return false;
+}
+
+function providerDefaultFromFields(fields: FormSchemaField[] | null): string {
+  return normalizeProvider(
+    fields?.find((field) => field.key === "LLM_PROVIDER")?.default_value ?? null,
+  );
+}
+
+function sensitiveFieldRequired(
+  key: string,
+  sensitive: boolean,
+  provider: string,
+): boolean {
+  if (!sensitive) return false;
+  if (LLM_SECRET_KEYS.has(key)) return llmSecretRequired(key, provider);
+  return true;
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -223,6 +266,7 @@ export default function StartFormModal({
   const [validationErrors, setValidationErrors] = useState<
     Record<string, string>
   >({});
+  const [selectedProviderInput, setSelectedProviderInput] = useState("");
   const formRef = useRef<HTMLFormElement | null>(null);
 
   // -------------------------------------------------------------------------
@@ -252,7 +296,9 @@ export default function StartFormModal({
         }
         const body = (await res.json()) as ServiceDetailSubset;
         if (cancelled) return;
-        setFields(body.form_schema?.fields ?? []);
+        const loadedFields = body.form_schema?.fields ?? [];
+        setFields(loadedFields);
+        setSelectedProviderInput(providerDefaultFromFields(loadedFields));
       } catch (err: unknown) {
         if (cancelled || (err instanceof DOMException && err.name === "AbortError")) {
           return;
@@ -304,6 +350,15 @@ export default function StartFormModal({
     [],
   );
 
+  const providerDefault = useMemo(
+    () => providerDefaultFromFields(fields),
+    [fields],
+  );
+  const selectedProvider = normalizeProvider(
+    selectedProviderInput,
+    providerDefault,
+  );
+
   async function handleSubmit(
     ev: React.FormEvent<HTMLFormElement>,
   ): Promise<void> {
@@ -312,6 +367,10 @@ export default function StartFormModal({
 
     const formEl = ev.currentTarget;
     const fd = new FormData(formEl);
+    const effectiveProvider = normalizeProvider(
+      fd.get("LLM_PROVIDER"),
+      providerDefaultFromFields(fields),
+    );
 
     // Build env_overrides + run client-side validation.
     const envOverrides: Record<string, string> = {};
@@ -332,10 +391,14 @@ export default function StartFormModal({
 
       // Empty input.
       if (sensitive) {
+        if (!sensitiveFieldRequired(field.key, sensitive, effectiveProvider)) {
+          envOverrides[field.key] = "";
+          continue;
+        }
         // Sensitive_Env_Key default_value is *never* used — the
         // operator must explicitly type one (Requirement 5.7).
         newValidationErrors[field.key] =
-          "Sensitive value required (no default fallback).";
+          `${field.key} is required for LLM_PROVIDER=${effectiveProvider}.`;
         continue;
       }
       if (field.default_value.length > 0) {
@@ -466,6 +529,12 @@ export default function StartFormModal({
 
             {fields.map((field) => {
               const sensitive = isFieldSensitive(field);
+              const isProviderField = field.key === "LLM_PROVIDER";
+              const fieldRequired = sensitiveFieldRequired(
+                field.key,
+                sensitive,
+                selectedProvider,
+              );
               const helpId = field.comment ? `${field.key}-help` : undefined;
               const errId = validationErrors[field.key]
                 ? `${field.key}-err`
@@ -478,7 +547,7 @@ export default function StartFormModal({
                   <label style={labelStyle}>
                     <span>
                       {field.key}
-                      {sensitive && (
+                      {fieldRequired && (
                         <span
                           aria-label="sensitive"
                           title="Sensitive_Env_Key — must be entered explicitly"
@@ -493,27 +562,50 @@ export default function StartFormModal({
                         {field.comment}
                       </small>
                     )}
-                    <input
-                      name={field.key}
-                      type={sensitive ? "password" : "text"}
+                    {isProviderField ? (
+                      <select
+                        name={field.key}
+                        value={selectedProvider}
+                        onChange={(ev) => {
+                          setSelectedProviderInput(ev.currentTarget.value);
+                        }}
+                        aria-describedby={describedBy}
+                        aria-invalid={errId != null ? "true" : undefined}
+                        style={inputStyle}
+                      >
+                        {LLM_PROVIDER_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        name={field.key}
+                        type={sensitive ? "password" : "text"}
                       // Sensitive fields never display the .env.example
                       // default — operator must type one explicitly
                       // (Requirement 5.7). Non-sensitive fields show the
                       // default as the placeholder so the operator can
                       // submit blank to accept it (Requirement 5.2).
-                      placeholder={
-                        sensitive ? "(required)" : field.default_value
-                      }
-                      autoComplete={sensitive ? "new-password" : "off"}
+                        placeholder={
+                          sensitive
+                            ? fieldRequired
+                              ? "(required)"
+                              : "(optional)"
+                            : field.default_value
+                        }
+                        autoComplete={sensitive ? "new-password" : "off"}
                       // ``required`` here is for accessibility hints
                       // only; the actual sensitive-empty check lives
                       // in handleSubmit so we can show a proper inline
                       // message instead of the browser's tooltip.
-                      required={sensitive}
-                      aria-describedby={describedBy}
-                      aria-invalid={errId != null ? "true" : undefined}
-                      style={inputStyle}
-                    />
+                        required={fieldRequired}
+                        aria-describedby={describedBy}
+                        aria-invalid={errId != null ? "true" : undefined}
+                        style={inputStyle}
+                      />
+                    )}
                   </label>
                   {validationErrors[field.key] && (
                     <small

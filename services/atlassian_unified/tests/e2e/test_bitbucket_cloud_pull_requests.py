@@ -56,6 +56,7 @@ _REQUIRED_ENV = (
 
 _CREDENTIAL_ENV_SETS = (
     ("BITBUCKET_CLOUD_ACCESS_TOKEN",),
+    ("BITBUCKET_API_TOKEN", "BITBUCKET_USERNAME"),
     ("BITBUCKET_APP_PASSWORD", "BITBUCKET_USERNAME"),
 )
 
@@ -80,7 +81,7 @@ def _require_env() -> dict[str, str]:
     if not has_creds:
         missing.append(
             "BITBUCKET_CLOUD_ACCESS_TOKEN or "
-            "(BITBUCKET_APP_PASSWORD + BITBUCKET_USERNAME)"
+            "(BITBUCKET_API_TOKEN/BITBUCKET_APP_PASSWORD + BITBUCKET_USERNAME)"
         )
 
     if missing:
@@ -96,6 +97,7 @@ def _require_env() -> dict[str, str]:
     # Propagate credentials
     for key in (
         "BITBUCKET_CLOUD_ACCESS_TOKEN",
+        "BITBUCKET_API_TOKEN",
         "BITBUCKET_APP_PASSWORD",
         "BITBUCKET_USERNAME",
     ):

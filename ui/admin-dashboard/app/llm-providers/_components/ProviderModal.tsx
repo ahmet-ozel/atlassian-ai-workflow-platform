@@ -5,10 +5,9 @@
  *
  * Visible fields depend on `provider_type`:
  *
- * - **vllm**:      base_url (required), api_key (optional)
+ * - **vllm**:      base_url (required), api_key (required)
  * - **openai**:    api_key (required), org_id (optional), base_url (optional)
  * - **anthropic**: api_key (required)
- * - **gemini**:    api_key (required)
  *
  * Edit mode keeps the `api_key` input empty and shows a helper line
  * with the masked existing value; on submit, an empty input means
@@ -21,7 +20,7 @@
  * (without saving) and renders the result through `<TestResultBadge>`.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import TestResultBadge from "./TestResultBadge";
 import { useProviderApi, ApiError } from "./useProviderApi";
@@ -60,6 +59,9 @@ const EMPTY_FORM: FormState = {
   org_id: "",
 };
 
+const TEST_REQUIRED_MESSAGE =
+  "Kaydetmeden once Test Connection basarili olmali.";
+
 export default function ProviderModal({
   initial,
   onClose,
@@ -87,15 +89,36 @@ export default function ProviderModal({
     useState<ConnectionTestResult | null>(null);
   const [testing, setTesting] = useState(false);
 
+  const currentTestSignature = useMemo(() => buildTestSignature(form), [form]);
+  const [successfulTestSignature, setSuccessfulTestSignature] =
+    useState<string | null>(null);
+
   useEffect(() => {
     setTestResult(null);
+    setSuccessfulTestSignature(null);
     setError(null);
-  }, [form.provider_type]);
+  }, [currentTestSignature]);
 
-  const showApiKey = form.provider_type !== "vllm" || isEdit || true;
+  const showApiKey = true;
   const showBaseUrl =
     form.provider_type === "vllm" || form.provider_type === "openai";
   const showOrgId = form.provider_type === "openai";
+  const connectivityChanged =
+    !initial ||
+    form.model.trim() !== initial.model ||
+    (showBaseUrl && form.base_url.trim() !== (initial.base_url ?? "")) ||
+    Boolean(form.api_key.trim());
+  const requiresFreshTest = !isEdit || connectivityChanged;
+  const formError = validateForm(form, {
+    isEdit,
+    forTest: false,
+    connectivityChanged,
+  });
+  const saveBlockedReason =
+    formError ??
+    (requiresFreshTest && successfulTestSignature !== currentTestSignature
+      ? TEST_REQUIRED_MESSAGE
+      : null);
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -146,6 +169,10 @@ export default function ProviderModal({
 
   const submit = async () => {
     setError(null);
+    if (saveBlockedReason) {
+      setError(saveBlockedReason);
+      return;
+    }
     setSubmitting(true);
     try {
       if (initial) {
@@ -164,10 +191,29 @@ export default function ProviderModal({
 
   const runTest = async () => {
     setError(null);
+    const validationMessage = validateForm(form, {
+      isEdit,
+      forTest: true,
+      connectivityChanged,
+    });
+    if (validationMessage) {
+      setError(validationMessage);
+      return;
+    }
     setTesting(true);
     try {
       const result = await api.testUnsaved(buildCreatePayload());
       setTestResult(result);
+      if (result.success) {
+        setSuccessfulTestSignature(currentTestSignature);
+      } else {
+        setSuccessfulTestSignature(null);
+        setError(
+          `Model cevap vermiyor veya credential reddedildi: ${
+            result.error?.message ?? "bilinmeyen hata"
+          }`,
+        );
+      }
     } catch (exc) {
       setError(formatError(exc));
     } finally {
@@ -212,7 +258,6 @@ export default function ProviderModal({
               <option value="vllm">vLLM (self-hosted)</option>
               <option value="openai">OpenAI</option>
               <option value="anthropic">Anthropic</option>
-              <option value="gemini">Google Gemini</option>
             </select>
           </label>
 
@@ -259,7 +304,7 @@ export default function ProviderModal({
                 value={form.base_url}
                 placeholder={
                   form.provider_type === "vllm"
-                    ? "http://vllm:8000"
+                    ? "http://vllm:8000/v1"
                     : "https://api.openai.com (default)"
                 }
                 onChange={(e) => set("base_url", e.target.value)}
@@ -322,6 +367,12 @@ export default function ProviderModal({
           {testResult ? <TestResultBadge result={testResult} /> : null}
         </div>
 
+        {saveBlockedReason ? (
+          <p className="mt-2 text-xs text-gray-500">
+            {saveBlockedReason}
+          </p>
+        ) : null}
+
         {error ? (
           <p
             className="mt-3 rounded bg-red-50 px-3 py-2 text-sm text-red-700"
@@ -347,7 +398,7 @@ export default function ProviderModal({
               "hover:bg-blue-700 disabled:opacity-50"
             }
             onClick={submit}
-            disabled={submitting}
+            disabled={submitting || Boolean(saveBlockedReason)}
             data-testid="llm-provider-save-button"
           >
             {submitting ? "Saving…" : "Save"}
@@ -356,6 +407,55 @@ export default function ProviderModal({
       </div>
     </div>
   );
+}
+
+function buildTestSignature(form: FormState): string {
+  return JSON.stringify({
+    provider_type: form.provider_type,
+    model: form.model.trim(),
+    base_url: form.base_url.trim(),
+    api_key: form.api_key.trim(),
+    org_id: form.org_id.trim(),
+  });
+}
+
+function validateForm(
+  form: FormState,
+  options: {
+    isEdit: boolean;
+    forTest: boolean;
+    connectivityChanged: boolean;
+  },
+): string | null {
+  if (!form.name.trim()) return "Provider adi zorunlu.";
+  if (!form.model.trim()) return "Model name zorunlu.";
+  const contextLength = Number.parseInt(form.context_length, 10);
+  if (!Number.isFinite(contextLength) || contextLength <= 0) {
+    return "Context length pozitif bir sayi olmali.";
+  }
+  if (form.provider_type === "vllm" && !form.base_url.trim()) {
+    return "vLLM icin Base URL zorunlu.";
+  }
+  const keyRequired =
+    !options.isEdit || options.forTest || options.connectivityChanged;
+  if (keyRequired && !form.api_key.trim()) {
+    if (options.isEdit && options.forTest) {
+      return (
+        "Kayitli anahtar UI'ya geri gosterilmez; test etmek icin API key'i " +
+        "tekrar girin veya satirdaki Test aksiyonunu kullanin."
+      );
+    }
+    if (form.provider_type === "vllm") {
+      return "vLLM icin API key zorunlu.";
+    }
+    if (form.provider_type === "openai") {
+      return "OpenAI icin API key zorunlu.";
+    }
+    if (form.provider_type === "anthropic") {
+      return "Anthropic icin API key zorunlu.";
+    }
+  }
+  return null;
 }
 
 function formatError(exc: unknown): string {

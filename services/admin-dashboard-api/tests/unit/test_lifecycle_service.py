@@ -961,6 +961,134 @@ def test_start_empty_sensitive_value_raises(tmp_path: Path) -> None:
     assert compose.up_calls == []
 
 
+def test_start_llm_openai_does_not_require_other_provider_tokens(
+    tmp_path: Path,
+) -> None:
+    workspace = _build_workspace(tmp_path)
+    streamlit_dir = workspace / "ui" / "streamlit-app"
+    streamlit_dir.mkdir(parents=True)
+    (streamlit_dir / ".env").write_text(
+        "\n".join(
+            [
+                "PORT=8501",
+                "LLM_PROVIDER=openai",
+                "LLM_MODEL_NAME=gpt-4o-mini",
+                "OPENAI_API_KEY=",
+                "OPENAI_BASE_URL=https://api.openai.com/v1",
+                "VLLM_BASE_URL=http://host.docker.internal:8000/v1",
+                "VLLM_API_KEY=",
+                "ANTHROPIC_API_KEY=",
+                "ANTHROPIC_BASE_URL=https://api.anthropic.com/v1",
+                "CLIENT_SOURCE=streamlit-app",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    streamlit_entry = ManagedServiceEntry(
+        name="streamlit-ui",
+        kind="ui",
+        compose_service_name="streamlit-ui",
+        compose_profile="streamlit-ui",
+        env_example_path="ui/streamlit-app/.env",
+        health_endpoint="/_stcore/health",
+        test_command=None,
+    )
+    svc, _, vault, compose, _ = _make_service(
+        workspace_root=workspace,
+        manifest=_entries() + (streamlit_entry,),
+    )
+
+    env_overrides = {
+        "PORT": "8501",
+        "LLM_PROVIDER": "openai",
+        "LLM_MODEL_NAME": "gpt-4o-mini",
+        "OPENAI_API_KEY": "openai-secret",
+        "OPENAI_BASE_URL": "https://api.openai.com/v1",
+        "VLLM_BASE_URL": "http://host.docker.internal:8000/v1",
+        "VLLM_API_KEY": "",
+        "ANTHROPIC_API_KEY": "",
+        "ANTHROPIC_BASE_URL": "https://api.anthropic.com/v1",
+        "CLIENT_SOURCE": "streamlit-app",
+    }
+
+    async def run() -> StartResponse:
+        return await svc.start(
+            name="streamlit-ui",
+            env_overrides=env_overrides,
+            actor="ops",
+        )
+
+    response = asyncio.run(run())
+
+    assert response.state == "running"
+    assert compose.up_calls[-1]["service_name"] == "streamlit-ui"
+    assert vault.stored["streamlit-ui"]["OPENAI_API_KEY"] == "openai-secret"
+    assert vault.stored["streamlit-ui"]["VLLM_API_KEY"] == ""
+    assert vault.stored["streamlit-ui"]["ANTHROPIC_API_KEY"] == ""
+
+
+def test_start_llm_vllm_requires_vllm_api_key(tmp_path: Path) -> None:
+    workspace = _build_workspace(tmp_path)
+    streamlit_dir = workspace / "ui" / "streamlit-app"
+    streamlit_dir.mkdir(parents=True)
+    (streamlit_dir / ".env").write_text(
+        "\n".join(
+            [
+                "PORT=8501",
+                "LLM_PROVIDER=vllm",
+                "LLM_MODEL_NAME=qwen2.5-coder",
+                "OPENAI_API_KEY=",
+                "OPENAI_BASE_URL=https://api.openai.com/v1",
+                "VLLM_BASE_URL=http://host.docker.internal:8000/v1",
+                "VLLM_API_KEY=",
+                "ANTHROPIC_API_KEY=",
+                "ANTHROPIC_BASE_URL=https://api.anthropic.com/v1",
+                "CLIENT_SOURCE=streamlit-app",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    streamlit_entry = ManagedServiceEntry(
+        name="streamlit-ui",
+        kind="ui",
+        compose_service_name="streamlit-ui",
+        compose_profile="streamlit-ui",
+        env_example_path="ui/streamlit-app/.env",
+        health_endpoint="/_stcore/health",
+        test_command=None,
+    )
+    svc, _, vault, compose, _ = _make_service(
+        workspace_root=workspace,
+        manifest=_entries() + (streamlit_entry,),
+    )
+
+    async def run() -> StartResponse:
+        return await svc.start(
+            name="streamlit-ui",
+            env_overrides={
+                "PORT": "8501",
+                "LLM_PROVIDER": "vllm",
+                "LLM_MODEL_NAME": "qwen2.5-coder",
+                "OPENAI_API_KEY": "",
+                "OPENAI_BASE_URL": "https://api.openai.com/v1",
+                "VLLM_BASE_URL": "http://host.docker.internal:8000/v1",
+                "VLLM_API_KEY": "",
+                "ANTHROPIC_API_KEY": "",
+                "ANTHROPIC_BASE_URL": "https://api.anthropic.com/v1",
+                "CLIENT_SOURCE": "streamlit-app",
+            },
+            actor="ops",
+        )
+
+    with pytest.raises(FormSchemaMismatchError, match="VLLM_API_KEY"):
+        asyncio.run(run())
+
+    assert vault.writes == []
+    assert compose.up_calls == []
+
+
 # ---------------------------------------------------------------------------
 # start — audit precheck failure (Requirement 11.6)
 # ---------------------------------------------------------------------------

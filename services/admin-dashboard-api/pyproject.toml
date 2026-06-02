@@ -72,11 +72,12 @@ dependencies = [
     # Live capability probes use Paramiko for SSH authentication and
     # Docker-on-SSH checks from the admin dashboard.
     "paramiko>=3.4,<4",
+    # Runtime ASGI server used by the Docker CMD.
+    "uvicorn[standard]",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "uvicorn[standard]",
     "pytest",
     "hypothesis",
 ]

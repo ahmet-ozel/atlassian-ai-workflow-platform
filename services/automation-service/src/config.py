@@ -36,6 +36,9 @@ class Settings(BaseSettings):
     # LLM block (real provider by default; see Requirement 10.4)
     llm_provider: str = "openai"
     vllm_base_url: str = "http://host.docker.internal:8000/v1"
+    vllm_api_key: str = ""
+    openai_base_url: str = "https://api.openai.com/v1"
+    anthropic_base_url: str = "https://api.anthropic.com/v1"
     llm_model_name: str = "gpt-4o-mini"
     openai_api_key: str = ""
     anthropic_api_key: str = ""

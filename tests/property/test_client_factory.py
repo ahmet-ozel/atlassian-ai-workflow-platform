@@ -239,6 +239,7 @@ def _make_env_for_provider(provider_key: str) -> dict[str, str]:
     env: dict[str, str] = {"LLM_PROVIDER": provider_key}
     if provider_key == "vllm":
         env["VLLM_BASE_URL"] = "http://localhost:8000/v1"
+        env["VLLM_API_KEY"] = "not-needed"
     elif provider_key == "openai":
         env["OPENAI_API_KEY"] = "sk-test-key-for-property-test"
     elif provider_key == "anthropic":

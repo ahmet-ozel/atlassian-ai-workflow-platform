@@ -126,6 +126,44 @@ DEFAULT_HEALTH_FAIL_STREAK_THRESHOLD: int = 3
 #: legitimate-but-too-deep designs.
 MAX_DEPENDENCY_DEPTH: int = 3
 
+LLM_PROVIDER_KEY = "LLM_PROVIDER"
+LLM_PROVIDER_DEFAULT = "openai"
+LLM_PROVIDERS = {"openai", "vllm", "anthropic"}
+LLM_SECRET_KEYS = {"OPENAI_API_KEY", "ANTHROPIC_API_KEY", "VLLM_API_KEY"}
+
+
+def _normalise_llm_provider(value: str | None, fallback: str = LLM_PROVIDER_DEFAULT) -> str:
+    provider = (value or "").strip().lower()
+    return provider if provider else fallback
+
+
+def _llm_provider_for_schema(
+    fields: Sequence[EnvField],
+    env_overrides: Mapping[str, str],
+) -> str | None:
+    defaults = {field.key: field.default_value for field in fields}
+    if LLM_PROVIDER_KEY not in defaults:
+        return None
+    fallback = _normalise_llm_provider(defaults.get(LLM_PROVIDER_KEY))
+    provider = _normalise_llm_provider(env_overrides.get(LLM_PROVIDER_KEY), fallback)
+    if provider not in LLM_PROVIDERS:
+        raise FormSchemaMismatchError(
+            f"{LLM_PROVIDER_KEY} must be one of {sorted(LLM_PROVIDERS)}, got {provider!r}"
+        )
+    return provider
+
+
+def _llm_secret_can_be_empty(key: str, provider: str | None) -> bool:
+    if provider is None or key not in LLM_SECRET_KEYS:
+        return False
+    if key == "OPENAI_API_KEY":
+        return provider != "openai"
+    if key == "ANTHROPIC_API_KEY":
+        return provider != "anthropic"
+    if key == "VLLM_API_KEY":
+        return provider != "vllm"
+    return False
+
 #: Polling cadence used by :meth:`LifecycleService.start` while it
 #: waits for the service's ``/healthz`` to become healthy. Kept short
 #: so unit tests with patched timeouts terminate quickly.
@@ -1937,6 +1975,7 @@ class LifecycleService:
         fields = self._load_env_fields(entry)
         schema_keys = {f.key for f in fields}
         submitted_keys = set(env_overrides.keys())
+        llm_provider = _llm_provider_for_schema(fields, env_overrides)
 
         if schema_keys != submitted_keys:
             missing = sorted(schema_keys - submitted_keys)
@@ -1956,6 +1995,8 @@ class LifecycleService:
                 continue
             value = env_overrides.get(f.key, "")
             if value == "":
+                if _llm_secret_can_be_empty(f.key, llm_provider):
+                    continue
                 raise FormSchemaMismatchError(
                     f"sensitive value required for key {f.key!r} of "
                     f"service {entry.name!r}"

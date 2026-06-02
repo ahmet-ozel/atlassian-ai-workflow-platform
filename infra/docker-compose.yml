@@ -354,8 +354,33 @@ services:
         cat > /tmp/workspace/.opencode/opencode.json <<'JSON'
         {
           "$$schema": "https://opencode.ai/config.json",
-          "model": "vllm/{env:LLM_MODEL_NAME}",
+          "model": "{env:LLM_PROVIDER}/{env:LLM_MODEL_NAME}",
           "provider": {
+            "openai": {
+              "name": "OpenAI",
+              "options": {
+                "baseURL": "{env:OPENAI_BASE_URL}",
+                "apiKey": "{env:OPENAI_API_KEY}"
+              },
+              "models": {
+                "gpt-4o-mini": {
+                  "name": "GPT-4o mini"
+                }
+              }
+            },
+            "anthropic": {
+              "npm": "@ai-sdk/anthropic",
+              "name": "Anthropic",
+              "options": {
+                "baseURL": "{env:ANTHROPIC_BASE_URL}",
+                "apiKey": "{env:ANTHROPIC_API_KEY}"
+              },
+              "models": {
+                "claude-sonnet-4-20250514": {
+                  "name": "Claude Sonnet 4"
+                }
+              }
+            },
             "vllm": {
               "npm": "@ai-sdk/openai-compatible",
               "name": "vLLM",
@@ -374,13 +399,18 @@ services:
         JSON
         exec opencode serve --port 4096 --hostname 0.0.0.0
     env_file:
-      - path: ../workers/agent-runner-worker/.env
+      - path: ../services/opencode-sidecar/.env
         required: false
     environment:
       OPENCODE_CONFIG: /tmp/workspace/.opencode/opencode.json
+      LLM_PROVIDER: ${LLM_PROVIDER:-vllm}
       LLM_MODEL_NAME: ${LLM_MODEL_NAME:-qwen2.5-coder}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       VLLM_BASE_URL: ${VLLM_BASE_URL:-http://host.docker.internal:8000/v1}
       VLLM_API_KEY: ${VLLM_API_KEY:-not-needed}
+      ANTHROPIC_BASE_URL: ${ANTHROPIC_BASE_URL:-https://api.anthropic.com/v1}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
     expose:
       - "4096"
     volumes:
@@ -426,6 +456,14 @@ services:
       # requires a live IdP; the e2e stack has no IdP container, so we
       # flip to the dev-mode bypass that accepts any non-empty token.
       AUTH_PROVIDER: ${AUTH_PROVIDER:-local}
+      LLM_PROVIDER: ${LLM_PROVIDER:-openai}
+      LLM_MODEL_NAME: ${LLM_MODEL_NAME:-gpt-4o-mini}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      VLLM_BASE_URL: ${VLLM_BASE_URL:-http://host.docker.internal:8000/v1}
+      VLLM_API_KEY: ${VLLM_API_KEY:-}
+      ANTHROPIC_BASE_URL: ${ANTHROPIC_BASE_URL:-https://api.anthropic.com/v1}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -485,8 +523,11 @@ services:
       VAULT_TOKEN: ${VAULT_TOKEN:-dev-token-not-for-prod}
       LLM_PROVIDER: ${LLM_PROVIDER:-openai}
       LLM_MODEL_NAME: ${LLM_MODEL_NAME:-gpt-4o-mini}
-      VLLM_BASE_URL: ${VLLM_BASE_URL:-http://host.docker.internal:8000/v1}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      VLLM_BASE_URL: ${VLLM_BASE_URL:-http://host.docker.internal:8000/v1}
+      VLLM_API_KEY: ${VLLM_API_KEY:-}
+      ANTHROPIC_BASE_URL: ${ANTHROPIC_BASE_URL:-https://api.anthropic.com/v1}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
     depends_on:
       postgres:
@@ -565,6 +606,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       # DEV-ONLY: the in-container Docker CLI needs the compose file
       # and the relative paths used by infra/docker-compose.yml.
+      - ../.env:/app/.env:ro
       - .:/app/infra:ro
       - ../services:/app/services:ro
       - ../ui:/app/ui:ro
@@ -678,6 +720,8 @@ services:
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
       VLLM_BASE_URL: ${VLLM_BASE_URL:-http://host.docker.internal:8000/v1}
       VLLM_API_KEY: ${VLLM_API_KEY:-}
+      ANTHROPIC_BASE_URL: ${ANTHROPIC_BASE_URL:-https://api.anthropic.com/v1}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
     ports:
       - "${STREAMLIT_HOST_PORT:-18501}:8501"
     volumes:
@@ -766,14 +810,17 @@ services:
       VAULT_TOKEN: ${VAULT_TOKEN:-}
       LLM_PROVIDER: ${LLM_PROVIDER:-openai}
       LLM_MODEL_NAME: ${LLM_MODEL_NAME:-gpt-4o-mini}
-      VLLM_BASE_URL: ${VLLM_BASE_URL:-http://host.docker.internal:8000/v1}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      VLLM_BASE_URL: ${VLLM_BASE_URL:-http://host.docker.internal:8000/v1}
+      VLLM_API_KEY: ${VLLM_API_KEY:-}
+      ANTHROPIC_BASE_URL: ${ANTHROPIC_BASE_URL:-https://api.anthropic.com/v1}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio:9000}
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-miniosecret_dev_only}
       OPENCODE_ENDPOINT: ${OPENCODE_ENDPOINT:-http://opencode-sidecar:4096}
-      OPENCODE_MODEL: ${OPENCODE_MODEL:-openai/gpt-4o-mini}
+      OPENCODE_MODEL: ${OPENCODE_MODEL:-}
       FEATURE_FLAG_AI_ENABLED: ${FEATURE_FLAG_AI_ENABLED:-true}
       FEATURE_FLAG_FIRECRAWL_ENABLED: ${FEATURE_FLAG_FIRECRAWL_ENABLED:-false}
     depends_on:
@@ -892,6 +939,14 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-miniosecret_dev_only}
       MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
       MINIO_REGION: ${MINIO_REGION:-us-east-1}
+      LLM_PROVIDER: ${LLM_PROVIDER:-openai}
+      LLM_MODEL_NAME: ${LLM_MODEL_NAME:-gpt-4o-mini}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      VLLM_BASE_URL: ${VLLM_BASE_URL:-http://host.docker.internal:8000/v1}
+      VLLM_API_KEY: ${VLLM_API_KEY:-}
+      ANTHROPIC_BASE_URL: ${ANTHROPIC_BASE_URL:-https://api.anthropic.com/v1}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       RETENTION_DAYS: ${RETENTION_DAYS:-90}
       SLACK_ADMIN_WEBHOOK: ${SLACK_ADMIN_WEBHOOK:-}
     depends_on:

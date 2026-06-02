@@ -253,6 +253,24 @@ class TestGetAvailableServices:
             assert set(result.keys()) == {"confluence", "jira", "bitbucket"}
             assert all(isinstance(v, bool) for v in result.values())
 
+    def test_bitbucket_cloud_api_token_detected(self):
+        """Bitbucket Cloud accepts username + BITBUCKET_API_TOKEN."""
+        with MockEnvironment.clean_env():
+            import os
+
+            os.environ["BITBUCKET_URL"] = "https://bitbucket.org"
+            os.environ["BITBUCKET_USERNAME"] = "user@example.com"
+            os.environ["BITBUCKET_API_TOKEN"] = "bb-api-token"
+
+            result = get_available_services()
+
+            _assert_service_availability(
+                result,
+                confluence_expected=False,
+                jira_expected=False,
+                bitbucket_expected=True,
+            )
+
     @pytest.mark.parametrize(
         "invalid_vars",
         [
@@ -294,7 +312,7 @@ class TestGetAvailableServicesWithHeaders:
                 result, confluence_expected=False, jira_expected=True
             )
             assert_log_contains(
-                caplog, "INFO", "Using Jira authentication from header personal token"
+                caplog, "INFO", "Using Jira authentication from request headers"
             )
 
     def test_header_based_confluence_authentication(self, caplog):
@@ -313,7 +331,7 @@ class TestGetAvailableServicesWithHeaders:
             assert_log_contains(
                 caplog,
                 "INFO",
-                "Using Confluence authentication from header personal token",
+                "Using Confluence authentication from request headers",
             )
 
     def test_header_based_both_services_authentication(self, caplog):
@@ -332,12 +350,12 @@ class TestGetAvailableServicesWithHeaders:
                 result, confluence_expected=True, jira_expected=True
             )
             assert_log_contains(
-                caplog, "INFO", "Using Jira authentication from header personal token"
+                caplog, "INFO", "Using Jira authentication from request headers"
             )
             assert_log_contains(
                 caplog,
                 "INFO",
-                "Using Confluence authentication from header personal token",
+                "Using Confluence authentication from request headers",
             )
 
     def test_header_auth_missing_url(self, caplog):

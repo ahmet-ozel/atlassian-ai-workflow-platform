@@ -264,9 +264,11 @@ class HealthProbe:
         http_client: httpx.AsyncClient,
         temporal_host: str,
         compose_internal_ports: Mapping[str, int] | None = None,
+        prefer_docker_health: bool = False,
     ) -> None:
         self._http_client = http_client
         self._temporal_host = temporal_host
+        self._prefer_docker_health = prefer_docker_health
         # Defensive copy → the snapshot of ports the probe sees stays
         # stable for the lifetime of the instance, even if the caller
         # mutates the original map after construction.
@@ -385,6 +387,19 @@ class HealthProbe:
     ) -> tuple[bool, str]:
         """Return whether Docker has a running container for a Compose service."""
 
+        names, body = await self._compose_service_running_container_names(
+            compose_service_name
+        )
+        if not names:
+            return False, body
+        return True, "running container(s): " + ", ".join(names[:3])
+
+    async def _compose_service_running_container_names(
+        self,
+        compose_service_name: str,
+    ) -> tuple[list[str], str]:
+        """Return running Docker container names for a Compose service."""
+
         cmd = (
             "docker",
             "ps",
@@ -442,11 +457,11 @@ class HealthProbe:
             if line.strip()
         ]
         if not names:
-            return False, (
+            return [], (
                 "no running Docker container found for Compose service "
                 f"{compose_service_name!r}"
             )
-        return True, "running container(s): " + ", ".join(names[:3])
+        return names, "running container(s): " + ", ".join(names[:3])
 
     # ------------------------------------------------------------------
     # Assume-running probe — docker inspect (R12 / Q14)
@@ -604,6 +619,39 @@ class HealthProbe:
 
         return status, f"docker healthcheck status: {status}"
 
+    async def _docker_inspect_compose_service_health_status(
+        self, compose_service_name: str
+    ) -> tuple[str, str]:
+        """Return Docker health status for the running container of a service."""
+
+        names, body = await self._compose_service_running_container_names(
+            compose_service_name
+        )
+        if not names:
+            return "", body
+        return await self._docker_inspect_health_status(names[0])
+
+    async def _probe_docker_health(
+        self, entry: ManagedServiceEntry
+    ) -> HealthSnapshot | None:
+        """Prefer Docker's native healthcheck when a running container has one."""
+
+        status, body = await self._docker_inspect_compose_service_health_status(
+            entry.compose_service_name
+        )
+        if status not in _DOCKER_HEALTH_STATUS_MAP:
+            return None
+
+        state = _DOCKER_HEALTH_STATUS_MAP[status]
+        return HealthSnapshot(
+            ts=_utcnow(),
+            healthz_status=200 if state == "healthy" else -1,
+            healthz_body=_truncate_body(body),
+            readyz_status=None,
+            readyz_body=None,
+            state=state,
+        )
+
     # ------------------------------------------------------------------
     # HTTP probe (Requirement 7.6, 4.7)
     # ------------------------------------------------------------------
@@ -623,6 +671,11 @@ class HealthProbe:
         """
 
         assert entry.health_endpoint is not None  # narrowed by ``probe``
+
+        if self._prefer_docker_health:
+            docker_snapshot = await self._probe_docker_health(entry)
+            if docker_snapshot is not None:
+                return docker_snapshot
 
         port = _resolve_port(entry.compose_service_name, self._compose_internal_ports)
         base_url = f"http://{entry.compose_service_name}:{port}"

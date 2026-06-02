@@ -56,8 +56,8 @@ export default function ProviderTable({
               className="px-3 py-6 text-center text-gray-400"
               data-testid="llm-provider-empty"
             >
-              No providers configured yet — click <em>Add Provider</em>{" "}
-              to create one.
+              Henuz provider yok. Yeni kayit icin <em>Provider ekle</em>{" "}
+              butonunu kullanin.
             </td>
           </tr>
         ) : (

@@ -45,8 +45,6 @@ WORKDIR /app
 
 COPY --from=builder /install /usr/local
 
-RUN pip install --no-cache-dir "uvicorn[standard]"
-
 COPY services/admin-dashboard-api/src/ ./src/
 
 USER appuser

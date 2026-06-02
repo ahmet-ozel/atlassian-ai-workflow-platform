@@ -146,6 +146,8 @@ class VLLMProvider:
             self.base_url = os.environ.get(
                 "VLLM_BASE_URL", "http://host.docker.internal:8000/v1"
             )
+        if not self.api_key:
+            self.api_key = os.environ.get("VLLM_API_KEY", "not-needed")
 
     def complete(self, prompt: str) -> str:
         """Synchronous completion via vLLM (OpenAI-compatible endpoint).
@@ -451,6 +453,9 @@ class LLMProviderFactory:
             base_url = source.get("VLLM_BASE_URL", "")
             if base_url:
                 kwargs["base_url"] = base_url
+            api_key = source.get("VLLM_API_KEY", "")
+            if api_key:
+                kwargs["api_key"] = api_key
         elif provider_cls is OpenAIProvider:
             api_key = source.get("OPENAI_API_KEY", "")
             if api_key:
@@ -542,8 +547,12 @@ class LLMProviderFactory:
                 if "base_url" in primary_cfg:
                     override_env["VLLM_BASE_URL"] = primary_cfg["base_url"]
                 if "api_key" in primary_cfg:
-                    override_env["OPENAI_API_KEY"] = primary_cfg["api_key"]
-                    override_env["ANTHROPIC_API_KEY"] = primary_cfg["api_key"]
+                    if provider_key == "vllm":
+                        override_env["VLLM_API_KEY"] = primary_cfg["api_key"]
+                    elif provider_key == "openai":
+                        override_env["OPENAI_API_KEY"] = primary_cfg["api_key"]
+                    elif provider_key == "anthropic":
+                        override_env["ANTHROPIC_API_KEY"] = primary_cfg["api_key"]
                 if "model" in primary_cfg:
                     override_env["LLM_MODEL_NAME"] = primary_cfg["model"]
                 primary = cls.from_env(override_env)

@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from urllib.parse import quote
 
 import pytest
 
@@ -25,10 +26,15 @@ if str(_STREAMLIT_ROOT) not in sys.path:
 
 
 try:  # pragma: no cover — guarded import (Streamlit may be missing).
+    import components.credential_manager as credential_manager  # type: ignore[import-not-found]
+    from components.cookie_manager import sign_cookie  # type: ignore[import-not-found]
     from components.credential_manager import (  # type: ignore[import-not-found]
         CREDENTIAL_WARNING_TEXT,
         CredentialManager,
         StoredCredential,
+        _RESTORE_COOKIE_NAME,
+        _default_validator,
+        _restore_cookie_key,
     )
 except ModuleNotFoundError as exc:  # pragma: no cover
     CredentialManager = None  # type: ignore[assignment]
@@ -253,6 +259,108 @@ def test_validate_returns_friendly_error_when_no_credential() -> None:
 # ---------------------------------------------------------------------------
 
 
+def test_default_bitbucket_validator_probes_cloud_user(monkeypatch) -> None:
+    calls: list[dict[str, object]] = []
+
+    class _Response:
+        status_code = 401
+
+    class _Client:
+        def __init__(self, *, timeout: float) -> None:
+            self.timeout = timeout
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc) -> None:
+            return None
+
+        def get(self, url: str, *, headers: dict[str, str]) -> _Response:
+            calls.append({"url": url, "headers": headers})
+            return _Response()
+
+    class _HTTPX:
+        RequestError = OSError
+        Client = _Client
+
+    monkeypatch.setitem(sys.modules, "httpx", _HTTPX)
+    mgr, _, _ = _make_manager(validator=_default_validator)
+    mgr.store("bitbucket", email="user@example.com", api_token="bad-token")
+
+    ok, err = mgr.validate("bitbucket")
+
+    assert ok is False
+    assert "HTTP 401" in (err or "")
+    assert "Streamlit'e girilen username/token" in (err or "")
+    assert calls[0]["url"] == "https://api.bitbucket.org/2.0/user"
+    assert str(calls[0]["headers"]["Authorization"]).startswith("Basic ")
+    cred = mgr.get("bitbucket")
+    assert cred is not None
+    assert cred.is_valid is False
+
+
+def test_default_bitbucket_validator_probes_workspace_scope(monkeypatch) -> None:
+    calls: list[dict[str, object]] = []
+
+    class _Response:
+        status_code = 200
+
+    class _Client:
+        def __init__(self, *, timeout: float) -> None:
+            self.timeout = timeout
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc) -> None:
+            return None
+
+        def get(self, url: str, *, headers: dict[str, str]) -> _Response:
+            calls.append({"url": url, "headers": headers})
+            return _Response()
+
+    class _HTTPX:
+        RequestError = OSError
+        Client = _Client
+
+    monkeypatch.setitem(sys.modules, "httpx", _HTTPX)
+    mgr, _, _ = _make_manager(validator=_default_validator)
+    mgr.store(
+        "bitbucket",
+        email="user@example.com",
+        api_token="ok-token",
+        workspace="example_workspace",
+    )
+
+    ok, err = mgr.validate("bitbucket")
+
+    assert ok is True
+    assert err is None
+    assert calls[0]["url"] == (
+        "https://api.bitbucket.org/2.0/repositories/example_workspace?pagelen=1"
+    )
+    assert str(calls[0]["headers"]["Authorization"]).startswith("Basic ")
+    cred = mgr.get("bitbucket")
+    assert cred is not None
+    assert cred.is_valid is True
+
+
+def test_restore_cookie_key_decodes_url_encoded_cookie_header(monkeypatch) -> None:
+    secret = "restore-test-secret"
+    monkeypatch.setenv("COOKIE_SECRET", secret)
+    signed = sign_cookie("restore-key", secret)
+
+    class _Context:
+        cookies = None
+        headers = {"Cookie": f"{_RESTORE_COOKIE_NAME}={quote(signed)}"}
+
+    monkeypatch.setattr(credential_manager.st, "query_params", {}, raising=False)
+    monkeypatch.setattr(credential_manager.st, "context", _Context(), raising=False)
+    monkeypatch.setattr(credential_manager.st, "session_state", {}, raising=False)
+
+    assert _restore_cookie_key() == "restore-key"
+
+
 def test_get_auth_header_returns_basic_base64_value() -> None:
     """R13.5 — the manager builds a Basic auth header on the fly."""
     import base64
@@ -305,11 +413,21 @@ def test_get_active_services_preserves_canonical_order() -> None:
     assert mgr.get_active_services() == ["jira", "bitbucket"]
 
 
-def test_bitbucket_cloud_requires_workspace() -> None:
+def test_bitbucket_cloud_allows_optional_workspace() -> None:
     mgr, _, _ = _make_manager()
 
-    with pytest.raises(ValueError, match="workspace"):
-        mgr.store("bitbucket", email="a@b.com", api_token="t")
+    cred = mgr.store("bitbucket", email="bitbucket-user", api_token="t")
+
+    assert cred.deployment == "cloud"
+    assert cred.email == "bitbucket-user"
+    assert cred.workspace == ""
+
+
+def test_bitbucket_cloud_requires_username() -> None:
+    mgr, _, _ = _make_manager()
+
+    with pytest.raises(ValueError, match="BITBUCKET_USERNAME"):
+        mgr.store("bitbucket", email="", api_token="t")
 
 
 def test_bitbucket_server_allows_optional_project_key() -> None:

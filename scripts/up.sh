@@ -59,6 +59,12 @@ COMPOSE="${COMPOSE:-docker compose}"
 COMPOSE_BASE="$PLATFORM_DIR/infra/docker-compose.yml"
 COMPOSE_DEV="$PLATFORM_DIR/infra/docker-compose.dev.yml"
 MANIFEST="$PLATFORM_DIR/config/services.manifest.json"
+# Root .env is the single Compose bootstrap source (see platform/.env header).
+# Because we pass the compose files by ABSOLUTE path, Compose's default `.env`
+# lookup happens in the compose-file directory (infra/), NOT platform/. Pass it
+# explicitly so root .env values (OPENAI_API_KEY, LLM_*, POSTGRES_*, …) reach
+# the containers while the computed project name stays `infra`.
+ENV_FILE="$PLATFORM_DIR/.env"
 
 if [[ ! -f "$MANIFEST" ]]; then
     echo "up.sh: manifest not found: $MANIFEST" >&2
@@ -95,9 +101,13 @@ done
 
 # Splitting $COMPOSE on whitespace is intentional so that the default
 # "docker compose" (two words) and the legacy "docker-compose" (one word)
-# both work.
+# both work. --env-file MUST precede the -f flags so the root .env resolves.
+ENV_FILE_ARGV=()
+if [[ -f "$ENV_FILE" ]]; then
+    ENV_FILE_ARGV=( --env-file "$ENV_FILE" )
+fi
 # shellcheck disable=SC2206
-COMPOSE_BOOT_ARGV=( $COMPOSE -f "$COMPOSE_BASE" -f "$COMPOSE_DEV" )
+COMPOSE_BOOT_ARGV=( $COMPOSE "${ENV_FILE_ARGV[@]}" -f "$COMPOSE_BASE" -f "$COMPOSE_DEV" )
 # shellcheck disable=SC2206
 COMPOSE_FULL_ARGV=( "${COMPOSE_BOOT_ARGV[@]}" "${PROFILE_FLAGS[@]}" )
 

@@ -250,33 +250,37 @@ class BitbucketConfig:
                 credential pair is incomplete.
         """
         username = os.getenv("BITBUCKET_USERNAME")
+        api_token = os.getenv("BITBUCKET_API_TOKEN")
         app_password = os.getenv("BITBUCKET_APP_PASSWORD")
+        cloud_basic_secret = api_token or app_password
         cloud_access_token = os.getenv("BITBUCKET_CLOUD_ACCESS_TOKEN")
 
         # Validate the Basic credential pair before picking an auth_type so
         # that an incomplete pair is rejected even when a bearer token is
         # also set — the operator has given us contradictory credentials.
         # (Requirement 3.4)
-        if app_password and not username:
+        if cloud_basic_secret and not username:
             raise ValueError(
                 "Bitbucket Cloud Basic authentication requires both "
-                "BITBUCKET_USERNAME and BITBUCKET_APP_PASSWORD. "
-                "BITBUCKET_APP_PASSWORD is set but BITBUCKET_USERNAME is unset."
+                "BITBUCKET_USERNAME and BITBUCKET_API_TOKEN or "
+                "BITBUCKET_APP_PASSWORD. A token is set but "
+                "BITBUCKET_USERNAME is unset."
             )
 
         auth_type: Literal["basic", "cloud_bearer"]
         if cloud_access_token:
             auth_type = "cloud_bearer"
-        elif username and app_password:
+        elif username and cloud_basic_secret:
             auth_type = "basic"
         else:
             # Requirement 3.3 — no usable Cloud credential pair.
             raise ValueError(
                 "Bitbucket Cloud authentication requires "
                 "BITBUCKET_CLOUD_ACCESS_TOKEN, or BITBUCKET_USERNAME and "
-                "BITBUCKET_APP_PASSWORD. "
+                "BITBUCKET_API_TOKEN or BITBUCKET_APP_PASSWORD. "
                 "Set BITBUCKET_CLOUD_ACCESS_TOKEN, or set both "
-                "BITBUCKET_USERNAME and BITBUCKET_APP_PASSWORD."
+                "BITBUCKET_USERNAME and BITBUCKET_API_TOKEN or "
+                "BITBUCKET_APP_PASSWORD."
             )
 
         # Workspace resolution: env var wins; otherwise parse the first path
@@ -293,7 +297,7 @@ class BitbucketConfig:
                     workspace = path_parts[0]
 
         # password / personal_token are never used in Cloud mode.
-        return auth_type, username, None, None, app_password, cloud_access_token, workspace
+        return auth_type, username, None, None, cloud_basic_secret, cloud_access_token, workspace
 
     def is_auth_configured(self) -> bool:
         """Check if the current authentication configuration is complete.

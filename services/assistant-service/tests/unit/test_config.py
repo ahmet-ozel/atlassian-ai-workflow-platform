@@ -3,7 +3,7 @@
 Tests the fail-fast credential validation logic:
   - openai provider requires OPENAI_API_KEY
   - anthropic provider requires ANTHROPIC_API_KEY
-  - vllm provider requires a valid VLLM_BASE_URL
+  - vllm provider requires a valid VLLM_BASE_URL and VLLM_API_KEY
   - unknown providers are rejected
   - ConfigurationError is raised for missing/invalid credentials
 """
@@ -73,6 +73,7 @@ class TestValidateProviderCredentials:
             "openai_api_key": "sk-test-key-123",
             "anthropic_api_key": "",
             "vllm_base_url": "http://host.docker.internal:8000/v1",
+            "vllm_api_key": "not-needed",
         }
         defaults.update(overrides)
         return Settings(**defaults)
@@ -135,16 +136,26 @@ class TestValidateProviderCredentials:
         with pytest.raises(ConfigurationError, match="VLLM_BASE_URL must be a valid URL"):
             settings.validate_provider_credentials()
 
+    def test_vllm_provider_missing_key_raises(self) -> None:
+        """vllm provider with empty VLLM_API_KEY raises ConfigurationError."""
+        settings = self._make_settings(llm_provider="vllm", vllm_api_key="")
+        with pytest.raises(ConfigurationError, match="VLLM_API_KEY required"):
+            settings.validate_provider_credentials()
+
     def test_vllm_provider_with_valid_url_passes(self) -> None:
         """vllm provider with a valid URL passes validation."""
         settings = self._make_settings(
-            llm_provider="vllm", vllm_base_url="http://localhost:8000/v1"
+            llm_provider="vllm",
+            vllm_base_url="http://localhost:8000/v1",
+            vllm_api_key="not-needed",
         )
         settings.validate_provider_credentials()
 
     def test_vllm_provider_https_url_passes(self) -> None:
         """vllm provider with HTTPS URL passes validation."""
         settings = self._make_settings(
-            llm_provider="vllm", vllm_base_url="https://vllm.internal:443/api"
+            llm_provider="vllm",
+            vllm_base_url="https://vllm.internal:443/api",
+            vllm_api_key="vllm-key",
         )
         settings.validate_provider_credentials()

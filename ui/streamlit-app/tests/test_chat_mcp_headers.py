@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from chat_mcp import _mcp_headers
+import chat_mcp
+from chat_mcp import _mcp_headers, _post_llm_with_retry
 
 
 def test_bitbucket_workspace_token_uses_personal_token_header() -> None:
@@ -36,3 +37,42 @@ def test_bitbucket_account_token_uses_basic_headers() -> None:
     assert headers["X-Atlassian-Bitbucket-App-Password"] == credential.api_token
     assert headers["X-Atlassian-Bitbucket-Api-Token"] == credential.api_token
     assert "X-Atlassian-Bitbucket-Personal-Token" not in headers
+
+
+def test_llm_post_retries_transient_transport_error(monkeypatch) -> None:
+    attempts = {"count": 0}
+
+    class Response:
+        status_code = 200
+
+        def raise_for_status(self) -> None:
+            return None
+
+    class Client:
+        def __init__(self, timeout: float) -> None:
+            self.timeout = timeout
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb) -> None:
+            return None
+
+        def post(self, url, headers, json):
+            del url, headers, json
+            attempts["count"] += 1
+            if attempts["count"] == 1:
+                raise chat_mcp.httpx.ConnectError("temporary eof")
+            return Response()
+
+    monkeypatch.setattr(chat_mcp.httpx, "Client", Client)
+    monkeypatch.setattr(chat_mcp.time, "sleep", lambda seconds: None)
+
+    response = _post_llm_with_retry(
+        "https://example.invalid",
+        headers={"Authorization": "Bearer test"},
+        payload={"model": "test"},
+    )
+
+    assert response.status_code == 200
+    assert attempts["count"] == 2

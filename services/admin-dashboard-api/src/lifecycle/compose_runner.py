@@ -149,6 +149,22 @@ class ComposeRunner:
         self._compose_file = compose_file
         self._workspace_root = workspace_root
 
+    def _compose_prefix(self) -> list[str]:
+        """Return the shared ``docker compose`` argv prefix.
+
+        The dashboard runs inside a container with ``WORKSPACE_ROOT=/app``.
+        Mounting and passing ``/app/.env`` explicitly keeps Compose variable
+        interpolation aligned with ``scripts/up.ps1`` without inheriting
+        arbitrary host environment secrets.
+        """
+
+        argv = ["docker", "compose"]
+        env_file = self._workspace_root / ".env"
+        if env_file.is_file():
+            argv.extend(["--env-file", str(env_file)])
+        argv.extend(["-f", str(self._compose_file)])
+        return argv
+
     # ------------------------------------------------------------------
     # Environment scrubbing
     # ------------------------------------------------------------------
@@ -257,10 +273,7 @@ class ComposeRunner:
         """
 
         argv: list[str] = [
-            "docker",
-            "compose",
-            "-f",
-            str(self._compose_file),
+            *self._compose_prefix(),
             "--profile",
             profile,
             "up",
@@ -293,10 +306,7 @@ class ComposeRunner:
         env = self._build_env(None)
 
         stop_argv: list[str] = [
-            "docker",
-            "compose",
-            "-f",
-            str(self._compose_file),
+            *self._compose_prefix(),
             "stop",
             service_name,
         ]
@@ -307,10 +317,7 @@ class ComposeRunner:
             return stop_result
 
         rm_argv: list[str] = [
-            "docker",
-            "compose",
-            "-f",
-            str(self._compose_file),
+            *self._compose_prefix(),
             "rm",
             "-fv",
             service_name,
@@ -368,10 +375,7 @@ class ComposeRunner:
         """
 
         argv: list[str] = [
-            "docker",
-            "compose",
-            "-f",
-            str(self._compose_file),
+            *self._compose_prefix(),
             "logs",
             "--tail",
             str(tail),
@@ -457,10 +461,7 @@ class ComposeRunner:
         """
 
         full_argv: list[str] = [
-            "docker",
-            "compose",
-            "-f",
-            str(self._compose_file),
+            *self._compose_prefix(),
             "exec",
             "-T",
             service_name,

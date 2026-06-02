@@ -65,6 +65,9 @@ class Settings(BaseSettings):
     # LLM block — assistant-service is an LLM consumer.
     llm_provider: str = Field(default="openai")
     vllm_base_url: str = Field(default="http://host.docker.internal:8000/v1")
+    vllm_api_key: str = Field(default="")
+    openai_base_url: str = Field(default="https://api.openai.com/v1")
+    anthropic_base_url: str = Field(default="https://api.anthropic.com/v1")
     llm_model_name: str = Field(default="gpt-4o-mini")
     openai_api_key: str = Field(default="")
     anthropic_api_key: str = Field(default="")
@@ -83,17 +86,20 @@ class Settings(BaseSettings):
         contains only whitespace characters.
         """
         allowed = {"openai", "anthropic", "vllm"}
-        if self.llm_provider not in allowed:
+        provider = self.llm_provider.strip().lower()
+        if provider not in allowed:
             raise ConfigurationError(
                 f"LLM_PROVIDER must be one of {sorted(allowed)}"
             )
-        if self.llm_provider == "openai" and not self.openai_api_key.strip():
+        if provider == "openai" and not self.openai_api_key.strip():
             raise ConfigurationError("OPENAI_API_KEY required for openai provider")
-        if self.llm_provider == "anthropic" and not self.anthropic_api_key.strip():
+        if provider == "anthropic" and not self.anthropic_api_key.strip():
             raise ConfigurationError("ANTHROPIC_API_KEY required for anthropic provider")
-        if self.llm_provider == "vllm":
+        if provider == "vllm":
             if not self.vllm_base_url or not _is_valid_url(self.vllm_base_url.strip()):
                 raise ConfigurationError("VLLM_BASE_URL must be a valid URL")
+            if not self.vllm_api_key.strip():
+                raise ConfigurationError("VLLM_API_KEY required for vllm provider")
 
     def dependencies_reachable(self) -> bool:
         """Stub readiness probe.

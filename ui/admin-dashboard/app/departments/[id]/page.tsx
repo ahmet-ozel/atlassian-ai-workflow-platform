@@ -382,13 +382,13 @@ export default function DepartmentDetailPage({
         }}
       >
         <a href="/departments" style={{ color: "#2563eb", textDecoration: "none" }}>
-          ← Departments
+          ← Departmanlar
         </a>
       </nav>
 
       <header style={{ marginBottom: "1rem" }}>
         <h1 style={{ margin: 0, fontSize: "1.4rem" }}>
-          Department · <code>{id}</code>
+          Departman · <code>{id}</code>
           {state.kind === "ok" && state.detail.display_name && (
             <span
               style={{
@@ -403,14 +403,14 @@ export default function DepartmentDetailPage({
           )}
         </h1>
         <p style={{ margin: "0.25rem 0 0", color: "#6b7280", fontSize: "0.9rem" }}>
-          Manage Jira / Confluence / Bitbucket bot credentials for this
-          department.
+          Bu departman için Jira / Confluence / Bitbucket bot kimlik
+          bilgilerini yönetin.
         </p>
       </header>
 
       {/* Status badge section */}
       {state.kind === "loading" && (
-        <p style={{ color: "#6b7280" }}>Loading department detail…</p>
+        <p style={{ color: "#6b7280" }}>Departman detayı yükleniyor…</p>
       )}
 
       {state.kind === "error" && (
@@ -424,7 +424,7 @@ export default function DepartmentDetailPage({
             marginBottom: "1rem",
           }}
         >
-          Failed to load department: {state.message}
+          Departman yüklenemedi: {state.message}
         </div>
       )}
 
@@ -453,7 +453,7 @@ export default function DepartmentDetailPage({
             role="status"
             aria-label="Pending Credentials"
           >
-            ⚠ Pending Credentials
+            ⚠ Kimlik bilgileri bekleniyor
           </span>
           <button
             type="button"
@@ -469,7 +469,7 @@ export default function DepartmentDetailPage({
               cursor: "pointer",
             }}
           >
-            Add Credential
+            Kimlik bilgisi ekle
           </button>
         </div>
       )}
@@ -499,7 +499,7 @@ export default function DepartmentDetailPage({
             role="status"
             aria-label="Active"
           >
-            ✓ Active
+            ✓ Aktif
           </span>
           <button
             type="button"
@@ -515,7 +515,7 @@ export default function DepartmentDetailPage({
               cursor: "pointer",
             }}
           >
-            Manage Credential
+            Kimlik bilgilerini yönet
           </button>
         </div>
       )}
@@ -534,7 +534,7 @@ export default function DepartmentDetailPage({
             id="ssh-runners-heading"
             style={{ margin: "0 0 0.75rem 0", fontSize: "1.1rem" }}
           >
-            Assigned SSH Runners
+            Atanmış SSH Runner'ları
           </h2>
 
           {/* Runner pool empty warning banner (R4.19) */}

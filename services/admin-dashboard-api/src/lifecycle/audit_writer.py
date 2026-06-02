@@ -201,6 +201,19 @@ def _default_pool_factory() -> PoolFactory:
     import asyncpg  # type: ignore[import-not-found]
 
     async def _factory(dsn: str, **kwargs: Any) -> _PoolLike:
+        # ``max_inactive_connection_lifetime`` recycles idle connections
+        # before the container/NAT layer silently drops a long-idle TCP
+        # socket. Without this, a pooled connection that has been idle for
+        # ~1h goes half-open; the next ``acquire()`` + query then hangs
+        # until a hard timeout, surfacing as a spurious
+        # ``audit DB precheck failed: TimeoutError`` on the first
+        # Stop/Start the operator issues after a quiet period. A 180s
+        # ceiling keeps connections fresh while still pooling within a
+        # burst of dashboard actions. ``command_timeout`` bounds any
+        # single query so a wedged socket can never hang a request
+        # indefinitely. Callers may override either via ``kwargs``.
+        kwargs.setdefault("max_inactive_connection_lifetime", 180.0)
+        kwargs.setdefault("command_timeout", 10.0)
         return await asyncpg.create_pool(dsn=dsn, **kwargs)
 
     return _factory
@@ -334,6 +347,12 @@ class AuditWriter:
     #: ceiling the drainer keeps retrying at the same cadence.
     DEFAULT_RETRY_MAX_DELAY = 30.0
 
+    #: Upper bound for the ``precheck`` ``SELECT 1`` round-trip. A
+    #: half-open pooled connection (idle TCP dropped by Docker/NAT) must
+    #: not block the lifecycle request indefinitely; on timeout the
+    #: writer recreates the pool once and retries (see :meth:`precheck`).
+    PRECHECK_TIMEOUT_SECONDS = 5.0
+
     def __init__(
         self,
         *,
@@ -433,14 +452,66 @@ class AuditWriter:
 
         pool = self._require_pool()
         try:
+            await self._run_select_1(pool)
+            return
+        except BaseException as exc:
+            if not _is_connection_error(exc):
+                raise
+            first_exc = exc
+
+        # The pooled connection was likely half-open: an idle TCP socket
+        # silently dropped by Docker/NAT after a quiet period. The pool
+        # object itself outlives uvicorn code-reloads (it is created once
+        # in the lifespan), so recycling tuning alone cannot rescue an
+        # already-stale pool. Recreate the pool once and retry before
+        # declaring the audit DB unreachable — this lets the first
+        # Stop/Start after an idle window self-heal instead of returning
+        # a spurious 502.
+        try:
+            await self._reset_pool()
+            await self._run_select_1(self._require_pool())
+        except BaseException as retry_exc:  # noqa: BLE001
+            raise AuditUnreachableError(
+                f"audit DB precheck failed: "
+                f"{type(retry_exc).__name__}: {retry_exc}",
+            ) from retry_exc
+
+    async def _run_select_1(self, pool: _PoolLike) -> None:
+        """Run a bounded ``SELECT 1`` against ``pool``.
+
+        Wrapped in :func:`asyncio.wait_for` so a wedged/half-open
+        connection can never block the lifecycle request indefinitely;
+        a stall surfaces as :class:`asyncio.TimeoutError`, which
+        :func:`_is_connection_error` classifies as a connection-level
+        failure (triggering the one-shot pool reset above). Combined
+        with the pool's ``max_inactive_connection_lifetime`` (which
+        recycles idle connections before the socket goes half-open),
+        this keeps the dashboard responsive after a quiet period.
+        """
+
+        async def _do() -> None:
             async with pool.acquire() as conn:
                 await conn.execute("SELECT 1")
-        except BaseException as exc:
-            if _is_connection_error(exc):
-                raise AuditUnreachableError(
-                    f"audit DB precheck failed: {type(exc).__name__}: {exc}",
-                ) from exc
-            raise
+
+        await asyncio.wait_for(_do(), timeout=self.PRECHECK_TIMEOUT_SECONDS)
+
+    async def _reset_pool(self) -> None:
+        """Close and re-open the asyncpg pool (best-effort close).
+
+        Used by :meth:`precheck` to recover from a stale/half-open pool.
+        Closing a wedged pool can itself hang, so the close is bounded
+        and any failure is swallowed — the important half is opening a
+        fresh pool from the factory.
+        """
+
+        old_pool = self._pool
+        self._pool = None
+        if old_pool is not None:
+            try:
+                await asyncio.wait_for(old_pool.close(), timeout=2.0)
+            except BaseException:  # noqa: BLE001 - stale pool close may hang
+                pass
+        self._pool = await self._pool_factory(dsn=self._dsn)
 
     async def write(self, entry: AuditEntry) -> None:
         """Insert a single :class:`AuditEntry` into ``shared.audit_log``.

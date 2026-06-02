@@ -165,9 +165,10 @@ def test_up_argv_shape_uses_profile_and_service_name() -> None:
 def test_up_does_not_pass_env_overrides_as_cli_flags() -> None:
     """Property P2 surface: env_overrides go through the env dict only.
 
-    The recorded argv must NEVER contain ``--env-file`` or ``--env``
-    flags constructed from the override map. They live solely in the
-    subprocess's ``env`` mapping.
+    The recorded argv must NEVER contain ``--env`` flags constructed
+    from the override map, and override values must never appear on
+    the command line. They live solely in the subprocess's ``env``
+    mapping.
     """
 
     recorder = _make_recorder(_FakeProcess(returncode=0))
@@ -188,6 +189,39 @@ def test_up_does_not_pass_env_overrides_as_cli_flags() -> None:
     assert "--env" not in argv
     # And the secret value must not have leaked into the argv at all.
     assert all("super-secret-do-not-leak" not in token for token in argv)
+
+
+def test_up_passes_workspace_env_file_when_present(tmp_path: Path) -> None:
+    """Dashboard-started profiles use the same root ``.env`` as boot scripts."""
+
+    workspace = tmp_path
+    compose_file = workspace / "infra" / "docker-compose.yml"
+    compose_file.parent.mkdir()
+    compose_file.write_text("services: {}\n", encoding="utf-8")
+    env_file = workspace / ".env"
+    env_file.write_text("OPENAI_API_KEY=sk-test-value\n", encoding="utf-8")
+    runner = ComposeRunner(compose_file=compose_file, workspace_root=workspace)
+
+    recorder = _make_recorder(_FakeProcess(returncode=0, stdout=b"ok"))
+    with patch("asyncio.create_subprocess_exec", recorder):
+        asyncio.run(
+            runner.up(
+                profile="streamlit-ui",
+                service_name="streamlit-ui",
+                env_overrides=None,
+            )
+        )
+
+    argv = recorder.calls[0]["argv"]
+    assert argv[:6] == (
+        "docker",
+        "compose",
+        "--env-file",
+        str(env_file),
+        "-f",
+        str(compose_file),
+    )
+    assert all("sk-test-value" not in token for token in argv)
 
 
 def test_stop_argv_shape() -> None:

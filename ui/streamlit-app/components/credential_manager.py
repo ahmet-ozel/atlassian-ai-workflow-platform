@@ -53,11 +53,14 @@ from __future__ import annotations
 
 import base64
 from http.cookies import SimpleCookie
+import json
 import logging
 import secrets
 import time
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass, field, replace
 from typing import Any, Callable, Final, MutableMapping
+from urllib.parse import quote, unquote, urlparse
 
 import streamlit as st
 
@@ -134,13 +137,6 @@ _DEPLOYMENTS: Final[dict[str, str]] = {
 #: credential entry UI. Used by :func:`render_logout_button` to
 #: drive the post-logout redirect (R13.6).
 _CREDENTIAL_PAGE_PATH: Final[str] = "pages/0_credentials.py"
-
-
-def _is_bitbucket_cloud_url(url: str) -> bool:
-    """Return True for Bitbucket Cloud base/API URLs."""
-
-    lowered = url.lower()
-    return "bitbucket.org" in lowered or "api.bitbucket.org" in lowered
 
 
 # ---------------------------------------------------------------------------
@@ -220,7 +216,94 @@ class StoredCredential:
 CredentialValidator = Callable[[str, str, str], tuple[bool, str | None]]
 
 
-def _default_validator(service: str, email: str, api_token: str) -> tuple[bool, str | None]:
+def _is_bitbucket_cloud_url(url: str) -> bool:
+    host = urlparse(url).netloc.lower()
+    return host in {"bitbucket.org", "www.bitbucket.org", "api.bitbucket.org"}
+
+
+def _bitbucket_cloud_api_base(url: str) -> str:
+    parsed = urlparse(url)
+    if parsed.netloc.lower() == "api.bitbucket.org":
+        return f"{parsed.scheme or 'https'}://api.bitbucket.org"
+    return "https://api.bitbucket.org"
+
+
+def _bitbucket_cloud_headers(email: str, api_token: str) -> dict[str, str]:
+    headers = {"Accept": "application/json"}
+    if api_token.strip().startswith("ATCTT"):
+        headers["Authorization"] = f"Bearer {api_token.strip()}"
+    else:
+        raw = f"{email}:{api_token}".encode("utf-8")
+        headers["Authorization"] = f"Basic {base64.b64encode(raw).decode('ascii')}"
+    return headers
+
+
+def _validate_bitbucket_credential(
+    httpx_module: Any,
+    email: str,
+    api_token: str,
+    credential: "StoredCredential | None",
+) -> tuple[bool, str | None]:
+    deployment = str(getattr(credential, "deployment", "cloud") or "cloud").lower()
+    url = str(getattr(credential, "url", "") or _DEFAULT_SERVICE_URLS["bitbucket"]).strip()
+    workspace = str(getattr(credential, "workspace", "") or "").strip().strip("/")
+
+    if deployment == "server" or not _is_bitbucket_cloud_url(url):
+        auth_only_probe = False
+        endpoint = f"{url.rstrip('/')}/rest/api/1.0/projects?limit=1"
+        headers = {
+            "Accept": "application/json",
+            "Authorization": f"Bearer {api_token.strip()}",
+        }
+    else:
+        api_base = _bitbucket_cloud_api_base(url)
+        if workspace:
+            auth_only_probe = False
+            endpoint = f"{api_base}/2.0/repositories/{quote(workspace)}?pagelen=1"
+        else:
+            auth_only_probe = True
+            endpoint = f"{api_base}/2.0/user"
+        headers = _bitbucket_cloud_headers(email, api_token)
+
+    request_error = getattr(httpx_module, "RequestError", Exception)
+    try:
+        with httpx_module.Client(timeout=8.0) as client:
+            resp = client.get(endpoint, headers=headers)
+    except request_error as exc:
+        return False, f"Bitbucket API'ye ulasilamadi: {exc}"
+
+    if 200 <= resp.status_code < 300:
+        return True, None
+    if resp.status_code in (401, 403):
+        if auth_only_probe:
+            return (
+                False,
+                "Bitbucket Cloud auth reddedildi "
+                f"(/2.0/user HTTP {resp.status_code}). Curl ile ayni endpoint "
+                "calisiyorsa Streamlit'e girilen username/token veya .env degeri "
+                "farklidir.",
+            )
+        return (
+            False,
+            "Bitbucket credential reddedildi "
+            f"(HTTP {resp.status_code}). Token gecersiz, suresi dolmus "
+            "veya gerekli Bitbucket scope yok.",
+        )
+    if resp.status_code == 404 and workspace:
+        return (
+            False,
+            f"Bitbucket workspace bulunamadi veya yetki yok (HTTP 404): {workspace}",
+        )
+    return False, f"Bitbucket dogrulama hatasi (HTTP {resp.status_code})."
+
+
+def _default_validator(
+    service: str,
+    email: str,
+    api_token: str,
+    *,
+    credential: "StoredCredential | None" = None,
+) -> tuple[bool, str | None]:
     """Default validator — POSTs a credential probe to MCP.
 
     The function is deliberately small and dependency-light so unit
@@ -241,6 +324,14 @@ def _default_validator(service: str, email: str, api_token: str) -> tuple[bool, 
         import httpx  # type: ignore[import-not-found]
     except ImportError:
         return False, "httpx kütüphanesi yok; credential doğrulanamıyor."
+
+    if service == "bitbucket":
+        return _validate_bitbucket_credential(
+            httpx_module=httpx,
+            email=email,
+            api_token=api_token,
+            credential=credential,
+        )
 
     try:
         from config import Settings  # type: ignore[import-not-found]
@@ -309,6 +400,7 @@ def _restore_cookie_key() -> str | None:
             return None
     if not raw_value:
         return None
+    raw_value = unquote(str(raw_value).strip())
     try:
         from components.cookie_manager import _get_secret, verify_cookie
 
@@ -319,17 +411,44 @@ def _restore_cookie_key() -> str | None:
 
 def _write_restore_cookie(key: str) -> None:
     writer = st.session_state.get("_cookie_writer")
-    if writer is None:
-        return
     try:
         from components.cookie_manager import _get_secret, sign_cookie
 
-        writer(
-            _RESTORE_COOKIE_NAME,
-            sign_cookie(key, _get_secret()),
-            ttl_days=_RESTORE_COOKIE_TTL_DAYS,
-        )
+        signed_value = sign_cookie(key, _get_secret())
     except Exception:  # noqa: BLE001 - credentials still remain in session_state.
+        return
+    if writer is not None:
+        try:
+            writer(
+                _RESTORE_COOKIE_NAME,
+                signed_value,
+                ttl_days=_RESTORE_COOKIE_TTL_DAYS,
+            )
+        except Exception:  # noqa: BLE001 - fallback JS cookie write is best-effort.
+            pass
+    try:
+        import streamlit.components.v1 as components
+
+        ttl_seconds = _RESTORE_COOKIE_TTL_DAYS * 86400
+        components.html(
+            """
+            <script>
+            (function () {
+              const name = %s;
+              const value = encodeURIComponent(%s);
+              document.cookie = name + "=" + value
+                + "; Max-Age=%d; Path=/; SameSite=Lax";
+            })();
+            </script>
+            """
+            % (
+                json.dumps(_RESTORE_COOKIE_NAME),
+                json.dumps(signed_value),
+                ttl_seconds,
+            ),
+            height=0,
+        )
+    except Exception:  # noqa: BLE001 - direct page reload can still use session_state.
         return
 
 
@@ -340,7 +459,21 @@ def _clear_restore_cookie() -> None:
         try:
             delete(_RESTORE_COOKIE_NAME)
         except Exception:  # noqa: BLE001
-            return
+            pass
+    try:
+        import streamlit.components.v1 as components
+
+        components.html(
+            """
+            <script>
+            document.cookie = %s + "=; Max-Age=0; Path=/; SameSite=Lax";
+            </script>
+            """
+            % json.dumps(_RESTORE_COOKIE_NAME),
+            height=0,
+        )
+    except Exception:  # noqa: BLE001
+        return
 
 
 def _copy_restore_credentials(bucket: dict[str, Any]) -> dict[str, StoredCredential]:
@@ -542,6 +675,28 @@ class CredentialManager:
                 bucket.get("credentials", {}).clear()
             del self.state[_STATE_KEY]
 
+    def delete(self, service: str) -> bool:
+        """Delete one stored credential without touching the others."""
+        if service not in _SUPPORTED_SERVICES:
+            raise ValueError(f"Unknown service {service!r}; expected one of {_SUPPORTED_SERVICES}.")
+        if self.enforce_timeout():
+            return False
+        bucket = self._ensure_state()
+        credentials = bucket.get("credentials", {})
+        if service not in credentials:
+            return False
+        del credentials[service]
+        bucket["last_activity"] = self.now()
+        if credentials:
+            _sync_restore_cache(bucket)
+        else:
+            restore_key = bucket.get("restore_key")
+            if isinstance(restore_key, str):
+                _restore_cache().pop(restore_key, None)
+            _clear_restore_cookie()
+        _LOG.info("credential_deleted", extra={"service": service})
+        return True
+
     # ---- store / get ----------------------------------------------------
 
     def store(
@@ -585,19 +740,19 @@ class CredentialManager:
         clean_workspace = workspace.strip().strip("/")
         if not (clean_url.startswith("https://") or clean_url.startswith("http://")):
             raise ValueError("Gecerli bir servis URL'i giriniz.")
-        if clean_deployment == "cloud" and "@" not in clean_email:
+        if clean_deployment == "cloud" and service != "bitbucket" and "@" not in clean_email:
             raise ValueError("Geçerli bir e-posta giriniz (örn: ad.soyad@firma.com).")
-        if service == "bitbucket" and clean_deployment == "cloud" and not clean_workspace:
-            raise ValueError("Bitbucket Cloud icin workspace slug zorunludur. Ornek: example_workspace")
-        if not api_token:
-            raise ValueError("API token boş olamaz.")
+        if service == "bitbucket" and clean_deployment == "cloud" and not clean_email:
+            raise ValueError("Bitbucket Cloud icin BITBUCKET_USERNAME zorunludur.")
+        if not api_token.strip():
+            raise ValueError("API token veya Personal Access Token bos olamaz.")
 
         bucket = self._ensure_state()
         cred = StoredCredential(
             service=service,
             url=clean_url,
             email=clean_email,
-            api_token=api_token,
+            api_token=api_token.strip(),
             stored_at=self.now(),
             workspace=clean_workspace,
             deployment=clean_deployment,
@@ -661,7 +816,15 @@ class CredentialManager:
         if cred is None:
             return False, "Credential bulunamadı."
 
-        ok, err = self.validator(service, cred.email, cred.api_token)
+        if self.validator is _default_validator:
+            ok, err = _default_validator(
+                service,
+                cred.email,
+                cred.api_token,
+                credential=cred,
+            )
+        else:
+            ok, err = self.validator(service, cred.email, cred.api_token)
         cred.is_valid = bool(ok)
         if ok:
             cred.last_validated_at = self.now()
@@ -792,12 +955,64 @@ def render_logout_button(*, key: str = "credential_manager_logout") -> bool:
     return False
 
 
+def _credential_status_label(entry: Mapping[str, Any]) -> str:
+    is_valid = entry.get("is_valid")
+    if is_valid is True:
+        return "Dogrulandi"
+    if is_valid is False:
+        return "Reddedildi"
+    return "Dogrulanmadi"
+
+
+def _render_saved_credentials(
+    manager: CredentialManager,
+    snapshot: Mapping[str, Any],
+) -> None:
+    credentials = snapshot.get("credentials")
+    st.subheader("Kayitli credentials")
+    st.caption(
+        "Token degerleri gosterilmez. Guncellemek icin ilgili servis formunu "
+        "yeniden doldurup Bagla ve dogrula'ya basin."
+    )
+    if not isinstance(credentials, Mapping) or not credentials:
+        st.info("Henuz kayitli Jira, Confluence veya Bitbucket credential yok.")
+        return
+
+    for service in _SUPPORTED_SERVICES:
+        entry = credentials.get(service)
+        if not isinstance(entry, Mapping):
+            continue
+        cols = st.columns([1.1, 2.0, 1.5, 0.6])
+        cols[0].markdown(f"**{service.title()}**")
+        cols[0].caption(_credential_status_label(entry))
+        url = entry.get("url") or "-"
+        email = entry.get("email") or "-"
+        cols[1].markdown(f"`{url}`")
+        cols[1].caption(f"Kullanici: {email}")
+        deployment = entry.get("deployment") or "cloud"
+        workspace = entry.get("workspace") or "-"
+        if service == "bitbucket":
+            cols[2].markdown(f"Deployment: `{deployment}`")
+            cols[2].caption(f"Workspace/project: {workspace}")
+        else:
+            cols[2].markdown(f"Deployment: `{deployment}`")
+            cols[2].caption("Workspace gerekmez")
+        if cols[3].button("Sil", key=f"_cred_mgr_delete_{service}"):
+            manager.delete(service)
+            st.success(f"{service.title()} credential silindi.")
+            rerun = getattr(st, "rerun", None) or getattr(st, "experimental_rerun", None)
+            if callable(rerun):
+                rerun()
+        st.divider()
+
+
 def _render_service_form(manager: CredentialManager, service: str) -> None:
     """Render one ``st.form`` per Atlassian service."""
 
     cred = manager.get(service)
     with st.form(f"_cred_mgr_{service}", clear_on_submit=True):
-        st.markdown(f"##### {service.title()}")
+        service_label = service.title()
+        st.markdown(f"##### {service_label}")
         if cred is not None:
             status = (
                 "✅ Doğrulandı"
@@ -820,14 +1035,25 @@ def _render_service_form(manager: CredentialManager, service: str) -> None:
         default_urls = _DEFAULT_SERVICE_URLS if is_cloud else _DEFAULT_DC_SERVICE_URLS
         email = ""
         if is_cloud:
-            email = st.text_input(
-                f"{service.title()} e-posta",
-                placeholder="ad.soyad@firma.com",
-                help="Cloud icin Atlassian hesap e-postasi gerekir.",
-                key=f"_cred_mgr_email_{service}",
-            )
+            if service == "bitbucket":
+                email = st.text_input(
+                    "Bitbucket username/e-posta (BITBUCKET_USERNAME)",
+                    placeholder="your.email@company.com",
+                    help=(
+                        "Zorunlu. API token kullanirken Atlassian e-postasi; "
+                        "app password kullanirken Bitbucket kullanici adi girilir."
+                    ),
+                    key=f"_cred_mgr_email_{service}",
+                )
+            else:
+                email = st.text_input(
+                    f"{service_label} e-posta",
+                    placeholder="ad.soyad@firma.com",
+                    help="Cloud icin Atlassian hesap e-postasi gerekir.",
+                    key=f"_cred_mgr_email_{service}",
+                )
         url = st.text_input(
-            f"{service.title()} URL",
+            f"{service_label} URL",
             value=default_urls[service],
             help=(
                 f"Ornek: {default_urls[service]}"
@@ -840,27 +1066,39 @@ def _render_service_form(manager: CredentialManager, service: str) -> None:
         if service == "bitbucket":
             workspace = st.text_input(
                 (
-                    "Bitbucket workspace (Cloud)"
+                    "Bitbucket workspace (Cloud, opsiyonel)"
                     if is_cloud
                     else "Bitbucket project key (Server/DC opsiyonel)"
                 ),
                 placeholder="example_workspace" if is_cloud else "PROJ",
                 help=(
-                    "Cloud icin workspace slug zorunludur; repo URL'sindeki "
-                    "bitbucket.org/{workspace}/{repo} bolumunden alinir."
+                    "Opsiyonel. Repo URL'sindeki bitbucket.org/{workspace}/{repo} "
+                    "bolumunden alinabilir; bos birakilirsa chat sorusunda "
+                    "workspace/repo belirtin."
                     if is_cloud
                     else "Server/DC icin varsayilan project key opsiyoneldir."
                 ),
                 key=f"_cred_mgr_workspace_{service}",
             )
+        if service == "bitbucket" and is_cloud:
+            token_label = "Bitbucket API token veya app password"
+            token_help = (
+                "BITBUCKET_API_TOKEN onerilir. Legacy app password da kabul edilir; "
+                "BITBUCKET_API_TOKEN veya BITBUCKET_APP_PASSWORD degerlerinden biri sarttir."
+            )
+        elif is_cloud:
+            token_label = f"{service_label} API token"
+            token_help = (
+                "Atlassian API token girin. Jira ve Confluence icin ayni token "
+                "kullanilabilir."
+            )
+        else:
+            token_label = f"{service_label} Personal Access Token"
+            token_help = "Server/Data Center profilinden uretilen PAT girin."
         token = st.text_input(
-            f"{service.title()} {'API token' if is_cloud else 'Personal Access Token'}",
+            token_label,
             type="password",
-            help=(
-                "Cloud icin scoped API token girin."
-                if is_cloud
-                else "Server/Data Center profilinden uretilen PAT girin."
-            ),
+            help=token_help,
             key=f"_cred_mgr_token_{service}",
         )
         submitted = st.form_submit_button(
@@ -871,8 +1109,6 @@ def _render_service_form(manager: CredentialManager, service: str) -> None:
         return
 
     try:
-        if service == "bitbucket" and deployment == "cloud" and _is_bitbucket_cloud_url(url) and not workspace.strip():
-            raise ValueError("Bitbucket Cloud icin workspace slug zorunludur. Ornek: example_workspace")
         manager.store(
             service,
             email=email,
@@ -935,8 +1171,9 @@ def render_credential_manager(
         with tab:
             _render_service_form(manager, service)
 
-    st.divider()
     snapshot = manager.snapshot()
+    _render_saved_credentials(manager, snapshot)
+    st.divider()
     if snapshot.get("active"):
         with st.expander("Oturum durumu", expanded=False):
             st.json(snapshot)

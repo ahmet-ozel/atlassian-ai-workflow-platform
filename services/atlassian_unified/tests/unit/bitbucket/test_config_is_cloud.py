@@ -28,6 +28,7 @@ _BITBUCKET_ENV_VARS: tuple[str, ...] = (
     "BITBUCKET_USERNAME",
     "BITBUCKET_PASSWORD",
     "BITBUCKET_PERSONAL_TOKEN",
+    "BITBUCKET_API_TOKEN",
     "BITBUCKET_APP_PASSWORD",
     "BITBUCKET_CLOUD_ACCESS_TOKEN",
     "BITBUCKET_WORKSPACE",
@@ -306,6 +307,15 @@ class TestFromEnvCloudRowJ:
         ):
             BitbucketConfig.from_env()
 
+    def test_api_token_without_username_raises(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("BITBUCKET_URL", "https://bitbucket.org/myteam")
+        monkeypatch.setenv("BITBUCKET_API_TOKEN", "bb-api-token")
+
+        with pytest.raises(ValueError, match="BITBUCKET_USERNAME"):
+            BitbucketConfig.from_env()
+
     def test_app_password_without_username_raises_even_with_bearer(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
@@ -507,6 +517,22 @@ class TestFromEnvCloudBasicHappyPath:
         assert cfg.username == "alice"
         assert cfg.app_password == "app-pass"
         # DC password field stays unset under Cloud.
+        assert cfg.password is None
+        assert cfg.personal_token is None
+
+    def test_api_token_cloud_pair_sets_basic_auth_type(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("BITBUCKET_URL", "https://bitbucket.org/myteam")
+        monkeypatch.setenv("BITBUCKET_USERNAME", "alice@example.com")
+        monkeypatch.setenv("BITBUCKET_API_TOKEN", "bb-api-token")
+
+        cfg = BitbucketConfig.from_env()
+
+        assert cfg.is_cloud is True
+        assert cfg.auth_type == "basic"
+        assert cfg.username == "alice@example.com"
+        assert cfg.app_password == "bb-api-token"
         assert cfg.password is None
         assert cfg.personal_token is None
 

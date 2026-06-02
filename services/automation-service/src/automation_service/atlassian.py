@@ -43,12 +43,31 @@ class AtlassianProbeClient:
     # ------------------------------------------------------------------
 
     async def jira_myself(self, cred: Any) -> dict[str, Any]:
-        data = await self._call_tool(
-            cred,
-            "jira_get_current_user_profile",
-            {},
-            service="jira",
-        )
+        # Prefer the dedicated current-user tool. Some pinned MCP image
+        # builds predate ``jira_get_current_user_profile`` and only expose
+        # ``jira_get_user_profile`` (which needs an explicit
+        # ``user_identifier``). Fall back to the latter using the
+        # credential's own username/email so the read probe authenticates
+        # on both old and new MCP images.
+        try:
+            data = await self._call_tool(
+                cred,
+                "jira_get_current_user_profile",
+                {},
+                service="jira",
+            )
+        except RuntimeError as exc:
+            if "unknown tool" not in str(exc).lower():
+                raise
+            identifier = str(getattr(cred, "username", "") or "").strip()
+            if not identifier:
+                raise
+            data = await self._call_tool(
+                cred,
+                "jira_get_user_profile",
+                {"user_identifier": identifier},
+                service="jira",
+            )
         user = data.get("user") if isinstance(data, dict) else None
         return user if isinstance(user, dict) else data
 
@@ -280,7 +299,7 @@ class AtlassianProbeClient:
                 result = await session.call_tool(tool_name, arguments)
         text = _tool_text(result)
         if getattr(result, "isError", False):
-            raise RuntimeError(f"mcp_tool_error:{tool_name}")
+            raise RuntimeError(f"mcp_tool_error:{tool_name}:{text[:200]}")
         data = _loads(text)
         if isinstance(data, dict) and data.get("success") is False:
             raise RuntimeError(f"mcp_tool_failed:{tool_name}")

@@ -60,7 +60,7 @@ def bitbucket_cloud_client() -> BitbucketClient:
 
     cloud_access_token = os.environ.get("BITBUCKET_CLOUD_ACCESS_TOKEN")
     username = os.environ.get("BITBUCKET_USERNAME")
-    app_password = os.environ.get("BITBUCKET_APP_PASSWORD")
+    app_password = os.environ.get("BITBUCKET_API_TOKEN") or os.environ.get("BITBUCKET_APP_PASSWORD")
 
     if cloud_access_token:
         config = BitbucketConfig(
@@ -80,7 +80,7 @@ def bitbucket_cloud_client() -> BitbucketClient:
     else:
         pytest.skip(
             "Need BITBUCKET_CLOUD_ACCESS_TOKEN or "
-            "BITBUCKET_USERNAME + BITBUCKET_APP_PASSWORD"
+            "BITBUCKET_USERNAME + BITBUCKET_API_TOKEN/BITBUCKET_APP_PASSWORD"
         )
 
     return BitbucketClient(config=config)

@@ -125,6 +125,11 @@ class _FakePool:
         self.execute_log: list[tuple[str, tuple[Any, ...]]] = []
         self.raise_on_execute: BaseException | None = None
         self.closed = False
+        # When True, ``raise_on_execute`` is NOT consumed one-shot — every
+        # acquired connection keeps raising. Used by the precheck
+        # connection-error tests to simulate a genuinely-down DB where the
+        # writer's one-shot pool-reset retry must also fail (→ 502).
+        self.persist_failure = False
 
     def acquire(self) -> _FakeAcquireCtx:
         conn = _FakeConn(
@@ -132,8 +137,10 @@ class _FakePool:
             raise_on_execute=self.raise_on_execute,
         )
         # One-shot: clear the failure trigger after handing it to the
-        # connection so the *next* acquire returns a healthy conn.
-        self.raise_on_execute = None
+        # connection so the *next* acquire returns a healthy conn — unless
+        # ``persist_failure`` keeps the failure mode latched.
+        if not self.persist_failure:
+            self.raise_on_execute = None
         return _FakeAcquireCtx(conn)
 
     async def close(self) -> None:
@@ -267,6 +274,10 @@ def test_precheck_issues_select_one_on_healthy_pool() -> None:
 def test_precheck_raises_audit_unreachable_on_connection_error() -> None:
     async def run() -> None:
         pool = _FakePool()
+        # Persistent failure: the writer's one-shot pool-reset retry must
+        # also hit the connection error before declaring the DB
+        # unreachable (a genuinely-down DB → 502).
+        pool.persist_failure = True
         pool.raise_on_execute = _FakeConnectionError("connection refused")
         writer, _ = await _build_writer(pool)
         try:
@@ -281,11 +292,35 @@ def test_precheck_raises_audit_unreachable_on_connection_error() -> None:
 def test_precheck_raises_audit_unreachable_on_oserror() -> None:
     async def run() -> None:
         pool = _FakePool()
+        pool.persist_failure = True
         pool.raise_on_execute = OSError("network down")
         writer, _ = await _build_writer(pool)
         try:
             with pytest.raises(AuditUnreachableError):
                 await writer.precheck()
+        finally:
+            await writer.close()
+
+    asyncio.run(run())
+
+
+def test_precheck_self_heals_stale_pool_via_reset() -> None:
+    """A half-open pooled connection recovers on the one-shot pool reset.
+
+    The first ``acquire`` raises a connection-level error (stale/idle TCP
+    socket); the writer recreates the pool from the factory and retries.
+    The one-shot failure trigger is cleared after the first acquire, so
+    the retry succeeds and ``precheck`` returns without raising.
+    """
+
+    async def run() -> None:
+        pool = _FakePool()
+        pool.raise_on_execute = _FakeConnectionError("connection lost")
+        writer, _ = await _build_writer(pool)
+        try:
+            await writer.precheck()
+            # The retry's successful ``SELECT 1`` is recorded in the log.
+            assert ("SELECT 1", ()) in pool.execute_log
         finally:
             await writer.close()
 

@@ -289,6 +289,110 @@ async def test_infra_http_probe_uses_healthz_only() -> None:
 
 
 @pytest.mark.asyncio
+async def test_http_probe_prefers_docker_health_when_enabled(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Runtime wiring can trust Docker health before falling back to HTTP."""
+
+    seen: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(str(request.url))
+        raise AssertionError("HTTP probe should not run when Docker is healthy")
+
+    async def _fake_docker_health(
+        self: HealthProbe,
+        compose_service_name: str,
+    ) -> tuple[str, str]:
+        del self
+        assert compose_service_name == "atlassian-mcp"
+        return "healthy", "docker healthcheck status: healthy"
+
+    monkeypatch.setattr(
+        HealthProbe,
+        "_docker_inspect_compose_service_health_status",
+        _fake_docker_health,
+        raising=True,
+    )
+
+    transport = httpx.MockTransport(handler)
+    client = httpx.AsyncClient(transport=transport)
+    probe = HealthProbe(
+        http_client=client,
+        temporal_host="temporal:7233",
+        compose_internal_ports={"atlassian-mcp": 8090},
+        prefer_docker_health=True,
+    )
+    try:
+        snap = await probe.probe(
+            _entry(
+                name="atlassian-mcp",
+                kind="infra",
+                health_endpoint="/healthz",
+            )
+        )
+    finally:
+        await client.aclose()
+
+    assert snap.state == "healthy"
+    assert snap.healthz_status == 200
+    assert snap.healthz_body == "docker healthcheck status: healthy"
+    assert snap.readyz_status is None
+    assert seen == []
+
+
+@pytest.mark.asyncio
+async def test_http_probe_falls_back_when_docker_health_is_unavailable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Missing Docker healthcheck keeps the original HTTP probe behaviour."""
+
+    seen: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(str(request.url))
+        return httpx.Response(200, text="ok")
+
+    async def _fake_docker_health(
+        self: HealthProbe,
+        compose_service_name: str,
+    ) -> tuple[str, str]:
+        del self, compose_service_name
+        return "", "container has no healthcheck"
+
+    monkeypatch.setattr(
+        HealthProbe,
+        "_docker_inspect_compose_service_health_status",
+        _fake_docker_health,
+        raising=True,
+    )
+
+    transport = httpx.MockTransport(handler)
+    client = httpx.AsyncClient(transport=transport)
+    probe = HealthProbe(
+        http_client=client,
+        temporal_host="temporal:7233",
+        compose_internal_ports={"atlassian-mcp": 8090},
+        prefer_docker_health=True,
+    )
+    try:
+        snap = await probe.probe(
+            _entry(
+                name="atlassian-mcp",
+                kind="infra",
+                health_endpoint="/healthz",
+            )
+        )
+    finally:
+        await client.aclose()
+
+    assert snap.state == "healthy"
+    assert snap.healthz_status == 200
+    assert snap.healthz_body == "ok"
+    assert seen == ["http://atlassian-mcp:8090/healthz"]
+
+
+@pytest.mark.asyncio
 async def test_http_probe_truncates_body_to_200_chars() -> None:
     """Bodies > 200 chars are truncated (Requirement 4.7)."""
 

@@ -254,6 +254,42 @@ def _retry_delay(attempt: int) -> float:
     return _MCP_RETRY_DELAYS[-1]
 
 
+def _post_llm_with_retry(
+    url: str,
+    *,
+    headers: dict[str, str],
+    payload: dict[str, Any],
+) -> httpx.Response:
+    """POST to the active LLM provider with transient retry protection."""
+
+    last_error: Exception | None = None
+    retry_statuses = {429, 500, 502, 503, 504}
+    for attempt in range(_MCP_MAX_ATTEMPTS):
+        try:
+            with httpx.Client(timeout=60.0) as client:
+                response = client.post(url, headers=headers, json=payload)
+            if response.status_code in retry_statuses:
+                try:
+                    response.raise_for_status()
+                except httpx.HTTPStatusError as exc:
+                    last_error = exc
+                    if attempt < _MCP_MAX_ATTEMPTS - 1:
+                        time.sleep(_retry_delay(attempt))
+                        continue
+                    raise
+            return response
+        except (httpx.TimeoutException, httpx.TransportError) as exc:
+            last_error = exc
+            if attempt < _MCP_MAX_ATTEMPTS - 1:
+                time.sleep(_retry_delay(attempt))
+                continue
+            raise
+
+    if last_error is not None:
+        raise last_error
+    raise RuntimeError("LLM provider yanit vermedi.")
+
+
 def mcp_call_any(
     candidates: Sequence[tuple[str, dict[str, Any]]],
     credential_for: CredentialGetter,
@@ -306,8 +342,9 @@ def mcp_call_any(
 def _llm_chat_url(settings: Settings) -> tuple[str, str, str]:
     """Return (url, api_key, api_kind) for the active provider.
 
-    ``api_kind`` is ``"responses"`` for OpenAI (Responses API) and
-    ``"chat"`` for vLLM (OpenAI-compatible Chat Completions).
+    ``api_kind`` is ``"responses"`` for OpenAI (Responses API),
+    ``"chat"`` for vLLM (OpenAI-compatible Chat Completions), and
+    ``"anthropic"`` for Anthropic Messages.
     """
     provider = settings.llm_provider
     if provider == "vllm":
@@ -315,6 +352,12 @@ def _llm_chat_url(settings: Settings) -> tuple[str, str, str]:
             settings.vllm_base_url.rstrip("/") + "/chat/completions",
             settings.vllm_api_key,
             "chat",
+        )
+    if provider == "anthropic":
+        return (
+            settings.anthropic_base_url.rstrip("/") + "/messages",
+            settings.anthropic_api_key,
+            "anthropic",
         )
     return (
         settings.openai_base_url.rstrip("/") + "/responses",
@@ -346,10 +389,23 @@ def _extract_responses_text(data: Any) -> str:
     return "".join(chunks)
 
 
+def _extract_anthropic_text(data: Any) -> str:
+    """Pull assistant text out of an Anthropic Messages API payload."""
+    if not isinstance(data, dict):
+        return ""
+    chunks: list[str] = []
+    for part in data.get("content", []) or []:
+        if isinstance(part, dict) and part.get("type") == "text":
+            text = part.get("text")
+            if isinstance(text, str):
+                chunks.append(text)
+    return "".join(chunks)
+
+
 def ask_llm(user_text: str, tool_name: str, tool_result: Any) -> str:
     settings = Settings()
     url, api_key, api_kind = _llm_chat_url(settings)
-    if settings.llm_provider == "openai" and not api_key:
+    if settings.llm_provider in ("openai", "anthropic") and not api_key:
         raw = json.dumps(tool_result, ensure_ascii=False, indent=2, default=str)[:4000]
         return (
             "LLM provider dashboard/env tarafinda bagli degil; MCP sonucu ham olarak donuyor:\n\n"
@@ -360,7 +416,10 @@ def ask_llm(user_text: str, tool_name: str, tool_result: Any) -> str:
     system_prompt = (
         "Sen Streamlit icinde calisan Atlassian asistanisin. "
         "Cevabi Turkce, kisa, net ver. MCP sonucuna dayan; uydurma. "
-        "Eksik bilgi varsa hangi bilginin eksik oldugunu soyle."
+        "Kullanici kac kayit istediyse o kadarini yaz. "
+        "Eksik bilgi varsa islemi tamamlamaya calisma; eksik alanlari "
+        "madde madde soyle ve ornek format ver. "
+        "Kullanici sormadikca 'eksik bilgi yok' gibi kapanis cumlesi ekleme."
     )
     user_prompt = (
         f"Kullanici sorusu:\n{user_text}\n\n"
@@ -369,7 +428,10 @@ def ask_llm(user_text: str, tool_name: str, tool_result: Any) -> str:
         f"{json.dumps(tool_result, ensure_ascii=False, default=str)[:12000]}"
     )
     headers = {"Content-Type": "application/json"}
-    if api_key:
+    if api_kind == "anthropic" and api_key:
+        headers["x-api-key"] = api_key
+        headers["anthropic-version"] = "2023-06-01"
+    elif api_key:
         headers["Authorization"] = f"Bearer {api_key}"
 
     if api_kind == "responses":
@@ -379,6 +441,16 @@ def ask_llm(user_text: str, tool_name: str, tool_result: Any) -> str:
             "input": user_prompt,
             "temperature": 0.1,
             "max_output_tokens": 900,
+        }
+    elif api_kind == "anthropic":
+        payload = {
+            "model": model,
+            "system": system_prompt,
+            "messages": [
+                {"role": "user", "content": user_prompt},
+            ],
+            "temperature": 0.1,
+            "max_tokens": 900,
         }
     else:
         payload = {
@@ -391,10 +463,11 @@ def ask_llm(user_text: str, tool_name: str, tool_result: Any) -> str:
             "max_tokens": 900,
         }
 
-    with httpx.Client(timeout=60.0) as client:
-        response = client.post(url, headers=headers, json=payload)
+    response = _post_llm_with_retry(url, headers=headers, payload=payload)
     response.raise_for_status()
     data = response.json()
     if api_kind == "responses":
         return _extract_responses_text(data)
+    if api_kind == "anthropic":
+        return _extract_anthropic_text(data)
     return data["choices"][0]["message"]["content"]

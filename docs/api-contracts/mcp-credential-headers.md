@@ -92,6 +92,23 @@ spec §"Authentication truth table" for the full matrix.
 > | D | Cloud URL | (none Cloud-shaped) | 401 `unauthorized` |
 > | K | (no URL) | `Bitbucket-Personal-Token` | DC PAT against globally configured URL |
 
+### Cloud auth quick probe
+
+For Bitbucket Cloud API token or app-password auth, first prove the secret
+against Bitbucket's user endpoint. Do not paste the real token into docs,
+tickets, logs, or screenshots:
+
+```powershell
+$env:BITBUCKET_USERNAME = "your.email@company.com"
+$env:BITBUCKET_API_TOKEN = "<bitbucket-api-token-or-app-password>"
+curl.exe -u "$($env:BITBUCKET_USERNAME):$($env:BITBUCKET_API_TOKEN)" "https://api.bitbucket.org/2.0/user"
+```
+
+Expected result: a user JSON body containing fields such as `username`,
+`display_name`, and `account_status`. This verifies Cloud auth only; repository,
+pull-request, pipeline, and webhook calls still require the matching workspace,
+repository permission, and token scopes.
+
 ---
 
 ## 5. Caller-side helper

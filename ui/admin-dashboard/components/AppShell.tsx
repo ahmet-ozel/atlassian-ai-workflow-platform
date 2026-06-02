@@ -43,35 +43,37 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    label: "Yonetim",
+    label: "Yönetim",
     items: [
       { href: "/departments", label: "Departmanlar", icon: "DP", matchPrefix: true },
       { href: "/services", label: "Servisler", icon: "SV", matchPrefix: true },
-      { href: "/workflows", label: "Is akislari", icon: "WF", matchPrefix: true },
+      { href: "/workflows", label: "İş akışları", icon: "WF", matchPrefix: true },
       { href: "/capabilities", label: "Yetenek matrisi", icon: "CP" },
-      { href: "/live-smoke", label: "Live smoke", icon: "LS" },
+      { href: "/live-smoke", label: "Canlı test", icon: "LS" },
     ],
   },
   {
-    label: "Gozlemlenebilirlik",
+    label: "Gözlemlenebilirlik",
     items: [
       { href: "/costs", label: "Maliyetler", icon: "CO" },
-      { href: "/audit", label: "Audit log", icon: "AL" },
-      { href: "/mcp-traffic", label: "MCP trafigi", icon: "MT" },
+      { href: "/logs", label: "Loglar", icon: "LG" },
+      { href: "/audit", label: "Denetim kaydı", icon: "AL" },
+      { href: "/mcp-traffic", label: "MCP trafiği", icon: "MT" },
       { href: "/notifications", label: "Bildirimler", icon: "NT" },
     ],
   },
   {
-    label: "Yapilandirma",
+    label: "Yapılandırma",
     items: [
-      { href: "/feature-flags", label: "Feature flags", icon: "FF" },
-      { href: "/firecrawl", label: "Firecrawl allowlist", icon: "FC" },
+      { href: "/feature-flags", label: "Özellik bayrakları", icon: "FF" },
+      { href: "/llm-providers", label: "AI modelleri", icon: "AI" },
+      { href: "/firecrawl", label: "Firecrawl izin listesi", icon: "FC" },
       { href: "/prompts", label: "Promptlar", icon: "PR", matchPrefix: true },
-      { href: "/security", label: "Guvenlik", icon: "SC", matchPrefix: true },
+      { href: "/security", label: "Güvenlik", icon: "SC", matchPrefix: true },
     ],
   },
   {
-    label: "Debug",
+    label: "Hata Ayıklama",
     items: [
       { href: `${STREAMLIT_URL}/explorer`, label: "MCP Explorer", icon: "EX", external: true },
       { href: `${STREAMLIT_URL}/mcp_inspector`, label: "MCP Inspector", icon: "MI", external: true },
@@ -80,21 +82,23 @@ const NAV_GROUPS: NavGroup[] = [
 ];
 
 const ROUTE_TITLE: Record<string, string> = {
-  "/": "Kurulum sihirbazi",
+  "/": "Kurulum sihirbazı",
   "/operations": "Operasyonlar",
   "/departments": "Departmanlar",
   "/services": "Servisler",
-  "/workflows": "Is akislari",
+  "/workflows": "İş akışları",
   "/capabilities": "Yetenek matrisi",
-  "/live-smoke": "Live smoke tests",
+  "/live-smoke": "Canlı test",
   "/costs": "Maliyetler",
-  "/audit": "Audit log",
-  "/mcp-traffic": "MCP trafigi",
+  "/logs": "Loglar",
+  "/audit": "Denetim kaydı",
+  "/mcp-traffic": "MCP trafiği",
   "/notifications": "Bildirimler",
-  "/feature-flags": "Feature flags",
-  "/firecrawl": "Firecrawl allowlist",
+  "/feature-flags": "Özellik bayrakları",
+  "/llm-providers": "AI modelleri",
+  "/firecrawl": "Firecrawl izin listesi",
   "/prompts": "Promptlar",
-  "/security": "Guvenlik",
+  "/security": "Güvenlik",
 };
 
 function pickTitle(pathname: string): string {

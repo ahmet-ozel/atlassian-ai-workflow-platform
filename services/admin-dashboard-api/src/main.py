@@ -401,6 +401,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
                 "opencode-sidecar": 4096,
                 "streamlit-ui": 8501,
             },
+            prefer_docker_health=True,
         )
         lifecycle = LifecycleService(
             manifest=manifest,
@@ -430,6 +431,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         automation_service_url=settings.automation_service_url,
         http_client=http_client,
         audit_sink=LoggingAuditSink(),
+        # Credential save runs a live Atlassian read+write probe through
+        # the MCP (myself → find issue → add comment → delete comment),
+        # which legitimately takes longer than the default 30s on cloud
+        # round trips. Allow 90s so a valid credential is not rejected
+        # with a spurious 504 upstream timeout.
+        request_timeout_seconds=90.0,
     )
     app.state.admin_proxy = admin_proxy
 

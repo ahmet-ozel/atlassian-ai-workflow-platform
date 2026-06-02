@@ -95,6 +95,11 @@
           "description": "Optional environment variable that enables an optional external provider when set to a truthy value such as 1/true/yes/on.",
           "pattern": "^[A-Z][A-Z0-9_]{1,80}$"
         },
+        "credential_env": {
+          "type": "string",
+          "description": "Optional environment variable that holds the provider credential. When set, an optional external provider is considered configured and will be surfaced/probed.",
+          "pattern": "^[A-Z][A-Z0-9_]{1,80}$"
+        },
         "smoke_test_command": {
           "description": "Full command string used for smoke testing (typically a quick pytest run with --timeout). null when the service has no smoke tests.",
           "default": null,

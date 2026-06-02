@@ -17,6 +17,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
+import { getStreamlitUrl } from "@/lib/config";
+
 type NavEntry = {
   href: string;
   label: string;
@@ -31,7 +33,7 @@ type NavGroup = {
   items: NavEntry[];
 };
 
-const STREAMLIT_URL = (process.env.NEXT_PUBLIC_STREAMLIT_URL ?? "http://localhost:18501").replace(/\/$/, "");
+const STREAMLIT_URL = getStreamlitUrl();
 
 const NAV_GROUPS: NavGroup[] = [
   {
@@ -186,7 +188,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
         <div className="app-topbar__actions">
           <a
             className="btn btn--ghost btn--sm"
-            href={process.env.NEXT_PUBLIC_STREAMLIT_URL ?? "http://localhost:18501"}
+            href={STREAMLIT_URL}
             target="_blank"
             rel="noopener noreferrer"
           >

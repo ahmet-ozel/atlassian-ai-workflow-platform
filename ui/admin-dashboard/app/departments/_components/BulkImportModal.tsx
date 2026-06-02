@@ -14,6 +14,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { apiFetch } from "@/lib/api-client";
+import { getAdminApiBaseUrl } from "@/lib/config";
 
 // ---------------------------------------------------------------------------
 // Props
@@ -217,8 +218,7 @@ export default function BulkImportModal({
       formData.append("file", file);
       formData.append("dry_run", mode === "dry_run" ? "true" : "false");
 
-      const baseUrl =
-        process.env.NEXT_PUBLIC_ADMIN_API_BASE_URL ?? "http://localhost:8082";
+      const baseUrl = getAdminApiBaseUrl();
       const url = `${baseUrl}/admin/departments/bulk-import`;
 
       const res = await fetch(url, {

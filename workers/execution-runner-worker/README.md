@@ -1,17 +1,14 @@
 # execution-runner-worker
 
-Temporal worker skeleton for the multi-service scaffold. Hosts the
-`ExecutionRunWorkflow` and the supporting SSH / Docker / Vault / MinIO
-activities described in the
-[design](../../.kiro/specs/multi-service-scaffold/design.md) §3.2.
+Temporal worker that hosts the `ExecutionRunWorkflow` and its supporting
+SSH / Docker / Vault / MinIO activities (see the
+[design](../../.kiro/specs/multi-service-scaffold/design.md) §3.2).
 
 The worker connects to the Temporal cluster identified by the
 `TEMPORAL_HOST` environment variable (default `temporal:7233`) and
-subscribes to the **`execution-runner`** task queue. Concrete workflow,
-activity, and runner implementations are stubbed out under
-`src/workflows/`, `src/activities/`, and `src/runners/` (each module
-contains a single `# TODO: implement` marker) and will be filled in by
-later specs.
+subscribes to the **`execution-runner`** task queue. Workflow, activity,
+and runner implementations live under `src/workflows/`, `src/activities/`,
+and `src/runners/`.
 
 Unlike `agent-runner-worker`, this worker does **not** ship a
 `prompts/` directory; it executes pre-authored runner plans instead of
@@ -21,16 +18,16 @@ LLM-driven prompt steps.
 
 The worker runs in **Standalone Mode** without the rest of the Compose
 stack (Requirement 15). It only needs a reachable Temporal endpoint;
-all other dependencies (Vault, MinIO, Postgres, SSH targets) are
-exercised by the not-yet-implemented activities and may be omitted at
-this scaffold stage.
+the other dependencies (Vault, MinIO, Postgres, SSH targets) are used by
+the activities at runtime.
 
 ```bash
 # from workers/execution-runner-worker/
-docker build -t execution-runner-worker:scaffold .
+docker build -t execution-runner-worker .
 
-cp .env.example .env
-docker run --rm --env-file .env execution-runner-worker:scaffold
+# This project uses .env files only (no .env.example). Create workers/
+# execution-runner-worker/.env first, then:
+docker run --rm --env-file .env execution-runner-worker
 ```
 
 The container has no published ports — workers communicate exclusively
@@ -40,7 +37,7 @@ instance running on the host machine override `TEMPORAL_HOST`:
 ```bash
 docker run --rm \
   -e TEMPORAL_HOST=host.docker.internal:7233 \
-  execution-runner-worker:scaffold
+  execution-runner-worker
 ```
 
 If the Temporal connection cannot be established the process exits
@@ -85,5 +82,5 @@ workers/execution-runner-worker/
 │       └── noop.py                      # placeholder
 ├── tests/{unit,integration,e2e}/        # .gitkeep only
 ├── pyproject.toml
-└── .env.example                         # added in task 7.2
+└── .env                                 # service-local env (git-ignored)
 ```

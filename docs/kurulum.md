@@ -60,10 +60,10 @@ Kapali birakilan servisler:
 - firecrawl
 - opencode-sidecar
 
-Kullanilan adresler:
+Kullanilan adresler (host portlari `infra/.env`'deki `*_HOST_PORT` ile degisir):
 
-- Admin Dashboard: `http://127.0.0.1:3000/services`
-- Streamlit: `http://127.0.0.1:18501`
+- Admin Dashboard: `http://127.0.0.1:33000/services`
+- Streamlit: `http://127.0.0.1:38501`
 
 ## Kod ve runtime duzeltmeleri
 

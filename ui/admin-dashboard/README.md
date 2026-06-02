@@ -1,22 +1,21 @@
 # `admin-dashboard`
 
-Next.js 14 (App Router) admin UI for the multi-service scaffold.
-This package is intentionally a thin scaffold at this stage — the
-nine pages under `app/` (`services`, `workflows`, `departments`,
-`prompts`, `audit`, `costs`, `notifications`, `security`,
-`feature-flags`) are placeholders, and `lib/api-client.ts` exposes
-a single `apiFetch` stub that talks to `admin-dashboard-api`.
+Next.js 14 (App Router) admin UI for the platform. It is the operator
+control plane: bring services up/down, manage departments and credentials,
+configure LLM providers, review workflows and PO requests, run live smoke
+tests, and inspect costs / logs / audit trails.
 
-See `MIMARI.md` §2 and `.kiro/specs/multi-service-scaffold/design.md`
-§3.3 for the broader architecture.
+All URL and port resolution lives in a single module, `lib/config.ts`
+(env-driven, no hard-coded ports). `lib/api-client.ts` exposes `apiFetch`,
+which talks to `admin-dashboard-api` via that config.
+
+See `MIMARI.md` and `.kiro/specs/` for the broader architecture.
 
 ## Standalone build & run
 
-This Component is designed to be runnable on its own without the
-full Compose stack (per Requirement 15). The backing API
-(`admin-dashboard-api`) is reachable via
-`NEXT_PUBLIC_ADMIN_API_BASE_URL`; if unset, `apiFetch` falls back to
-`http://localhost:8082`.
+This component can run on its own without the full Compose stack. The backing
+API (`admin-dashboard-api`) is reached via `NEXT_PUBLIC_ADMIN_API_BASE_URL`;
+when unset, `lib/config.ts` falls back to `http://localhost:38082` (dev only).
 
 Prerequisites:
 
@@ -28,36 +27,26 @@ Prerequisites:
 From this directory (`ui/admin-dashboard/`):
 
 ```bash
-# 1. Install dependencies
-npm install
-
-# 2. Type-check
-npm run typecheck
-
-# 3. Production build
-npm run build
-
-# 4. Start the production server on :3000
-npm run start
+npm install            # 1. install dependencies
+npm run typecheck      # 2. type-check
+npm run build          # 3. production build
+npm run start          # 4. start the production server on :3000 (container port)
 
 # Or, for iterative development with hot reload:
 npm run dev
 ```
 
-Then open http://localhost:3000 — you should see the
-`Admin Dashboard — scaffold` placeholder.
+In the Compose stack the UI is published on the host at
+**`http://localhost:33000`** (`ADMIN_DASHBOARD_UI_HOST_PORT`); standalone runs
+listen on the container port `3000`.
 
 ### With Docker (standalone, no Compose)
 
-A multi-stage `Dockerfile` will be added in task 6.3. Once present,
-this Component can be built and run in isolation:
-
 ```bash
-# From this directory
 docker build -t admin-dashboard:dev .
 docker run --rm \
   --env-file .env \
-  -p 3000:3000 \
+  -p 33000:3000 \
   admin-dashboard:dev
 ```
 
@@ -65,21 +54,22 @@ docker run --rm \
 
 ```
 ui/admin-dashboard/
-├── app/
-│   ├── layout.tsx              # RootLayout (html/body wrapper)
-│   ├── page.tsx                # "Admin Dashboard — scaffold"
-│   ├── services/page.tsx
-│   ├── workflows/page.tsx
-│   ├── departments/page.tsx
-│   ├── prompts/page.tsx
-│   ├── audit/page.tsx
-│   ├── costs/page.tsx
-│   ├── notifications/page.tsx
-│   ├── security/page.tsx
-│   └── feature-flags/page.tsx
-├── components/.gitkeep         # reserved for shared React components
+├── app/                        # App Router pages
+│   ├── layout.tsx              # RootLayout + AppShell chrome
+│   ├── page.tsx                # Home / Setup Wizard
+│   ├── services/               # Service lifecycle + quick start
+│   ├── workflows/              # Temporal workflow list + drill-down
+│   ├── po-review/              # PO review of bot-opened draft PRs
+│   ├── departments/            # Department CRUD + credentials
+│   ├── capabilities/           # Capability matrix
+│   ├── live-smoke/             # Live smoke tests
+│   ├── llm-providers/          # LLM provider config
+│   ├── prompts/ audit/ costs/ logs/ mcp-traffic/
+│   ├── notifications/ feature-flags/ firecrawl/ security/ operations/
+├── components/                 # Shared React components (AppShell, modals, …)
 ├── lib/
-│   └── api-client.ts           # apiFetch(path, init) stub
+│   ├── config.ts               # single source of truth for URLs/ports (env-driven)
+│   └── api-client.ts           # apiFetch(path, init)
 ├── package.json                # next ^14, react ^18, react-dom ^18
 ├── next.config.mjs             # minimal Next.js 14 config
 ├── tsconfig.json               # target ES2022, jsx: preserve, strict
@@ -88,10 +78,16 @@ ui/admin-dashboard/
 
 ## Environment variables
 
-| Variable | Purpose | Default |
+| Variable | Purpose | Default (dev) |
 | --- | --- | --- |
-| `NEXT_PUBLIC_ADMIN_API_BASE_URL` | Base URL of `admin-dashboard-api` | `http://localhost:8082` |
-| `PORT` | Port the Next.js server listens on | `3000` |
+| `NEXT_PUBLIC_ADMIN_API_BASE_URL` | Base URL of `admin-dashboard-api` | `http://localhost:38082` |
+| `NEXT_PUBLIC_STREAMLIT_URL` | Base URL of the end-user Streamlit app | `http://localhost:38501` |
+| `NEXT_PUBLIC_DEV_TOKEN` | Dev bearer token (when `AUTH_MODE=dev`) | `dev-admin-token` |
+| `PORT` | Container port the Next.js server listens on | `3000` |
 | `LOG_LEVEL` | Log verbosity | `INFO` |
 
-A component-local `.env.example` will be added in task 7.3.
+> The dev fallbacks above only apply to `npm run dev` without a backing
+> `.env`. In the Compose stack these `NEXT_PUBLIC_*` values come from
+> `infra/.env` / the service `environment:` block. To change a port, edit the
+> `*_HOST_PORT` variables in `infra/.env` — never the TypeScript source.
+> This project uses `.env` files only; there is no `.env.example`.

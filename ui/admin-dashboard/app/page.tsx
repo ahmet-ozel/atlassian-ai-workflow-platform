@@ -15,6 +15,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState, Suspense } from "react";
 
 import { apiFetch } from "@/lib/api-client";
+import { getStreamlitUrl } from "@/lib/config";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -146,7 +147,7 @@ function HomePageInner() {
           <div className="hero__actions">
             <a
               className="btn btn--lg"
-              href={process.env.NEXT_PUBLIC_STREAMLIT_URL ?? "http://localhost:18501"}
+              href={getStreamlitUrl()}
               target="_blank"
               rel="noopener noreferrer"
             >

@@ -1,42 +1,41 @@
 # streamlit-app
 
-Streamlit-based user-facing UI for the multi-service scaffold. Provides
-the chat, task creator, explorer, workflows, orphan-branches and PO
-review inbox surfaces backed by `assistant-service` and `atlassian-mcp`
-(see `MIMARI.md` §2 and the multi-service-scaffold spec, Requirement 4).
+The end-user Streamlit UI. It provides the per-session **Credentials**,
+**Chat** and **Task Creator** surfaces, backed by `assistant-service` and
+`atlassian-mcp` (see `MIMARI.md` and the platform specs).
 
-This package is a scaffold: `app.py` only renders a placeholder title
-and every page under `pages/` is a `# TODO: implement page` stub.
+Governance surfaces (Workflows, PO Review, Orphan Branches) intentionally live
+in the **admin dashboard** (admin-gated), not here — every user who opens
+Streamlit must not see operator-only controls.
+
+The admin-only MCP debug pages (`3_explorer`, `7_mcp_inspector`) are reachable
+from the admin dashboard's "Debugging" navigation group, not from the normal
+end-user menu.
 
 ## Layout
 
 ```
 ui/streamlit-app/
-├── app.py                     # Streamlit entrypoint, listens on :8501
-├── pages/                     # Multi-page navigation entries
-│   ├── 1_chat.py
-│   ├── 2_task_creator.py
-│   ├── 3_explorer.py
-│   ├── 4_workflows.py
-│   ├── 5_orphan_branches.py
-│   └── 6_po_review_inbox.py
-├── config.py                  # Runtime settings loader (placeholder)
-├── mcp_client.py              # libs/http-shared wrapper (placeholder)
-├── config/
-│   └── quick_actions.yaml     # Quick-action presets, currently empty (`[]`)
-├── requirements.txt           # streamlit, httpx, pyyaml
+├── app.py                     # Streamlit entrypoint (binds to container port 8501)
+├── pages/
+│   ├── 0_credentials.py       # per-session Jira/Confluence/Bitbucket credentials
+│   ├── 1_chat.py              # chat → MCP, formatted by the configured LLM
+│   ├── 2_task_creator.py      # Jira task-description drafting assistant
+│   ├── 3_explorer.py          # (admin-debug) read-only MCP explorer
+│   └── 7_mcp_inspector.py     # (admin-debug) MCP inspector
+├── chat_runtime.py            # chat → plan → MCP call → LLM summary
+├── chat_planner.py            # intent/plan extraction (Confluence space-key, etc.)
+├── chat_mcp.py                # MCP client wiring
+├── config.py                  # Pydantic settings loader
+├── mcp_client.py              # libs/http-shared wrapper
+├── components/                # dept_switcher, credential_manager, theme, …
+├── config/quick_actions.yaml  # quick-action presets
+├── requirements.txt           # streamlit, httpx, pyyaml, …
+├── Dockerfile
 └── README.md
 ```
 
-The `config.py` module (Pydantic Settings loader) and the
-`config/quick_actions.yaml` file coexist by design: the former is
-imported as a Python module, the latter is a YAML data file consumed at
-runtime.
-
 ## Standalone build & run
-
-The container image and `Dockerfile` arrive in task 6.3; until then the
-app runs straight from a local Python environment.
 
 ```bash
 # from ui/streamlit-app/
@@ -45,30 +44,34 @@ python -m venv .venv
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 
-# Streamlit binds to its default port 8501.
+# Streamlit binds to its container port 8501.
 streamlit run app.py --server.port=8501 --server.address=0.0.0.0
 ```
 
-Once task 6.3 lands the same component will also be runnable as a
-container:
+In the Compose stack the app is published on the host at
+**`http://localhost:38501`** (`STREAMLIT_HOST_PORT`). As a container:
 
 ```bash
-# from ui/streamlit-app/ (after task 6.3 adds the Dockerfile)
 docker build -t streamlit-app .
-cp .env.example .env            # provided by task 7.3
-docker run --rm --env-file .env -p 8501:8501 streamlit-app
+docker run --rm --env-file .env -p 38501:8501 streamlit-app
 ```
 
 ## Configuration
 
-Runtime settings come from environment variables. The full list lands
-with task 7.3 in `.env.example`; the Streamlit app reads at minimum:
+Runtime settings come from environment variables (this project uses `.env`
+files only — there is no `.env.example`). Key variables:
 
-- `PORT` — defaults to `8501` (Streamlit default).
+- `STREAMLIT_HOST_PORT` — host port published by Compose (default `38501`);
+  the container always listens on `8501`.
 - `LOG_LEVEL` — defaults to `INFO`.
 - `ASSISTANT_BASE_URL` — base URL of `assistant-service`
-  (e.g. `http://assistant-service:8081`).
+  (e.g. `http://assistant-service:8081`, the internal container address).
 - `MCP_BASE_URL` — base URL of `atlassian-mcp`
-  (e.g. `http://atlassian-mcp:8090`).
-- `CLIENT_SOURCE` — optional override; defaults to `streamlit-app`
-  (see Requirement 13 and `libs/http-shared`).
+  (e.g. `http://atlassian-mcp:8090`, the internal container address).
+- `LLM_PROVIDER` / `LLM_MODEL_NAME` / `OPENAI_API_KEY` — entered from the
+  Dashboard Start modal, not committed to `.env`.
+- `CLIENT_SOURCE` — optional override; defaults to `streamlit-app`.
+
+> Service-to-service URLs use the internal container ports (`:8081`, `:8090`)
+> and never change. Only host-published ports are configurable, via the
+> `*_HOST_PORT` variables in `infra/.env`.

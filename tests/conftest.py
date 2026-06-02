@@ -160,7 +160,7 @@ COMPONENT_MANIFEST: tuple[ComponentSpec, ...] = (
         runtime="python",
         path="services/automation-service",
         container_port=8080,
-        host_port=8080,
+        host_port=38084,
         profiles=(),
         depends_on=("postgres", "vault", "temporal", "atlassian-mcp"),
         required_env=(
@@ -180,7 +180,7 @@ COMPONENT_MANIFEST: tuple[ComponentSpec, ...] = (
         runtime="python",
         path="services/assistant-service",
         container_port=8081,
-        host_port=8081,
+        host_port=38081,
         profiles=(),
         depends_on=("postgres", "redis", "atlassian-mcp"),
         required_env=(
@@ -198,7 +198,7 @@ COMPONENT_MANIFEST: tuple[ComponentSpec, ...] = (
         runtime="python",
         path="services/admin-dashboard-api",
         container_port=8082,
-        host_port=8082,
+        host_port=38082,
         profiles=(),
         depends_on=("postgres", "vault", "temporal"),
         required_env=(
@@ -217,7 +217,7 @@ COMPONENT_MANIFEST: tuple[ComponentSpec, ...] = (
         runtime="python",
         path="services/task-intake-service",
         container_port=8083,
-        host_port=8083,
+        host_port=38083,
         profiles=("task-intake",),
         depends_on=("postgres", "temporal", "atlassian-mcp", "firecrawl"),
         required_env=(
@@ -286,7 +286,7 @@ COMPONENT_MANIFEST: tuple[ComponentSpec, ...] = (
         runtime="python",
         path="ui/streamlit-app",
         container_port=8501,
-        host_port=8501,
+        host_port=38501,
         profiles=(),
         depends_on=("assistant-service",),
         required_env=(
@@ -303,7 +303,7 @@ COMPONENT_MANIFEST: tuple[ComponentSpec, ...] = (
         runtime="node",
         path="ui/admin-dashboard",
         container_port=3000,
-        host_port=3000,
+        host_port=33000,
         profiles=(),
         # The Compose service for this UI is named ``admin-dashboard-ui``
         # (see EXPECTED_COMPOSE_SERVICES); the manifest carries the
@@ -631,14 +631,14 @@ EXPECTED_COMPOSE_SERVICES: frozenset[str] = frozenset(
 #: with Component host ports by ``test_port_uniqueness.py`` (Property 3)
 #: to assert global uniqueness.
 INFRA_PUBLISHED_PORTS: dict[str, tuple[int, ...]] = {
-    "postgres": (5432,),
-    "redis": (6379,),
-    "vault": (8200,),
-    "temporal": (7233,),
-    "temporal-ui": (8233,),
-    "minio": (9000, 9001),
-    "firecrawl": (3002,),
-    "atlassian-mcp": (8090,),
+    "postgres": (35432,),
+    "redis": (36379,),
+    "vault": (38200,),
+    "temporal": (37233,),
+    "temporal-ui": (38233,),
+    "minio": (39000, 39001),
+    "firecrawl": (33002,),
+    "atlassian-mcp": (38090,),
 }
 
 

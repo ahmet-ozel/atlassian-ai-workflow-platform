@@ -1,9 +1,8 @@
 # agent-runner-worker
 
-Temporal worker skeleton for the multi-service scaffold. Hosts the
-`AgentRunnerWorkflow` and the supporting activities (Jira, Bitbucket,
-Confluence, LLM, artifact, opencode) and subscribes to the
-`agent-runner` Temporal task queue.
+Temporal worker that hosts the `AgentRunnerWorkflow` and its supporting
+activities (Jira, Bitbucket, Confluence, LLM, artifact, opencode) and
+subscribes to the `agent-runner` Temporal task queue.
 
 The worker does **not** publish any TCP port: it only opens an outgoing
 connection to the Temporal cluster pointed at by `TEMPORAL_HOST`
@@ -11,10 +10,8 @@ connection to the Temporal cluster pointed at by `TEMPORAL_HOST`
 process exits with a non-zero status code so that the orchestrator can
 restart it (Requirement 3.7).
 
-Prompt files under `prompts/` are placeholder stubs (`<!-- TODO: prompt
-content -->`) that will be filled in by later tasks. Concrete workflow
-and activity bodies live behind the `# TODO: implement` modules in
-`src/workflows/` and `src/activities/`.
+Prompt files under `prompts/` drive the LLM activities; workflow and
+activity bodies live in `src/workflows/` and `src/activities/`.
 
 ## Standalone build & run
 
@@ -25,10 +22,11 @@ this directory:
 
 ```bash
 # from workers/agent-runner-worker/
-docker build -t agent-runner-worker:scaffold .
+docker build -t agent-runner-worker .
 
-cp .env.example .env
-docker run --rm --env-file .env agent-runner-worker:scaffold
+# This project uses .env files only (no .env.example). Create workers/
+# agent-runner-worker/.env first, then:
+docker run --rm --env-file .env agent-runner-worker
 ```
 
 To point the worker at a Temporal cluster running on the host machine,
@@ -38,7 +36,7 @@ override `TEMPORAL_HOST` on the command line:
 docker run --rm \
     -e TEMPORAL_HOST=host.docker.internal:7233 \
     -e TEMPORAL_TASK_QUEUE=agent-runner \
-    agent-runner-worker:scaffold
+    agent-runner-worker
 ```
 
 The container's `HEALTHCHECK` performs a one-shot Temporal client

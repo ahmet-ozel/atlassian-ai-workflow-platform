@@ -14,6 +14,8 @@
 
 import { useCallback, useRef, useState } from "react";
 
+import { getAdminApiBaseUrl } from "@/lib/config";
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -52,8 +54,7 @@ export default function VaultInitModal({ onComplete }: VaultInitModalProps) {
     setConfirmed(false);
 
     try {
-      const baseUrl =
-        process.env.NEXT_PUBLIC_ADMIN_API_BASE_URL ?? "http://localhost:8082";
+      const baseUrl = getAdminApiBaseUrl();
       const response = await fetch(`${baseUrl}/admin/vault/init`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

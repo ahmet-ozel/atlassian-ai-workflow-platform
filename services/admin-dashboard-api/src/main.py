@@ -1031,13 +1031,28 @@ app = FastAPI(
 # remains outermost regardless of any future middleware additions.
 app.add_middleware(TraceMiddleware)
 
-# CORS middleware — allows the admin-dashboard-ui (localhost:3000) to
-# call the API (localhost:8082) during local development.
+# CORS middleware — allows the admin-dashboard-ui to call the API during
+# local development. Origins are env-driven (single source of truth):
+# set ``CORS_ALLOW_ORIGINS`` to a comma-separated list to override. The
+# dev default covers the dashboard's published host port (see
+# ``ADMIN_DASHBOARD_UI_HOST_PORT`` in infra/.env). Ports are NOT
+# hard-coded — change the deployment env, not this source.
+import os as _os
+
 from fastapi.middleware.cors import CORSMiddleware
+
+_cors_origins = [
+    origin.strip()
+    for origin in _os.environ.get(
+        "CORS_ALLOW_ORIGINS",
+        "http://localhost:33000,http://127.0.0.1:33000",
+    ).split(",")
+    if origin.strip()
+]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

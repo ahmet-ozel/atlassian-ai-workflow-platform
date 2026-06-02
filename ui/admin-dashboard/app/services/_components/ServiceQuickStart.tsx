@@ -3,6 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 
 import { apiFetch } from "@/lib/api-client";
+import { getStreamlitUrl } from "@/lib/config";
 import StateBadge, { type ServiceState } from "./StateBadge";
 
 type ServiceSummary = {
@@ -38,9 +39,7 @@ type AiModelState =
   | { kind: "configured"; provider: ExternalProvider }
   | { kind: "error" };
 
-const STREAMLIT_URL = (
-  process.env.NEXT_PUBLIC_STREAMLIT_URL ?? "http://localhost:18501"
-).replace(/\/$/, "");
+const STREAMLIT_URL = getStreamlitUrl();
 
 const AI_PROVIDER_NAMES = new Set(["openai", "vllm", "anthropic"]);
 

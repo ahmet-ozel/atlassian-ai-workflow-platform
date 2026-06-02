@@ -156,17 +156,33 @@ def test_workflows_list_page_links_to_detail_route() -> None:
 
 
 def test_admin_shell_links_streamlit_debug_tools() -> None:
-    """Streamlit ops/debug tools must be linked from admin navigation."""
+    """Streamlit ops/debug tools must be linked from admin navigation.
+
+    Governance surfaces (Workflows, PO Review, Orphan Branches) now
+    live as native admin-dashboard routes, not Streamlit links. Only
+    the read-only MCP debug tools remain external Streamlit links.
+    """
 
     shell = _PAGES_DIR.parent / "components" / "AppShell.tsx"
     body = shell.read_text(encoding="utf-8")
-    assert "Orphan Branches" in body
     assert "MCP Explorer" in body
     assert "MCP Inspector" in body
-    assert "/orphan_branches" in body
     assert "/explorer" in body
     assert "/mcp_inspector" in body
     assert "NEXT_PUBLIC_STREAMLIT_URL" in body
+
+
+def test_admin_shell_links_po_review_route() -> None:
+    """PO Review is a native admin-dashboard route (moved from Streamlit)."""
+
+    shell = _PAGES_DIR.parent / "components" / "AppShell.tsx"
+    body = shell.read_text(encoding="utf-8")
+    assert "/po-review" in body, (
+        "AppShell must link the native /po-review route; PO review moved "
+        "out of Streamlit into the admin dashboard."
+    )
+    po_page = _PAGES_DIR / "po-review" / "page.tsx"
+    assert po_page.is_file(), "app/po-review/page.tsx missing"
 
 
 # ---------------------------------------------------------------------------

@@ -95,6 +95,34 @@ function formatTimestamp(value: string | null | undefined): string {
   return date.toLocaleString();
 }
 
+/**
+ * Extract the LLM provider + model a service is configured to use from
+ * its manifest form-schema. Returns ``null`` when the service has no
+ * LLM fields (e.g. postgres, vault, atlassian-mcp) — those services do
+ * not talk to a model, so no "model" row is shown for them.
+ *
+ * NOTE: there is no standalone "AI model" service — each service that
+ * needs an LLM receives the provider/model + key in its own Start
+ * modal. This surfaces that per-service configuration so operators can
+ * see at a glance which model a given service runs on.
+ */
+function extractServiceModel(
+  fields: FormSchemaField[],
+): { provider: string; model: string } | null {
+  const byKey = (k: string): string | null => {
+    const f = fields.find((x) => x.key === k);
+    const v = f?.default_value?.trim();
+    return v ? v : null;
+  };
+  const provider = byKey("LLM_PROVIDER");
+  const model = byKey("LLM_MODEL_NAME");
+  if (!provider && !model) return null;
+  return {
+    provider: provider ?? "—",
+    model: model ?? "—",
+  };
+}
+
 async function safeReadDetail(res: Response): Promise<string> {
   try {
     const ct = res.headers.get("content-type") ?? "";
@@ -159,9 +187,9 @@ function CredentialsBanner({
         }}
       >
         <span aria-hidden style={{ fontSize: "1.05rem" }}>✅</span>
-        <span style={{ fontWeight: 600 }}>Credentials OK</span>
+        <span style={{ fontWeight: 600 }}>Kimlik bilgileri OK</span>
         <span style={{ color: "#15803d", fontWeight: 400 }}>
-          · last probed {formatTimestamp(probeAt)}
+          · son kontrol {formatTimestamp(probeAt)}
         </span>
       </div>
     );
@@ -191,9 +219,9 @@ function CredentialsBanner({
         }}
       >
         <span aria-hidden style={{ fontSize: "1.05rem" }}>⚠️</span>
-        <strong>Credentials failed</strong>
+        <strong>Kimlik bilgileri başarısız</strong>
         <span style={{ color: "#92400e", fontWeight: 400 }}>
-          · last probed {formatTimestamp(probeAt)}
+          · son kontrol {formatTimestamp(probeAt)}
         </span>
         <span style={{ flex: 1 }} />
         <button
@@ -212,7 +240,7 @@ function CredentialsBanner({
             cursor: reprobing ? "wait" : "pointer",
           }}
         >
-          {reprobing ? "Probing…" : "Re-probe"}
+          {reprobing ? "Kontrol ediliyor…" : "Yeniden dene"}
         </button>
       </div>
       {detail && (
@@ -247,7 +275,7 @@ function CredentialsBanner({
             fontSize: "0.8rem",
           }}
         >
-          Re-probe failed: {reprobeError}
+          Yeniden deneme başarısız: {reprobeError}
         </div>
       )}
     </div>
@@ -347,11 +375,11 @@ export default function ServiceDetailPage({ params }: PageProps) {
         }}
       >
         <a href="/services" style={{ color: "#2563eb", textDecoration: "none" }}>
-          ← Services
+          ← Servisler
         </a>
       </nav>
 
-      {state.kind === "loading" && <p>Loading service detail…</p>}
+      {state.kind === "loading" && <p>Servis detayı yükleniyor…</p>}
 
       {state.kind === "error" && (
         <div
@@ -363,7 +391,7 @@ export default function ServiceDetailPage({ params }: PageProps) {
             borderRadius: "0.25rem",
           }}
         >
-          Failed to load service detail: {state.message}
+          Servis detayı yüklenemedi: {state.message}
         </div>
       )}
 
@@ -414,19 +442,19 @@ export default function ServiceDetailPage({ params }: PageProps) {
           >
             <h2 style={{ marginTop: 0, fontSize: "1.05rem" }}>Manifest</h2>
             <dl style={dlStyle}>
-              <dt style={dtStyle}>Compose service</dt>
+              <dt style={dtStyle}>Compose servisi</dt>
               <dd style={ddStyle}>
                 <code>{state.detail.compose_service_name}</code>
               </dd>
-              <dt style={dtStyle}>Compose profile</dt>
+              <dt style={dtStyle}>Compose profili</dt>
               <dd style={ddStyle}>
                 <code>{state.detail.compose_profile}</code>
               </dd>
-              <dt style={dtStyle}>Env example</dt>
+              <dt style={dtStyle}>Env örneği</dt>
               <dd style={ddStyle}>
                 <code>{state.detail.env_example_path}</code>
               </dd>
-              <dt style={dtStyle}>Health endpoint</dt>
+              <dt style={dtStyle}>Sağlık endpoint'i</dt>
               <dd style={ddStyle}>
                 {state.detail.health_endpoint ? (
                   <code>{state.detail.health_endpoint}</code>
@@ -434,7 +462,7 @@ export default function ServiceDetailPage({ params }: PageProps) {
                   <span style={{ color: "#9ca3af" }}>—</span>
                 )}
               </dd>
-              <dt style={dtStyle}>Test command</dt>
+              <dt style={dtStyle}>Test komutu</dt>
               <dd style={ddStyle}>
                 {state.detail.test_command ? (
                   <code>{state.detail.test_command}</code>
@@ -442,12 +470,68 @@ export default function ServiceDetailPage({ params }: PageProps) {
                   <span style={{ color: "#9ca3af" }}>—</span>
                 )}
               </dd>
-              <dt style={dtStyle}>Last started</dt>
+              <dt style={dtStyle}>Son başlatma</dt>
               <dd style={ddStyle}>
                 {formatTimestamp(state.detail.last_started_at)}
               </dd>
             </dl>
           </section>
+
+          {(() => {
+            const model = extractServiceModel(state.detail.form_schema.fields);
+            if (!model) return null;
+            const running =
+              state.detail.state === "running" ||
+              state.detail.state === "running_unmonitored";
+            return (
+              <section
+                style={{
+                  background: "#ffffff",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: "0.4rem",
+                  padding: "1rem 1.25rem",
+                  marginBottom: "1rem",
+                }}
+              >
+                <h2 style={{ marginTop: 0, fontSize: "1.05rem" }}>
+                  Yapay zekâ modeli
+                </h2>
+                <p
+                  style={{
+                    margin: "0 0 0.75rem",
+                    fontSize: "0.82rem",
+                    color: "#6b7280",
+                  }}
+                >
+                  Bu servisin kullandığı model, başlatılırken Start
+                  ekranından girilir. Aşağıdaki değerler servisin
+                  yapılandırmasından okunur.
+                </p>
+                <dl style={dlStyle}>
+                  <dt style={dtStyle}>Sağlayıcı</dt>
+                  <dd style={ddStyle}>
+                    <code>{model.provider}</code>
+                  </dd>
+                  <dt style={dtStyle}>Model</dt>
+                  <dd style={ddStyle}>
+                    <code>{model.model}</code>
+                  </dd>
+                  <dt style={dtStyle}>Durum</dt>
+                  <dd style={ddStyle}>
+                    {running ? (
+                      <span style={{ color: "#166534", fontWeight: 600 }}>
+                        ✓ Servis çalışıyor
+                      </span>
+                    ) : (
+                      <span style={{ color: "#92400e", fontWeight: 600 }}>
+                        Servis çalışmıyor
+                      </span>
+                    )}
+                  </dd>
+                </dl>
+              </section>
+            );
+          })()}
 
           {state.detail.last_health_snapshot && (
             <section
@@ -460,14 +544,14 @@ export default function ServiceDetailPage({ params }: PageProps) {
               }}
             >
               <h2 style={{ marginTop: 0, fontSize: "1.05rem" }}>
-                Last health snapshot
+                Son sağlık görüntüsü
               </h2>
               <dl style={dlStyle}>
-                <dt style={dtStyle}>State</dt>
+                <dt style={dtStyle}>Durum</dt>
                 <dd style={ddStyle}>
                   {state.detail.last_health_snapshot.state}
                 </dd>
-                <dt style={dtStyle}>Probed at</dt>
+                <dt style={dtStyle}>Kontrol zamanı</dt>
                 <dd style={ddStyle}>
                   {formatTimestamp(state.detail.last_health_snapshot.ts)}
                 </dd>

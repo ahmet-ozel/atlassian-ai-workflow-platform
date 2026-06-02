@@ -658,17 +658,36 @@ def _items_from_mcp_result(result: Any, key: str) -> list[dict[str, Any]]:
 
 
 def _ensure_user_context(state: Any) -> None:
-    """Install a minimal session user when OIDC has not populated one."""
+    """Install a minimal session user when OIDC has not populated one.
+
+    This branch only runs in the dev fallback — production OIDC
+    middleware populates ``state["user"]`` (with real ``dept_ids``
+    claims) before this is reached, so the early return keeps the
+    production path untouched. In dev mode we seed ``dept_ids`` from
+    admin-dashboard-api so dept-scoped pages (Task Creator, PO Review
+    Inbox) are reachable without a live IdP. An explicit
+    ``STREAMLIT_DEV_DEPT_IDS`` env (comma-separated) wins when set.
+    """
 
     if state.get("user"):
         return
+
+    env_dept_ids = [
+        item.strip()
+        for item in os.environ.get("STREAMLIT_DEV_DEPT_IDS", "").split(",")
+        if item.strip()
+    ]
+    dept_ids = env_dept_ids or _load_department_ids_from_admin_api()
+    default_dept = os.environ.get("STREAMLIT_DEV_DEFAULT_DEPT_ID", "").strip()
+    if default_dept not in dept_ids:
+        default_dept = dept_ids[0] if dept_ids else ""
 
     state["user"] = {
         "id": os.environ.get("STREAMLIT_DEV_USER_ID", "dev-user"),
         "session_id": os.environ.get("STREAMLIT_DEV_SESSION_ID", "dev-streamlit-session"),
         "display_name": os.environ.get("STREAMLIT_DEV_USER_NAME", "Dev User"),
-        "dept_ids": [],
-        "default_dept_id": "",
+        "dept_ids": dept_ids,
+        "default_dept_id": default_dept,
     }
     state.setdefault("auth_token", os.environ.get("STREAMLIT_DEV_AUTH_TOKEN", "dev"))
 
@@ -791,8 +810,6 @@ _USER_NAV_PAGES: tuple[tuple[str, str, str], ...] = (
     ("🔑", "Credentials", "pages/0_credentials.py"),
     ("💬", "Chat", "pages/1_chat.py"),
     ("🆕", "Task Creator", "pages/2_task_creator.py"),
-    ("🔁", "Workflows", "pages/4_workflows.py"),
-    ("📥", "PO Review Inbox", "pages/6_po_review_inbox.py"),
 )
 
 
@@ -973,8 +990,6 @@ def main() -> None:
         ("🔑", "Credentials", "Atlassian token'larınızı bağlayın", "pages/0_credentials.py"),
         ("💬", "Chat", "AI ile konuşun, soru sorun", "pages/1_chat.py"),
         ("🆕", "Task Creator", "Jira task description taslağı hazırlayın", "pages/2_task_creator.py"),
-        ("🔁", "Workflows", "Çalışan iş akışlarını izleyin", "pages/4_workflows.py"),
-        ("📥", "PO Inbox", "PO inceleme talepleri", "pages/6_po_review_inbox.py"),
     ]
 
     grid_cols = st.columns(2)

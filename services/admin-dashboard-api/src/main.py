@@ -1557,6 +1557,12 @@ try:  # pragma: no cover - exercised by live browser validation
 except Exception as _import_exc:  # noqa: BLE001
     logger.info("automation_e2e_smoke router unavailable: %s", _import_exc)
 
+try:  # pragma: no cover - exercised by unit tests
+    from .routers.po_review_proxy import router as _po_review_proxy_router
+    app.include_router(_po_review_proxy_router)
+except Exception as _import_exc:  # noqa: BLE001
+    logger.info("po_review_proxy router unavailable: %s", _import_exc)
+
 
 # ---------------------------------------------------------------------------
 # McpTrafficRouter (platform-gap-fill task 8.3)

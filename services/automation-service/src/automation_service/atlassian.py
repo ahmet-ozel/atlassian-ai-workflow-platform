@@ -355,6 +355,92 @@ class AtlassianProbeClient:
         values = data.get("values") if isinstance(data, dict) else None
         return list(values) if isinstance(values, list) else []
 
+    # ------------------------------------------------------------------
+    # Bitbucket — PO Review / orphan-branch read-only scanners
+    # ------------------------------------------------------------------
+
+    async def bitbucket_scan_pull_requests(
+        self, cred: Any, workspace: str, repo: str
+    ) -> list[dict[str, Any]]:
+        """Return open/draft PRs projected into the PO-review shape.
+
+        Each returned mapping carries the keys the PO Review API shim
+        (`api/po_review._project_pull_requests`) expects: ``id``,
+        ``source_branch``, ``is_draft``, ``author_account_id`` and
+        ``title``. The Bitbucket Cloud ``/pullrequests`` endpoint is
+        paginated; we follow ``next`` links up to a small cap so a
+        busy repo cannot stall the request.
+        """
+
+        results: list[dict[str, Any]] = []
+        # ``state=OPEN`` covers both ready and draft PRs; Bitbucket
+        # exposes the draft flag on each PR object as ``draft``.
+        path = (
+            f"/repositories/{workspace}/{repo}/pullrequests"
+            "?state=OPEN&pagelen=50"
+        )
+        for _ in range(10):  # hard page cap (50 * 10 = 500 PRs max)
+            data = await self._bitbucket_get(cred, path)
+            values = data.get("values") if isinstance(data, dict) else None
+            for item in values or []:
+                if not isinstance(item, dict):
+                    continue
+                author = item.get("author") if isinstance(item.get("author"), dict) else {}
+                account_id = str(author.get("account_id") or author.get("uuid") or "")
+                source = item.get("source") if isinstance(item.get("source"), dict) else {}
+                branch = source.get("branch") if isinstance(source.get("branch"), dict) else {}
+                source_branch = str(branch.get("name") or "")
+                pr_id = item.get("id")
+                if not isinstance(pr_id, int) or not source_branch or not account_id:
+                    continue
+                results.append(
+                    {
+                        "id": pr_id,
+                        "source_branch": source_branch,
+                        "is_draft": bool(item.get("draft", False)),
+                        "author_account_id": account_id,
+                        "title": str(item.get("title") or ""),
+                    }
+                )
+            next_url = data.get("next") if isinstance(data, dict) else None
+            if not isinstance(next_url, str) or not next_url:
+                break
+            # ``next`` is an absolute URL; strip the API origin so the
+            # shared ``_bitbucket_get`` (which prepends the origin) works.
+            path = next_url.split("https://api.bitbucket.org/2.0", 1)[-1]
+        return results
+
+    async def bitbucket_scan_branches(
+        self, cred: Any, workspace: str, repo: str
+    ) -> list[dict[str, Any]]:
+        """Return branches projected into the orphan-branch scan shape.
+
+        Each mapping carries ``name`` and ``last_commit_at`` (UTC
+        ``datetime`` or ``None``) — the keys the PO Review API shim's
+        `_project_branches` helper consumes.
+        """
+
+        from datetime import datetime as _dt
+
+        raw = await self._bitbucket_branches(cred, workspace, repo)
+        projected: list[dict[str, Any]] = []
+        for item in raw:
+            if not isinstance(item, dict):
+                continue
+            name = str(item.get("name") or "")
+            if not name:
+                continue
+            target = item.get("target") if isinstance(item.get("target"), dict) else {}
+            raw_date = str(target.get("date") or "")
+            last_commit_at = None
+            if raw_date:
+                try:
+                    last_commit_at = _dt.fromisoformat(raw_date.replace("Z", "+00:00"))
+                except ValueError:
+                    last_commit_at = None
+            projected.append({"name": name, "last_commit_at": last_commit_at})
+        return projected
+
 
 def _normalise_mcp_url(base_url: str) -> str:
     base = str(base_url or "").rstrip("/")

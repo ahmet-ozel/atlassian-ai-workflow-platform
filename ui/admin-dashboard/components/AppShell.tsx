@@ -39,7 +39,6 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/", label: "Kurulum", icon: "ST" },
       { href: "/operations", label: "Operasyonlar", icon: "OP", matchPrefix: true },
-      { href: `${STREAMLIT_URL}/orphan_branches`, label: "Orphan Branches", icon: "OB", external: true },
     ],
   },
   {
@@ -48,6 +47,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/departments", label: "Departmanlar", icon: "DP", matchPrefix: true },
       { href: "/services", label: "Servisler", icon: "SV", matchPrefix: true },
       { href: "/workflows", label: "İş akışları", icon: "WF", matchPrefix: true },
+      { href: "/po-review", label: "PO Review", icon: "PO", matchPrefix: true },
       { href: "/capabilities", label: "Yetenek matrisi", icon: "CP" },
       { href: "/live-smoke", label: "Canlı test", icon: "LS" },
     ],
@@ -87,6 +87,7 @@ const ROUTE_TITLE: Record<string, string> = {
   "/departments": "Departmanlar",
   "/services": "Servisler",
   "/workflows": "İş akışları",
+  "/po-review": "PO Review",
   "/capabilities": "Yetenek matrisi",
   "/live-smoke": "Canlı test",
   "/costs": "Maliyetler",

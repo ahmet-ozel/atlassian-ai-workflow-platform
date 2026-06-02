@@ -18,7 +18,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { apiFetch } from "@/lib/api-client";
 
-import ExternalProvidersSection from "./_components/ExternalProvidersSection";
 import McpSetupTab from "./_components/McpSetupTab";
 import ServiceQuickStart from "./_components/ServiceQuickStart";
 import StartFormModal from "./_components/StartFormModal";
@@ -601,8 +600,6 @@ export default function ServicesPage() {
 
       {activeTab === "services" && (
         <div role="tabpanel" id="services-tabpanel-services" aria-labelledby="services-tab-services" className="stack stack--lg">
-          <ExternalProvidersSection />
-
           {actionError && (
             <div className="banner banner--danger" role="alert">
               <span className="banner__icon">!</span>

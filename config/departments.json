@@ -84,9 +84,9 @@
     {
       "id": "payment",
       "display_name": "Payment Team",
-      "jira_project_keys": [],
-      "confluence_space_keys": [],
-      "bitbucket_workspace": null,
+      "jira_project_keys": ["KAN"],
+      "confluence_space_keys": ["E2ETEST"],
+      "bitbucket_workspace": "johni_test",
       "default_language": "tr",
       "web_search_enabled": true,
       "mode": "active",
@@ -95,9 +95,27 @@
           "credential_ref": "vault:atlassian/payment/jira",
           "account_id": "",
           "username": ""
+        },
+        "bitbucket": {
+          "credential_ref": "vault:atlassian/payment/bitbucket",
+          "account_id": "",
+          "username": "",
+          "deployment": "cloud"
+        },
+        "confluence": {
+          "credential_ref": "vault:atlassian/payment/confluence",
+          "account_id": "",
+          "username": ""
         }
       },
-      "repo_mappings": [],
+      "repo_mappings": [
+        {
+          "bitbucket_workspace": "johni_test",
+          "bitbucket_repo": "smoke-test",
+          "jira_project_key": "KAN",
+          "default_branch": "main"
+        }
+      ],
       "budget_caps": {
         "weekly_usd_dept": 500,
         "weekly_usd_user": 50,

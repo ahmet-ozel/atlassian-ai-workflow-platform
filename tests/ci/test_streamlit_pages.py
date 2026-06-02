@@ -29,14 +29,21 @@ _STREAMLIT_ROOT = (
 _REQUIRED_PAGES: tuple[str, ...] = (
     "1_chat.py",
     "2_task_creator.py",
-    "4_workflows.py",
-    "6_po_review_inbox.py",
 )
 
 _ADMIN_ONLY_PAGES: tuple[str, ...] = (
     "3_explorer.py",
-    "5_orphan_branches.py",
     "7_mcp_inspector.py",
+)
+
+#: Pages that moved OUT of Streamlit into the admin dashboard
+#: (governance surfaces that must be admin-gated, not exposed to
+#: every credential-holding chat user). They MUST NOT exist under
+#: ``pages/`` anymore.
+_MOVED_TO_ADMIN_DASHBOARD: tuple[str, ...] = (
+    "4_workflows.py",
+    "5_orphan_branches.py",
+    "6_po_review_inbox.py",
 )
 
 _REQUIRED_COMPONENTS: tuple[str, ...] = (
@@ -77,9 +84,28 @@ def test_streamlit_default_sidebar_navigation_disabled() -> None:
 def test_user_navigation_excludes_admin_debug_pages() -> None:
     app_source = (_STREAMLIT_ROOT / "app.py").read_text(encoding="utf-8")
     assert "pages/3_explorer.py" not in app_source
-    assert "pages/5_orphan_branches.py" not in app_source
     assert "pages/7_mcp_inspector.py" not in app_source
     assert "render_user_navigation" in app_source
+
+
+@pytest.mark.parametrize("page", _MOVED_TO_ADMIN_DASHBOARD)
+def test_governance_pages_moved_to_admin_dashboard(page: str) -> None:
+    """Workflows / Orphan Branches / PO Review left the Streamlit app.
+
+    These are governance surfaces that must be gated by admin auth in
+    the admin dashboard, not exposed to every credential-holding chat
+    user. The Streamlit ``pages/`` slot MUST be gone and the user nav
+    MUST NOT reference them.
+    """
+    path = _STREAMLIT_ROOT / "pages" / page
+    assert not path.is_file(), (
+        f"Streamlit page {page!r} must be removed; it moved to the "
+        "admin dashboard (admin-gated governance surface)."
+    )
+    app_source = (_STREAMLIT_ROOT / "app.py").read_text(encoding="utf-8")
+    assert f"pages/{page}" not in app_source, (
+        f"app.py still references pages/{page}; drop the nav/card entry."
+    )
 
 
 @pytest.mark.parametrize("component", _REQUIRED_COMPONENTS)

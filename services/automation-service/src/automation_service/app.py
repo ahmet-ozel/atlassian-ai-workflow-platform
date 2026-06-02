@@ -805,6 +805,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         pool=pool,
         audit_logger=audit_logger,
         oidc_validator=oidc_validator,
+        vault=vault,
+        probe_client=probe_client,
     )
     _wire_inbound(
         app,
@@ -1249,26 +1251,26 @@ def _wire_po_review(
     pool: object,
     audit_logger: object,
     oidc_validator: object,
+    vault: object,
+    probe_client: object,
 ) -> None:
-    """Wire ``app.state.po_review`` with the production ``PoReviewEndpointDeps``.
+    """Wire ``app.state.po_review`` with production Bitbucket scanners.
 
     Builds the per-endpoint collaborators (branch / PR scanners, bot
     account id snapshot, asyncpg-backed :class:`DiffSummaryCacheRepo`,
     LLM diff callback, Bitbucket actions adapter) and folds them
     with the shared OIDC validator + audit logger + canonical
-    :func:`utc_now` clock into the
-    :class:`PoReviewEndpointDeps` dataclass the PO Review router
-    pulls from ``app.state.po_review`` at request time.
+    :func:`utc_now` clock into the :class:`PoReviewEndpointDeps`
+    dataclass the PO Review router pulls from ``app.state.po_review``
+    at request time.
 
-    The MCP-routed scanners + actions adapter are delivered by a
-    sibling spec (Spec 2 — production wiring); until then the
-    production callables raise :class:`NotImplementedError` with a
-    pointer at the missing wiring so any caller that mistakenly
-    reaches the production scanner / actions adapter in this build
-    fails loudly rather than silently returning empty results.
-    Tests bypass this entirely by pre-populating
-    ``app.state.po_review`` with a hand-rolled
-    :class:`PoReviewEndpointDeps` (Requirement 7.1).
+    The scanners resolve each department's Bitbucket workspace/repo
+    from ``automation.repo_mappings`` and its bot credential from
+    Vault (via ``automation.department_bots.credential_ref``), then
+    issue read-only Bitbucket Cloud REST calls through the shared
+    :class:`AtlassianProbeClient`. A department with no Bitbucket
+    mapping yields an empty list rather than an error so the inbox /
+    orphan-branch panels degrade gracefully.
 
     Honours the "skip if slot already set" guard so test code that
     pre-populates ``app.state.po_review`` keeps observing its own
@@ -1278,80 +1280,164 @@ def _wire_po_review(
     if getattr(app.state, "po_review", None) is not None:
         return  # test override wins (Requirement 7.1)
 
-    async def _branch_scanner(dept_id: str) -> list[dict[str, Any]]:
-        """MCP-routed Bitbucket branch scanner (Spec 2 — production)."""
+    async def _resolve_bitbucket_target(
+        dept_id: str,
+    ) -> tuple[Any, str, str] | None:
+        """Return ``(credential, workspace, repo)`` for *dept_id*.
 
-        raise NotImplementedError(
-            "po_review.branch_scanner MCP routing is not wired in this "
-            f"build (dept_id={dept_id!r}). Tests inject a hand-rolled "
-            "BitbucketBranchScanner via app.state.po_review override "
-            "(Requirement 7.1)."
+        ``None`` when the dept has no Bitbucket bot credential or no
+        repo mapping — the caller treats this as "nothing to scan".
+        """
+
+        async with pool.acquire() as conn:  # type: ignore[attr-defined]
+            bot = await conn.fetchrow(
+                """
+                SELECT credential_ref, username
+                FROM automation.department_bots
+                WHERE department_id = $1 AND service = 'bitbucket'
+                """,
+                dept_id,
+            )
+            mapping = await conn.fetchrow(
+                """
+                SELECT bitbucket_workspace, bitbucket_repo
+                FROM automation.repo_mappings
+                WHERE department_id = $1
+                ORDER BY bitbucket_repo
+                LIMIT 1
+                """,
+                dept_id,
+            )
+        if bot is None or mapping is None:
+            return None
+        workspace = str(mapping["bitbucket_workspace"] or "")
+        repo = str(mapping["bitbucket_repo"] or "")
+        if not workspace or not repo:
+            return None
+
+        ref = str(bot["credential_ref"] or "")
+        if not ref:
+            return None
+        try:
+            secret = vault.read(VaultPath.parse(ref))  # type: ignore[attr-defined]
+        except (KeyError, ValueError):
+            return None
+        if not secret:
+            return None
+
+        class _Cred:
+            __slots__ = ("url", "username", "personal_token")
+
+            def __init__(self, payload: Any) -> None:
+                self.url = str(payload.get("url") or "")
+                self.username = str(
+                    payload.get("username") or payload.get("email") or ""
+                )
+                self.personal_token = str(
+                    payload.get("personal_token")
+                    or payload.get("api_token")
+                    or payload.get("token")
+                    or payload.get("app_password")
+                    or ""
+                )
+
+        return _Cred(secret), workspace, repo
+
+    async def _branch_scanner(dept_id: str) -> list[dict[str, Any]]:
+        """Real Bitbucket branch scanner for the orphan-branches list."""
+
+        target = await _resolve_bitbucket_target(dept_id)
+        if target is None:
+            return []
+        cred, workspace, repo = target
+        return await probe_client.bitbucket_scan_branches(  # type: ignore[attr-defined]
+            cred, workspace, repo
         )
 
     async def _pr_scanner(dept_id: str) -> list[dict[str, Any]]:
-        """MCP-routed Bitbucket pull-request scanner (Spec 2)."""
+        """Real Bitbucket pull-request scanner for the PO Review inbox."""
 
-        raise NotImplementedError(
-            "po_review.pr_scanner MCP routing is not wired in this "
-            f"build (dept_id={dept_id!r}). Tests inject a hand-rolled "
-            "BitbucketPullRequestScanner via app.state.po_review override "
-            "(Requirement 7.1)."
+        target = await _resolve_bitbucket_target(dept_id)
+        if target is None:
+            return []
+        cred, workspace, repo = target
+        return await probe_client.bitbucket_scan_pull_requests(  # type: ignore[attr-defined]
+            cred, workspace, repo
         )
 
     async def _bot_account_ids(dept_id: str) -> frozenset[str]:
-        """Per-dept bot account id snapshot (placeholder).
+        """Per-dept Bitbucket bot account ids from ``department_bots``."""
 
-        Returns an empty frozen set until the dept-bot mapping
-        snapshot lands (Spec 2 — production wiring). An empty set is
-        safe for the orphan-branches / po-review-inbox endpoints
-        because the pure helpers treat "no bot account ids" as "no
-        author is recognised as a bot" — the result is an empty
-        inbox / branch list rather than spurious bot rows.
-        """
-
-        _ = dept_id
-        return frozenset()
+        async with pool.acquire() as conn:  # type: ignore[attr-defined]
+            rows = await conn.fetch(
+                """
+                SELECT account_id
+                FROM automation.department_bots
+                WHERE department_id = $1
+                  AND service = 'bitbucket'
+                  AND account_id IS NOT NULL
+                  AND account_id != ''
+                """,
+                dept_id,
+            )
+        return frozenset(str(r["account_id"]) for r in rows)
 
     async def _llm_diff_callback(diff_hash: str) -> str:
-        """LLM diff-summary renderer (Spec 2 — production wiring)."""
+        """LLM diff-summary renderer.
 
-        raise NotImplementedError(
-            "po_review.llm_diff_callback is not wired in this build "
-            f"(diff_hash={diff_hash!r}). Tests inject a hand-rolled "
-            "LlmDiffCallback via app.state.po_review override "
-            "(Requirement 7.1)."
-        )
-
-    class _PoReviewActions:
-        """MCP-routed Bitbucket PO Review actions (Spec 2 stand-in).
-
-        Mirrors the :class:`PoReviewActions` protocol the three
-        POST endpoints call into.  Until the MCP transport ships
-        each method raises :class:`NotImplementedError`; tests
-        inject a hand-rolled adapter via the
-        ``app.state.po_review`` override path (Requirement 7.1).
+        The diff-summary cache is the primary surface; when a hash has
+        no cached summary this callback returns an empty string so the
+        orphan-branch row simply omits the summary rather than failing
+        the whole scan. A richer MCP-routed summariser can replace this
+        without touching the router.
         """
 
+        _ = diff_hash
+        return ""
+
+    class _PoReviewActions:
+        """Bitbucket PO Review actions driven through the probe client.
+
+        ``open_draft`` re-opens a declined draft PR; ``request_changes``
+        and ``approve_note`` post PO-side comments. Each resolves the
+        dept's Bitbucket credential + repo before issuing the call and
+        raises a clear error when the dept is not Bitbucket-enabled.
+        """
+
+        async def _target(self, dept_id: str) -> tuple[Any, str, str]:
+            target = await _resolve_bitbucket_target(dept_id)
+            if target is None:
+                raise RuntimeError(
+                    f"dept {dept_id!r} has no Bitbucket credential/repo mapping"
+                )
+            return target
+
         async def open_draft(self, dept_id: str, pr_id: int) -> None:
-            raise NotImplementedError(
-                "po_review.actions.open_draft is not wired in this "
-                f"build (dept_id={dept_id!r}, pr_id={pr_id!r})."
+            cred, workspace, repo = await self._target(dept_id)
+            await probe_client._bitbucket_post(  # type: ignore[attr-defined]
+                cred,
+                f"/repositories/{workspace}/{repo}/pullrequests/{pr_id}/request-changes",
+                {},
             )
 
         async def request_changes(
             self, dept_id: str, pr_id: int, *, comment: str
         ) -> None:
-            raise NotImplementedError(
-                "po_review.actions.request_changes is not wired in "
-                f"this build (dept_id={dept_id!r}, pr_id={pr_id!r})."
+            cred, workspace, repo = await self._target(dept_id)
+            await probe_client._bitbucket_post(  # type: ignore[attr-defined]
+                cred,
+                f"/repositories/{workspace}/{repo}/pullrequests/{pr_id}/comments",
+                {"content": {"raw": comment}},
             )
 
         async def approve_note(
             self, dept_id: str, pr_id: int, *, comment: str
         ) -> None:
-            raise NotImplementedError(
-                "po_review.actions.approve_note is not wired in this "
-                f"build (dept_id={dept_id!r}, pr_id={pr_id!r})."
+            cred, workspace, repo = await self._target(dept_id)
+            await probe_client._bitbucket_post(  # type: ignore[attr-defined]
+                cred,
+                f"/repositories/{workspace}/{repo}/pullrequests/{pr_id}/comments",
+                {"content": {"raw": comment}},
             )
 
     diff_summary_cache = DiffSummaryCacheRepo(pool=pool)

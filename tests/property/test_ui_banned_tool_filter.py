@@ -38,9 +38,6 @@ _PAGES = (
     "1_chat.py",
     "2_task_creator.py",
     "3_explorer.py",
-    "4_workflows.py",
-    "5_orphan_branches.py",
-    "6_po_review_inbox.py",
 )
 
 

@@ -450,6 +450,9 @@ REQUIRED_PATHS_BY_NAME: dict[str, tuple[str, ...]] = {
         "src/runners/noop.py",
     ),
     # Requirements 4.1–4.3: Streamlit pages + config skeleton.
+    # Workflows / Orphan Branches / PO Review moved to the admin
+    # dashboard (admin-gated governance surfaces), so they are no
+    # longer part of the end-user Streamlit page catalog.
     "streamlit-app": (
         "app.py",
         "requirements.txt",
@@ -458,9 +461,6 @@ REQUIRED_PATHS_BY_NAME: dict[str, tuple[str, ...]] = {
         "pages/1_chat.py",
         "pages/2_task_creator.py",
         "pages/3_explorer.py",
-        "pages/4_workflows.py",
-        "pages/5_orphan_branches.py",
-        "pages/6_po_review_inbox.py",
         "config/quick_actions.yaml",
     ),
     # Requirements 4.4–4.6: Next.js 14 app router skeleton.

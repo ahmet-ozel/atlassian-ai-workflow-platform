@@ -109,6 +109,100 @@ repository permission, and token scopes.
 
 ---
 
+## 4b. Connecting an IDE (VS Code / Cursor / JetBrains) to the MCP
+
+IDE MCP clients connect over HTTP to the gateway and send the same per-request
+headers as any other caller. A minimal working config:
+
+```jsonc
+{
+  "servers": {
+    "atlassian": {
+      "type": "http",
+      "url": "http://<mcp-host>:38090/mcp",
+      "headers": {
+        "X-Client-Source": "ide:<your-name>",
+
+        // Server / Data Center → Personal Access Token (sent as Bearer)
+        "X-Atlassian-Jira-Url": "https://jira.internal",
+        "X-Atlassian-Jira-Personal-Token": "<jira-PAT>",
+
+        "X-Atlassian-Confluence-Url": "https://wiki.internal",
+        "X-Atlassian-Confluence-Personal-Token": "<confluence-PAT>",
+
+        "X-Atlassian-Bitbucket-Url": "https://bitbucket.internal",
+        "X-Atlassian-Bitbucket-Personal-Token": "<bitbucket-PAT>"
+      }
+    }
+  }
+}
+```
+
+For **Atlassian Cloud**, swap each `*-Personal-Token` for the Cloud Basic Auth
+pair (`*-Username` = account email + `*-Api-Token` = API token), or use
+`Authorization: Bearer` + `X-Atlassian-Cloud-Id` for OAuth. See §2–§4 for the
+full per-service header sets and the auth resolution order.
+
+**Rules that avoid the common failures:**
+
+- **Server/DC uses Bearer, not Basic.** Send only `X-Atlassian-<Service>-Url`
+  and `X-Atlassian-<Service>-Personal-Token`. The gateway applies the PAT as
+  `Authorization: Bearer <token>`. **Do not** also send `*-Username` /
+  `*-Api-Token` for a DC host — the gateway has no `*-Api-Token` PAT branch, so
+  with no recognised credential it falls through to the Cloud OAuth path and
+  fails with `Cloud OAuth authentication requires a valid cloud_id`.
+- **Why Bearer matters for DC:** Basic auth can hit Jira/Confluence Seraph
+  `CAPTCHA_CHALLENGE` after failed logins (HTTP 403,
+  `X-Authentication-Denied-Reason: CAPTCHA_CHALLENGE`). Bearer/PAT is not
+  subject to the CAPTCHA gate, so a PAT keeps working without unlocking the
+  account.
+- **Use the real host name, not `localhost`.** Point `url` at the host curl can
+  reach (e.g. `http://<mcp-host>:38090/mcp`). Behind a corporate proxy,
+  `localhost` may be routed to the proxy and return `Unknown Host`.
+- **Reconnect after editing the config** so the client drops cached headers.
+
+**Verify the token independently of the IDE** (DC PAT, bypasses CAPTCHA/Basic):
+
+```bash
+curl -H "Authorization: Bearer <jira-PAT>" -H "Accept: application/json" \
+  "https://jira.internal/rest/api/2/myself"
+```
+
+200 + user JSON ⇒ the token is valid and the gateway will accept the same PAT.
+
+**Quick gateway probe** (returns the real error behind a client-side
+`-32001`/`32603` "tool failed" code):
+
+```bash
+curl -X POST http://<mcp-host>:38090/mcp \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -H "X-Client-Source: probe" \
+  -H "X-Atlassian-Jira-Url: https://jira.internal" \
+  -H "X-Atlassian-Jira-Personal-Token: <jira-PAT>" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"jira_get_user_profile","arguments":{"user_identifier":"<user>"}}}'
+```
+
+**Self-hosted hosts and the SSRF guard:** if the gateway returns
+`Forbidden: Invalid <service> URL - DNS for <host> resolves to non-global IP`,
+the host resolves to a private IP and is blocked by the upstream SSRF guard. Add
+its domain to `MCP_ALLOWED_URL_DOMAINS` in `infra/.env` and recreate the
+`atlassian-mcp` service (see `docs/env-reference.md` §4).
+
+---
+
+## 4c. IDE tool discovery (`ATLASSIAN_OAUTH_ENABLE`)
+
+If the IDE connects but shows **"Discovered 0 tools"**, the gateway is not
+advertising its toolsets. In stateless mode `tools/list` only returns the Jira/
+Confluence toolsets when `ATLASSIAN_OAUTH_ENABLE=true` is set on the
+`atlassian-mcp` service (it is the default in Compose). This flag only enables
+tool discovery; real auth still comes from the per-request `X-Atlassian-*`
+headers above. Bitbucket tools are not listed by `tools/list` in this mode but
+`tools/call` against them still works.
+
+---
+
 ## 5. Caller-side helper
 
 Use `mcp_client.AtlassianClient` (in `libs/mcp_client/`) — **never** assemble

@@ -289,12 +289,17 @@ services:
       STREAMABLE_HTTP_PATH: /mcp
       READ_ONLY: "false"
       READ_ONLY_MODE: "false"
-      ATLASSIAN_OAUTH_ENABLE: "true"
-      # SSRF guard allowlist. A matching host skips the DNS/private-IP check,
-      # which is needed for self-hosted instances that resolve to private IPs.
-      # Defaults to the public Atlassian Cloud domains so Jira/Confluence/
-      # Bitbucket Cloud work out of the box; override to add a self-hosted host.
-      MCP_ALLOWED_URL_DOMAINS: ${MCP_ALLOWED_URL_DOMAINS:-atlassian.net,atlassian.com,bitbucket.org}
+      ATLASSIAN_OAUTH_ENABLE: ${ATLASSIAN_OAUTH_ENABLE:-true}
+      # SSRF guard allowlist for the upstream MCP. The gateway blocks any
+      # Atlassian URL that resolves to a private (non-global) IP. A self-hosted
+      # Server/Data Center instance on an internal network (10.x / 192.168.x /
+      # 172.16-31.x) is therefore blocked by default. List its domain here to
+      # skip the private-IP check for matching hosts (suffix match, e.g.
+      # "jira.example.org" is covered by "example.org"). Empty = guard fully
+      # active with a DNS check (public hosts pass, private IPs blocked), which
+      # is the correct default for Atlassian Cloud. Set the real value in
+      # infra/.env (MCP_ALLOWED_URL_DOMAINS); never hard-code a site domain here.
+      MCP_ALLOWED_URL_DOMAINS: ${MCP_ALLOWED_URL_DOMAINS:-}
       TOOLSETS: ${MCP_TOOLSETS:-all}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
     ports:

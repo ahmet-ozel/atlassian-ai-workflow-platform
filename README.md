@@ -184,6 +184,7 @@ A typical automation flow:
 - **Webhook setup:** [`docs/runbooks/webhook-setup.md`](docs/runbooks/webhook-setup.md).
 - **Department decommission:** [`docs/runbooks/dept-decommission.md`](docs/runbooks/dept-decommission.md).
 - **Environment variables:** [`docs/env-reference.md`](docs/env-reference.md).
+- **Connect an IDE / MCP credential headers:** [`docs/api-contracts/mcp-credential-headers.md`](docs/api-contracts/mcp-credential-headers.md) — Cloud vs Server/DC auth, Bearer/PAT vs Basic, and the SSRF allowlist.
 - **End-user task-creation guide:** [`docs/user-guide/`](docs/user-guide/).
 
 ## License

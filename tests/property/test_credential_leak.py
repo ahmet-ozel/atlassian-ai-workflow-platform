@@ -5,7 +5,7 @@
 invariant: Credential leak invariant
 
 For any path matching sensitive credential file patterns (`.env`,
-`services/foo/.env`, `apps/bar/.env`, `CREDENTIALS.md`), the repository's
+`services/foo/.env`, `apps/bar/.env`, `credentials.md`), the repository's
 `.gitignore` MUST transitively ignore that path (verified via
 `git check-ignore --no-index`), and `git status --porcelain` MUST NOT
 report any tracked or staged file matching these patterns.
@@ -19,7 +19,7 @@ Hypothesis generates random paths matching `.env`-like patterns:
 - Root `.env`
 - Nested `.env` files under arbitrary directory prefixes
  (e.g. `services/foo/.env`, `apps/bar/.env`)
-- `CREDENTIALS.md` at root and nested locations
+- `credentials.md` at root and nested locations
 
 For each generated path, the test asserts:
 1. `git check-ignore --no-index <path>` exits with code 0 (path is
@@ -43,10 +43,10 @@ from hypothesis import strategies as st
 # Workspace root resolution
 # ---------------------------------------------------------------------------
 
-#: Workspace root: ``tests/property/X`` → ``tests/property`` → ``tests``
-#: → ``<platform>`` → ``<workspace_root>``
+#: Workspace root: ``tests/property/X`` -> ``tests/property`` -> ``tests``
+#: -> ``<platform>``
 _PLATFORM_ROOT: Path = Path(__file__).resolve().parents[2]
-_WORKSPACE_ROOT: Path = _PLATFORM_ROOT.parent
+_WORKSPACE_ROOT: Path = _PLATFORM_ROOT
 
 
 # ---------------------------------------------------------------------------
@@ -175,10 +175,10 @@ _env_paths = st.one_of(
     st.tuples(_dir_segment, _dir_segment).map(
         lambda t: f"{t[0]}/{t[1]}/.env"
     ),
-    # CREDENTIALS.md at root
-    st.just("CREDENTIALS.md"),
-    # Nested CREDENTIALS.md (less common but should still be ignored)
-    _dir_segment.map(lambda d: f"{d}/CREDENTIALS.md"),
+    # credentials.md at root
+    st.just("credentials.md"),
+    # Nested credentials.md (less common but should still be ignored)
+    _dir_segment.map(lambda d: f"{d}/credentials.md"),
 )
 
 
@@ -208,7 +208,7 @@ def test_credential_paths_are_gitignored(path: str) -> None:
 
  If git is not initialized (no.git directory), the test falls back
  to verifying that the.gitignore file contains the required literal
- patterns (`.env`, `**/.env`, `CREDENTIALS.md`).
+ patterns (`.env`, `**/.env`, `credentials.md`).
  """
     note(f"Testing path: {path}")
 
@@ -243,10 +243,10 @@ def test_credential_paths_are_gitignored(path: str) -> None:
                 f"contain `.env` or `**/.env` pattern. Credential files "
                 f"could be accidentally committed (the operational rule)."
             )
-        elif "CREDENTIALS.md" in path:
-            assert _gitignore_contains_pattern("CREDENTIALS.md"), (
-                f"Path {path!r} matches CREDENTIALS.md but.gitignore "
-                f"does not contain `CREDENTIALS.md` pattern. Credential "
+        elif "credentials.md" in path:
+            assert _gitignore_contains_pattern("credentials.md"), (
+                f"Path {path!r} matches credentials.md but.gitignore "
+                f"does not contain `credentials.md` pattern. Credential "
                 f"files could be accidentally committed (the operational rule)."
             )
 
@@ -257,7 +257,7 @@ def test_credential_paths_are_gitignored(path: str) -> None:
 
 
 # Sensitive file patterns for matching against git status output
-_SENSITIVE_PATTERNS = (".env", "CREDENTIALS.md")
+_SENSITIVE_PATTERNS = (".env", "credentials.md")
 
 
 @hyp_settings(
@@ -276,7 +276,7 @@ def test_git_status_has_no_credential_files(data: st.DataObject) -> None:
 
  The output of `git status --porcelain` in the repository root
  MUST NOT contain any line whose path matches `.env`, `*/.env`,
- `services/*/.env`, or `CREDENTIALS.md`. This ensures no credential
+ `services/*/.env`, or `credentials.md`. This ensures no credential
  file is staged, modified, or untracked in the working tree.
  """
     git_root = _find_git_root()
@@ -326,7 +326,7 @@ def test_gitignore_contains_required_credential_patterns() -> None:
  The workspace-root `.gitignore` MUST contain literal patterns for:
  - `.env` (root-level env file)
  - `**/.env` (all nested env files)
- - `CREDENTIALS.md` (credential documentation)
+ - `credentials.md` (credential documentation)
 
  These patterns together ensure transitive coverage of all
  credential file locations.
@@ -336,7 +336,7 @@ def test_gitignore_contains_required_credential_patterns() -> None:
         f"({_WORKSPACE_ROOT}). Cannot verify credential patterns."
     )
 
-    required_patterns = [".env", "**/.env", "CREDENTIALS.md"]
+    required_patterns = [".env", "**/.env", "credentials.md"]
     missing = []
 
     for pattern in required_patterns:

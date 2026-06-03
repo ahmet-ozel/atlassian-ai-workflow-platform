@@ -261,11 +261,11 @@ class TestSSHSectionNavigation:
 
         # Verify the SSH target matches credentials
         assert credentials.ssh_host, (
-            "SSH host not configured in CREDENTIALS.md. "
+            "SSH host not configured in credentials.md. "
             "Expected ssh_host field with VPS IP address."
         )
         assert credentials.ssh_user, (
-            "SSH user not configured in CREDENTIALS.md. "
+            "SSH user not configured in credentials.md. "
             "Expected ssh_user field (e.g., 'root')."
         )
 

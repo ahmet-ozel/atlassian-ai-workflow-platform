@@ -1,5 +1,6 @@
 .env
 .env.*
+credentials.md
 
 .mypy_cache/
 .pytest_cache/

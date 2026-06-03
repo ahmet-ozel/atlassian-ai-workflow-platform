@@ -27,8 +27,7 @@ from hypothesis import strategies as st
 # Path setup: ensure http_shared is importable
 # ---------------------------------------------------------------------------
 
-WORKSPACE_ROOT = Path(__file__).resolve().parent.parent.parent.parent
-PLATFORM_ROOT = WORKSPACE_ROOT / "platform"
+PLATFORM_ROOT = Path(__file__).resolve().parent.parent.parent
 
 # Add the http-shared lib to path
 HTTP_SHARED_SRC = PLATFORM_ROOT / "libs" / "http-shared" / "src"

@@ -2,13 +2,13 @@
 Test 05: Setup Wizard Step 4 — MCP Server (Credential UI Entry & Connection Test).
 
 Validates that the Playwright MCP browser automation can fill the MCP Server
-credential form with Jira/Confluence credentials from CREDENTIALS.md, test
+credential form with Jira/Confluence credentials from credentials.md, test
 the connection, and complete Step 4 of the Setup Wizard.
 
 This test uses:
 - httpx for API-level checks against admin-dashboard-api and atlassian-mcp
 - Playwright MCP tools for browser interaction (fill form, click, screenshot)
-- credential_loader for parsing CREDENTIALS.md
+- credential_loader for parsing credentials.md
 - Evidence collector for screenshots and JSON evidence
 
 IMPORTANT: Credentials are NEVER logged in plain text. Screenshots use
@@ -389,7 +389,7 @@ def _create_screenshot_placeholder(path: Path, description: str) -> None:
 # ---------------------------------------------------------------------------
 
 class TestMCPCredentialForm:
-    """R5.1, R5.2: Fill credential form with Jira/Confluence values from CREDENTIALS.md.
+    """R5.1, R5.2: Fill credential form with Jira/Confluence values from credentials.md.
 
     WHEN the Playwright_Harness clicks the 'Configure MCP Server' step,
     THE Setup_Wizard SHALL display a credential form with fields for
@@ -397,7 +397,7 @@ class TestMCPCredentialForm:
     Username and Confluence API Token.
 
     WHEN the Playwright_Harness fills the credential form with values from
-    CREDENTIALS.md, THE Setup_Wizard SHALL accept the input without
+    credentials.md, THE Setup_Wizard SHALL accept the input without
     validation errors.
     """
 
@@ -416,16 +416,16 @@ class TestMCPCredentialForm:
             )
 
     def test_credentials_loaded(self, credentials):
-        """R5.2: Verify credentials are loaded from CREDENTIALS.md.
+        """R5.2: Verify credentials are loaded from credentials.md.
 
         Validates that the credential_loader successfully parsed the required
         Jira/Confluence fields. Does NOT log actual credential values.
         """
         # Verify required fields are present and non-empty (without logging values)
-        assert credentials.jira_url, "Jira URL must be present in CREDENTIALS.md"
-        assert credentials.jira_username, "Jira username must be present in CREDENTIALS.md"
-        assert credentials.jira_api_token, "Jira API token must be present in CREDENTIALS.md"
-        assert credentials.confluence_url, "Confluence URL must be present in CREDENTIALS.md"
+        assert credentials.jira_url, "Jira URL must be present in credentials.md"
+        assert credentials.jira_username, "Jira username must be present in credentials.md"
+        assert credentials.jira_api_token, "Jira API token must be present in credentials.md"
+        assert credentials.confluence_url, "Confluence URL must be present in credentials.md"
 
         # Verify URL format (safe to log)
         assert credentials.jira_url.startswith("http"), (

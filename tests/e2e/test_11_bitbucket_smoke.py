@@ -302,7 +302,7 @@ class TestBitbucketSmoke:
                 # Bitbucket Cloud documents the decline endpoint as a
                 # body-less POST. Some workspace access-token calls return
                 # a generic 400 here; retry with the user/app-password
-                # credential from CREDENTIALS.md before failing the smoke.
+                # credential from credentials.md before failing the smoke.
                 auth_mode = "basic_fallback"
                 response = client.post(
                     url,

@@ -1,7 +1,7 @@
 """
 Credential loader for E2E tests.
 
-Parses CREDENTIALS.md markdown file and provides typed access to all
+Parses credentials.md markdown file and provides typed access to all
 credential values needed by the local E2E test suite.
 
 Requirements: R5.2, R7.2, R9-R15
@@ -16,7 +16,7 @@ from pathlib import Path
 
 @dataclass(frozen=True)
 class Credentials:
-    """Typed container for all credentials parsed from CREDENTIALS.md."""
+    """Typed container for all credentials parsed from credentials.md."""
 
     # Jira
     jira_url: str
@@ -45,7 +45,7 @@ class Credentials:
 
 
 class CredentialParseError(Exception):
-    """Raised when CREDENTIALS.md cannot be parsed or a value is missing."""
+    """Raised when credentials.md cannot be parsed or a value is missing."""
 
 
 def _extract_table_value(content: str, section_pattern: str, key: str) -> str:
@@ -91,10 +91,10 @@ def _extract_env_value(content: str, env_key: str) -> str:
 
 
 def load_credentials(path: Path) -> Credentials:
-    """Parse CREDENTIALS.md and return a populated Credentials dataclass.
+    """Parse credentials.md and return a populated Credentials dataclass.
 
     Args:
-        path: Path to the CREDENTIALS.md file.
+        path: Path to the credentials.md file.
 
     Returns:
         Credentials dataclass with all fields populated.
@@ -104,15 +104,15 @@ def load_credentials(path: Path) -> Credentials:
             required values cannot be extracted.
     """
     if not path.exists():
-        raise CredentialParseError(f"CREDENTIALS.md not found at: {path}")
+        raise CredentialParseError(f"credentials.md not found at: {path}")
 
     try:
         content = path.read_text(encoding="utf-8")
     except OSError as exc:
-        raise CredentialParseError(f"Cannot read CREDENTIALS.md: {exc}") from exc
+        raise CredentialParseError(f"Cannot read credentials.md: {exc}") from exc
 
     if not content.strip():
-        raise CredentialParseError("CREDENTIALS.md is empty")
+        raise CredentialParseError("credentials.md is empty")
 
     # --- Jira ---
     # Section starts with "## Jira" and ends at next "##"

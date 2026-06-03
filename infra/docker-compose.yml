@@ -290,6 +290,11 @@ services:
       READ_ONLY: "false"
       READ_ONLY_MODE: "false"
       ATLASSIAN_OAUTH_ENABLE: "true"
+      # SSRF guard allowlist. A matching host skips the DNS/private-IP check,
+      # which is needed for self-hosted instances that resolve to private IPs.
+      # Defaults to the public Atlassian Cloud domains so Jira/Confluence/
+      # Bitbucket Cloud work out of the box; override to add a self-hosted host.
+      MCP_ALLOWED_URL_DOMAINS: ${MCP_ALLOWED_URL_DOMAINS:-atlassian.net,atlassian.com,bitbucket.org}
       TOOLSETS: ${MCP_TOOLSETS:-all}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
     ports:

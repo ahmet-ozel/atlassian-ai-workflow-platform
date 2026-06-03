@@ -119,10 +119,9 @@ def _require_streamlit_or_skip() -> None:
 
 def _task_creator_source_path() -> Path:
     """On-disk path of the Task Creator page module."""
-    workspace = Path(__file__).resolve().parents[3]
+    workspace = Path(__file__).resolve().parents[2]
     return (
         workspace
-        / "platform"
         / "ui"
         / "streamlit-app"
         / "pages"

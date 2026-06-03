@@ -1,19 +1,25 @@
 """Unit tests for credential_loader module."""
 
+import os
 import pytest
 from pathlib import Path
 
 from e2e.credential_loader import load_credentials, Credentials, CredentialParseError
 
 
-CREDENTIALS_PATH = Path(__file__).resolve().parents[3] / "CREDENTIALS.md"
+CREDENTIALS_PATH = Path(
+    os.environ.get(
+        "E2E_CREDENTIALS_FILE",
+        Path(__file__).resolve().parents[2] / "credentials.md",
+    )
+)
 
 
 class TestLoadCredentials:
     """Tests for load_credentials function."""
 
     def test_parses_real_credentials_file(self):
-        """Verify all fields are correctly parsed from the real CREDENTIALS.md."""
+        """Verify all fields are correctly parsed from the real credentials.md."""
         creds = load_credentials(CREDENTIALS_PATH)
 
         assert isinstance(creds, Credentials)
@@ -51,14 +57,14 @@ class TestLoadCredentials:
 
     def test_empty_file_raises_error(self, tmp_path):
         """Verify clear error when file is empty."""
-        empty_file = tmp_path / "CREDENTIALS.md"
+        empty_file = tmp_path / "credentials.md"
         empty_file.write_text("")
         with pytest.raises(CredentialParseError, match="empty"):
             load_credentials(empty_file)
 
     def test_malformed_file_raises_error(self, tmp_path):
         """Verify clear error when file has no recognizable sections."""
-        bad_file = tmp_path / "CREDENTIALS.md"
+        bad_file = tmp_path / "credentials.md"
         bad_file.write_text("# Just a title\nNo tables here.\n")
         with pytest.raises(CredentialParseError, match="Section not found"):
             load_credentials(bad_file)

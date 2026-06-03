@@ -13,11 +13,11 @@ $ErrorActionPreference = "Stop"
 . "$PSScriptRoot\vps_common.ps1"
 
 # --- Paths ---
-$WorkspaceRoot   = (Resolve-Path "$PSScriptRoot\..\..").Path
-$CredentialsFile = Join-Path $WorkspaceRoot "CREDENTIALS.md"
-$EnvExampleFile  = Join-Path $WorkspaceRoot "platform\.env"
-$EnvOutputFile   = Join-Path $WorkspaceRoot "platform\.env"
-$EvidenceDir     = Join-Path $WorkspaceRoot "vps-test-evidence"
+$PlatformRoot    = (Resolve-Path "$PSScriptRoot\..").Path
+$CredentialsFile = if ($env:CREDENTIALS_FILE) { $env:CREDENTIALS_FILE } else { Join-Path $PlatformRoot "credentials.md" }
+$EnvExampleFile  = Join-Path $PlatformRoot ".env"
+$EnvOutputFile   = Join-Path $PlatformRoot ".env"
+$EvidenceDir     = Join-Path $PlatformRoot "vps-test-evidence"
 $EvidenceFile    = Join-Path $EvidenceDir "04-workspace-env-keys.txt"
 $VaultDevNote    = Join-Path $EvidenceDir "vault-dev-mode-note.txt"
 
@@ -27,12 +27,12 @@ if (-not (Test-Path $EvidenceDir)) {
 }
 
 # =============================================================================
-# STEP 1: Parse CREDENTIALS.md for OpenAI API Key (regex-based)
+# STEP 1: Parse the credentials file for the OpenAI API Key (regex-based)
 # =============================================================================
-Write-Host "[credential_loader] Parsing CREDENTIALS.md..." -ForegroundColor Cyan
+Write-Host "[credential_loader] Parsing credentials file..." -ForegroundColor Cyan
 
 if (-not (Test-Path $CredentialsFile)) {
-    throw "CREDENTIALS.md not found at: $CredentialsFile"
+    throw "Credentials file not found at: $CredentialsFile"
 }
 
 $credContent = Get-Content -Path $CredentialsFile -Raw
@@ -40,7 +40,7 @@ $credContent = Get-Content -Path $CredentialsFile -Raw
 # Extract OpenAI API Key
 $openaiKeyMatch = [regex]::Match($credContent, '(?m)^\|\s*API Key\s*\|\s*`(sk-proj-[^`]+)`')
 if (-not $openaiKeyMatch.Success) {
-    throw "Failed to parse OpenAI API Key from CREDENTIALS.md"
+    throw "Failed to parse OpenAI API Key from the credentials file"
 }
 $openaiApiKey = $openaiKeyMatch.Groups[1].Value
 Write-Host "[credential_loader] OpenAI API Key parsed (length=$($openaiApiKey.Length))" -ForegroundColor Green
@@ -281,13 +281,13 @@ if ($missingKeys.Count -gt 0) {
 # =============================================================================
 Write-Host "[credential_loader] Generating MCP env (services/atlassian_mcp_bitbucket/.env)..." -ForegroundColor Cyan
 
-$McpEnvOutputFile = Join-Path $WorkspaceRoot "platform\services\atlassian_mcp_bitbucket\.env"
+$McpEnvOutputFile = Join-Path $PlatformRoot "services\atlassian_mcp_bitbucket\.env"
 $McpEvidenceFile  = Join-Path $EvidenceDir "05-mcp-env-keys.txt"
 
-# --- Parse Jira API Token from CREDENTIALS.md ---
+# --- Parse Jira API Token from the credentials file ---
 $jiraTokenMatch = [regex]::Match($credContent, '(?m)^\|\s*API Token\s*\|\s*`(ATATT3x[^`]+)`')
 if (-not $jiraTokenMatch.Success) {
-    throw "Failed to parse Jira API Token from CREDENTIALS.md"
+    throw "Failed to parse Jira API Token from the credentials file"
 }
 $jiraApiToken = $jiraTokenMatch.Groups[1].Value
 Write-Host "[credential_loader] Jira API Token parsed (length=$($jiraApiToken.Length))" -ForegroundColor Green
@@ -295,11 +295,11 @@ Write-Host "[credential_loader] Jira API Token parsed (length=$($jiraApiToken.Le
 # Confluence uses the same token as Jira (Atlassian Cloud unified auth)
 $confluenceApiToken = $jiraApiToken
 
-# --- Parse Bitbucket Token B (KiÅŸisel API Token, Basic Auth) from CREDENTIALS.md ---
+# --- Parse Bitbucket Token B (API token, Basic Auth) from the credentials file ---
 # Token B is under "Token 2: KiÅŸisel API Token (Basic Auth)" section
 $bitbucketTokenBMatch = [regex]::Match($credContent, '(?ms)Token 2.*?\|\s*Token\s*\|\s*`(ATATT3x[^`]+)`')
 if (-not $bitbucketTokenBMatch.Success) {
-    throw "Failed to parse Bitbucket Token B from CREDENTIALS.md"
+    throw "Failed to parse Bitbucket Token B from the credentials file"
 }
 $bitbucketTokenB = $bitbucketTokenBMatch.Groups[1].Value
 Write-Host "[credential_loader] Bitbucket Token B parsed (length=$($bitbucketTokenB.Length))" -ForegroundColor Green

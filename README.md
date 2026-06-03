@@ -1,9 +1,18 @@
 ﻿# Atlassian AI Workflow Platform
 
-A multi-department AI workflow automation platform built around Atlassian
-(Jira, Confluence, Bitbucket). A webhook gateway, Temporal workers, a stateless
-MCP integration layer, an admin dashboard and a Streamlit front end run together
-in a single Docker Compose stack.
+Self-hosted, multi-department **AI automation for Jira, Confluence and
+Bitbucket**. Assign a Jira issue to the bot and the platform turns it into real
+work: it reasons over the task with an LLM, makes code changes on a runner,
+opens a draft Bitbucket pull request, publishes a Confluence page, and comments
+back on the issue — all driven by durable Temporal workflows.
+
+It ships as a single Docker Compose stack: a stateless Atlassian MCP gateway, a
+webhook intake service, Temporal workers, an admin dashboard for governance, and
+a Streamlit chat front end for end users.
+
+**Keywords:** Atlassian automation, Jira bot, Confluence automation, Bitbucket
+pull request automation, MCP (Model Context Protocol) server, Temporal
+workflows, LLM agent, self-hosted, Docker Compose.
 
 ## Highlights
 
@@ -154,14 +163,20 @@ A typical automation flow:
 
 - **Atlassian MCP gateway** - `services/atlassian_mcp_bitbucket/` builds the
   [`jellythomas/mcp-atlassian-with-bitbucket`](https://github.com/jellythomas/mcp-atlassian-with-bitbucket)
-  fork at a pinned commit. It extends the `mcp-atlassian` server with Bitbucket
-  support so Jira, Confluence and Bitbucket share one stateless HTTP MCP surface.
+  fork at a pinned commit. That fork extends
+  [`sooperset/mcp-atlassian`](https://github.com/sooperset/mcp-atlassian) (the
+  original Jira/Confluence MCP server) with Bitbucket support, so all three
+  Atlassian products share one stateless HTTP MCP surface.
 - **[Temporal](https://temporal.io/)** - durable workflow execution for the
   automation tier.
 - **[HashiCorp Vault](https://www.vaultproject.io/)** - secret storage for
   department credentials and tokens.
 - **[Firecrawl](https://www.firecrawl.dev/)** - web content retrieval used by
   research/automation steps.
+- **[Next.js](https://nextjs.org/)** (admin dashboard) and
+  **[Streamlit](https://streamlit.io/)** (chat front end) for the two UIs;
+  **[MinIO](https://min.io/)** for artifact storage and
+  **[Traefik](https://traefik.io/)** as the optional edge router.
 
 ## Next steps
 

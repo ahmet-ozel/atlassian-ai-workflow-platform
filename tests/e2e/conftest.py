@@ -3,7 +3,7 @@ Shared pytest configuration and fixtures for the Local E2E test suite.
 
 This conftest provides session-scoped fixtures for:
 - Docker client (docker SDK)
-- Credential loader (parsed from CREDENTIALS.md)
+- Credential loader (parsed from credentials.md)
 - Evidence collector (auto-creates e2e-evidence/ directory)
 - Stack state tracking (which services are running)
 - pytest-ordering configuration (sequential test execution)
@@ -24,10 +24,12 @@ import pytest
 # Path setup: ensure workspace root and e2e modules are importable
 # ---------------------------------------------------------------------------
 
-# Workspace root is 3 levels up from this file:
-# platform/tests/e2e/conftest.py -> platform/tests/e2e -> platform/tests -> platform -> workspace root
-WORKSPACE_ROOT = Path(__file__).resolve().parent.parent.parent.parent
-PLATFORM_ROOT = WORKSPACE_ROOT / "platform"
+# Platform root is 3 levels up from this file:
+# platform/tests/e2e/conftest.py -> platform/tests/e2e -> platform/tests -> platform
+PLATFORM_ROOT = Path(__file__).resolve().parent.parent.parent
+# Evidence and other generated artifacts stay inside the platform tree so the
+# suite is self-contained.
+WORKSPACE_ROOT = PLATFORM_ROOT
 E2E_DIR = Path(__file__).resolve().parent
 
 # Add e2e directory to path so credential_loader, evidence_collector etc. are importable
@@ -80,18 +82,21 @@ def docker_client():
 
 @pytest.fixture(scope="session")
 def credentials():
-    """Load credentials from CREDENTIALS.md at workspace root.
+    """Load credentials for the E2E suite.
 
-    Returns a Credentials dataclass with all parsed credential fields.
-    Fails the session if CREDENTIALS.md is missing or malformed.
+    The credentials file location is resolved from the ``E2E_CREDENTIALS_FILE``
+    environment variable. When unset, it defaults to a ``credentials.md`` file
+    at the platform root, keeping the test suite self-contained. The file holds
+    real API credentials and is intentionally not committed.
     """
     from credential_loader import load_credentials
 
-    creds_path = WORKSPACE_ROOT / "CREDENTIALS.md"
+    env_path = os.environ.get("E2E_CREDENTIALS_FILE")
+    creds_path = Path(env_path) if env_path else (PLATFORM_ROOT / "credentials.md")
     if not creds_path.exists():
         pytest.fail(
-            f"CREDENTIALS.md not found at {creds_path}. "
-            f"This file is required for E2E tests with real API credentials."
+            f"Credentials file not found at {creds_path}. Set E2E_CREDENTIALS_FILE "
+            f"to its location; it is required for E2E tests with real API credentials."
         )
 
     return load_credentials(creds_path)

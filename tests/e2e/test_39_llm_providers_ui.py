@@ -124,10 +124,9 @@ def _page_source_path() -> Path:
  step with the test running.
  """
 
-    workspace = Path(__file__).resolve().parents[3]
+    workspace = Path(__file__).resolve().parents[2]
     return (
         workspace
-        / "platform"
         / "ui"
         / "admin-dashboard"
         / "app"

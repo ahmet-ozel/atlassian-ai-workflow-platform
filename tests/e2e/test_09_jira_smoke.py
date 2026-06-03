@@ -3,7 +3,7 @@ Test 09: Jira real API smoke test — CRUD operations via Jira REST API.
 
 Validates that the platform can perform full Jira issue lifecycle operations
 (create, search, comment, transition, delete) against real Jira Cloud using
-credentials from CREDENTIALS.md.
+credentials from credentials.md.
 
 Uses httpx with Basic Auth (username:api_token) to call Jira REST API directly.
 The Jira project key is "JOH".

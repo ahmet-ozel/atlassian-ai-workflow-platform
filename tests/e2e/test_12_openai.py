@@ -7,7 +7,7 @@ token usage, and cost guardrails.
 
 This test uses:
 - httpx for direct OpenAI API calls (https://api.openai.com/v1/responses)
-- credentials fixture for openai_api_key (from CREDENTIALS.md)
+- credentials fixture for openai_api_key (from credentials.md)
 - evidence_collector fixture for emitting JSON evidence
 - Retry logic for 429 rate limit and 401 auth errors
 
@@ -159,7 +159,7 @@ class TestOpenAILLMCall:
         """OpenAI API call with gpt-4o-mini must return a valid completion."""
         api_key = credentials.openai_api_key
         assert api_key and api_key.startswith("sk-"), (
-            "OpenAI API key not found or invalid in CREDENTIALS.md. "
+            "OpenAI API key not found or invalid in credentials.md. "
             "Expected key starting with 'sk-'."
         )
 

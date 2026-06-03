@@ -8,7 +8,7 @@ and Bitbucket connections, and create the department to complete Step 7.
 This test uses:
 - httpx for API-level checks against admin-dashboard-api (port 8082)
 - psycopg2 for database verification of wizard state
-- credential_loader fixture for Bitbucket/SSH credentials from CREDENTIALS.md
+- credential_loader fixture for Bitbucket/SSH credentials from credentials.md
 - playwright_state fixture for tracking wizard progress
 - evidence_collector fixture for screenshots and JSON evidence
 

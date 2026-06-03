@@ -1,7 +1,7 @@
 # vps_leak_check.ps1 - Credential leak and .gitignore validation (B3 Leak_Checker)
 # Requirements: R6.1, R6.2, R6.3, R6.4, R6.5
 #
-# Validates that no .env files or CREDENTIALS.md appear in git working tree
+# Validates that no .env files or credentials file appear in git working tree
 # (staged or untracked) on both local Windows host and remote VPS.
 # Also asserts that workspace-root .gitignore contains required patterns.
 #
@@ -17,27 +17,27 @@ param(
 . "$PSScriptRoot\vps_common.ps1"
 
 # --- Configuration ---
-$WORKSPACE_ROOT = (Resolve-Path "$PSScriptRoot\..\..").Path
+$WORKSPACE_ROOT = (Resolve-Path "$PSScriptRoot\..").Path
 $EVIDENCE_DIR = Join-Path $WORKSPACE_ROOT "vps-test-evidence"
 $EVIDENCE_FILE = Join-Path $EVIDENCE_DIR "06-leakcheck.txt"
 $LOGGER_SCRIPT = Join-Path $PSScriptRoot "vps_open_issue_logger.py"
 
 # Sensitive path patterns for git status output (R6.1)
-# Matches: .env, anything/.env, services/*/.env, CREDENTIALS.md
+# Matches: .env, anything/.env, services/*/.env, credentials.md
 $LEAK_PATTERNS = @(
     '\.env$',
     '/\.env$',
     '\\\.env$',
     'services/.+/\.env$',
     'services\\.+\\\.env$',
-    'CREDENTIALS\.md$'
+    'credentials\.md$'
 )
 
 # Required .gitignore literal lines (R6.2)
 $REQUIRED_GITIGNORE_LINES = @(
     '.env',
     '**/.env',
-    'CREDENTIALS.md'
+    'credentials.md'
 )
 
 # --- Helper Functions ---
@@ -414,7 +414,7 @@ if (-not $allPassed) {
         -Requirement "R6" `
         -Severity "critical" `
         -Category "config" `
-        -Summary "Credential leak detected: .env or CREDENTIALS.md visible in git working tree" `
+        -Summary "Credential leak detected: .env or credentials file visible in git working tree" `
         -EvidencePath "vps-test-evidence/06-leakcheck.txt" `
         -RecommendedAction "config_change"
 

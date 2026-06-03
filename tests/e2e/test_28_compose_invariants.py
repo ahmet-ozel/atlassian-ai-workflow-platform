@@ -27,8 +27,8 @@ from hypothesis import strategies as st
 # ---------------------------------------------------------------------------
 
 EVIDENCE_FILENAME = "28-compose-invariants.json"
-WORKSPACE_ROOT = Path(__file__).resolve().parent.parent.parent.parent
-COMPOSE_FILE = WORKSPACE_ROOT / "platform" / "infra" / "docker-compose.yml"
+WORKSPACE_ROOT = Path(__file__).resolve().parent.parent.parent
+COMPOSE_FILE = WORKSPACE_ROOT / "infra" / "docker-compose.yml"
 
 # Healthcheck constraints
 MIN_INTERVAL_SECONDS = 5

@@ -1032,7 +1032,7 @@ from pathlib import Path as _P6Path  # noqa: E402 -- avoid shadowing earlier Pat
 
 # Sensitive substrings that MUST NOT appear in any log output.
 # These correspond to the actual credential prefixes/patterns from
-# CREDENTIALS.md used in the VPS E2E deployment test.
+# credentials.md used in the VPS E2E deployment test.
 _P6_FORBIDDEN_SUBSTRINGS: tuple[str, ...] = (
     "Bearer ATCTT3x",
     "Bearer ATATT3x",
@@ -1042,8 +1042,8 @@ _P6_FORBIDDEN_SUBSTRINGS: tuple[str, ...] = (
     "ATCTT3x",
 )
 
-# Workspace root — evidence files live at ``<workspace>/vps-test-evidence/``
-_P6_WORKSPACE_ROOT = _P6Path(__file__).resolve().parents[2].parent
+# Platform root - evidence files live at ``<platform>/vps-test-evidence/``
+_P6_WORKSPACE_ROOT = _P6Path(__file__).resolve().parents[2]
 _P6_EVIDENCE_GLOB = str(_P6_WORKSPACE_ROOT / "vps-test-evidence" / "17-logs-*.txt")
 
 

@@ -289,6 +289,7 @@ services:
       STREAMABLE_HTTP_PATH: /mcp
       READ_ONLY: "false"
       READ_ONLY_MODE: "false"
+      ATLASSIAN_OAUTH_ENABLE: "true"
       TOOLSETS: ${MCP_TOOLSETS:-all}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
     ports:

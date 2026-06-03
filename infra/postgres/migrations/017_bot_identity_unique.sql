@@ -1,20 +1,16 @@
 -- 012_bot_identity_unique.sql
--- Spec: platform-gap-fill — Task 18.1 (Bot Account ID Uniqueness Enforcement)
+-- Bot account ID uniqueness enforcement.
 --
--- Adds the database-layer leg of the three-layer uniqueness defence
--- declared by Requirement 18:
---   * R18.1 — UNIQUE(service, account_id) on the department-bot identity table
---   * R18.2 — Admin Dashboard API CRUD-time conflict check (existing —
---             see ``_find_account_id_conflicts`` in
---             ``routers/departments.py``).
---   * R18.4 — Boot-time uniqueness validation when ``departments.json``
---             is loaded (see ``db_shared.bot_identity``).
+-- Adds the database-layer leg of bot identity uniqueness:
+--   * UNIQUE(service, account_id) on the department-bot identity table
+--   * Admin Dashboard API CRUD-time conflict checks
+--   * Boot-time uniqueness validation when ``departments.json`` is loaded
 --
 -- The actual table that holds bot identities is
 -- ``automation.department_bots`` (created by
--- ``infra/postgres/10_automation.sql``). The R18 narrative refers to a
+-- ``infra/postgres/10_automation.sql``). Earlier notes referenced a
 -- ``shared.department_bot_identity`` table, but no such object exists
--- in this codebase — every reader (loop guard, webhook dispatcher,
+-- in this codebase. Every reader (loop guard, webhook dispatcher,
 -- credential resolver, capability prober, bootstrap probe) keys off
 -- ``automation.department_bots`` already, so that is the table this
 -- constraint binds to.
@@ -24,14 +20,11 @@
 --   1. Partial UNIQUE INDEX (instead of plain CONSTRAINT) so the
 --      bundled ``departments.json`` can keep shipping placeholder rows
 --      with ``account_id = ""`` / ``account_id IS NULL`` for departments
---      whose Vault probe has not run yet. The R18 narrative is
---      explicit: "iki farklı departmanın aynı bot account_id'sini
---      kullanmasının engellenmesi" — only *non-empty* account_ids are
+--      whose Vault probe has not run yet. Only *non-empty* account_ids are
 --      routing keys, so only those need to be globally unique.
 --      Partial indexes also match how the admin dashboard CRUD layer
 --      thinks about conflicts (see _extract_bot_identities) so the
 --      DB and API layers agree on the same notion of "real" id.
---
 --   2. The migration is idempotent: ``CREATE UNIQUE INDEX IF NOT
 --      EXISTS`` lets it re-run on an already-migrated database
 --      without raising ``42P07``. The DO-block guard runs *before*
@@ -41,8 +34,6 @@
 --      build.
 --
 -- Idempotent — safe to re-run.
---
--- Requirements: 18.1
 
 -- =============================================================================
 -- 1. Pre-flight: refuse to apply when the table already has duplicates
@@ -112,5 +103,5 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_department_bots_service_account_id
       AND account_id <> '';
 
 COMMENT ON INDEX automation.uq_department_bots_service_account_id IS
-    'R18.1 — globally unique (service, account_id) for non-empty bot '
+    'globally unique (service, account_id) for non-empty bot '
     'account_ids; empty/NULL placeholders are excluded.';

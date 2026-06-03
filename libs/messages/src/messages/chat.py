@@ -12,8 +12,7 @@ The three primary types are:
 * :class:`ChatRequest` — request body sent to the SSE chat endpoint.
 * :class:`SseEvent` — a single event yielded over the SSE stream. The
   ``type`` field is constrained to the **10 fixed event types** defined
-  in the design document (`platform-mimari-ops` design §"SseEvent
-  dataclass ve type catalogu"):
+  by the chat event catalog:
 
   ``token``, ``tool_call``, ``tool_result``,
   ``redirect_to_task_creator``, ``intent``,
@@ -22,8 +21,7 @@ The three primary types are:
 
 All dataclasses are :func:`~dataclasses.dataclass`-decorated with
 ``frozen=True`` and ``slots=True`` so instances are hashable, immutable
-and cheap to allocate. Validates Requirement 1.1 of the
-``platform-mimari-ops`` spec.
+and cheap to allocate.
 """
 
 from __future__ import annotations

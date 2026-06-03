@@ -1,15 +1,11 @@
 """End-to-end test — automation-service mounts ``TraceMiddleware``.
 
-Validates: platform-gap-fill Requirement 8.2 (automation-service trace
-boundary).
-
 The automation-service FastAPI app must:
 
 * Set the ``X-Trace-Id`` response header on every reply, generated
   from a fresh UUIDv7 when the inbound request omits it.
 * Preserve the inbound ``X-Trace-Id`` value when the caller supplies
-  one (Requirement 8.7 — Atlassian webhook retries keep the same
-  trace_id).
+  one, so Atlassian webhook retries keep the same trace_id.
 
 Both behaviours are covered by the ``observability.TraceMiddleware``
 unit tests; this test confirms the middleware is *wired* into the

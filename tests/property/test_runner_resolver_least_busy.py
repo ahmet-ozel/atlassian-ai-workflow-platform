@@ -1,11 +1,4 @@
-"""Property tests for runner resolver least-busy selection (Property 5).
-
-# Feature: platform-quick-fixes, Property 5: Runner Resolver Least-Busy Selection
-
-**Validates: Requirements 4.5**
-
-Property 5 — Runner Resolver Least-Busy Selection
---------------------------------------------------
+"""Runner resolver least-busy selection tests.
 
 *For any* department with multiple active runners having different active
 workflow counts, ``runner_resolver`` SHALL select the runner with the
@@ -161,22 +154,19 @@ def runners_with_tied_counts_strategy(draw: st.DrawFn) -> list[RunnerCandidate]:
 
 
 # ---------------------------------------------------------------------------
-# Property 5 — Least-Busy Selection Tests
+# Least-Busy Selection Tests
 # ---------------------------------------------------------------------------
 
 
 class TestLeastBusySelection:
-    """Property 5: Runner resolver always selects the least-busy runner.
-
-    **Validates: Requirements 4.5**
-    """
+    """Runner resolver always selects the least-busy runner."""
 
     @settings(max_examples=100, deadline=2000)
     @given(runners=multiple_runners_strategy())
     def test_selected_runner_has_minimum_active_count(
         self, runners: list[RunnerCandidate]
     ) -> None:
-        """**Validates: Requirements 4.5**
+        """The selected runner has the minimum active count.
 
         For any set of active runners, the selected runner must have
         an active_count equal to the minimum across all candidates.
@@ -195,7 +185,7 @@ class TestLeastBusySelection:
     def test_distinct_counts_selects_unique_minimum(
         self, runners: list[RunnerCandidate]
     ) -> None:
-        """**Validates: Requirements 4.5**
+        """Distinct active counts select the unique minimum.
 
         When all active_counts are distinct, the runner with the
         globally minimum count is always selected regardless of
@@ -215,7 +205,7 @@ class TestLeastBusySelection:
     def test_tied_counts_selects_by_priority_order(
         self, runners: list[RunnerCandidate]
     ) -> None:
-        """**Validates: Requirements 4.5**
+        """Tied active counts are resolved by priority order.
 
         When multiple runners share the minimum active_count, the
         runner with the lowest priority value (highest precedence)
@@ -240,7 +230,7 @@ class TestLeastBusySelection:
     def test_selection_is_deterministic(
         self, runners: list[RunnerCandidate]
     ) -> None:
-        """**Validates: Requirements 4.5**
+        """Selection is deterministic for identical input.
 
         Calling the selection function multiple times with the same
         input always yields the same result (referential transparency).
@@ -255,7 +245,7 @@ class TestLeastBusySelection:
     def test_selection_invariant_under_input_order(
         self, runners: list[RunnerCandidate]
     ) -> None:
-        """**Validates: Requirements 4.5**
+        """Selection is invariant under input order.
 
         The selection result does not depend on the order of the input
         list — the algorithm sorts by (active_count, priority) so any
@@ -278,7 +268,7 @@ class TestLeastBusySelection:
     def test_no_runner_with_lower_count_exists(
         self, runners: list[RunnerCandidate]
     ) -> None:
-        """**Validates: Requirements 4.5**
+        """No candidate has a lower active count than the selection.
 
         No other candidate has a strictly lower active_count than the
         selected runner. This is the core invariant of least-busy
@@ -302,7 +292,7 @@ class TestLeastBusySelection:
     def test_no_runner_with_same_count_and_lower_priority_exists(
         self, runners: list[RunnerCandidate]
     ) -> None:
-        """**Validates: Requirements 4.5**
+        """No tied candidate has higher precedence than the selection.
 
         Among runners with the same active_count as the selected one,
         no other runner has a strictly lower priority value (higher
@@ -326,22 +316,19 @@ class TestLeastBusySelection:
 
 
 # ---------------------------------------------------------------------------
-# Property 5 — Edge cases and monotonicity
+# Edge cases and monotonicity
 # ---------------------------------------------------------------------------
 
 
 class TestLeastBusyMonotonicity:
-    """Monotonicity and stability properties of the selection algorithm.
-
-    **Validates: Requirements 4.5**
-    """
+    """Monotonicity and stability properties of the selection algorithm."""
 
     @settings(max_examples=100, deadline=2000)
     @given(runners=multiple_runners_strategy())
     def test_adding_busier_runner_does_not_change_selection(
         self, runners: list[RunnerCandidate]
     ) -> None:
-        """**Validates: Requirements 4.5**
+        """Adding a busier runner does not change the selection.
 
         Adding a runner with a higher active_count than the current
         selection cannot change the winner.
@@ -372,7 +359,7 @@ class TestLeastBusyMonotonicity:
     def test_single_runner_always_selected(
         self, runners: list[RunnerCandidate]
     ) -> None:
-        """**Validates: Requirements 4.5**
+        """A single runner is always selected.
 
         When only one runner is provided, it is always selected
         regardless of its active_count or priority.
@@ -386,7 +373,7 @@ class TestLeastBusyMonotonicity:
     def test_selected_runner_is_from_candidates(
         self, runners: list[RunnerCandidate]
     ) -> None:
-        """**Validates: Requirements 4.5**
+        """The selected runner is always one of the candidates.
 
         The selected runner is always one of the input candidates
         (no fabrication).
@@ -397,22 +384,19 @@ class TestLeastBusyMonotonicity:
 
 
 # ---------------------------------------------------------------------------
-# Property 5 — Alignment with SQL ORDER BY semantics
+# Alignment with SQL ORDER BY semantics
 # ---------------------------------------------------------------------------
 
 
 class TestSqlOrderByAlignment:
-    """Verify the pure function matches SQL ORDER BY active_count ASC, priority ASC.
-
-    **Validates: Requirements 4.5**
-    """
+    """Verify the pure function matches SQL ORDER BY active_count ASC, priority ASC."""
 
     @settings(max_examples=100, deadline=2000)
     @given(runners=multiple_runners_strategy())
     def test_matches_sql_order_by_semantics(
         self, runners: list[RunnerCandidate]
     ) -> None:
-        """**Validates: Requirements 4.5**
+        """Selection matches SQL ordering semantics.
 
         The selection result matches what SQL
         ``ORDER BY active_count ASC, a.priority ASC LIMIT 1``
@@ -437,7 +421,7 @@ class TestSqlOrderByAlignment:
     def test_active_count_dominates_priority(
         self, runners: list[RunnerCandidate]
     ) -> None:
-        """**Validates: Requirements 4.5**
+        """Active count dominates priority.
 
         A runner with lower active_count always wins over a runner
         with higher active_count, regardless of priority values.
@@ -454,12 +438,8 @@ class TestSqlOrderByAlignment:
 
 
 # ===========================================================================
-# Property 6: No-Runner Failure Invariant
+# No-Runner Failure Invariant
 # ===========================================================================
-#
-# # Feature: platform-quick-fixes, Property 6: No-Runner Failure Invariant
-#
-# **Validates: Requirements 4.6, 4.7**
 #
 # *For any* department where all assigned runners have
 # ``status ∈ {disabled, quarantine}`` OR no runners are assigned, the
@@ -502,7 +482,7 @@ _resolve_runner = _module.resolve_runner
 
 
 # ---------------------------------------------------------------------------
-# Hypothesis strategies for Property 6
+# Hypothesis strategies for no-runner failure scenarios
 # ---------------------------------------------------------------------------
 
 #: Valid department ID pattern
@@ -569,14 +549,12 @@ _failure_scenario_strategy = st.one_of(
 
 
 # ---------------------------------------------------------------------------
-# Property 6 — No-Runner Failure Invariant Tests
+# No-Runner Failure Invariant Tests
 # ---------------------------------------------------------------------------
 
 
 class TestNoRunnerFailureInvariant:
-    """Property 6: No-Runner Failure Invariant.
-
-    # Feature: platform-quick-fixes, Property 6: No-Runner Failure Invariant
+    """No-runner failure invariant.
 
     *For any* department where all assigned runners have
     ``status ∈ {disabled, quarantine}`` OR no runners are assigned, the
@@ -584,7 +562,6 @@ class TestNoRunnerFailureInvariant:
     the workflow SHALL transition to ``failed`` state, and an audit event
     ``no_runner_assigned_to_dept`` SHALL be written.
 
-    **Validates: Requirements 4.6, 4.7**
     """
 
     @settings(
@@ -597,7 +574,7 @@ class TestNoRunnerFailureInvariant:
     async def test_raises_runner_resolution_error_when_no_active_runners(
         self, scenario: dict[str, Any]
     ) -> None:
-        """**Validates: Requirements 4.6, 4.7**
+        """No active runners raise ``RunnerResolutionError``.
 
         When the database query returns no active runners (either because
         no runners are assigned or all are disabled/quarantine), the
@@ -641,7 +618,7 @@ class TestNoRunnerFailureInvariant:
     async def test_writes_audit_event_on_failure(
         self, scenario: dict[str, Any]
     ) -> None:
-        """**Validates: Requirements 4.6, 4.7**
+        """No active runners write an audit event.
 
         When no active runner is available, the resolver MUST write an
         audit event with action ``no_runner_assigned_to_dept`` containing
@@ -685,7 +662,7 @@ class TestNoRunnerFailureInvariant:
     async def test_all_disabled_quarantine_runners_treated_as_no_runner(
         self, scenario: dict[str, Any]
     ) -> None:
-        """**Validates: Requirements 4.6, 4.7**
+        """Disabled and quarantined runners are treated as unavailable.
 
         When all assigned runners have status 'disabled' or 'quarantine',
         the SQL query (which filters by status='active') returns empty
@@ -742,7 +719,7 @@ class TestNoRunnerFailureInvariant:
     async def test_error_is_runtime_error_subclass(
         self, dept_id: str
     ) -> None:
-        """**Validates: Requirements 4.6, 4.7**
+        """RunnerResolutionError is a RuntimeError subclass.
 
         RunnerResolutionError is a RuntimeError subclass, ensuring it
         propagates correctly through Temporal's activity error handling

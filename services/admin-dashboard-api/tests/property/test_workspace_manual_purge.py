@@ -1,14 +1,10 @@
-# Feature: platform-mimari-uyumluluk
-# Property 14: Workspace Purge Input Validation + SSH Safety (Q15)
-# Validates: Requirements 13.1, 13.3, 13.4, 13.5
-"""Property test: Workspace Purge Input Validation + SSH Safety (Q15).
-
-**Property 14: Workspace Purge Input Validation + SSH Safety (Q15)**
-**Validates: Requirements 13.1, 13.3, 13.4, 13.5**
-
+#
+# Workspace Purge Input Validation + SSH Safety (Q15)
+#
+"""Workspace Purge Input Validation + SSH Safety (Q15).
+Workspace Purge Input Validation + SSH Safety (Q15)**
 For any ``issue_key`` string that could be a path-traversal attack vector,
 ``DELETE /admin/runner/workspaces/{issue_key}`` behaviour must be:
-
 - ``issue_key`` matches regex ``^[A-Z][A-Z0-9_]*-\\d+$`` → SSH command is
   executed; the workspace path is derived correctly; the command argv
   contains **no** shell metacharacters (``;``, ``&``, ``|``, ``$``,
@@ -17,11 +13,9 @@ For any ``issue_key`` string that could be a path-traversal attack vector,
   ``"PROJ; rm -rf /"``, ``""``, unicode-encoded vectors) → 400 +
   ``invalid_issue_key_format``; SSH command is **never** invoked; no
   ``workspace_purge_failed`` audit is written (zero side effects).
-
 Strategy
 --------
 Hypothesis generates:
-
 1. **Valid keys** — strings matching ``^[A-Z][A-Z0-9_]*-\\d+$`` — and
    asserts the endpoint returns 200 and the SSH client is called exactly
    once with the unmodified key.
@@ -32,12 +26,10 @@ Hypothesis generates:
 3. **Shell-metachar safety** — for every valid key the ``_purge_logic``
    helper is called directly and the resulting SSH argv is inspected to
    confirm no forbidden characters appear.
-
 The router is exercised through :class:`fastapi.testclient.TestClient`
 (same pattern as ``test_runner_workspaces_router.py``) so the full
 FastAPI request pipeline (URL parsing, path-parameter extraction, regex
-guard) is covered.
-"""
+guard) is covered."""
 
 from __future__ import annotations
 
@@ -82,7 +74,7 @@ from src.routers.runner_workspaces import (  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Shell metacharacters that must NEVER appear in SSH command argv
-# (Requirement 13.4 — path-traversal + shell injection safety)
+#
 # ---------------------------------------------------------------------------
 
 _SHELL_METACHAR_PATTERN = re.compile(
@@ -242,7 +234,7 @@ _INVALID_KEY_STRATEGY = st.one_of(
 
 
 # ---------------------------------------------------------------------------
-# Property 14a — valid keys → 200 + SSH client called exactly once
+#  — valid keys → 200 + SSH client called exactly once
 # ---------------------------------------------------------------------------
 
 
@@ -255,18 +247,14 @@ _INVALID_KEY_STRATEGY = st.one_of(
 def test_valid_issue_key_returns_200_and_calls_ssh_client(
     issue_key: str,
 ) -> None:
-    """Property 14a — valid issue_key → 200 + SSH client called exactly once.
-
-    **Validates: Requirements 13.1, 13.3**
-
+    """— valid issue_key → 200 + SSH client called exactly once.
     For any ``issue_key`` matching ``^[A-Z][A-Z0-9_]*-\\d+$``:
     - The endpoint returns HTTP 200.
     - The SSH client's ``purge_workspace`` is called exactly once with
       the unmodified ``issue_key``.
-    - The response body contains ``{"purged": true, "freed_bytes": ...,
+    - The response body contains ``{"purged": true, "freed_bytes":...,
       "issue_key": <key>}``.
-    - A ``workspace_manually_purged`` audit event is written.
-    """
+    - A ``workspace_manually_purged`` audit event is written."""
     # Confirm the strategy only generates valid keys.
     assert _VALID_KEY_REGEX.fullmatch(issue_key) is not None, (
         f"Strategy generated an invalid key: {issue_key!r}"
@@ -322,7 +310,7 @@ def test_valid_issue_key_returns_200_and_calls_ssh_client(
 
 
 # ---------------------------------------------------------------------------
-# Property 14b — invalid keys → 400 + SSH client NEVER called
+#  — invalid keys → 400 + SSH client NEVER called
 # ---------------------------------------------------------------------------
 
 
@@ -335,10 +323,7 @@ def test_valid_issue_key_returns_200_and_calls_ssh_client(
 def test_invalid_issue_key_returns_400_and_never_calls_ssh_client(
     issue_key: str,
 ) -> None:
-    """Property 14b — invalid issue_key → 400 + SSH client NEVER called.
-
-    **Validates: Requirements 13.4, 13.5**
-
+    """— invalid issue_key → 400 + SSH client NEVER called.
     For any ``issue_key`` that does NOT match ``^[A-Z][A-Z0-9_]*-\\d+$``:
     - The endpoint returns HTTP 400.
     - The response body contains ``{"error": "invalid_issue_key_format"}``.
@@ -347,11 +332,9 @@ def test_invalid_issue_key_returns_400_and_never_calls_ssh_client(
     - No ``workspace_purge_failed`` audit event is written (the rejection
       audit ``workspace_purge_rejected_invalid_key`` may be written, but
       the failure audit must not appear).
-
     This is the critical safety invariant: path-traversal vectors and
     shell-injection strings must be stopped at the regex boundary before
-    any subprocess or SSH command is built.
-    """
+    any subprocess or SSH command is built."""
     # Skip keys that happen to be valid (extremely rare with the strategy,
     # but possible for edge cases like "A-1" which is technically valid).
     assume(_VALID_KEY_REGEX.fullmatch(issue_key) is None)
@@ -408,7 +391,7 @@ def test_invalid_issue_key_returns_400_and_never_calls_ssh_client(
 
 
 # ---------------------------------------------------------------------------
-# Property 14c — shell metachar safety in SSH argv
+#  — shell metachar safety in SSH argv
 # ---------------------------------------------------------------------------
 
 
@@ -421,21 +404,16 @@ def test_invalid_issue_key_returns_400_and_never_calls_ssh_client(
 def test_valid_key_produces_no_shell_metachar_in_ssh_argv(
     issue_key: str,
 ) -> None:
-    """Property 14c — valid key produces no shell metachar in SSH argv.
-
-    **Validates: Requirements 13.4, 13.5**
-
+    """— valid key produces no shell metachar in SSH argv.
     For any valid ``issue_key``, the value forwarded to the SSH client
     must not contain shell metacharacters (``;``, ``&``, ``|``, ``$``,
     backtick, newline, null-byte). This verifies that the router's
     regex guard is tight enough that no valid key can carry injection
     payloads, and that the client receives a clean value.
-
     Additionally, the key as it would appear in a ``shlex.quote``-escaped
     shell command must not introduce any metacharacters — confirming that
-    the ``shlex.quote`` contract (Requirement 13.4 design note) holds for
-    all valid keys.
-    """
+    the ``shlex.quote`` contract holds for
+    all valid keys."""
     assert _VALID_KEY_REGEX.fullmatch(issue_key) is not None
 
     ssh_client = _RecordingClient()
@@ -480,7 +458,7 @@ def test_valid_key_produces_no_shell_metachar_in_ssh_argv(
 
 
 # ---------------------------------------------------------------------------
-# Property 14d — determinism: same issue_key → same outcome
+# same issue_key → same outcome
 # ---------------------------------------------------------------------------
 
 
@@ -497,14 +475,10 @@ def test_purge_decision_is_deterministic(
     issue_key: str,
     freed_bytes: int,
 ) -> None:
-    """Property 14d — purge decision is deterministic.
-
-    **Validates: Requirements 13.1, 13.4**
-
+    """— purge decision is deterministic.
     For any ``issue_key``, calling the endpoint twice with the same key
     must produce the same HTTP status code. This confirms the validation
-    logic is a pure function of the key (no hidden state, no randomness).
-    """
+    logic is a pure function of the key (no hidden state, no randomness)."""
     outcomes: list[int] = []
 
     for _ in range(2):
@@ -529,7 +503,7 @@ def test_purge_decision_is_deterministic(
 
 
 # ---------------------------------------------------------------------------
-# Property 14e — ISSUE_KEY_PATTERN agrees with router behaviour
+#  — ISSUE_KEY_PATTERN agrees with router behaviour
 # ---------------------------------------------------------------------------
 
 
@@ -542,15 +516,11 @@ def test_purge_decision_is_deterministic(
 def test_issue_key_pattern_constant_matches_valid_keys(
     issue_key: str,
 ) -> None:
-    """Property 14e — ISSUE_KEY_PATTERN constant matches all valid keys.
-
-    **Validates: Requirements 13.4**
-
+    """— ISSUE_KEY_PATTERN constant matches all valid keys.
     The exported ``ISSUE_KEY_PATTERN`` constant must match every key
     that the strategy generates as valid. This ensures the pattern used
     by the router and the pattern used by the execution-runner-worker's
-    ``workspace_path.py`` agree (forward/reverse path consistency).
-    """
+    ``workspace_path.py`` agree (forward/reverse path consistency)."""
     assert ISSUE_KEY_PATTERN.fullmatch(issue_key) is not None, (
         f"ISSUE_KEY_PATTERN did not match valid key {issue_key!r}"
     )
@@ -565,14 +535,10 @@ def test_issue_key_pattern_constant_matches_valid_keys(
 def test_issue_key_pattern_constant_rejects_invalid_keys(
     issue_key: str,
 ) -> None:
-    """Property 14e (inverse) — ISSUE_KEY_PATTERN rejects all invalid keys.
-
-    **Validates: Requirements 13.4**
-
+    """(inverse) — ISSUE_KEY_PATTERN rejects all invalid keys.
     The exported ``ISSUE_KEY_PATTERN`` constant must reject every key
     that the strategy generates as invalid. This confirms the pattern
-    is tight enough to block path-traversal and shell-injection vectors.
-    """
+    is tight enough to block path-traversal and shell-injection vectors."""
     # Skip keys that happen to be valid (edge cases from the strategy).
     assume(_VALID_KEY_REGEX.fullmatch(issue_key) is None)
 
@@ -582,7 +548,7 @@ def test_issue_key_pattern_constant_rejects_invalid_keys(
 
 
 # ---------------------------------------------------------------------------
-# Property 14f — audit action set for valid vs invalid keys
+#  — audit action set for valid vs invalid keys
 # ---------------------------------------------------------------------------
 
 
@@ -595,14 +561,10 @@ def test_issue_key_pattern_constant_rejects_invalid_keys(
 def test_valid_key_writes_purged_audit_not_rejected_audit(
     issue_key: str,
 ) -> None:
-    """Property 14f — valid key writes purged audit, not rejected audit.
-
-    **Validates: Requirements 13.3**
-
+    """— valid key writes purged audit, not rejected audit.
     For a valid key, the audit sink must receive exactly one
     ``workspace_manually_purged`` event and zero
-    ``workspace_purge_rejected_invalid_key`` events.
-    """
+    ``workspace_purge_rejected_invalid_key`` events."""
     ssh_client = _RecordingClient()
     sink = _RecordingAuditSink()
     app = _build_app(client=ssh_client, audit_sink=sink)
@@ -632,16 +594,12 @@ def test_valid_key_writes_purged_audit_not_rejected_audit(
 def test_invalid_key_writes_rejected_audit_not_purged_audit(
     issue_key: str,
 ) -> None:
-    """Property 14f (inverse) — invalid key writes rejected audit, not purged.
-
-    **Validates: Requirements 13.3, 13.4**
-
+    """(inverse) — invalid key writes rejected audit, not purged.
     For an invalid key, the audit sink must receive zero
     ``workspace_manually_purged`` events and zero
     ``workspace_purge_failed`` events. The rejection audit
     ``workspace_purge_rejected_invalid_key`` may be written (it is
-    best-effort), but the success/failure audits must not appear.
-    """
+    best-effort), but the success/failure audits must not appear."""
     assume(_VALID_KEY_REGEX.fullmatch(issue_key) is None)
 
     # Skip keys that httpx cannot encode as a URL path component.

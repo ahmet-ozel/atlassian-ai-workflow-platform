@@ -1,7 +1,7 @@
 # db-shared
 
 Tenant-aware database session primitives consumed by the HTTP services
-and Temporal workers. The current scaffold ships only the
+and Temporal workers. The current package ships only the
 `TenantAwareSession` placeholder; the real implementation will issue
 `SET LOCAL app.tenant_id = ...` so Postgres row-level security policies
 can filter per tenant.

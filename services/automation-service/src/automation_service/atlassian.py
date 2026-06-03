@@ -19,7 +19,7 @@ __all__ = ["AtlassianProbeClient"]
 class AtlassianProbeClient:
     """Small production client for credential read/write probes.
 
-    Jira and Confluence calls go through the stateless ``atlassian_unified``
+    Jira and Confluence calls go through the stateless ``atlassian_mcp_bitbucket``
     MCP endpoint with per-request credential headers. Bitbucket probe calls use
     Bitbucket's branch REST endpoints directly because the current MCP cloud
     repository tools reject the live app-password token even though the branch

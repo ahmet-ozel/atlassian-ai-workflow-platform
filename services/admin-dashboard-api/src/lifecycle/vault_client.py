@@ -1,17 +1,16 @@
-"""Vault KV-v2 wrapper for Env_Override storage (design §3.5).
+"""Vault KV-v2 wrapper for Env_Override storage.
 
 This module implements :class:`VaultClient`, the **only** persistence
 path the admin-dashboard control plane uses for operator-supplied
-``Env_Override`` values (Requirement 9.1). Every key/value pair sent
-through ``POST /admin/services/{name}/start`` is round-tripped through
-the live Vault KV-v2 mount; nothing is staged on the host filesystem,
-in temp files, or in log lines (Requirement 9.2 — Property P2).
+``Env_Override`` values. Every key/value pair sent through
+``POST /admin/services/{name}/start`` is round-tripped through the live Vault
+KV-v2 mount; nothing is staged on the host filesystem, in temp files, or in log
+lines.
 
 Endpoints (Vault KV-v2 — see Vault docs ``secret/kv-v2``):
 
 * ``PUT  {addr}/v1/{kv_mount}/data/services/{service_name}/{key}``
-  body ``{"data": {"value": value}}`` → atomic per-key write
-  (Requirement 9.6).
+  body ``{"data": {"value": value}}`` → atomic per-key write.
 * ``LIST {addr}/v1/{kv_mount}/metadata/services/{service_name}/?list=true``
   → ``{"data": {"keys": [...]}}``; ``404`` means the prefix is empty
   (no first-time start has happened yet) and is **not** an error.
@@ -22,18 +21,16 @@ Endpoints (Vault KV-v2 — see Vault docs ``secret/kv-v2``):
 
 Authentication uses the ``X-Vault-Token`` header on every request.
 
-Failure handling (Requirement 9.5): any ``404`` outside of the empty-
-prefix LIST case, any ``5xx``, and any non-2xx returned by the *write*
-or *delete* endpoints raises :class:`VaultWriteError`. The lifecycle
-service wraps that into a ``502 Bad Gateway`` response and transitions
-the service into ``failed`` state.
+Failure handling: any ``404`` outside of the empty-prefix LIST case, any
+``5xx``, and any non-2xx returned by the *write* or *delete* endpoints raises
+:class:`VaultWriteError`. The lifecycle service wraps that into a
+``502 Bad Gateway`` response and transitions the service into ``failed`` state.
 
 Design constraints honoured:
 
 * **No disk I/O.** The implementation only opens an in-memory
   :class:`httpx.AsyncClient`; it never imports :mod:`pathlib` or
-  :func:`open` for read/write. This is what Property P2 actually
-  exercises.
+  :func:`open` for read/write.
 * **Pure async.** All public methods are coroutines suitable for use
   from FastAPI request handlers.
 * **No secret leakage in exceptions.** :class:`VaultWriteError`
@@ -57,7 +54,7 @@ class VaultWriteError(Exception):
     """Raised when a Vault KV-v2 write/read/delete fails fatally.
 
     The lifecycle service maps this to ``502 Bad Gateway`` and the
-    ``failed`` service state (Requirement 9.5).
+    ``failed`` service state.
 
     Attributes
     ----------
@@ -71,10 +68,9 @@ class VaultWriteError(Exception):
     status_code:
         The HTTP status code returned by Vault, or ``None`` when the
         failure was a transport error (DNS, TCP, TLS, ...). The error
-        is raised for ``404`` and ``5xx`` per design §3.5; ``4xx``
-        responses other than ``404`` are also treated as fatal because
-        they indicate a misconfigured token / policy and the operator
-        cannot recover by retry.
+        is raised for ``404`` and ``5xx``; ``4xx`` responses other than
+        ``404`` are also treated as fatal because they indicate a
+        misconfigured token / policy and the operator cannot recover by retry.
     """
 
     def __init__(
@@ -185,7 +181,7 @@ class VaultClient:
         await self.aclose()
 
     # ------------------------------------------------------------------
-    # Public API (design §3.5)
+    # Public API
     # ------------------------------------------------------------------
 
     async def write_kv2_secret(
@@ -196,11 +192,11 @@ class VaultClient:
     ) -> None:
         """Write a multi-key secret to a Vault KV-v2 path.
 
-        K2 fix (GEREKSINIM_ANALIZI.md): :func:`write_env_override` is
-        scoped to ``data/services/{service_name}/{key}`` with a single
-        ``{"data": {"value": ...}}`` shape — perfect for env overrides
-        but wrong for multi-field secrets like SSH credentials which
-        the worker fetches as ``{host, port, user, private_key}``.
+        :func:`write_env_override` is scoped to
+        ``data/services/{service_name}/{key}`` with a single
+        ``{"data": {"value": ...}}`` shape — perfect for env overrides but
+        wrong for multi-field secrets like SSH credentials which the worker
+        fetches as ``{host, port, user, private_key}``.
 
         This method writes ``{"data": data}`` to ``{kv_mount}/data/{path}``
         so the canonical SSH secret shape can be stored at
@@ -336,7 +332,7 @@ class VaultClient:
         with body ``{"data": {"value": value}}``. Each key is its own
         atomic write: a partial failure across N keys leaves the
         already-written keys intact, and the lifecycle service surfaces
-        the failure as ``502`` (Requirement 9.5, 9.6).
+        the failure as ``502``.
         """
 
         url = self._data_url(service_name, key)
@@ -379,8 +375,8 @@ class VaultClient:
         Implementation: ``LIST`` the metadata prefix to enumerate keys,
         then ``GET`` each one. A ``404`` on the LIST means the operator
         has never started this service before; we return ``{}`` instead
-        of raising (Requirement 9.5 only fires for *write* failures and
-        for genuine 5xx errors on read).
+        of raising; write failures and genuine 5xx errors on read still
+        surface as errors.
         """
 
         keys = await self._list_keys(service_name)
@@ -406,8 +402,8 @@ class VaultClient:
         out so callers receive a flat list of leaf keys).
 
         Used by the lifecycle stop endpoint's ``purge_vault=true``
-        path (platform-mimari-uyumluluk R14 / Q16) to enumerate every
-        path that needs to be soft-deleted after Compose down. A
+        path to enumerate every path that needs to be soft-deleted after
+        Compose down. A
         ``404`` on the LIST means the prefix has never been written
         to (the operator never started the service with overrides) —
         in that case we return ``[]`` rather than raising, so the
@@ -466,7 +462,7 @@ class VaultClient:
             )
 
     # ------------------------------------------------------------------
-    # LLM provider credential helpers (llm-provider-management R3.1, R3.3)
+    # LLM provider credential helpers
     # ------------------------------------------------------------------
     #
     # Target Vault KV-v2 path: ``secret/data/llm-providers/{provider_id}/credentials``.
@@ -501,8 +497,8 @@ class VaultClient:
 
         On any non-2xx response (including 4xx misconfigurations and
         5xx server failures) a :class:`VaultWriteError` is raised so the
-        service layer can issue ``ROLLBACK`` and surface the spec-
-        mandated ``502 vault_write_failed`` response.
+        service layer can issue ``ROLLBACK`` and surface
+        ``502 vault_write_failed``.
         """
 
         url = self._llm_credentials_url(provider_id)
@@ -694,7 +690,7 @@ class VaultClient:
             ) from exc
 
         if response.status_code == 404:
-            # Empty prefix on first start — design §3.5 explicit case.
+            # Empty prefix on first start.
             return []
         if not _is_success(response.status_code):
             raise VaultWriteError(

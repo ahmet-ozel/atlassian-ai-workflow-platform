@@ -1,30 +1,28 @@
 """Integration test 9.4 — Audit insertion + correlation ID round-trip.
 
-Validates: Requirements 11.1, 11.2, 11.3, 11.6, 11.7, 11.8
-Spec: ``.kiro/specs/admin-dashboard-control-plane`` (task 9.4).
 
 Three scenarios are covered:
 
-1. **Happy path / round-trip (Requirements 11.1, 11.2, 11.3, 11.8)**:
-   ``POST /admin/services/redis/start`` returns ``202`` with a
-   ``correlation_id``. A direct ``SELECT`` against
-   ``shared.audit_log`` finds at least one row whose
-   ``correlation_id`` matches; the ``details_json`` column carries the
-   list of Env_Override keys (Requirement 11.2 / 11.3) but NEVER the
-   values (Requirement 11.3).
+1. **Happy path / round-trip **:
+ ``POST /admin/services/redis/start`` returns ``202`` with a
+ ``correlation_id``. A direct ``SELECT`` against
+ ``shared.audit_log`` finds at least one row whose
+ ``correlation_id`` matches; the ``details_json`` column carries the
+ list of Env_Override keys but NEVER the
+ values .
 
-2. **Audit-or-rollback (Requirement 11.6)**:
-   The Postgres container is paused (``docker pause``) before the
-   start request. The handler's audit precheck (``SELECT 1``) fails
-   and the request returns ``502 Bad Gateway`` — Compose is never
-   invoked. We confirm this by checking the redis container is still
-   absent after the failed call.
+2. **Audit-or-rollback **:
+ The Postgres container is paused (``docker pause``) before the
+ start request. The handler's audit precheck (``SELECT 1``) fails
+ and the request returns ``502 Bad Gateway`` — Compose is never
+ invoked. We confirm this by checking the redis container is still
+ absent after the failed call.
 
-3. **Deferred-write (Requirement 11.7)**:
-   We let Compose succeed, then pause Postgres before the
-   *post-Compose* audit row gets written. The response body must
-   carry ``audit_write_deferred=true`` so the operator's UI can
-   surface the queued state.
+3. **Deferred-write **:
+ We let Compose succeed, then pause Postgres before the
+ *post-Compose* audit row gets written. The response body must
+ carry ``audit_write_deferred=true`` so the operator's UI can
+ surface the queued state.
 
 Implementation notes
 --------------------
@@ -72,7 +70,7 @@ ADMIN_API_BASE: str = "http://localhost:8082"
 DEV_BEARER_TOKEN: str = "audit-round-trip-bearer"
 
 #: PostgreSQL connection details. The base Compose file publishes 5432
-#: directly to the host, with credentials matching the scaffold's
+#: directly to the host, with credentials matching the project's
 #: ``infra/postgres`` defaults (see ``services/admin-dashboard-api/
 #: .env.example``).
 POSTGRES_DSN: str = "postgresql://ai:ai_dev_only@localhost:5432/ai"
@@ -341,12 +339,12 @@ async def _select_audit_rows_by_correlation_id(
     try:
         rows = await conn.fetch(
             """
-            SELECT id, actor, actor_type, service_name, action,
-                   timestamp, correlation_id, outcome, details_json
-            FROM shared.audit_log
-            WHERE correlation_id = $1::uuid
-            ORDER BY timestamp ASC
-            """,
+ SELECT id, actor, actor_type, service_name, action,
+ timestamp, correlation_id, outcome, details_json
+ FROM shared.audit_log
+ WHERE correlation_id = $1::uuid
+ ORDER BY timestamp ASC
+ """,
             uuid.UUID(correlation_id),
         )
     finally:
@@ -399,8 +397,7 @@ def test_audit_round_trip_and_audit_or_rollback_and_deferred_write(
 ) -> None:
     """All three audit scenarios in one test (boot+down once, share state).
 
-    Validates: Requirements 11.1, 11.2, 11.3, 11.6, 11.7, 11.8.
-    """
+ """
 
     _require_docker_or_skip(request)
 
@@ -419,7 +416,7 @@ def test_audit_round_trip_and_audit_or_rollback_and_deferred_write(
 
         # ------------------------------------------------------------------
         # Scenario 1: happy-path round-trip
-        # Requirements 11.1 (audit row written), 11.2 (correlation_id),
+        # (audit row written), 11.2 (correlation_id),
         # 11.3 (env_keys but no values), 11.8 (correlation_id round-trip).
         # ------------------------------------------------------------------
         env_overrides = {
@@ -452,7 +449,7 @@ def test_audit_round_trip_and_audit_or_rollback_and_deferred_write(
         rows = asyncio.run(_select_audit_rows_by_correlation_id(correlation_id))
         assert len(rows) >= 1, (
             f"no audit rows found for correlation_id={correlation_id!r}; "
-            "Requirement 11.1 violated."
+            "violated."
         )
 
         # Find the row whose details_json carries the env_keys list. The
@@ -474,25 +471,25 @@ def test_audit_round_trip_and_audit_or_rollback_and_deferred_write(
         )
         assert SAMPLE_ENV_KEY_A in env_keys and SAMPLE_ENV_KEY_B in env_keys, (
             "details_json.env_keys must list both submitted Env_Override "
-            f"keys (Requirement 11.2); got {env_keys!r}"
+            f"keys ; got {env_keys!r}"
         )
 
-        # Property P6 / Requirement 11.3 — values must NEVER reach audit.
+        # the invariant / values must NEVER reach audit.
         full_dump = json.dumps([dict(r) for r in rows], default=str)
         assert SAMPLE_ENV_VALUE_A not in full_dump, (
             "Env_Override VALUE leaked into shared.audit_log "
-            "(Requirement 11.3 violated); value=A leaked."
+            "violated); value=A leaked."
         )
         assert SAMPLE_ENV_VALUE_B not in full_dump, (
             "Env_Override VALUE leaked into shared.audit_log "
-            "(Requirement 11.3 violated); value=B leaked."
+            "violated); value=B leaked."
         )
 
         # Stop the service so the deferred-write scenario starts fresh.
         client.post_stop(TARGET_SERVICE)
 
         # ------------------------------------------------------------------
-        # Scenario 2: audit-or-rollback (Requirement 11.6)
+        # Scenario 2: audit-or-rollback 
         # Pause Postgres → /start → expect 502 + redis NOT running.
         # ------------------------------------------------------------------
         _docker_pause(postgres_container)
@@ -500,18 +497,18 @@ def test_audit_round_trip_and_audit_or_rollback_and_deferred_write(
             # Confirm the pause actually took effect.
             assert not asyncio.run(_ping_postgres()), (
                 "Postgres pause failed to disconnect — cannot validate "
-                "Requirement 11.6 audit-or-rollback without a real outage."
+                "audit-or-rollback without a real outage."
             )
 
             status_code, body = client.post_start(TARGET_SERVICE)
             assert status_code == 502, (
-                "audit-or-rollback (Requirement 11.6): start with Postgres "
+                "audit-or-rollback : start with Postgres "
                 f"down must return 502 Bad Gateway; got {status_code} "
                 f"body={body!r}"
             )
             # Compose MUST NOT have been invoked.
             assert not _compose_ps_running(repo_root, TARGET_SERVICE), (
-                "Requirement 11.6 violated: Postgres was unreachable yet "
+                "violated: Postgres was unreachable yet "
                 "Compose started the service anyway. The audit precheck "
                 "should have aborted the request before any side-effect."
             )
@@ -523,7 +520,7 @@ def test_audit_round_trip_and_audit_or_rollback_and_deferred_write(
             _wait_for_postgres_ready()
 
         # ------------------------------------------------------------------
-        # Scenario 3: deferred-write (Requirement 11.7)
+        # Scenario 3: deferred-write 
         # Compose succeeds (Postgres up at precheck + pending-row time),
         # then the post-Compose audit row hits a paused Postgres.
         # ------------------------------------------------------------------
@@ -532,7 +529,7 @@ def test_audit_round_trip_and_audit_or_rollback_and_deferred_write(
         # post-Compose audit row insertion. The test tolerates either
         # outcome (deferred=true or deferred=false) ONLY when the call
         # itself succeeds — a deferred=true response is the explicit
-        # Requirement 11.7 surface we want to observe.
+        # surface we want to observe.
         import threading
 
         def _pause_after_delay(delay: float) -> None:
@@ -555,9 +552,9 @@ def test_audit_round_trip_and_audit_or_rollback_and_deferred_write(
         # Outcome may legitimately be either:
         # * 502 (the pause hit before the precheck/pending-row insert)
         # * 202 with audit_write_deferred=true (the pause hit between
-        #   Compose success and the final audit row — Requirement 11.7)
+        # Compose success and the final audit row — 
         # * 202 with audit_write_deferred=false (timing missed; rare on
-        #   the warm host but possible).
+        # the warm host but possible).
         # The test PASSES on any of those because all three are valid
         # spec-compliant responses. We FAIL only on a 5xx other than
         # 502 or a body without a correlation_id.
@@ -567,11 +564,11 @@ def test_audit_round_trip_and_audit_or_rollback_and_deferred_write(
                 f"202 start response missing correlation_id; got {body!r}"
             )
             # When the response advertises deferred=true that explicitly
-            # validates Requirement 11.7. When it's false the timing
+            # validates When it's false the timing
             # missed; not a test failure.
             assert body.get("audit_write_deferred") in (True, False)
         elif status_code == 502:
-            # Requirement 11.6 — same code path, audit-or-rollback fired
+            # same code path, audit-or-rollback fired
             # before Compose. Acceptable outcome for this scenario.
             pass
         else:

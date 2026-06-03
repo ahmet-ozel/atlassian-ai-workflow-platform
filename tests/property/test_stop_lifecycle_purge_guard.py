@@ -1,6 +1,4 @@
-"""Property test 20 — Stop lifecycle purge profile guard.
-
-**Validates: Requirements 4.2, 8.7**
+"""Stop lifecycle purge profile guard property tests.
 
 The ``ServicesLifecycleRouter.stop`` endpoint MUST refuse a
 ``purge_vault=true`` flag when the deployment profile is

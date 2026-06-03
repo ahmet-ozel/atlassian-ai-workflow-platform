@@ -1,11 +1,10 @@
-"""Property test: Output action execution audit completeness.
+"""Invariant test: Output action execution audit completeness.
 
-Feature: platform-completion, Property 6: For any executed action
+Feature:,: For any executed action
 (regardless of outcome: success, failed, skipped, or timeout), an
 execution record with action type, index, status, and timestamp SHALL
 be persisted to workflow history.
 
-Validates: Requirements 3.9
 """
 from __future__ import annotations
 
@@ -17,7 +16,7 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap (mirror sibling property tests)
+# sys.path bootstrap (mirror sibling Invariant tests)
 # ---------------------------------------------------------------------------
 
 _WORKER_ROOT: Path = Path(__file__).resolve().parents[2]
@@ -87,7 +86,7 @@ def test_all_outcomes_have_status_field(statuses: list[str]) -> None:
     ]
 
     # Every result must have a valid status, an integer index, an action_type,
-    # and a timestamp — Property 6 audit completeness.
+    # and a timestamp — audit completeness.
     for r in results:
         assert r.status in _VALID_STATUSES
         assert isinstance(r.index, int)

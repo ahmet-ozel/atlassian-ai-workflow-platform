@@ -1,8 +1,8 @@
-"""Iter advance + PR supersede activity (task 7.6).
+"""Iter advance + PR supersede activity.
 
 When :class:`AgentRunnerWorkflow` advances to a new iteration and opens
 a fresh draft PR, the previous iteration's PR (if any) must be marked
-as *superseded* so the PO Review Inbox (R10.4) and human reviewers can
+as *superseded* so the PO Review Inbox and human reviewers can
 see at a glance that a newer iteration has shipped. The marking is a
 two-part Bitbucket update:
 
@@ -18,8 +18,8 @@ The activity *also* records the transition in
 :class:`automation_service.pr_supersede_log.PrSupersedeLogRepo` so the
 PO Review Inbox can render a multi-iter audit trail.
 
-Idempotency contract (R10.1)
-----------------------------
+Idempotency contract
+--------------------
 
 The activity is **idempotent**: running it twice for the same
 ``(workflow_id, old_pr_id, new_pr_id)`` triple is a safe no-op. Three
@@ -59,13 +59,8 @@ already present).
 Cross-references
 ----------------
 
-* tasks.md task 7.6 — this activity.
-* tasks.md task 3.4 — :class:`PrSupersedeLogRepo`.
-* design.md §"Property 8: Multi-iter / PO Review invariants" — the
-  property test that consumes this contract.
-* MIMARI §16.10.9 (Y9) — the originating backlog item.
-
-Validates: Requirement 10.1.
+The activity writes through :class:`PrSupersedeLogRepo` and records the
+supersede operation in the audit log.
 """
 
 from __future__ import annotations
@@ -109,7 +104,7 @@ SUPERSEDE_LABEL_TEMPLATE: Final[str] = "superseded-by-pr-{new_pr_id}"
 #: Description-banner template prepended to the old PR's body. The
 #: trailing ``\n\n`` separates the banner from the existing description
 #: so Markdown rendering keeps the banner as its own paragraph. The
-#: text mirrors design.md §"AgentRunner modülü" verbatim.
+#: text is kept stable for Markdown rendering.
 BANNER_PREFIX_TEMPLATE: Final[str] = (
     "⚠️ Bu PR yerine yeni iterasyon (PR #{new_pr_id}) "
     "açıldı, kapatılabilir.\n\n"
@@ -118,7 +113,7 @@ BANNER_PREFIX_TEMPLATE: Final[str] = (
 
 #: Stable audit action emitted when the activity successfully marks
 #: the old PR as superseded (label + banner + ledger row). Mirrors
-#: the value MIMARI §16.10.9 documents for the dashboard greps.
+#: the value dashboard queries use.
 SUPERSEDE_AUDIT_ACTION: Final[str] = "pr_superseded"
 
 
@@ -225,7 +220,7 @@ def get_pr_supersede_log_repo() -> Any | None:
 # HTTP helpers
 # ---------------------------------------------------------------------------
 #
-# The activity issues four Bitbucket calls (via the atlassian_unified
+# The activity issues four Bitbucket calls (via the atlassian_mcp_bitbucket
 # MCP):
 #
 #   GET  /api/bitbucket/pull-requests/get      → state + description
@@ -245,7 +240,7 @@ def _get_credential_resolver():
     Uses the same registry as :mod:`activities.bitbucket`; the resolver
     is set during worker boot. Imported lazily so this module is
     importable in environments without the legacy ``src.activities``
-    namespace (eg. isolated unit tests for task 7.6).
+    namespace (eg. isolated unit tests).
     """
 
     # Local import keeps the dependency surface minimal at import time.
@@ -503,7 +498,7 @@ async def iter_advance_pr_supersede(
 
     * The Temporal retry policy applied at ``execute_activity`` time
       uses ``start_to_close_timeout=30s`` and ``maximumAttempts=3``
-      per R1.6 — the activity is idempotent so retries are safe.
+      and the activity is idempotent so retries are safe.
     * The activity raises :class:`BitbucketSupersedeError` only on
       genuinely unexpected non-2xx HTTP responses. Network errors
       surface as :class:`httpx.HTTPError` so Temporal treats them as
@@ -562,7 +557,7 @@ async def iter_advance_pr_supersede(
     except httpx.HTTPError as exc:
         # Surface as Bitbucket-flavoured error so the activity retry
         # machinery sees a consistent class. The timeout / attempts
-        # are configured at the call site (R1.6 contract).
+        # are configured at the call site.
         raise BitbucketSupersedeError(
             f"HTTP error fetching PR #{old_pr_id}: {exc}"
         ) from exc

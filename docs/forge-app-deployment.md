@@ -1,6 +1,5 @@
 # Runbook: Forge Add-On Deployment (`AI Bot Task` issue type)
 
-> **Spec:** `platform-mimari-uyumluluk` — Requirement 6 (`R6 / Q3` forge-app bacağı; acceptance criteria 6.3, 6.6).
 > **Audience:** Platform `admin` rolü; Atlassian organizasyon admin'i (Jira Cloud) ve Forge developer hesabı sahibi.
 > **Scope:** [`platform/forge-app/`](../forge-app/) skeleton'ının Atlassian Forge platformuna deploy edilmesi ve `FEATURE_FLAG_FORGE_ADDON_ENABLED` opt-in flag'i ile devreye alınması.
 > **Reversibility:** Tüm adımlar geri alınabilir; `forge install` `forge uninstall` ile geri alınır, flag `false`'a çekilir, runtime davranışı plain Markdown template'ine düşer.
@@ -11,10 +10,10 @@ Bu runbook, [`platform/forge-app/`](../forge-app/) altındaki Forge skeleton'ın
 
 Forge add-on, **AI Bot Task** adlı özel bir Jira issue type'ı ve beş zorunlu custom field (`AI Görev Tipi`, `Hedef Repo`, `Branch`, `Output Hedefi`, `Cleanup Policy`) sağlar. Bu sayede end-user'lar AI bot task'ı açarken eksik metadata bırakamaz; aksi halde varsayılan davranış [`platform/prompts/task_creation_assistant.md`](../prompts/task_creation_assistant.md) içindeki Markdown template'idir.
 
-Mimari kuralları (R6, MIMARI §16.10.2 Y2 + §16.17 Q3):
+Kurulum kuralları:
 
 - Forge add-on **opt-in**'dir; flag default `false`.
-- Flag kapalıyken platform Forge'u **runtime'da kullanmaz**; chat assistant düz Markdown template'e fallback eder (acceptance criterion 6.6).
+- Flag kapalıyken platform Forge'u **runtime'da kullanmaz**; chat assistant düz Markdown template'e fallback eder.
 - Manifest yalnızca `read:jira-work` ve `write:jira-work` scope'larını ister; daha geniş scope eklemek manifest review gerektirir.
 - `app.id` skeleton'da placeholder; gerçek değer `forge register` çıktısından `manifest.yml`'ye yazılır.
 
@@ -146,7 +145,7 @@ Forge add-on'un site'a kurulu olması platformun onu **kullandığı** anlamına
 
 | Flag durumu | Platform davranışı |
 |---|---|
-| `false` (default) | Chat assistant `task-creation-assistant-prompt.md` Markdown template'ini render eder; Forge add-on yok sayılır (acceptance criterion 6.6). |
+| `false` (default) | Chat assistant `task-creation-assistant-prompt.md` Markdown template'ini render eder; Forge add-on yok sayılır. |
 | `true` | Chat assistant kullanıcıyı doğrudan Jira `AI Bot Task` issue type'ına yönlendirir; template render edilmez. |
 
 ### 5.1 Flag'i aç
@@ -167,7 +166,7 @@ INSERT INTO automation.feature_flags (name, enabled, description, updated_by)
 VALUES (
   'FEATURE_FLAG_FORGE_ADDON_ENABLED',
   false,
-  'Forge add-on AI Bot Task issue type opt-in (R6 / Q3).',
+  'Forge add-on AI Bot Task issue type opt-in.',
   '<admin_username>'
 )
 ON CONFLICT (name) DO NOTHING;
@@ -225,7 +224,7 @@ Aşağıdaki smoke test'ler deploy + install + flag toggle dizisinin doğru çal
 
 > "Yeni bir code change task'ı oluştur."
 
-Beklenen: Asistan `task-creation-assistant-prompt.md` template'ini render eder; çıktı düz Markdown başlıkları içerir (`## Görev`, `## Hedef Repo`, vb.). Bu, acceptance criterion 6.6'nın gözlenebilir doğrulamasıdır.
+Beklenen: Asistan `task-creation-assistant-prompt.md` template'ini render eder; çıktı düz Markdown başlıkları içerir (`## Görev`, `## Hedef Repo`, vb.).
 
 ### 6.3 Platform tarafı (flag açık)
 
@@ -243,7 +242,7 @@ Adım 5.1 ile flag'i `true`'ya çektikten sonra aynı talebi tekrar gönder. Bek
 | `forge install` `Cannot find site` | `--site` parametresi yanlış domain veya site Forge'a erişim vermemiş | Domain'i `https://` olmadan, `<sub>.atlassian.net` formatında ver; Atlassian admin'in **Connected apps** ekranında izin verdiğini doğrula. |
 | `AI Bot Task` issue type Jira'da görünmüyor | Install development environment'da yapıldı, ama site staging/production environment kullanıyor | `forge install` `--environment <env>` parametresi ile uyumlu environment'a install et; veya `forge deploy --environment <env>` ile uygun bundle'ı yükle. |
 | Flag `true` ama assistant hâlâ template render ediyor | Postgres satırı güncellendi, ama `automation-service` cache'i yenilenmedi (TTL 60 sn) | 60 sn bekle veya `automation-service` `/admin/feature-flags/refresh` endpoint'ini çağır. Audit'te `feature_flag_toggled` event'inin yazıldığını doğrula. |
-| `Hedef Repo` dropdown'u boş | `populateHedefRepo` resolver henüz dept config'e bağlanmadı | Bu beklenen davranış (skeleton). Follow-up task `automation-service`'in dept repo listesini Forge resolver'ına expose etmesini gerektirir. Geçici çözüm: kullanıcı `Hedef Repo`'yu boş bırakıp formu submit edemez; flag'i `false`'a çekerek Markdown template'e geç. |
+| `Hedef Repo` dropdown'u boş | `populateHedefRepo` resolver henüz dept config'e bağlanmadı | Bu beklenen davranış. Follow-up work `automation-service`'in dept repo listesini Forge resolver'ına expose etmesini gerektirir. Geçici çözüm: kullanıcı `Hedef Repo`'yu boş bırakıp formu submit edemez; flag'i `false`'a çekerek Markdown template'e geç. |
 | Forge function timeout (`exceeded 25 seconds`) | Resolver senkron HTTP çağrısı yapıyor (örn. dept config fetch) ve external service yavaş | Forge function'larının 25 sn'lik timeout'u vardır; uzun süren operasyonlar `automation-service`'e taşınmalı. Resolver yalnızca cache'lenmiş veriyi return eder. |
 | `permissions.scopes` değişikliği install sırasında yeniden onay istemiyor | Site'daki install eski scope set'ini cache'liyor | `forge uninstall` + `forge install` döngüsü ile force re-grant yap. |
 
@@ -270,7 +269,7 @@ Forge add-on versiyonu `package.json` `version` alanı ile yönetilir. Major ver
 
 ### 8.4 Flag-gated başlatma
 
-`automation-service` ve `automation-service`'in tükettiği consumer'lar `FEATURE_FLAG_FORGE_ADDON_ENABLED` flag'ine `services.manifest.json` `feature_flag_dependency` üzerinden bağlanmaz; flag yalnızca **runtime** davranışını değiştirir, servis lifecycle'ı etkilemez. Bu, Q12 feature-flag start gate'inden farklıdır (R10).
+`automation-service` ve `automation-service`'in tükettiği consumer'lar `FEATURE_FLAG_FORGE_ADDON_ENABLED` flag'ine `services.manifest.json` `feature_flag_dependency` üzerinden bağlanmaz; flag yalnızca **runtime** davranışını değiştirir, servis lifecycle'ı etkilemez.
 
 ---
 
@@ -279,6 +278,3 @@ Forge add-on versiyonu `package.json` `version` alanı ile yönetilir. Major ver
 - [`platform/forge-app/manifest.yml`](../forge-app/manifest.yml) — modül tanımları.
 - [`platform/forge-app/README.md`](../forge-app/README.md) — quick-start özeti (bu runbook'a link verir).
 - [`platform/prompts/task_creation_assistant.md`](../prompts/task_creation_assistant.md) — flag kapalı default davranış (Markdown template).
-- `MIMARI.md §16.10.2 Y2` — Forge add-on tasarım gerekçesi ve flag default değeri.
-- `MIMARI.md §16.17 Q3` — uyumluluk gap kayıt nedeni.
-- Spec: `platform-mimari-uyumluluk` — Requirement 6 (acceptance criteria 6.1-6.7).

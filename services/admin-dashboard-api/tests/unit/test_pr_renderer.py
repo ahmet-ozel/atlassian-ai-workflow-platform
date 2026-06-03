@@ -1,5 +1,4 @@
-"""Unit tests for ``src.prompts.pr_renderer`` (platform-mimari-ops 6.3).
-
+"""Unit tests for ``src.prompts.pr_renderer`` (the project 6.3).
 The renderer is a pure function: every input is passed in, no I/O is
 performed. The tests exercise the four section emitters
 (:func:`_render_header`, :func:`_render_diff_section`,
@@ -7,9 +6,7 @@ performed. The tests exercise the four section emitters
 the public :func:`render_pr_description` surface, plus the
 :func:`extract_v15_status` helper that the router calls before
 invoking the renderer.
-
 Test cases cover:
-
 * Empty diff renders a "no textual diff" notice.
 * Long diffs are truncated past 8 KiB.
 * Sandbox history empty → "no sandbox runs" notice; non-empty →
@@ -19,10 +16,9 @@ Test cases cover:
 * V15 section reports IDs as in-sync, missing, or unverifiable
   depending on the :class:`V15SyncStatus` shape.
 * :func:`extract_v15_status` extracts every backlog ID and reports
-  the missing-from-MIMARI subset deterministically.
+  the missing-from-architecture subset deterministically.
 * The renderer is deterministic — identical inputs produce
-  byte-identical Markdown.
-"""
+  byte-identical Markdown."""
 
 from __future__ import annotations
 
@@ -59,15 +55,14 @@ from src.prompts.pr_renderer import (  # noqa: E402
 
 
 class TestHeaderAndDiff:
-    def test_header_includes_path_and_requirement_anchor(self) -> None:
+    def test_header_includes_path_anchor(self) -> None:
         out = render_pr_description(
             path="platform/prompts/foo.md",
             diff="@@ -1 +1 @@\n-old\n+new\n",
         )
         # Stable lead-in for greppable PR titles in admin lists.
         assert out.startswith(f"{PR_DESCRIPTION_HEADER}: `platform/prompts/foo.md`")
-        # Anchors the reviewer at the spec requirement.
-        assert "Requirement 2.2" in out
+        assert "`platform/prompts/foo.md`" in out
 
     def test_diff_section_renders_fenced_diff_block(self) -> None:
         diff_body = "@@ -1 +1 @@\n-old line\n+new line\n"
@@ -259,7 +254,7 @@ class TestV15Section:
         )
         # Soft warning explains why the gate could not be evaluated
         # locally and points at the CI gate.
-        assert "MIMARI.md` was not available" in out
+        assert "was not available" in out
         assert "tests/test_taskprompt_mimari_sync.py" in out
 
     def test_no_ids_in_body_renders_trivial_message(self) -> None:
@@ -329,7 +324,7 @@ class TestExtractV15Status:
         assert status.in_sync() is True
 
     def test_id_regex_rejects_three_digit_suffix(self) -> None:
-        # The MIMARI series uses 1-2 digit suffixes; ``V123`` would
+        #  The architecture series uses 1-2 digit suffixes; ``V123`` would
         # be a typo / unrelated identifier.
         status = extract_v15_status(body="V123 says hi", mimari_text="")
         assert status.all_ids == ()

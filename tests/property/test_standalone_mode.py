@@ -1,29 +1,25 @@
-"""Property test for Standalone Mode preconditions.
-
-Validates: Requirements 11.6, 15.1, 15.2, 15.4
-Property 12: Standalone Mode preconditions.
+"""Behavioral test for Standalone Mode preconditions.
 
 Every Component declared in :data:`COMPONENT_MANIFEST` must satisfy the
-filesystem-level invariants that make Standalone Mode (Requirement 15)
-viable from inside the Component's own directory:
+filesystem-level invariants that make Standalone Mode viable from inside
+the Component's own directory:
 
 1. **README.md exists** under ``<c.path>/`` and contains *some* heading
    whose normalized text equals ``standalone build & run``.
    Normalization strips leading ``#`` markers and surrounding
    whitespace and lowercases the result, so any of
    ``## Standalone build & run``, ``### Standalone Build & Run``,
-   ``# standalone build & run`` etc. are accepted (Requirement 15.4).
+   ``# standalone build & run`` etc. are accepted.
 2. **.dockerignore exists** under ``<c.path>/`` so the build context
-   stays small and never bleeds in ``.env`` files (Requirement 15.1).
+   stays small and never bleeds in ``.env`` files.
 3. **No ``COPY ../...`` directives** escape the Component's own
    directory in its ``Dockerfile``. ``COPY --from=<stage>`` lines
    reference earlier build stages (not the parent filesystem) and are
    therefore exempt; only "naked" ``COPY`` directives whose source
-   path contains a ``..`` segment fail this check (Requirement 15.1,
-   15.2).
+   path contains a ``..`` segment fail this check.
 4. **Root ``.gitignore`` matches ``.env``**, i.e. it contains a
    pattern such as ``*.env`` or ``/.env`` that prevents real
-   ``.env`` files from being committed (Requirement 11.6 / 15.4).
+   ``.env`` files from being committed.
 
 The fourth invariant is *workspace-wide* (independent of the
 Component sample) but is naturally validated alongside the
@@ -60,7 +56,7 @@ _REQUIRED_HEADING_NORMALIZED: str = "standalone build & run"
 
 # ATX headings: any number of leading ``#`` markers followed by at
 # least one space, then the heading text. Setext headings (``===``
-# / ``---`` underlines) are not used by the scaffold's READMEs and
+# / ``---`` underlines) are not used by the project's READMEs and
 # are intentionally not handled here.
 _HEADING_RE = re.compile(r"^\s*(#{1,6})\s+(.+?)\s*#*\s*$")
 
@@ -93,7 +89,7 @@ def _has_standalone_heading(readme_text: str) -> bool:
 
 # A ``COPY`` directive that is NOT a ``COPY --from=<stage>`` (i.e. one
 # that copies from the build context) and whose body contains a ``..``
-# segment. The scaffold's Dockerfiles are line-oriented so a single-
+# segment. The project's Dockerfiles are line-oriented so a single-
 # line regex is sufficient; multi-line ``COPY`` continuations are not
 # used. ``--from=`` may carry an arbitrary stage name including digits
 # and hyphens, which is why we match it loosely.
@@ -116,7 +112,7 @@ def _scan_dockerfile_for_parent_copies(text: str) -> list[tuple[int, str]]:
     Only ``COPY`` lines that do NOT carry a ``--from=`` flag are
     considered; ``COPY --from=builder ...`` references the previous
     build stage's filesystem (not the parent of the build context) and
-    is permitted by Requirement 15.2.
+    is permitted.
     """
 
     findings: list[tuple[int, str]] = []
@@ -159,7 +155,7 @@ def _gitignore_blocks_env(gitignore_text: str) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# Property test
+# Standalone mode preconditions
 # ---------------------------------------------------------------------------
 
 
@@ -170,70 +166,67 @@ def _gitignore_blocks_env(gitignore_text: str) -> bool:
 )
 @given(component=st.sampled_from(COMPONENT_MANIFEST))
 def test_standalone_mode_preconditions(component: ComponentSpec) -> None:
-    """Property 12 — Standalone Mode preconditions for every Component.
-
-    Validates: Requirements 11.6, 15.1, 15.2, 15.4.
-    """
+    """Standalone Mode preconditions for every Component."""
 
     component_root: Path = WORKSPACE_ROOT / component.path
 
     # ------------------------------------------------------------------
-    # Clause 1: README.md exists with the required heading (Req 15.4).
+    # Clause 1: README.md exists with the required heading.
     # ------------------------------------------------------------------
     readme_path = component_root / "README.md"
     assert readme_path.is_file(), (
         f"{component.name}: missing README.md at "
         f"{readme_path.relative_to(WORKSPACE_ROOT)} "
-        f"(Req 15.4)"
+        f"(standalone README heading required)"
     )
     readme_text = readme_path.read_text(encoding="utf-8")
     assert _has_standalone_heading(readme_text), (
         f"{component.name}: README.md must contain a heading whose "
         f"normalized text equals {_REQUIRED_HEADING_NORMALIZED!r} "
-        f"(Req 15.4); inspected "
+        f"(standalone README heading required); inspected "
         f"{readme_path.relative_to(WORKSPACE_ROOT)}"
     )
 
     # ------------------------------------------------------------------
-    # Clause 2: .dockerignore exists (Req 15.1).
+    # Clause 2: .dockerignore exists.
     # ------------------------------------------------------------------
     dockerignore_path = component_root / ".dockerignore"
     assert dockerignore_path.is_file(), (
         f"{component.name}: missing .dockerignore at "
         f"{dockerignore_path.relative_to(WORKSPACE_ROOT)} "
-        f"(Req 15.1)"
+        f"(.dockerignore required)"
     )
 
     # ------------------------------------------------------------------
     # Clause 3: no naked ``COPY ../...`` lines escape the Component's
-    # own directory (Req 15.1, 15.2). ``COPY --from=<stage>`` lines
+    # own directory. ``COPY --from=<stage>`` lines
     # reference earlier build stages and are explicitly allowed.
     # ------------------------------------------------------------------
     dockerfile_path = component_root / "Dockerfile"
     assert dockerfile_path.is_file(), (
         f"{component.name}: missing Dockerfile at "
         f"{dockerfile_path.relative_to(WORKSPACE_ROOT)} "
-        f"(Req 15.1)"
+        f"(Dockerfile required)"
     )
     dockerfile_text = dockerfile_path.read_text(encoding="utf-8")
     parent_copies = _scan_dockerfile_for_parent_copies(dockerfile_text)
     assert not parent_copies, (
         f"{component.name}: Dockerfile contains COPY directive(s) that "
-        f"escape the Component directory via '..' (Req 15.1, 15.2): "
+        f"escape the Component directory via '..': "
         f"{parent_copies}"
     )
 
     # ------------------------------------------------------------------
-    # Clause 4: root .gitignore matches the .env pattern (Req 11.6).
+    # Clause 4: root .gitignore matches the .env pattern.
     # ------------------------------------------------------------------
     root_gitignore = WORKSPACE_ROOT / ".gitignore"
     assert root_gitignore.is_file(), (
         f"missing root .gitignore at "
-        f"{root_gitignore.relative_to(WORKSPACE_ROOT)} (Req 11.6)"
+        f"{root_gitignore.relative_to(WORKSPACE_ROOT)} (.env guard required)"
     )
     gitignore_text = root_gitignore.read_text(encoding="utf-8")
     assert _gitignore_blocks_env(gitignore_text), (
         f"root .gitignore must contain a pattern such as '*.env' or "
-        f"'/.env' to block real .env commits (Req 11.6); inspected "
+        f"'/.env' to block real .env commits; inspected "
         f"{root_gitignore.relative_to(WORKSPACE_ROOT)}"
     )

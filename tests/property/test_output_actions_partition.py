@@ -1,9 +1,6 @@
-"""Property 10 — output_actions partition + partial-failure semantics.
+"""output_actions partition and partial-failure semantics.
 
-**Validates: Requirements 5.9, 9.6, 12.1, 12.2, 12.3, 12.4, 12.5**
-
-This file pins the five clauses of Property 10 from
-``platform-mimari-workflows`` design.md §"Property 10":
+This file pins the expected partition and partial-failure behavior:
 
 (a) **Disjoint partition.** ``CRITICAL_OUTPUT_ACTION_KINDS`` and
     ``BEST_EFFORT_OUTPUT_ACTION_KINDS`` are disjoint frozensets (the
@@ -17,16 +14,16 @@ This file pins the five clauses of Property 10 from
     :class:`_OutputActionCriticalFailure` (the sentinel
     :class:`Exception` carrying the partial result) — which the
     workflow's ``run`` traps to dispatch ``compensation_chain_run``
-    (R12.2 / R11.2).
+    after a critical output-action failure.
 
 (c) **Best-effort failure → workflow ``completed`` / partial.**  When
     ``failed_critical`` is empty but ``failed_best_effort`` is
     non-empty, the simulated apply step does **not** raise; the
     list of failed best-effort kinds parities with
     ``ApplyResult.failed_best_effort`` and is what the workflow's
-    final-comment formatter renders into the ``⚠️`` line (R12.3).
+    final-comment formatter renders into the warning line.
 
-(d) **``jira_attachment`` format guard.**  Per Requirement 12.4 the
+(d) **``jira_attachment`` format guard.**  The
     ``jira_attachment`` payload must carry ``format ∈ {"pdf", "md"}``;
     any other value is rejected.  The pure-Python guard
     :func:`_validate_jira_attachment_format` mirrors the contract that
@@ -37,21 +34,21 @@ This file pins the five clauses of Property 10 from
     encoding exceeds :data:`MAX_OUTPUT_BYTES` returns a new action
     whose payload is the canonical ``{summary, minio_uri, size_bytes}``
     triple; below the cap the helper returns the input unchanged
-    (identity).  The byte cap is exactly 1 MiB (R5.9).
+    (identity).  The byte cap is exactly 1 MiB.
 
 The tests are pure-Python: they never import the worker package and
 never await a Temporal activity.  Workflow-level behaviour is
 exercised by simulating the public surface (``ApplyResult`` shape,
 the sentinel exception, the partition routing) — this matches the
-"simulated success/failure" wording of the task brief and keeps the
-property tests isolated from event-loop / Temporal runtime concerns.
+"simulated success/failure" behavior and keeps the tests isolated
+from event-loop / Temporal runtime concerns.
 
 The companion module :mod:`test_output_size_cap` already pins the
 identity / replacement contract of
 :func:`redirect_oversized_payload` exhaustively across many random
 payloads; clause (e) here re-asserts the boundary condition with a
 single deterministic example so the routing of "oversized → summary
-triple" stays linked to Property 10 by name.
+triple" remains covered with the partition semantics.
 
 Run target (from ``platform/``)::
 
@@ -86,7 +83,7 @@ from temporal_shared.output_size_cap import (
 )
 
 # ---------------------------------------------------------------------------
-# Closed-vocabulary kind alphabet (R12.1)
+# Closed-vocabulary kind alphabet
 # ---------------------------------------------------------------------------
 
 #: Closed alphabet of valid :class:`OutputAction.kind` values plus the
@@ -142,7 +139,7 @@ def _action_strategy() -> st.SearchStrategy[OutputAction]:
     Each draw samples a (kind, severity) pair from the closed
     alphabet plus a small integer payload tag so action equality
     rarely collides — useful for the union-preservation check in
-    Property 10(a).
+    partition invariant.
     """
     return st.builds(
         lambda kind_sev, idx: OutputAction(
@@ -163,7 +160,7 @@ _ACTION_TUPLE: Final = st.lists(_action_strategy(), min_size=0, max_size=10).map
 
 
 # ---------------------------------------------------------------------------
-# Property 10(a) — disjoint partition + union preservation
+# Disjoint partition + union preservation
 # ---------------------------------------------------------------------------
 
 
@@ -171,7 +168,7 @@ class TestPartitionDisjoint:
     """``CRITICAL_KINDS ∩ BEST_EFFORT_KINDS == ∅`` and union-preservation."""
 
     def test_classification_frozensets_are_disjoint(self) -> None:
-        """**Validates: Requirement 12.1 — disjoint partition**
+        """The classification frozensets are disjoint.
 
         The two classification frozensets in
         :mod:`temporal_shared.messages` are the single source of
@@ -179,7 +176,7 @@ class TestPartitionDisjoint:
         be empty so that no kind can ever be routed twice; the
         invariant is asserted as a structural fact about the
         constants themselves.  This is the (a) clause of
-        Property 10.
+        the partition invariant.
         """
         intersection = (
             CRITICAL_OUTPUT_ACTION_KINDS & BEST_EFFORT_OUTPUT_ACTION_KINDS
@@ -187,7 +184,7 @@ class TestPartitionDisjoint:
         assert intersection == frozenset()
 
     def test_classification_frozensets_are_non_empty(self) -> None:
-        """**Validates: Requirement 12.1 — both partitions populated**
+        """Both partitions are populated.
 
         Both frozensets carry at least one kind so the partition
         routing has somewhere to send each action.  An empty
@@ -202,7 +199,7 @@ class TestPartitionDisjoint:
     def test_partition_preserves_count_and_membership(
         self, actions: tuple[OutputAction, ...]
     ) -> None:
-        """**Validates: Requirement 12.1 — union = original**
+        """The partition union preserves the original actions.
 
         For any tuple of well-formed actions:
 
@@ -250,7 +247,7 @@ class TestPartitionDisjoint:
     def test_partition_preserves_relative_order_within_buckets(
         self, actions: tuple[OutputAction, ...]
     ) -> None:
-        """**Validates: Requirement 12.1 — order preservation**
+        """Partitioning preserves relative order within each bucket.
 
         :func:`partition` MUST preserve the relative order of each
         bucket from the input iterable so the workflow body applies
@@ -274,7 +271,7 @@ class TestPartitionDisjoint:
     def test_partition_rejects_unknown_kind_with_value_error(
         self, unknown_kind: str
     ) -> None:
-        """**Validates: Requirement 12.1 — unknown kind → ValueError**
+        """Unknown kinds raise ``ValueError``.
 
         Any :class:`OutputAction` whose ``kind`` is in neither
         classification frozenset MUST raise :class:`ValueError`
@@ -292,7 +289,7 @@ class TestPartitionDisjoint:
             partition((action,))
 
     def test_partition_rejects_non_outputaction_with_type_error(self) -> None:
-        """**Validates: Requirement 12.1 — defensive type check**
+        """Non-``OutputAction`` elements raise ``TypeError``.
 
         Non-:class:`OutputAction` elements raise :class:`TypeError`
         rather than coercing or silently routing.  This catches a
@@ -304,7 +301,7 @@ class TestPartitionDisjoint:
 
 
 # ---------------------------------------------------------------------------
-# Property 10(b) — failed_critical non-empty → critical-failure raised
+# failed_critical non-empty → critical-failure raised
 # ---------------------------------------------------------------------------
 
 
@@ -314,7 +311,7 @@ class _CompensationRecorder:
 
     The simulated workflow caller raises an
     :class:`_OutputActionCriticalFailure`-shaped sentinel exception
-    when ``failed_critical`` is non-empty (R12.2).  The recorder
+    when ``failed_critical`` is non-empty.  The recorder
     captures the apply result so the test can assert that the
     compensation step received the partial bookkeeping.
     """
@@ -340,7 +337,6 @@ class _SimulatedCriticalFailure(Exception):
     is raised when ``failed_critical`` is non-empty, not which class
     name carries the result.
 
-    Validates: Requirement 12.2.
     """
 
     def __init__(self, apply_result: ApplyResult) -> None:
@@ -367,10 +363,10 @@ def _simulate_apply(
        :attr:`ApplyResult.failed_critical`, dispatch the
        compensation recorder, and raise
        :class:`_SimulatedCriticalFailure` carrying the partial
-       result.  This matches the fail-fast semantics of R12.2.
+       result.  This matches the fail-fast semantics.
     3. Otherwise walk the best-effort bucket; failures are recorded
        into :attr:`ApplyResult.failed_best_effort` but never raise
-       (R12.3).
+       .
 
     The function is intentionally synchronous — the simulation does
     not need an event loop because every "activity" is a no-op.
@@ -418,7 +414,7 @@ class TestCriticalFailureTriggersCompensation:
         actions: tuple[OutputAction, ...],
         failing_index: int,
     ) -> None:
-        """**Validates: Requirement 12.2 — fail-fast + compensation**
+        """Critical failures raise and invoke compensation.
 
         For any input where the partitioned critical bucket has at
         least one element, simulating a failure on
@@ -454,18 +450,18 @@ class TestCriticalFailureTriggersCompensation:
         assert partial.has_critical_failure() is True
 
         # Best-effort bucket is never touched after a critical failure
-        # (R12.2 fail-fast).  Both lists must be empty regardless of
+        # (fail-fast).  Both lists must be empty regardless of
         # how many best-effort actions were in the input.
         assert partial.successful_best_effort == []
         assert partial.failed_best_effort == []
 
     def test_no_critical_failure_does_not_raise(self) -> None:
-        """**Validates: Requirement 12.2 — happy path**
+        """The happy path does not raise.
 
         When every critical action succeeds the simulated apply
         returns the result without raising and without invoking the
         compensation recorder.  This is the negative case of
-        Property 10(b): the exception fires only on actual failure.
+        the exception fires only on actual failure.
         """
         compensation = _CompensationRecorder()
         actions = (
@@ -488,7 +484,7 @@ class TestCriticalFailureTriggersCompensation:
 
 
 # ---------------------------------------------------------------------------
-# Property 10(c) — best-effort failure → completed_with_partial_failure
+# best-effort failure → completed_with_partial_failure
 # ---------------------------------------------------------------------------
 
 
@@ -513,13 +509,13 @@ class TestBestEffortFailureIsRecordedNotRaised:
         actions: tuple[OutputAction, ...],
         failing_index: int,
     ) -> None:
-        """**Validates: Requirement 12.3 — best-effort never aborts**
+        """Best-effort failure is recorded and does not abort.
 
         Failing the chosen best-effort action MUST NOT raise — the
         simulated apply returns an :class:`ApplyResult` whose
         ``failed_best_effort`` list contains the failed kind and
         whose ``failed_critical`` list is empty.  This is the (c)
-        clause of Property 10.
+        best-effort failure behavior.
         """
         compensation = _CompensationRecorder()
 
@@ -545,7 +541,7 @@ class TestBestEffortFailureIsRecordedNotRaised:
         # ``successful_best_effort`` or ``failed_best_effort`` exactly
         # once, and the total equals the bucket size.  This is the
         # parity invariant the workflow output's
-        # ``partial_failure_actions`` field relies on (R12.3) — a
+        # ``partial_failure_actions`` field relies on — a
         # failed action must never be silently double-counted as a
         # success.
         _, best_effort_bucket = partition(actions)
@@ -564,26 +560,22 @@ class TestBestEffortFailureIsRecordedNotRaised:
 
 
 # ---------------------------------------------------------------------------
-# Property 10(d) — jira_attachment format ∈ {pdf, md}
+# jira_attachment format ∈ {pdf, md}
 # ---------------------------------------------------------------------------
 
 
-#: Closed alphabet of accepted ``jira_attachment.format`` values per
-#: Requirement 12.4.
+#: Closed alphabet of accepted ``jira_attachment.format`` values.
 _VALID_JIRA_ATTACHMENT_FORMATS: Final[frozenset[str]] = frozenset({"pdf", "md"})
 
 
 def _validate_jira_attachment_format(action: OutputAction) -> None:
-    """Pure guard pinning the contract from Requirement 12.4.
+    """Pure guard pinning the attachment format contract.
 
-    The partition module does not enforce this rule today (task 12.1
-    hands the validation to ``apply()`` which is wired up in the
-    worker), but the requirement text is unambiguous: any
-    ``jira_attachment`` action whose payload's ``format`` field is
-    not in :data:`_VALID_JIRA_ATTACHMENT_FORMATS` MUST be rejected
-    with :class:`ValueError`.  We host the guard locally so the
-    property test can pin the contract today and the production
-    ``apply()`` can reuse the same logic when it lands.
+    The partition module does not enforce this rule today; validation
+    belongs to ``apply()`` in the worker. Any ``jira_attachment`` action
+    whose payload's ``format`` field is not in
+    :data:`_VALID_JIRA_ATTACHMENT_FORMATS` must be rejected with
+    :class:`ValueError`.
 
     Raises
     ------
@@ -607,7 +599,7 @@ class TestJiraAttachmentFormatGuard:
 
     @pytest.mark.parametrize("fmt", sorted(_VALID_JIRA_ATTACHMENT_FORMATS))
     def test_valid_formats_pass(self, fmt: str) -> None:
-        """**Validates: Requirement 12.4 — accepts {pdf, md}**
+        """The guard accepts ``pdf`` and ``md``.
 
         The two documented values pass the guard without raising.
         Other ``OutputAction`` kinds are unaffected by the format
@@ -631,7 +623,7 @@ class TestJiraAttachmentFormatGuard:
         ).filter(lambda s: s not in _VALID_JIRA_ATTACHMENT_FORMATS),
     )
     def test_arbitrary_other_format_rejected(self, bad_format: str) -> None:
-        """**Validates: Requirement 12.4 — rejects everything else**
+        """The guard rejects any other format value.
 
         For any string outside the closed alphabet the guard MUST
         raise :class:`ValueError`.  Hypothesis explores arbitrary
@@ -648,7 +640,7 @@ class TestJiraAttachmentFormatGuard:
             _validate_jira_attachment_format(action)
 
     def test_missing_format_rejected(self) -> None:
-        """**Validates: Requirement 12.4 — payload must carry format**
+        """The payload must carry a ``format`` field.
 
         A ``jira_attachment`` with no ``format`` field is rejected;
         the closed alphabet does not include ``None`` and the
@@ -667,7 +659,7 @@ class TestJiraAttachmentFormatGuard:
         sorted(CRITICAL_OUTPUT_ACTION_KINDS | BEST_EFFORT_OUTPUT_ACTION_KINDS),
     )
     def test_other_kinds_unaffected_by_format_guard(self, kind: str) -> None:
-        """**Validates: Requirement 12.4 — guard scoped to jira_attachment**
+        """The format guard is scoped to ``jira_attachment``.
 
         The format guard is targeted: it never raises for any other
         kind, regardless of payload contents.  This pins the
@@ -691,14 +683,13 @@ class TestJiraAttachmentFormatGuard:
 
 
 # ---------------------------------------------------------------------------
-# Property 10(e) — size cap → MinIO redirection invariant (boundary)
+# size cap → MinIO redirection invariant (boundary)
 # ---------------------------------------------------------------------------
 #
 # The exhaustive size-cap behaviour (random-payload identity / replacement
 # determinism) lives in :mod:`test_output_size_cap`.  Here we re-pin the
 # boundary condition with two deterministic examples — one just below the
-# cap, one just above — so Property 10's clause (e) is anchored by name
-# in the partition test file as the design table mandates.
+# cap, one just above.
 
 
 @dataclass
@@ -718,10 +709,10 @@ def _run(coro):
 
 
 class TestSizeCapMinioRedirection:
-    """Boundary anchor for Property 10(e)."""
+    """Boundary anchors for size-cap redirection."""
 
     def test_payload_within_cap_passes_through(self) -> None:
-        """**Validates: Requirement 5.9 — identity below cap**
+        """Payloads below the cap pass through unchanged.
 
         A small payload (well under 1 MiB) is returned unchanged by
         :func:`redirect_oversized_payload`.  The MinIO callback is
@@ -750,7 +741,7 @@ class TestSizeCapMinioRedirection:
         assert writer.calls == []
 
     def test_payload_above_cap_is_offloaded_with_summary_triple(self) -> None:
-        """**Validates: Requirement 5.9 — replacement above cap**
+        """Payloads above the cap are replaced with a summary triple.
 
         A payload whose JSON encoding exceeds :data:`MAX_OUTPUT_BYTES`
         is replaced with a tuple-of-pairs payload exposing exactly
@@ -808,10 +799,10 @@ class TestSizeCapMinioRedirection:
         assert body_len == original_size
 
     def test_max_output_bytes_is_one_mebibyte(self) -> None:
-        """**Validates: Requirement 5.9 — exact cap value**
+        """The cap value is exactly one mebibyte.
 
         The cap is exactly 1 MiB (2**20 bytes).  Pinning the
-        constant here keeps Property 10(e) and the size-cap
+        constant here keeps this boundary coverage and the size-cap
         property-test suite in sync.
         """
         assert MAX_OUTPUT_BYTES == 1 * 1024 * 1024

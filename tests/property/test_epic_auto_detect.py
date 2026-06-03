@@ -1,28 +1,26 @@
-"""Property test 13 — Epic Auto-Detect.
+"""Epic Auto-Detect behavior.
 
-Spec: ``platform-real-usage-gaps`` — Property 13.
 
-**Validates: Requirements 12.1, 12.2, 12.5, 12.7**
 
 Background
 ----------
 
 The ``analyze_task`` activity in
 ``automation_worker.activities.task_analyzer`` implements an Epic
-auto-detect branch (Requirements 12.1, 12.2):
+auto-detect branch:
 
 * When the issue's ``issuetype.name`` is ``"Epic"`` and no YAML
-  front-matter specifies a ``workflow_type``, the activity bypasses
-  the LLM entirely.
+ front-matter specifies a ``workflow_type``, the activity bypasses
+ the LLM entirely.
 * If the Epic has ≥1 subtask → deterministic
-  ``workflow_type="multi_step"``, ``confidence=1.0``,
-  ``source="epic_auto_detect"``, ``status="ready"``.
+ ``workflow_type="multi_step"``, ``confidence=1.0``,
+ ``source="epic_auto_detect"``, ``status="ready"``.
 * If the Epic has 0 subtasks → ``status="needs_info"``,
-  ``missing_fields=["subtasks"]``, ``source="epic_auto_detect"``.
+ ``missing_fields=["subtasks"]``, ``source="epic_auto_detect"``.
 * Non-Epic issue types (Story, Task, Bug) → existing LLM path.
 * If YAML front-matter sets ``workflow_type``, the auto-detect is
-  bypassed regardless of issue type (front-matter > Epic auto-detect
-  > LLM priority).
+ bypassed regardless of issue type (front-matter > Epic auto-detect
+ > LLM priority).
 
 Strategy
 --------
@@ -34,7 +32,7 @@ the four invariants:
 (b) Epic + 0 subtask → ``needs_info`` with ``source="epic_auto_detect"``
 (c) Story/Task/Bug → LLM path (``source="llm_analysis"``)
 (d) Front-matter ``workflow_type`` set → auto-detect bypass
-    (``source="yaml_frontmatter"``)
+ (``source="yaml_frontmatter"``)
 
 The activity is invoked as a plain coroutine (``@activity.defn`` does
 not change the calling contract for direct invocation). Fake LLM and
@@ -247,18 +245,18 @@ def _task_analysis_input(
 
 
 # ---------------------------------------------------------------------------
-# Property 13a: Epic + ≥1 subtask → multi_step
+# invariant: Epic + ≥1 subtask → multi_step
 # ---------------------------------------------------------------------------
 
 
 class TestEpicWithSubtasksMultiStep:
-    """**Validates: Requirement 12.1**
+    """Epic issues with subtasks are classified as multi-step.
 
-    When the issue is an Epic with at least one subtask and no YAML
-    front-matter specifies workflow_type, the analyzer deterministically
-    returns ``workflow_type="multi_step"``, ``confidence=1.0``,
-    ``source="epic_auto_detect"``, ``status="ready"``.
-    """
+ When the issue is an Epic with at least one subtask and no YAML
+ front-matter specifies workflow_type, the analyzer deterministically
+ returns ``workflow_type="multi_step"``, ``confidence=1.0``,
+ ``source="epic_auto_detect"``, ``status="ready"``.
+ """
 
     @settings(
         max_examples=50,
@@ -276,7 +274,7 @@ class TestEpicWithSubtasksMultiStep:
         issue_key: str,
         dept_id: str,
     ) -> None:
-        """R12.1: Epic + ≥1 subtask → multi_step deterministically."""
+        """: Epic + ≥1 subtask → multi_step deterministically."""
         inp = TaskAnalysisInput(
             issue_key=issue_key,
             title="Epic task",
@@ -311,7 +309,7 @@ class TestEpicWithSubtasksMultiStep:
         self,
         issue_meta: dict[str, Any],
     ) -> None:
-        """R12.1: Epic auto-detect bypasses the LLM entirely."""
+        """: Epic auto-detect bypasses the LLM entirely."""
         fake_llm = _FakeLLM(response="{}")
         set_llm_caller(fake_llm)
 
@@ -345,8 +343,8 @@ class TestEpicWithSubtasksMultiStep:
         self,
         issue_meta: dict[str, Any],
     ) -> None:
-        """R12.6: The result carries subtask_count in output_actions
-        metadata for audit purposes."""
+        """: The result carries subtask_count in output_actions
+ metadata for audit purposes."""
         inp = TaskAnalysisInput(
             issue_key="EPIC-2",
             title="Epic task",
@@ -374,18 +372,18 @@ class TestEpicWithSubtasksMultiStep:
 
 
 # ---------------------------------------------------------------------------
-# Property 13b: Epic + 0 subtask → needs_info
+# invariant: Epic + 0 subtask → needs_info
 # ---------------------------------------------------------------------------
 
 
 class TestEpicNoSubtasksNeedsInfo:
-    """**Validates: Requirement 12.2**
+    """Epic issues without subtasks request additional information.
 
-    When the issue is an Epic with 0 subtasks and no YAML front-matter
-    specifies workflow_type, the analyzer returns
-    ``status="needs_info"``, ``missing_fields=["subtasks"]``,
-    ``source="epic_auto_detect"``.
-    """
+ When the issue is an Epic with 0 subtasks and no YAML front-matter
+ specifies workflow_type, the analyzer returns
+ ``status="needs_info"``, ``missing_fields=["subtasks"]``,
+ ``source="epic_auto_detect"``.
+ """
 
     @settings(
         max_examples=50,
@@ -403,7 +401,7 @@ class TestEpicNoSubtasksNeedsInfo:
         issue_key: str,
         dept_id: str,
     ) -> None:
-        """R12.2: Epic + 0 subtask → needs_info."""
+        """: Epic + 0 subtask → needs_info."""
         inp = TaskAnalysisInput(
             issue_key=issue_key,
             title="Epic without subtasks",
@@ -436,7 +434,7 @@ class TestEpicNoSubtasksNeedsInfo:
         self,
         issue_meta: dict[str, Any],
     ) -> None:
-        """R12.2: Epic with no subtasks posts a needs_info comment."""
+        """: Epic with no subtasks posts a needs_info comment."""
         fake_commenter = _FakeCommenter()
         set_jira_commenter(fake_commenter)
 
@@ -473,7 +471,7 @@ class TestEpicNoSubtasksNeedsInfo:
         self,
         issue_meta: dict[str, Any],
     ) -> None:
-        """R12.2: Epic auto-detect (no subtasks) bypasses the LLM."""
+        """: Epic auto-detect (no subtasks) bypasses the LLM."""
         fake_llm = _FakeLLM(response="{}")
         set_llm_caller(fake_llm)
 
@@ -498,16 +496,16 @@ class TestEpicNoSubtasksNeedsInfo:
 
 
 # ---------------------------------------------------------------------------
-# Property 13c: Story/Task/Bug → LLM path
+# invariant: Story/Task/Bug → LLM path
 # ---------------------------------------------------------------------------
 
 
 class TestNonEpicUsesLLMPath:
-    """**Validates: Requirement 12.7**
+    """Non-Epic issue types use the LLM analysis path.
 
-    Non-Epic issue types (Story, Task, Bug, Sub-task, Improvement)
-    follow the existing LLM analysis path — ``source="llm_analysis"``.
-    """
+ Non-Epic issue types (Story, Task, Bug, Sub-task, Improvement)
+ follow the existing LLM analysis path — ``source="llm_analysis"``.
+ """
 
     @settings(
         max_examples=50,
@@ -525,7 +523,7 @@ class TestNonEpicUsesLLMPath:
         issue_key: str,
         dept_id: str,
     ) -> None:
-        """R12.7: Non-Epic types use the LLM analysis path."""
+        """: Non-Epic types use the LLM analysis path."""
         # Set up LLM to return a valid response
         llm_response = json.dumps({
             "workflow_type": "code_change_with_test",
@@ -574,7 +572,7 @@ class TestNonEpicUsesLLMPath:
         self,
         issue_meta: dict[str, Any],
     ) -> None:
-        """R12.7: Non-Epic types never produce source='epic_auto_detect'."""
+        """: Non-Epic types never produce source='epic_auto_detect'."""
         llm_response = json.dumps({
             "workflow_type": "research_basic",
             "confidence": 0.85,
@@ -608,18 +606,18 @@ class TestNonEpicUsesLLMPath:
 
 
 # ---------------------------------------------------------------------------
-# Property 13d: Front-matter workflow_type set → auto-detect bypass
+# invariant: Front-matter workflow_type set → auto-detect bypass
 # ---------------------------------------------------------------------------
 
 
 class TestFrontMatterBypassesAutoDetect:
-    """**Validates: Requirement 12.5**
+    """Front-matter workflow overrides bypass Epic auto-detection.
 
-    When the YAML front-matter in the description sets a
-    ``workflow_type``, the Epic auto-detect is bypassed — even if the
-    issue is an Epic with subtasks. The front-matter > Epic auto-detect
-    > LLM priority is maintained.
-    """
+ When the YAML front-matter in the description sets a
+ ``workflow_type``, the Epic auto-detect is bypassed — even if the
+ issue is an Epic with subtasks. The front-matter > Epic auto-detect
+ > LLM priority is maintained.
+ """
 
     @settings(
         max_examples=50,
@@ -644,14 +642,14 @@ class TestFrontMatterBypassesAutoDetect:
         dept_id: str,
         workflow_type: str,
     ) -> None:
-        """R12.5: Front-matter workflow_type overrides Epic auto-detect."""
+        """: Front-matter workflow_type overrides Epic auto-detect."""
         # Description with YAML front-matter
         description = (
             f"---\n"
             f"ai-bot:\n"
-            f"  workflow_type: {workflow_type}\n"
-            f"  repo: test-repo\n"
-            f"  branch: main\n"
+            f" workflow_type: {workflow_type}\n"
+            f" repo: test-repo\n"
+            f" branch: main\n"
             f"---\n"
             f"Some epic description with subtasks"
         )

@@ -1,27 +1,26 @@
 """``AgentRunnerWorkflow`` — LLM + MCP iteration orchestrator.
 
-Canonical home of the AgentRunnerWorkflow defined by the
-``platform-mimari-workflows`` spec (task 2.2). The workflow runs on
-the ``agent-runner-tq`` task queue and is dispatched as a child by
+Canonical home of the AgentRunnerWorkflow. The workflow runs on the
+``agent-runner-tq`` task queue and is dispatched as a child by
 :class:`automation_worker.workflows.automation_workflow.AutomationWorkflow`
 once the capability gate plus branch-pattern routing have validated
 the request.
 
-Responsibilities (design.md §"AgentRunnerWorkflow modülü", task 2.2):
+Responsibilities:
 
     1. Maintain a replay-safe iteration state (``IterationState`` from
        :mod:`temporal_shared.messages`) carrying ``iter_count``,
        ``last_fix_trigger_at``, ``test_results_by_diff_hash``,
        ``explain_cache``, and ``needs_info_streak``. State evolves by
        :func:`dataclasses.replace`, never by in-place mutation, so every
-       Temporal replay reaches the same value (Property 2).
+       Temporal replay reaches the same value.
     2. Carry workflow-local sets/lists for cross-iteration dedup and
        partial-failure reporting:
 
-           ``previous_findings: set[str]`` — PR review hash dedup (R7.6)
-           ``confluence_section_hashes: set[str]`` — Confluence dedup (R8.2)
+           ``previous_findings: set[str]`` — PR review hash dedup
+           ``confluence_section_hashes: set[str]`` — Confluence dedup
            ``output_actions_partial: list[str]`` — best-effort failures
-           reported in the final summary (R12.3)
+           reported in the final summary
 
     3. Expose four signals — ``comment_added``, ``fix_triggered``,
        ``explain_triggered`` and ``cancel_requested`` — each of which
@@ -30,12 +29,10 @@ Responsibilities (design.md §"AgentRunnerWorkflow modülü", task 2.2):
        transitions to ``out_of_scope`` and refuses to advance further;
        any in-flight signal is ignored (state remains untouched).
     4. Drive the per-workflow-type body via activities. The full body
-       (code-change / pr_review / confluence / research / multi_step)
-       lands in tasks 7-10; this skeleton lays down the scaffolding so
-       signals, state, and the iteration cap are exercised end-to-end.
+       (code-change / pr_review / confluence / research / multi_step),
+       with signals, state, and the iteration cap exercised end-to-end.
 
-Replay-safety invariants (Property 2; also enforced by the static AST
-test in ``platform/tests/property/test_workflow_determinism_static.py``):
+Replay-safety invariants:
 
 * No ``datetime.now()``, ``time.time()``, ``random.*``, ``uuid.uuid4()``
   in the workflow body — only ``workflow.now()`` and the activities
@@ -45,18 +42,16 @@ test in ``platform/tests/property/test_workflow_determinism_static.py``):
 * Any module that performs I/O is imported inside the
   ``workflow.unsafe.imports_passed_through()`` sandbox-escape block.
 
-Forward-compatibility note (task 2.2 brief):
+Forward-compatibility note:
 
 The pure helpers ``should_advance_iter``, ``is_fix_debounced``,
 ``fix_should_skip_retest``, ``explain_should_skip_llm``,
 ``needs_info_should_terminate`` are scheduled to land in
-:mod:`temporal_shared.iteration` (task 6.1). Until that module exists
+:mod:`temporal_shared.iteration`. Until that module exists
 this file imports them lazily inside ``workflow.unsafe.imports_passed_through()``;
 when the import fails we fall back to inline placeholder functions that
-encode the same contract. Once task 6.1 ships the placeholders go
+encode the same contract. Once that module ships the placeholders go
 unused automatically — no rewrite required.
-
-Validates Requirements: 1.1, 5.1, 5.7, 6.3.
 """
 
 from __future__ import annotations
@@ -78,7 +73,7 @@ from temporalio.exceptions import ApplicationError
 # ``workflow.unsafe.imports_passed_through()`` is the documented escape
 # hatch for importing modules whose transitive dependencies (httpx,
 # asyncpg, …) would otherwise trip the Temporal sandbox. The static
-# determinism property test (Property 2) explicitly tolerates this
+# determinism tests explicitly tolerate this
 # with-block.
 # ---------------------------------------------------------------------------
 
@@ -130,11 +125,10 @@ with workflow.unsafe.imports_passed_through():
     )
     from mcp_client.deployment_router import select_pr_create_tool
 
-    # ``temporal_shared.llm_dedup`` lands with task 6.2 — until it ships
-    # we inline a trivial set-difference helper so task 7.5 can land
-    # independently. When the module appears the import below shadows
-    # the placeholder automatically.
-    # TODO(task 6.2): remove the placeholder once
+    # Until ``temporal_shared.llm_dedup`` is available, inline a trivial
+    # set-difference helper. When the module appears the import below
+    # shadows the placeholder automatically.
+    # TODO: remove the placeholder once
     # ``temporal_shared.llm_dedup.dedup_findings`` is available.
     try:
         from temporal_shared.llm_dedup import (  # type: ignore[import-not-found]
@@ -142,14 +136,13 @@ with workflow.unsafe.imports_passed_through():
         )
 
         _LLM_DEDUP_MODULE_AVAILABLE = True
-    except ImportError:  # pragma: no cover - covered once task 6.2 lands
+    except ImportError:  # pragma: no cover - covered once the module lands
         _LLM_DEDUP_MODULE_AVAILABLE = False
         _dedup_findings_impl = None  # type: ignore[assignment]
 
-    # Iteration helpers live in ``temporal_shared.iteration`` (task 6.1).
+    # Iteration helpers live in ``temporal_shared.iteration``.
     # Until that module exists we fall back to local placeholder
-    # implementations that encode the contract from design.md
-    # §"temporal_shared.iteration".
+    # implementations that encode the same runtime contract.
     try:
         from temporal_shared.iteration import (  # type: ignore[import-not-found]
             explain_should_skip_llm as _explain_should_skip_llm_impl,
@@ -168,7 +161,7 @@ with workflow.unsafe.imports_passed_through():
         )
 
         _ITERATION_MODULE_AVAILABLE = True
-    except ImportError:  # pragma: no cover - covered once task 6.1 lands
+    except ImportError:  # pragma: no cover - covered once the module lands
         _ITERATION_MODULE_AVAILABLE = False
         _should_advance_iter_impl = None  # type: ignore[assignment]
         _is_fix_debounced_impl = None  # type: ignore[assignment]
@@ -195,18 +188,18 @@ _DEFAULT_RETRY: RetryPolicy = RetryPolicy(
     maximum_attempts=5,
 )
 
-#: Hard cap on iterations (R5.1, MIMARI §16.7). The workflow input may
+#: Hard cap on iterations. The workflow input may
 #: lower this — but we treat the input value as advisory and clamp to
-#: this constant so a misconfigured caller can't bypass the design.
+#: this constant so a misconfigured caller can't bypass the cap.
 MAX_ITER: int = 5
 
-#: ``[fix]`` debounce window (R5.4, T6).
+#: ``[fix]`` debounce window.
 FIX_DEBOUNCE_WINDOW: timedelta = timedelta(seconds=60)
 
-#: ``[explain]`` cache TTL (R5.5, Z10).
+#: ``[explain]`` cache TTL.
 EXPLAIN_CACHE_TTL: timedelta = timedelta(minutes=5)
 
-#: ``needs_info`` consecutive-comment cap (R5.6, S12).
+#: ``needs_info`` consecutive-comment cap.
 NEEDS_INFO_MAX_STREAK: int = 3
 
 #: Wall-clock budget the workflow waits for a signal before terminating
@@ -215,7 +208,7 @@ NEEDS_INFO_MAX_STREAK: int = 3
 SIGNAL_WAIT_TIMEOUT: timedelta = timedelta(days=7)
 
 
-#: Activity-level token cap (R5.2, MIMARI §16.15 T13). Any LLM activity
+#: Activity-level token cap. Any LLM activity
 #: whose ``input_tokens`` argument exceeds this value is aborted before
 #: the network call so the platform never spends compute on an over-cap
 #: prompt. The cap is enforced at the *workflow* layer (not the
@@ -229,27 +222,27 @@ MAX_ACTIVITY_TOKEN_CAP: int = 8000
 #: handling.
 TOKEN_CAP_ERROR_TYPE: str = "TokenCapExceeded"
 
-#: Stable audit action emitted when the token cap fires (R5.2).
+#: Stable audit action emitted when the token cap fires.
 TOKEN_CAP_AUDIT_ACTION: str = "token_cap_exceeded"
 
 #: Stable audit action emitted when the iter==3 banner fires the very
-#: first time (R5.7, MIMARI §16.16 N17 / U8).
+#: first time.
 ITER_WARNING_AUDIT_ACTION: str = "iter_warning_at_three_posted"
 
 #: Stable audit action emitted when ``[fix]`` is silently dropped by the
-#: 60-second debounce window (R5.4, T6).
+#: 60-second debounce window.
 FIX_DEBOUNCE_AUDIT_ACTION: str = "fix_debounce_dropped"
 
 #: Stable audit action emitted when ``[fix]`` re-uses a cached test
-#: result instead of re-running the ExecutionRunWorkflow (R5.3, T1).
+#: result instead of re-running the ExecutionRunWorkflow.
 FIX_RETEST_PROTECTED_AUDIT_ACTION: str = "fix_re_test_protected"
 
 #: Stable audit action emitted when ``[explain]`` is served from the
-#: 5-minute LRU cache instead of calling the LLM (R5.5, Z10).
+#: 5-minute LRU cache instead of calling the LLM.
 EXPLAIN_CACHE_HIT_AUDIT_ACTION: str = "explain_cache_hit"
 
 #: Stable audit action emitted when a Confluence update target is a
-#: ``_AI_PROBE_*`` foundation probe page (R8.3, MIMARI §16.14.6 V6).
+#: ``_AI_PROBE_*`` foundation probe page.
 #: The bot must never overwrite a probe artifact, so the page is
 #: filtered out of the update queue and an audit row is written so
 #: operators can see the skip surfaced alongside the workflow run.
@@ -258,25 +251,25 @@ CONFLUENCE_PROBE_PAGE_SKIPPED_AUDIT_ACTION: str = (
 )
 
 #: Stable audit action emitted when a workflow is cancelled by an
-#: end-user actor (R11.4, MIMARI §16.10.7 Y7). Used by
+#: end-user actor. Used by
 #: :meth:`AgentRunnerWorkflow._handle_cancel` after the compensation
 #: chain completes so the audit trail records who initiated the
 #: cancel without leaking the OIDC subject into the workflow body.
 CANCEL_BY_END_USER_AUDIT_ACTION: str = "workflow_cancelled_by_end_user"
 
 #: Stable audit action emitted when a workflow is cancelled by an
-#: admin / dept_admin actor (R11.4). Mirrors
+#: admin / dept_admin actor. Mirrors
 #: :data:`CANCEL_BY_END_USER_AUDIT_ACTION`; the workflow consults the
 #: cancel signal's ``actor_role`` to decide which audit action to
 #: emit.
 CANCEL_BY_ADMIN_AUDIT_ACTION: str = "workflow_cancelled_by_admin"
 
 #: Closed vocabulary of cancel ``actor_role`` values recognised by the
-#: cancel signal handler (R11.4). ``end_user`` maps to
+#: cancel signal handler. ``end_user`` maps to
 #: :data:`CANCEL_BY_END_USER_AUDIT_ACTION`; ``admin`` and
 #: ``dept_admin`` map to :data:`CANCEL_BY_ADMIN_AUDIT_ACTION`. Any
 #: other value (including ``None`` / empty string) defaults to
-#: ``end_user`` per the spec ("if not in the closed set, default to
+#: ``end_user`` ("if not in the closed set, default to
 #: workflow_cancelled_by_end_user").
 _CANCEL_ROLE_END_USER: Final[str] = "end_user"
 _CANCEL_ROLE_ADMIN: Final[str] = "admin"
@@ -296,19 +289,19 @@ def _audit_action_for_cancel_role(actor_role: str | None) -> str:
     the signal handler. Returns
     :data:`CANCEL_BY_ADMIN_AUDIT_ACTION` for ``admin`` / ``dept_admin``,
     :data:`CANCEL_BY_END_USER_AUDIT_ACTION` for everything else,
-    including unknown / empty / ``None`` (R11.4 default rule).
+    including unknown / empty / ``None``.
     """
 
     if isinstance(actor_role, str) and actor_role in _CANCEL_ADMIN_ROLES:
         return CANCEL_BY_ADMIN_AUDIT_ACTION
     return CANCEL_BY_END_USER_AUDIT_ACTION
 
-#: Iteration count at which the banner-once warning fires (R5.7 — banner
+#: Iteration count at which the banner-once warning fires; banner
 #: state field flips ``iter_warning_at_three=True``).
 ITER_WARNING_THRESHOLD: int = 3
 
 #: Banner text mirrored into Jira when ``iter_count >= ITER_WARNING_THRESHOLD``
-#: for the first time (R5.7, MIMARI §16.16 N17 / U8).
+#: for the first time.
 ITER_WARNING_BANNER_TEXT: str = (
     "⚠️ Bu görev şu ana kadar 3 iterasyon sürdü. Yeni bir task açmayı "
     "düşünün — devam ederseniz iterasyon sayısı 5'i bulduğunda iş otomatik "
@@ -316,11 +309,11 @@ ITER_WARNING_BANNER_TEXT: str = (
 )
 
 #: Retry policy for LLM activities that participate in the token cap
-#: (R5.2). ``maximum_attempts=1`` guarantees fail-fast: a
+#: path. ``maximum_attempts=1`` guarantees fail-fast: a
 #: :class:`TokenCapExceededError` raised inside the activity (or
 #: pre-flighted by :meth:`AgentRunnerWorkflow._execute_llm_activity`)
-#: never triggers a retry, mirroring the design contract that the
-#: platform must not spend tokens on a known-overflow prompt.
+#: never triggers a retry, ensuring the platform does not spend tokens
+#: on a known-overflow prompt.
 LLM_RETRY_POLICY: RetryPolicy = RetryPolicy(
     initial_interval=timedelta(seconds=1),
     backoff_coefficient=2.0,
@@ -330,7 +323,7 @@ LLM_RETRY_POLICY: RetryPolicy = RetryPolicy(
 
 
 #: Stable failure-reason discriminator emitted when a critical output
-#: action fails during ``_execute_output_actions`` (R12.2). The body
+#: action fails during ``_execute_output_actions``. The body
 #: traps an internal :class:`_OutputActionCriticalFailure` exception
 #: and routes the workflow into the cancel/compensation path with
 #: this stable category in the workflow output.
@@ -340,7 +333,7 @@ OUTPUT_ACTION_CRITICAL_FAILED_REASON: Final[str] = (
 
 
 #: Activity name dispatch table for :class:`OutputAction.kind` values
-#: emitted by activity ``output_actions`` tuples (R12.1). The
+#: emitted by activity ``output_actions`` tuples. The
 #: workflow body invokes the matching activity via
 #: :func:`workflow.execute_activity` after the size-cap helper has
 #: optionally redirected oversized payloads to MinIO.
@@ -397,7 +390,7 @@ _NEEDS_INFO_KEYWORD_RE: re.Pattern[str] = re.compile(
 
 @dataclass(frozen=True)
 class CommentAddedSignal:
-    """Payload for the ``comment_added`` signal (R5.7, R6.3).
+    """Payload for the ``comment_added`` signal.
 
     Forwarded by the webhook gateway whenever a Jira / Bitbucket comment
     passes the filter chain. The workflow consults
@@ -415,7 +408,7 @@ class CommentAddedSignal:
     diff_hash:
         Optional hash of the current diff at the time the comment was
         posted; populated by the gateway for ``[fix]`` re-test
-        protection (R5.3, T1) and by ``[explain]`` cache lookup (R5.5).
+        protection and by ``[explain]`` cache lookup.
     """
 
     comment_text: str = ""
@@ -425,7 +418,7 @@ class CommentAddedSignal:
 
 @dataclass(frozen=True)
 class FixTriggeredSignal:
-    """Payload for the ``[fix]`` keyword signal (R5.3, R5.4)."""
+    """Payload for the ``[fix]`` keyword signal."""
 
     comment_text: str = ""
     actor_account_id: str | None = None
@@ -434,7 +427,7 @@ class FixTriggeredSignal:
 
 @dataclass(frozen=True)
 class ExplainTriggeredSignal:
-    """Payload for the ``[explain]`` keyword signal (R5.5)."""
+    """Payload for the ``[explain]`` keyword signal."""
 
     comment_text: str = ""
     actor_account_id: str | None = None
@@ -443,11 +436,11 @@ class ExplainTriggeredSignal:
 
 @dataclass(frozen=True)
 class CancelRequestedSignal:
-    """Payload for the cancel signal (R11.1, R11.4).
+    """Payload for the cancel signal.
 
     Carries enough metadata for the audit log to distinguish
     ``workflow_cancelled_by_end_user`` from ``workflow_cancelled_by_admin``
-    (R11.4) without having to re-resolve the actor at compensation time.
+    without having to re-resolve the actor at compensation time.
 
     Attributes
     ----------
@@ -458,7 +451,7 @@ class CancelRequestedSignal:
         Role of the cancelling user — one of ``end_user``, ``admin``,
         or ``dept_admin``. Drives the audit action selected by
         :func:`_audit_action_for_cancel_role`. Unknown / blank values
-        default to ``end_user`` (R11.4).
+        default to ``end_user``.
     reason:
         Free-form cancel reason carried verbatim into the
         compensation context and the audit payload. Defaults to
@@ -472,7 +465,7 @@ class CancelRequestedSignal:
 
 
 # ---------------------------------------------------------------------------
-# TokenCapExceededError — non-retryable application error (R5.2, T13)
+# TokenCapExceededError — non-retryable application error
 # ---------------------------------------------------------------------------
 
 
@@ -482,7 +475,7 @@ class TokenCapExceededError(ApplicationError):
     Subclasses :class:`temporalio.exceptions.ApplicationError` with
     ``non_retryable=True`` so Temporal's retry machinery treats the
     failure as terminal — no second attempt is scheduled, mirroring
-    the spec's "fail-fast" mandate (R5.2, MIMARI §16.15 T13).
+    the fail-fast contract.
 
     The error type is :data:`TOKEN_CAP_ERROR_TYPE` so the workflow body
     (and any external observer of the workflow event history) can
@@ -517,9 +510,9 @@ class TokenCapExceededError(ApplicationError):
 
 # ---------------------------------------------------------------------------
 # Pure helpers — placeholders for the not-yet-shipped temporal_shared.iteration
-# module (task 6.1).
+# module.
 #
-# These mirror the contract documented in design.md §"temporal_shared.iteration".
+# These mirror the runtime contract for ``temporal_shared.iteration``.
 # Once :mod:`temporal_shared.iteration` lands these placeholders go
 # unused automatically — the production helpers take precedence in
 # :func:`_should_advance_iter` and friends below.
@@ -528,7 +521,7 @@ class TokenCapExceededError(ApplicationError):
 
 @dataclass(frozen=True)
 class _IterDecision:
-    """Internal mirror of design.md ``IterDecision``."""
+    """Internal mirror of the iteration decision shape."""
 
     advance: bool
     reason: str = ""
@@ -686,7 +679,7 @@ def _state_reset_needs_info(state: IterationState) -> IterationState:
 def _state_record_test_result(
     state: IterationState, diff_hash: str, status: str
 ) -> IterationState:
-    """Return a new state caching the test outcome for ``diff_hash`` (T1).
+    """Return a new state caching the test outcome for ``diff_hash``.
 
     Used by the ``code_change_with_test`` flow so a follow-up ``[fix]``
     against an unchanged diff hits the re-test guard
@@ -707,10 +700,10 @@ def _dedup_findings(
     """Return ``current_findings`` minus any entry whose ``hash`` was seen.
 
     Pure helper; placeholder until :func:`temporal_shared.llm_dedup.dedup_findings`
-    lands in task 6.2. Each finding is expected to carry a stable
+    lands. Each finding is expected to carry a stable
     ``hash`` field — usually a sha256 of the rendered finding body —
     so the set difference reliably suppresses repeat content across
-    iterations (R7.6, MIMARI §16.14 G13).
+    iterations.
 
     The placeholder mirrors the contract of the eventual module-level
     helper: the input list order is preserved, only entries whose
@@ -738,11 +731,10 @@ def _dedup_findings(
 
 @workflow.defn(name="AgentRunnerWorkflow")
 class AgentRunnerWorkflow:
-    """LLM + MCP iteration orchestrator (Spec 2 §2.2).
+    """LLM + MCP iteration orchestrator.
 
-    The workflow body is intentionally minimal at this point in the
-    spec: it sets up the iteration state, registers the four signals
-    required by R5/R6/R11, and waits for either the per-workflow-type
+    The workflow body sets up the iteration state, registers the four signals
+    required by the workflow control rules, and waits for either the per-workflow-type
     body to complete or a cancel signal. Concrete per-workflow-type
     bodies (code_change, pr_review, confluence, research, multi_step)
     land in tasks 7-10 and plug into ``_dispatch_workflow_type`` below.
@@ -751,22 +743,22 @@ class AgentRunnerWorkflow:
     def __init__(self) -> None:
         # Iteration state — frozen dataclass; we evolve it via
         # ``dataclasses.replace`` so every replay reaches the same
-        # value (Property 2).
+        # value.
         self._iteration_state: IterationState = IterationState()
 
         # PR-review finding hashes seen in *previous* iterations. The
         # ``pr_review`` body consults this set before posting comments
-        # so the same finding is never re-posted in iter-N (R7.6).
+        # so the same finding is never re-posted in iter-N.
         self._previous_findings: set[str] = set()
 
         # Confluence section content hashes written in *previous*
         # iterations. The ``confluence_doc_update`` body consults this
         # set before updating a section so identical content is never
-        # re-written (R8.2).
+        # re-written.
         self._confluence_section_hashes: set[str] = set()
 
         # Best-effort actions that failed during this run. Reported in
-        # the final Jira comment (R12.3).
+        # the final Jira comment.
         self._output_actions_partial: list[str] = []
 
         # Edge flag flipped by signal handlers; consumed by the
@@ -782,8 +774,8 @@ class AgentRunnerWorkflow:
         self._cancel_reason: str = "user_cancel"
 
         # Set to True by :meth:`_handle_cancel` *before* invoking the
-        # compensation chain activity. Idempotency latch (R11 spec
-        # task 13.3): a second ``cancel_requested`` signal that
+        # compensation chain activity. Idempotency latch: a second
+        # ``cancel_requested`` signal that
         # arrives while the chain is mid-flight observes this flag
         # and short-circuits, so compensation never double-fires.
         # The flag stays set for the lifetime of the workflow so a
@@ -811,7 +803,7 @@ class AgentRunnerWorkflow:
         self._latest_comment: str = ""
 
         # Once-per-workflow flag: ``True`` after the iter==3 warning
-        # banner has been posted to Jira (R5.7, MIMARI §16.16 N17 / U8).
+        # banner has been posted to Jira.
         # Idempotent — the body inspects this flag and a parallel
         # ``_iter_warning_pending`` edge to decide whether to call the
         # ``jira_add_comment`` activity. Once set the flag never flips
@@ -836,8 +828,7 @@ class AgentRunnerWorkflow:
         self._pending_audit_actions: list[str] = []
 
         # Per-workflow LRU for ``code_change_commit_only`` diff
-        # summaries. Mirrors the ``diff_summary_cache`` design from
-        # task 6.2 — when that module ships this attribute will be
+        # summaries. When the shared module ships this attribute will be
         # replaced by a delegate to ``temporal_shared.llm_dedup``.
         # The cache is keyed by commit / diff hash and survives across
         # iterations of the same workflow execution, so a follow-up
@@ -845,7 +836,7 @@ class AgentRunnerWorkflow:
         # the LLM round-trip.
         self._diff_summary_cache: dict[str, str] = {}
 
-        # Previous iteration's draft PR id (task 7.6, R10.1). Updated
+        # Previous iteration's draft PR id. Updated
         # after each successful ``code_change_with_test`` run so a
         # follow-up iteration can mark the prior PR as superseded
         # via :func:`iter_advance_pr_supersede`. ``None`` until the
@@ -853,14 +844,14 @@ class AgentRunnerWorkflow:
         self._previous_pr_id: int | None = None
 
         # Latest Confluence page id created/updated by this workflow.
-        # Populated by the ``confluence_doc_create`` body (task 8.4)
+        # Populated by the ``confluence_doc_create`` body
         # so the terminal :class:`AgentRunnerWorkflowOutput` can
         # surface it via ``confluence_page_id`` and downstream PO
-        # tooling (Spec 3) can deep-link to the page. ``None`` when
+        # tooling can deep-link to the page. ``None`` when
         # no page operation has happened yet during this run.
         self._latest_confluence_page_id: str | None = None
 
-        # Cumulative output-actions apply log (task 12.3, R12.3).
+        # Cumulative output-actions apply log.
         # Each ``_execute_output_actions`` invocation merges its
         # per-call :class:`ApplyResult` into this aggregate so the
         # final Jira comment composed by ``run`` can name every
@@ -875,7 +866,7 @@ class AgentRunnerWorkflow:
 
     @workflow.query
     def is_iter_warning_at_three(self) -> bool:
-        """Whether the iter==3 banner has already been posted (R5.7)."""
+        """Whether the iter==3 banner has already been posted."""
 
         return self._iter_warning_at_three
 
@@ -911,13 +902,13 @@ class AgentRunnerWorkflow:
 
     @workflow.query
     def is_cancel_requested(self) -> bool:
-        """Whether a ``cancel_requested`` signal has been received (R11.4)."""
+        """Whether a ``cancel_requested`` signal has been received."""
 
         return self._cancel_requested
 
     @workflow.query
     def is_compensation_running(self) -> bool:
-        """Whether the compensation chain has been dispatched (R11.4).
+        """Whether the compensation chain has been dispatched.
 
         Latched by :meth:`_handle_cancel` immediately before the
         activity call; observable so external probes can confirm the
@@ -933,7 +924,7 @@ class AgentRunnerWorkflow:
     # mutating state. When the pre-condition denies, the handler flips
     # ``_out_of_scope`` and leaves the state untouched — the body's wait
     # predicate then drains and the workflow terminates with
-    # ``out_of_scope`` (R5.1, R5.7).
+    # ``out_of_scope``.
     #
     # Signal handlers MUST NOT perform I/O (Temporal restricts await on
     # activities inside signal handlers). They mutate workflow state and
@@ -942,7 +933,7 @@ class AgentRunnerWorkflow:
 
     @workflow.signal
     def comment_added(self, payload: Any) -> None:
-        """Receive a forwarded comment event (R5.7, R6.3).
+        """Receive a forwarded comment event.
 
         Inspects the comment body for keyword markers (``[fix]``,
         ``[explain]``, ``[needs_info]``) and dispatches to the
@@ -951,7 +942,6 @@ class AgentRunnerWorkflow:
         deterministic (a pure function of ``comment_text``) so replays
         reach the same routing decision.
 
-        Validates Requirements: 5.2, 5.3, 5.4, 5.5, 5.7, 6.3.
         """
 
         if self._cancel_requested or self._out_of_scope:
@@ -984,7 +974,7 @@ class AgentRunnerWorkflow:
         # ----- Plain comment path ---------------------------------
         # Receiving a non-``needs_info`` comment resets the streak —
         # the user has supplied additional context, so the loop cap
-        # restarts from zero (R5.6).
+        # restarts from zero.
         self._iteration_state = _state_reset_needs_info(self._iteration_state)
 
         # Pre-condition: still allowed to advance?
@@ -1001,13 +991,13 @@ class AgentRunnerWorkflow:
         # Note: ``actor`` is not surfaced as workflow state — it only
         # exists so the audit chain can log the originator. We accept
         # the value to keep the wire schema stable but intentionally
-        # avoid storing PII inside the workflow state (R12 / N15
+        # avoid storing PII inside the workflow state
         # adjacent concerns).
         del actor, diff_hash
 
     @workflow.signal
     def fix_triggered(self, payload: Any) -> None:
-        """Receive a ``[fix]`` keyword event (R5.3, R5.4, T1, T6)."""
+        """Receive a ``[fix]`` keyword event."""
 
         if self._cancel_requested or self._out_of_scope:
             return
@@ -1020,7 +1010,7 @@ class AgentRunnerWorkflow:
 
     @workflow.signal
     def explain_triggered(self, payload: Any) -> None:
-        """Receive an ``[explain]`` keyword event (R5.5, Z10)."""
+        """Receive an ``[explain]`` keyword event."""
 
         if self._cancel_requested or self._out_of_scope:
             return
@@ -1041,7 +1031,7 @@ class AgentRunnerWorkflow:
     # de-duplicated.
 
     def _apply_fix_signal(self, *, text: str, diff_hash: str | None) -> None:
-        """Apply the ``[fix]`` debounce + dedup logic (R5.3, R5.4)."""
+        """Apply the ``[fix]`` debounce + dedup logic."""
 
         if self._cancel_requested or self._out_of_scope:
             return
@@ -1056,7 +1046,7 @@ class AgentRunnerWorkflow:
 
         now = workflow.now()
 
-        # T6 — 60s debounce. Drop the signal silently when fired too
+        # 60s debounce. Drop the signal silently when fired too
         # fast; the gateway also enforces this but defending in depth
         # keeps the workflow correct under direct-signal tests. The
         # body emits a ``fix_debounce_dropped`` audit event lazily on
@@ -1069,7 +1059,7 @@ class AgentRunnerWorkflow:
         # has supplied additional direction.
         self._iteration_state = _state_reset_needs_info(self._iteration_state)
 
-        # T1 — same diff means re-test is redundant.
+        # Same diff means re-test is redundant.
         if diff_hash and _fix_should_skip_retest(
             self._iteration_state, diff_hash
         ):
@@ -1096,7 +1086,7 @@ class AgentRunnerWorkflow:
     def _apply_explain_signal(
         self, *, text: str, pr_diff_hash: str | None
     ) -> None:
-        """Apply the ``[explain]`` cooldown + cache logic (R5.5, Z10)."""
+        """Apply the ``[explain]`` cooldown + cache logic."""
 
         if self._cancel_requested or self._out_of_scope:
             return
@@ -1131,7 +1121,7 @@ class AgentRunnerWorkflow:
         self._advance_iter_with_banner_check()
 
     def _apply_needs_info_signal(self, *, text: str) -> None:
-        """Apply the ``[needs_info]`` loop-cap logic (R5.6, S12).
+        """Apply the ``[needs_info]`` loop-cap logic.
 
         Increments :attr:`IterationState.needs_info_streak`. When the
         streak reaches :data:`NEEDS_INFO_MAX_STREAK` the workflow
@@ -1168,7 +1158,7 @@ class AgentRunnerWorkflow:
         iteration counter. When the resulting count crosses
         :data:`ITER_WARNING_THRESHOLD` for the first time the helper
         flips :attr:`_iter_warning_pending` so the run body can post
-        the Jira banner once and only once (R5.7).
+        the Jira banner once and only once.
         """
 
         self._iteration_state = _state_increment_iter(self._iteration_state)
@@ -1181,13 +1171,13 @@ class AgentRunnerWorkflow:
 
     @workflow.signal
     def cancel_requested(self, payload: Any) -> None:
-        """Receive an end-user / admin cancel signal (R11.1, R11.4).
+        """Receive an end-user / admin cancel signal.
 
         Cancel always wins over the iter cap — the body observes
         ``_cancel_requested`` and runs the compensation chain regardless
         of ``_out_of_scope`` state.
 
-        Idempotent (task 13.3): a second cancel signal that arrives
+        Idempotent: a second cancel signal that arrives
         while compensation is already in flight (or has completed) is
         a silent no-op — both :attr:`_cancel_requested` and
         :attr:`_compensation_running` latch the first request, and
@@ -1221,7 +1211,7 @@ class AgentRunnerWorkflow:
         # Initial iteration count comes from the input (almost always 1
         # for a fresh dispatch; >=2 reserved for future iter-N re-entry
         # via a parent-side restart). We clamp ``max_iter`` to the
-        # constant so a misconfigured input cannot lift the design cap.
+        # constant so a misconfigured input cannot lift the cap.
         max_iter = min(inp.max_iter, MAX_ITER) if inp.max_iter > 0 else MAX_ITER
 
         # Seed the iteration state from the input's iteration counter.
@@ -1266,17 +1256,17 @@ class AgentRunnerWorkflow:
                 ),
             )
         except _OutputActionCriticalFailure as exc:
-            # R12.2 — a critical output action refused; trigger the
+            # A critical output action refused; trigger the
             # compensation chain (close draft PR, label Confluence,
             # etc.) and terminate with ``failed``. The final Jira
             # comment names the completed critical actions and the
             # failed best-effort actions via
-            # :func:`format_final_jira_comment` (R12.3).
+            # :func:`format_final_jira_comment`.
             self._failure_reason = OUTPUT_ACTION_CRITICAL_FAILED_REASON
             self._cancel_reason = "user_cancel"
             return await self._handle_output_action_critical(inp, exc)
         except TokenCapExceededError as exc:
-            # T13 fail-fast: the audit row was already written by
+            # Fail-fast token cap: the audit row was already written by
             # :meth:`_execute_llm_activity` before raising, so the
             # workflow simply terminates with a stable failure
             # category. ``maximum_attempts=1`` on the activity retry
@@ -1312,7 +1302,7 @@ class AgentRunnerWorkflow:
             )
 
         # ----- Success / partial success -----------------------------
-        # R12.3 — the final Jira comment names every critical action
+        # The final Jira comment names every critical action
         # that succeeded plus every best-effort action that failed.
         # When neither list carries content the formatter returns
         # the empty string and we fall back to the legacy "✅ Tamamlandı"
@@ -1341,7 +1331,7 @@ class AgentRunnerWorkflow:
         inp: AgentRunnerWorkflowInput,
         exc: _OutputActionCriticalFailure,
     ) -> AgentRunnerWorkflowOutput:
-        """Run compensation after a critical output-action failure (R12.2).
+        """Run compensation after a critical output-action failure.
 
         Mirrors :meth:`_handle_cancel` (the compensation contract is
         identical) but composes a richer terminal summary that names
@@ -1383,7 +1373,7 @@ class AgentRunnerWorkflow:
                 workflow.info().workflow_id,
             )
 
-        # Compose the final Jira comment with the spec-mandated shape:
+        # Compose the final Jira comment with the expected operator-facing shape:
         # the ``failed_critical`` list lands under the best-effort
         # prefix because the Turkish prose template only carries one
         # "warning" line — see :func:`format_final_jira_comment`.
@@ -1408,8 +1398,8 @@ class AgentRunnerWorkflow:
 
         Discriminates on :attr:`AgentRunnerWorkflowInput.workflow_type`
         and delegates to the matching ``_handle_*`` coroutine. The
-        ``code_change_*`` / ``pr_review`` paths land here in task 7.5;
-        the ``confluence_doc_*`` paths land in task 8.4. The remaining
+        ``code_change_*`` / ``pr_review`` paths land here;
+        the ``confluence_doc_*`` paths land here too. The remaining
         types (``research_*``, ``multi_step``, ``noop_test``,
         ``remote_ssh_test_only``) still fall through to the legacy
         signal-wait loop below — tasks 9.3 / 10.3 will replace those
@@ -1448,7 +1438,7 @@ class AgentRunnerWorkflow:
             await self._handle_research_summary_jira(inp)
             return
 
-        # ---- Legacy signal-wait fallback (task 10.3) ----
+        # ---- Legacy signal-wait fallback ------------------------
 
         # Post the iter==3 banner before waiting (handles the case
         # where the workflow was restarted directly at iter >= 3).
@@ -1489,16 +1479,16 @@ class AgentRunnerWorkflow:
         if self._out_of_scope:
             raise _OutOfScope
 
-    # -- code_change_* handlers (task 7.5, R7.1-R7.10) ---------------------
+    # -- code_change_* handlers --------------------------------------------
 
     async def _handle_code_change_with_test(
         self, inp: AgentRunnerWorkflowInput
     ) -> None:
-        """Code-change happy path with test execution (R7.1, R7.3, R7.4).
+        """Code-change happy path with test execution.
 
-        Sequence (mirrors design.md §"Code Change Akışları"):
+        Sequence for the code-change flow:
 
-        1. ``set_assignee_to_bot`` (foundation R5.10).
+        1. ``set_assignee_to_bot`` claims the Jira issue for the bot.
         2. ``branch_pattern_rules`` deny → ``out_of_scope``.
         3. ``compute_branch_name`` (pure formatter).
         4. ``precommit_scanner`` activity — block → fail with audit
@@ -1511,7 +1501,6 @@ class AgentRunnerWorkflow:
            post a Jira comment with the PR link.
         8. On test fail: post a failure summary comment, no PR.
 
-        Validates Requirements: 7.1, 7.2, 7.3, 7.4, 7.7, 7.9, 7.10.
         """
 
         await self._handle_code_change_common(
@@ -1521,12 +1510,12 @@ class AgentRunnerWorkflow:
     async def _handle_code_change_commit_only(
         self, inp: AgentRunnerWorkflowInput
     ) -> None:
-        """Code-change commit-only path (R7.5, Z4).
+        """Code-change commit-only path.
 
         Same shape as :meth:`_handle_code_change_with_test` but with
         the test-run + PR-creation steps elided. The Jira comment
         carries the branch link plus a diff summary fed from the
-        ``diff_summary_cache`` (task 6.2 placeholder mirrored here as
+        ``diff_summary_cache`` (placeholder mirrored here as
         a per-workflow LRU on :attr:`_diff_summary_cache`).
         """
 
@@ -1557,7 +1546,7 @@ class AgentRunnerWorkflow:
         target_repo = inp.target_repo or ""
         target_branch = inp.target_branch or ""
 
-        # 1. jira_set_assignee_to_bot (foundation R5.10).
+        # 1. jira_set_assignee_to_bot.
         try:
             await workflow.execute_activity(
                 "set_assignee_to_bot",
@@ -1577,7 +1566,7 @@ class AgentRunnerWorkflow:
         # 2. branch_pattern_rules check — denies hotfix commit-only,
         #    release non-pr_review etc. The rule list is pinned to
         #    the foundation defaults; per-dept rule loading lands in
-        #    task 4.2 / 7.7 (departments.json schema migration).
+        #    departments.json schema migration.
         if target_branch:
             decision = route_by_branch_pattern(
                 target_branch,
@@ -1754,7 +1743,7 @@ class AgentRunnerWorkflow:
             # On pass: route the PR-create tool via deployment_router.
             # The deployment value comes from the dept config; the
             # workflow input does not carry it directly today, so
-            # default to ``"cloud"`` until task 4.2 threads it through.
+            # default to ``"cloud"`` until the deployment mode is threaded through.
             deployment = "cloud"
             pr_tool = select_pr_create_tool(deployment)
             try:
@@ -1766,7 +1755,7 @@ class AgentRunnerWorkflow:
                             "repo_slug": target_repo,
                         },
                         branch_name,
-                        "main",  # destination branch — task 10.1 wires
+                        "main",  # destination branch — callers can override
                         # the dept-configured default branch.
                         f"[bot] {inp.analysis.title or inp.issue_key}",
                         inp.analysis.rationale or "AI-generated change.",
@@ -1788,7 +1777,7 @@ class AgentRunnerWorkflow:
             pr_url = self._extract_pr_url(pr_info)
             new_pr_id = self._extract_pr_id_from_info(pr_info)
 
-            # Task 7.6 / R10.1: mark the previous iteration's PR as
+            # Mark the previous iteration's PR as
             # superseded *before* posting the Jira comment so a reader
             # who follows the PR link from the comment sees the
             # banner already in place. The activity is idempotent
@@ -1849,7 +1838,7 @@ class AgentRunnerWorkflow:
             return
 
         # commit-only flow: post a branch-link Jira comment with a
-        # diff summary served from the per-workflow cache (task 6.2
+        # diff summary served from the per-workflow cache
         # placeholder — see ``_diff_summary_cache``).
         diff_hash = commit_hash
         diff_summary = self._diff_summary_cache.get(diff_hash)
@@ -1868,13 +1857,13 @@ class AgentRunnerWorkflow:
     async def _handle_pr_review(
         self, inp: AgentRunnerWorkflowInput
     ) -> None:
-        """LLM-driven PR review with hash dedup (R7.6, G13).
+        """LLM-driven PR review with hash dedup.
 
         Steps:
 
         1. Fetch the PR diff via :func:`bitbucket_fetch_pr_diff`.
         2. Run the ``pr_review.md`` LLM activity (``llm_review_code``)
-           via :meth:`_execute_llm_activity` so the T13 token cap
+           via :meth:`_execute_llm_activity` so the token cap
            applies.
         3. ``dedup_findings(self._previous_findings, current)`` — only
            emit findings whose ``hash`` was not seen in earlier
@@ -1884,13 +1873,12 @@ class AgentRunnerWorkflow:
            :attr:`_previous_findings` so the next iteration suppresses
            them.
 
-        Validates Requirements: 7.6, 5.2.
         """
 
         target_repo = inp.target_repo or ""
         # The workflow input carries the issue_key, not the PR id —
         # the AutomationWorkflow passes the PR id via the analysis
-        # ``rationale`` as a fallback today; task 10.1 will surface a
+        # ``rationale`` as a fallback today; future callers can surface a
         # dedicated field. Defensive: fall back to 0 so the activity
         # surfaces the misconfiguration instead of crashing the body.
         pr_id = self._extract_pr_id(inp)
@@ -1982,16 +1970,16 @@ class AgentRunnerWorkflow:
         # the answer to the PR.
         await self._maybe_handle_explain(inp)
 
-    # -- confluence_doc_* handlers (task 8.4, R8.1-R8.7) -------------------
+    # -- confluence_doc_* handlers -----------------------------------------
 
     async def _handle_confluence_doc_create(
         self, inp: AgentRunnerWorkflowInput
     ) -> None:
-        """Create a Confluence page with provenance footer (R8.1, R8.4, R8.6).
+        """Create a Confluence page with provenance footer.
 
-        Sequence (mirrors design.md §"Confluence Doküman Akışları"):
+        Sequence for the Confluence document creation flow:
 
-        1. ``set_assignee_to_bot`` (foundation R5.10) — claim the
+        1. ``set_assignee_to_bot`` claims the
            Jira issue.
         2. Resolve the Jira issue link via ``jira_build_issue_link``
            so :func:`compute_provenance_footer` can embed it
@@ -2004,17 +1992,16 @@ class AgentRunnerWorkflow:
            replay-deterministic. The topic is taken from
            ``analysis.title`` so the LLM-translated text is preserved.
         4. Generate the body via the token-capped LLM activity
-           ``llm_generate_doc`` (T13 enforcement applies). The
+           ``llm_generate_doc`` (token-cap enforcement applies). The
            returned text is appended with the provenance footer
            before the page is created.
         5. Call ``confluence_create_page`` — the foundation
            :func:`mcp_client.tool_filter.filter_tools` ensures
            ``confluence_delete_page`` is never offered to the LLM
-           (R8.4); ``confluence_create_page`` itself is allowed.
+           ``confluence_create_page`` itself is allowed.
         6. Post a Jira completion comment with the page link
            (best-effort).
 
-        Validates Requirements: 8.1, 8.4, 8.6.
         """
 
         # 1. set_assignee_to_bot — critical step.
@@ -2055,7 +2042,7 @@ class AgentRunnerWorkflow:
             )
             raise
 
-        # 4. LLM body — token-capped (T13).
+        # 4. LLM body — token-capped.
         rationale = inp.analysis.rationale or ""
         estimated_tokens = max(1, len(rationale) // 4 + len(topic) // 4)
         try:
@@ -2083,12 +2070,12 @@ class AgentRunnerWorkflow:
 
         body_text = self._extract_doc_body(body_response)
 
-        # 5. Append the provenance footer (R8.6) and call
+        # 5. Append the provenance footer and call
         # ``confluence_create_page``. The footer is appended only
         # when we have a usable Jira issue link; otherwise we
         # gracefully fall back to a body without the footer rather
         # than fail the page creation. The footer attribution is
-        # required by R8.6 / Property 9.c — operators can detect a
+        # required so operators can detect a
         # missing footer via the ``confluence_create_page`` audit
         # trail in such degraded cases.
         page_body = body_text
@@ -2146,7 +2133,7 @@ class AgentRunnerWorkflow:
             f"📝 Confluence sayfası oluşturuldu: `{link_text}`",
         )
 
-        # 7. Apply LLM-emitted output_actions (R12.1-R12.3).
+        # 7. Apply LLM-emitted output_actions.
         await self._maybe_execute_llm_output_actions(inp)
 
     async def _handle_confluence_doc_update(
@@ -2154,30 +2141,29 @@ class AgentRunnerWorkflow:
     ) -> None:
         """Update Confluence sections with dedup + overwrite protection.
 
-        Sequence (mirrors design.md §"Confluence Doküman Akışları"):
+        Sequence for the Confluence section update flow:
 
-        1. ``set_assignee_to_bot`` (foundation R5.10).
+        1. ``set_assignee_to_bot`` claims the Jira issue for the bot.
         2. Read the page metadata via ``confluence_get_page`` to
            resolve last-editor, last-edit timestamp, and current
            sections. The activity also supplies the page title so the
            ``_AI_PROBE_*`` filter can fire deterministically.
         3. Filter out pages whose title matches
            :func:`is_probe_page` — write-probe artifacts must never
-           be overwritten (R8.3, foundation R5).
+           be overwritten.
         4. Overwrite-protection check via :func:`should_skip_overwrite`
            — when a non-bot user edited the page within the last 5
            minutes, skip the update and emit the
-           ``confluence_overwrite_protected`` audit (R8.7).
+           ``confluence_overwrite_protected`` audit.
         5. For every target section: compute the content hash, run
            :func:`should_skip_section_update` against the workflow's
            in-memory hash set, and either skip (audit
-           ``confluence_section_dedup_skip``, R8.2) or update via
+           ``confluence_section_dedup_skip``) or update via
            ``confluence_update_page``. The section content is
-           augmented with the provenance footer (R8.6).
+           augmented with the provenance footer.
         6. Post a Jira summary comment listing updated and skipped
            sections (best-effort).
 
-        Validates Requirements: 8.2, 8.3, 8.4, 8.6, 8.7.
         """
 
         # 1. set_assignee_to_bot.
@@ -2241,7 +2227,7 @@ class AgentRunnerWorkflow:
             )
             return
 
-        # 4. Overwrite-protection check (R8.7).
+        # 4. Overwrite-protection check.
         bot_ids = self._resolve_bot_account_ids(inp)
         now = workflow.now()
         overwrite_decision = should_skip_overwrite(
@@ -2319,7 +2305,7 @@ class AgentRunnerWorkflow:
                 skipped_sections.append(section_path)
                 continue
 
-            # Append the provenance footer (R8.6) to the section
+            # Append the provenance footer to the section
             # body before writing. Failure to render the footer is
             # non-fatal — the update still goes ahead.
             section_body = content
@@ -2379,20 +2365,19 @@ class AgentRunnerWorkflow:
             inp, "\n".join(summary_lines)
         )
 
-        # 7. Apply LLM-emitted output_actions (R12.1-R12.3).
+        # 7. Apply LLM-emitted output_actions.
         await self._maybe_execute_llm_output_actions(inp)
 
-    # -- research_* handlers (task 9.3, R9.1-R9.6) -------------------------
+    # -- research_* handlers ------------------------------------------------
 
     async def _handle_research_publish_confluence(
         self, inp: AgentRunnerWorkflowInput
     ) -> None:
-        """Run the research → Confluence publish flow (R9.1-R9.6).
+        """Run the research → Confluence publish flow.
 
-        Sequence (mirrors design.md §"Research Akışları" + tasks.md
-        9.3):
+        Sequence for the research-to-Confluence publish flow:
 
-        1. ``set_assignee_to_bot`` (foundation R5.10) — claim the
+        1. ``set_assignee_to_bot`` claims the
            Jira issue so the bot's authorship surfaces immediately.
         2. Resolve the Jira issue link via ``jira_build_issue_link``
            so the provenance footer can deep-link back to the
@@ -2404,7 +2389,7 @@ class AgentRunnerWorkflow:
            outcome:
 
            * ``EgressBlocked`` (or any dict with ``kind ==
-             "egress_blocked"``) → graceful 403 handling per R9.3:
+             "egress_blocked"``) → graceful 403 handling:
              post a Jira comment naming the blocked domain, record a
              best-effort partial-failure marker, and **continue with
              the remaining URLs**. The workflow MUST NOT raise.
@@ -2414,11 +2399,10 @@ class AgentRunnerWorkflow:
 
         5. Render the Confluence body via
            :func:`format_research_publish_confluence_body`, append
-           the provenance footer (R8.6 / Property 9.c), and call the
+           the provenance footer, and call the
            ``confluence_create_page`` activity.
         6. Post a Jira completion comment carrying the new page URL.
 
-        Validates Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6.
         """
 
         # 1. set_assignee_to_bot — critical step.
@@ -2561,18 +2545,17 @@ class AgentRunnerWorkflow:
             f"📝 Araştırma yayınlandı: `{link_text}`",
         )
 
-        # 7. Apply LLM-emitted output_actions (R12.1-R12.3).
+        # 7. Apply LLM-emitted output_actions.
         await self._maybe_execute_llm_output_actions(inp)
 
     async def _handle_research_summary_jira(
         self, inp: AgentRunnerWorkflowInput
     ) -> None:
-        """Run the research → Jira summary flow (R9.5).
+        """Run the research → Jira summary flow.
 
-        Sequence (mirrors design.md §"Research Akışları" + tasks.md
-        9.3):
+        Sequence for the research-to-Jira summary flow:
 
-        1. ``set_assignee_to_bot`` (foundation R5.10).
+        1. ``set_assignee_to_bot`` claims the Jira issue for the bot.
         2. ``firecrawl_search`` — enumerate candidate URLs from the
            Jira topic.
         3. For every URL run ``firecrawl_scrape`` with the same
@@ -2590,7 +2573,6 @@ class AgentRunnerWorkflow:
            primary side effect — failure flips ``failure_reason``
            rather than degrading silently).
 
-        Validates Requirements: 9.1, 9.2, 9.3, 9.5, 9.6.
         """
 
         # 1. set_assignee_to_bot — critical step.
@@ -2718,7 +2700,7 @@ class AgentRunnerWorkflow:
             )
             raise
 
-        # Apply LLM-emitted output_actions (R12.1-R12.3).
+        # Apply LLM-emitted output_actions.
         await self._maybe_execute_llm_output_actions(inp)
 
     # -- research helpers --------------------------------------------------
@@ -2792,12 +2774,12 @@ class AgentRunnerWorkflow:
     async def _firecrawl_scrape_with_grace(
         self, *, url: str, inp: AgentRunnerWorkflowInput
     ) -> dict[str, Any] | None:
-        """Run ``firecrawl_scrape`` for *url* with R9.3 graceful 403.
+        """Run ``firecrawl_scrape`` for *url* with graceful 403 handling.
 
         Returns a ``{"content": str, "source": dict}`` mapping on
         success and ``None`` for blocked / failed URLs (the caller
         treats ``None`` as "skip this URL").  Blocked URLs trigger
-        the standard Jira-comment + partial-failure flow per R9.3.
+        the standard Jira-comment + partial-failure flow.
         """
 
         try:
@@ -2971,8 +2953,8 @@ class AgentRunnerWorkflow:
         forwarded to the agent runner. As a defensive default we
         return an empty set, which means
         :func:`should_skip_overwrite` treats every recent edit as a
-        non-bot edit (the safer fail-closed behaviour for R8.7).
-        Future work (task 4.2 / 8.x) will thread the bot id list
+        non-bot edit (the safer fail-closed behaviour).
+        Future work will thread the bot id list
         through the input envelope so the comparison is exact.
         """
 
@@ -3147,7 +3129,7 @@ class AgentRunnerWorkflow:
         test failure and the result is cached against ``commit_hash``
         in :attr:`IterationState.test_results_by_diff_hash` so a
         follow-up ``[fix]`` against the same diff hits the re-test
-        guard (R5.3, T1).
+        guard.
         """
 
         command = getattr(inp.analysis, "execution_command", None) or ""
@@ -3210,7 +3192,7 @@ class AgentRunnerWorkflow:
     async def _maybe_handle_explain(
         self, inp: AgentRunnerWorkflowInput
     ) -> None:
-        """Render and post a queued ``[explain]`` answer (R5.5, Z10).
+        """Render and post a queued ``[explain]`` answer.
 
         Consumes :attr:`_pending_explain_diff_hash` /
         :attr:`_pending_explain_text` populated by the corresponding
@@ -3286,9 +3268,8 @@ class AgentRunnerWorkflow:
         wrapper dispatches via :meth:`_execute_output_actions`; a
         critical failure propagates :class:`_OutputActionCriticalFailure`
         up to ``run`` which translates it into the cancel /
-        compensation path (R12.2).
+        compensation path.
 
-        Validates Requirements: 12.1, 12.2, 12.3.
         """
 
         actions = inp.analysis.output_actions
@@ -3318,7 +3299,7 @@ class AgentRunnerWorkflow:
             )
             self._record_partial_failure("jira_comment")
 
-    # -- output_actions partition + apply (task 12.3, R12.1-R12.3) ---------
+    # -- output_actions partition + apply ----------------------------------
 
     async def _execute_output_actions(
         self,
@@ -3326,9 +3307,9 @@ class AgentRunnerWorkflow:
         workflow_id: str,
         inp: AgentRunnerWorkflowInput,
     ) -> ApplyResult:
-        """Apply a tuple of LLM-emitted ``OutputAction`` values (R12.1).
+        """Apply a tuple of LLM-emitted ``OutputAction`` values.
 
-        Pipeline (mirrors design.md §"output_actions partition_and_apply"):
+        Output action pipeline:
 
         1. Apply the size-cap helper
            :func:`temporal_shared.output_size_cap.redirect_oversized_payload`
@@ -3344,12 +3325,12 @@ class AgentRunnerWorkflow:
            critical failure short-circuits the rest of the critical
            list, raises :class:`_OutputActionCriticalFailure`, and the
            ``run`` body translates that into a compensation chain
-           run + ``failed`` workflow status (R11.2 / §16.6.57).
+           run + ``failed`` workflow status.
         4. Best-effort actions are applied **after** all critical
            actions succeed.  A best-effort failure appends the action
            kind + reason to :attr:`ApplyResult.failed_best_effort`
            and to :attr:`_output_actions_partial` so the final Jira
-           comment can list every degraded action (R12.3).
+           comment can list every degraded action.
 
         The activity dispatch table is :data:`_OUTPUT_ACTION_DISPATCH`.
         Each activity is invoked with two positional arguments:
@@ -3439,7 +3420,7 @@ class AgentRunnerWorkflow:
                 result.failed_critical.append((action.kind, reason))
                 # Critical failure short-circuits the rest of the list:
                 # the workflow MUST NOT keep applying side effects after
-                # the first critical refusal (R12.2 — "fail-fast").
+                # the first critical refusal.
                 self._failure_reason = OUTPUT_ACTION_CRITICAL_FAILED_REASON
                 await self._merge_output_actions_into_log(result, inp)
                 raise _OutputActionCriticalFailure(result)
@@ -3472,7 +3453,7 @@ class AgentRunnerWorkflow:
         Returns ``(True, "")`` on success and ``(False, reason)`` on
         failure.  The reason string is the exception's ``str(exc)``
         truncated to a single line so it can land verbatim in the
-        final Jira comment without breaking the spec-mandated layout.
+        final Jira comment without breaking the expected layout.
         """
 
         activity_name = _OUTPUT_ACTION_DISPATCH.get(action.kind)
@@ -3584,7 +3565,7 @@ class AgentRunnerWorkflow:
         Pure list extension — no clocks, no randomness — so the
         merged log replays deterministically.  *inp* is currently
         unused but retained in the signature so a future audit hook
-        (R12 — "audit on partial failure") can be threaded through
+        audit on partial failure can be threaded through
         without changing call sites.
         """
 
@@ -3609,7 +3590,7 @@ class AgentRunnerWorkflow:
         returns the canonical S3-style URI emitted by the activity.
         Shape mirrors :class:`temporal_shared.output_size_cap.MinioCallback`.
         Failure of the activity propagates to the caller — the
-        size-cap branch is part of the critical pipeline (R5.9), so a
+        size-cap branch is part of the critical pipeline, so a
         MinIO outage during the offload is treated as a critical
         failure rather than a degraded best-effort action.
         """
@@ -3775,7 +3756,7 @@ class AgentRunnerWorkflow:
         ``pr_id`` keys (the dict variant) or attributes (the
         :class:`PRInfo` dataclass variant emitted by
         :mod:`activities.bitbucket`). Returns ``None`` when no
-        recoverable integer is available — task 7.6 callers fall
+        recoverable integer is available; callers fall
         through gracefully so a malformed PR-create response cannot
         silently break the supersede chain.
         """
@@ -3862,21 +3843,21 @@ class AgentRunnerWorkflow:
     async def _handle_cancel(
         self, inp: AgentRunnerWorkflowInput
     ) -> AgentRunnerWorkflowOutput:
-        """Run the deterministic compensation chain (R11.2, R11.4, §16.6.57).
+        """Run the deterministic compensation chain.
 
-        Idempotent (task 13.3): :attr:`_compensation_running` is set to
+        Idempotent: :attr:`_compensation_running` is set to
         ``True`` *before* the activity dispatch so a cancel signal
         that arrives during the chain (replay, rapid double-tap, etc.)
         observes the latched state via :meth:`cancel_requested` and
         returns without re-firing. Combined with the activity-level
         idempotency contract (every compensation step is a no-op when
         the side effect is already cleaned up — see
-        ``temporal_shared.compensation`` task 13.2) this gives an
+        ``temporal_shared.compensation``) this gives an
         exactly-once compensation guarantee at the workflow layer.
 
         The audit row uses :data:`CANCEL_BY_END_USER_AUDIT_ACTION` or
         :data:`CANCEL_BY_ADMIN_AUDIT_ACTION` according to
-        :attr:`_cancel_actor_role` (R11.4). The role mapping happens
+        :attr:`_cancel_actor_role`. The role mapping happens
         through :func:`_audit_action_for_cancel_role`, which falls
         back to ``end_user`` for unknown / blank values so a
         misconfigured caller still produces a usable audit trail.
@@ -3889,12 +3870,12 @@ class AgentRunnerWorkflow:
         # Run the compensation activities. The activity itself enforces
         # its own retry policy and idempotence (see
         # ``temporal_shared.compensation``). When the activity is not
-        # yet wired up (early in the spec) we fall through gracefully
+        # yet wired up we fall through gracefully
         # so the cancel still terminates the workflow.
         #
         # ``start_to_close_timeout=_SHORT_TIMEOUT`` (= 2 minutes / 120s)
         # covers the full chain (six activities × 30s budgets each)
-        # per the spec contract; individual steps are retried inside
+        # for the compensation contract; individual steps are retried inside
         # the chain activity according to its own ``maximumAttempts=3``
         # rule.
         try:
@@ -3919,7 +3900,7 @@ class AgentRunnerWorkflow:
                 workflow.info().workflow_id,
             )
 
-        # Emit the role-mapped audit row (R11.4). Best-effort — the
+        # Emit the role-mapped audit row. Best-effort — the
         # workflow still terminates with ``cancelled`` even if the
         # audit activity is unavailable.
         await self._emit_audit_action(
@@ -3936,7 +3917,7 @@ class AgentRunnerWorkflow:
     async def _maybe_post_iter_warning_banner(
         self, inp: AgentRunnerWorkflowInput
     ) -> None:
-        """Post the iter==3 banner once per workflow (R5.7).
+        """Post the iter==3 banner once per workflow.
 
         Idempotent: the banner activity is invoked at most one time
         across the lifetime of an :class:`AgentRunnerWorkflow`
@@ -3947,8 +3928,8 @@ class AgentRunnerWorkflow:
         at-least-once for user-facing comments (the banner is a soft
         warning, not a contractual guarantee).
 
-        Validates Requirement 5.7 (banner state field +
-        ``iter_warning_at_three=True``).
+        Sets the banner state field to
+        ``iter_warning_at_three=True``.
         """
 
         if self._iter_warning_at_three:
@@ -3994,8 +3975,8 @@ class AgentRunnerWorkflow:
         Signal handlers cannot ``await`` activities, so they queue an
         action name in :attr:`_pending_audit_actions` and rely on the
         body to emit them on the next loop turn. This keeps the audit
-        trail aligned with the design's "audit on every keyword
-        decision" mandate (R5.3, R5.4, R5.5) without violating
+        trail aligned with the "audit on every keyword decision" behavior
+        without violating
         Temporal's signal-handler I/O restriction.
         """
 
@@ -4015,8 +3996,8 @@ class AgentRunnerWorkflow:
     ) -> None:
         """Best-effort emission of an audit row via ``audit_emit``.
 
-        The audit activity is registered separately (Spec 3 / ops
-        roadmap); when the worker is not yet hosting it the call
+        The audit activity is registered separately; when the worker is
+        not yet hosting it the call
         falls through silently with a workflow-logger warning so the
         primary side effect of the parent operation is unaffected.
         """
@@ -4043,7 +4024,7 @@ class AgentRunnerWorkflow:
                 workflow.info().workflow_id,
             )
 
-    # -- LLM activity execution with token cap (T13) -----------------------
+    # -- LLM activity execution with token cap -----------------------------
 
     async def _execute_llm_activity(
         self,
@@ -4055,7 +4036,7 @@ class AgentRunnerWorkflow:
         start_to_close_timeout: timedelta = _LLM_TIMEOUT,
         token_cap: int = MAX_ACTIVITY_TOKEN_CAP,
     ) -> Any:
-        """Invoke an LLM activity with the T13 fail-fast token cap.
+        """Invoke an LLM activity with the fail-fast token cap.
 
         Pre-flight check: when ``input_tokens`` exceeds
         :data:`MAX_ACTIVITY_TOKEN_CAP` the workflow refuses to call
@@ -4069,7 +4050,7 @@ class AgentRunnerWorkflow:
         the workflow could not pre-flight because the token count was
         only known after the prompt was rendered) also fails fast.
 
-        Validates Requirement 5.2 (activity-level token cap, T13).
+        Enforces the activity-level token cap.
 
         Parameters
         ----------
@@ -4182,7 +4163,7 @@ class AgentRunnerWorkflow:
         ``actor_role`` field is normalised through the closed
         vocabulary in :data:`_CANCEL_RECOGNISED_ROLES` — unknown,
         empty, or ``None`` values default to
-        :data:`_CANCEL_ROLE_END_USER` per R11.4.
+        :data:`_CANCEL_ROLE_END_USER`.
         """
 
         if isinstance(payload, CancelRequestedSignal):
@@ -4210,7 +4191,7 @@ class AgentRunnerWorkflow:
             # Fallback — preserve the operator's intent without crashing.
             return "", _CANCEL_ROLE_END_USER, "user_cancel"
 
-        # Closed-vocabulary check (R11.4). Unknown roles default to
+        # Closed-vocabulary check. Unknown roles default to
         # ``end_user`` so a misconfigured caller still produces a
         # well-formed audit row.
         if role not in _CANCEL_RECOGNISED_ROLES:
@@ -4239,13 +4220,13 @@ class _OutOfScope(Exception):
 
 class _OutputActionCriticalFailure(Exception):
     """Raised by :meth:`AgentRunnerWorkflow._execute_output_actions` when at
-    least one critical output action fails (R12.2).
+    least one critical output action fails.
 
     The ``run`` body catches this sentinel exactly the same way it
     catches ``cancel_requested`` — it triggers the
     ``compensation_chain_run`` activity before terminating with
     ``failed`` and the stable failure reason
-    :data:`OUTPUT_ACTION_CRITICAL_FAILED_REASON` (R11.2 / §16.6.57).
+    :data:`OUTPUT_ACTION_CRITICAL_FAILED_REASON`.
 
     Carries the :class:`ApplyResult` produced by the failed run so
     the cancel branch can render the final Jira comment with the

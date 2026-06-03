@@ -1,6 +1,4 @@
-"""Unit tests for ``src.routers.ssh_runners`` (platform-quick-fixes task 7.6).
-
-**Validates: Requirements 4.10, 4.11, 4.13, 4.15**
+"""Unit tests for ``src.routers.ssh_runners``.
 
 The router exposes five endpoints:
 
@@ -214,7 +212,7 @@ class TestListSshRunners:
         assert len(body["runners"]) == 2
         assert body["runners"][0]["runner_id"] == "runner-01"
         assert body["runners"][1]["host"] == "10.0.0.5"
-        # New fields from production-hardening task 11.1
+        # New response summary fields.
         assert body["active_runners"] == 2
         assert "healthcheck_cron_scheduled" in body
 

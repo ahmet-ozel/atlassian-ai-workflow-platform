@@ -1,11 +1,10 @@
-"""Streamlit dept switcher (`platform-mimari-ops` task 9.6).
+"""Streamlit dept switcher.
 
-Validates Requirements:
-    * R3.11 — dept seçimi zorunlu, dept seçilmeden hiçbir sayfa açılmaz.
-    * R3.12 — dropdown change → otomatik probe + tooltip.
-    * R7.1  — multi-dept user persistence in signed cookie.
-    * R7.2  — dept change → full session reset (Property 12).
-    * R7.3  — Q19 default_dept_id from OIDC claim or cookie fallback.
+Dept seçimi zorunlu; dept seçilmeden hiçbir sayfa açılmaz. Dropdown
+changes trigger an automatic probe and tooltip update. Multi-dept users
+persist their selection in a signed cookie, and dept changes reset the
+dept-scoped session state. The default dept comes from the OIDC claim,
+the cookie fallback, or the first allowed dept.
 
 The component is intentionally pure: every collaborator (cookie reader,
 signed cookie writer, probe runner, API client) is injected through
@@ -13,8 +12,7 @@ signed cookie writer, probe runner, API client) is injected through
 :class:`streamlit.testing.v1.AppTest` without standing up the
 production HTTP / cookie stack.
 
-Property 12 contract — when ``selected != active_dept_id``, the
-component:
+When ``selected != active_dept_id``, the component:
 
 1. Snapshots ``user`` and ``auth_token`` from ``st.session_state``.
 2. Deletes every other key (chat history, workflow cache, credential
@@ -41,11 +39,11 @@ __all__ = ["render_dept_switcher", "clear_session_except_user"]
 #: Session-state keys that survive a dept switch. Keeping the auth
 #: surface intact lets the user stay logged in; everything else is
 #: dept-scoped and must be reset to prevent dept-A data leaking into
-#: dept-B (R7.2 / Property 12).
+#: dept-B.
 _KEEP_KEYS: Final[frozenset[str]] = frozenset({"user", "auth_token"})
 
 
-#: Cookie name used for multi-dept persistence (R7.1). The value is
+#: Cookie name used for multi-dept persistence. The value is
 #: a signed JWS so a tampered cookie can never reroute the user to a
 #: dept they were not granted (RBAC check still runs server-side; the
 #: signature only protects the *default selection*).
@@ -74,7 +72,7 @@ def _read_cookie(name: str) -> str | None:
     For the department cookie (COOKIE_NAME), this reads and verifies
     the HMAC signature using the cookie_manager module. If the primary
     cookie is not found, falls back to the ``dept_selection`` cookie
-    written by ``write_department_cookie`` (Requirement 10.3).
+    written by ``write_department_cookie``.
     """
     from components.cookie_manager import (
         COOKIE_NAME,
@@ -123,9 +121,9 @@ def _write_cookie(name: str, value: str, *, ttl_days: int) -> None:
     """Write a signed cookie via the helper installed on session state.
 
     For the department cookie, signs the value with HMAC-SHA256 before
-    writing (Requirement 10.2). Also writes to the ``dept_selection``
+    writing. Also writes to the ``dept_selection``
     cookie via ``write_department_cookie`` to keep both cookie stores
-    in sync (Requirement 10.3).
+    in sync.
     """
     from components.cookie_manager import (
         COOKIE_NAME,
@@ -160,7 +158,7 @@ def _write_cookie(name: str, value: str, *, ttl_days: int) -> None:
 
 
 def _run_probe(dept_id: str) -> Mapping[str, Any]:
-    """Run the dept connectivity probe (R3.12).
+    """Run the dept connectivity probe.
 
     Production wiring posts to ``automation-service /admin/probe/dry-run``;
     the result is a small dict keyed by service (``jira``, ``bitbucket``,
@@ -191,9 +189,8 @@ def clear_session_except_user(
 ) -> None:
     """Drop every session_state key except the auth-related ones.
 
-    Exposed as a public helper so the property test
-    (``test_streamlit_dept_switcher_reset.py`` / Property 12) can call
-    it directly with synthetic session-state dicts. Production code
+    Exposed as a public helper so the reset test can call it directly
+    with synthetic session-state dicts. Production code
     routes through :func:`render_dept_switcher`, which calls this
     function on every dept change.
     """
@@ -233,7 +230,7 @@ def render_dept_switcher() -> str:
         )
         st.stop()
 
-    # Default: OIDC claim → cookie → first allowed dept (R7.3).
+    # Default: OIDC claim → cookie → first allowed dept.
     default = (
         user.get("default_dept_id")
         or _read_cookie(_DEPT_COOKIE_NAME)
@@ -256,13 +253,13 @@ def render_dept_switcher() -> str:
 
     previous = st.session_state.get("active_dept_id")
     if selected != previous:
-        # ---- Property 12: full session reset on dept change -----
+        # ---- Full session reset on dept change ------------------
         clear_session_except_user(st.session_state)
         st.session_state["active_dept_id"] = selected
         _write_cookie(
             _DEPT_COOKIE_NAME, selected, ttl_days=_DEPT_COOKIE_TTL_DAYS
         )
-        # ---- R3.12: auto-probe + tooltip ------------------------
+        # ---- Auto-probe + tooltip -------------------------------
         st.session_state["dept_probe"] = _run_probe(selected)
         st.rerun()
 

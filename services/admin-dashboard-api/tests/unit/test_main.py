@@ -1,29 +1,22 @@
-"""Unit tests for ``src.main`` (task 6.3).
-
+"""Unit tests for ``src.main``.
 These tests validate the readiness / liveness contract and the
-lifespan wiring added by the ``admin-dashboard-control-plane`` spec
-(Requirement 3.3, design §3.14):
-
+lifespan wiring for the service:
 * ``GET /healthz`` returns 200 ``{"status": "ok"}`` whether or not the
-  manifest loaded — Requirement 12.1 parity from the multi-service
-  scaffold.
+  manifest loaded, matching the rest of the service stack.
 * ``GET /readyz`` returns 503 ``{"status": "not_ready", "reason":
   "manifest_invalid"}`` when ``load_manifest`` raised
   :class:`ManifestLoadError` during startup. Body must be ≤64 bytes.
 * ``GET /readyz`` returns 200 ``{"status": "ready"}`` on the happy
   path (manifest loaded + ``Settings.dependencies_reachable`` true) —
-  Requirement 12.2 parity.
 * The lifespan context attaches the LifecycleService singleton on
   ``app.state.lifecycle`` and tears it down on shutdown.
 * ``get_lifecycle_service`` raises ``HTTPException(503)`` when the
   manifest failed to load, mirroring the readiness probe.
-
 The tests deliberately use the *real* manifest checked into the
 workspace because ``Settings`` resolves ``workspace_root`` to the
 repository root by default, and the validator setup is independent of
 the manifest path. For the failure-mode test we monkey-patch
-``src.main.load_manifest`` to raise.
-"""
+``src.main.load_manifest`` to raise."""
 
 from __future__ import annotations
 
@@ -51,7 +44,7 @@ from src.manifest import ManifestLoadError  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
-# /healthz — always 200 (Requirement 12.1 parity)
+# /healthz — always 200
 # ---------------------------------------------------------------------------
 
 
@@ -69,11 +62,9 @@ def test_healthz_returns_200_even_when_manifest_invalid(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """``/healthz`` MUST stay green when the manifest fails to load.
-
-    Per Requirement 3.3 manifest failures surface on ``/readyz`` only
-    — flapping the liveness probe would force a restart loop without
-    fixing anything (the operator has to edit the manifest file).
-    """
+    Manifest failures surface on ``/readyz`` only; flapping the liveness
+    probe would force a restart loop without
+    fixing anything (the operator has to edit the manifest file)."""
 
     def _explode(_workspace_root: Path) -> None:
         raise ManifestLoadError("synthetic manifest failure for test")
@@ -88,7 +79,7 @@ def test_healthz_returns_200_even_when_manifest_invalid(
 
 
 # ---------------------------------------------------------------------------
-# /readyz — happy path + manifest_invalid (Requirement 3.3)
+# /readyz — happy path + manifest_invalid
 # ---------------------------------------------------------------------------
 
 
@@ -96,10 +87,8 @@ def test_readyz_returns_200_on_happy_path(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """``/readyz`` returns 200 when all dependency probes pass.
-
     We mock the readiness probes to simulate all dependencies being
-    reachable (Requirements 11.5, 11.6).
-    """
+    reachable ."""
     from src.lifecycle import readiness as readiness_mod
 
     async def _mock_check_readiness(dependencies):
@@ -117,11 +106,9 @@ def test_readyz_returns_200_on_happy_path(
 def test_readyz_returns_503_with_manifest_invalid_when_manifest_fails(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """``/readyz`` returns 503 + ``manifest_invalid`` per Requirement 3.3.
-
-    The body shape is fixed by task 6.3:
-    ``{"status": "not_ready", "reason": "manifest_invalid"}``.
-    """
+    """``/readyz`` returns 503 + ``manifest_invalid``.
+    The body shape is fixed by :
+    ``{"status": "not_ready", "reason": "manifest_invalid"}``."""
 
     def _explode(_workspace_root: Path) -> None:
         raise ManifestLoadError("synthetic manifest failure for test")
@@ -142,13 +129,10 @@ def test_readyz_manifest_invalid_body_under_64_bytes(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """The 503 body for ``manifest_invalid`` MUST be ≤64 bytes.
-
-    Requirement 3.3 explicitly calls out the size budget (≤64 bytes)
     so logs/metrics remain the structured surface for diagnostics.
     The canonical body
     ``{"status":"not_ready","reason":"manifest_invalid"}`` is 51
-    bytes — well within budget.
-    """
+    bytes — well within budget."""
 
     def _explode(_workspace_root: Path) -> None:
         raise ManifestLoadError("synthetic")
@@ -170,11 +154,9 @@ def test_readyz_manifest_invalid_body_under_64_bytes(
 def test_readyz_returns_503_when_dependencies_unreachable(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Real probe failure drives /readyz to 503 (Requirement 11.5).
-
+    """Real probe failure drives /readyz to 503 .
     When any dependency probe reports unreachable, the endpoint returns
-    503 with ``{"status": "not_ready", "failed_dependencies": [...]}``.
-    """
+    503 with ``{"status": "not_ready", "failed_dependencies": [...]}``."""
     from src.lifecycle import readiness as readiness_mod
 
     async def _mock_check_readiness(dependencies):

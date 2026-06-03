@@ -1,8 +1,7 @@
-"""Unit tests for the workflows-spec webhook endpoints (tasks 4.5 + 4.6).
+"""Unit tests for the webhook endpoints.
 
 Exercises the end-to-end response code matrix from
-``platform-mimari-workflows`` requirements 3.1, 3.2, 3.3, 3.9 by
-spinning up the canonical FastAPI app, parking a hand-rolled
+the webhook endpoints by spinning up the canonical FastAPI app, parking a hand-rolled
 :class:`WebhooksEndpointDeps` on ``app.state.webhooks``, and posting
 to ``POST /webhooks/jira`` / ``POST /webhooks/bitbucket``.
 
@@ -315,7 +314,7 @@ class TestJiraEndpointHappyPath:
     """A valid Jira ``issue_commented`` delivery dispatches a workflow."""
 
     def test_dispatches_workflow_with_202(self) -> None:
-        """Validates Requirements 3.1, 3.2, 3.9."""
+        """Valid Jira delivery starts a workflow."""
 
         chain = _make_chain(
             iter_count=1,
@@ -369,7 +368,7 @@ class TestJiraHmacFailure:
     """Invalid HMAC → 401 with ``webhook_hmac_invalid`` audit row."""
 
     def test_returns_401_when_signature_mismatches(self) -> None:
-        """Validates Requirement 3.9 (HMAC fail row)."""
+        """HMAC failure writes the failure audit row."""
 
         chain = _make_chain(iter_count=1)
         audit = _FakeAuditWriter()
@@ -400,7 +399,7 @@ class TestJiraDeptUnresolved:
     """Dept resolution miss → 400 with ``webhook_dept_unresolved``."""
 
     def test_returns_400_when_dept_resolver_returns_none(self) -> None:
-        """Validates Requirement 3.9 (dept resolve fail row)."""
+        """Dept resolve failure writes the failure audit row."""
 
         chain = _make_chain(dept_id=None, iter_count=1)
         audit = _FakeAuditWriter()
@@ -430,7 +429,7 @@ class TestJiraFilterChainDrop:
     """Mention filter drops a non-mentioned commenter (iter > 1)."""
 
     def test_returns_200_with_drop_reason(self) -> None:
-        """Validates Requirement 3.9 (drop row), 4.3."""
+        """Dropped delivery writes the drop audit row."""
 
         chain = _make_chain(
             iter_count=2,
@@ -473,10 +472,10 @@ class TestJiraFilterChainDrop:
 
 
 class TestJiraUnsupportedEventType:
-    """Events outside the allowlist are silently dropped (R3.2)."""
+    """Events outside the allowlist are silently dropped."""
 
     def test_returns_200_with_webhook_event_ignored_audit(self) -> None:
-        """Validates Requirement 3.2 + 4.6."""
+        """Unsupported event writes the ignored audit row."""
 
         chain = _make_chain()
         wf_client = _FakeWorkflowClient()
@@ -511,10 +510,10 @@ class TestJiraUnsupportedEventType:
 
 
 class TestBitbucketLoopGuardFulfilled:
-    """``pullrequest:fulfilled`` is silently loop-guarded (R3.3)."""
+    """``pullrequest:fulfilled`` is silently loop-guarded."""
 
     def test_returns_200_with_loop_guard_audit(self) -> None:
-        """Validates Requirement 3.3 + 4.6."""
+        """Loop-guarded event writes the loop guard audit row."""
 
         chain = _make_chain(hmac_secret=_BB_SECRET)
         wf_client = _FakeWorkflowClient()
@@ -552,7 +551,7 @@ class TestBitbucketHappyPath:
     """A valid Bitbucket ``pullrequest:created`` dispatches a workflow."""
 
     def test_dispatches_workflow_with_202(self) -> None:
-        """Validates Requirements 3.1, 3.3, 3.9."""
+        """Valid Bitbucket delivery starts a workflow."""
 
         chain = _make_chain(
             hmac_secret=_BB_SECRET,
@@ -600,7 +599,7 @@ class TestReplayDedupDrop:
     """Duplicate ``delivery_id`` is dropped by the chain's replay stage."""
 
     def test_returns_200_with_duplicate_event_dropped(self) -> None:
-        """Validates Requirement 4 / R3.5 dedup invariant."""
+        """Duplicate delivery is dropped by replay dedup."""
 
         already_seen = {"delivery-replay"}
         chain = _make_chain(processed_ids=already_seen, iter_count=1)
@@ -634,7 +633,7 @@ class TestStartWorkflowFailureReleasesClaim:
 
     The handler must not retain the claim if ``signalWithStart`` fails:
     otherwise Atlassian's webhook retry would trip the replay-dedup
-    guard and silently swallow the delivery (Requirement 2.4).
+    guard and silently swallow the delivery.
     """
 
     def test_releases_claim_on_workflow_start_error(self) -> None:
@@ -711,7 +710,7 @@ class TestInvalidJsonBody:
 
 
 # ---------------------------------------------------------------------------
-# License-cap enforcement (R16 / Q20 — uyumluluk spec, task 16.2)
+# License-cap enforcement
 # ---------------------------------------------------------------------------
 
 
@@ -782,7 +781,7 @@ class _RecordingJiraAckCommentPoster:
 class TestJiraEndpointLicenseCapEnforcement:
     """Wire :func:`enforce_license_cap` into the Jira start path.
 
-    Validates: Requirements 16.4 (uyumluluk spec — task 16.2 wiring).
+    Covers the Jira start path wiring.
     """
 
     def test_runs_enforcer_on_pass_and_dispatches_on_allow(self) -> None:

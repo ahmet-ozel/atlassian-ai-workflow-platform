@@ -1,12 +1,10 @@
 # MCP Credential Headers — Canonical Contract
 
-> **Spec:** `platform-quick-fixes` G2 — single source of truth for the per-request
 > HTTP headers that callers (`automation-service`, `agent-runner-worker`,
 > `assistant-service`, `streamlit-app`, IDE proxies, future services) MUST set
-> when calling the `atlassian_unified` MCP service.
+> when calling the `atlassian_mcp_bitbucket` MCP service.
 >
-> **Why this exists:** The MCP service is **stateless** (Requirement: design
-> §"MCP stateless"). Every outbound call carries credentials in HTTP headers
+> **Why this exists:** The MCP service is **stateless**. Every outbound call carries credentials in HTTP headers
 > rather than in a server-side session. Without a single canonical doc, header
 > names drifted across the codebase (`X-Atlassian-Jira-Url`,
 > `X-Atlassian-Bitbucket-Url`, `X-Atlassian-Cloud-Id`, etc.) and new clients
@@ -14,8 +12,8 @@
 >
 > **Parity invariant:** `platform/tests/property/test_mcp_credential_headers_doc.py`
 > asserts that every header name listed below maps to a sabit constant in
-> `services/atlassian_unified/src/mcp_atlassian/utils/environment.py` (Bitbucket)
-> and `services/atlassian_unified/src/mcp_atlassian/servers/dependencies.py`
+> `services/atlassian_mcp_bitbucket/src/mcp_atlassian/utils/environment.py` (Bitbucket)
+> and `services/atlassian_mcp_bitbucket/src/mcp_atlassian/servers/dependencies.py`
 > (Jira, Confluence). Drift fails the property test.
 
 ---
@@ -30,8 +28,8 @@
 
 > **Note on `X-Client-Source` enforcement:** The header is enforced at the MCP
 > layer (rejection on miss). At the **client library** layer, `mcp_client.AtlassianClient.__init__`
-> takes `client_source: str` as a **required** constructor argument (G6 — see
-> `requirements.md`); this is the second line of defence so a mis-wired worker
+> takes `client_source: str` as a **required** constructor argument; this is the
+> second line of defence so a mis-wired worker
 > cannot reach the network at all without identifying itself.
 
 ---
@@ -143,12 +141,12 @@ result = await client.jira_get_issue(
 
 The header strings above are mirrored as Python constants in:
 
-- `services/atlassian_unified/src/mcp_atlassian/utils/environment.py`
+- `services/atlassian_mcp_bitbucket/src/mcp_atlassian/utils/environment.py`
   → `BITBUCKET_URL_HEADER`, `BITBUCKET_DC_PAT_HEADER`,
     `BITBUCKET_CLOUD_ACCESS_TOKEN_HEADER`,
     `BITBUCKET_CLOUD_APP_PASSWORD_HEADER`,
     `BITBUCKET_CLOUD_USERNAME_HEADER`.
-- `services/atlassian_unified/src/mcp_atlassian/servers/dependencies.py`
+- `services/atlassian_mcp_bitbucket/src/mcp_atlassian/servers/dependencies.py`
   → Jira `url_header="X-Atlassian-Jira-Url"`,
     `token_header="X-Atlassian-Jira-Personal-Token"`,
     Confluence equivalents.
@@ -164,7 +162,7 @@ fails the build on drift.
 
 - **Never log** raw header values for `*-Token`, `*-Api-Token`,
   `*-App-Password`, `Authorization`, `*-Cloud-Access-Token`. The
-  redaction filter at `services/atlassian_unified/src/mcp_atlassian/utils/logging.py::format_request_headers`
+  redaction filter at `services/atlassian_mcp_bitbucket/src/mcp_atlassian/utils/logging.py::format_request_headers`
   already masks these; new headers MUST be added to its
   `sensitive_headers` set.
 - **Never persist** credential headers to disk, audit log, or trace

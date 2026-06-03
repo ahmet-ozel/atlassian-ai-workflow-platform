@@ -1,7 +1,6 @@
 """Unit tests for ``automation_service.jira_field_resolver``.
 
-Validates the runtime contract of :class:`JiraFieldResolver`
-(task 4.7, Requirement 3.7, design Property 19):
+Validates the runtime contract of :class:`JiraFieldResolver`:
 
 * First call → exactly one ``get_fields()`` HTTP fetch; cache
   populated.
@@ -14,9 +13,9 @@ Validates the runtime contract of :class:`JiraFieldResolver`
 
 The Jira HTTP client is replaced by a tiny in-memory fake whose
 ``get_fields()`` coroutine records every invocation. This avoids any
-dependency on httpx / live Jira / the foundation MCP plumbing —
-Property 19 is purely about the cache + TTL + lock semantics, all of
-which live inside :class:`JiraFieldResolver`.
+dependency on httpx / live Jira / the foundation MCP plumbing — these
+tests are purely about the cache + TTL + lock semantics, all of which
+live inside :class:`JiraFieldResolver`.
 """
 
 from __future__ import annotations
@@ -226,7 +225,7 @@ class TestCacheRefreshAfterTtl:
     async def test_ttl_boundary_inclusive(self) -> None:
         """``now - fetched_at == ttl`` is treated as stale.
 
-        Property 19 (a–c): the freshness predicate is ``< ttl``,
+        The freshness predicate is ``< ttl``,
         i.e. the boundary is exclusive on the fresh side. Equality
         triggers a refresh.
         """
@@ -337,7 +336,7 @@ class TestConstructorValidation:
         """``ttl=0`` is accepted and forces every call to refresh.
 
         Useful for tests that need a "never cache" mode without
-        special-casing the resolver. Property 19 (a) is preserved:
+        special-casing the resolver. The cache-hit behavior is preserved:
         the first call still issues a single fetch; the next call
         observes ``now - fetched_at >= 0`` and refetches.
         """

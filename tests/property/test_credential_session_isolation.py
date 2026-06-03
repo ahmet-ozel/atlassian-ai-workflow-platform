@@ -1,57 +1,56 @@
-"""Property test 14 — Streamlit credential session isolation.
+"""Streamlit credential session isolation.
 
-**Validates: Requirements 13.1, 13.2, 13.6**
+
 
 Hypothesis-driven exercise of
 ``components.credential_manager.CredentialManager``
 (``platform/ui/streamlit-app/components/credential_manager.py``)
-implementing the ``platform-gap-fill`` design Property 14:
+covering the credential storage rule:
 
 > *For any* Streamlit session, credentials SHALL exist only in
 > memory (``session_state``) and SHALL be cleared on timeout
 > (60 min inactivity) or explicit logout.
 
-The tests drive the **pure** :class:`CredentialManager` slice with
+The tests drive the **pure**:class:`CredentialManager` slice with
 fresh ``state`` dicts and a deterministic monotonic clock, so every
 example is fully isolated from sibling examples and from Streamlit
 itself. The Streamlit ``render_*`` helpers and the default HTTP
-validator are out of scope here — Property 14 is a state-machine
-invariant on the storage seam, not on the UI surface.
+validator are out of scope here — the behavior is a state-machine
+property on the storage seam, not on the UI surface.
 
 Properties enforced
 -------------------
 
-1. **Storage isolation (R13.1)** — after :meth:`store`, the raw token
-   bytes are reachable from the state dict *only* via
-   ``state["_credential_manager_state"]["credentials"][service]``.
-   No sibling ``st.session_state`` key sees the token, no metadata
-   field inside the namespaced bucket (``last_activity``,
-   ``session_started_at``) carries it, and no recursive walk through
-   the foreign state finds it.
-2. **Snapshot non-leak (R13.1)** — :meth:`snapshot` is the public
-   diagnostic dict that the credentials page renders into ``st.json``.
-   It MUST omit the raw ``api_token`` value entirely, both by
-   recursive object walk and by JSON serialisation.
-3. **Inactivity timeout (R13.2)** — once the wall clock advances by
-   strictly more than 60 minutes since the last interaction, the next
-   :meth:`get` MUST return ``None`` AND clear the namespaced bucket
-   from the state dict, leaving no token byte reachable.
-4. **Explicit logout (R13.6)** — :meth:`clear_all` (the path the
-   "Oturumu Kapat" button drives) MUST remove the namespaced bucket
-   entirely; no token byte SHALL remain reachable from the state
-   dict, even if foreign components have written unrelated keys
-   alongside the credential bucket.
+1. **Storage isolation ** — after:meth:`store`, the raw token
+ bytes are reachable from the state dict *only* via
+ ``state["_credential_manager_state"]["credentials"][service]``.
+ No sibling ``st.session_state`` key sees the token, no metadata
+ field inside the namespaced bucket (``last_activity``,
+ ``session_started_at``) carries it, and no recursive walk through
+ the foreign state finds it.
+2. **Snapshot non-leak ** —:meth:`snapshot` is the public
+ diagnostic dict that the credentials page renders into ``st.json``.
+ It MUST omit the raw ``api_token`` value entirely, both by
+ recursive object walk and by JSON serialisation.
+3. **Inactivity timeout ** — once the wall clock advances by
+ strictly more than 60 minutes since the last interaction, the next:meth:`get` MUST return ``None`` AND clear the namespaced bucket
+ from the state dict, leaving no token byte reachable.
+4. **Explicit logout ** —:meth:`clear_all` (the path the
+ "Oturumu Kapat" button drives) MUST remove the namespaced bucket
+ entirely; no token byte SHALL remain reachable from the state
+ dict, even if foreign components have written unrelated keys
+ alongside the credential bucket.
 
 Why drive the pure class, not the rendered page
 -----------------------------------------------
 
 ``CredentialManager`` is deliberately split off from the ``render_*``
 helpers (see the module docstring of ``credential_manager.py``) so
-the storage / lifecycle invariants can be exercised without standing
+the storage / lifecycle behavior can be exercised without standing
 up Streamlit. The Streamlit-side tests live in the integration suite
 (``tests/integration/test_streamlit_credential_page.py``) and the CI
 page-presence smoke test; the property assertions here pin the
-state-machine invariants those higher-level tests rely on.
+state-machine behavior those higher-level tests rely on.
 """
 
 from __future__ import annotations
@@ -96,7 +95,7 @@ pytestmark = pytest.mark.skipif(
     CredentialManager is None,
     reason=(
         "components.credential_manager not importable "
-        f"(streamlit missing?); error: {_IMPORT_ERROR!r}"
+        f"(streamlit missingsection); error: {_IMPORT_ERROR!r}"
     ),
 )
 
@@ -110,7 +109,7 @@ pytestmark = pytest.mark.skipif(
 #: poking the underscore-prefixed symbol.
 _STATE_KEY: str = "_credential_manager_state"
 
-#: Inactivity threshold (Requirement 13.2 — 60 minutes).
+#: Inactivity threshold — 60 minutes).
 _SESSION_TIMEOUT_SECONDS: int = 60 * 60
 
 
@@ -122,10 +121,10 @@ _SESSION_TIMEOUT_SECONDS: int = 60 * 60
 class _Clock:
     """Deterministic monotonic-clock seam.
 
-    Mirrors the helper used by ``test_streamlit_credential_manager.py``
-    so the inactivity-window arithmetic is exact and Hypothesis can
-    advance the clock by any positive offset without sleeping.
-    """
+ Mirrors the helper used by ``test_streamlit_credential_manager.py``
+ so the inactivity-window arithmetic is exact and Hypothesis can
+ advance the clock by any positive offset without sleeping.
+ """
 
     def __init__(self, start: float = 1_000.0) -> None:
         self.t = start
@@ -142,15 +141,15 @@ def _stub_validator(
 ) -> tuple[bool, str | None]:
     """No-op validator — keeps tests free of network IO.
 
-    The default validator in ``credential_manager.py`` issues an HTTP
-    request through ``httpx`` to the MCP ``/healthz`` endpoint; the
-    property test only exercises the storage / lifecycle seam, so we
-    swap in a stub that always succeeds. Storage paths
-    (``store``, ``clear_all``, the timeout sweep) never call the
-    validator anyway, so this stub mostly silences the
-    ``ImportError`` fallback in the default impl when ``httpx`` is
-    not on the path of a stripped CI runner.
-    """
+ The default validator in ``credential_manager.py`` issues an HTTP
+ request through ``httpx`` to the MCP ``/healthz`` endpoint; the
+ tests only exercise the storage / lifecycle seam, so we
+ swap in a stub that always succeeds. Storage paths
+ (``store``, ``clear_all``, the timeout sweep) never call the
+ validator anyway, so this stub mostly silences the
+ ``ImportError`` fallback in the default impl when ``httpx`` is
+ not on the path of a stripped CI runner.
+ """
     return True, None
 
 
@@ -162,19 +161,19 @@ def _stub_validator(
 def _walk_strings(obj: Any, _seen: set[int] | None = None) -> Iterator[str]:
     """Yield every string reachable from *obj*.
 
-    Walks dictionaries (keys + values), sequences (lists, tuples,
-    sets, frozensets), and dataclass instances (via
-    ``__dataclass_fields__``). Cycles are suppressed with an
-    identity-keyed ``seen`` set so a credential dict that grows a
-    back-reference during a future refactor can't trip the walker
-    into infinite recursion.
+ Walks dictionaries (keys + values), sequences (lists, tuples,
+ sets, frozensets), and dataclass instances (via
+ ``__dataclass_fields__``). Cycles are suppressed with an
+ identity-keyed ``seen`` set so a credential dict that grows a
+ back-reference during a future refactor can't trip the walker
+ into infinite recursion.
 
-    The walker intentionally **descends into** :class:`StoredCredential`
-    instances so the property tests can verify that the token byte
-    stream lives ONLY inside the namespaced bucket — if the
-    StoredCredential were skipped, a regression that copied
-    ``api_token`` into a sibling key would slip past the assertion.
-    """
+ The walker intentionally **descends into**:class:`StoredCredential`
+ instances so the test can verify that the token byte
+ stream lives ONLY inside the namespaced bucket — if the
+ StoredCredential were skipped, a regression that copied
+ ``api_token`` into a sibling key would slip past the assertion.
+ """
     if _seen is None:
         _seen = set()
     oid = id(obj)
@@ -272,7 +271,7 @@ _INACTIVITY_SECONDS = st.floats(
 # ``st.session_state`` is shared across every component of the
 # Streamlit app — the dept switcher, the chat page, the auth
 # bootstrap can all park unrelated values alongside the credential
-# bucket. Property 14 must hold under that reality, so we
+# bucket. Token isolation must hold under that reality, so we
 # pre-populate the dict with random nonsense and assert the
 # credential token never bleeds into it.
 #
@@ -289,7 +288,7 @@ _FOREIGN_KEY = st.text(
 ).filter(lambda k: k != _STATE_KEY)
 _FOREIGN_STR = st.text(
     alphabet=st.sampled_from(
-        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 .,;:!?"
+        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,;:!section"
     ),
     max_size=32,
 )
@@ -307,7 +306,7 @@ _FOREIGN_STATE = st.dictionaries(
 
 
 # ---------------------------------------------------------------------------
-# Property tests
+# Credential lifecycle properties
 # ---------------------------------------------------------------------------
 
 
@@ -325,20 +324,20 @@ _FOREIGN_STATE = st.dictionaries(
 def test_store_keeps_token_only_in_namespaced_bucket(
     service: str, email: str, token: str, foreign: dict
 ) -> None:
-    """**Validates: Requirements 13.1** — storage isolation invariant.
+    """Storage isolation behavior.
 
-    For every (service, email, token) triple the manager accepts, the
-    raw token byte stream MUST appear *only* inside
-    ``state[_STATE_KEY]["credentials"][service]``: no foreign
-    ``st.session_state`` key sees it, and no metadata field
-    (``last_activity``, ``session_started_at``) within the namespaced
-    bucket carries it either.
+ For every (service, email, token) triple the manager accepts, the
+ raw token byte stream MUST appear *only* inside
+ ``state[_STATE_KEY]["credentials"][service]``: no foreign
+ ``st.session_state`` key sees it, and no metadata field
+ (``last_activity``, ``session_started_at``) within the namespaced
+ bucket carries it either.
 
-    Pre-populating the state dict with ``foreign`` keys models the
-    real Streamlit reality — multiple components share
-    ``st.session_state`` and the property must hold regardless of
-    what else the user / other components have written.
-    """
+ Pre-populating the state dict with ``foreign`` keys models the
+ real Streamlit reality — multiple components share
+ ``st.session_state`` and the property must hold regardless of
+ what else the user / other components have written.
+ """
     state: dict = dict(foreign)
     mgr = CredentialManager(state=state, now=_Clock(), validator=_stub_validator)
 
@@ -391,26 +390,24 @@ def test_store_keeps_token_only_in_namespaced_bucket(
 def test_snapshot_never_contains_raw_token(
     service: str, email: str, token: str
 ) -> None:
-    """**Validates: Requirements 13.1** — snapshot non-leak invariant.
+    """:meth:`CredentialManager.snapshot` is the public diagnostic dict
+ that the credentials page feeds into ``st.json`` for the
+ "Oturum durumu" expander. It MUST omit ``api_token`` entirely so
+ a screenshot of the panel is safe to share. We pin the contract
+ twice:
 
-    :meth:`CredentialManager.snapshot` is the public diagnostic dict
-    that the credentials page feeds into ``st.json`` for the
-    "Oturum durumu" expander. It MUST omit ``api_token`` entirely so
-    a screenshot of the panel is safe to share. We pin the contract
-    twice:
+ * by recursive object walk (``_contains_token``), which would
+ catch a regression that swapped ``asdict`` + ``pop`` for a
+ ``__repr__``-based dump that leaks the token into a string
+ field;
+ * by ``json.dumps`` round-trip, which would catch a regression
+ that hid the token behind a ``__str__`` override that lands
+ verbatim once the snapshot is JSON-serialised.
 
-    * by recursive object walk (``_contains_token``), which would
-      catch a regression that swapped ``asdict`` + ``pop`` for a
-      ``__repr__``-based dump that leaks the token into a string
-      field;
-    * by ``json.dumps`` round-trip, which would catch a regression
-      that hid the token behind a ``__str__`` override that lands
-      verbatim once the snapshot is JSON-serialised.
-
-    Both checks are needed: the recursive walk catches structured
-    leaks (token nested in a sub-dict), the JSON dump catches
-    string-fusion leaks (token concatenated into another field).
-    """
+ Both checks are needed: the recursive walk catches structured
+ leaks (token nested in a sub-dict), the JSON dump catches
+ string-fusion leaks (token concatenated into another field).
+ """
     state: dict = {}
     mgr = CredentialManager(state=state, now=_Clock(), validator=_stub_validator)
     mgr.store(service, email=email, api_token=token, **_store_kwargs(service))
@@ -425,7 +422,7 @@ def test_snapshot_never_contains_raw_token(
     cred_entry = snap.get("credentials", {}).get(service)
     assert cred_entry is not None
     assert "api_token" not in cred_entry, (
-        "snapshot retained the api_token key — Requirement 13.1 forbids it"
+        "snapshot retained the api_token key — the operational rule forbids it"
     )
 
     assert not _contains_token(snap, token), (
@@ -453,22 +450,22 @@ def test_snapshot_never_contains_raw_token(
 def test_token_cleared_after_inactivity_timeout(
     service: str, email: str, token: str, inactivity: float
 ) -> None:
-    """**Validates: Requirements 13.2** — inactivity timeout invariant.
+    """Inactivity timeout behavior.
 
-    After an idle window of strictly more than 60 minutes, the next
-    interaction (here :meth:`get`) MUST:
+ After an idle window of strictly more than 60 minutes, the next
+ interaction (here:meth:`get`) MUST:
 
-    1. return ``None`` — the credential is no longer observable;
-    2. drop the namespaced state bucket — ``_STATE_KEY`` removed
-       from the state dict outright;
-    3. leave no token byte reachable from the state dict.
+ 1. return ``None`` — the credential is no longer observable;
+ 2. drop the namespaced state bucket — ``_STATE_KEY`` removed
+ from the state dict outright;
+ 3. leave no token byte reachable from the state dict.
 
-    Calling ``get()`` only once after the timeout matters: the
-    ``enforce_timeout`` path inside ``get()`` short-circuits before
-    ``_ensure_state`` can re-create an empty bucket, so the
-    ``_STATE_KEY not in state`` assertion is a tight check on the
-    timeout path rather than on a follow-up read.
-    """
+ Calling ``get`` only once after the timeout matters: the
+ ``enforce_timeout`` path inside ``get`` short-circuits before
+ ``_ensure_state`` can re-create an empty bucket, so the
+ ``_STATE_KEY not in state`` assertion is a tight check on the
+ timeout path rather than on a follow-up read.
+ """
     state: dict = {}
     clk = _Clock()
     mgr = CredentialManager(state=state, now=clk, validator=_stub_validator)
@@ -508,24 +505,22 @@ def test_token_cleared_after_inactivity_timeout(
 def test_clear_all_removes_every_token_byte(
     service: str, email: str, token: str, foreign: dict
 ) -> None:
-    """**Validates: Requirements 13.6** — explicit logout invariant.
+    """:meth:`CredentialManager.clear_all` is the code path the
+ "Oturumu Kapat" button drives. After it runs:
 
-    :meth:`CredentialManager.clear_all` is the code path the
-    "Oturumu Kapat" button drives (R13.6). After it runs:
+ * the namespaced bucket SHALL be removed from the state dict;
+ * no token byte SHALL remain reachable anywhere in the state
+ dict (including under any foreign key written by sibling
+ Streamlit components);
+ * a follow-up:meth:`get` SHALL still return ``None`` — the
+ credential cannot silently re-materialise out of a stale
+ reference.
 
-    * the namespaced bucket SHALL be removed from the state dict;
-    * no token byte SHALL remain reachable anywhere in the state
-      dict (including under any foreign key written by sibling
-      Streamlit components);
-    * a follow-up :meth:`get` SHALL still return ``None`` — the
-      credential cannot silently re-materialise out of a stale
-      reference.
-
-    The follow-up ``get()`` call deliberately re-creates an empty
-    namespaced bucket (per the ``_ensure_state`` contract); we
-    re-check the token-absence invariant after that interaction to
-    pin down "an empty bucket cannot smuggle the token back in".
-    """
+ The follow-up ``get`` call deliberately re-creates an empty
+ namespaced bucket (per the ``_ensure_state`` contract); we
+ re-check token absence after that interaction to
+ pin down "an empty bucket cannot smuggle the token back in".
+ """
     state: dict = dict(foreign)
     mgr = CredentialManager(state=state, now=_Clock(), validator=_stub_validator)
     mgr.store(service, email=email, api_token=token, **_store_kwargs(service))
@@ -542,11 +537,11 @@ def test_clear_all_removes_every_token_byte(
     )
 
     # A subsequent read must keep returning None — even though
-    # ``get()`` re-creates an empty bucket via ``_ensure_state``,
+    # ``get`` re-creates an empty bucket via ``_ensure_state``,
     # the token MUST remain unreachable.
     assert mgr.get(service) is None
     assert not _contains_token(state, token), (
-        f"token re-appeared after a post-clear get(): "
+        f"token re-appeared after a post-clear get: "
         f"state_keys={sorted(state)!r}, token_prefix={token[:12]!r}"
     )
     assert mgr.get_active_services() == []

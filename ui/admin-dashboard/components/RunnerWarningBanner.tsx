@@ -3,11 +3,10 @@
 /**
  * RunnerWarningBanner — SSH Runner Single Point of Failure warning.
  *
- * Production-hardening task 11.2 — queries `GET /admin/ssh-runners` on page
+ * Queries `GET /admin/ssh-runners` on page
  * load and displays a yellow warning banner when the number of active runners
  * is less than 2.
  *
- * Requirements: 9.1, 9.2, 9.3
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -61,12 +60,12 @@ export default function RunnerWarningBanner() {
     void fetchRunners();
   }, [fetchRunners]);
 
-  // Hide banner when runners >= 2 (Requirement 9.3)
+  // Hide banner when runners >= 2
   if (fetchState !== "success" || activeRunners === null || activeRunners >= 2) {
     return null;
   }
 
-  // Show yellow warning banner when active runners < 2 (Requirements 9.1, 9.2)
+  // Show yellow warning banner when active runners < 2
   return (
     <div
       role="alert"

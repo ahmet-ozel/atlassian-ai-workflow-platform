@@ -1,6 +1,4 @@
-"""Property test 2 — PII filter zorunlu ve tam maskeleme.
-
-**Validates: Requirements 1.5**
+"""PII filter mandatory full-masking property tests.
 
 Hypothesis-driven exercise of :func:`pii_shared.mask`:
 

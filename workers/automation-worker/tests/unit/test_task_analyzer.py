@@ -1,7 +1,4 @@
-"""Unit tests for the ``task_analyzer`` activity (task 2.3).
-
-Validates Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 5.9,
-                        5.10, 20.6.
+"""Unit tests for the ``task_analyzer`` activity.
 
 Strategy
 --------
@@ -217,7 +214,7 @@ def _llm_payload(
 
 
 # ---------------------------------------------------------------------------
-# Tests: LLM happy path (Requirements 5.1, 5.2)
+# Tests: LLM happy path
 # ---------------------------------------------------------------------------
 
 
@@ -228,7 +225,7 @@ class TestLLMAnalysis:
         fake_llm: _FakeLLM,
         fake_commenter: _FakeCommenter,
     ) -> None:
-        """Requirement 5.1, 5.2 — LLM analysis happy path."""
+        """LLM analysis happy path."""
         fake_llm.response = _llm_payload(
             workflow_type="code_change_with_test",
             confidence=0.9,
@@ -301,7 +298,7 @@ class TestLLMAnalysis:
 
 
 # ---------------------------------------------------------------------------
-# Tests: Confidence threshold (Requirements 5.5, 5.6)
+# Tests: Confidence threshold
 # ---------------------------------------------------------------------------
 
 
@@ -312,7 +309,7 @@ class TestConfidenceThreshold:
         fake_llm: _FakeLLM,
         fake_commenter: _FakeCommenter,
     ) -> None:
-        """Requirement 5.5 — confidence < 0.7 → needs_info."""
+        """Confidence < 0.7 → needs_info."""
         fake_llm.response = _llm_payload(
             confidence=0.5,
             missing_fields=["repo", "branch"],
@@ -334,7 +331,7 @@ class TestConfidenceThreshold:
         prompt_path: Path,
         fake_llm: _FakeLLM,
     ) -> None:
-        """Requirement 5.6 — confidence == 0.7 proceeds (boundary)."""
+        """Confidence == 0.7 proceeds at the boundary."""
         fake_llm.response = _llm_payload(confidence=0.7)
         result = asyncio.run(analyze_task(_make_input()))
 
@@ -353,7 +350,7 @@ class TestConfidenceThreshold:
 
 
 # ---------------------------------------------------------------------------
-# Tests: Workflow type validation (Requirements 5.7, 5.8)
+# Tests: Workflow type validation
 # ---------------------------------------------------------------------------
 
 
@@ -364,7 +361,7 @@ class TestWorkflowTypeValidation:
         fake_llm: _FakeLLM,
         fake_commenter: _FakeCommenter,
     ) -> None:
-        """Requirement 5.7, 5.8 — unknown workflow_type → reject + comment."""
+        """Unknown workflow_type → reject + comment."""
         fake_llm.response = _llm_payload(
             workflow_type="not_a_real_type",
             confidence=0.95,
@@ -397,7 +394,7 @@ class TestWorkflowTypeValidation:
 
 
 # ---------------------------------------------------------------------------
-# Tests: Web search downgrade (Requirement 5.10)
+# Tests: Web search downgrade
 # ---------------------------------------------------------------------------
 
 
@@ -408,7 +405,7 @@ class TestWebSearchDowngrade:
         fake_llm: _FakeLLM,
         fake_commenter: _FakeCommenter,
     ) -> None:
-        """Requirement 5.10 — research_with_web → research_basic."""
+        """research_with_web → research_basic."""
         fake_llm.response = _llm_payload(
             workflow_type="research_with_web",
             confidence=0.9,
@@ -433,7 +430,7 @@ class TestWebSearchDowngrade:
         fake_llm: _FakeLLM,
         fake_commenter: _FakeCommenter,
     ) -> None:
-        """Requirement 5.10 — research_publish_confluence is downgraded too."""
+        """research_publish_confluence is downgraded too."""
         fake_llm.response = _llm_payload(
             workflow_type="research_publish_confluence",
             confidence=0.9,
@@ -479,7 +476,7 @@ class TestWebSearchDowngrade:
 
 
 # ---------------------------------------------------------------------------
-# Tests: Hot-reload prompt cache (Requirements 5.9, 20.6)
+# Tests: Hot-reload prompt cache
 # ---------------------------------------------------------------------------
 
 
@@ -502,7 +499,7 @@ class TestPromptHotReload:
         self,
         prompt_path: Path,
     ) -> None:
-        """Requirement 5.9, 20.6 — file change → cache invalidated."""
+        """File change → cache invalidated."""
         cache = PromptCache()
         body_v1 = cache.load(prompt_path)
 
@@ -549,15 +546,15 @@ class TestPromptHotReload:
 
 
 # ---------------------------------------------------------------------------
-# Tests: YAML front-matter priority (Requirements 5.3, 5.4) — uses real parser
+# Tests: YAML front-matter priority — uses real parser
 # ---------------------------------------------------------------------------
 
 
 class TestYamlFrontMatter:
     """Exercises the YAML branch using a stub description_parser injected
     via ``sys.modules``.  We *do not* depend on the real parser because
-    task 2.2 may land later; the stub lets us prove the analyzer
-    *would* skip the LLM when the parser yields a workflow_type.
+    the stub lets us prove the analyzer would skip the LLM when the parser
+    yields a workflow_type.
     """
 
     def _install_stub_parser(self, parsed_obj: object) -> None:
@@ -581,7 +578,7 @@ class TestYamlFrontMatter:
         prompt_path: Path,
         fake_llm: _FakeLLM,
     ) -> None:
-        """Requirement 5.3 — valid YAML block → LLM is NOT called."""
+        """Valid YAML block → LLM is not called."""
 
         @dataclass
         class _ParsedFM:
@@ -619,7 +616,7 @@ class TestYamlFrontMatter:
         prompt_path: Path,
         fake_llm: _FakeLLM,
     ) -> None:
-        """Requirement 5.4 — no YAML / parser returns None → LLM fires."""
+        """No YAML / parser returns None → LLM fires."""
         # Stub returns None → no front-matter detected.
         self._install_stub_parser(None)
         try:
@@ -741,14 +738,12 @@ class TestFieldDefaults:
 
 
 # ---------------------------------------------------------------------------
-# Tests: Description override integration (task 10.1, R11.1-R11.8)
+# Tests: Description override integration
 # ---------------------------------------------------------------------------
 
 
 class TestDescriptionOverrideIntegration:
     """Per-task YAML overrides applied on top of dept_config.
-
-    Validates Requirements: 11.1, 11.2, 11.3, 11.4, 11.8.
 
     The contract is that the YAML front-matter values win over
     department defaults for ``cleanup``, ``timeout_seconds``,
@@ -782,10 +777,10 @@ class TestDescriptionOverrideIntegration:
         prompt_path: Path,
         fake_llm: _FakeLLM,
     ) -> None:
-        """R11.3 — YAML omits timeout_seconds → dept default fills in.
+        """YAML omits timeout_seconds → dept default fills in.
 
-        Before task 10.1 the YAML branch left ``timeout_seconds`` as
-        ``None`` which is inconsistent with the LLM branch and would
+        The YAML branch used to leave ``timeout_seconds`` as ``None``, which
+        is inconsistent with the LLM branch and would
         force the workflow to invent its own fallback. The override
         contract requires falling back to ``docker_defaults.default_timeout_seconds``.
         """
@@ -820,7 +815,7 @@ class TestDescriptionOverrideIntegration:
         prompt_path: Path,
         fake_llm: _FakeLLM,
     ) -> None:
-        """R11.2, R11.3 — YAML values win over dept_config when valid."""
+        """YAML values win over dept_config when valid."""
 
         @dataclass
         class _ParsedFM:
@@ -855,7 +850,7 @@ class TestDescriptionOverrideIntegration:
         fake_llm: _FakeLLM,
         fake_commenter: _FakeCommenter,
     ) -> None:
-        """R11.8 — invalid YAML field → warning comment listing the errors.
+        """Invalid YAML field → warning comment listing the errors.
 
         The parser drops the offending fields to ``None`` and records
         per-field error strings in ``parse_errors``. ``analyze_task``
@@ -936,7 +931,7 @@ class TestDescriptionOverrideIntegration:
         fake_llm: _FakeLLM,
         fake_commenter: _FakeCommenter,
     ) -> None:
-        """R11.8 — parse_errors warning is posted whether or not the
+        """parse_errors warning is posted whether or not the
         YAML branch is taken.
 
         When the YAML block carries invalid values *and* omits

@@ -1,16 +1,15 @@
 """CI gate — Template placeholder ↔ render context dict matching.
 
-**Validates: Requirement 14.6**
 
-For each template in the minimum set (R14.1), this test extracts the
+For each template in the minimum set , this test extracts the
 documented context variables (from the Jinja2 comment header) and the
 actual placeholders used in the template body, then verifies that:
 
 1. Every placeholder used in the template body is present in the
-   documented context (no undocumented variables that would fail at
-   render time).
+ documented context (no undocumented variables that would fail at
+ render time).
 2. The expected render context dict covers all template placeholders
-   (the template can be rendered without ``UndefinedError``).
+ (the template can be rendered without ``UndefinedError``).
 """
 
 from __future__ import annotations
@@ -112,10 +111,10 @@ _EXPECTED_CONTEXT: dict[str, set[str]] = {
 def _extract_template_variables(source: str) -> set[str]:
     """Extract all undeclared (referenced) variables from a Jinja2 template.
 
-    Uses Jinja2's AST-based ``meta.find_undeclared_variables`` which
-    returns the set of variable names that the template references but
-    does not define internally (via ``{% set %}`` or loop variables).
-    """
+ Uses Jinja2's AST-based ``meta.find_undeclared_variables`` which
+ returns the set of variable names that the template references but
+ does not define internally (via ``{% set %}`` or loop variables).
+ """
     env = Environment(loader=BaseLoader(), autoescape=False)
     ast = env.parse(source)
     return meta.find_undeclared_variables(ast)
@@ -127,12 +126,12 @@ def _extract_template_variables(source: str) -> set[str]:
 )
 def test_template_placeholders_covered_by_context(template_rel: str) -> None:
     """Every placeholder in the template must be present in the expected
-    render context dict.
+ render context dict.
 
-    If a template uses ``{{ foo }}`` but ``foo`` is not in the expected
-    context, the render call will raise ``UndefinedError`` at runtime.
-    This test catches such mismatches at CI time.
-    """
+ If a template uses ``{{ foo }}`` but ``foo`` is not in the expected
+ context, the render call will raise ``UndefinedError`` at runtime.
+ This test catches such mismatches at CI time.
+ """
     path = _template_path(template_rel)
     if not path.is_file():
         pytest.skip(f"File does not exist: {path}")
@@ -155,7 +154,7 @@ def test_template_placeholders_covered_by_context(template_rel: str) -> None:
         f"Template '{template_rel}' uses placeholders not present in the "
         f"expected render context: {sorted(uncovered)}. "
         f"Either add these to the render context dict or remove them from "
-        f"the template. R14.6 requires placeholder ↔ context parity."
+        f"the template. placeholder and context keys must stay in sync."
     )
 
 
@@ -165,11 +164,11 @@ def test_template_placeholders_covered_by_context(template_rel: str) -> None:
 )
 def test_template_renders_with_expected_context(template_rel: str) -> None:
     """Each template must render successfully when given the full expected
-    context (all values as non-empty strings).
+ context (all values as non-empty strings).
 
-    This is a stronger check than syntax-only parsing: it exercises the
-    full Jinja2 render path including filters and conditionals.
-    """
+ This is a stronger check than syntax-only parsing: it exercises the
+ full Jinja2 render path including filters and conditionals.
+ """
     path = _template_path(template_rel)
     if not path.is_file():
         pytest.skip(f"File does not exist: {path}")
@@ -199,7 +198,7 @@ def test_template_renders_with_expected_context(template_rel: str) -> None:
     except Exception as exc:
         pytest.fail(
             f"Template '{template_rel}' failed to render with the expected "
-            f"context: {exc}. R14.6 requires templates to render cleanly "
+            f"context: {exc}. templates must render cleanly "
             f"with the documented context variables."
         )
 
@@ -217,11 +216,11 @@ def test_template_renders_with_expected_context(template_rel: str) -> None:
 )
 def test_documented_context_matches_header_comment(template_rel: str) -> None:
     """The context variables documented in the template's Jinja2 comment
-    header should match the expected context dict defined in this test.
+ header should match the expected context dict defined in this test.
 
-    This catches drift between the template's own documentation and the
-    actual render contract.
-    """
+ This catches drift between the template's own documentation and the
+ actual render contract.
+ """
     path = _template_path(template_rel)
     if not path.is_file():
         pytest.skip(f"File does not exist: {path}")
@@ -230,24 +229,24 @@ def test_documented_context_matches_header_comment(template_rel: str) -> None:
     expected_vars = _EXPECTED_CONTEXT[template_rel]
 
     # Extract variable names from the comment header.
-    # Pattern: lines like "    - variable_name   : type  — description"
-    # or "  * ``variable_name`` — ..." (pdf template style)
+    # Pattern: lines like " - variable_name : type — description"
+    # or " * ``variable_name`` — ..." (pdf template style)
     header_vars: set[str] = set()
 
-    # Style 1: "    - var_name      : type   — description"
+    # Style 1: " - var_name : type — description"
     for match in re.finditer(
         r"^\s*-\s+(\w+)\s*:", source, re.MULTILINE
     ):
         header_vars.add(match.group(1))
 
-    # Style 2: "  * ``var_name`` — ..." (used in pdf_templates)
+    # Style 2: " * ``var_name`` — ..." (used in pdf_templates)
     for match in re.finditer(
         r"^\s*\*\s+``(\w+)``", source, re.MULTILINE
     ):
         header_vars.add(match.group(1))
 
     # Style 3: "Required context keys:" / "Optional context keys:" blocks
-    # with "  * ``var_name``" entries
+    # with " * ``var_name``" entries
     for match in re.finditer(
         r"context\s+keys?.*?``(\w+)``", source, re.IGNORECASE
     ):

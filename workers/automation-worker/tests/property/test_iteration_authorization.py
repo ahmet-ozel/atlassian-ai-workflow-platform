@@ -1,11 +1,8 @@
-"""Property test: Iteration authorization (Property 13).
+"""Invariant test: Iteration authorization.
 
-**Validates: Requirements 12.6**
-
-Property 13 — Iteration authorization
+** — Iteration authorization
 -------------------------------------
-*For any* ``[iterate]`` command, the helper
-:func:`automation_worker.activities.iteration_manager.is_authorized_for_iterate`
+*For any* ``[iterate]`` command, the helper:func:`automation_worker.activities.iteration_manager.is_authorized_for_iterate`
 SHALL return ``True`` if and only if the comment author is in the
 department's ``approvers`` list OR is the issue reporter; in every
 other case (including an empty author account id) the helper SHALL
@@ -14,22 +11,20 @@ return ``False``.
 This module pins three derived sub-properties:
 
 1. **Positive path.** If ``author_account_id`` is non-empty and either
-   appears in ``approvers`` or equals a non-empty
-   ``issue_reporter_account_id``, the helper returns ``True``.
+ appears in ``approvers`` or equals a non-empty
+ ``issue_reporter_account_id``, the helper returns ``True``.
 2. **Negative path.** If ``author_account_id`` is non-empty but is
-   *neither* in ``approvers`` *nor* equal to a non-empty
-   ``issue_reporter_account_id``, the helper returns ``False``.
+ *neither* in ``approvers`` *nor* equal to a non-empty
+ ``issue_reporter_account_id``, the helper returns ``False``.
 3. **Empty author guard.** A misconfigured webhook that drops the
-   actor account id (``""``) MUST never authorize anyone — even when
-   the empty string happens to land in ``approvers`` or matches an
-   empty ``issue_reporter_account_id``.
+ actor account id (``""``) MUST never authorize anyone — even when
+ the empty string happens to land in ``approvers`` or matches an
+ empty ``issue_reporter_account_id``.
 
 Bonus — dispatcher lock-step
 ----------------------------
-The mirror static method
-:py:meth:`webhooks.dispatcher.WebhookDispatcher._is_iterate_authorized`
-implements the same predicate against a :class:`WebhookPayload` /
-:class:`DepartmentConfig` pair. Property 4 below asserts both helpers
+The mirror static method:py:meth:`webhooks.dispatcher.WebhookDispatcher._is_iterate_authorized`
+implements the same predicate against a:class:`WebhookPayload` /:class:`DepartmentConfig` pair. below asserts both helpers
 agree byte-for-byte on every example so the dispatcher and the
 activity cannot drift out of sync as the surrounding code evolves.
 """
@@ -44,7 +39,7 @@ from hypothesis import strategies as st
 
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — mirror sibling property tests
+# sys.path bootstrap — mirror sibling Invariant tests
 # ---------------------------------------------------------------------------
 
 _WORKER_ROOT: Path = Path(__file__).resolve().parents[2]
@@ -82,7 +77,7 @@ from webhooks.loop_guard import WebhookPayload  # noqa: E402
 #: Atlassian-flavoured account-id strings.
 #:
 #: We deliberately allow the empty string in the *author* strategy so
-#: Property 3 (empty-author guard) is exercised every time Hypothesis
+#: is exercised every time Hypothesis
 #: hits the ``""`` corner. ``account_ids`` (plural) and ``reporter_ids``
 #: derive from this base.
 _ACCOUNT_ID = st.text(
@@ -96,7 +91,7 @@ _ACCOUNT_ID = st.text(
 
 #: Approver list — may contain the empty string. The helper must NOT
 #: treat ``"" in approvers`` as authorization for an empty author
-#: (Property 3).
+#:.
 _APPROVERS_LIST = st.lists(_ACCOUNT_ID, min_size=0, max_size=8)
 
 #: Reporter is ``None`` or an account id (possibly empty). The helper
@@ -115,22 +110,22 @@ def _expected(
     approvers: list[str],
     reporter: str | None,
 ) -> bool:
-    """Independent re-statement of the R12.6 contract.
+    """Independent re-statement of the contract.
 
-    Hypothesis tests should compare the helper's output against an
-    *independent* derivation of the spec — not against the helper
-    itself. This routine re-encodes the three rules from the
-    requirement:
+ Hypothesis tests should compare the helper's output against an
+ *independent* derivation of the spec — not against the helper
+ itself. This routine re-encodes the three rules from the
+ requirement:
 
-    * empty author → never authorised,
-    * author in approvers → authorised,
-    * author equals a non-empty reporter → authorised,
-    * otherwise → not authorised.
+ * empty author → never authorised,
+ * author in approvers → authorised,
+ * author equals a non-empty reporter → authorised,
+ * otherwise → not authorised.
 
-    Booleans short-circuit through the same order the spec describes;
-    the order does not affect the final result because the predicates
-    are combined via ``OR``.
-    """
+ Booleans short-circuit through the same order the spec describes;
+ the order does not affect the final result because the predicates
+ are combined via ``OR``.
+ """
 
     if not author:
         return False
@@ -171,7 +166,7 @@ def _dispatcher_decision(
 
 
 # ---------------------------------------------------------------------------
-# Property 1 — positive path
+# — positive path
 # ---------------------------------------------------------------------------
 
 
@@ -196,13 +191,13 @@ def test_authorized_when_in_approvers_or_is_reporter(
 ) -> None:
     """If author ∈ approvers OR author == non-empty reporter → ``True``.
 
-    The strategy synthesises both authorization paths in a single
-    example: ``include_in_approvers`` injects the author into the
-    approvers list, while ``use_reporter_match`` overrides ``reporter``
-    with the author's id. At least one of the two flags must be true
-    for the example to count toward this property; when neither holds
-    the example is filtered out via Hypothesis ``assume`` semantics.
-    """
+ The strategy synthesises both authorization paths in a single
+ example: ``include_in_approvers`` injects the author into the
+ approvers list, while ``use_reporter_match`` overrides ``reporter``
+ with the author's id. At least one of the two flags must be true
+ for the example to count toward this property; when neither holds
+ the example is filtered out via Hypothesis ``assume`` semantics.
+ """
 
     approvers = list(other_approvers)
     if include_in_approvers:
@@ -211,7 +206,7 @@ def test_authorized_when_in_approvers_or_is_reporter(
     effective_reporter = author if use_reporter_match else reporter
 
     # Skip examples that don't actually exercise the positive path —
-    # they belong to Property 2.
+    # they belong to.
     if not include_in_approvers and not (
         effective_reporter and author == effective_reporter
     ):
@@ -243,7 +238,7 @@ def test_authorized_when_in_approvers_or_is_reporter(
 
 
 # ---------------------------------------------------------------------------
-# Property 2 — negative path
+# — negative path
 # ---------------------------------------------------------------------------
 
 
@@ -264,9 +259,9 @@ def test_unauthorized_when_neither_approver_nor_reporter(
 ) -> None:
     """If author ∉ approvers AND author ≠ non-empty reporter → ``False``.
 
-    The example is only counted when *both* conditions fail
-    simultaneously; otherwise we fall under Property 1's domain.
-    """
+ The example is only counted when *both* conditions fail
+ simultaneously; otherwise we fall under 's domain.
+ """
 
     if author in approvers:
         return
@@ -295,7 +290,7 @@ def test_unauthorized_when_neither_approver_nor_reporter(
 
 
 # ---------------------------------------------------------------------------
-# Property 3 — empty author always denied
+# — empty author always denied
 # ---------------------------------------------------------------------------
 
 
@@ -314,10 +309,10 @@ def test_empty_author_is_never_authorized(
 ) -> None:
     """Empty author id → ``False`` regardless of approvers / reporter.
 
-    A webhook that drops the actor accountId must not silently grant
-    access — even when the approvers list happens to contain the
-    empty string, or when ``reporter_account_id`` is itself empty.
-    """
+ A webhook that drops the actor accountId must not silently grant
+ access — even when the approvers list happens to contain the
+ empty string, or when ``reporter_account_id`` is itself empty.
+ """
 
     result = is_authorized_for_iterate(
         author_account_id="",
@@ -336,7 +331,7 @@ def test_empty_author_is_never_authorized(
 
 
 # ---------------------------------------------------------------------------
-# Property 4 (bonus) — dispatcher mirror lock-step
+# — dispatcher mirror lock-step
 # ---------------------------------------------------------------------------
 
 
@@ -357,15 +352,15 @@ def test_dispatcher_mirror_matches_helper(
 ) -> None:
     """Dispatcher and activity helpers MUST agree on every input.
 
-    The dispatcher's :py:meth:`WebhookDispatcher._is_iterate_authorized`
-    and the activity's :func:`is_authorized_for_iterate` encode the
-    same predicate (R12.6). Drift between the two would let a
-    ``[iterate]`` command pass the dispatcher's gate only to be
-    rejected by the activity (or vice versa). This property pins
-    them to byte-for-byte agreement on every input — including the
-    ``author == ""`` corner the dispatcher reads as ``actor_account_id
-    is None`` via :class:`WebhookPayload`.
-    """
+ The dispatcher's:py:meth:`WebhookDispatcher._is_iterate_authorized`
+ and the activity's:func:`is_authorized_for_iterate` encode the
+ same predicate. Drift between the two would let a
+ ``[iterate]`` command pass the dispatcher's gate only to be
+ rejected by the activity (or vice versa). This property pins
+ them to byte-for-byte agreement on every input — including the
+ ``author == ""`` corner the dispatcher reads as ``actor_account_id
+ is None`` via:class:`WebhookPayload`.
+ """
 
     helper_decision = is_authorized_for_iterate(
         author_account_id=author,

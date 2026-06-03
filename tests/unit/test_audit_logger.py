@@ -1,8 +1,5 @@
 """Unit tests for the ``audit_logger`` package.
 
-Validates: Requirements 7.7 (actor_role mandatory) — task 2.4 of
-``.kiro/specs/platform-mimari-foundation/tasks.md``.
-
 The tests cover three concerns:
 
 1. :class:`AuditEvent` is frozen and matches the design.md schema.
@@ -119,7 +116,7 @@ def test_audit_event_result_runtime_set_matches_literal_type() -> None:
 
 
 # ---------------------------------------------------------------------------
-# AuditLogger.write — mandatory actor_role (Requirement 7.7)
+# AuditLogger.write — mandatory actor_role
 # ---------------------------------------------------------------------------
 
 
@@ -136,7 +133,7 @@ def test_write_persists_well_formed_event() -> None:
 
 
 def test_write_rejects_none_actor_role() -> None:
-    """Requirement 7.7: ``actor_role=None`` raises before any INSERT."""
+    """``actor_role=None`` raises before any INSERT."""
 
     writer = _CapturingWriter()
     logger = AuditLogger(writer=writer)

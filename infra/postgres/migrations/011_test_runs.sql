@@ -1,5 +1,5 @@
 -- 011_test_runs.sql
--- Spec: gereksinim.txt G9 / Requirement 7.x — E4 iyileştirmesi.
+-- Persistent service test-run history migration.
 --
 -- Adds:
 --   automation.test_runs — persistent service test-run history.

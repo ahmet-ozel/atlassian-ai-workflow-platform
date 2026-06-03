@@ -3,7 +3,7 @@
 Validates the project-wide Vault path convention
 (``^vault:[a-zA-Z0-9/_-]+$``) at construction time so callers cannot
 accidentally pass a plain-text token, an HTTP URL, or a credential
-reference that would later fail deep inside an HTTP backend (R3.3, R6.1).
+reference that would later fail deep inside an HTTP backend.
 
 The grammar is intentionally permissive:
 
@@ -42,10 +42,9 @@ _PREFIX: Final[str] = "vault:"
 # Project-wide path conventions
 # ---------------------------------------------------------------------------
 #
-# Foundation (Spec 1) owns the base ``vault:atlassian/<dept_id>/<service>``
-# pattern; the constants below are the **ops-scope additions** introduced
-# by ``platform-mimari-ops`` (R3.4, R5.1, R8.4) so that callers do not
-# build per-user / notification path strings ad-hoc.
+# The base ``vault:atlassian/<dept_id>/<service>`` pattern is shared
+# across the project; the constants below add per-user and notification
+# paths so callers do not build those strings ad hoc.
 #
 # All templates use ``str.format``-style placeholders so that producing a
 # concrete path stays a single, greppable call site::
@@ -59,11 +58,10 @@ _PREFIX: Final[str] = "vault:"
 # The templates intentionally **omit** the ``vault:`` prefix so they
 # compose with :meth:`VaultPath.relative` naturally; callers prepend the
 # prefix once when constructing the literal reference. The placeholder
-# names match the field names in `requirements.md` (R3.4: per-user
-# session credential, R5.1: notification credentials).
+# names match the field names used by callers.
 
 #: Per-user session credential written by ``assistant-service`` and read
-#: by ``automation-service`` (Q6/Q7, R3.4, R8.4). Session lifetime —
+#: by ``automation-service``. Session lifetime —
 #: deleted on Streamlit logout, 24h cron sweep cleans orphans.
 USER_SESSION_PATH_TEMPLATE: Final[str] = (
     "atlassian/_user_session/{session_id}/{service}"
@@ -78,11 +76,11 @@ USER_PERSISTED_PATH_TEMPLATE: Final[str] = (
 )
 
 #: SMTP credential consumed by ``notification_service`` for outbound
-#: email (R5.1). Single tenant — owner: notification_service.
+#: email. Single tenant — owner: notification_service.
 NOTIFICATION_SMTP_PATH: Final[str] = "notifications/smtp/credential"
 
 #: Per-department Slack webhook URL consumed by ``notification_service``
-#: (R5.1). Owner: notification_service; rotated on dept rotation cycles.
+#: Owner: notification_service; rotated on dept rotation cycles.
 NOTIFICATION_SLACK_PATH_TEMPLATE: Final[str] = "notifications/{dept_id}/slack"
 
 

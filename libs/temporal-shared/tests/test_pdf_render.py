@@ -1,7 +1,7 @@
 """Unit tests for ``temporal_shared.pdf_render``.
 
-Covers Requirements 8.8 (V5 — A4, Latin/Türkçe glyph desteği) and
-12.4 (``jira_attachment`` format ∈ {pdf, md}).
+Covers deterministic PDF rendering and ``jira_attachment`` format
+handling for ``pdf`` and ``md`` outputs.
 
 The test suite is split into two halves:
 
@@ -14,7 +14,6 @@ The test suite is split into two halves:
   gets a green ``pytest libs/temporal-shared`` run.  The CI image
   ships these libraries, so the e2e half is exercised there.
 
-Validates: Requirements 8.8, 12.4.
 """
 
 from __future__ import annotations
@@ -42,7 +41,7 @@ class TestModuleSurface:
     """Public constants are pinned by the requirements / design doc."""
 
     def test_pdf_magic_is_ascii_pdf_prefix(self) -> None:
-        """**Validates: Requirement 8.8**
+        """
 
         Every well-formed PDF starts with ``%PDF-``; the constant is
         exposed so tests and activity-layer assertions reference the
@@ -51,7 +50,7 @@ class TestModuleSurface:
         assert PDF_MAGIC == b"%PDF-"
 
     def test_deterministic_timestamp_is_fixed_epoch(self) -> None:
-        """**Validates: Requirement 8.8**
+        """
 
         The timestamp pin is what makes ``render_pdf`` byte-deterministic.
         It must be a timezone-aware ``datetime`` so WeasyPrint does not
@@ -64,7 +63,7 @@ class TestModuleSurface:
         )
 
     def test_default_template_ships_with_repo(self) -> None:
-        """**Validates: Requirement 8.8**
+        """
 
         The ``jira_attachment`` activity loads the default template
         from ``platform/prompts/pdf_templates/default.html.j2``.  We
@@ -81,7 +80,7 @@ class TestModuleSurface:
         assert template.exists(), f"missing default template at {template}"
         body = template.read_text(encoding="utf-8")
         assert body.strip(), "default template is empty"
-        # A4 page size is an explicit Requirement 8.8 contract.
+        # A4 page size is an explicit the PDF rendering contract.
         assert "size: A4" in body
         # The font stack must include a Latin Extended-A capable family
         # (Turkish glyphs live there).  We check for the primary
@@ -100,7 +99,7 @@ class TestInputValidation:
     """Errors before the WeasyPrint call are raised as ``PdfRenderError``."""
 
     def test_empty_template_is_rejected(self) -> None:
-        """**Validates: Requirement 8.8**
+        """
 
         An empty template would produce an empty PDF that Jira would
         reject as a malformed attachment.  We surface the error
@@ -111,17 +110,15 @@ class TestInputValidation:
             render_pdf("   ", {})
 
     def test_non_string_template_is_rejected(self) -> None:
-        """**Validates: Requirement 8.8**"""
         with pytest.raises(PdfRenderError, match="must be a string"):
             render_pdf(b"<html></html>", {})  # type: ignore[arg-type]
 
     def test_non_mapping_context_is_rejected(self) -> None:
-        """**Validates: Requirement 8.8**"""
         with pytest.raises(PdfRenderError, match="must be a Mapping"):
             render_pdf("<html></html>", ["title", "x"])  # type: ignore[arg-type]
 
     def test_jinja2_syntax_error_surfaces_as_pdf_render_error(self) -> None:
-        """**Validates: Requirement 8.8**
+        """
 
         Jinja2's :class:`jinja2.TemplateSyntaxError` is wrapped in
         :class:`PdfRenderError` so the activity layer only has to
@@ -132,7 +129,7 @@ class TestInputValidation:
             render_pdf("{% for x in %}", {})
 
     def test_undefined_variable_is_rejected(self) -> None:
-        """**Validates: Requirement 8.8**
+        """
 
         :class:`jinja2.StrictUndefined` is on by design — a missing
         ``context`` key would otherwise silently emit an empty string
@@ -188,7 +185,7 @@ class TestRenderPdfEndToEnd:
     """Real WeasyPrint output exercised when the native stack is present."""
 
     def test_round_trip_returns_pdf_bytes(self) -> None:
-        """**Validates: Requirement 8.8**
+        """
 
         The basic round trip: a syntactically valid template + simple
         context produces non-empty bytes that start with the
@@ -203,7 +200,7 @@ class TestRenderPdfEndToEnd:
         assert out.startswith(PDF_MAGIC)
 
     def test_render_is_deterministic(self) -> None:
-        """**Validates: Requirement 8.8, 12.4**
+        """
 
         Two calls with byte-identical ``(template, context)`` arguments
         produce byte-identical PDFs.  This guarantees that activity
@@ -219,7 +216,7 @@ class TestRenderPdfEndToEnd:
         )
 
     def test_turkish_glyphs_render_without_error(self) -> None:
-        """**Validates: Requirement 8.8 (V5 — Türkçe glyph desteği)**
+        """
 
         Rendering a template that contains the full Turkish-specific
         glyph set (``çğıöşü ÇĞİÖŞÜ``) must succeed and produce a
@@ -244,7 +241,7 @@ class TestRenderPdfEndToEnd:
         assert len(out) > 500
 
     def test_default_template_renders_with_full_context(self) -> None:
-        """**Validates: Requirement 8.8**
+        """
 
         The packaged default template (``platform/prompts/pdf_templates/
         default.html.j2``) renders successfully when given the full
@@ -285,7 +282,7 @@ class TestUnavailability:
     """The unavailability error path must be the only public failure mode."""
 
     def test_unavailable_error_is_a_runtime_error(self) -> None:
-        """**Validates: Requirement 8.8**
+        """
 
         :class:`PdfRenderUnavailableError` is intentionally a
         :class:`RuntimeError` (not :class:`PdfRenderError` /
@@ -301,7 +298,7 @@ class TestUnavailability:
         "path cannot be exercised without monkey-patching the import.",
     )
     def test_render_raises_unavailable_when_native_missing(self) -> None:
-        """**Validates: Requirement 8.8**
+        """
 
         When the native runtime is missing the function raises
         :class:`PdfRenderUnavailableError` rather than letting the

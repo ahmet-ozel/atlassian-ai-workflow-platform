@@ -1,37 +1,25 @@
-"""Shared pytest fixtures for the multi-service-scaffold test suite.
+"""Shared pytest fixtures for the workspace test suite.
 
 This module is the single source of truth that every property test under
 ``tests/property/`` parameterises against. It exposes four data
-structures and one fixture that mirror the design document
-(`.kiro/specs/multi-service-scaffold/design.md`):
+structures and one fixture that model the workspace contract:
 
-- ``COMPONENT_MANIFEST`` — the 8 in-scope Components from §4.1
-  (Component Manifest table). Each row carries enough metadata to drive
-  Property tests 1, 3, 5, 6, 9, 10, 12.
+- ``COMPONENT_MANIFEST`` — the 8 in-scope Components. Each row carries
+ enough metadata to drive the component property tests.
 - ``REQUIRED_PATHS`` — relative paths every Component of a given
-  ``ComponentType`` must have, plus infra/config/root path lists.
-- ``FORBIDDEN_PATHS`` — paths the scaffold *must not* produce
-  (Property 11; design "Kapsam Dışı Bileşenler").
+ ``ComponentType`` must have, plus infra/config/root path lists.
+- ``FORBIDDEN_PATHS`` — paths the project *must not* produce.
 - ``EXPECTED_COMPOSE_SERVICES`` — the 17 service names that the parsed
-  ``infra/docker-compose.yml`` must equal under Property 4.1, including
-  ``task-intake-service`` (profile-gated) and ``automation-worker``
-  (added by platform-mimari-workflows task 2.6 — foundation 10-entry
-  topology + 1).
+ ``infra/docker-compose.yml`` must equal under the invariant, including
+ ``task-intake-service`` (profile-gated) and ``automation-worker``
+ (added for the workflow topology).
 - ``repo_root`` fixture — workspace root ``Path`` used by every
-  filesystem-walking property test.
+ filesystem-walking property test.
 
 It also injects each shared library's ``src/`` directory onto
 ``sys.path`` so property tests can ``import http_shared``,
 ``import temporal_shared``, etc., without first installing the libs.
 
-Related references
-------------------
-
-- design §4.1 (Component Manifest), §3.4 (libs/ table),
-  §"Compose Bağımlılık DAG'ı" (depends_on),
-  §6.3 (Property → test mapping).
-- requirements 1.1–1.7, 6.1–6.5 (paths covered by REQUIRED_PATHS),
-  18.1–18.5 (out-of-scope artifacts → FORBIDDEN_PATHS).
 """
 
 from __future__ import annotations
@@ -78,7 +66,7 @@ for _src in _LIB_SRC_DIRS:
         sys.path.insert(0, _src_str)
 
 
-# K3 fix (GEREKSINIM_ANALIZI.md): cross-service property tests use
+# Cross-service property tests use
 # ``from src.X`` patterns (e.g. ``from src.lifecycle.audit_writer
 # import ...``). Python's import system can only resolve ONE ``src``
 # package at a time, so listing every service ``src/`` here would
@@ -99,7 +87,7 @@ for _src in _LIB_SRC_DIRS:
 
 
 # ---------------------------------------------------------------------------
-# Component Manifest (design §4.1)
+# Component Manifest
 # ---------------------------------------------------------------------------
 
 ComponentType = Literal["http_service", "temporal_worker", "ui_component"]
@@ -108,14 +96,13 @@ RuntimeKind = Literal["python", "node"]
 
 @dataclass(frozen=True)
 class ComponentSpec:
-    """Mental model for a single Component row in design §4.1.
+    """Mental model for a single Component row.
 
-    The schema mirrors the pseudocode dataclass in the design document
-    so this fixture can stand in for the table during property test
-    parameterisation. Every field is hashable so the dataclass itself
-    stays ``frozen=True`` and can be sampled by Hypothesis via
-    ``st.sampled_from``.
-    """
+ The schema mirrors the component table shape so this fixture can
+ stand in for it during property test parameterisation. Every field is hashable so the dataclass itself
+ stays ``frozen=True`` and can be sampled by Hypothesis via
+ ``st.sampled_from``.
+ """
 
     name: str
     type: ComponentType
@@ -130,17 +117,16 @@ class ComponentSpec:
 
 
 # ---------------------------------------------------------------------------
-# Per-Component manifest rows (mirrors design §4.1 plus the "Compose
-# Bağımlılık DAG'ı" section for ``depends_on`` and the §"Env Değişkeni
-# Sözlüğü" table for ``required_env``).
+# Per-Component manifest rows, including ``depends_on`` and
+# ``required_env`` metadata.
 # ---------------------------------------------------------------------------
 
 #: Standard env block every HTTP service must expose locally
-#: (Requirement 10.3, Property 5).
+#: the invariant).
 _HTTP_BASE_ENV: tuple[str, ...] = ("PORT", "LOG_LEVEL")
 
 #: Full LLM provider block — required by every LLM-consuming Component
-#: regardless of the currently configured provider (Requirement 10.4).
+#: regardless of the currently configured provider .
 _LLM_ENV_BLOCK: tuple[str, ...] = (
     "LLM_PROVIDER",
     "VLLM_BASE_URL",
@@ -149,7 +135,7 @@ _LLM_ENV_BLOCK: tuple[str, ...] = (
     "ANTHROPIC_API_KEY",
 )
 
-#: MCP / Firecrawl consumer block (Requirement 10.5).
+#: MCP / Firecrawl consumer block .
 _MCP_FIRECRAWL_ENV: tuple[str, ...] = ("MCP_BASE_URL", "FIRECRAWL_BASE_URL")
 
 
@@ -307,7 +293,7 @@ COMPONENT_MANIFEST: tuple[ComponentSpec, ...] = (
         profiles=(),
         # The Compose service for this UI is named ``admin-dashboard-ui``
         # (see EXPECTED_COMPOSE_SERVICES); the manifest carries the
-        # backend dependency so Property 4.6's superset check passes.
+        # backend dependency so the invariant's superset check passes.
         depends_on=("admin-dashboard-api",),
         required_env=(
             "PORT",
@@ -332,11 +318,11 @@ UI_COMPONENTS: tuple[ComponentSpec, ...] = tuple(
 
 
 # ---------------------------------------------------------------------------
-# Required filesystem paths (Property 1)
+# Required filesystem paths (the invariant)
 # ---------------------------------------------------------------------------
 
 # Paths every Python HTTP service must have under its component path
-# (Requirements 2.1–2.4, 2.6–2.9, 12.1–12.3, 18.4).
+# .
 _HTTP_SERVICE_PATHS: tuple[str, ...] = (
     "src/__init__.py",
     "src/main.py",
@@ -351,7 +337,7 @@ _HTTP_SERVICE_PATHS: tuple[str, ...] = (
     "tests/e2e/.gitkeep",
 )
 
-# Paths every Temporal worker must have (Requirements 3.1–3.6, 18.4).
+# Paths every Temporal worker must have .
 _TEMPORAL_WORKER_PATHS: tuple[str, ...] = (
     "src/__init__.py",
     "src/main.py",
@@ -367,7 +353,7 @@ _TEMPORAL_WORKER_PATHS: tuple[str, ...] = (
     "tests/e2e/.gitkeep",
 )
 
-# Paths every UI Component must have (Requirements 4.1–4.7).
+# Paths every UI Component must have .
 # Note: ``streamlit-app`` uses ``app.py`` + ``requirements.txt``;
 # ``admin-dashboard`` (Next.js) uses ``package.json`` + ``app/page.tsx``.
 # The shared minimum is the README + Dockerfile + .env.example +
@@ -389,35 +375,35 @@ REQUIRED_PATHS: dict[str, tuple[str, ...]] = {
 
 
 #: Per-Component additional paths that don't generalise across the
-#: ``ComponentType``. Used by Property 1 to layer Component-specific
+#: ``ComponentType``. Used by the invariant to layer Component-specific
 #: assertions on top of the type-level baseline.
 REQUIRED_PATHS_BY_NAME: dict[str, tuple[str, ...]] = {
-    # Per requirements 2.6: webhooks/, temporal_client.py, decision/
+    # Additional automation-service modules.
     "automation-service": (
         "src/webhooks/__init__.py",
         "src/temporal_client.py",
         "src/decision/__init__.py",
         "migrations/.gitkeep",
     ),
-    # Requirement 2.7: chat/, llm/, prompts/
+    # : chat/, llm/, prompts/
     "assistant-service": (
         "src/chat/__init__.py",
         "src/llm/__init__.py",
     ),
-    # Requirement 2.8: routers/, auth/, clients/, prompts_git/
+    # : routers/, auth/, clients/, prompts_git/
     "admin-dashboard-api": (
         "src/routers/__init__.py",
         "src/auth/__init__.py",
         "src/clients/__init__.py",
         "src/prompts_git/__init__.py",
     ),
-    # Requirement 2.9: same skeleton as other HTTP services + intake modules
+    # : same project structure as other HTTP services + intake modules
     "task-intake-service": (
         "src/intake/__init__.py",
         "src/channels/__init__.py",
     ),
-    # Requirement 3.4: agent-runner workflow + activity placeholders +
-    # prompts/ tree (Requirements 3.5, 18.3).
+    # : agent-runner workflow + activity placeholders +
+    # prompts/ tree .
     "agent-runner-worker": (
         "src/workflows/agent_runner_workflow.py",
         "src/activities/jira.py",
@@ -436,7 +422,7 @@ REQUIRED_PATHS_BY_NAME: dict[str, tuple[str, ...]] = {
         "prompts/error_notification.md",
         "prompts/pdf_templates/.gitkeep",
     ),
-    # Requirement 3.6: execution-runner activity + runner placeholders.
+    # : execution-runner activity + runner placeholders.
     "execution-runner-worker": (
         "src/workflows/execution_run_workflow.py",
         "src/activities/ssh.py",
@@ -449,7 +435,7 @@ REQUIRED_PATHS_BY_NAME: dict[str, tuple[str, ...]] = {
         "src/runners/remote_ssh_docker.py",
         "src/runners/noop.py",
     ),
-    # Requirements 4.1–4.3: Streamlit pages + config skeleton.
+    # : Streamlit pages + config project structure.
     # Workflows / Orphan Branches / PO Review moved to the admin
     # dashboard (admin-gated governance surfaces), so they are no
     # longer part of the end-user Streamlit page catalog.
@@ -463,7 +449,7 @@ REQUIRED_PATHS_BY_NAME: dict[str, tuple[str, ...]] = {
         "pages/3_explorer.py",
         "config/quick_actions.yaml",
     ),
-    # Requirements 4.4–4.6: Next.js 14 app router skeleton.
+    # : Next.js 14 app router project structure.
     "admin-dashboard": (
         "package.json",
         "next.config.mjs",
@@ -485,11 +471,11 @@ REQUIRED_PATHS_BY_NAME: dict[str, tuple[str, ...]] = {
 }
 
 
-#: Workspace-relative paths required by Requirements 5.1–5.9 and 6.1–6.5.
-#: Property 1 iterates over this list in addition to the per-Component set.
+#: Workspace-relative paths required by the repository contract.
+#: the invariant iterates over this list in addition to the per-Component set.
 INFRA_AND_LIB_REQUIRED_PATHS: tuple[str, ...] = (
     # Shared libraries — every package ships a manifest, src tree, README
-    # (Requirement 5.1).
+    # .
     "libs/http-shared/pyproject.toml",
     "libs/http-shared/src/http_shared/__init__.py",
     "libs/http-shared/src/http_shared/client.py",
@@ -524,57 +510,57 @@ INFRA_AND_LIB_REQUIRED_PATHS: tuple[str, ...] = (
     "libs/web-shared/src/index.ts",
     "libs/web-shared/src/deeplink.ts",
     "libs/web-shared/README.md",
-    # Postgres init scripts (Requirement 6.1, 6.2, 6.6).
+    # Postgres init scripts .
     "infra/postgres/00_schemas.sql",
     "infra/postgres/10_automation.sql",
     "infra/postgres/40_assistant.sql",
     "infra/postgres/50_shared.sql",
     "infra/postgres/99_temporal.sql",
-    # Temporal dynamic config (Requirement 6.3).
+    # Temporal dynamic config .
     "infra/temporal/dynamicconfig/development-sql.yaml",
-    # Vault / MinIO dev-mode notes (Requirement 6.4, 18.5).
+    # Vault / MinIO dev-mode notes .
     "infra/vault/README.md",
     "infra/minio/README.md",
-    # Observability skeletons (Requirement 6.5).
+    # Observability project structures .
     "infra/observability/prometheus.yml",
     "infra/observability/loki-config.yaml",
     "infra/observability/grafana-datasources.yaml",
-    # Departments configuration (Requirement 7.1, 7.6).
+    # Departments configuration .
     "config/departments.json",
     "config/departments.schema.json",
-    # Compose orchestration (Requirement 8.1, 8.8).
+    # Compose orchestration .
     "infra/docker-compose.yml",
     "infra/docker-compose.dev.yml",
-    # Workspace-root metadata (Requirement 11.1, 11.6).
+    # Workspace-root metadata .
     ".env.example",
     ".gitignore",
 )
 
 
 # ---------------------------------------------------------------------------
-# Forbidden paths (Property 11; design "Kapsam Dışı Bileşenler")
+# Forbidden paths
 # ---------------------------------------------------------------------------
 
-#: Paths that MUST NOT exist under the workspace root after scaffold
-#: generation. Property 11's test treats glob-like patterns
+#: Paths that MUST NOT exist under the workspace root after project generation
+#: generation. the invariant's test treats glob-like patterns
 #: (``**/...``) by walking the tree; concrete paths are checked directly.
 #:
 #: Notes:
-#: - ``helm/`` and ``k8s/`` artifacts are out of scope (Requirement 18.1).
-#: - ``KEDA ScaledObject``-style YAML is out of scope (Requirement 18.2).
-#: - The ``vllm`` Compose service is excluded (Requirement 8.10) but that
-#:   invariant is enforced inside ``test_compose_structure.py`` (Property
-#:   4.1) rather than via a filesystem path here.
+#: - ``helm/`` and ``k8s/`` artifacts are out of scope .
+#: - ``KEDA ScaledObject``-style YAML is out of scope .
+#: - The ``vllm`` Compose service is excluded but that
+#: invariant is enforced inside ``test_compose_structure.py`` (Property
+#: 4.1) rather than via a filesystem path here.
 #: - ``forge-app/`` was previously listed but has been removed: the
-#:   ``platform-mimari-uyumluluk`` spec (R6 / Q3) introduces a Forge
-#:   add-on skeleton under ``platform/forge-app/`` gated by
-#:   ``FEATURE_FLAG_FORGE_ADDON_ENABLED``, so the directory is now an
-#:   in-scope (opt-in) artifact rather than a forbidden one.
+#: compliance workflow introduces a Forge
+#: add-on project structure under ``platform/forge-app/`` gated by
+#: ``FEATURE_FLAG_FORGE_ADDON_ENABLED``, so the directory is now an
+#: in-scope (opt-in) artifact rather than a forbidden one.
 FORBIDDEN_PATHS: tuple[str, ...] = (
     "helm",
     "k8s",
     "k8s/manifests",
-    # Glob-style patterns; Property 11's test resolves these by walking.
+    # Glob-style patterns; the invariant's test resolves these by walking.
     "**/helm",
     "**/*ScaledObject*.yaml",
     "**/keda-*.yaml",
@@ -582,20 +568,19 @@ FORBIDDEN_PATHS: tuple[str, ...] = (
 
 
 # ---------------------------------------------------------------------------
-# Expected Compose services (Property 4.1)
+# Expected Compose services (the invariant)
 # ---------------------------------------------------------------------------
 
 #: The exact set of service names the parsed ``infra/docker-compose.yml``
 #: must equal. This includes the profile-gated ``task-intake-service``
-#: (Property 4.3 ensures the gating predicate). ``vllm`` is intentionally
-#: NOT in this set — Requirement 8.10 / Property 4.1.
+#: (the invariant ensures the gating predicate). ``vllm`` is intentionally
+#: NOT in this set — 
 #:
 #: ``admin-dashboard-ui`` is the Compose service name for the
-#: ``admin-dashboard`` Component (design §"Compose Bağımlılık DAG'ı").
+#: ``admin-dashboard`` Component.
 #: ``streamlit-ui`` is the Compose service name for the ``streamlit-app``
-#: Component, added by ``platform-mimari-foundation`` task 10.1
-#: (Requirement 1.1 — foundation 10-entry topology requires the
-#: end-user UI in Compose under its manifest ``compose_service_name``).
+#: Component, added because the workflow topology requires the
+#: end-user UI in Compose under its manifest ``compose_service_name``.
 EXPECTED_COMPOSE_SERVICES: frozenset[str] = frozenset(
     {
         # Infrastructure services
@@ -614,12 +599,11 @@ EXPECTED_COMPOSE_SERVICES: frozenset[str] = frozenset(
         "agent-runner-worker",
         "execution-runner-worker",
         # automation-worker hosts the ``automation-tq`` Temporal task
-        # queue (workflows-spec Requirement 1.1, 1.2; manifest entry
-        # added by task 2.6). Foundation 10-entry topology + 1.
+        # queue; manifest entry added for the workflow topology.
         "automation-worker",
         "admin-dashboard-api",
         "admin-dashboard-ui",
-        # End-user UI (foundation Requirement 1.1 — added by task 10.1)
+        # End-user UI (foundation added for the workflow)
         "streamlit-ui",
         # Profile-gated
         "task-intake-service",
@@ -628,7 +612,7 @@ EXPECTED_COMPOSE_SERVICES: frozenset[str] = frozenset(
 
 
 #: Host ports published by infrastructure-only Compose services. Joined
-#: with Component host ports by ``test_port_uniqueness.py`` (Property 3)
+#: with Component host ports by ``test_port_uniqueness.py`` (the invariant)
 #: to assert global uniqueness.
 INFRA_PUBLISHED_PORTS: dict[str, tuple[int, ...]] = {
     "postgres": (35432,),
@@ -655,13 +639,12 @@ INFRA_PUBLISHED_PORTS: dict[str, tuple[int, ...]] = {
 def pytest_addoption(parser: pytest.Parser) -> None:
     """Register workspace-level CLI options consumed by the integration suite.
 
-    ``--run-docker`` gates the Compose boot smoke tests in
-    ``tests/integration/`` (see task 14.3–14.5 in
-    ``.kiro/specs/multi-service-scaffold/tasks.md``). Those tests bind
-    to a real Docker daemon, publish host ports, and are therefore
-    opt-in so the default fast-lane property/unit suite stays
-    self-contained and parallel-safe.
-    """
+ ``--run-docker`` gates the Compose boot smoke tests in
+ ``tests/integration/``. Those tests bind
+ to a real Docker daemon, publish host ports, and are therefore
+ opt-in so the default fast-lane property/unit suite stays
+ self-contained and parallel-safe.
+ """
 
     parser.addoption(
         "--run-docker",
@@ -686,31 +669,31 @@ def repo_root() -> Path:
 def component_manifest() -> tuple[ComponentSpec, ...]:
     """Convenience fixture mirroring the module-level ``COMPONENT_MANIFEST``.
 
-    Property tests can either import the constant directly (preferred for
-    use inside ``@given`` strategies) or take this fixture as a function
-    argument (preferred for example-based tests).
-    """
+ Property tests can either import the constant directly (preferred for
+ use inside ``@given`` strategies) or take this fixture as a function
+ argument (preferred for example-based tests).
+ """
 
     return COMPONENT_MANIFEST
 
 
 @pytest.fixture(scope="session")
 def required_paths() -> dict[str, tuple[str, ...]]:
-    """Returns the per-type required-paths mapping used by Property 1."""
+    """Returns the per-type required-paths mapping used by the invariant."""
 
     return REQUIRED_PATHS
 
 
 @pytest.fixture(scope="session")
 def forbidden_paths() -> tuple[str, ...]:
-    """Returns the forbidden-paths tuple used by Property 11."""
+    """Returns the forbidden-paths tuple used by the invariant."""
 
     return FORBIDDEN_PATHS
 
 
 @pytest.fixture(scope="session")
 def expected_compose_services() -> frozenset[str]:
-    """Returns the expected set of Compose service names (Property 4.1)."""
+    """Returns the expected set of Compose service names (the invariant)."""
 
     return EXPECTED_COMPOSE_SERVICES
 
@@ -739,7 +722,7 @@ __all__ = [
 
 
 # ---------------------------------------------------------------------------
-# R23 Fix: Graceful handling of collection errors
+# Fix: Graceful handling of collection errors
 # ---------------------------------------------------------------------------
 # Instead of aborting the entire test suite when one file has a syntax
 # or import error, this hook logs a warning and allows other tests to

@@ -26,8 +26,6 @@ audit entry; see Error Handling §5.1):
 A ``WorkflowAlreadyStartedError`` raised from the workflow start
 collapses to a 200 ``duplicate`` with the same ``workflow_id``
 (Temporal native idempotency on top of the SHA-256 replay guard).
-
-Validates Requirements: 3.1, 3.2, 3.3, 3.4, 3.5
 """
 
 from __future__ import annotations
@@ -56,7 +54,7 @@ __all__ = ["router"]
 # Constants
 # ---------------------------------------------------------------------------
 
-#: Default replay-guard TTL (matches the 7-day policy in Requirement 1.6).
+#: Default replay-guard TTL for duplicate delivery protection.
 _REPLAY_TTL: timedelta = timedelta(days=7)
 
 #: Temporal workflow type name.
@@ -82,7 +80,7 @@ router = APIRouter()
 # ``asyncpg.Pool`` / ``TemporalClient`` / ``CredentialResolver`` instances
 # do not exist at import time, so each ``Depends`` placeholder raises
 # unless ``main.py`` overrides it via ``app.dependency_overrides`` once
-# the lifespan handler has built the resources (task 5.3).
+# the lifespan handler has built the resources.
 
 
 def get_db_pool() -> asyncpg.Pool:  # pragma: no cover - replaced by app
@@ -400,7 +398,7 @@ async def handle_bitbucket_webhook(  # noqa: PLR0911 - sequential guard chain
     # ----- (a) raw body --------------------------------------------------
     raw_body: bytes = await request.body()
 
-    # ----- (b) HMAC verification (Requirement 3.1, 3.2) -----------------
+    # ----- (b) HMAC verification ---------------------------------------
     if not hmac_verify.verify(raw_body, x_hub_signature or "", webhook_secret):
         log.warning(
             "webhook_hmac_failed",
@@ -410,7 +408,7 @@ async def handle_bitbucket_webhook(  # noqa: PLR0911 - sequential guard chain
         return _json_response({"status": "unauthorized"}, status=401)
 
     # Parse JSON.  Real Atlassian deliveries are always valid JSON; for
-    # malformed payloads we return 400 (silent — see design §5.1).
+    # malformed payloads we return 400 without additional side effects.
     payload = _safe_json_loads(raw_body)
     if payload is None:
         log.warning(
@@ -441,7 +439,7 @@ async def handle_bitbucket_webhook(  # noqa: PLR0911 - sequential guard chain
         )
         return _json_response({"status": "duplicate", "action": "skipped"})
 
-    # ----- (d) loop guard (self actor — Requirement 3.5) ---------------
+    # ----- (d) loop guard (self actor) ----------------------------------
     actor_id = _extract_actor_account_id(payload)
     if loop_guard.is_self_actor(actor_id, bot_account_ids):
         log.info(
@@ -560,7 +558,7 @@ async def _handle_reviewer_added(
     department_id: str,
     work_item_issue_key: str,
 ) -> Response:
-    """Handle ``pullrequest:reviewer_added`` (Requirement 3.3).
+    """Handle ``pullrequest:reviewer_added``.
 
     The added reviewer must match the dept's Bitbucket bot ``account_id``;
     otherwise the event is silently skipped.  When matched, a
@@ -646,7 +644,7 @@ async def _handle_comment_created(
     pr_id: int,
     department_id: str,
 ) -> Response:
-    """Handle ``pullrequest:comment_created`` (Requirement 3.4).
+    """Handle ``pullrequest:comment_created``.
 
     Forwards a minimal ``new_comment`` signal to the existing PR review
     workflow.  When no workflow is running for this PR the signal call

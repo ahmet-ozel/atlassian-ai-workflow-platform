@@ -1,9 +1,7 @@
 """Pure iteration-state helpers for ``AgentRunnerWorkflow``.
 
 This module is the **single source of truth** for the iteration
-decision functions and ``IterationState`` evolution helpers spelled
-out in ``platform-mimari-workflows`` design.md
-§"temporal_shared.iteration" and tasks.md §6.1.
+decision functions and ``IterationState`` evolution helpers.
 
 Every helper here is a **pure function**:
 
@@ -17,7 +15,7 @@ Every helper here is a **pure function**:
 This shape lets the production workflow body import the module
 inside ``workflow.unsafe.imports_passed_through()`` and call any
 helper directly from a signal handler without breaking Temporal
-replay determinism (Property 2 / R5.7).
+replay determinism.
 
 Public API
 ----------
@@ -39,7 +37,6 @@ Re-exports :class:`IterDecision` and :class:`IterationState` so
 callers can ``from temporal_shared.iteration import IterDecision``
 without reaching into the messages module.
 
-Validates: Requirements 5.1, 5.2, 5.3, 5.4, 5.5, 5.6.
 """
 
 from __future__ import annotations
@@ -75,19 +72,18 @@ __all__ = [
 # Constants — defaults consumed by the helpers below.
 # ---------------------------------------------------------------------------
 
-#: Hard cap on the bounded ``[explain]`` LRU cache (R5.5, MIMARI §16.7).
+#: Hard cap on the bounded ``[explain]`` LRU cache.
 #: Writing beyond this cap evicts the **oldest insertion** so the
 #: workflow's history never balloons unbounded across long-lived runs.
 EXPLAIN_CACHE_MAXSIZE: Final[int] = 32
 
-#: Default ``[fix]`` debounce window (R5.4, MIMARI §16.15 T6).
+#: Default ``[fix]`` debounce window.
 FIX_DEBOUNCE_WINDOW: Final[timedelta] = timedelta(seconds=60)
 
-#: Default ``[explain]`` cache TTL (R5.5, MIMARI §16.11 Z10).
+#: Default ``[explain]`` cache TTL.
 EXPLAIN_CACHE_TTL: Final[timedelta] = timedelta(minutes=5)
 
-#: Default ``needs_info`` consecutive-comment cap (R5.6, MIMARI §16.15
-#: S12).
+#: Default ``needs_info`` consecutive-comment cap.
 NEEDS_INFO_MAX_STREAK: Final[int] = 3
 
 
@@ -134,7 +130,7 @@ def should_advance_iter(
 
     The check is purely arithmetic — no clock, no randomness — so
     callers can invoke it from inside a Temporal signal handler
-    without breaking replay determinism (Property 2).
+    without breaking replay determinism.
 
     Parameters
     ----------
@@ -195,8 +191,7 @@ def fix_should_skip_retest(
 ) -> bool:
     """Pure: ``True`` iff a prior test result exists for this diff hash.
 
-    Used by the ``code_change_with_test`` flow (R5.3, MIMARI
-    §16.15 T1): re-running a ``[fix]`` against an unchanged diff
+    Used by the ``code_change_with_test`` flow: re-running a ``[fix]`` against an unchanged diff
     must reuse the cached test outcome instead of dispatching a
     second :class:`ExecutionRunWorkflow`.
 
@@ -253,8 +248,8 @@ def needs_info_should_terminate(
 ) -> bool:
     """Pure: ``True`` iff the consecutive ``needs_info`` cap is reached.
 
-    R5.6 / MIMARI §16.15 S12: when the bot has emitted ``max_streak``
-    ``needs_info`` comments in a row without a substantive reply
+    When the bot has emitted ``max_streak`` ``needs_info`` comments in
+    a row without a substantive reply
     from the user, the workflow transitions to ``out_of_scope`` and
     stops asking.
     """
@@ -275,7 +270,7 @@ def record_explain_answer(
 ) -> IterationState:
     """Return a new state with the ``[explain]`` cache extended.
 
-    Implements the bounded LRU contract from R5.5 / tasks.md §6.1:
+    Implements the bounded LRU contract:
 
     * The cache is capped at :data:`EXPLAIN_CACHE_MAXSIZE` (32)
       entries.

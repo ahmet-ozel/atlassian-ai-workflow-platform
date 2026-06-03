@@ -1,9 +1,8 @@
-"""Atomic per-service department credential orchestrator (uyumluluk R1 / Q1).
+"""Atomic per-service department credential orchestrator.
 
 This module owns the orchestration helper used by the
 ``/admin/departments/{id}/credentials/{service}`` and
-``/admin/departments/{id}/probe`` endpoints (see `tasks.md` task 3.1
-in `.kiro/specs/platform-mimari-uyumluluk/`).  Unlike the foundation
+``/admin/departments/{id}/probe`` endpoints.  Unlike
 ``DepartmentCreateOrchestrator`` (which provisions a *new* department
 with all of its bots in a single shot), this service mutates a
 **single** ``(dept_id, service)`` pair on an *existing* department.
@@ -27,13 +26,13 @@ Atomic Dept Credential Add"):
        ``with_dept_session``.
 
 The helper is deliberately HTTP-framework agnostic: a thin FastAPI
-router (task 3.2) parses the request, builds an
+router parses the request, builds an
 :class:`AddCredentialRequest`, dispatches to :meth:`add_or_update`,
 and translates the resulting :class:`DeptCredentialOperationError`
 into HTTP status codes.
 
-R3.6 staging pattern reuse
---------------------------
+Staging pattern reuse
+---------------------
 
 This service does **not** duplicate the staging / probe / promote
 machinery from :mod:`automation_service.admin.dept_create`.  Instead
@@ -46,11 +45,9 @@ it imports and calls:
 * :func:`automation_service.staging.validate_dept_id`
 * :class:`automation_service.probe.ProbeRunner`
 
-The duplicate-row safety, plain-text-token hygiene (R3.4) and probe
-artifact cleanup (R5.5) all reuse the same primitives the foundation
-suite already proves correct.
-
-Validates: Requirements 1.3, 1.4, 1.5, 1.6 (uyumluluk R1 / Q1).
+The duplicate-row safety, plain-text-token hygiene, and probe artifact
+cleanup all reuse the same primitives already covered by the shared
+suite.
 """
 
 from __future__ import annotations
@@ -120,9 +117,9 @@ ConnectionFactory = Callable[[], Awaitable[AsyncConnection]]
 class DepartmentNotFoundError(LookupError):
     """Raised when ``automation.departments`` has no row for *dept_id*.
 
-    The R1 spec only mutates *existing* departments; create flow is
-    owned by the foundation ``DepartmentCreateOrchestrator``.  The
-    router maps this to HTTP 404.
+    This service only mutates *existing* departments; create flow is
+    owned by ``DepartmentCreateOrchestrator``.  The router maps this
+    to HTTP 404.
     """
 
     def __init__(self, dept_id: str) -> None:
@@ -180,7 +177,7 @@ class AddCredentialRequest:
         username: Email or login the bot authenticates as.
         personal_token: Plain-text API token; **must** be supplied as
             a :class:`bytearray` so the orchestrator can zero it on
-            the heap (R3.4) once the value is in Vault.
+            the heap once the value is in Vault.
         account_id: Optional pre-known ``accountId``.  When ``None``
             the probe runner's auto-fetch fills it in.
         deployment: Bitbucket deployment kind.  Only meaningful when
@@ -213,8 +210,7 @@ class AddCredentialResult:
         account_id: Resolved ``accountId``.  Equal to the request's
             ``account_id`` when supplied, otherwise the probe-runner's
             auto-fetched value.  When the inline bot identity probe
-            (R6.2) succeeds, this is updated to the freshly probed
-            value.
+            succeeds, this is updated to the freshly probed value.
         last_probe_at: UTC timestamp the read+write probe completed.
         vault_path: The *final* (post-promotion) Vault path stored on
             the ``credential_ref`` column.  Returned as a plain string
@@ -223,7 +219,7 @@ class AddCredentialResult:
             ``"updated"`` when the ``(dept_id, service)`` row already
             existed and we replaced its ``credential_ref``.
         account_id_probe_status: Status of the inline bot identity
-            probe (R6.2).  ``"ok"`` when the probe resolved an
+            probe.  ``"ok"`` when the probe resolved an
             account_id, ``"failed"`` when the probe could not resolve
             it, ``None`` when the probe was not attempted (should not
             happen in normal flow).
@@ -421,8 +417,7 @@ class DeptCredentialService:
             actor_id: OIDC ``sub`` of the human admin (or the bot
                 ``account_id`` for ``actor_role == "system"``).
             actor_role: RBAC role of the caller — recorded on every
-                audit row so the actor_role-mandatory invariant
-                (R7.7) holds end-to-end.
+                audit row so the actor role is traceable end-to-end.
 
         Returns:
             :class:`AddCredentialResult` on success.
@@ -513,8 +508,8 @@ class DeptCredentialService:
             )
 
         # The probe phase is the last consumer of the plain-text
-        # token — wipe the bytearray before the DB transaction begins
-        # (R3.4).  Vault retains the encrypted-at-rest staging copy.
+        # token — wipe the bytearray before the DB transaction begins.
+        # Vault retains the encrypted-at-rest staging copy.
         self._zero_request_token(request)
 
         resolved_account_id = (
@@ -587,7 +582,7 @@ class DeptCredentialService:
             )
         )
 
-        # --- Step 5 — inline bot identity probe (R6.2) ----------------
+        # --- Step 5 — inline bot identity probe -----------------------
         # After Vault write + DB upsert succeed, probe the bot's
         # account_id via Atlassian /myself (Jira/Confluence) or /user
         # (Bitbucket).  This is best-effort: failure does not roll
@@ -1034,7 +1029,7 @@ class DeptCredentialService:
             del token_str
 
     # ------------------------------------------------------------------
-    # Inline bot identity probe (R6.2)
+    # Inline bot identity probe
     # ------------------------------------------------------------------
 
     async def _run_bot_identity_probe(
@@ -1048,10 +1043,9 @@ class DeptCredentialService:
     ) -> BotIdentityProbeResult:
         """Run the inline bot identity probe after credential commit.
 
-        This is the R6.2 post-create probe: after Vault write + DB
-        upsert succeed, we issue a lightweight read-only Atlassian
-        call to resolve the bot's ``account_id``.  The result is
-        surfaced in the HTTP response via
+        After Vault write + DB upsert succeed, we issue a lightweight
+        read-only Atlassian call to resolve the bot's ``account_id``.
+        The result is surfaced in the HTTP response via
         ``account_id_probe_status`` / ``account_id_probe_error``.
 
         On success, the resolved ``account_id`` is upserted into
@@ -1062,7 +1056,7 @@ class DeptCredentialService:
         is written.  The credential write is **not** rolled back —
         the probe is best-effort.
 
-        .. important:: **Invariant (foundation R7.2 — idempotent config)**
+        .. important:: **Invariant: idempotent config**
 
            The resolved ``account_id`` is persisted **only** to the
            ``automation.department_bot_identity`` Postgres table.
@@ -1188,7 +1182,7 @@ class DeptCredentialService:
         actor_role: Literal["admin", "dept_admin", "system"],
         error: str,
     ) -> None:
-        """Write the ``bot_account_id_probe_failed`` audit row (R6.5)."""
+        """Write the ``bot_account_id_probe_failed`` audit row."""
 
         await self._audit.write(
             AuditEvent(
@@ -1223,10 +1217,8 @@ class DeptCredentialService:
     ) -> Literal["created", "updated"]:
         """Run the SQL UPSERT and Vault staging→final move atomically.
 
-        Atomicity contract (uyumluluk R1 / Q1, design.md
-        §"Komponent Etkileşim Sırası — Atomic Dept Credential Add"):
-        any failure — staging→final promotion error, INSERT
-        failure, **or SQL ``COMMIT`` failure raised at the
+        Atomicity contract: any failure — staging→final promotion
+        error, INSERT failure, **or SQL ``COMMIT`` failure raised at the
         context-manager exit** — must roll the system back to the
         pre-call state.  In particular the Vault tree must be
         restored to its prior shape:
@@ -1544,7 +1536,7 @@ class DeptCredentialService:
 
     @staticmethod
     def _zero_request_token(request: AddCredentialRequest) -> None:
-        """Zero ``request.personal_token`` in-place (R3.4)."""
+        """Zero ``request.personal_token`` in-place."""
 
         scrub_plain_text_token(request.personal_token)
 

@@ -1,13 +1,11 @@
 """HTTP client factory that stamps every outgoing request with ``X-Client-Source``.
 
 This module is the single point that creates :class:`httpx.AsyncClient`
-instances used for MCP and Firecrawl calls across the multi-service
-scaffold.  All outgoing traffic carries the caller Component's identity
+instances used for MCP and Firecrawl calls across the platform. All outgoing traffic carries the caller Component's identity
 in the ``X-Client-Source`` header so the observability layer can break
-down traffic by origin (see MIMARI §6.6, Requirement 13).
+down traffic by origin.
 
-In addition (platform-gap-fill task 7.2 / Requirement 8.4) every
-outgoing request is stamped with the ``X-Trace-Id`` header at request
+In addition, every outgoing request is stamped with the ``X-Trace-Id`` header at request
 time using the trace_id installed on the calling task's
 :mod:`contextvars` context by :class:`observability.TraceMiddleware`
 (in services) or :func:`observability.set_trace_id` (in workers).
@@ -42,12 +40,11 @@ except Exception:  # pragma: no cover - defensive fallback
     def _get_trace_id() -> str:  # type: ignore[misc]
         return ""
 
-#: The Component identifiers that may appear in ``X-Client-Source``
-#: (design §3.4). Unknown values are accepted by :func:`make_mcp_client`
+#: The Component identifiers that may appear in ``X-Client-Source``.
+#: Unknown values are accepted by :func:`make_mcp_client`
 #: but are intended to be flagged by the observability layer.
 #:
-#: ``automation-worker`` was added by platform-gap-fill task 8.2
-#: (Requirement 9.3) so the worker hosting the ``automation-tq``
+#: ``automation-worker`` identifies the worker hosting the ``automation-tq``
 #: Temporal task queue can identify itself when its output_actions
 #: activity calls the MCP server.
 KNOWN_CLIENT_SOURCES: frozenset[str] = frozenset(
@@ -120,11 +117,10 @@ def make_mcp_client(
 
     Every request issued by the returned client carries:
 
-    * ``X-Client-Source: <client_source>`` (Requirement 13 — set on the
+    * ``X-Client-Source: <client_source>`` (set on the
       client instance so it survives every ``client.post(...)`` /
       ``client.request(...)`` call without per-call boilerplate).
-    * ``X-Trace-Id: <get_trace_id()>`` (platform-gap-fill task 7.2 /
-      Requirement 8.4 — resolved per-request via a request event
+    * ``X-Trace-Id: <get_trace_id()>`` (resolved per-request via a request event
       hook so the header value reflects the trace_id of the calling
       task at the moment the request is sent, not at client
       construction time).

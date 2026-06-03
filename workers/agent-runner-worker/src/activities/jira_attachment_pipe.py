@@ -26,14 +26,13 @@ forwarded verbatim to the caller for audit logging.
 MCP routing
 -----------
 
-Per MIMARI §1 Kural 1 (R1.2) every outbound Atlassian HTTP call goes
-through the ``atlassian_unified`` MCP service. The activity does not
+Every outbound Atlassian HTTP call goes through the
+``atlassian_mcp_bitbucket`` MCP service. The activity does not
 issue a raw ``httpx`` request to Jira itself — it invokes the
 ``jira_add_attachment`` MCP tool which in turn calls Jira. The MCP
 plumbing helpers (``make_mcp_client``, ``with_atlassian_creds``) are
 shared with the rest of ``activities/jira.py``.
 
-Validates Requirements: 3.3, 4.1-4.8, 7.7, 7.8
 """
 
 from __future__ import annotations
@@ -69,7 +68,7 @@ _LOG = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 #: File extensions accepted for upload. Mirrors
-#: :class:`atlassian_unified.tools.jira_attachment.JiraAttachmentTool.ALLOWED_EXTENSIONS`
+#: the Atlassian MCP gateway's ``JiraAttachmentTool.ALLOWED_EXTENSIONS``
 #: with the addition of ``.html`` (the agent-runner workflow can emit
 #: HTML reports that the MCP tool already accepts).
 ALLOWED_EXTENSIONS: frozenset[str] = frozenset(

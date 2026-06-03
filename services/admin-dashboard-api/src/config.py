@@ -2,15 +2,15 @@
 
 This module provides a single :class:`Settings` class that reads the
 service's environment variables. Real dependency probing is intentionally
-not implemented at the scaffold stage; :meth:`Settings.dependencies_reachable`
+not implemented at the initial stage; :meth:`Settings.dependencies_reachable`
 returns ``True`` so ``/readyz`` succeeds in local-dev as long as the process
-is alive (see Requirement 12 and design §3.1).
+is alive.
 
-In addition to the scaffold's baseline keys (``PORT``, ``LOG_LEVEL``,
+In addition to the baseline keys (``PORT``, ``LOG_LEVEL``,
 ``POSTGRES_DSN``, ``VAULT_*``, ``TEMPORAL_*``, ``CLIENT_SOURCE``,
 ``AUTH_MODE``, ``OIDC_*``), this module exposes the Control_Plane keys
-appended by the ``admin-dashboard-control-plane`` spec (design §3.14 /
-task 6.4):
+used by manifest loading, Compose orchestration, health polling, and
+prompt sync wiring:
 
 * ``WORKSPACE_ROOT`` — workspace folder containing ``config/``,
   ``infra/`` and ``services/``. Defaults to four levels above this
@@ -45,7 +45,7 @@ def _default_workspace_root() -> Path:
     the workspace root that contains ``config/``, ``infra/`` and
     ``services/``. The fallback only kicks in when the operator does
     not set ``WORKSPACE_ROOT`` — in production Compose passes the
-    correct path via the env file (design §3.14, task 6.4).
+    correct path via the env file.
     """
     try:
         return Path(__file__).resolve().parents[3]
@@ -58,8 +58,8 @@ class Settings(BaseSettings):
     """Runtime configuration for the admin-dashboard-api service.
 
     Values are read from process environment variables (and a local ``.env``
-    file when present) following the two-level model described in design
-    §3.1 / Requirement 11.
+    file when present) following the local-development and production
+    environment model.
     """
 
     model_config = SettingsConfigDict(
@@ -94,11 +94,11 @@ class Settings(BaseSettings):
         description="Default value advertised in outgoing X-Client-Source headers.",
     )
 
-    # --- McpTrafficRouter (platform-gap-fill task 8.3) --------------
+    # --- McpTrafficRouter metrics client wiring --------------------------------------
     # Base URL of the Atlassian MCP server. The traffic-stats router
     # appends ``/metrics`` and parses the Prometheus exposition for
-    # ``mcp_requests_total{client_source, tool, status}`` (Requirement
-    # 9.5). Defaults to the Compose-internal hostname; production
+    # ``mcp_requests_total{client_source, tool, status}`` metrics.
+    # Defaults to the Compose-internal hostname; production
     # deployments override via the env file.
     mcp_metrics_url: str = Field(
         default="http://atlassian-mcp:8090",
@@ -109,10 +109,10 @@ class Settings(BaseSettings):
         ),
     )
 
-    # --- AdminProxy (task 8.2 — platform-mimari-foundation) ----------
+    # --- AdminProxy (admin proxy wiring — platform foundation) ----------
     # ``AUTOMATION_SERVICE_URL`` is the base URL of automation-service,
     # which owns every ``/admin/*`` endpoint forwarded by
-    # :class:`src.proxy.AdminProxy` (Requirement 3.5). The default
+    # :class:`src.proxy.AdminProxy`. The default
     # points at the Compose-internal hostname; production deployments
     # override it via the env file.
     automation_service_url: str = Field(
@@ -120,12 +120,12 @@ class Settings(BaseSettings):
         description="Base URL of automation-service used by AdminProxy.",
     )
 
-    # --- Deployment profile (platform-mimari-uyumluluk R14 / Q16) ----
+    # --- Deployment profile ----------------------------------------
     # ``DEPLOYMENT_PROFILE`` identifies the runtime environment for
     # admin-only safety guards. The lifecycle stop endpoint refuses
     # ``purge_vault=true`` when this resolves to ``"production"`` —
     # the dev-only Vault override purge is a developer escape hatch
-    # and must never apply on a production cluster (Requirement 14.2).
+    # and must never apply on a production cluster.
     # The value is matched case-insensitively in the router; common
     # values are ``"dev"``, ``"staging"``, ``"production"``. Defaults
     # to ``"dev"`` so the local-dev developer experience is unchanged.
@@ -134,17 +134,16 @@ class Settings(BaseSettings):
         description=(
             "Runtime deployment profile (``dev`` / ``staging`` / "
             "``production``). Production blocks ``purge_vault=true`` "
-            "on the lifecycle stop endpoint (R14 / Q16)."
+            "on the lifecycle stop endpoint."
         ),
     )
 
-    # --- OIDC / auth (Requirement 10) ---------------------------------
+    # --- OIDC / auth -----------------------------------------------
     # ``AUTH_MODE`` selects between the dev-mode bypass (``dev``, accepts
     # any non-empty bearer token) and the full JWKS-backed validator
     # (``production``). The remaining three fields wire the validator to
     # the configured IdP. They are intentionally optional so the service
-    # still boots in ``dev`` mode without an IdP configured (Requirement
-    # 10.6).
+    # still boots in ``dev`` mode without an IdP configured.
     auth_mode: Literal["dev", "production"] = Field(
         default="dev",
         description="OIDC validator mode; ``production`` enforces full JWKS verification.",
@@ -162,10 +161,10 @@ class Settings(BaseSettings):
         description="HTTPS URL of the IdP JWKS document used in production mode.",
     )
 
-    # --- Control_Plane (admin-dashboard-control-plane spec) ----------
+    # --- Control_Plane ----------------------------------------------
     # These keys back the manifest loader, ComposeRunner, HealthProbe
     # and AuditWriter wiring performed by ``src/main.py``'s lifespan
-    # context (task 6.3, design §3.14).
+    # context.
     workspace_root: Path = Field(
         default_factory=_default_workspace_root,
         description=(
@@ -200,7 +199,7 @@ class Settings(BaseSettings):
         le=180,
         description=(
             "Max wait after ``compose up`` before marking the service "
-            "``failed`` (Requirement 12.6)."
+            "``failed``."
         ),
     )
     health_fail_streak_threshold: int = Field(
@@ -209,11 +208,11 @@ class Settings(BaseSettings):
         le=10,
         description=(
             "Consecutive unhealthy polls that trigger a single "
-            "``health_streak_alert`` audit entry (Requirement 12.5)."
+            "``health_streak_alert`` audit entry."
         ),
     )
 
-    # --- PromptsGitRouter (platform-mimari-ops task 6.1) -------------
+    # --- PromptsGitRouter (operations surface prompt git wiring) -------------
     # ``PROMPTS_REPO_PATH`` is the absolute path to the local git
     # clone that holds prompt Markdown files. The
     # :class:`PromptsGitRouter` opens this clone via
@@ -234,7 +233,7 @@ class Settings(BaseSettings):
         default="main",
         description=(
             "Name of the branch the prompts router forks draft "
-            "branches from (Requirement 2.2)."
+            "branches from."
         ),
     )
     prompts_dir_prefix: str = Field(
@@ -248,9 +247,9 @@ class Settings(BaseSettings):
     def dependencies_reachable(self) -> bool:
         """Stub readiness probe.
 
-        Real implementations will probe Postgres/Temporal/Vault. The scaffold
+        Real implementations will probe Postgres/Temporal/Vault. The stack
         always returns ``True`` so the service starts cleanly under
-        ``docker compose up`` (see design §3.1, Requirement 12.2).
+        ``docker compose up``.
         """
 
         return True

@@ -1,19 +1,14 @@
 """``POST /api/workflows/{workflow_id}/cancel`` endpoint and predicate.
 
-Implements task 13.1 (``platform-mimari-workflows`` tasks.md):
-
 * :func:`is_cancel_authorized` — pure RBAC predicate. ``True`` iff the
   caller is the issue reporter or appears in the past assignees set.
-  Property 11(a) bullet (``is_cancel_authorized(actor, reporter,
-  past_assignees) == True ⇔ actor == reporter OR actor ∈
-  past_assignees``).
 * :data:`router` — ``POST /api/workflows/{workflow_id}/cancel``
   FastAPI router. Extracts the actor from the OIDC token via the
   injected validator, looks up the workflow's underlying Jira issue
   (reporter + past assignees) via a caller-supplied callback, and on
   authorization-pass calls :meth:`temporalio.client.WorkflowHandle.cancel`.
   Failures emit a single ``rbac_denied`` audit row through the
-  foundation :class:`audit_logger.AuditLogger`.
+  :class:`audit_logger.AuditLogger`.
 
 The endpoint is deliberately *thin*: every collaborator (OIDC
 validator, Temporal client, issue lookup, audit logger, clock) is
@@ -22,15 +17,8 @@ read from :class:`CancelEndpointDeps` parked on
 router can be exercised end-to-end without a live Temporal cluster
 or IdP.
 
-Design references
------------------
-
-* ``platform-mimari-workflows/requirements.md`` — Requirement 11.1.
-* ``platform-mimari-workflows/design.md`` — Components and Interfaces
-  §"Cancel API (R11.1)" and Property 11.
-* ``platform-mimari-foundation/audit_logger`` — ``actor_role`` is
-  required; the writer rejects empty / unknown values before any DB
-  round-trip.
+The audit writer rejects empty or unknown ``actor_role`` values before
+any DB round-trip.
 
 The predicate is intentionally **pure** (frozen sets, no clock, no
 I/O) so it can be exercised in isolation by both the unit test
@@ -78,7 +66,7 @@ _LOG = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# Pure predicate (Property 11(a))
+# Pure predicate
 # ---------------------------------------------------------------------------
 
 
@@ -89,8 +77,7 @@ def is_cancel_authorized(
 ) -> bool:
     """Return whether ``actor_user_id`` may cancel a workflow.
 
-    Implements Requirement 11.1 verbatim: a workflow may be cancelled
-    by either the issue ``reporter`` or anyone who has at some point
+    A workflow may be cancelled by either the issue ``reporter`` or anyone who has at some point
     been listed as an ``assignee`` (the "past assignees" set
     maintained by ``AgentRunnerWorkflow.iter_advance``).
 
@@ -113,9 +100,8 @@ def is_cancel_authorized(
     """
 
     # Defensive: an empty string is never authorized regardless of
-    # what the issue lookup returns. This matches the spec's
-    # implicit invariant that an unauthenticated request never reaches
-    # this predicate (see ``router`` below — it raises 401 first), but
+    # what the issue lookup returns. An unauthenticated request should
+    # never reach this predicate (see ``router`` below — it raises 401 first), but
     # if it does the answer must be ``False``.
     if not actor_user_id:
         return False
@@ -193,7 +179,7 @@ class CancelEndpointDeps:
             passes.
         audit_logger: Audit sink for ``rbac_denied`` and
             ``workflow_cancel_requested`` events. Required by
-            Requirement 11.1 and 11.4.
+            the cancel audit contract.
         clock: Optional callable returning the current UTC datetime.
             When omitted, the router uses
             ``datetime.now(timezone.utc)``. Tests inject a frozen
@@ -372,7 +358,7 @@ async def cancel_workflow(
        true}``.
 
     The body of the request is currently ignored — a future revision
-    may accept ``{"reason": "..."}`` (Requirement 11.4) and forward
+    may accept ``{"reason": "..."}`` and forward
     it to the audit payload. The endpoint already accepts arbitrary
     JSON without parsing it so the body shape can be extended without
     a breaking change.

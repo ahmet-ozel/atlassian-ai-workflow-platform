@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# infra/minio/init.sh — MinIO bucket bootstrap (platform-mimari-ops task 13.4)
+# infra/minio/init.sh — MinIO bucket bootstrap
 # =============================================================================
 # Purpose
 # -------
@@ -14,8 +14,7 @@
 #                         by the AuditPruneWorkflow's
 #                         ``archive_audit_to_minio`` activity.
 #                         Layout: ``audit-archive/{Y}/{M}/{D}/audit-N.jsonl.gz``
-#                         (platform-mimari-ops design §"MinIO arşiv yapısı",
-#                         requirement 6.3).
+#                         used by archive search and retention workflows.
 #
 # Usage
 # -----
@@ -56,7 +55,7 @@
 # Re-running the script is a no-op when every required bucket already
 # exists; ``BucketAlreadyOwnedByYou`` (HTTP 409) is treated as success.
 #
-# Production hardening (deferred — Requirement 18.5)
+# Production hardening
 # --------------------------------------------------
 # Object-lock + lifecycle policies are NOT applied in this dev-mode
 # bootstrap. Production deployments should:

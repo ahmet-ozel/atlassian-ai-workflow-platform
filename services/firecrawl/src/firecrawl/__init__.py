@@ -1,10 +1,10 @@
 """firecrawl — egress-allowlisted web scrape/search wrapper.
 
 The package implements the wrapper service that fronts Firecrawl with a
-deterministic per-host egress allowlist (Requirement 10.3, MIMARI §16.14 Y3).
+deterministic per-host egress allowlist.
 The egress matcher (:mod:`firecrawl.egress`) is the load-bearing piece and is
 exercised by both the unit tests under ``tests/unit/`` and the platform
-property test ``platform/tests/property/test_firecrawl_egress.py``.
+property test for Firecrawl egress.
 """
 
 from firecrawl.egress import (

@@ -4,7 +4,7 @@ Multi-channel task intake service (email, Slack, web form, …) for the
 Atlassian automation platform. Receives unstructured requests, normalises
 them, and dispatches Temporal workflows through `automation-service`.
 
-This is a **scaffold**: only the FastAPI skeleton with `/healthz` and
+This is an initial implementation: only the FastAPI skeleton with `/healthz` and
 `/readyz` is implemented. Business logic lives in future tasks.
 
 ## Profile-gated
@@ -76,7 +76,7 @@ services/task-intake-service/
 
 ## Environment variables
 
-See `.env.example` (added in task 7.1). Key variables:
+See `.env.example`. Key variables:
 
 - `PORT=8083`
 - `LOG_LEVEL=INFO`

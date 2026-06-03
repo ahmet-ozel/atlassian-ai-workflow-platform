@@ -53,7 +53,7 @@ sarmasın, yeni send_webhook_with_retry yaz."*
 
 Bot hangi repo'ya commit atacak? Form'da dropdown — sadece departmanına atanmış repo'ları
 gösterir. Yeni repo varsa AI Admin'e başvur (`automation.repo_mappings` tablosuna ekleme
-gerekir, [detay: §16.6.43](../../MIMARI.md)).
+gerekir).
 
 ### Branch (opsiyonel)
 
@@ -64,7 +64,7 @@ kuralı. Manuel commit at, sonra PR'a bot'u reviewer olarak ekle.
 ### Attachment (opsiyonel)
 
 Hata screenshot'u, UI mockup'ı, log dosyası ekleyebilirsin. Bot Vision LLM ile
-görüntüleri okur ([detay: §16.6.7](../../MIMARI.md)).
+görüntüleri okur.
 
 ## Tek/Çift Repo'da Değişiklik?
 

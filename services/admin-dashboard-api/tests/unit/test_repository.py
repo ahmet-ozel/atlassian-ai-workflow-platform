@@ -1,4 +1,4 @@
-"""Task 4.3 — Unit tests for the LLM provider repository pair.
+"""Unit tests for the LLM provider repository pair.
 
 Covers:
 * Round-trip insert / get / list_all / update / delete on

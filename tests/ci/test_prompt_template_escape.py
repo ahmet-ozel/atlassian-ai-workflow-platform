@@ -1,6 +1,5 @@
-"""CI gate — prompt template escape (`platform-mimari-ops` task 2.6).
+"""CI gate — prompt template escape (ops work).
 
-**Validates: Requirement 2.9**
 
 Every Markdown file under any ``prompts/`` directory MUST pass
 :func:`prompts.validate.validate_template_format` so the boot-time
@@ -23,16 +22,16 @@ _PLATFORM_ROOT = Path(__file__).resolve().parent.parent.parent
 def _prompt_files() -> list[Path]:
     """Return only the prompt files that go through PromptLoader.
 
-    The validator pins the chat-assistant template variable contract
-    (``KNOWN_TEMPLATE_VARS``); agent-runner / execution-runner
-    prompts follow a richer Jinja2 dialect that the loader renders
-    differently and is out of scope for this CI gate. Notification
-    templates carry workflow-completion variables (``workflow_id``,
-    ``error``, ``result_summary``) that the notification service's
-    own renderer accepts; this gate deliberately keeps to the
-    chat / orchestration prompts under ``platform/prompts/`` whose
-    boot-time validator is :func:`validate_template_format`.
-    """
+ The validator pins the chat-assistant template variable contract
+ (``KNOWN_TEMPLATE_VARS``); agent-runner / execution-runner
+ prompts follow a richer Jinja2 dialect that the loader renders
+ differently and is out of scope for this CI gate. Notification
+ templates carry workflow-completion variables (``workflow_id``,
+ ``error``, ``result_summary``) that the notification service's
+ own renderer accepts; this gate deliberately keeps to the
+ chat / orchestration prompts under ``platform/prompts/`` whose
+ boot-time validator is :func:`validate_template_format`.
+ """
 
     candidates: list[Path] = []
     chat_prompts = _PLATFORM_ROOT / "prompts"

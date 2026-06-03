@@ -1,27 +1,21 @@
 """Git-aware ``PromptLoader`` with 30-second mtime hot-reload.
 
-The full design lives in
-``.kiro/specs/platform-mimari-ops/design.md`` §`PromptLoader` and
-satisfies Requirements **2.5** (hot-reload), **2.6** (``prompt_version``
-= short git hash) and **2.7** (template variable injection). This
-module is task **2.1** of the ``platform-mimari-ops`` plan; sibling
-tasks **2.2** (:mod:`prompts.types`) and **2.3** (:mod:`prompts.validate`)
-provide the data classes and template format validator the loader
-delegates to.
+This module handles hot-reload, ``prompt_version`` tracking via short
+git hash, and template variable injection. :mod:`prompts.types` and
+:mod:`prompts.validate` provide the data classes and template format
+validator the loader delegates to.
 
-Behavioural contract (verbatim from design):
+Behavioural contract:
 
 * ``load(name)`` — file-backed; cached by ``name``. First call reads
   the prompt body from disk, calls ``git rev-parse --short HEAD --
   <path>`` to capture ``git_hash`` and stores a ``_PromptEntry``.
   Subsequent calls return the cached body.
 * ``version(name)`` — returns the cached ``git_hash``. ``load`` must
-  be called first; raises :class:`KeyError` otherwise (mirrors design
-  pseudocode: ``self._cache[name].git_hash``).
+  be called first; raises :class:`KeyError` otherwise.
 * ``render(name, vars=...)`` — performs ``body.format(**asdict(vars))``;
   any :class:`KeyError` is converted to
-  :class:`PromptTemplateError` so the CI gate flagged in
-  Requirement 2.9 can fail the build.
+  :class:`PromptTemplateError` so CI can fail the build.
 * ``poll_loop()`` — async ``while True`` that re-stats every cached
   prompt once per ``poll_interval_s`` seconds and refreshes the cache
   if ``mtime`` advanced.
@@ -31,18 +25,18 @@ Behavioural contract (verbatim from design):
   ``git_hash`` falls back to ``"unknown"`` and a ``warning`` is
   logged.
 
-Design alignment notes
-----------------------
+Implementation notes
+--------------------
 
 * The cache key is the *logical name* (eg. ``"assistant_chat"``), not
   the resolved path. ``_resolve(name)`` walks ``self._roots`` in
   insertion order and returns the first matching ``<root>/<name>.md``.
   Resolution is intentionally simple — multi-root layering is a
   layering primitive, not a complex include system.
-* Hot-reload is **fail-soft** (design "Hot-reload graceful failure"):
+* Hot-reload is **fail-soft**:
   if ``_read`` raises mid-poll, the existing cache row is kept and a
-  ``warning`` is logged. Task 2.4 adds the ``audit
-  prompt_hot_reload_failed`` write on top of this hook.
+  ``warning`` is logged. Audit writes for
+  ``prompt_hot_reload_failed`` can be layered on top of this hook.
 """
 
 from __future__ import annotations
@@ -69,7 +63,7 @@ _log = logging.getLogger(__name__)
 
 
 #: Default polling interval for :meth:`PromptLoader.poll_loop`. The
-#: design pins this to 30 seconds (MIMARI §16.13 S18); it is
+#: defaults to 30 seconds; it is
 #: parametrised on :class:`PromptLoader` so tests can drive a faster
 #: cadence without monkeypatching.
 _DEFAULT_POLL_INTERVAL_S = 30
@@ -91,10 +85,8 @@ _GIT_TIMEOUT_S = 5.0
 class PromptLoader:
     """File-backed prompt loader with hot-reload + git hash audit.
 
-    Validates:
-        * R2.5 (hot-reload via 30s mtime poll)
-        * R2.6 (``prompt_version`` = git short hash, audited)
-        * R2.7 (template variable injection through :class:`PromptVars`)
+    Handles hot-reload via mtime polling, prompt version tracking, and
+    template variable injection through :class:`PromptVars`.
 
     Args:
         roots: Ordered tuple of directories to search for prompts.
@@ -103,7 +95,7 @@ class PromptLoader:
             shadow later ones — typical layering is
             ``(service_local_root, shared_root)``.
         poll_interval_s: Seconds between mtime polls in
-            :meth:`poll_loop`. Defaults to 30 (design-pinned).
+            :meth:`poll_loop`. Defaults to 30.
     """
 
     def __init__(
@@ -154,9 +146,8 @@ class PromptLoader:
         """Return the short git hash of the cached prompt.
 
         :meth:`load` must have been called for ``name`` first;
-        otherwise :class:`KeyError` is raised — this matches the
-        design pseudocode, which deliberately surfaces a "hot path
-        before warm path" misuse instead of silently re-reading.
+        otherwise :class:`KeyError` is raised so "hot path before warm
+        path" misuse surfaces instead of silently re-reading.
 
         Args:
             name: Same logical name passed to :meth:`load`.
@@ -171,7 +162,7 @@ class PromptLoader:
     def render(self, name: str, *, vars: "PromptVars") -> str:
         """Inject template variables into the prompt body.
 
-        Validates Requirement 2.7. The mapping passed to
+        The mapping passed to
         :meth:`str.format` is the ``dataclasses.asdict`` projection of
         ``vars`` — every field of :class:`prompts.types.PromptVars`
         becomes a placeholder. ``frozenset`` and ``tuple`` fields are
@@ -188,8 +179,8 @@ class PromptLoader:
         Raises:
             PromptTemplateError: The body references a placeholder
                 that is not part of the
-                :class:`prompts.types.PromptVars` contract — Requirement
-                2.9 forces this into a CI-failing error rather than a
+                :class:`prompts.types.PromptVars` contract; this becomes
+                a CI-failing error rather than a
                 silent ``str.format`` ``KeyError``.
         """
 
@@ -198,8 +189,8 @@ class PromptLoader:
         # do *not* rely solely on ``dataclasses.asdict`` because that
         # leaves ``frozenset`` / ``tuple`` as Python collections, which
         # would render as ``frozenset({'a', 'b'})`` literals — useless
-        # to an LLM. The design (§PromptLoader.render) calls these
-        # joins out explicitly.
+        # to an LLM. Joining these values keeps rendered prompts
+        # stable and readable.
         render_vars = dict(dataclasses.asdict(vars))
         render_vars["department_repos"] = ", ".join(vars.department_repos)
         render_vars["capabilities"] = ", ".join(sorted(vars.capabilities))
@@ -223,7 +214,7 @@ class PromptLoader:
             ) from exc
 
     async def poll_loop(self) -> None:
-        """30s mtime poll for hot-reload (Requirement 2.5).
+        """30s mtime poll for hot-reload.
 
         Runs forever; intended to be launched as a background task at
         service boot::
@@ -234,15 +225,14 @@ class PromptLoader:
         and replaces the cache row when ``mtime`` advanced. Failures
         are **fail-soft** — a single broken read keeps the existing
         cache row in place and logs a warning so callers continue to
-        serve the last-known-good prompt (design "Hot-reload graceful
-        failure").
+        serve the last-known-good prompt.
         """
 
         while True:
             for name in list(self._cache.keys()):
                 try:
                     fresh = self._read(name)
-                except Exception as exc:  # noqa: BLE001 — fail-soft per design
+                except Exception as exc:  # noqa: BLE001 — fail-soft cache refresh
                     _log.warning(
                         "prompt hot-reload read failed; keeping cached body",
                         extra={"prompt": name, "error": str(exc)},
@@ -278,15 +268,15 @@ class PromptLoader:
 
         Every read goes through this helper so the git lookup is the
         single source of truth for ``prompt_version`` and the audit
-        contract in Requirement 2.6. The body is also fed through
-        :func:`prompts.validate.validate_template_format` (Requirement
-        2.9) so a malformed template fails the boot/hot-reload read
+        contract. The body is also fed through
+        :func:`prompts.validate.validate_template_format` so a malformed
+        template fails the boot/hot-reload read
         instead of surfacing at LLM render time.
         """
 
         path = self._resolve(name)
         body = path.read_text(encoding="utf-8")
-        # Requirement 2.9 — reject unbalanced/unescaped braces and
+        # Reject unbalanced/unescaped braces and
         # unknown placeholders before the body lands in the cache.
         # ``PromptTemplateError`` propagates: the first ``load`` call
         # surfaces it to the caller (boot fails fast), and inside
@@ -311,8 +301,7 @@ class PromptLoader:
         """
 
         # ``name`` may carry a sub-directory (eg. ``"notifications/workflow_failed"``)
-        # which the design supports without comment; we honour that
-        # by appending ``.md`` to the *full* name rather than the stem.
+        # so append ``.md`` to the *full* name rather than the stem.
         relative = Path(f"{name}.md")
         for root in self._roots:
             candidate = root / relative
@@ -328,10 +317,9 @@ class PromptLoader:
 def _git_short_hash_for(path: Path) -> str:
     """Return ``git log -n1 --pretty=%h -- <path>`` or ``"unknown"``.
 
-    The design specifies *commit-bazlı versiyon* (commit-based
-    version): we want the short hash of the most recent commit that
-    touched ``path``. ``git log -n1 --pretty=%h -- <path>`` is the
-    canonical incantation.
+    Prompt versioning uses the short hash of the most recent commit
+    that touched ``path``. ``git log -n1 --pretty=%h -- <path>`` is
+    the canonical incantation.
 
     Fail-soft branches:
         * ``git`` binary missing → ``FileNotFoundError`` from

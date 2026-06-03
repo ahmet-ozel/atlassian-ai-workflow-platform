@@ -1,7 +1,6 @@
 """Pure sliding-window compressor used by ``ChatHandler.stream``.
 
-Implements the design contract from
-``platform-mimari-ops`` design.md §"SlidingWindow":
+Implements this deterministic compression contract:
 
     def compress(messages, *, n, summarizer):
         if len(messages) <= n:
@@ -14,9 +13,8 @@ Implements the design contract from
 This is a deterministic, side-effect-free transformation: the sole
 external interaction is the call to ``summarizer`` on the dropped
 older messages, which is the seam through which a real LLM-backed
-summariser is injected at runtime. Property 14
-(``platform/tests/property/test_sliding_window.py``) pins the
-following invariants for the deterministic-summariser case:
+summariser is injected at runtime. The deterministic-summariser tests
+pin the following invariants:
 
 (a) ``len(messages) <= n`` ⇒ output ``== messages`` (no-op, no
     summariser call).
@@ -34,7 +32,7 @@ The compressor is intentionally minimal: env wiring (``CHAT_SLIDING
 _WINDOW_N=20``), the LLM-backed summariser default, the audit
 ``sliding_window_summary_failed`` fallback (design Testing Strategy
 table) and the boot-time ``poll_loop`` are layered on top by
-``src/main.py`` and ``ChatHandler`` (tasks 3.1, 4.4). Keeping
+``src/main.py`` and ``ChatHandler``. Keeping
 ``compress`` pure means the property test can exercise the contract
 without any I/O.
 """
@@ -56,11 +54,9 @@ __all__ = ["compress", "Summariser", "SUMMARY_PREFIX"]
 Summariser = Callable[[Sequence[Message]], str]
 
 
-#: Substring stamped into the leading summary message. Property 14
-#: clause (d) asserts membership of this substring in the output's
-#: first element. The Turkish phrase mirrors the user-facing prompt
-#: in ``platform/prompts/assistant_chat.md`` (task 4.5) and the
-#: design pseudocode verbatim.
+#: Substring stamped into the leading summary message. Tests assert
+#: membership of this substring in the output's first element. The
+#: Turkish phrase mirrors the user-facing prompt text.
 SUMMARY_PREFIX: str = "[Önceki konuşma özeti]"
 
 
@@ -91,8 +87,6 @@ def compress(
         ``role="system"`` summary message and whose remaining ``n``
         elements equal ``messages[-n:]`` verbatim.
 
-    Validates:
-        Requirement 1.7.
     """
 
     if len(messages) <= n:

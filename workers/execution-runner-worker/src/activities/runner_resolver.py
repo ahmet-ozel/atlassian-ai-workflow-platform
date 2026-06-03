@@ -16,9 +16,6 @@ algorithm:
    and writes an audit event ``no_runner_assigned_to_dept``.
 6. On successful selection, writes an audit event ``ssh_runner_selected``
    with ``dept_id``, ``runner_id``, and ``selection_reason``.
-
-Spec: platform-quick-fixes — Task 7.3
-Requirements: 4.5, 4.6, 4.7, 4.16
 """
 
 from __future__ import annotations
@@ -293,7 +290,7 @@ async def resolve_runner(dept_id: str) -> dict[str, Any]:
         selected["active_count"],
     )
 
-    # Write audit event for runner selection (R4.16)
+    # Write audit event for runner selection.
     await _write_audit_event(
         action="ssh_runner_selected",
         dept_id=dept_id,

@@ -1,11 +1,6 @@
-"""Property test: Firecrawl allowlist domain format validation.
-
-Feature: platform-completion, Property 26: For any input string submitted as a new
+"""Firecrawl allowlist domain format validation.
 domain, it SHALL be accepted iff it is a valid DNS domain (max 253 chars) AND
-does not already exist in the allowlist.
-
-Validates: Requirements 12.2, 12.3
-"""
+does not already exist in the allowlist."""
 from __future__ import annotations
 import re
 import sys

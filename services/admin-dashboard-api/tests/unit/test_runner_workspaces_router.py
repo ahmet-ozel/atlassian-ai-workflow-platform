@@ -1,4 +1,4 @@
-"""Unit tests for ``src.routers.runner_workspaces`` (task 14.1).
+"""Unit tests for ``src.routers.runner_workspaces``.
 
 The router is exercised through :class:`fastapi.testclient.TestClient`
 against an in-memory stub :class:`RunnerWorkspacesClient`. The
@@ -7,10 +7,10 @@ the happy paths; the auth-gate behaviour is delegated to the existing
 ``test_services_lifecycle_router`` coverage so we can focus on the
 endpoint-specific contracts (regex guard, audit emission, soft-fail).
 
-Coverage matrix (tasks.md 14.1, requirements.md R13):
+Coverage matrix:
 
 * ``GET /admin/runner/workspaces`` → 200 + serialised entries when the
-  client is wired (Requirement 13.1 listing shape).
+  client is wired.
 * ``GET`` → 200 + empty list when the client slot is ``None``
   (soft-fail; UI keeps rendering).
 * ``GET`` → 200 + empty list when the client raises (soft-fail; the
@@ -172,7 +172,7 @@ def _entry(
 
 
 class TestListWorkspaces:
-    """Cover Requirement 13.1 listing shape + soft-fail branches."""
+    """Cover listing shape and soft-fail branches."""
 
     def test_returns_serialised_entries(self) -> None:
         client = _StubClient(
@@ -286,7 +286,7 @@ class TestPurgeWorkspaceHappyPath:
 
 
 # ---------------------------------------------------------------------------
-# DELETE — path-traversal guard (Requirement 13.4)
+# DELETE — path-traversal guard
 # ---------------------------------------------------------------------------
 
 
@@ -442,7 +442,7 @@ def test_delete_502_and_audit_when_client_raises() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Audit best-effort contract (Requirement 7.5 / 11.8)
+# Audit best-effort contract
 # ---------------------------------------------------------------------------
 
 

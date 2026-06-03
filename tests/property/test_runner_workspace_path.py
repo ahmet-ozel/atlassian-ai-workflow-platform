@@ -1,24 +1,20 @@
-"""Property test 12 — Workspace Path Build Determinism + Path-Traversal Safety (Q13).
-
-**Validates: Requirements 11.3, 11.4, 11.6**
-
-Spec: ``platform-mimari-uyumluluk`` task 13.5.
+"""Property-based tests for workspace path determinism and traversal safety.
 
 Scope
 -----
 
 This test pins three invariants over
 :func:`runners.workspace_path.build_workspace_path` (the helper added by
-task 13.1) and the ``RUNNER_BASE_PATH > SSH_BASE_PATH > default`` alias
-chain on :class:`src.config.Settings.runner_base_path` (task 13.2):
+and the ``RUNNER_BASE_PATH > SSH_BASE_PATH > default`` alias chain on
+:class:`src.config.Settings.runner_base_path`:
 
-1. **Determinism (R11.3, R11.6).** For every valid input
+1. **Determinism.** For every valid input
    ``(base, issue_key, iter_n)`` the helper returns
    ``f"{base.rstrip('/')}/{issue_key}/iter-{iter_n}"`` byte-for-byte —
    independent of how many trailing slashes the caller passes on
    ``base``, and idempotent across repeated calls.
 
-2. **Path-traversal safety (R11.3, R11.6).** Any ``issue_key`` that
+2. **Path-traversal safety.** Any ``issue_key`` that
    does not match ``^[A-Z][A-Z0-9_]*-\\d+$`` — including the canonical
    path-traversal vectors (``..``, ``../etc``, absolute paths,
    embedded slashes) and shell-metachar vectors (``;``, ``&``, ``|``,
@@ -29,7 +25,7 @@ chain on :class:`src.config.Settings.runner_base_path` (task 13.2):
    ``iter_n`` (``< 0``, ``> 999``, booleans, non-int) with
    :class:`InvalidIterError`.
 
-3. **Settings alias priority (R11.4).** ``runner_base_path`` is read
+3. **Settings alias priority.** ``runner_base_path`` is read
    in the order ``RUNNER_BASE_PATH > SSH_BASE_PATH > default
    ("/var/ai-runner")``. Both Hypothesis and three example-level
    guards exercise the chain so a regression that swaps the alias
@@ -162,8 +158,8 @@ valid_bases = st.builds(
 
 valid_iter_n = st.integers(min_value=MIN_ITER, max_value=MAX_ITER)
 
-# Shell-metachar / path-traversal vectors. Property 12 explicitly calls
-# out ``..``, ``;``, ``&``, ``|``, newline, null-byte (R11.6); the
+# Shell-metachar / path-traversal vectors. The suite explicitly covers
+# ``..``, ``;``, ``&``, ``|``, newline, null-byte; the
 # helper rejects anything that does not match the canonical pattern, so
 # we strategy-mix curated vectors with arbitrary text containing those
 # bytes.
@@ -218,7 +214,7 @@ _INVALID_ITER_N = st.one_of(
 
 
 # ---------------------------------------------------------------------------
-# Property 1 — Determinism for valid inputs
+# Determinism for valid inputs
 # ---------------------------------------------------------------------------
 
 
@@ -235,9 +231,7 @@ _INVALID_ITER_N = st.one_of(
 def test_valid_inputs_produce_canonical_path(
     base: str, issue_key: str, iter_n: int
 ) -> None:
-    """**Validates: Requirement 11.3, 11.6.**
-
-    For every valid triple, output equals the canonical formula —
+    """For every valid triple, output equals the canonical formula —
     ``{base.rstrip('/')}/{issue_key}/iter-{iter_n}`` — and the helper
     is idempotent (repeated calls return byte-for-byte equal strings).
     """
@@ -265,10 +259,8 @@ def test_valid_inputs_produce_canonical_path(
 def test_output_is_safe_for_shell_consumers(
     base: str, issue_key: str, iter_n: int
 ) -> None:
-    """**Validates: Requirement 11.6.**
-
-    The execution-runner builds SSH commands by interpolating this
-    string. The helper's contract — and what Property 12 enforces — is
+    """The execution-runner builds SSH commands by interpolating this
+    string. The helper's contract is
     that the *output* is always free of the shell metachars and
     path-traversal bytes the validator rejects on the input side. We
     re-check the output here as a defence-in-depth assertion: even if
@@ -295,7 +287,7 @@ def test_output_is_safe_for_shell_consumers(
 
 
 # ---------------------------------------------------------------------------
-# Property 2 — Path-traversal safety on issue_key
+# Path-traversal safety on issue_key
 # ---------------------------------------------------------------------------
 
 
@@ -312,9 +304,7 @@ def test_output_is_safe_for_shell_consumers(
 def test_invalid_issue_keys_are_rejected(
     base: str, invalid_key: Any, iter_n: int
 ) -> None:
-    """**Validates: Requirement 11.3, 11.6.**
-
-    Any ``issue_key`` outside the canonical pattern raises
+    """Any ``issue_key`` outside the canonical pattern raises
     :class:`InvalidIssueKeyError`. The exception preserves the
     offending value for audit. No ``InvalidIterError`` is raised
     because ``iter_n`` is valid — order of validation must surface the
@@ -330,7 +320,7 @@ def test_invalid_issue_keys_are_rejected(
 
 
 # ---------------------------------------------------------------------------
-# Property 3 — iter_n range guard
+# iter_n range guard
 # ---------------------------------------------------------------------------
 
 
@@ -347,9 +337,7 @@ def test_invalid_issue_keys_are_rejected(
 def test_invalid_iter_n_is_rejected(
     base: str, issue_key: str, invalid_iter: Any
 ) -> None:
-    """**Validates: Requirement 11.3, 11.6.**
-
-    ``iter_n`` MUST be a non-bool ``int`` in ``[MIN_ITER, MAX_ITER]``.
+    """``iter_n`` MUST be a non-bool ``int`` in ``[MIN_ITER, MAX_ITER]``.
     Booleans, floats, ``None``, strings, and out-of-range integers are
     all rejected with :class:`InvalidIterError`. The exception
     preserves the offending value for audit.
@@ -362,7 +350,7 @@ def test_invalid_iter_n_is_rejected(
 
 
 # ---------------------------------------------------------------------------
-# Property 4 — Trailing-slash idempotency
+# Trailing-slash idempotency
 # ---------------------------------------------------------------------------
 
 
@@ -380,9 +368,7 @@ def test_invalid_iter_n_is_rejected(
 def test_trailing_slash_is_normalised(
     base: str, issue_key: str, iter_n: int, extra_slashes: int
 ) -> None:
-    """**Validates: Requirement 11.3, 11.6.**
-
-    ``base`` may carry any number of trailing forward slashes; the
+    """``base`` may carry any number of trailing forward slashes; the
     output is invariant under that suffix. This is the determinism
     contract that lets ``RUNNER_BASE_PATH=/var/ai-runner`` and
     ``RUNNER_BASE_PATH=/var/ai-runner/`` produce identical workspaces.
@@ -400,7 +386,7 @@ def test_trailing_slash_is_normalised(
 
 
 # ---------------------------------------------------------------------------
-# Property 5 — Settings alias priority
+# Settings alias priority
 # ---------------------------------------------------------------------------
 
 
@@ -453,9 +439,7 @@ def test_canonical_env_wins_over_legacy_alias(
     legacy: str,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """**Validates: Requirement 11.4.**
-
-    When ``RUNNER_BASE_PATH`` is set, it MUST win regardless of
+    """When ``RUNNER_BASE_PATH`` is set, it MUST win regardless of
     whether ``SSH_BASE_PATH`` is also set. ``AliasChoices`` declares
     ``RUNNER_BASE_PATH`` first, so the canonical name takes precedence.
     """
@@ -479,9 +463,7 @@ def test_canonical_env_wins_over_legacy_alias(
 def test_legacy_alias_used_when_canonical_absent(
     legacy: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """**Validates: Requirement 11.4.**
-
-    When ``RUNNER_BASE_PATH`` is unset, the deprecated ``SSH_BASE_PATH``
+    """When ``RUNNER_BASE_PATH`` is unset, the deprecated ``SSH_BASE_PATH``
     alias is honoured. This is the backwards-compatibility contract
     that protects existing deployments from a silent fall-back to the
     ``/var/ai-runner`` default.
@@ -499,9 +481,7 @@ def test_legacy_alias_used_when_canonical_absent(
 def test_default_when_neither_env_set(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """**Validates: Requirement 11.4.**
-
-    With neither env var set the documented default
+    """With neither env var set the documented default
     (``/var/ai-runner``, referenced by the ``task-creation-assistant``
     prompt template) wins. Example-level guard rather than Hypothesis
     because the property is a single point.
@@ -516,7 +496,7 @@ def test_default_when_neither_env_set(
 
 
 # ---------------------------------------------------------------------------
-# Property 6 — End-to-end Settings → build_workspace_path round-trip
+# End-to-end Settings → build_workspace_path round-trip
 # ---------------------------------------------------------------------------
 
 
@@ -536,15 +516,13 @@ def test_settings_to_build_workspace_path_round_trip(
     iter_n: int,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """**Validates: Requirements 11.3, 11.4, 11.6.**
-
-    The two public surfaces — :class:`Settings.runner_base_path` and
+    """The two public surfaces — :class:`Settings.runner_base_path` and
     :func:`build_workspace_path` — compose deterministically. Setting
     ``RUNNER_BASE_PATH=<X>`` followed by
     ``build_workspace_path(settings.runner_base_path, issue_key, iter_n)``
     yields ``f"{X.rstrip('/')}/{issue_key}/iter-{iter_n}"``. This is
     the exact wiring used by ``runners/remote_ssh.py`` and
-    ``runners/remote_ssh_docker.py`` (task 13.3); breaking it desyncs
+    ``runners/remote_ssh_docker.py``; breaking it desyncs
     the prompt-template path layout from the runtime layout.
     """
 

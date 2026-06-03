@@ -1,12 +1,11 @@
-"""Task 5.2 — ``test_create_app_settings_state`` (automation-service-wiring).
+"""Tests for ``create_app`` settings state wiring.
 
 Pins the contract that :func:`automation_service.app.create_app` stashes
 the resolved :class:`Settings` instance on ``app.state.settings``. The
 production lifespan handler reads ``app.state.settings`` to resolve every
 infrastructure connection string (``postgres_dsn``, ``temporal_host``,
 ``mcp_base_url``, ...), so this attribute is part of the public contract
-between :func:`create_app` and :func:`lifespan` (Requirements 1.3 and 7.3
-of the ``automation-service-wiring`` spec).
+between :func:`create_app` and :func:`lifespan`.
 """
 
 from __future__ import annotations

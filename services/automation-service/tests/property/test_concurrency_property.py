@@ -1,23 +1,19 @@
 """Property test: Per-department concurrency limit enforcement.
 
-# Feature: platform-gap-fill
-# Property 17: Concurrency Limit Enforcement (Q19)
-# Validates: Requirements 19.1, 19.2 (with R19.3 cross-check)
-
 For every ``(max_concurrent, current_count)`` pair, ``check_dept_concurrency``
 behaviour satisfies the following invariants:
 
-(A) **None-cap allow (R19.3 cross-check)** — ``max_concurrent is None`` →
+(A) **None-cap allow** — ``max_concurrent is None`` →
     the check passes regardless of ``current_count``. The returned
     :class:`ConcurrencyCheckResult` has ``max_allowed is None`` and
     ``current == observed_count``.
 
-(B) **Under-cap allow (R19.1)** — ``current_count < max_concurrent`` →
+(B) **Under-cap allow** — ``current_count < max_concurrent`` →
     the check returns a :class:`ConcurrencyCheckResult` with
     ``current == observed_count`` and ``max_allowed == max_concurrent``;
     no exception is raised.
 
-(C) **At-or-over-cap reject (R19.2)** — ``current_count >= max_concurrent``
+(C) **At-or-over-cap reject** — ``current_count >= max_concurrent``
     (and ``max`` is not ``None``) → :class:`ConcurrencyLimitExceeded` is
     raised. The exception carries ``.current == observed_count``,
     ``.max_allowed == max_concurrent``, and ``.dept_id`` matching the
@@ -26,7 +22,7 @@ behaviour satisfies the following invariants:
 (D) **N+1 boundary transition** — for any ``max ∈ [1, 50]``, the
     ``(max - 1)`` check passes and the ``max`` check rejects. This is
     the explicit "departman aynı anda çalıştırabileceği N+1. workflow'u
-    reddedilmeli" wording from R19.2.
+    reddedilmeli" behavior.
 
 (E) **Source label propagation** — the ``source`` field of the
     success result and of the exception is ``"temporal"`` when the
@@ -164,15 +160,12 @@ _DEPT_ID = st.from_regex(r"[a-z][a-z0-9-]{1,30}", fullmatch=True)
 
 
 # ---------------------------------------------------------------------------
-# Property A — None cap is a silent allow regardless of count (R19.3 anchor)
+# None cap is a silent allow regardless of count
 # ---------------------------------------------------------------------------
 
 
 class TestNoneCapAllows:
-    """**Property 17A: ``max_concurrent is None`` → silent allow.**
-
-    Validates: Requirements 19.3 (cross-check feeding R19.1, R19.2).
-    """
+    """``max_concurrent is None`` → silent allow."""
 
     @_PROFILE
     @given(current_count=_COUNT_INT, dept_id=_DEPT_ID)
@@ -196,12 +189,12 @@ class TestNoneCapAllows:
 
 
 # ---------------------------------------------------------------------------
-# Property B — current < max → allow (R19.1)
+# Current < max → allow
 # ---------------------------------------------------------------------------
 
 
 class TestUnderCapAllows:
-    """**Property 17B: ``current < max`` → silent allow (R19.1).**"""
+    """``current < max`` → silent allow."""
 
     @_PROFILE
     @given(
@@ -234,12 +227,12 @@ class TestUnderCapAllows:
 
 
 # ---------------------------------------------------------------------------
-# Property C — current >= max → reject (R19.2)
+# Current >= max → reject
 # ---------------------------------------------------------------------------
 
 
 class TestAtOrOverCapRejects:
-    """**Property 17C: ``current >= max`` → ConcurrencyLimitExceeded (R19.2).**"""
+    """``current >= max`` → ``ConcurrencyLimitExceeded``."""
 
     @_PROFILE
     @given(
@@ -276,16 +269,15 @@ class TestAtOrOverCapRejects:
 
 
 # ---------------------------------------------------------------------------
-# Property D — N+1 boundary transition (R19.2 verbatim wording)
+# N+1 boundary transition
 # ---------------------------------------------------------------------------
 
 
 class TestNPlusOneBoundary:
-    """**Property 17D: starting one more when current = max-1 passes,
+    """Starting one more when current = max-1 passes,
     then re-checking with current = max rejects.**
 
-    This is the literal "N+1 workflow start → 429" wording in
-    ``tasks.md`` task 19.2 and Requirements 19.2.
+    This covers the "N+1 workflow start → 429" behavior.
     """
 
     @_PROFILE
@@ -336,12 +328,12 @@ class TestNPlusOneBoundary:
 
 
 # ---------------------------------------------------------------------------
-# Property E — Source label is consistent with which counter answered
+# Source label is consistent with which counter answered
 # ---------------------------------------------------------------------------
 
 
 class TestSourceLabelPropagation:
-    """**Property 17E: ``source`` label tracks which counter answered.**
+    """``source`` label tracks which counter answered.
 
     - Visibility client present and *does not* raise → ``"temporal"``.
     - Visibility client raises → fallback to Postgres → ``"postgres"``.
@@ -478,12 +470,12 @@ class TestSourceLabelPropagation:
 
 
 # ---------------------------------------------------------------------------
-# Property F — extract_max_concurrent rejects non-positive-int inputs
+# extract_max_concurrent rejects non-positive-int inputs
 # ---------------------------------------------------------------------------
 
 
 class TestExtractMaxConcurrentParsing:
-    """**Property 17F: ``extract_max_concurrent`` is strict about types.**
+    """``extract_max_concurrent`` is strict about types.
 
     Only positive integers (excluding ``bool``) round-trip; everything
     else maps to ``None``. This guards the dispatcher's gate input —
@@ -546,16 +538,12 @@ class TestExtractMaxConcurrentParsing:
 
 
 # ---------------------------------------------------------------------------
-# Cross-property — combined (max, count) sweep
+# Combined (max, count) sweep
 # ---------------------------------------------------------------------------
 
 
 class TestCombinedAllowRejectSweep:
-    """**Combined Property 17 (Q19): for every (max, count) pair, behaviour
-    is exactly partitioned by ``current >= max``.**
-
-    Validates: Requirements 19.1, 19.2.
-    """
+    """For every (max, count) pair, behavior is partitioned by ``current >= max``."""
 
     @_PROFILE
     @given(

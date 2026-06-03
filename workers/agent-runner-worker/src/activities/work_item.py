@@ -7,12 +7,12 @@ rows and exposes:
   status transition that is not in the allowed-edge set.
 - :func:`validate_work_item_transition` — a *pure* helper (no DB, no
   Temporal runtime) that enforces the state-machine contract. This is
-  the entry point exercised by Property 9.
+  the entry point exercised by state-machine tests.
 - :func:`update_work_item_status` — a Temporal activity that issues the
   ``UPDATE automation.work_items SET status = ...`` statement, but only
   after the same pure validator has accepted the transition.
 
-Allowed transitions (Property 9, design.md §"Property 9"):
+Allowed transitions:
 
     pending  → running
     pending  → failed
@@ -22,7 +22,6 @@ Allowed transitions (Property 9, design.md §"Property 9"):
 Self-loops (``s → s`` for every status) are also accepted as idempotent
 no-ops. Every other ordered pair is rejected.
 
-Validates Requirements 5.10, 5.11, 11.5.
 """
 
 from __future__ import annotations
@@ -43,8 +42,7 @@ WORK_ITEM_STATUSES: Final[frozenset[str]] = frozenset(
 
 #: Forward edges in the work-item state machine (excluding self-loops).
 #:
-#: This is a tuple of ``(from_status, to_status)`` ordered pairs, exactly
-#: as enumerated in design.md §"Property 9". Self-loops are NOT included
+#: This is a tuple of ``(from_status, to_status)`` ordered pairs. Self-loops are NOT included
 #: here because they're handled by the validator without needing an
 #: explicit table entry.
 _FORWARD_EDGES: Final[frozenset[tuple[str, str]]] = frozenset(
@@ -85,7 +83,7 @@ class InvalidWorkItemTransition(ValueError):
 
 
 # ---------------------------------------------------------------------------
-# Pure validator (Property 9 entry point)
+# Pure validator entry point
 # ---------------------------------------------------------------------------
 
 

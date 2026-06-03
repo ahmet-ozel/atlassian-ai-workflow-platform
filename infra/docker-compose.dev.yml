@@ -5,7 +5,7 @@
 #   docker compose -f infra/docker-compose.yml -f infra/docker-compose.dev.yml up -d
 #
 # This override layers developer-machine conveniences on top of the base
-# `infra/docker-compose.yml` (Requirement 2.2):
+# `infra/docker-compose.yml`:
 #
 #   * Bind-mounts each Component's source tree into the container so edits
 #     on the host are reflected immediately inside the container.
@@ -34,7 +34,7 @@
 #   this override only refreshes their source mount + LOG_LEVEL, leaving
 #   the base `command` (or Dockerfile `CMD`) intact. Restart the worker
 #   container after editing source to pick up the change.
-# * `atlassian_unified/` is immutable (Requirement 2.4) and intentionally
+# * `atlassian_mcp_bitbucket/` is the Atlassian MCP gateway and intentionally
 #   has no override stanza here — its `LOG_LEVEL` continues to be sourced
 #   from the base file's `${LOG_LEVEL:-INFO}` interpolation.
 # =============================================================================

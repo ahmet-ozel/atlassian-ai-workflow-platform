@@ -10,9 +10,6 @@ and diff extraction. Each task gets its own session for isolation.
 
 The caller workflow (AgentRunnerWorkflow) is responsible for setting the
 ``start_to_close_timeout`` to 5 minutes via activity options.
-
-Design reference: design.md §3.3, MIMARI §8 (OpenCode Sidecar)
-Requirements: 7.5
 """
 
 from __future__ import annotations

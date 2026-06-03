@@ -10,9 +10,9 @@ and translates orchestrator exceptions into HTTP status codes.
 Currently exposes:
 
 * :mod:`routers.dept_credentials` — per-service department credential
-  CRUD + probe endpoints (uyumluluk R1 / Q1, task 3.2).  Wraps the
+  CRUD + probe endpoints. Wraps the
   :class:`services.dept_credential_service.DeptCredentialService`
-  orchestrator from task 3.1.
+  orchestrator.
 """
 
 __all__: list[str] = []

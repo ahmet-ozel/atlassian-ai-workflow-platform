@@ -2,46 +2,40 @@
 
 Receives Jira Cloud webhook events (``jira:issue_created``,
 ``jira:issue_assigned``, ``jira:issue_updated``, ``jira:comment_created``)
-and either starts an ``AutomationWorkflow`` (Requirement 2.12) or signals
-an existing workflow with a ``new_comment`` payload (Requirement 5.6).
+and either starts an ``AutomationWorkflow`` or signals an existing
+workflow with a ``new_comment`` payload.
 
-Guard chain (sequential — each step short-circuits with the response
-shape and audit-log entry from design.md §5.1):
+Guard chain (sequential — each step short-circuits with the documented
+response shape and audit-log entry):
 
   (a) Read the raw request body.
-  (b) ``hmac_verify.verify(...)`` — 401 ``unauthorized`` on failure
-      (Requirements 2.1, 2.2).
+  (b) ``hmac_verify.verify(...)`` — 401 ``unauthorized`` on failure.
   (c) ``replay.check_and_insert(...)`` SHA-256 dedup — 200 ``duplicate``
-      on dup (Requirements 2.3, 2.4).
+      on dup.
   (d) ``loop_guard.is_self_actor(...)`` — 200 ``loop_guard`` when the
-      actor is a registered bot (Requirements 2.5, 2.6).
+      actor is a registered bot.
   (e) ``loop_guard.route(...)`` event-type classification — 200
-      ``ignored`` for unsupported event types (Requirement 2.13).
+      ``ignored`` for unsupported event types.
   (f) ``jira:comment_created`` → ``temporal.signal_workflow(...)``
-      ``new_comment`` signal, 200 ``signal_forwarded``
-      (Requirement 5.6 / pre-Phase-1 fast path).
+      ``new_comment`` signal, 200 ``signal_forwarded``.
   (g) ``jira:issue_created`` / ``jira:issue_assigned`` →
       ``loop_guard.is_bot_assignee``? Otherwise 200
-      ``not_bot_assignee`` (Requirements 2.7, 2.8).
+      ``not_bot_assignee``.
   (h) ``jira:issue_updated`` → ``loop_guard.assignee_changed_to_bot``?
-      Otherwise 200 ``not_bot_assignee`` (Requirements 2.8, 2.9).
+      Otherwise 200 ``not_bot_assignee``.
   (i) ``capability_gate.has_jira_credential(...)`` — 200
       ``missing_capability`` if the resolved department lacks a Jira
-      bot credential (Requirement 2.11).
-  (j) INSERT INTO ``automation.work_items`` with ``status='pending'``
-      (Requirement 2.14).
+      bot credential.
+  (j) INSERT INTO ``automation.work_items`` with ``status='pending'``.
   (k) ``temporal.start_workflow("AutomationWorkflow", id=...)`` with
-      ``automation_workflow_id_jira(issue_key)`` (Requirement 2.12).
+      ``automation_workflow_id_jira(issue_key)``.
   (l) Best-effort acknowledgement comment via the Atlassian MCP
       (Turkish per default ``departments.default_language='tr'``).
-  (m) 200 ``{"status": "accepted", "workflow_id": ...}``
-      (Requirement 2.10).
+  (m) 200 ``{"status": "accepted", "workflow_id": ...}``.
 
 A ``WorkflowAlreadyStartedError`` raised from step (k) collapses to a
 200 ``duplicate`` response — Temporal native idempotency layered on top
-of the SHA-256 replay guard (Requirements 2.12, 10.4).
-
-Validates Requirements 2.1–2.14.
+of the SHA-256 replay guard.
 """
 
 from __future__ import annotations
@@ -75,7 +69,7 @@ __all__ = ["router"]
 # Constants
 # ---------------------------------------------------------------------------
 
-#: Replay-hash TTL (Requirement 10.5 — 7 days).
+#: Replay-hash TTL for duplicate delivery protection.
 _REPLAY_TTL: timedelta = timedelta(days=7)
 
 #: Workflow type constant for ``AutomationWorkflow``.
@@ -94,9 +88,9 @@ _EVENT_ISSUE_UPDATED: str = "jira:issue_updated"
 _EVENT_COMMENT_CREATED: str = "jira:comment_created"
 
 #: Default acknowledgement comment posted on workflow start.  Turkish
-#: per Requirement 11.2 — the department-specific ``default_language``
-#: override is applied by the activity layer if/when a non-``tr``
-#: department is added.
+#: by default; the department-specific ``default_language`` override
+#: is applied by the activity layer if/when a non-``tr`` department is
+#: added.
 _ACK_COMMENT_TR: str = "🤖 Task alındı, analiz ediliyor..."
 
 #: Comment posted as best-effort acknowledgement when Phase 1
@@ -108,7 +102,7 @@ _MISSING_CAPABILITY_COMMENT_TR: str = (
 
 #: Default Jira status names that allow restarting a workflow from a
 #: ``comment_created`` event when no execution is currently running for
-#: the issue (Requirement 3.2 / MIMARI §16.17 Q5 ④). The list is
+#: the issue. The list is
 #: overridable per-department via
 #: ``departments.config_json.task_status_mapping.retrigger_eligible``.
 _DEFAULT_RETRIGGER_ELIGIBLE_STATUSES: tuple[str, ...] = ("To Do", "Open")
@@ -130,7 +124,7 @@ AckCommentFn = Callable[[str, str, str], Awaitable[None]]
 
 
 # ---------------------------------------------------------------------------
-# Dependency accessors (set up in main.py lifespan, task 5.3)
+# Dependency accessors (set up in main.py lifespan)
 # ---------------------------------------------------------------------------
 
 
@@ -166,7 +160,7 @@ def _get_ack_comment_fn(request: Request) -> AckCommentFn | None:
 
 #: Optional callable on ``app.state.jira_fetch_issue`` that returns
 #: ``(status_name, assignee_account_id)`` for a given Jira issue.  The
-#: comment-restart branch (Requirement 3.1) uses it to read the current
+#: comment-restart branch uses it to read the current
 #: state of an issue when ``signal_workflow`` reports
 #: ``WorkflowNotFound``.  The handler treats ``None`` as "no restart
 #: possible" — the request degrades gracefully to ``ignored``.
@@ -373,8 +367,8 @@ async def _jira_bot_account_ids_for_dept(
 ) -> frozenset[str]:
     """Return the Jira bot ``account_id`` values for one department.
 
-    Used by the ``comment_created`` restart branch (Requirement 3.2)
-    so the eligibility check is scoped to the dept that owns the
+    Used by the ``comment_created`` restart branch so the eligibility
+    check is scoped to the dept that owns the
     issue's project key — a cross-dept bot must not trigger a restart
     on another dept's issue.
     """
@@ -412,7 +406,7 @@ async def _retrigger_eligible_statuses(
     db: Any, dept_id: str
 ) -> frozenset[str]:
     """Return the set of Jira status names that allow a comment-driven
-    workflow restart for *dept_id* (Requirement 3.2).
+    workflow restart for *dept_id*.
 
     Reads ``automation.departments.config_json.task_status_mapping
     .retrigger_eligible``; falls back to
@@ -492,7 +486,7 @@ async def _insert_work_item(
 def _audit(event_name: str, **fields: Any) -> None:
     """Emit a single structured audit-log entry.
 
-    Field names match the table in design.md §5.1.  ``None`` values are
+    Field names follow the webhook audit schema.  ``None`` values are
     silently dropped so the JSON output is compact and stable.  The
     helper's first positional parameter is named ``event_name`` because
     structlog reserves ``event`` for the log message slot — call sites
@@ -517,7 +511,7 @@ async def post_jira_webhook(request: Request) -> JSONResponse:  # noqa: PLR0911,
     signature = request.headers.get(_HEADER_SIGNATURE, "") or ""
 
     # Check infrastructure dependencies up front; structuring 503s here
-    # mirrors the Bitbucket handler and matches the design §5.1 table.
+    # mirrors the Bitbucket handler's webhook error responses.
     db = _get_db(request)
     if db is None:
         _audit("webhook_db_error", source="jira")
@@ -586,7 +580,7 @@ async def post_jira_webhook(request: Request) -> JSONResponse:  # noqa: PLR0911,
         )
 
     # Parse JSON.  Real Atlassian deliveries are always valid JSON; for
-    # malformed payloads we return 400 (silent — see design §5.1).
+    # malformed payloads we return a quiet 400 response.
     try:
         decoded = json.loads(raw_body or b"{}")
     except (ValueError, TypeError):
@@ -897,16 +891,15 @@ async def _handle_comment_created(
     creds: CredentialResolver,
     jira_fetch_issue: JiraFetchIssueFn | None,
 ) -> JSONResponse:
-    """Handle ``jira:comment_created`` (Requirements 3.1-3.4, 5.6).
+    """Handle ``jira:comment_created``.
 
     Fast path: forward a minimal ``new_comment`` payload to the
     existing ``AutomationWorkflow`` via :meth:`signal_workflow`. The
-    happy-path response is unchanged from the pre-Requirement-3
-    behaviour (200 ``signal_forwarded``).
+    happy-path response remains 200 ``signal_forwarded``.
 
-    Restart branch (MIMARI §16.17 Q5 ④): when Temporal raises
-    :class:`WorkflowNotFoundError` (no execution exists for the
-    issue's workflow id), we look up the issue's current Jira state.
+    Restart branch: when Temporal raises :class:`WorkflowNotFoundError`
+    (no execution exists for the issue's workflow id), we look up the
+    issue's current Jira state.
     If the status is in the dept's ``retrigger_eligible`` set
     (default ``["To Do", "Open"]``) **and** the assignee is one of
     the dept's registered Jira bots, we ``signal_with_start`` a fresh
@@ -917,7 +910,7 @@ async def _handle_comment_created(
     to 200 ``ignored`` (``comment_ignored_no_pending_workflow``).
     Generic transport / RPC failures from the initial ``signal_workflow``
     fall back to the legacy 200 ``no_active_workflow`` branch — they
-    are best-effort (Requirement 5.6).
+    are best-effort.
     """
     comment = payload.get("comment")
     body_text: str = ""
@@ -947,8 +940,7 @@ async def _handle_comment_created(
             payload=signal_payload,
         )
     except WorkflowNotFoundError:
-        # No execution exists for this issue → consider restart
-        # (Requirements 3.1-3.4, MIMARI §16.17 Q5 ④).
+        # No execution exists for this issue → consider restart.
         return await _maybe_restart_workflow_from_comment(
             temporal=temporal,
             workflow_id=workflow_id,
@@ -998,7 +990,7 @@ async def _maybe_restart_workflow_from_comment(
     jira_fetch_issue: JiraFetchIssueFn | None,
 ) -> JSONResponse:
     """Decide whether a comment on an issue with no live workflow
-    should restart one (Requirements 3.1-3.4).
+    should restart one.
 
     The decision is intentionally conservative — every "unknown" or
     "missing data" branch falls through to ``ignored`` so we never

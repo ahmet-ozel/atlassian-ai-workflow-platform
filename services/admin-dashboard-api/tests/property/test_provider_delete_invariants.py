@@ -1,17 +1,11 @@
-"""Property 5 — Provider-in-use deletes are blocked before any side-effect.
-
-# Feature: llm-provider-management, Property 5: Provider-in-use deletes are blocked before any side-effect
-
-Validates Requirements 1.7, 3.7. Three scenarios are exercised:
-
+"""— Provider-in-use deletes are blocked before any side-effect.
 * Provider with at least one referencing dept → 409 with ``dept_ids``
   matching the override set; no Vault or DB write happens.
 * Provider with no overrides + healthy Vault delete → row removed
   AND Vault key removed; exactly one ``llm_provider_deleted`` audit
   emitted.
 * Provider with no overrides + Vault delete raises → row stays;
-  exactly one ``llm_provider_delete_vault_failed`` audit emitted.
-"""
+  exactly one ``llm_provider_delete_vault_failed`` audit emitted."""
 
 from __future__ import annotations
 

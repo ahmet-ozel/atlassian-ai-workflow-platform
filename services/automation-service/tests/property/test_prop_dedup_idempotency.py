@@ -1,8 +1,6 @@
 """Property tests for Event Dedup idempotency.
 
-**Validates: Requirements 3.2, 3.3**
-
-Property 2: Event dedup idempotency — For any webhook with the same
+Event dedup idempotency: for any webhook with the same
 event_id received N times (N ≥ 1), exactly ONE workflow start SHALL be
 triggered; all subsequent deliveries SHALL be dropped with 200 OK.
 
@@ -204,7 +202,7 @@ def _run(coro):
 
 
 # ---------------------------------------------------------------------------
-# Property 2a — First submission always passes
+# First submission always passes
 # ---------------------------------------------------------------------------
 
 
@@ -216,9 +214,7 @@ class TestFirstSubmissionPasses:
     def test_first_submission_returns_pass(
         self, event_id: str, data: st.DataObject
     ) -> None:
-        """**Validates: Requirements 3.2, 3.3**
-
-        For any event_id not previously seen, EventDedup.check() returns
+        """For any event_id not previously seen, EventDedup.check() returns
         action="pass".
         """
         payload = data.draw(_webhook_payload_with_header(event_id))
@@ -230,7 +226,7 @@ class TestFirstSubmissionPasses:
 
 
 # ---------------------------------------------------------------------------
-# Property 2b — All subsequent submissions are dropped
+# All subsequent submissions are dropped
 # ---------------------------------------------------------------------------
 
 
@@ -242,9 +238,7 @@ class TestSubsequentSubmissionsDropped:
     def test_subsequent_submissions_return_drop(
         self, event_id: str, n: int, data: st.DataObject
     ) -> None:
-        """**Validates: Requirements 3.2, 3.3**
-
-        For any event_id submitted N times (N >= 2), submissions 2..N
+        """For any event_id submitted N times (N >= 2), submissions 2..N
         all return action="drop" with reason="duplicate".
         """
         payload = data.draw(_webhook_payload_with_header(event_id))
@@ -263,7 +257,7 @@ class TestSubsequentSubmissionsDropped:
 
 
 # ---------------------------------------------------------------------------
-# Property 2c — Exactly one pass per event_id
+# Exactly one pass per event_id
 # ---------------------------------------------------------------------------
 
 
@@ -275,9 +269,7 @@ class TestExactlyOnePass:
     def test_exactly_one_pass_n_minus_one_drops(
         self, event_id: str, n: int, data: st.DataObject
     ) -> None:
-        """**Validates: Requirements 3.2, 3.3**
-
-        For any event_id submitted N times (N >= 1), the count of "pass"
+        """For any event_id submitted N times (N >= 1), the count of "pass"
         results is exactly 1 and the count of "drop" results is exactly N-1.
         """
         payload = data.draw(_webhook_payload_with_header(event_id))
@@ -301,7 +293,7 @@ class TestExactlyOnePass:
 
 
 # ---------------------------------------------------------------------------
-# Property 2d — Different event_ids are independent
+# Different event_ids are independent
 # ---------------------------------------------------------------------------
 
 
@@ -317,9 +309,7 @@ class TestIndependentEventIds:
     def test_different_event_ids_each_get_first_pass(
         self, event_id_a: str, event_id_b: str, data: st.DataObject
     ) -> None:
-        """**Validates: Requirements 3.2, 3.3**
-
-        Two distinct event_ids each get their own independent "first pass".
+        """Two distinct event_ids each get their own independent "first pass".
         Submitting event_id_a does not cause event_id_b to be dropped.
         """
         from hypothesis import assume
@@ -351,7 +341,7 @@ class TestIndependentEventIds:
 
 
 # ---------------------------------------------------------------------------
-# Property 2e — Determinism
+# Determinism
 # ---------------------------------------------------------------------------
 
 
@@ -363,10 +353,7 @@ class TestDedupDeterminism:
     def test_fresh_dedup_always_passes_first_time(
         self, event_id: str, data: st.DataObject
     ) -> None:
-        """**Validates: Requirements 3.2, 3.3**
-
-        With a fresh (empty) DB, the same event_id always passes on first check.
-        """
+        """With a fresh DB, the same event_id always passes on first check."""
         payload = data.draw(_webhook_payload_with_header(event_id))
 
         # Run the same scenario 3 times with fresh DBs
@@ -381,10 +368,7 @@ class TestDedupDeterminism:
     def test_seen_event_always_drops(
         self, event_id: str, data: st.DataObject
     ) -> None:
-        """**Validates: Requirements 3.2, 3.3**
-
-        Once an event_id is in the DB, repeated checks always return "drop".
-        """
+        """Once an event_id is in the DB, repeated checks always return "drop"."""
         payload = data.draw(_webhook_payload_with_header(event_id))
         db = FakeDBPool()
         dedup = EventDedup(db=db)
@@ -402,7 +386,7 @@ class TestDedupDeterminism:
 
 
 # ---------------------------------------------------------------------------
-# Property 2 (hash-based) — Same invariants hold for hash-derived event_ids
+# Hash-based event IDs keep the same invariants
 # ---------------------------------------------------------------------------
 
 
@@ -414,9 +398,7 @@ class TestHashBasedDedup:
     def test_hash_based_dedup_exactly_one_pass(
         self, data: st.DataObject, n: int
     ) -> None:
-        """**Validates: Requirements 3.2, 3.3**
-
-        When no X-Atlassian-Webhook-Identifier header is present, the
+        """When no X-Atlassian-Webhook-Identifier header is present, the
         event_id is derived from webhookEvent + timestamp + issue.id.
         The same payload submitted N times still yields exactly 1 pass.
         """

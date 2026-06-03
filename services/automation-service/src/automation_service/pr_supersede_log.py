@@ -1,13 +1,12 @@
-"""PR supersede ledger — multi-iter PR transition log (task 3.4).
+"""PR supersede ledger — multi-iter PR transition log.
 
 When ``AgentRunnerWorkflow`` advances to a new iteration and opens a
 fresh draft PR, the ``iter_advance`` activity must record the
 transition from the previous iteration's PR (``old_pr_id``) to the
-new PR (``new_pr_id``) so the PO Review Inbox (R10.4) can render an
+new PR (``new_pr_id``) so the PO Review Inbox can render an
 audit trail of multi-iter supersede events.
 
-Design contract (design.md → "Postgres şeması — yeni / değişen
-tablolar", `pr_supersede_log` block; tasks.md task 3.4)::
+Repository contract:
 
     record(workflow_id, old_pr_id, new_pr_id) -> bool
         Insert a row in automation.pr_supersede_log; idempotent via
@@ -25,12 +24,9 @@ Schema reference: ``platform/infra/postgres/11_workflows.sql`` block
 
 The repo is intentionally minimal — it owns exactly the one INSERT
 the ``iter_advance`` activity needs. Read-side queries (PO Review
-Inbox lookups) are owned by the API endpoint module that ships with
-R10.4 and are out of scope for this task.
+Inbox lookups) are owned by the API endpoint module.
 
-Validates: Requirement 10.1 (eski PR superseded etiketleme + log
-satırı; ``iter_advance`` activity idempotent — PK constraint
-guarantees no duplicate rows when the activity is retried).
+The PK constraint guarantees no duplicate rows when the activity is retried.
 """
 
 from __future__ import annotations
@@ -47,7 +43,7 @@ _LOG = logging.getLogger(__name__)
 # Single-source SQL — kept at module scope so tests can assert on the
 # exact statement shape (``ON CONFLICT DO NOTHING`` is the idempotency
 # contract; mutating it without updating the contract test would be a
-# silent regression on R10.1).
+# silent regression in idempotent supersede logging.
 _INSERT_SQL: Final[
     str
 ] = """
@@ -73,7 +69,7 @@ class PrSupersedeLogRepo:
     KEY combined with ``ON CONFLICT DO NOTHING`` makes every retried
     or replayed call to :meth:`record` a safe no-op. The Temporal
     activity ``iter_advance`` may be retried under
-    ``maximumAttempts <= 3`` (R1.6) without producing duplicate
+    ``maximumAttempts <= 3`` without producing duplicate
     ledger rows.
     """
 

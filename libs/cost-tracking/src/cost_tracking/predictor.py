@@ -1,8 +1,7 @@
 """``predict_cost`` — pure dept-vs-global cost predictor.
 
-Implements task **7.2** of ``platform-mimari-ops``. The predictor
-returns a :class:`CostPrediction` whose ``source`` field carries the
-audit signal required by Requirement 5.7 — when
+The predictor returns a :class:`CostPrediction` whose ``source`` field carries the
+fallback audit signal — when
 ``dept_history.task_count < GLOBAL_FALLBACK_MIN_TASKS`` (30), the
 caller emits a ``cost_prediction_using_global_fallback`` audit row so
 the operator can see the dept transitioning between cold-start and
@@ -35,7 +34,7 @@ __all__ = [
 ]
 
 
-#: Threshold from design.md §`CostPredictor`. Below this the predictor
+#: Threshold for the cost predictor. Below this the predictor
 #: falls back to the global average; at or above it the dept-specific
 #: average is used.
 GLOBAL_FALLBACK_MIN_TASKS: Final[int] = 30
@@ -59,8 +58,7 @@ class DeptCostHistory:
         stddev_per_workflow_type: Optional ``{workflow_type: stddev_usd}``.
             ``None`` ⇒ predictor falls back to :data:`_DEFAULT_BAND`.
         ci_low_per_workflow_type: Optional pre-computed lower
-            confidence bound. Property 7's reference dataclass uses
-            this shape directly; supplying the values lets
+            confidence bound. Supplying the values lets
             :func:`predict_cost` skip the stddev → CI conversion and
             return the same numbers the reference predictor produces.
         ci_high_per_workflow_type: Optional pre-computed upper
@@ -100,7 +98,7 @@ class CostPrediction:
             tasks); ``"global_fallback"`` when the platform-wide
             average was used. Caller emits the
             ``cost_prediction_using_global_fallback`` audit event when
-            the value is ``"global_fallback"`` (R5.7).
+            the value is ``"global_fallback"``.
         scaling_factor: The factor applied to the mean — surfaced so
             the caller can log "we scaled by 1.5× because repo had X
             LOC and Y iterations" without re-deriving.
@@ -123,8 +121,6 @@ def predict_cost(
 ) -> CostPrediction:
     """Predict the cost of one workflow run.
 
-    Validates Requirements 5.6, 5.7 and Property 7.
-
     Args:
         dept_history: Recent dept aggregates. Must expose
             ``task_count`` and ``avg_cost_per_workflow_type``; may
@@ -134,7 +130,7 @@ def predict_cost(
             test can pass its own dataclass.
         global_history: Platform-wide aggregates (cold-start fallback).
             Same duck-typed contract.
-        workflow_type: One of the 9 workflow types declared by Spec 2;
+        workflow_type: One of the supported workflow type labels;
             the predictor looks up the per-type mean.
         repo_size_loc: Repository size in lines of code. Larger repos
             scale linearly with a cap (≤2× at 100k+ LOC).

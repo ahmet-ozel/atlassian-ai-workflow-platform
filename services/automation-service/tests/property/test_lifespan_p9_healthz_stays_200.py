@@ -1,14 +1,10 @@
-"""Property 9 — ``/healthz`` remains 200 after startup completes.
-
-# Feature: automation-service-wiring, Property 9: Healthz stays 200
+"""``/healthz`` remains 200 after startup completes.
 
 For any successful run of the lifespan startup phase, ``GET /healthz``
 returns HTTP 200 with body ``{"status": "ok"}`` regardless of the state
 of the downstream dependencies. ``/healthz`` is dependency-free; the
 property pins the contract that the lifespan handler does not
 accidentally wire ``/healthz`` to any of its constructed collaborators.
-
-Validates Requirement 6.2 of the ``automation-service-wiring`` spec.
 """
 
 from __future__ import annotations

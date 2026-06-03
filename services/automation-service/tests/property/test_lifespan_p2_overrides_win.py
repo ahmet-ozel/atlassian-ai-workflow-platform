@@ -1,13 +1,9 @@
-"""Property 2 — test overrides on ``app.state.<name>`` survive lifespan startup.
-
-# Feature: automation-service-wiring, Property 2: Test overrides win
+"""Test overrides on ``app.state.<name>`` survive lifespan startup.
 
 For any subset ``S`` of ``SLOT_NAMES`` pre-populated with sentinel
 objects before lifespan startup runs, every slot in ``S`` still holds
 its sentinel after startup completes and every slot not in ``S``
 holds a fresh production-built container.
-
-Validates Requirements 7.1 — 7.3 of the ``automation-service-wiring`` spec.
 """
 
 from __future__ import annotations

@@ -7,50 +7,47 @@ processed Jira issue.
 The activity is the first stage of the iteration re-run flow described in
 ``design.md`` §"Iteration Re-Run Flow":
 
-1.  **Authorization gate (R12.6)** — the comment author MUST be in the
-    department's ``approvers`` list OR equal the issue reporter; any
-    other author causes the activity to return a *not authorized*
-    result and the orchestrating workflow drops the request.
-2.  **Iteration number** — load the highest ``iteration_number`` for
-    ``issue_key`` from ``shared.workflow_iterations`` and increment to
-    ``N+1`` (R12.7). The first ever iteration on an issue resolves to
-    ``1`` (the original automated run is iter-0 by convention).
-3.  **Workspace path (R12.2)** — derive ``{base}/{issue_key}/iter-{N+1}``
-    via the same canonical helper used by ``execution-runner-worker``.
-    The path is *guaranteed distinct* from any earlier iteration on
-    the same issue so workspace state cannot leak across iterations
-    (Property 12).
-4.  **PR / branch carry-over (R12.4 / R12.5)** — if the latest stored
-    iteration recorded a ``previous_pr_id``, surface it in the result
-    so the workflow can choose to push commits to the *same* PR.
-    Otherwise the result carries ``previous_pr_id=None`` and the
-    workflow opens a fresh branch + PR.
-5.  **Extra instructions (R12.8)** — extract any text following the
-    ``[iterate]`` keyword from the comment body and forward it as a
-    free-form instruction string for the LLM context.
-6.  **Persist (R12.7)** — insert a ``shared.workflow_iterations`` row
-    with status ``'pending'``. The activity returns the workflow_id
-    placeholder it generated; the caller (workflow) overwrites
-    ``status`` with ``'in_progress'`` once the inner workflow start
-    succeeds.
+1. **Authorization gate ** — the comment author MUST be in the
+ department's ``approvers`` list OR equal the issue reporter; any
+ other author causes the activity to return a *not authorized*
+ result and the orchestrating workflow drops the request.
+2. **Iteration number** — load the highest ``iteration_number`` for
+ ``issue_key`` from ``shared.workflow_iterations`` and increment to
+ ``N+1``. The first ever iteration on an issue resolves to
+ ``1`` (the original automated run is iter-0 by convention).
+3. **Workspace path ** — derive ``{base}/{issue_key}/iter-{N+1}``
+ via the same canonical helper used by ``execution-runner-worker``.
+ The path is *guaranteed distinct* from any earlier iteration on
+ the same issue so workspace state cannot leak across iterations.
+4. **PR / branch carry-over (/)** — if the latest stored
+ iteration recorded a ``previous_pr_id``, surface it in the result
+ so the workflow can choose to push commits to the *same* PR.
+ Otherwise the result carries ``previous_pr_id=None`` and the
+ workflow opens a fresh branch + PR.
+5. **Extra instructions ** — extract any text following the
+ ``[iterate]`` keyword from the comment body and forward it as a
+ free-form instruction string for the LLM context.
+6. **Persist ** — insert a ``shared.workflow_iterations`` row
+ with status ``'pending'``. The activity returns the workflow_id
+ placeholder it generated; the caller (workflow) overwrites
+ ``status`` with ``'in_progress'`` once the inner workflow start
+ succeeds.
 
 Dependency-injection pattern
 ----------------------------
 
-Mirrors :mod:`audit_prune` exactly. Two collaborators are pulled
+Mirrors:mod:`audit_prune` exactly. Two collaborators are pulled
 through module-level setters configured at worker boot:
 
-* :func:`set_db_pool` — asyncpg-shaped Postgres pool used to read /
-  write ``shared.workflow_iterations``. Tests inject an in-memory
-  fake (see ``tests/unit/test_iteration_manager.py``).
-* :func:`set_iteration_store` — an alternative override that bypasses
-  the SQL path entirely and lets tests stub the persistence surface
-  with a hand-rolled :class:`IterationStore` implementation. This is
-  the path used by sibling task 11.2's table migration when it lands
-  *after* this activity ships — it lets task 11.1 (this task) be
-  shipped, exercised, and unit-tested before the migration runs.
-
-Validates Requirements: 12.1, 12.2, 12.3, 12.4, 12.5, 12.6, 12.7, 12.8.
+*:func:`set_db_pool` — asyncpg-shaped Postgres pool used to read /
+ write ``shared.workflow_iterations``. Tests inject an in-memory
+ fake (see ``tests/unit/test_iteration_manager.py``).
+*:func:`set_iteration_store` — an alternative override that bypasses
+ the SQL path entirely and lets tests stub the persistence surface
+ with a hand-rolled:class:`IterationStore` implementation. This is
+ the path used by sibling 's table migration when it lands
+ *after* this activity ships — it lets (this task) be
+ shipped, exercised, and unit-tested before the migration runs..
 """
 
 from __future__ import annotations
@@ -78,7 +75,7 @@ __all__ = (
     "get_db_pool",
     "get_iteration_store",
     "get_workspace_base_path",
-    # Pure helpers (re-exported for unit tests + property tests)
+    # Pure helpers (re-exported for unit tests + Invariant tests)
     "extract_extra_instructions",
     "build_iteration_workspace_path",
     "is_iterate_command",
@@ -98,7 +95,7 @@ _logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 #: Default workspace root used when no explicit base path is configured
-#: through :func:`set_workspace_base_path`. Matches the ``RUNNER_BASE_PATH``
+#: through:func:`set_workspace_base_path`. Matches the ``RUNNER_BASE_PATH``
 #: default of ``execution-runner-worker`` (see ``runners/workspace_path``)
 #: so every worker derives ``{base}/{issue_key}/iter-{N}`` consistently.
 DEFAULT_WORKSPACE_BASE_PATH: Final[str] = "/var/ai-runner"
@@ -110,7 +107,7 @@ DEFAULT_WORKSPACE_BASE_PATH: Final[str] = "/var/ai-runner"
 MAX_ITERATION_NUMBER: Final[int] = 999
 
 #: Storm-guard cap on the number of automated iterations a single
-#: issue may accumulate. Independent of :data:`MAX_ITERATION_NUMBER`
+#: issue may accumulate. Independent of:data:`MAX_ITERATION_NUMBER`
 #: (which is the *path-layout* upper bound). The intent is to break
 #: runaway ``[iterate]`` loops — a misbehaving approver, a flaky LLM
 #: that keeps re-emitting a "please re-run" comment, or a feedback
@@ -127,7 +124,7 @@ MAX_ITERATIONS_PER_ISSUE: Final[int] = 10
 
 #: Case-insensitive regex matching the ``[iterate]`` command keyword in
 #: a Jira comment body. Mirrors the pattern used by
-#: :class:`webhooks.dispatcher.WebhookDispatcher` so both sides of the
+#::class:`webhooks.dispatcher.WebhookDispatcher` so both sides of the
 #: signal hand-off agree on what counts as an iterate command.
 ITERATE_PATTERN: Final[re.Pattern[str]] = re.compile(
     r"\[iterate\]", re.IGNORECASE
@@ -148,38 +145,37 @@ _ISSUE_KEY_PATTERN: Final[re.Pattern[str]] = re.compile(
 
 @dataclass(frozen=True)
 class PrepareIterationInput:
-    """Input for the :func:`prepare_iteration` activity.
+    """Input for the:func:`prepare_iteration` activity.
 
-    The shape mirrors the dispatcher's ``[iterate]`` payload (see
-    ``WebhookDispatcher._start_iteration``) plus the dept config bits
-    needed for the authorization check.
+ The shape mirrors the dispatcher's ``[iterate]`` payload (see
+ ``WebhookDispatcher._start_iteration``) plus the dept config bits
+ needed for the authorization check.
 
-    Attributes:
-        issue_key: The Jira issue key (e.g. ``"PAY-4211"``).
-        comment_body: Full body text of the ``[iterate]`` comment —
-            used both for authorization tracing (the audit log mirrors
-            the original text) and for ``extra_instructions``
-            extraction.
-        comment_author_account_id: Atlassian ``accountId`` of the
-            comment author. Compared against ``dept_config.approvers``
-            and ``issue_reporter_account_id`` to gate authorization
-            (R12.6).
-        issue_reporter_account_id: ``accountId`` of the Jira issue
-            reporter. ``None`` when the webhook payload did not carry
-            a reporter (e.g. the issue was created by a bot — in that
-            case only the dept ``approvers`` list grants access).
-        dept_id: Department identifier. Forwarded to the resulting
-            workflow input so the inner re-run wires up the correct
-            credentials.
-        dept_config: Department configuration mapping. The activity
-            only reads the ``approvers`` key (a list of authorized
-            ``accountId`` strings); other fields are ignored. Passing
-            the whole dict keeps the surface flexible for future
-            authorization rules without breaking the input contract.
-        trace_id: Trace identifier propagated for log correlation.
-            When empty the activity generates one so downstream logs
-            can still be correlated.
-    """
+ Attributes:
+ issue_key: The Jira issue key (e.g. ``"PAY-4211"``).
+ comment_body: Full body text of the ``[iterate]`` comment —
+ used both for authorization tracing (the audit log mirrors
+ the original text) and for ``extra_instructions``
+ extraction.
+ comment_author_account_id: Atlassian ``accountId`` of the
+ comment author. Compared against ``dept_config.approvers``
+ and ``issue_reporter_account_id`` to gate authorization.
+ issue_reporter_account_id: ``accountId`` of the Jira issue
+ reporter. ``None`` when the webhook payload did not carry
+ a reporter (e.g. the issue was created by a bot — in that
+ case only the dept ``approvers`` list grants access).
+ dept_id: Department identifier. Forwarded to the resulting
+ workflow input so the inner re-run wires up the correct
+ credentials.
+ dept_config: Department configuration mapping. The activity
+ only reads the ``approvers`` key (a list of authorized
+ ``accountId`` strings); other fields are ignored. Passing
+ the whole dict keeps the surface flexible for future
+ authorization rules without breaking the input contract.
+ trace_id: Trace identifier propagated for log correlation.
+ When empty the activity generates one so downstream logs
+ can still be correlated.
+ """
 
     issue_key: str
     comment_body: str
@@ -192,54 +188,54 @@ class PrepareIterationInput:
 
 @dataclass(frozen=True)
 class IterationContext:
-    """Result of the :func:`prepare_iteration` activity.
+    """Result of the:func:`prepare_iteration` activity.
 
-    The workflow consumes this dataclass to build the input for the
-    inner re-run workflow. ``authorized=False`` means the activity
-    declined to start an iteration (R12.6) — the workflow logs and
-    drops the request without surfacing an exception so a stray
-    ``[iterate]`` from an unauthorized user cannot crash the cron.
+ The workflow consumes this dataclass to build the input for the
+ inner re-run workflow. ``authorized=False`` means the activity
+ declined to start an iteration — the workflow logs and
+ drops the request without surfacing an exception so a stray
+ ``[iterate]`` from an unauthorized user cannot crash the cron.
 
-    Attributes:
-        authorized: ``True`` if the comment author may trigger a
-            re-run. ``False`` otherwise — every other field except
-            ``reason`` is the empty / default value.
-        reason: When ``authorized=False``, a short machine-readable
-            reason code (e.g. ``"not_in_approvers"``,
-            ``"max_iteration_exceeded"``). When ``authorized=True``
-            the reason is ``""``.
-        issue_key: Echoed for convenience.
-        iteration_number: The new iteration number ``N+1``. Always
-            ``>= 1``; ``0`` represents "not assigned" when the result
-            is unauthorized.
-        workflow_id: Suggested workflow id for the inner re-run
-            (``iteration-{ISSUE_KEY}-{N}-{shortuuid}``). The caller
-            may override but the activity persists this value as the
-            ``workflow_id`` column of the new ``workflow_iterations``
-            row.
-        workspace_path: Canonical workspace path for iter-(N+1).
-            Forward-slash separators, distinct from any earlier
-            iteration on the same issue (R12.2 / Property 12).
-        previous_branch: Branch name from the most recent stored
-            iteration, or ``None`` when no prior iteration exists.
-        previous_pr_id: PR id from the most recent stored iteration,
-            or ``None`` when no prior PR exists. The workflow uses
-            this to decide whether to commit to the same PR (R12.4)
-            or open a new branch + PR (R12.5).
-        extra_instructions: Free-form text extracted from the
-            ``[iterate]`` comment body following the keyword, or
-            ``None`` when the user did not supply additional
-            instructions (R12.8).
-        dept_id: Echoed for convenience.
-        trace_id: Echoed (or generated) trace identifier.
-        current_count: When ``authorized=False`` and
-            ``reason="max_iteration_exceeded"``, the *current* highest
-            iteration number stored for this issue (i.e. the count we
-            refused to increment). ``None`` for every other path —
-            including authorized results — to keep the field a
-            no-overhead diagnostic that callers can rely on for the
-            storm-guard surface only.
-    """
+ Attributes:
+ authorized: ``True`` if the comment author may trigger a
+ re-run. ``False`` otherwise — every other field except
+ ``reason`` is the empty / default value.
+ reason: When ``authorized=False``, a short machine-readable
+ reason code (e.g. ``"not_in_approvers"``,
+ ``"max_iteration_exceeded"``). When ``authorized=True``
+ the reason is ``""``.
+ issue_key: Echoed for convenience.
+ iteration_number: The new iteration number ``N+1``. Always
+ ``>= 1``; ``0`` represents "not assigned" when the result
+ is unauthorized.
+ workflow_id: Suggested workflow id for the inner re-run
+ (``iteration-{ISSUE_KEY}-{N}-{shortuuid}``). The caller
+ may override but the activity persists this value as the
+ ``workflow_id`` column of the new ``workflow_iterations``
+ row.
+ workspace_path: Canonical workspace path for iter-(N+1).
+ Forward-slash separators, distinct from any earlier
+ iteration on the same issue (/).
+ previous_branch: Branch name from the most recent stored
+ iteration, or ``None`` when no prior iteration exists.
+ previous_pr_id: PR id from the most recent stored iteration,
+ or ``None`` when no prior PR exists. The workflow uses
+ this to decide whether to commit to the same PR 
+ or open a new branch + PR.
+ extra_instructions: Free-form text extracted from the
+ ``[iterate]`` comment body following the keyword, or
+ ``None`` when the user did not supply additional
+ instructions.
+ dept_id: Echoed for convenience.
+ trace_id: Echoed (or generated) trace identifier.
+ current_count: When ``authorized=False`` and
+ ``reason="max_iteration_exceeded"``, the *current* highest
+ iteration number stored for this issue (i.e. the count we
+ refused to increment). ``None`` for every other path —
+ including authorized results — to keep the field a
+ no-overhead diagnostic that callers can rely on for the
+ storm-guard surface only.
+ """
 
     authorized: bool
     reason: str
@@ -259,13 +255,13 @@ class IterationContext:
 class IterationRecord:
     """A single ``shared.workflow_iterations`` row exposed to the activity.
 
-    Mirrors the column layout introduced by sibling task 11.2's
-    migration (``009_workflow_iterations.sql``) but is declared here so
-    the activity can be unit-tested against an in-memory store before
-    the migration lands. The activity only ever reads ``previous_*`` /
-    ``iteration_number`` and writes a fresh row; column-level fidelity
-    matters less than field shape.
-    """
+ Mirrors the column layout introduced by sibling 's
+ migration (``009_workflow_iterations.sql``) but is declared here so
+ the activity can be unit-tested against an in-memory store before
+ the migration lands. The activity only ever reads ``previous_*`` /
+ ``iteration_number`` and writes a fresh row; column-level fidelity
+ matters less than field shape.
+ """
 
     issue_key: str
     iteration_number: int
@@ -284,34 +280,33 @@ class IterationRecord:
 
 @runtime_checkable
 class IterationStore(Protocol):
-    """Persistence surface required by :func:`prepare_iteration`.
+    """Persistence surface required by:func:`prepare_iteration`.
 
-    The activity needs three operations on the ``workflow_iterations``
-    table; all of them are wrapped in this protocol so:
+ The activity needs three operations on the ``workflow_iterations``
+ table; all of them are wrapped in this protocol so:
 
-    1. The activity can be unit-tested against a hand-rolled in-memory
-       fake without spinning up Postgres.
-    2. Sibling task 11.2 (which delivers the SQL migration) can be
-       implemented in parallel — until the migration lands, production
-       deployments wire :class:`PostgresIterationStore` (defined
-       below) which is a no-op when the table is missing, while
-       focused unit tests inject the in-memory fake directly via
-       :func:`set_iteration_store`.
+ 1. The activity can be unit-tested against a hand-rolled in-memory
+ fake without spinning up Postgres.
+ 2. Sibling (which delivers the SQL migration) can be
+ implemented in parallel — until the migration lands, production
+ deployments wire:class:`PostgresIterationStore` (defined
+ below) which is a no-op when the table is missing, while
+ focused unit tests inject the in-memory fake directly via:func:`set_iteration_store`.
 
-    Implementations MUST be safe to call concurrently from Temporal
-    activity workers; the SQL implementation funnels through asyncpg
-    pool acquisition which is already concurrency-safe.
-    """
+ Implementations MUST be safe to call concurrently from Temporal
+ activity workers; the SQL implementation funnels through asyncpg
+ pool acquisition which is already concurrency-safe.
+ """
 
     async def latest_iteration(
         self, issue_key: str
     ) -> IterationRecord | None:
         """Return the highest-numbered iteration for ``issue_key``.
 
-        ``None`` is returned when no row exists — the caller treats
-        this as "first iteration" and the new ``iteration_number``
-        becomes ``1``.
-        """
+ ``None`` is returned when no row exists — the caller treats
+ this as "first iteration" and the new ``iteration_number``
+ becomes ``1``.
+ """
         ...
 
     async def insert_iteration(
@@ -327,13 +322,13 @@ class IterationStore(Protocol):
     ) -> None:
         """Persist the new iteration row.
 
-        Implementations MUST honour the ``UNIQUE(issue_key,
-        iteration_number)`` constraint and raise a clear error on
-        conflict; the activity does not retry on conflict — concurrent
-        ``[iterate]`` comments race for the same iteration number and
-        the second writer is rejected so the workflow can surface the
-        race to the user via Jira.
-        """
+ Implementations MUST honour the ``UNIQUE(issue_key,
+ iteration_number)`` constraint and raise a clear error on
+ conflict; the activity does not retry on conflict — concurrent
+ ``[iterate]`` comments race for the same iteration number and
+ the second writer is rejected so the workflow can surface the
+ race to the user via Jira.
+ """
         ...
 
 
@@ -346,12 +341,12 @@ class IterationStore(Protocol):
 class _AsyncPoolLike(Protocol):
     """Minimal asyncpg pool surface used by the default SQL store.
 
-    Mirrors :class:`audit_prune._AsyncPoolLike` so the worker boot
-    script can hand the *same* pool to both activity families. Tests
-    that exercise the SQL path inject an in-memory fake whose
-    ``acquire()`` returns a context manager yielding a fake connection
-    with ``fetchrow`` / ``execute`` methods.
-    """
+ Mirrors:class:`audit_prune._AsyncPoolLike` so the worker boot
+ script can hand the *same* pool to both activity families. Tests
+ that exercise the SQL path inject an in-memory fake whose
+ ``acquire`` returns a context manager yielding a fake connection
+ with ``fetchrow`` / ``execute`` methods.
+ """
 
     def acquire(self) -> Any:  # noqa: D401 - protocol shape
         """Return an async context manager yielding a connection."""
@@ -366,12 +361,11 @@ _workspace_base_path: str = DEFAULT_WORKSPACE_BASE_PATH
 def set_db_pool(pool: _AsyncPoolLike) -> None:
     """Register the asyncpg-shaped pool for the default SQL store.
 
-    Called once at worker boot (``automation_worker.main``). When a
-    custom :class:`IterationStore` has been wired through
-    :func:`set_iteration_store`, the pool is unused — but registering
-    it anyway is harmless and keeps the boot script symmetric with
-    the audit-prune wiring.
-    """
+ Called once at worker boot (``automation_worker.main``). When a
+ custom:class:`IterationStore` has been wired through:func:`set_iteration_store`, the pool is unused — but registering
+ it anyway is harmless and keeps the boot script symmetric with
+ the audit-prune wiring.
+ """
     global _db_pool  # noqa: PLW0603
     _db_pool = pool
 
@@ -379,15 +373,15 @@ def set_db_pool(pool: _AsyncPoolLike) -> None:
 def get_db_pool() -> _AsyncPoolLike:
     """Resolve the registered pool or fail loudly.
 
-    Surfaced as a clear ``RuntimeError`` so misconfiguration (forgot
-    to call :func:`set_db_pool`) is obvious in worker logs rather
-    than an ``AttributeError`` deep inside the SQL emitter.
-    """
+ Surfaced as a clear ``RuntimeError`` so misconfiguration (forgot
+ to call:func:`set_db_pool`) is obvious in worker logs rather
+ than an ``AttributeError`` deep inside the SQL emitter.
+ """
     if _db_pool is None:
         raise RuntimeError(
             "iteration_manager activity: db pool not initialised; "
-            "call set_db_pool() during worker startup or supply an "
-            "IterationStore via set_iteration_store()."
+            "call set_db_pool during worker startup or supply an "
+            "IterationStore via set_iteration_store."
         )
     return _db_pool
 
@@ -395,23 +389,23 @@ def get_db_pool() -> _AsyncPoolLike:
 def set_iteration_store(store: IterationStore | None) -> None:
     """Override the iteration persistence surface.
 
-    Passing ``None`` reverts to the default :class:`PostgresIterationStore`
-    backed by the pool registered through :func:`set_db_pool`. Tests
-    use this to inject an in-memory fake; production typically does
-    not call this setter.
-    """
+ Passing ``None`` reverts to the default:class:`PostgresIterationStore`
+ backed by the pool registered through:func:`set_db_pool`. Tests
+ use this to inject an in-memory fake; production typically does
+ not call this setter.
+ """
     global _iteration_store  # noqa: PLW0603
     _iteration_store = store
 
 
 def get_iteration_store() -> IterationStore:
-    """Resolve the active :class:`IterationStore`.
+    """Resolve the active:class:`IterationStore`.
 
-    When :func:`set_iteration_store` has been called with a non-``None``
-    value, that store is returned directly. Otherwise the helper
-    constructs an on-demand :class:`PostgresIterationStore` bound to
-    the registered DB pool.
-    """
+ When:func:`set_iteration_store` has been called with a non-``None``
+ value, that store is returned directly. Otherwise the helper
+ constructs an on-demand:class:`PostgresIterationStore` bound to
+ the registered DB pool.
+ """
     if _iteration_store is not None:
         return _iteration_store
     return PostgresIterationStore(pool=get_db_pool())
@@ -420,11 +414,11 @@ def get_iteration_store() -> IterationStore:
 def set_workspace_base_path(base: str) -> None:
     """Override the workspace base path.
 
-    Defaults to :data:`DEFAULT_WORKSPACE_BASE_PATH`. The boot script
-    sets this from ``RUNNER_BASE_PATH`` (with the deprecated
-    ``SSH_BASE_PATH`` alias) so workspace paths produced here line up
-    with the execution-runner.
-    """
+ Defaults to:data:`DEFAULT_WORKSPACE_BASE_PATH`. The boot script
+ sets this from ``RUNNER_BASE_PATH`` (with the deprecated
+ ``SSH_BASE_PATH`` alias) so workspace paths produced here line up
+ with the execution-runner.
+ """
     global _workspace_base_path  # noqa: PLW0603
     _workspace_base_path = base or DEFAULT_WORKSPACE_BASE_PATH
 
@@ -442,10 +436,10 @@ def get_workspace_base_path() -> str:
 def is_iterate_command(comment_body: str | None) -> bool:
     """Return ``True`` if ``comment_body`` contains the ``[iterate]`` keyword.
 
-    Matches the dispatcher's regex (case-insensitive). Useful for
-    callers that want a shared definition of "iterate command" between
-    the dispatcher and the activity.
-    """
+ Matches the dispatcher's regex (case-insensitive). Useful for
+ callers that want a shared definition of "iterate command" between
+ the dispatcher and the activity.
+ """
     if not comment_body:
         return False
     return bool(ITERATE_PATTERN.search(comment_body))
@@ -454,19 +448,19 @@ def is_iterate_command(comment_body: str | None) -> bool:
 def extract_extra_instructions(comment_body: str | None) -> str | None:
     """Extract free-form instructions following the ``[iterate]`` keyword.
 
-    The Jira comment shape is::
+ The Jira comment shape is::
 
-        [iterate] add exponential backoff to the retry helper
+ [iterate] add exponential backoff to the retry helper
 
-    Everything after the closing ``]`` is treated as the extra
-    instruction. Leading / trailing whitespace is stripped. Multiple
-    ``[iterate]`` markers are tolerated — only the *first* match is
-    used as the anchor and the rest of the body (verbatim) becomes the
-    instruction text.
+ Everything after the closing ``]`` is treated as the extra
+ instruction. Leading / trailing whitespace is stripped. Multiple
+ ``[iterate]`` markers are tolerated — only the *first* match is
+ used as the anchor and the rest of the body (verbatim) becomes the
+ instruction text.
 
-    Returns ``None`` when the comment is empty, missing the keyword,
-    or carries no text after it. R12.8 / R12.1.
-    """
+ Returns ``None`` when the comment is empty, missing the keyword,
+ or carries no text after it. /.
+ """
     if not comment_body:
         return None
     match = ITERATE_PATTERN.search(comment_body)
@@ -484,14 +478,14 @@ def is_authorized_for_iterate(
 ) -> bool:
     """Return ``True`` if the comment author may trigger a re-run.
 
-    The contract is the union of two predicates (R12.6):
+ The contract is the union of two predicates:
 
-    * ``author_account_id`` is in the department's ``approvers`` list, or
-    * ``author_account_id`` equals the issue's ``reporter`` accountId.
+ * ``author_account_id`` is in the department's ``approvers`` list, or
+ * ``author_account_id`` equals the issue's ``reporter`` accountId.
 
-    Empty strings never authorize anyone — a misconfigured webhook
-    that drops the actor accountId must not silently grant access.
-    """
+ Empty strings never authorize anyone — a misconfigured webhook
+ that drops the actor accountId must not silently grant access.
+ """
     if not author_account_id:
         return False
     if author_account_id in approvers:
@@ -511,18 +505,18 @@ def build_iteration_workspace_path(
 ) -> str:
     """Return the canonical ``{base}/{issue_key}/iter-{N}`` path.
 
-    Mirrors :func:`runners.workspace_path.build_workspace_path` from
-    ``execution-runner-worker``. The two helpers must agree
-    byte-for-byte: the iteration manager records the path in the
-    ``workflow_iterations`` table and the runner expects to find the
-    same string when it provisions the workspace on the SSH host.
+ Mirrors:func:`runners.workspace_path.build_workspace_path` from
+ ``execution-runner-worker``. The two helpers must agree
+ byte-for-byte: the iteration manager records the path in the
+ ``workflow_iterations`` table and the runner expects to find the
+ same string when it provisions the workspace on the SSH host.
 
-    Raises ``ValueError`` when ``issue_key`` fails the Jira-style
-    pattern (``^[A-Z][A-Z0-9_]*-\\d+$``) or ``iteration_number`` is
-    not an int in ``[1, MAX_ITERATION_NUMBER]``. Booleans are rejected
-    explicitly because ``isinstance(True, int)`` is ``True`` in Python
-    and a boolean iteration number is almost certainly a caller bug.
-    """
+ Raises ``ValueError`` when ``issue_key`` fails the Jira-style
+ pattern (``^[A-Z][A-Z0-9_]*-\\d+$``) or ``iteration_number`` is
+ not an int in ``[1, MAX_ITERATION_NUMBER]``. Booleans are rejected
+ explicitly because ``isinstance(True, int)`` is ``True`` in Python
+ and a boolean iteration number is almost certainly a caller bug.
+ """
     if not isinstance(issue_key, str):
         raise ValueError(
             f"issue_key must be a string, got {type(issue_key).__name__}"
@@ -558,17 +552,16 @@ def build_iteration_workspace_path(
 
 @dataclass
 class PostgresIterationStore:
-    """Default :class:`IterationStore` backed by ``shared.workflow_iterations``.
+    """Default:class:`IterationStore` backed by ``shared.workflow_iterations``.
 
-    The class is intentionally tiny — it's mostly just two SQL
-    statements bound to the column layout introduced by sibling task
-    11.2's migration. We declare it here (rather than waiting on the
-    migration) so the activity can ship and be exercised end-to-end
-    against a Postgres test container; if the migration is missing in
-    a development environment the queries fail loudly with a
-    ``"relation shared.workflow_iterations does not exist"`` Postgres
-    error, which is the correct signal.
-    """
+ The class is intentionally tiny — it's mostly just two SQL
+ statements bound to the column layout introduced by sibling 's migration. We declare it here (rather than waiting on the
+ migration) so the activity can ship and be exercised end-to-end
+ against a Postgres test container; if the migration is missing in
+ a development environment the queries fail loudly with a
+ ``"relation shared.workflow_iterations does not exist"`` Postgres
+ error, which is the correct signal.
+ """
 
     pool: _AsyncPoolLike
 
@@ -578,19 +571,19 @@ class PostgresIterationStore:
         async with self.pool.acquire() as conn:
             row = await conn.fetchrow(
                 """
-                SELECT issue_key,
-                       iteration_number,
-                       workflow_id,
-                       previous_branch,
-                       previous_pr_id,
-                       workspace_path,
-                       status,
-                       created_at
-                  FROM shared.workflow_iterations
-                 WHERE issue_key = $1
-                 ORDER BY iteration_number DESC
-                 LIMIT 1
-                """,
+ SELECT issue_key,
+ iteration_number,
+ workflow_id,
+ previous_branch,
+ previous_pr_id,
+ workspace_path,
+ status,
+ created_at
+ FROM shared.workflow_iterations
+ WHERE issue_key = $1
+ ORDER BY iteration_number DESC
+ LIMIT 1
+ """,
                 issue_key,
             )
         if row is None:
@@ -628,16 +621,14 @@ class PostgresIterationStore:
         async with self.pool.acquire() as conn:
             await conn.execute(
                 """
-                INSERT INTO shared.workflow_iterations (
-                    issue_key,
-                    iteration_number,
-                    workflow_id,
-                    previous_branch,
-                    previous_pr_id,
-                    workspace_path,
-                    status
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7)
-                """,
+ INSERT INTO shared.workflow_iterations (issue_key,
+ iteration_number,
+ workflow_id,
+ previous_branch,
+ previous_pr_id,
+ workspace_path,
+ status) VALUES ($1, $2, $3, $4, $5, $6, $7)
+ """,
                 issue_key,
                 iteration_number,
                 workflow_id,
@@ -659,19 +650,16 @@ async def prepare_iteration(
 ) -> IterationContext:
     """Prepare the context for an ``[iterate]`` re-run.
 
-    See module docstring for the full pipeline. Highlights:
+ See module docstring for the full pipeline. Highlights:
 
-    * Authorization is checked *before* any DB write so an unauthorized
-      attempt leaves no trace in ``workflow_iterations`` (R12.6).
-    * The new iteration number is the highest stored ``iteration_number``
-      for ``issue_key`` plus one, defaulting to ``1`` when no prior
-      row exists (R12.7).
-    * The workspace path is rendered through :func:`build_iteration_workspace_path`
-      which guarantees uniqueness across iterations (Property 12).
-
-    Validates: Requirements 12.1, 12.2, 12.3, 12.4, 12.5, 12.6, 12.7,
-    12.8.
-    """
+ * Authorization is checked *before* any DB write so an unauthorized
+ attempt leaves no trace in ``workflow_iterations``.
+ * The new iteration number is the highest stored ``iteration_number``
+ for ``issue_key`` plus one, defaulting to ``1`` when no prior
+ row exists.
+ * The workspace path is rendered through:func:`build_iteration_workspace_path`
+ which guarantees uniqueness across iterations..
+ """
     # Bind the inbound trace_id onto the activity's contextvar so log
     # records emitted by this activity carry the same trace_id as the
     # originating webhook. Falls back to a generated id when the
@@ -695,7 +683,7 @@ async def prepare_iteration(
     )
 
     # ------------------------------------------------------------------
-    # Step 1 — Authorization gate (R12.6)
+    # Step 1 — Authorization gate 
     # ------------------------------------------------------------------
     approvers_raw = input.dept_config.get("approvers") if input.dept_config else None
     approvers: list[str] = (
@@ -722,7 +710,7 @@ async def prepare_iteration(
         )
 
     # ------------------------------------------------------------------
-    # Step 2 — Load latest iteration (R12.3, R12.7)
+    # Step 2 — Load latest iteration (,)
     # ------------------------------------------------------------------
     store = get_iteration_store()
     latest = await store.latest_iteration(input.issue_key)
@@ -766,7 +754,7 @@ async def prepare_iteration(
         )
 
     # ------------------------------------------------------------------
-    # Step 3 — Workspace path (R12.2, Property 12)
+    # Step 3 — Workspace path (,)
     # ------------------------------------------------------------------
     try:
         workspace_path = build_iteration_workspace_path(
@@ -789,25 +777,25 @@ async def prepare_iteration(
         )
 
     # ------------------------------------------------------------------
-    # Step 4 — Carry-over branch / PR (R12.4, R12.5)
+    # Step 4 — Carry-over branch / PR (,)
     # ------------------------------------------------------------------
     previous_branch = latest.previous_branch if latest else None
     previous_pr_id = latest.previous_pr_id if latest else None
     # If the *latest* iteration row doesn't carry a branch/PR (eg. it
     # was a noop_test that never opened a PR) we still want to use its
     # own ``workspace_path`` references rather than reaching further
-    # back in history. Per R12.4 the "previous PR" is whichever PR is
+    # back in history. the "previous PR" is whichever PR is
     # *currently* tracked against the issue — the dispatcher records
     # exactly that on each iteration so the latest row is the source
     # of truth.
 
     # ------------------------------------------------------------------
-    # Step 5 — Extra instructions (R12.8)
+    # Step 5 — Extra instructions 
     # ------------------------------------------------------------------
     extra_instructions = extract_extra_instructions(input.comment_body)
 
     # ------------------------------------------------------------------
-    # Step 6 — Persist the new iteration row (R12.7)
+    # Step 6 — Persist the new iteration row 
     # ------------------------------------------------------------------
     workflow_id = (
         f"iteration-{input.issue_key}-{new_iteration_number}-"
@@ -885,13 +873,13 @@ def _unauthorized_result(
 ) -> IterationContext:
     """Build a *not-authorized* / *deny* result.
 
-    Used by every early-return path so the shape of the deny response
-    is identical regardless of the underlying reason. Callers
-    distinguish via :attr:`IterationContext.reason`. The
-    ``current_count`` argument is only meaningful for the
-    storm-guard path (``max_iteration_exceeded``); every other
-    rejection leaves it as ``None``.
-    """
+ Used by every early-return path so the shape of the deny response
+ is identical regardless of the underlying reason. Callers
+ distinguish via:attr:`IterationContext.reason`. The
+ ``current_count`` argument is only meaningful for the
+ storm-guard path (``max_iteration_exceeded``); every other
+ rejection leaves it as ``None``.
+ """
     return IterationContext(
         authorized=False,
         reason=reason,

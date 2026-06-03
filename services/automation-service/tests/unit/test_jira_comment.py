@@ -1,8 +1,7 @@
 """Unit tests for ``automation_service.budget.jira_comment``.
 
-Validates: Requirements 5.6 (cost prediction comment) and 5.7
-(global-fallback disclosure note) — task **7.4** of
-``.kiro/specs/platform-mimari-ops/tasks.md``.
+The tests cover the cost prediction comment and the global-fallback
+disclosure note.
 
 The tests exercise :func:`post_cost_prediction_comment` against:
 
@@ -15,10 +14,10 @@ The tests exercise :func:`post_cost_prediction_comment` against:
 The MCP wiring used by ``jira_comment.py`` mirrors the worker's
 ``jira_add_comment`` activity (same ``/mcp`` path, same
 ``X-Atlassian-Jira-*`` headers, same JSON-RPC envelope), so the
-tests assert on the **wire shape** as the regression guardrail —
-the Spec 1 R1.2 contract is "every Atlassian call goes through the
-``atlassian_unified`` MCP", and the wire shape is the externally
-observable manifestation of that contract.
+tests assert on the **wire shape** as the regression guardrail: every
+Atlassian call goes through the ``atlassian_mcp_bitbucket`` MCP, and
+the wire shape is the externally observable manifestation of that
+contract.
 """
 
 from __future__ import annotations
@@ -173,12 +172,12 @@ def _ok_jsonrpc_handler(
 
 
 # ---------------------------------------------------------------------------
-# Tests — body composition (R5.6, R5.7)
+# Tests — body composition
 # ---------------------------------------------------------------------------
 
 
 class TestBodyComposition:
-    """The Jira body must follow the format from task 7.4 verbatim."""
+    """The Jira body must follow the expected format verbatim."""
 
     @pytest.mark.asyncio
     async def test_dept_source_renders_header_only(self) -> None:
@@ -328,7 +327,7 @@ class TestBodyComposition:
 
 
 # ---------------------------------------------------------------------------
-# Tests — MCP wire shape (R1.2 parity with worker activity)
+# Tests — MCP wire shape parity with worker activity
 # ---------------------------------------------------------------------------
 
 
@@ -418,7 +417,7 @@ class TestMcpWireShape:
 
 
 # ---------------------------------------------------------------------------
-# Tests — best-effort failure semantics (Spec 2 partition)
+# Tests — best-effort failure semantics
 # ---------------------------------------------------------------------------
 
 

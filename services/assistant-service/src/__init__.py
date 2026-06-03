@@ -1,1 +1,1 @@
-"""assistant-service: scaffold skeleton (no business logic)."""
+"""assistant-service package marker."""

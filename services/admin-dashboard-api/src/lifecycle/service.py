@@ -1,13 +1,11 @@
 """``LifecycleService`` — pure orchestrator for Managed_Service lifecycle.
 
 This module wires together the Vault, Compose, Health, Audit and
-Manifest helpers built in tasks 3 / 5 into the request-handling
-contract used by ``services/admin-dashboard-api/src/routers/services_lifecycle.py``
-(task 6.2). It is **the** module that enforces the ordering invariants
-documented in design §3.3 and the various Lifecycle requirements
-(``6.1``, ``6.3``, ``6.5``, ``6.6``, ``6.7``, ``6.8``, ``7.7``,
-``8.2``, ``8.6``, ``9.1``, ``9.5``, ``9.6``, ``11.1``, ``11.6``,
-``11.7``, ``12.4``, ``12.5``).
+Manifest helpers into the request-handling contract used by
+``services/admin-dashboard-api/src/routers/services_lifecycle.py``
+(service lifecycle wiring). It is **the** module that enforces the
+ordering invariants for lifecycle operations, health reporting, audit
+records, credential checks, and sensitive value handling.
 
 Notes on testability
 --------------------
@@ -19,10 +17,10 @@ Notes on testability
 * The Pydantic-free response dataclasses (``ServiceSummary``,
   ``StartResponse``, ``StopResponse``, ``RunTestsResponse``,
   ``FormSchemaField``) are deliberately decoupled from FastAPI's
-  serialisation layer — the REST router (task 6.2) adapts them into
+  serialisation layer — the REST router (service lifecycle wiring) adapts them into
   Pydantic v2 models at the HTTP boundary.
 
-Requirements explicitly enforced here
+behaviors explicitly enforced here
 -------------------------------------
 * **6.1** — ``list_summaries`` returns one entry per manifest service.
 * **6.3** — ``state[name].state = "starting"`` is set **before** the
@@ -35,7 +33,7 @@ Requirements explicitly enforced here
   ``stop`` / ``restart`` so the router can render a 502.
 * **6.8** — ``last_started_at`` updates only on successful start.
 * **7.7** — ``logs`` redacts every Sensitive_Env_Key occurrence
-  (Property C5).
+  (invariant C5).
 * **8.2 / 8.6** — ``run_tests`` returns a 409-shaped result when the
   service is not running or has no ``test_command``.
 * **9.1 / 9.6** — Each Env_Override is written to Vault via
@@ -77,11 +75,11 @@ from .sensitive import is_sensitive_env_key
 from .vault_client import VaultClient, VaultWriteError
 
 # ---------------------------------------------------------------------------
-# Constants (design §3.14)
+# Lifecycle configuration constants.
 # ---------------------------------------------------------------------------
 
 #: Allowed values for :attr:`LifecycleStateCache.state`.
-#: ``"running_unmonitored"`` (platform-mimari-uyumluluk R12 / Q14) is
+#: ``"running_unmonitored"`` (platform operations rule 12 / Q14) is
 #: used when a service's Compose ``healthcheck`` block is absent — the
 #: container is running but we have no native health signal. The legacy
 #: ``"unknown"`` value is kept for backwards compatibility; both are
@@ -90,29 +88,29 @@ ServiceState = Literal[
     "stopped", "starting", "running", "unhealthy", "failed", "running_unmonitored"
 ]
 
-#: Default ``HEALTH_POLL_INTERVAL_SECONDS`` (design §3.14). The cache
+#: Default ``HEALTH_POLL_INTERVAL_SECONDS``. The cache
 #: TTL used by :meth:`LifecycleService.list_summaries` is
-#: ``DEFAULT_HEALTH_POLL_INTERVAL_SECONDS / 2`` per Requirement 12.4.
+#: ``DEFAULT_HEALTH_POLL_INTERVAL_SECONDS / 2``.
 DEFAULT_HEALTH_POLL_INTERVAL_SECONDS: float = 10.0
 
-#: Default ``HEALTH_READY_TIMEOUT_SECONDS`` (design §3.14). The
+#: Default ``HEALTH_READY_TIMEOUT_SECONDS``. The
 #: lifecycle handler polls ``health.probe`` for at most this many
 #: seconds after a successful Compose ``up`` before declaring the
-#: service ``failed`` (Requirement 12.6).
+#: service ``failed``.
 DEFAULT_HEALTH_READY_TIMEOUT_SECONDS: float = 60.0
 
-#: Hard upper bound on ``HEALTH_READY_TIMEOUT_SECONDS`` per design
-#: §3.14 (and Requirement 12.6). Values above this clamp downwards.
+#: Hard upper bound on ``HEALTH_READY_TIMEOUT_SECONDS``. Values above
+#: this clamp downwards.
 MAX_HEALTH_READY_TIMEOUT_SECONDS: float = 180.0
 
-#: Default ``HEALTH_FAIL_STREAK_THRESHOLD`` (design §3.14). When a
+#: Default ``HEALTH_FAIL_STREAK_THRESHOLD``. When a
 #: service reaches this many consecutive ``unhealthy`` polls the
 #: lifecycle handler writes a single ``health_streak_alert`` audit
-#: entry (Requirement 12.5).
+#: entry.
 DEFAULT_HEALTH_FAIL_STREAK_THRESHOLD: int = 3
 
-#: Maximum dependency-chain recursion depth (platform-mimari-uyumluluk
-#: Requirement 5.2 / Q11). The lifecycle service refuses to recurse
+#: Maximum dependency-chain recursion depth (platform operations
+#: behavior 5.2 / Q11). The lifecycle service refuses to recurse
 #: deeper than this when walking ``depends_on_services``; any
 #: violation surfaces as :class:`MaxDependencyDepthExceededError` and
 #: a ``dependency_chain_max_depth_exceeded`` audit row.
@@ -169,7 +167,7 @@ def _llm_secret_can_be_empty(key: str, provider: str | None) -> bool:
 #: so unit tests with patched timeouts terminate quickly.
 _HEALTH_POLL_STEP_SECONDS: float = 0.5
 
-#: Pytest summary regex (design §3.13). Captures the number of
+#: Pytest summary regex. Captures the number of
 #: passing/failing tests and the run duration. Match groups are 1:
 #: passed, 2: failed, 3: duration_seconds.
 _PYTEST_SUMMARY_RE: re.Pattern[str] = re.compile(
@@ -186,7 +184,7 @@ _PYTEST_SUMMARY_RE: re.Pattern[str] = re.compile(
 class UnknownServiceError(KeyError):
     """Raised when ``name`` does not match any manifest entry.
 
-    The router (task 6.2) maps this to ``404 Not Found``.
+    The router (service lifecycle wiring) maps this to ``404 Not Found``.
     """
 
     def __init__(self, service_name: str) -> None:
@@ -201,7 +199,7 @@ class FormSchemaMismatchError(ValueError):
     """Raised when ``env_overrides`` does not match the form schema.
 
     The router maps this to ``422 Unprocessable Entity``. Two failure
-    modes carry this exception (design §3.3 / Requirement 5.6, 5.7):
+    modes carry this exception:
 
     1. The LHS key set submitted by the operator differs from the
        ``.env.example`` LHS key set (missing or extra keys).
@@ -212,11 +210,11 @@ class FormSchemaMismatchError(ValueError):
 class TestPreconditionError(RuntimeError):
     """Raised when ``run_tests`` cannot proceed.
 
-    Maps to ``409 Conflict`` (Requirement 8.2 / 8.6). The
+    Maps to ``409 Conflict`` (behavior 8.2 / 8.6). The
     ``reason`` attribute distinguishes the two cases:
 
-    * ``"service must be running before tests"`` (Requirement 8.6).
-    * ``"service has no test_command in manifest"`` (Requirement 8.2).
+    * ``"service must be running before tests"`` (behavior 8.6).
+    * ``"service has no test_command in manifest"`` (behavior 8.2).
     """
 
     # Hint to pytest collectors: this class name happens to start
@@ -231,7 +229,7 @@ class TestPreconditionError(RuntimeError):
 class FeatureFlagDisabledError(RuntimeError):
     """Raised when a manifest ``feature_flag_dependency`` is disabled.
 
-    Implements platform-mimari-uyumluluk Requirement 10.1 / 10.2 (Q12 —
+    Implements platform operations behavior 10.1 / 10.2 (Q12 —
     feature-flag start gate). Step 1.5 of :meth:`LifecycleService.start`
     consults ``shared.feature_flags`` for every flag listed in the
     manifest entry's :attr:`ManagedServiceEntry.feature_flag_dependency`
@@ -242,7 +240,7 @@ class FeatureFlagDisabledError(RuntimeError):
     result deterministically) is exposed via :attr:`blocking_flag` so
     the router can render the 409 envelope and the UI can show a
     targeted "open Feature Flags page → toggle ``{blocking_flag}``"
-    modal (Requirement 10.3).
+    modal (behavior 10.3).
 
     The router maps this to ``409 Conflict``::
 
@@ -263,7 +261,7 @@ class FeatureFlagDisabledError(RuntimeError):
 class MaxDependencyDepthExceededError(RuntimeError):
     """Raised when ``depends_on_services`` recursion exceeds ``MAX_DEPENDENCY_DEPTH``.
 
-    Implements platform-mimari-uyumluluk Requirement 5.2 (Q11 — dependency
+    Implements platform operations behavior 5.2 (Q11 — dependency
     chain orchestration). Step 1.6 of :meth:`LifecycleService.start`
     walks the manifest's ``depends_on_services`` graph by recursing
     into ``_do_start`` with an explicit ``_recursion_path`` tuple of
@@ -295,7 +293,7 @@ class MaxDependencyDepthExceededError(RuntimeError):
 class DependencyStartFailedError(RuntimeError):
     """Raised when a recursive ``_do_start`` call fails to start a dep.
 
-    Implements platform-mimari-uyumluluk Requirement 5.5 (Q11). When a
+    Implements platform operations behavior 5.5 (Q11). When a
     dependency's ``_do_start`` raises ``ComposeFailureError`` (or any
     other start-time exception that surfaces past the canonical
     audit-or-rollback boundary), the parent service's Step 1.6 walk
@@ -304,7 +302,7 @@ class DependencyStartFailedError(RuntimeError):
     error_type}``, and re-raises wrapped in this class. Already-started
     sibling dependencies are **not** stopped — they remain in their
     current state so a subsequent retry can complete the chain
-    incrementally (Requirement 5.5 explicit clause "önceden başlatılmış
+    incrementally (behavior 5.5 explicit clause "önceden başlatılmış
     sibling'ler stop edilmez").
 
     The router maps this to ``502 Bad Gateway`` and surfaces the
@@ -364,7 +362,7 @@ __all__ = (
 
 
 # ---------------------------------------------------------------------------
-# Feature-flag reader protocol (R10 / Q12)
+# Feature-flag reader protocol (rule 10 / Q12)
 # ---------------------------------------------------------------------------
 
 
@@ -377,7 +375,7 @@ class FeatureFlagReader(Protocol):
     Implementations MUST:
 
     * Issue a *single* SQL ``SELECT`` against ``shared.feature_flags``
-      (Requirement 10.5 — "tek SELECT").
+      (behavior 10.5 — "tek SELECT").
     * Return a ``dict[str, bool]`` mapping flag name → ``enabled``.
       Missing rows are simply absent from the dict; the lifecycle
       service treats absence as "disabled" so a typo in the manifest
@@ -406,7 +404,7 @@ class AsyncpgFeatureFlagReader:
     Issues a single ``SELECT name, enabled FROM shared.feature_flags
     WHERE name = ANY($1)`` against the asyncpg pool — exactly one round
     trip per ``LifecycleService.start`` call, regardless of how many
-    flags the manifest entry depends on (Requirement 10.5 — "tek
+    flags the manifest entry depends on (behavior 10.5 — "tek
     SELECT").
 
     The pool handle is the same one wired by ``src.main.lifespan`` onto
@@ -455,7 +453,7 @@ class LifecycleStateCache:
     by ``name``. The cache is the source of truth for the ``state``
     column in ``GET /admin/services`` responses; it also tracks the
     most recent :class:`HealthSnapshot` so :meth:`list_summaries` can
-    return a list cheaply (Requirement 12.4 cache TTL).
+    return a list cheaply (behavior 12.4 cache TTL).
     """
 
     name: str
@@ -470,7 +468,7 @@ class LifecycleStateCache:
     #: TTL of ``HEALTH_POLL_INTERVAL_SECONDS / 2``.
     last_health_polled_at: datetime | None = None
     # ------------------------------------------------------------------
-    # Connectivity-probe fields (platform-mimari-uyumluluk R9 / Q10)
+    # Connectivity-probe fields (platform operations rule 9 / Q10)
     # ------------------------------------------------------------------
     #: Result of the most recent ``connectivity_probe_command`` run.
     #: ``"ok"`` — exit_code 0; ``"failed"`` — non-zero exit or timeout;
@@ -520,7 +518,7 @@ class StartResponse:
     """Result envelope for ``start`` / ``restart``.
 
     ``audit_write_deferred`` is set when the post-Compose audit row
-    could not be written and was queued for retry (Requirement 11.7).
+    could not be written and was queued for retry (behavior 11.7).
     ``state`` is the *final* state after polling for health; it is
     ``"running"`` on success, ``"failed"`` on Compose / health
     timeout failure.
@@ -536,7 +534,7 @@ class StopResponse:
     """Result envelope for ``stop``.
 
     ``noop`` is ``True`` when the service was already stopped
-    (Requirement 6.5 / Property P3).
+    (behavior 6.5 / invariant P3).
     """
 
     state: ServiceState
@@ -549,8 +547,8 @@ class StopResponse:
 class TestSummary:
     """Parsed pytest summary line.
 
-    Built from the regex match described by design §3.13 — when the
-    pytest output does not contain a recognisable summary the router
+    Built from the pytest summary regex. When the pytest output does
+    not contain a recognisable summary the router
     receives ``summary=None`` and surfaces a JSON ``null``.
     """
 
@@ -564,7 +562,7 @@ class TestSummary:
 
 @dataclass(frozen=True)
 class RunTestsResponse:
-    """Result envelope for ``run_tests`` (Requirement 8.4)."""
+    """Result envelope for ``run_tests`` (behavior 8.4)."""
 
     output: str
     exit_code: int
@@ -577,7 +575,7 @@ class RunTestsResponse:
 class StartPlan:
     """Result envelope for :meth:`LifecycleService.compute_start_plan`.
 
-    Implements platform-mimari-uyumluluk Requirement 5.6 (Q11). The
+    Implements platform operations behavior 5.6 (Q11). The
     router (``GET /admin/services/{name}/start-plan``) adapts this
     dataclass into :class:`StartPlanResponse` for the UI's "Aşağıdaki
     servisler de başlatılacak: ..." preview modal.
@@ -594,7 +592,7 @@ class StartPlan:
     * ``already_running`` — manifest-resident services in the
       transitive closure that are currently in ``state="running"``
       and will therefore be skipped on Step 1.6 idempotent descent
-      (Requirement 5.3). Order matches manifest declaration order so
+      (behavior 5.3). Order matches manifest declaration order so
       the UI can show a stable list.
 
     External dependencies (Boot_Bundle infra such as ``postgres``,
@@ -633,7 +631,7 @@ def _build_redaction_pattern(
     even if the parser never saw it.
 
     The match captures everything until the next whitespace or end of
-    line; this matches the way Compose / scaffolded services log env
+    line; this matches the way Compose / services log env
     snapshots (e.g. ``MY_TOKEN=abc123 OTHER=...``). For the
     ``KEY: value`` shape we stop at the next newline so multi-token
     values on the same line are still partially redacted.
@@ -660,8 +658,8 @@ def _redact_log_line(line: str, pattern: re.Pattern[str] | None) -> str:
 
     The replacement preserves the original key + separator (so the
     operator can still tell which variable was logged) but obliterates
-    the value. ``<redacted>`` is the canonical sentinel used across
-    the spec (Requirement 7.7, Glossary entry).
+    the value. ``<redacted>`` is the canonical sentinel used for
+    scrubbed sensitive values.
     """
 
     if pattern is None:
@@ -697,8 +695,7 @@ class LifecycleService:
         sleep: Callable[[float], Awaitable[None]] | None = None,
     ) -> None:
         # Public-ish state — tests inspect these directly to assert
-        # transitions (state machine table in design §Lifecycle
-        # State Machine).
+        # lifecycle state transitions.
         self._manifest: tuple[ManagedServiceEntry, ...] = manifest
         self._by_name: dict[str, ManagedServiceEntry] = {
             entry.name: entry for entry in manifest
@@ -716,7 +713,7 @@ class LifecycleService:
         self._compose = compose
         self._health = health
         self._workspace_root = workspace_root
-        # Feature-flag reader for Step 1.5 (R10 / Q12). When ``None``
+        # Feature-flag reader for Step 1.5 (rule 10 / Q12). When ``None``
         # the gate is a no-op and the manifest's
         # ``feature_flag_dependency`` field is treated as informational
         # only — used by tests that don't exercise the gate and by
@@ -739,7 +736,7 @@ class LifecycleService:
         # The form-schema cache is keyed by ``env_example_path``
         # because two manifest entries may legitimately share the
         # same file (e.g. ``atlassian-mcp`` reading from
-        # ``services/atlassian_unified/.env.example``). Loaded
+        # ``services/atlassian_mcp_bitbucket/.env.example``). Loaded
         # lazily on first access.
         self._form_schema_cache: dict[str, list[EnvField]] = {}
 
@@ -763,7 +760,7 @@ class LifecycleService:
     def compose(self) -> ComposeRunner:
         """Expose the underlying :class:`ComposeRunner`.
 
-        The REST router (task 6.2) relies on this for the
+        The REST router (service lifecycle wiring) relies on this for the
         streaming-logs path: ``lifecycle.compose.logs(..., follow=True)``
         returns the async generator that the SSE response forwards
         per-chunk after applying :meth:`build_log_redaction_pattern`.
@@ -791,7 +788,7 @@ class LifecycleService:
         Raises :class:`UnknownServiceError` when the service is not in
         the manifest. The schema mirrors the LHS keys of the
         ``.env.example`` file referenced by the manifest entry, in
-        file order (Requirement 5.1, 5.2, design §3.3 form_schema).
+        file order.
         """
 
         entry = self._require_entry(name)
@@ -809,7 +806,7 @@ class LifecycleService:
     def compute_start_plan(self, name: str) -> StartPlan:
         """Return the dependency-chain plan for ``start(name)``.
 
-        Implements platform-mimari-uyumluluk Requirement 5.6 (Q11 —
+        Implements platform operations behavior 5.6 (Q11 —
         dependency chain orchestration preview). The router exposes
         the result through ``GET /admin/services/{name}/start-plan``
         so the admin-dashboard-ui can render a confirmation modal
@@ -823,7 +820,7 @@ class LifecycleService:
            Tarjan-style post-order recording. The post-order traversal
            guarantees **dependencies appear before dependents** in the
            output, which mirrors the actual ``_do_start`` Step 1.6
-           descent order (Requirement 5.4 sequential start).
+           descent order (behavior 5.4 sequential start).
         3. Skip dependency edges whose target is not a manifest-resident
            node (e.g. external Boot_Bundle infra ``postgres`` /
            ``vault``). These are not actionable by the lifecycle
@@ -834,7 +831,7 @@ class LifecycleService:
            services currently in ``state="running"`` are filtered
            into the ``already_running`` bucket because
            :meth:`_do_start` is idempotent on running entries
-           (Requirement 5.3).
+           (behavior 5.3).
         5. The target service itself is appended to ``will_start`` last
            (post-order) when it is not currently running. If the target
            is running both lists may be empty; this is a legitimate
@@ -893,7 +890,7 @@ class LifecycleService:
         """Return one :class:`ServiceSummary` per manifest entry.
 
         Honours the cache TTL of
-        ``HEALTH_POLL_INTERVAL_SECONDS / 2`` (Requirement 12.4): if
+        ``HEALTH_POLL_INTERVAL_SECONDS / 2`` (behavior 12.4): if
         the cached snapshot is older than the TTL the method does
         **not** silently re-probe — that responsibility lives in
         :meth:`health_of` so callers explicitly request fresh data.
@@ -936,15 +933,15 @@ class LifecycleService:
         env_overrides: Mapping[str, str],
         actor: Any,
     ) -> StartResponse:
-        """Bring a Managed_Service up. Implements design §3.3 step list.
+        """Bring a Managed_Service up using the lifecycle start sequence.
 
         Order:
 
         1. Manifest lookup (else :class:`UnknownServiceError`).
         2. Form-schema match (else :class:`FormSchemaMismatchError`).
         3. Sensitive-field non-empty check.
-        4. Audit precheck (audit-or-rollback — Requirement 11.6).
-        5. Per-key Vault writes (Requirement 9.1, 9.6).
+        4. Audit precheck (audit-or-rollback — behavior 11.6).
+        5. Per-key Vault writes (behavior 9.1, 9.6).
         6. ``audit.write`` of the ``pending`` row (must succeed —
            we just prechecked).
         7. ``state[name].state = "starting"``.
@@ -974,7 +971,7 @@ class LifecycleService:
         overrides from Vault without re-validating the form schema.
 
         ``_recursion_path`` is a private parameter used by Step 1.6
-        (R5 / Q11 — dependency chain orchestration). Each recursive
+        (rule 5 / Q11 — dependency chain orchestration). Each recursive
         descent appends the current ``entry.name`` so the depth guard
         below can reject chains longer than
         :data:`MAX_DEPENDENCY_DEPTH`. External callers (``start`` /
@@ -1011,7 +1008,7 @@ class LifecycleService:
                 recursion_path=_recursion_path + (entry.name,),
             )
 
-        # Step 1.5 — feature-flag gate (R10 / Q12). Runs *before* the
+        # Step 1.5 — feature-flag gate (rule 10 / Q12). Runs *before* the
         # form-schema check so a flag-disabled start fails fast with
         # 409 even when the operator submitted no env_overrides at all
         # (matches the design Step Order: Step 1 manifest lookup →
@@ -1023,9 +1020,9 @@ class LifecycleService:
 
         # Step 1.6 (dependency chain) — start every dependency listed
         # in the manifest's ``depends_on_services`` tuple before
-        # touching the form schema for the parent. R5 / Q11 specifies
+        # touching the form schema for the parent. rule 5 / Q11 specifies
         # *sequential* (not parallel) descent so each child's health
-        # is confirmed before the next sibling is touched (Requirement
+        # is confirmed before the next sibling is touched
         # 5.4) and so an early failure aborts the chain without
         # leaving partially-started peers in flight.
         await self._start_dependencies(
@@ -1045,7 +1042,7 @@ class LifecycleService:
 
         # Step 5 — per-key Vault writes. First write that fails
         # propagates VaultWriteError; already-written keys remain in
-        # Vault (Requirement 9.6 atomic per-key semantics).
+        # Vault (behavior 9.6 atomic per-key semantics).
         for key, value in env_overrides.items():
             await self._vault.write_env_override(
                 service_name=entry.name,
@@ -1070,7 +1067,7 @@ class LifecycleService:
 
         # Step 7 — flip to ``starting`` BEFORE the compose call so
         # the ``GET /admin/services`` snapshot reflects the action
-        # (Requirement 6.3 second sentence).
+        # (behavior 6.3 second sentence).
         slot = self._state[entry.name]
         slot.state = "starting"
         slot.last_correlation_id = correlation_id
@@ -1106,13 +1103,13 @@ class LifecycleService:
         # Step 9 — poll until healthy or timeout.
         healthy = await self._wait_for_healthy(entry)
 
-        # Step 9.5 — connectivity probe (platform-mimari-uyumluluk R9 / Q10).
+        # Step 9.5 — connectivity probe (platform operations rule 9 / Q10).
         # Runs *after* _wait_for_healthy succeeds and *before* the final
         # audit row so the probe result is visible in the state cache by
         # the time the caller receives the StartResponse. A failed probe
         # does NOT change the service state to "failed" — the service is
         # still considered "running"; only the credentials_status field
-        # in the state cache is updated (design §3.3 Step 9.5 note).
+        # in the state cache is updated.
         if healthy:
             await self._run_connectivity_probe(
                 entry=entry,
@@ -1162,7 +1159,7 @@ class LifecycleService:
     ) -> None:
         """Record an audit row when ``purge_vault=true`` is blocked.
 
-        Implements platform-mimari-uyumluluk Requirement 14.2 (Q16) —
+        Implements platform operations behavior 14.2 (Q16) —
         the lifecycle stop endpoint refuses ``purge_vault=true`` when
         ``settings.deployment_profile == "production"`` and writes a
         ``purge_vault_blocked_in_production`` audit row before the
@@ -1183,7 +1180,7 @@ class LifecycleService:
           observability layer.
         * The ``details_json`` payload carries ``actor_id`` so the
           security review can pivot back to the OIDC subject without
-          joining against an external IdP record (Requirement 14.2
+          joining against an external IdP record (behavior 14.2
           payload: ``{service_name, actor_id}``).
 
         Compose is **never** invoked on this path; the router
@@ -1220,24 +1217,24 @@ class LifecycleService:
         purge_vault: bool = False,
         actor: Any,
     ) -> StopResponse:
-        """Bring a Managed_Service down (idempotent — Requirement 6.5).
+        """Bring a Managed_Service down (idempotent — behavior 6.5).
 
         When the service is already in the ``stopped`` state the
         method short-circuits: it still writes a *successful* audit
         entry (so the operator's action is visible) but does **not**
-        invoke Compose. This is the structural surface of Property
+        invoke Compose. This is the structural surface of the invariant
         P3 — repeated ``stop`` calls remain ``200 OK``.
 
-        platform-mimari-uyumluluk Requirement 14.3 / 14.4 (Q16) —
+        platform operations behavior 14.3 / 14.4 (Q16) —
         when ``purge_vault=True`` the orchestrator runs a best-effort
         Vault purge **after** the Compose stop succeeds. The
-        production guard lives in the router (Requirement 14.2 — the
+        production guard lives in the router (behavior 14.2 — the
         body field is rejected with a 403 before ``stop`` is even
         called when ``deployment_profile`` resolves to
         ``"production"``); by the time we reach this method the
         ``purge_vault=True`` path is guaranteed safe to execute.
 
-        Purge semantics (best-effort — Requirement 14.4):
+        Purge semantics (best-effort — behavior 14.4):
 
         * The Compose stop happens first. If it fails the canonical
           ``ComposeFailureError`` audit row is written and the
@@ -1336,10 +1333,10 @@ class LifecycleService:
             )
         )
 
-        # platform-mimari-uyumluluk R14.3 / R14.4 (Q16) — best-effort
+        # platform operations rule 14.3 / rule 14.4 (Q16) — best-effort
         # Vault purge. Runs ONLY when the operator explicitly opted in
         # and ONLY after the Compose stop succeeded. The router has
-        # already gated the production profile (Requirement 14.2), so
+        # already gated the production profile (behavior 14.2), so
         # by the time we reach here it is safe to enumerate and delete
         # the override keys.
         #
@@ -1372,7 +1369,7 @@ class LifecycleService:
     ) -> None:
         """Best-effort delete of every Env_Override under ``services/{name}/``.
 
-        Implements platform-mimari-uyumluluk Requirement 14.3 / 14.4
+        Implements platform operations behavior 14.3 / 14.4
         (Q16). Called from :meth:`stop` after a successful Compose
         stop when ``purge_vault=True`` was passed. Two terminal
         outcomes — both surfaced via a single audit row, neither
@@ -1462,7 +1459,7 @@ class LifecycleService:
     ) -> StartResponse:
         """Stop the service then start it again with Vault-stored env.
 
-        The Env_Override map is **read** from Vault (Requirement 6.6
+        The Env_Override map is **read** from Vault (behavior 6.6
         explicit clause "son Env_Override setini Vault'tan tekrar
         okuyarak"). When the operator has never started the service
         before the map is empty and the form-schema check still
@@ -1501,9 +1498,9 @@ class LifecycleService:
 
         Pre-conditions:
 
-        * Service must be ``running`` (Requirement 8.6) — else
+        * Service must be ``running`` (behavior 8.6) — else
           :class:`TestPreconditionError`.
-        * Manifest entry must declare ``test_command`` (Requirement
+        * Manifest entry must declare ``test_command``
           8.2) — else :class:`TestPreconditionError`.
 
         On success the pytest summary is parsed via
@@ -1525,7 +1522,7 @@ class LifecycleService:
         # The ``test_command`` is sourced from the manifest, which is
         # already JSON-Schema validated. We still tokenise via shlex
         # so we get an explicit argv list (no shell metacharacter
-        # interpretation — Requirement 8.3 surface).
+        # interpretation — behavior 8.3 surface).
         full_argv = shlex.split(entry.test_command)
 
         # The manifest convention is to write the *full* command
@@ -1551,7 +1548,7 @@ class LifecycleService:
         # row. ``write_with_retry`` is used because the test command
         # has already executed by the time we reach here — we will
         # not roll the operator's invocation back if the DB went
-        # down (Requirement 11.7).
+        # down (behavior 11.7).
         outcome_label: Literal["success", "failed"] = (
             "success" if result.exit_code == 0 else "failed"
         )
@@ -1609,7 +1606,7 @@ class LifecycleService:
         :meth:`_redact_log_line` per chunk before forwarding to the
         SSE response. We expose the redaction pattern via
         :meth:`build_log_redaction_pattern` so the router shares the
-        same key set we use here (Property C5).
+        same key set we use here (invariant C5).
         """
 
         entry = self._require_entry(name)
@@ -1650,7 +1647,7 @@ class LifecycleService:
         return _build_redaction_pattern(sensitive_keys)
 
     # ------------------------------------------------------------------
-    # health_of (with streak alerting — Requirement 12.5)
+    # health_of (with streak alerting — behavior 12.5)
     # ------------------------------------------------------------------
 
     async def health_of(self, *, name: str) -> HealthSnapshot:
@@ -1660,9 +1657,9 @@ class LifecycleService:
         cached snapshot is younger than the TTL the method returns
         it verbatim — this is how :meth:`list_summaries` and the
         router's ``GET /admin/services/{name}/health`` endpoint
-        coexist with the UI's polling (Requirement 12.4).
+        coexist with the UI's polling (behavior 12.4).
 
-        Streak alerting (Requirement 12.5): each ``unhealthy``
+        Streak alerting (behavior 12.5): each ``unhealthy``
         snapshot increments
         :attr:`LifecycleStateCache.consecutive_unhealthy_polls`. When
         the counter reaches :attr:`_fail_streak_threshold` the
@@ -1676,7 +1673,7 @@ class LifecycleService:
         entry = self._require_entry(name)
         slot = self._state[entry.name]
 
-        # Cache hit branch (Requirement 12.4 cache TTL).
+        # Cache hit branch (behavior 12.4 cache TTL).
         ttl = self._poll_interval / 2
         if slot.last_health_snapshot is not None and slot.last_health_polled_at is not None:
             age = (self._clock() - slot.last_health_polled_at).total_seconds()
@@ -1699,7 +1696,7 @@ class LifecycleService:
             ):
                 # Best-effort audit write; we use ``write_with_retry``
                 # so a transient DB outage does not raise out of the
-                # health endpoint (Requirement 11.7).
+                # health endpoint (behavior 11.7).
                 await self._audit.write_with_retry(
                     AuditEntry(
                         id=uuid4(),
@@ -1761,13 +1758,13 @@ class LifecycleService:
     ) -> None:
         """Step 1.6 — start every dependency listed in ``entry.depends_on_services``.
 
-        Implements platform-mimari-uyumluluk Requirement 5.1 / 5.3 / 5.4 / 5.5
+        Implements platform operations behavior 5.1 / 5.3 / 5.4 / 5.5
         (Q11 — dependency chain orchestration). Behaviour:
 
         * Iterates ``entry.depends_on_services`` in manifest order
-          (Requirement 5.4 — sequential, not parallel).
+          (behavior 5.4 — sequential, not parallel).
         * Skips dependencies whose current ``state`` is already
-          ``"running"`` or ``"starting"`` (Requirement 5.3 — idempotent).
+          ``"running"`` or ``"starting"`` (behavior 5.3 — idempotent).
         * Skips dependencies that are not manifest-resident (external
           Boot_Bundle infra such as ``postgres`` / ``vault`` / ``temporal``
           that the lifecycle service cannot manage).
@@ -1780,9 +1777,9 @@ class LifecycleService:
 
           1. Writes a ``dependency_start_failed`` audit row with
              ``payload: {parent_service, failed_dependency, error_type}``
-             (Requirement 5.5).
+             (behavior 5.5).
           2. Does **not** stop already-started sibling dependencies
-             (Requirement 5.5 explicit clause "önceden başlatılmış
+             (behavior 5.5 explicit clause "önceden başlatılmış
              sibling'ler stop edilmez").
           3. Re-raises wrapped in :class:`DependencyStartFailedError`
              so the parent's caller (the router) can render a 502.
@@ -1798,7 +1795,7 @@ class LifecycleService:
 
             dep_state = self._state[dep_entry.name].state
             if dep_state in ("running", "starting"):
-                # Idempotent skip — Requirement 5.3.
+                # Idempotent skip — behavior 5.3.
                 continue
 
             try:
@@ -1809,7 +1806,7 @@ class LifecycleService:
                     _recursion_path=recursion_path + (entry.name,),
                 )
             except Exception as exc:
-                # Requirement 5.5: write audit, do NOT stop siblings,
+                # behavior 5.5: write audit, do NOT stop siblings,
                 # propagate wrapped in DependencyStartFailedError.
                 await self._audit.write_with_retry(
                     AuditEntry(
@@ -1843,17 +1840,17 @@ class LifecycleService:
     ) -> None:
         """Step 1.5 gate — refuse to start when a required flag is off.
 
-        Implements platform-mimari-uyumluluk Requirement 10.1 / 10.2 / 10.5
+        Implements platform operations behavior 10.1 / 10.2 / 10.5
         (Q12). Behaviour:
 
         * No-op when the manifest entry's ``feature_flag_dependency``
           tuple is empty or no :class:`FeatureFlagReader` is wired
           (boot-time / unit-test path).
-        * Otherwise issues **one** SQL ``SELECT`` (Requirement 10.5) to
+        * Otherwise issues **one** SQL ``SELECT`` (behavior 10.5) to
           fetch every flag's ``enabled`` value. Flags absent from the
           result map are treated as *disabled* — this catches typos in
           the manifest before they can corrupt audit history.
-        * On the first disabled flag (manifest order — Property 11
+        * On the first disabled flag (manifest order — invariant 11
           determinism), writes a ``service_start_blocked_feature_flag``
           audit row through ``write_with_retry`` (best-effort: a DB
           outage cannot block the request flow because the request is
@@ -1874,7 +1871,7 @@ class LifecycleService:
             # No reader wired (e.g. boot before pg_pool came up, or a
             # unit-test path that doesn't exercise the gate). Treat
             # this as a non-event so we don't accidentally block
-            # legitimate starts. The R10 acceptance criteria are
+            # legitimate starts. The rule 10 acceptance criteria are
             # exercised through the production wiring in
             # ``src.main.lifespan`` which always supplies a reader
             # when ``app.state.pg_pool`` is available.
@@ -1949,7 +1946,7 @@ class LifecycleService:
         except FileNotFoundError:
             # Treat a missing example file as an empty schema; the
             # form-schema match would then accept only ``{}``. The
-            # router-level startup readiness check (task 6.3) is
+            # router-level startup readiness check (audit sink wiring) is
             # responsible for surfacing the missing file at boot,
             # not this hot path.
             text = ""
@@ -1962,14 +1959,14 @@ class LifecycleService:
         entry: ManagedServiceEntry,
         env_overrides: Mapping[str, str],
     ) -> None:
-        """Enforce form-schema parity (Requirement 5.6 / 5.7).
+        """Enforce form-schema parity (behavior 5.6 / 5.7).
 
         Two checks:
 
         1. The submitted LHS key set equals the ``.env.example`` LHS
            key set **exactly**. Missing or extra keys both raise.
         2. Every Sensitive_Env_Key in the schema has a non-empty
-           value (Requirement 5.7).
+           value (behavior 5.7).
         """
 
         fields = self._load_env_fields(entry)
@@ -2008,9 +2005,9 @@ class LifecycleService:
         name: str,
         actor: Any,
     ) -> None:
-        """Manually re-run the connectivity probe for ``name`` (R9.6 / Q10).
+        """Manually re-run the connectivity probe for ``name`` (rule 9.6 / Q10).
 
-        Implements platform-mimari-uyumluluk Requirement 9.6 — the
+        Implements platform operations behavior 9.6 — the
         ``POST /admin/services/{name}/probe`` endpoint calls this method
         to trigger a manual re-run of the manifest's
         ``connectivity_probe_command``. The same audit events
@@ -2038,32 +2035,30 @@ class LifecycleService:
         actor_sub: str,
         correlation_id: UUID,
     ) -> None:
-        """Step 9.5 — run the manifest ``connectivity_probe_command`` (R9 / Q10).
+        """Step 9.5 — run the manifest ``connectivity_probe_command`` (rule 9 / Q10).
 
-        Implements platform-mimari-uyumluluk Requirement 9.2, 9.4 (Q10 —
+        Implements platform operations behavior 9.2, 9.4 (Q10 —
         connectivity probe). Called after :meth:`_wait_for_healthy` returns
         ``True`` and before the final audit row is written.
 
         Behaviour
         ---------
         * No-op when ``entry.connectivity_probe_command`` is ``None``
-          (Requirement 9.1 — default ``null`` means no probe).
+          (behavior 9.1 — default ``null`` means no probe).
         * Otherwise runs the command via ``subprocess.run`` with a 30-second
-          timeout (Requirement 9.2 — "timeout 30 sn").
+          timeout (behavior 9.2 — "timeout 30 sn").
         * ``exit_code == 0`` → ``state[name].credentials_status = "ok"`` +
-          ``service_connectivity_probe_passed`` audit (Requirement 9.4).
+          ``service_connectivity_probe_passed`` audit (behavior 9.4).
         * Any other exit code (or timeout / OS error) →
           ``credentials_status = "failed"``,
           ``credentials_probe_detail = stderr[-500:]`` +
-          ``service_connectivity_probe_failed`` audit (Requirement 9.4).
+          ``service_connectivity_probe_failed`` audit (behavior 9.4).
         * A failed probe does **not** change the service ``state`` to
           ``"failed"`` — the service remains ``"running"``; only the
-          ``credentials_status`` field is updated (design §3.3 Step 9.5
-          note: "probe başarısız olsa bile servis state='running' kabul
-          edilir").
+          ``credentials_status`` field is updated.
 
         This method is also called directly by the
-        ``POST /admin/services/{name}/probe`` endpoint (Requirement 9.6 —
+        ``POST /admin/services/{name}/probe`` endpoint (behavior 9.6 —
         manuel re-run) so the same audit events are emitted for both the
         automatic post-start probe and the operator-triggered re-run.
         """
@@ -2157,10 +2152,10 @@ class LifecycleService:
         ``unknown`` snapshots (for ``health_endpoint=null`` infra
         services) are **treated as success** because we have no way
         to confirm health and the operator's intent is "assume
-        running" — design §3.6 ``_probe_assume_running``.
+        running".
 
-        ``running_unmonitored`` snapshots (platform-mimari-uyumluluk
-        R12 / Q14) carry the same semantics: the container is up but
+        ``running_unmonitored`` snapshots (platform operations
+        rule 12 / Q14) carry the same semantics: the container is up but
         has no Compose ``healthcheck`` block, so we cannot obtain a
         native health signal. Both ``unknown`` and
         ``running_unmonitored`` are therefore treated as "ready" here.

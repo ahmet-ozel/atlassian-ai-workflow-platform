@@ -1,28 +1,28 @@
-"""Property test for LLM call path whitelist.
+"""LLM call path whitelist checks.
 
-**Validates: Requirement 1.4**
 
-Property 2 (LLM subset, design §Correctness Properties): repository
+
+LLM subset rule: repository
 altındaki her ``.py`` kaynak dosyası için LLM kütüphane çağrıları
 (``openai``, ``anthropic``, ``llm_orchestrator`` import'ları) yalnızca
 ``services/assistant-service/`` ve ``workers/agent-runner-worker/``
 ağaçlarında — ve bu kütüphanelerin kendi tanım yerleri olan
-``libs/llm-orchestrator/`` ve test scaffold'ları (``tests/unit/``,
+``libs/llm-orchestrator/`` ve test project'ları (``tests/unit/``,
 ``tests/integration/``, ``tests/property/``, ``tests/fixtures/``)
-içinde bulunur. Diğer her path Requirement 1.4 ihlali sayılır.
+içinde bulunur. Diğer her path ihlali sayılır.
 
 This module is a sibling of ``test_path_coverage.py``; the LLM-specific
-checks live here per task 11.4 (file split). Both modules consume the
+checks live here. Both modules consume the
 same ``_path_whitelist`` helper, but ``test_llm_call_paths.py``:
 
 * runs the LLM scanner against the live tree and asserts zero
-  findings,
+ findings,
 * uses Hypothesis to sample one source file at a time and confirm
-  the per-file invariant — same shrinking pattern as the broader
-  Property 2 tests in ``test_path_coverage.py``,
+ the per-file rule — same shrinking pattern as the broader
+ path checks in ``test_path_coverage.py``,
 * exercises the scanner against synthetic source snippets so the
-  detection rules stay locked in independent of the production
-  corpus.
+ detection rules stay locked in independent of the production
+ corpus.
 """
 
 from __future__ import annotations
@@ -64,28 +64,25 @@ _PLATFORM_ROOT: Path = Path(__file__).resolve().parents[2]
 
 
 def test_no_llm_imports_outside_whitelist() -> None:
-    """**Validates: Requirement 1.4**
+    """LLM kütüphane import'ları (``openai``, ``anthropic``,
+ ``llm_orchestrator``) yalnızca ``services/assistant-service/``,
+ ``workers/agent-runner-worker/``, ``libs/llm-orchestrator/`` ve
+ paylaşılan test project'ları içinde bulunabilir. Diğer her path
+ ihlali sayılır.
 
-    LLM kütüphane import'ları (``openai``, ``anthropic``,
-    ``llm_orchestrator``) yalnızca ``services/assistant-service/``,
-    ``workers/agent-runner-worker/``, ``libs/llm-orchestrator/`` ve
-    paylaşılan test scaffold'ları içinde bulunabilir. Diğer her path
-    Requirement 1.4 ihlali sayılır.
-
-    The shared-test-fixture whitelist is added to the default LLM
-    whitelist because ``tests/unit/test_llm_orchestrator.py`` and any
-    future scaffolds that exercise the orchestrator must legitimately
-    import the package by name. The orchestrator library is the
-    *single source of truth* for LLM access (design §4.1 Components,
-    §6.3 Property → test mapping); its tests are not new LLM caller
-    sites.
-    """
+ The shared-test-fixture whitelist is added to the default LLM
+ whitelist because ``tests/unit/test_llm_orchestrator.py`` and any
+ future projects that exercise the orchestrator must legitimately
+ import the package by name. The orchestrator library is the
+ *single source of truth* for LLM access; its tests are not new LLM
+ caller sites.
+ """
 
     findings = scan_llm_calls(
         whitelist=tuple(LLM_WHITELIST) + SHARED_TEST_FIXTURE_WHITELIST,
     )
     assert not findings, (
-        "Requirement 1.4 violation — LLM library import found outside "
+        "the operational rule violation — LLM library import found outside "
         "assistant-service / agent-runner-worker / llm-orchestrator. "
         "Route every LLM call through libs/llm-orchestrator and import "
         "it only from those two services.\n"
@@ -94,7 +91,7 @@ def test_no_llm_imports_outside_whitelist() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Hypothesis property — per-file invariant
+# Hypothesis property — per-file rule
 # ---------------------------------------------------------------------------
 
 
@@ -104,9 +101,9 @@ _SOURCE_FILES: tuple[Path, ...] = tuple(iter_source_files())
 def _llm_findings_for_file(path: Path) -> list[Finding]:
     """Return LLM findings produced by *path* under the live scan.
 
-    The scanner normalises results against ``PLATFORM_ROOT``, so we
-    run it once and filter rather than crafting a per-file root.
-    """
+ The scanner normalises results against ``PLATFORM_ROOT``, so we
+ run it once and filter rather than crafting a per-file root.
+ """
 
     rel = path.relative_to(_PLATFORM_ROOT).as_posix()
     return [
@@ -125,35 +122,29 @@ def _llm_findings_for_file(path: Path) -> list[Finding]:
 )
 @given(path=st.sampled_from(_SOURCE_FILES) if _SOURCE_FILES else st.nothing())
 def test_per_file_no_llm_findings(path: Path) -> None:
-    """**Validates: Requirement 1.4**
+    """Hypothesis property: rastgele örneklenen herhangi bir ``.py``
+ kaynak dosyası için LLM scanner boş döner.
 
-    Hypothesis property: rastgele örneklenen herhangi bir ``.py``
-    kaynak dosyası için LLM scanner boş döner.
-
-    Sampling-then-asserting gives Hypothesis tight shrinking when a
-    regression slips in — the failing example is the single offending
-    file rather than an aggregate across the tree.
-    """
+ Sampling-then-asserting gives Hypothesis tight shrinking when a
+ regression slips in — the failing example is the single offending
+ file rather than an aggregate across the tree.
+ """
 
     findings = _llm_findings_for_file(path)
     rel = path.relative_to(_PLATFORM_ROOT).as_posix()
     assert not findings, (
-        f"Requirement 1.4 violation in {rel}:\n" + format_findings(findings)
+        f"the operational rule violation in {rel}:\n" + format_findings(findings)
     )
 
 
 def test_llm_source_corpus_is_non_empty() -> None:
-    """**Validates: Requirement 1.4**
-
-    Guard against a vacuous Hypothesis property: the source corpus
-    must contain at least one ``.py`` file or the
-    :func:`test_per_file_no_llm_findings` strategy degenerates to
-    :func:`hypothesis.strategies.nothing` and the property silently
-    passes.
-    """
+    """Guard against a vacuous Hypothesis property: the source corpus
+ must contain at least one ``.py`` file or the:func:`test_per_file_no_llm_findings` strategy degenerates to:func:`hypothesis.strategies.nothing` and the property silently
+ passes.
+ """
 
     assert _SOURCE_FILES, (
-        "LLM-scan source corpus is empty; iter_source_files() must "
+        "LLM-scan source corpus is empty; iter_source_files must "
         "return at least one file under the platform root"
     )
 
@@ -173,21 +164,21 @@ def _write(tmp: Path, rel: str, src: str) -> Path:
 
 
 class TestLlmCallPathScannerSelfChecks:
-    """Self-tests guaranteeing :func:`scan_llm_calls` actually flags
-    LLM imports outside the whitelist. Without these the production
-    aggregate test above could pass vacuously after a scanner
-    regression.
-    """
+    """Self-tests guaranteeing:func:`scan_llm_calls` actually flags
+ LLM imports outside the whitelist. Without these the production
+ aggregate test above could pass vacuously after a scanner
+ regression.
+ """
 
     def test_openai_import_outside_whitelist_is_flagged(
         self, tmp_path: Path
     ) -> None:
-        """**Validates: Requirement 1.4**"""
+        """OpenAI imports outside the allowed paths are reported."""
 
         src = (
             "import openai\n"
-            "def chat():\n"
-            "    return openai.ChatCompletion.create(model='gpt-4', messages=[])\n"
+            "def chat:\n"
+            " return openai.ChatCompletion.create(model='gpt-4', messages=[])\n"
         )
         _write(tmp_path, "services/automation-service/src/leak.py", src)
         findings = scan_llm_calls(tmp_path)
@@ -198,12 +189,12 @@ class TestLlmCallPathScannerSelfChecks:
     def test_anthropic_import_outside_whitelist_is_flagged(
         self, tmp_path: Path
     ) -> None:
-        """**Validates: Requirement 1.4**"""
+        """Anthropic imports outside the allowed paths are reported."""
 
         src = (
             "import anthropic\n"
-            "def chat():\n"
-            "    return anthropic.Anthropic().messages.create()\n"
+            "def chat:\n"
+            " return anthropic.Anthropic.messages.create\n"
         )
         _write(tmp_path, "services/admin-dashboard-api/src/leak.py", src)
         findings = scan_llm_calls(tmp_path)
@@ -214,12 +205,12 @@ class TestLlmCallPathScannerSelfChecks:
     def test_llm_orchestrator_import_outside_whitelist_is_flagged(
         self, tmp_path: Path
     ) -> None:
-        """**Validates: Requirement 1.4**"""
+        """LLM orchestrator imports outside the allowed paths are reported."""
 
         src = (
             "from llm_orchestrator import LLMProviderFactory\n"
-            "def f():\n"
-            "    return LLMProviderFactory.from_env()\n"
+            "def f:\n"
+            " return LLMProviderFactory.from_env\n"
         )
         _write(tmp_path, "services/automation-service/src/leak.py", src)
         findings = scan_llm_calls(tmp_path)
@@ -231,12 +222,12 @@ class TestLlmCallPathScannerSelfChecks:
     def test_openai_inside_assistant_service_is_allowed(
         self, tmp_path: Path
     ) -> None:
-        """**Validates: Requirement 1.4**"""
+        """OpenAI imports inside assistant-service are allowed."""
 
         src = (
             "import openai\n"
-            "def chat():\n"
-            "    return openai.ChatCompletion.create(model='gpt-4', messages=[])\n"
+            "def chat:\n"
+            " return openai.ChatCompletion.create(model='gpt-4', messages=[])\n"
         )
         _write(tmp_path, "services/assistant-service/src/llm.py", src)
         findings = scan_llm_calls(tmp_path)
@@ -245,11 +236,11 @@ class TestLlmCallPathScannerSelfChecks:
     def test_openai_inside_agent_runner_worker_is_allowed(
         self, tmp_path: Path
     ) -> None:
-        """**Validates: Requirement 1.4**"""
+        """OpenAI imports inside agent-runner-worker are allowed."""
 
         src = (
             "from openai import AsyncOpenAI\n"
-            "client = AsyncOpenAI()\n"
+            "client = AsyncOpenAI\n"
         )
         _write(
             tmp_path,
@@ -262,21 +253,19 @@ class TestLlmCallPathScannerSelfChecks:
     def test_llm_orchestrator_inside_lib_is_allowed(
         self, tmp_path: Path
     ) -> None:
-        """**Validates: Requirement 1.4**
-
-        The orchestrator library defines ``llm_orchestrator``; it is
-        the single source of truth and itself imports
-        ``openai``/``anthropic`` to wrap them. ``libs/llm-orchestrator/``
-        is on the default whitelist.
-        """
+        """The orchestrator library defines ``llm_orchestrator``; it is
+ the single source of truth and itself imports
+ ``openai``/``anthropic`` to wrap them. ``libs/llm-orchestrator/``
+ is on the default whitelist.
+ """
 
         src = (
             "import openai\n"
             "import anthropic\n"
             "class Wrapper:\n"
-            "    def __init__(self) -> None:\n"
-            "        self.openai = openai\n"
-            "        self.anthropic = anthropic\n"
+            " def __init__(self) -> None:\n"
+            " self.openai = openai\n"
+            " self.anthropic = anthropic\n"
         )
         _write(
             tmp_path,
@@ -287,16 +276,14 @@ class TestLlmCallPathScannerSelfChecks:
         assert findings == [], findings
 
     def test_from_import_form_is_flagged(self, tmp_path: Path) -> None:
-        """**Validates: Requirement 1.4**
-
-        ``from openai import X`` (the from-form) must be flagged just
-        like ``import openai``.
-        """
+        """``from openai import X`` (the from-form) must be flagged just
+ like ``import openai``.
+ """
 
         src = (
             "from openai import AsyncOpenAI\n"
-            "def make_client():\n"
-            "    return AsyncOpenAI()\n"
+            "def make_client:\n"
+            " return AsyncOpenAI\n"
         )
         _write(tmp_path, "services/admin-dashboard-api/src/leak.py", src)
         findings = scan_llm_calls(tmp_path)
@@ -305,13 +292,11 @@ class TestLlmCallPathScannerSelfChecks:
         ), findings
 
     def test_unrelated_module_is_not_flagged(self, tmp_path: Path) -> None:
-        """**Validates: Requirement 1.4**
-
-        Top-level modules that share a substring with LLM module names
-        (e.g. ``openai_compatibility_layer``) but resolve to a
-        different root are not flagged. The scanner matches the *root*
-        of dotted names exactly.
-        """
+        """Top-level modules that share a substring with LLM module names
+ (e.g. ``openai_compatibility_layer``) but resolve to a
+ different root are not flagged. The scanner matches the *root*
+ of dotted names exactly.
+ """
 
         src = (
             "import openai_compatibility_layer as ocl\n"
@@ -325,33 +310,29 @@ class TestLlmCallPathScannerSelfChecks:
     def test_string_literal_with_provider_name_is_not_flagged(
         self, tmp_path: Path
     ) -> None:
-        """**Validates: Requirement 1.4**
-
-        Sabit ``"openai"`` string literali (config key, log mesajı,
-        provider seçici) flag'lenmez — yalnızca import edilen modül
-        adları kontrol edilir.
-        """
+        """Sabit ``"openai"`` string literali (config key, log mesajı,
+ provider seçici) flag'lenmez — yalnızca import edilen modül
+ adları kontrol edilir.
+ """
 
         src = (
             "PROVIDER = 'openai'\n"
-            "def select():\n"
-            "    return PROVIDER == 'anthropic'\n"
+            "def select:\n"
+            " return PROVIDER == 'anthropic'\n"
         )
         _write(tmp_path, "services/automation-service/src/cfg.py", src)
         findings = scan_llm_calls(tmp_path)
         assert findings == [], findings
 
     def test_relative_import_is_not_flagged(self, tmp_path: Path) -> None:
-        """**Validates: Requirement 1.4**
-
-        Relative import'lar (``from . import x``) third-party LLM
-        modüllerine ulaşamaz; scanner ``ast.ImportFrom.level == 0``
-        koşuluyla bu durumu zaten dışlar.
-        """
+        """Relative import'lar (``from. import x``) third-party LLM
+ modüllerine ulaşamaz; scanner ``ast.ImportFrom.level == 0``
+ koşuluyla bu durumu zaten dışlar.
+ """
 
         src = (
-            "from . import openai_helper\n"
-            "from ..common import anthropic_helper\n"
+            "from. import openai_helper\n"
+            "from..common import anthropic_helper\n"
         )
         _write(
             tmp_path,
@@ -364,12 +345,10 @@ class TestLlmCallPathScannerSelfChecks:
     def test_finding_path_is_workspace_relative_forward_slash(
         self, tmp_path: Path
     ) -> None:
-        """**Validates: Requirement 1.4**
-
-        Finding objelerinin ``path`` alanı forward-slash workspace-
-        relative formattadır; bu :func:`format_findings` çıktısının
-        platform-bağımsız olmasını garanti eder.
-        """
+        """Finding objelerinin ``path`` alanı forward-slash workspace-
+ relative formattadır; bu:func:`format_findings` çıktısının
+ platform-bağımsız olmasını garanti eder.
+ """
 
         src = "import openai\n"
         _write(

@@ -8,8 +8,8 @@
 # be extended to a 3-node cluster by adding peer node_id entries.
 # Persistent state lives at ``/vault/data`` (the named volume
 # ``vault_data`` declared in docker-compose.prod.yml) so restarting the
-# container preserves secrets — fixes GEREKSINIM_ANALIZI.md Y2 (Vault
-# ``-dev`` mode wiped every credential on restart).
+# container preserves secrets instead of wiping credentials on restart
+# like Vault ``-dev`` mode.
 #
 # Init/unseal flow (one-time per fresh deployment):
 #

@@ -1,21 +1,19 @@
-"""Per-user > org-default credential resolution (task 12.5, R10.8).
+"""Per-user > org-default credential resolution.
 
 Implements ``CredentialResolver.resolve(session_id, dept_id, service)``
-as specified in
-``.kiro/specs/platform-mimari-foundation/design.md`` §"Vault path
-domeni" and ``requirements.md`` §Requirement 10.8.
+using the platform Vault path layout.
 
 Lookup order
 ------------
 
 1. **Per-user session credential** —
    ``vault:atlassian/_user_session/<session_id>/<service>``. This path
-   is populated by the Streamlit per-user session form (task 12.4)
+   is populated by the Streamlit per-user session form
    when a user supplies their own Atlassian credential for the
    lifetime of an interactive session.
 2. **Org-default credential** — ``vault:atlassian/<dept_id>/<service>``.
    This is the bot credential registered through the department
-   wizard (task 5.4 / 5.3).
+   wizard.
 3. **Neither present** — :class:`CredentialMissing` is raised. The
    exception's ``error_code`` attribute equals ``"credential_missing"``
    so callers can match the canonical audit event name without
@@ -31,7 +29,7 @@ Postgres — its source of truth is purely the Vault path layout — so
 keeping the two resolvers in separate modules avoids muddying the
 ``decision`` package with session-state plumbing. The two resolvers
 **can** be composed at the call site if a workflow ever needs to
-combine bot-default with a per-user override (Q6/Q7).
+combine bot-default with a per-user override.
 
 VaultClient contract
 --------------------
@@ -40,11 +38,10 @@ This module depends on a *structural* (duck-typed) Vault client that
 exposes a synchronous ``read(path: str) -> Mapping[str, str]`` method
 which raises :class:`KeyError` when the path does not exist. This
 matches the canonical :class:`vault_client.VaultClient` protocol
-shipped under ``platform/libs/vault_client/`` (task 2.2) without
+shipped under ``platform/libs/vault_client/`` without
 adding a hard build-time dependency on that package — production
 wiring imports the real backend, tests inject an in-memory fake.
 
-Requirements: 10.8
 """
 
 from __future__ import annotations
@@ -67,15 +64,14 @@ __all__ = [
 # ---------------------------------------------------------------------------
 
 #: Atlassian surfaces this resolver knows about. Mirrors the ``service``
-#: enum used everywhere else in the platform (R6.1, ``departments.schema.json``).
+#: enum used everywhere else in the platform (``departments.schema.json``).
 AtlassianService = Literal["jira", "bitbucket", "confluence"]
 
-#: Per-user / per-session credential path template (R10.7, design
-#: §"Vault path domeni"). The session id is opaque to this module —
+#: Per-user / per-session credential path template. The session id is opaque to this module —
 #: callers (Streamlit / assistant-service) generate and rotate it.
 _USER_SESSION_TEMPLATE: Final[str] = "vault:atlassian/_user_session/{session_id}/{service}"
 
-#: Org-default (department bot) credential path template (R6.1).
+#: Org-default (department bot) credential path template.
 _ORG_DEFAULT_TEMPLATE: Final[str] = "vault:atlassian/{dept_id}/{service}"
 
 
@@ -141,7 +137,7 @@ class CredentialMissing(LookupError):
 
     Attributes:
         error_code: Always ``"credential_missing"`` — the canonical
-            audit event name (R10.8).
+            audit event name.
         session_id: The session id that was tried.
         dept_id: The department id that was tried.
         service: The Atlassian surface that was requested.
@@ -181,7 +177,7 @@ class VaultReader(Protocol):
     """Minimal structural slice of :class:`vault_client.VaultClient`.
 
     Only the synchronous ``read`` operation is needed by this module;
-    a separate module (task 5.3) wraps the same backend for write /
+    a separate module wraps the same backend for write /
     rotation flows. Keeping the protocol slice tight means tests can
     inject a 3-line fake and avoid pulling in the full ``vault_client``
     package.
@@ -243,7 +239,7 @@ class CredentialResolver:
     ) -> ResolvedCredential:
         """Return the credential for *session_id* / *dept_id* / *service*.
 
-        Lookup order (R10.8):
+        Lookup order:
 
         1. ``vault:atlassian/_user_session/<session_id>/<service>``
         2. ``vault:atlassian/<dept_id>/<service>``

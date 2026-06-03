@@ -1,34 +1,31 @@
 """Integration smoke test 9.2 — Profile-gated start senaryosu.
 
-Validates: Requirements 2.3, 6.3, 6.4, 6.5
-Spec: ``.kiro/specs/admin-dashboard-control-plane`` (task 9.2).
 
 Scenario
 --------
 1. ``docker compose -f infra/docker-compose.yml up -d --wait`` brings up
-   the Boot_Bundle (Requirement 1.x).
+ the Boot_Bundle x).
 2. ``POST /admin/services/redis/start`` against the running
-   ``admin-dashboard-api`` returns ``202 Accepted`` with
-   ``state="starting"`` (Requirement 6.3).
+ ``admin-dashboard-api`` returns ``202 Accepted`` with
+ ``state="starting"`` .
 3. Polling ``GET /admin/services/redis`` flips to ``state="running"``
-   within 30 seconds (Requirement 2.3 — manifest profile gates a
-   started container — and Requirement 6.3 — health-driven state
-   transition).
+ within 30 seconds manifest profile gates a
+ started container — and health-driven state
+ transition).
 4. ``docker compose ps redis`` confirms a Redis container is actually
-   running (cross-checks the orchestrator's view against Compose).
+ running (cross-checks the orchestrator's view against Compose).
 5. ``POST /admin/services/redis/stop`` returns ``200`` and a second
-   call returns ``200 + noop=true`` (Requirement 6.5 / Property P3
-   sanity check).
+ call returns ``200 + noop=true`` .
 6. Teardown stops every Managed_Service (best-effort) and then
-   ``docker compose down -v`` to clean the host.
+ ``docker compose down -v`` to clean the host.
 
 Authentication
 --------------
 The admin-dashboard-api ships with ``AUTH_MODE=dev`` by default in
-the scaffold ``.env.example`` (see ``services/admin-dashboard-api/
+the project ``.env.example`` (see ``services/admin-dashboard-api/
 .env.example``); the test sends ``Authorization: Bearer dev-test``
 which is accepted by the dev-mode validator (canned admin claims —
-Requirement 10.6). When the deployed image runs in production mode
+. When the deployed image runs in production mode
 the test SKIPs cleanly with a clear reason rather than failing.
 
 Gating
@@ -59,7 +56,7 @@ COMPOSE_FILE_REL: str = "infra/docker-compose.yml"
 BOOT_TIMEOUT_SECONDS: float = 240.0
 
 #: Maximum wall-clock time to wait for ``redis`` to flip to
-#: ``state="running"`` after the start request (Requirement 6.3, design
+#: ``state="running"`` after the start request design
 #: §"Lifecycle State Machine").
 START_TO_RUNNING_TIMEOUT_SECONDS: float = 60.0
 
@@ -67,12 +64,12 @@ START_TO_RUNNING_TIMEOUT_SECONDS: float = 60.0
 STATE_POLL_INTERVAL_SECONDS: float = 1.0
 
 #: Admin API base URL (admin-dashboard-api publishes 8082 in the base
-#: Compose file — see Requirement 1.3).
+#: Compose file — see .
 ADMIN_API_BASE: str = "http://localhost:8082"
 
 #: Bearer token sent on every admin request. The dev-mode OIDCValidator
 #: accepts any non-empty string and returns canned admin claims
-#: (Requirement 10.6); production mode rejects it and the test SKIPs.
+#: ; production mode rejects it and the test SKIPs.
 DEV_BEARER_TOKEN: str = "smoke-test-bearer"
 
 #: Service we drive through start/stop. ``redis`` is a stable infra
@@ -176,9 +173,9 @@ def _compose_service_running(repo_root: Path, service: str) -> bool:
 class _ServiceClient:
     """Tiny wrapper around the admin-dashboard-api ``/admin/services`` API.
 
-    Kept inline so the test file is self-contained — no fixtures or
-    extra imports leak into the rest of the suite.
-    """
+ Kept inline so the test file is self-contained — no fixtures or
+ extra imports leak into the rest of the suite.
+ """
 
     base_url: str
     bearer: str
@@ -278,9 +275,9 @@ def _wait_for_state(
 ) -> str:
     """Poll ``GET /admin/services/{name}`` until ``state == target_state``.
 
-    Returns the last observed state; raises ``AssertionError`` on
-    timeout or on an HTTP error response.
-    """
+ Returns the last observed state; raises ``AssertionError`` on
+ timeout or on an HTTP error response.
+ """
 
     deadline = time.monotonic() + timeout
     last_state: str = "<unobserved>"
@@ -312,8 +309,7 @@ def test_profile_gated_start_drives_redis_through_start_stop_cycle(
 ) -> None:
     """End-to-end: Boot_Bundle → start redis → poll running → stop ×2.
 
-    Validates: Requirements 2.3, 6.3, 6.4, 6.5.
-    """
+ """
 
     _require_docker_or_skip(request)
 
@@ -345,7 +341,7 @@ def test_profile_gated_start_drives_redis_through_start_stop_cycle(
                 "admin-dashboard-api rejected the dev bearer token (401); "
                 "AUTH_MODE is likely set to 'production' on this host. "
                 "This smoke test only runs against the dev-mode default "
-                "(see Requirement 10.6).",
+                "(see .",
             )
         assert status_code == 202, (
             f"expected 202 Accepted from /start; got {status_code} "
@@ -399,7 +395,7 @@ def test_profile_gated_start_drives_redis_through_start_stop_cycle(
         assert body is not None
         assert body.get("state") == "stopped"
         assert body.get("noop") is True, (
-            "Property P3: second /stop on an already-stopped service "
+            "the invariant: second /stop on an already-stopped service "
             f"MUST report noop=True; got body={body!r}"
         )
     finally:

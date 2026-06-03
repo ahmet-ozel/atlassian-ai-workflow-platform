@@ -1,25 +1,18 @@
-"""Unit tests for ``src.routers.loki_search`` (platform-gap-fill task 7.3).
-
-**Validates: Requirements 8.6**
-
+"""Unit tests for ``src.routers.loki_search``.
 Two surfaces are exercised:
-
 1. ``GET /admin/audit/search?trace_id=...`` — the existing audit search
    proxy gains a ``trace_id`` filter that is forwarded to Loki when the
    client supports it and re-applied client-side as a defence-in-depth
    safety net.
-
 2. ``GET /api/v1/workflows/{workflow_id}/logs?trace_id=...`` — the new
    workflow-scoped log filter that builds a LogQL stream selector and
    forwards to ``LokiClient``. The endpoint is the backend half of
-   task 7.3; the FE integration is tracked separately.
-
+   ; the FE integration is tracked separately.
 The tests inject a tiny in-memory Loki stub so we can verify the
 LogQL query, the soft-fail path (no client wired), the
 graceful-degradation path (client raises), and the defensive
 client-side filter that drops rows from a different workflow or
-request.
-"""
+request."""
 
 from __future__ import annotations
 
@@ -235,7 +228,7 @@ def test_audit_search_falls_back_when_legacy_client_rejects_trace_id() -> None:
 
 
 # ---------------------------------------------------------------------------
-# /api/v1/workflows/{wf_id}/logs — new endpoint (Requirement 8.6)
+# /api/v1/workflows/{wf_id}/logs — new endpoint
 # ---------------------------------------------------------------------------
 
 

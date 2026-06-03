@@ -14,8 +14,6 @@ Workflow:
 Warning Deduplication:
     No duplicate warning is sent for the same department within 60 minutes.
     Deduplication is tracked via the ``disk_quota_warnings`` table.
-
-Requirements: 16.1, 16.2, 16.3, 16.4, 16.5
 """
 
 from __future__ import annotations
@@ -43,16 +41,16 @@ __all__ = [
 # Constants
 # ---------------------------------------------------------------------------
 
-#: Timeout for the SSH disk usage check command (Requirement 16.1: 30s).
+#: Timeout for the SSH disk usage check command.
 DISK_CHECK_TIMEOUT_SECONDS: float = 30.0
 
-#: Warning threshold as a fraction of quota (Requirement 16.3: 80%).
+#: Warning threshold as a fraction of quota.
 WARNING_THRESHOLD: float = 0.80
 
-#: Deduplication window for warnings (Requirement 16.3: 60 minutes).
+#: Deduplication window for warnings.
 WARNING_DEDUP_MINUTES: int = 60
 
-#: Age threshold for cleanup candidates (Requirement 16.4: 72 hours).
+#: Age threshold for cleanup candidates.
 CLEANUP_AGE_HOURS: int = 72
 
 
@@ -97,7 +95,7 @@ class DiskQuotaInput:
         Base path on the SSH runner where department workspaces reside.
     quota_mb : float | None
         Department disk quota in MB from ``ssh_workspace_quota_mb``.
-        If None, quota check is skipped entirely (Requirement 16.5).
+        If None, quota check is skipped entirely.
     """
 
     dept_id: str
@@ -232,7 +230,7 @@ async def _get_disk_usage_mb(
     """Get disk usage in MB for the workspace base path via SSH.
 
     Uses ``du -sm`` to compute total disk usage in megabytes.
-    Requirement 16.1: 30s timeout.
+    Uses a 30s timeout.
 
     Parameters
     ----------
@@ -297,8 +295,8 @@ async def _get_cleanup_candidates(
 ) -> list[str]:
     """List workspace directories older than 72 hours.
 
-    Requirement 16.4: When above 80%, list workspaces older than 72 hours
-    for cleanup suggestions.
+    When above 80%, list workspaces older than 72 hours for cleanup
+    suggestions.
 
     Parameters
     ----------
@@ -495,7 +493,7 @@ async def check_disk_quota(input: DiskQuotaInput) -> DiskQuotaResult:
         input.quota_mb,
     )
 
-    # Requirement 16.5: If ssh_workspace_quota_mb is null, skip check entirely
+    # If ssh_workspace_quota_mb is null, skip check entirely.
     if input.quota_mb is None:
         activity.logger.info(
             "Disk quota check skipped for dept=%s (quota_mb is null)",
@@ -510,7 +508,7 @@ async def check_disk_quota(input: DiskQuotaInput) -> DiskQuotaResult:
             cleanup_candidates=[],
         )
 
-    # Step 1: Get current disk usage (Requirement 16.1: 30s timeout)
+    # Step 1: Get current disk usage with a 30s timeout.
     try:
         usage_mb = await _get_disk_usage_mb(
             workspace_base=input.workspace_base,
@@ -540,7 +538,7 @@ async def check_disk_quota(input: DiskQuotaInput) -> DiskQuotaResult:
         (usage_mb / input.quota_mb) * 100 if input.quota_mb > 0 else 0,
     )
 
-    # Step 2: Check if quota is exceeded (Requirement 16.2)
+    # Step 2: Check if quota is exceeded.
     if usage_mb > input.quota_mb:
         activity.logger.warning(
             "Disk quota exceeded for dept=%s: %.1f MB > %.1f MB",
@@ -557,7 +555,7 @@ async def check_disk_quota(input: DiskQuotaInput) -> DiskQuotaResult:
             cleanup_candidates=[],
         )
 
-    # Step 3: Check 80% warning threshold (Requirement 16.3)
+    # Step 3: Check 80% warning threshold.
     warning_sent = False
     cleanup_candidates: list[str] = []
     threshold_mb = input.quota_mb * WARNING_THRESHOLD
@@ -571,13 +569,13 @@ async def check_disk_quota(input: DiskQuotaInput) -> DiskQuotaResult:
             threshold_mb,
         )
 
-        # Step 4: List cleanup candidates (Requirement 16.4)
+        # Step 4: List cleanup candidates.
         cleanup_candidates = await _get_cleanup_candidates(
             workspace_base=input.workspace_base,
             dept_id=input.dept_id,
         )
 
-        # Step 5: Send deduplicated warning (Requirement 16.3)
+        # Step 5: Send deduplicated warning.
         should_warn = await _should_send_warning(input.dept_id)
         if should_warn:
             warning_sent = await _send_warning_to_dashboard(

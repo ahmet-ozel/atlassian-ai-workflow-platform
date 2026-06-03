@@ -1,6 +1,5 @@
 # Runbook: Getting Started — İlk Açılış Akışı
 
-> **Spec:** `platform-real-usage-gaps` — Requirement 2.5 (R2.5).
 > **Audience:** Platform `admin` rolü (yeni kurulumda first operator); CI / debug senaryolarında DevOps.
 > **Scope:** `platform/` deposunu klonlayan bir operatörün, makineyi sıfırdan ayağa kaldırıp ilk task'ı açabilir hale gelmesi. Compose stack'in **bootstrap-only** (admin-dashboard + bağımlılıkları) modda başlatılması, admin-dashboard üzerinden Setup Wizard akışı, ardından kalan servislerin sırayla aktive edilmesi.
 > **Reversibility:** Tüm adımlar geri alınabilir; `make down` ile tüm container'lar durur (volume'lar korunur).
@@ -100,7 +99,7 @@ Setup Wizard, Compose stack'in geri kalanını **kullanıcı onayıyla** ve doğ
 | 4. `mcp_server` | `atlassian-mcp` profile'ı | MCP gateway (8090) ayağa kalkar; canlılık probe'u yeşil olur. |
 | 5. `workers` | `automation-worker`, `agent-runner-worker`, `execution-runner-worker` profile'ları | Worker'lar Temporal'a register olur; task queue'lar listelenebilir. |
 | 6. `services` | `automation-service`, `assistant-service`, `streamlit-ui`, `firecrawl` (opsiyonel) profile'ları | HTTP servisler ayağa kalkar; healthcheck'ler yeşil olur. |
-| 7. `add_first_department` | Yeni dept oluşturma akışı (R5) | Operatör bir dept ekler, bot credential'ları girer, connectivity probe çalışır; en az bir aktif dept commit edildiğinde wizard tamamlanır. |
+| 7. `add_first_department` | Yeni dept oluşturma akışı | Operatör bir dept ekler, bot credential'ları girer, connectivity probe çalışır; en az bir aktif dept commit edildiğinde wizard tamamlanır. |
 
 Her adımda UI:
 
@@ -171,7 +170,7 @@ veya POSIX shell'de:
 | `make boot` sonrası 5'ten fazla servis listede | Yanlışlıkla `make up-all` çağrıldı veya eski stack hâlâ ayakta | `make down` çalıştır, sonra `make boot` ile sadece bootstrap servisleri aç. |
 | `admin-dashboard-ui` `health: starting` durumundan çıkmıyor | Next.js ilk build cache'i olmadığı için 30-60 sn sürebilir | Bekle; 2 dakikadan uzun sürerse `docker compose logs admin-dashboard-ui` ile build hatasını incele. |
 | Setup Wizard adım 4 (`mcp_server`) `failed` | `atlassian-mcp` profile'ı açılırken healthcheck timeout (`MCP gateway 8090 not responding`) | `docker compose logs atlassian-mcp` — Atlassian credential'ları `.env`'de eksik olabilir; `MCP_BASE_URL` ve ilgili token'ları doldur, ardından retry. |
-| Setup Wizard adım 7 (`add_first_department`) `Probe failed` | Bot Atlassian credential'ı geçersiz veya `account_id` resolve edilemedi | Modal'da gösterilen probe hata mesajını oku; credential'ı düzelt veya `account_id`'yi manuel olarak Atlassian admin panelinden al. R6 auto-probe sonrası tekrar dene. |
+| Setup Wizard adım 7 (`add_first_department`) `Probe failed` | Bot Atlassian credential'ı geçersiz veya `account_id` resolve edilemedi | Modal'da gösterilen probe hata mesajını oku; credential'ı düzelt veya `account_id`'yi manuel olarak Atlassian admin panelinden al. Auto-probe sonrası tekrar dene. |
 | `make up-all` ile başlatınca da bir servis `unhealthy` | Profile-gated servisin bağımlılıkları (örn. `postgres`, `temporal`) henüz hazır değil | Compose `depends_on` zinciri healthcheck-aware'dır; 1-2 dakika bekle. Hâlâ unhealthy ise `docker compose logs <service>` ile root cause'a bak. |
 | Port 3000 / 8082 / 8200 / 5432 çakışıyor | Host'ta başka uygulama portu tutuyor | Çakışan uygulamayı kapat veya `infra/docker-compose.dev.yml` içinde port mapping'i değiştir. |
 
@@ -212,5 +211,3 @@ make down
 - [`platform/scripts/up.sh`](../../scripts/up.sh) ve [`platform/scripts/up.ps1`](../../scripts/up.ps1) — make olmayan host'lar için wrapper.
 - [`platform/infra/docker-compose.yml`](../../infra/docker-compose.yml) — boot bundle (profilesiz) ve profile-gated servis tanımları.
 - [`platform/config/services.manifest.json`](../../config/services.manifest.json) — profile listesi single source of truth.
-- Spec: `platform-real-usage-gaps` Requirement 2 (R2.1, R2.2, R2.3, R2.5, R2.6).
-- Spec: `platform-mimari-foundation` Requirement 2.8 (Compose lifecycle wrapper).

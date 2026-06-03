@@ -1,4 +1,4 @@
-"""Egress allowlist enforcement (Requirement 10.3, MIMARI §16.14 Y3).
+"""Egress allowlist enforcement.
 
 This module is **the** authoritative implementation of the host-allowlist
 predicate that the firecrawl wrapper consults before performing any external
@@ -42,12 +42,12 @@ __all__ = [
 ]
 
 #: Stable identifier emitted on the audit / log path when a request is
-#: refused. The platform property test (Property 16, task 12.9) asserts this
-#: exact string appears in the structured log record.
+#: refused. Tests assert this exact string appears in the structured log
+#: record.
 EGRESS_DENIED_AUDIT_ACTION = "egress_denied"
 
 #: Counterpart for permitted requests. Useful for symmetry in dashboards but
-#: not strictly required by the requirement.
+#: not required by the core allowlist behavior.
 EGRESS_ALLOWED_AUDIT_ACTION = "egress_allowed"
 
 
@@ -90,7 +90,7 @@ class EgressDecision:
         ``"invalid_url"``, ``"missing_host"``.
     audit_action
         ``"egress_allowed"`` or ``"egress_denied"``. The exact string that
-        SHALL appear in audit / log records (Requirement 10.3).
+        SHALL appear in audit / log records.
     """
 
     verdict: EgressVerdict
@@ -135,7 +135,7 @@ def is_host_allowed(host: str, allowlist: tuple[str, ...]) -> bool:
     but NOT ``barexample.com`` (no boundary).
 
     The empty allowlist always returns ``False`` — the closed-by-default
-    posture is a hard requirement for Y3.
+    posture is a hard requirement for this wrapper.
     """
 
     if not host or not allowlist:

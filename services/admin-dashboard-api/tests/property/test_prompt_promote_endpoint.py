@@ -1,46 +1,36 @@
-# Feature: platform-mimari-uyumluluk
-# Property 8: Prompt Promote Flow Determinism (Q4)
-# Validates: Requirements 7.1, 7.3, 7.5, 7.6
-"""Property test: Prompt Promote Flow Determinism (Q4).
-
-**Property 8: Prompt Promote Flow Determinism (Q4)**
-**Validates: Requirements 7.1, 7.3, 7.5, 7.6**
-
+#
+# Prompt Promote Flow Determinism (Q4)
+#
+"""Prompt Promote Flow Determinism (Q4).
+Prompt Promote Flow Determinism (Q4)**
 For any ``(sandbox_run_id, sandbox.passed, sandbox_run_exists)`` triplet,
 the promote endpoint behaviour must be deterministic:
-
 - ``sandbox_run_exists=False`` → 404 ``sandbox_run_not_found``
   (regardless of ``passed`` value).
 - ``sandbox_run_exists=True`` ∧ ``passed=False`` → 422
   ``sandbox_not_passed`` + ``prompt_promote_rejected_sandbox_failed`` audit.
 - ``sandbox_run_exists=True`` ∧ ``passed=True`` → 201 ``{pr_url, branch,
   sandbox_run_id}`` + ``prompt_promoted`` audit.
-
 Additionally, the sandbox-test → promote round-trip must preserve
 ``sandbox_run_id`` identity: the ``sandbox_run_id`` returned by the
 sandbox-test endpoint must be the same value accepted by the promote
 endpoint.
-
 Strategy
 --------
 Hypothesis generates random combinations of:
-
 1. ``sandbox_run_id`` — a UUID string (or ``None`` for the "pool
    unavailable" case).
 2. ``passed`` — ``True`` / ``False``.
 3. ``sandbox_run_exists`` — ``True`` / ``False``.
-
 All sub-properties are exercised as separate ``@given`` tests so
 Hypothesis can shrink counterexamples independently.
-
 Implementation note
 -------------------
-The promote endpoint (task 11.2) is tested here via its **logic layer**
+The promote endpoint  is tested here via its **logic layer**
 — a ``_promote_logic`` helper extracted from the router so the property
 test does not depend on FastAPI's HTTP machinery. The helper accepts a
 fake pool and a fake audit sink, making the test fully deterministic and
-free of I/O.
-"""
+free of I/O."""
 
 from __future__ import annotations
 
@@ -66,9 +56,9 @@ if str(_SERVICE_ROOT) not in sys.path:
 # ---------------------------------------------------------------------------
 # Promote logic — extracted / importable from the router
 # ---------------------------------------------------------------------------
-# The promote endpoint (task 11.2) exposes its core decision logic as a
+# The promote endpoint  exposes its core decision logic as a
 # standalone async function ``_promote_logic`` so property tests can call
-# it without spinning up a FastAPI app.  When task 11.2 lands the import
+#  it without spinning up a FastAPI app. When lands the import
 # below will resolve to the real implementation; until then the test
 # module defines a *reference implementation* that matches the spec and
 # the test validates that reference.
@@ -87,7 +77,7 @@ except ImportError:
 
 
 # ---------------------------------------------------------------------------
-# Reference implementation (used when task 11.2 is not yet merged)
+# Reference implementation
 # ---------------------------------------------------------------------------
 
 if not _USING_REAL_IMPL:
@@ -220,16 +210,13 @@ async def _promote_logic_reference(
     pr_opener: _FakePrOpener,
 ) -> PromoteResult:
     """Reference implementation of the promote endpoint logic.
-
-    Mirrors the spec (design.md §R7 — Prompt Promote Endpoint):
-
+    Mirrors the spec :
     ① Fetch ``sandbox_run_id`` from ``automation.prompt_sandbox_runs``.
        Not found → raise ``PromoteNotFoundError`` (→ HTTP 404).
     ② ``passed=False`` → raise ``PromoteSandboxNotPassedError`` (→ HTTP 422)
        + ``prompt_promote_rejected_sandbox_failed`` audit.
     ③ ``passed=True`` → open PR via ``pr_opener``.
-    ④ Success → ``prompt_promoted`` audit + return ``PromoteResult``.
-    """
+    ④ Success → ``prompt_promoted`` audit + return ``PromoteResult``."""
     # ① Fetch the sandbox run.
     run = await pool.fetch_sandbox_run(sandbox_run_id)
     if run is None:
@@ -305,7 +292,7 @@ _ACTOR_STRATEGY = st.from_regex(
 
 
 # ---------------------------------------------------------------------------
-# Property 8a — sandbox_run_exists=False → PromoteNotFoundError (→ 404)
+#  — sandbox_run_exists=False → PromoteNotFoundError (→ 404)
 # ---------------------------------------------------------------------------
 
 
@@ -328,14 +315,10 @@ def test_missing_sandbox_run_raises_not_found(
     draft_branch: str,
     actor_id: str,
 ) -> None:
-    """Property 8a — sandbox_run_exists=False → PromoteNotFoundError (→ 404).
-
-    **Validates: Requirements 7.1, 7.5**
-
+    """— sandbox_run_exists=False → PromoteNotFoundError (→ 404).
     For any ``sandbox_run_id`` that does not exist in the DB, the promote
     logic must raise ``PromoteNotFoundError`` regardless of the ``passed``
-    value. No audit event must be emitted (the run was never recorded).
-    """
+    value. No audit event must be emitted (the run was never recorded)."""
     pool = _FakeSandboxRunsPool()  # empty — no rows
     audit = _FakeAuditSink()
     pr_opener = _FakePrOpener()
@@ -376,7 +359,7 @@ def test_missing_sandbox_run_raises_not_found(
 
 
 # ---------------------------------------------------------------------------
-# Property 8b — sandbox_run_exists=True ∧ passed=False → 422 + rejected audit
+#  — sandbox_run_exists=True ∧ passed=False → 422 + rejected audit
 # ---------------------------------------------------------------------------
 
 
@@ -397,15 +380,11 @@ def test_failed_sandbox_run_raises_not_passed(
     draft_branch: str,
     actor_id: str,
 ) -> None:
-    """Property 8b — sandbox_run_exists=True ∧ passed=False → 422 + rejected audit.
-
-    **Validates: Requirements 7.1, 7.5, 7.6**
-
+    """— sandbox_run_exists=True ∧ passed=False → 422 + rejected audit.
     When the sandbox run exists but ``passed=False``, the promote logic must:
     - Raise ``PromoteSandboxNotPassedError`` (→ HTTP 422).
     - Emit exactly one ``prompt_promote_rejected_sandbox_failed`` audit event.
-    - NOT open a PR.
-    """
+    - NOT open a PR."""
     pool = _FakeSandboxRunsPool()
     pool.add_run(
         sandbox_run_id=sandbox_run_id,
@@ -469,7 +448,7 @@ def test_failed_sandbox_run_raises_not_passed(
 
 
 # ---------------------------------------------------------------------------
-# Property 8c — sandbox_run_exists=True ∧ passed=True → 201 + promoted audit
+#  — sandbox_run_exists=True ∧ passed=True → 201 + promoted audit
 # ---------------------------------------------------------------------------
 
 
@@ -490,17 +469,13 @@ def test_passed_sandbox_run_opens_pr_and_emits_promoted_audit(
     draft_branch: str,
     actor_id: str,
 ) -> None:
-    """Property 8c — sandbox_run_exists=True ∧ passed=True → 201 + promoted audit.
-
-    **Validates: Requirements 7.1, 7.3, 7.5**
-
+    """— sandbox_run_exists=True ∧ passed=True → 201 + promoted audit.
     When the sandbox run exists and ``passed=True``, the promote logic must:
     - Return a ``PromoteResult`` with ``sandbox_run_id`` matching the input.
     - Open exactly one PR via the PR opener.
     - Emit exactly one ``prompt_promoted`` audit event carrying
       ``actor_id``, ``prompt_path``, ``sandbox_run_id``, and ``pr_url``.
-    - NOT emit a ``prompt_promote_rejected_sandbox_failed`` audit event.
-    """
+    - NOT emit a ``prompt_promote_rejected_sandbox_failed`` audit event."""
     pool = _FakeSandboxRunsPool()
     pool.add_run(
         sandbox_run_id=sandbox_run_id,
@@ -586,7 +561,7 @@ def test_passed_sandbox_run_opens_pr_and_emits_promoted_audit(
 
 
 # ---------------------------------------------------------------------------
-# Property 8d — determinism: same (run_id, passed, exists) → same outcome
+# same (run_id, passed, exists) → same outcome
 # ---------------------------------------------------------------------------
 
 
@@ -609,16 +584,12 @@ def test_promote_flow_is_deterministic(
     prompt_path: str,
     draft_branch: str,
 ) -> None:
-    """Property 8d — promote flow is deterministic.
-
-    **Validates: Requirements 7.1, 7.3, 7.5, 7.6**
-
+    """— promote flow is deterministic.
     For any ``(sandbox_run_id, passed, run_exists)`` triplet, calling
     the promote logic twice with the same inputs must produce the same
     outcome (both succeed, both raise the same exception type, or both
     raise with the same ``sandbox_run_id``). This confirms the promote
-    flow is a pure function of its inputs.
-    """
+    flow is a pure function of its inputs."""
     outcomes: list[str] = []
 
     for _ in range(2):
@@ -661,7 +632,7 @@ def test_promote_flow_is_deterministic(
 
 
 # ---------------------------------------------------------------------------
-# Property 8e — sandbox-test → promote round-trip: sandbox_run_id preserved
+# sandbox_run_id preserved
 # ---------------------------------------------------------------------------
 
 
@@ -680,16 +651,12 @@ def test_sandbox_test_to_promote_round_trip_preserves_run_id(
     draft_branch: str,
     actor_id: str,
 ) -> None:
-    """Property 8e — sandbox-test → promote round-trip preserves sandbox_run_id.
-
-    **Validates: Requirements 7.3, 7.5**
-
+    """— sandbox-test → promote round-trip preserves sandbox_run_id.
     The ``sandbox_run_id`` returned by the sandbox-test step must be
     accepted by the promote step without modification. This verifies
     the round-trip contract: the same UUID that the sandbox-test
     endpoint writes to ``automation.prompt_sandbox_runs`` is the one
-    the promote endpoint reads back.
-    """
+    the promote endpoint reads back."""
     # Simulate the sandbox-test step: generate a fresh UUID and record it.
     sandbox_run_id = str(uuid.uuid4())
 
@@ -750,7 +717,7 @@ def test_sandbox_test_to_promote_round_trip_preserves_run_id(
 
 
 # ---------------------------------------------------------------------------
-# Property 8f — wrong sandbox_run_id in promote → 404 (not the run's data)
+#  — wrong sandbox_run_id in promote → 404 (not the run's data)
 # ---------------------------------------------------------------------------
 
 
@@ -773,15 +740,11 @@ def test_wrong_sandbox_run_id_raises_not_found(
     prompt_path: str,
     draft_branch: str,
 ) -> None:
-    """Property 8f — wrong sandbox_run_id in promote → 404.
-
-    **Validates: Requirements 7.1, 7.5**
-
+    """— wrong sandbox_run_id in promote → 404.
     When the promote endpoint receives a ``sandbox_run_id`` that does not
     match any row in the DB (even if other rows exist), it must raise
     ``PromoteNotFoundError``. This ensures the promote endpoint cannot be
-    tricked into promoting a run by guessing a different UUID.
-    """
+    tricked into promoting a run by guessing a different UUID."""
     # Only skip when the two UUIDs happen to be equal (extremely rare).
     if real_run_id == wrong_run_id:
         return

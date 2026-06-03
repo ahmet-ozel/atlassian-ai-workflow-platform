@@ -1,4 +1,4 @@
-"""Per-user session credential relay endpoint (task 12.4, R10.6 / R10.7).
+"""Per-user session credential relay endpoint.
 
 The Streamlit UI (``platform/ui/streamlit-app/pages/0_credentials.py``)
 posts plain-text Atlassian credentials to this router so they land in
@@ -6,9 +6,9 @@ Vault under
 ``vault:atlassian/_user_session/<session_id>/<service>``. The router
 is the **only** place plain-text user-supplied tokens land on the
 server — they are forwarded to Vault and the in-memory bytearray is
-zeroed before the response is returned (R3.4 mirror).
+zeroed before the response is returned.
 
-Lifecycle (Property 19, design.md §"Property 19"):
+Lifecycle:
 
 * ``POST /session/credentials`` → write or refresh.
 * ``DELETE /session/credentials?session_id=...&service=...`` →
@@ -63,7 +63,7 @@ def build_user_session_path(session_id: str, service: str) -> str:
 
     Mirrors :func:`automation_service.credentials.build_user_session_path`
     byte-for-byte. The two helpers are kept in lockstep by the
-    property test ``test_session_credential.py`` (Property 19) which
+    path parity test which
     drives both the writer (this module's POST handler) and the
     reader (``CredentialResolver``) through the same path.
     """
@@ -142,7 +142,7 @@ def _to_vault_path(raw: str) -> Any:
 async def post_session_credential(
     request: Request,
 ) -> JSONResponse:
-    """Write a per-user credential to Vault (R10.6).
+    """Write a per-user credential to Vault.
 
     Body shape:
 
@@ -227,7 +227,7 @@ async def delete_session_credential(
     session_id: str = Query(..., min_length=1),
     service: str = Query(...),
 ) -> JSONResponse:
-    """Remove the per-user credential (R10.7 (b))."""
+    """Remove the per-user credential."""
 
     if service not in _VALID_SERVICES:
         raise HTTPException(

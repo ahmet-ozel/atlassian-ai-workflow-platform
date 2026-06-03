@@ -1,11 +1,6 @@
-"""Property test 13 — Write-action intent intercept.
+"""Property-based tests for write-action intent intercept.
 
-**Property 13: Write-action intent intercept**
-
-**Validates: Requirements 1.3**
-
-This file owns Property 13 of ``platform-mimari-ops`` (design.md
-§"Property 13: Write-action intent intercept", task 4.9). It pins
+This file owns the write-action intent intercept behavior. It pins
 the deterministic decision table of
 :func:`assistant_service.chat.write_action.is_write_intent` and the
 two call-site invariants that follow from it inside
@@ -31,7 +26,7 @@ For any draw of ``(tool_name, intent)`` from
 * ``intent`` — drawn from ``{"write_action_requested", "read_action",
   None, <arbitrary string>}``;
 
-the predicate satisfies the three-row decision table from design.md:
+the predicate satisfies the three-row decision table:
 
 .. code-block:: text
 
@@ -61,9 +56,9 @@ Cross-references
   ``platform/services/assistant-service/tests/unit/test_write_action.py``.
 * Handler-level integration assertions on the redirect path live in
   ``platform/services/assistant-service/tests/unit/test_handler.py``.
-* The companion sliding-window property is task 4.8
-  (``test_sliding_window.py``) and the LLM retry / fallback property
-  is task 4.10 (``test_llm_retry_fallback.py``).
+* The companion sliding-window checks live in ``test_sliding_window.py``
+  and the LLM retry / fallback checks live in
+  ``test_llm_retry_fallback.py``.
 """
 
 from __future__ import annotations
@@ -369,15 +364,12 @@ async def _drain(handler: ChatHandler) -> list[SseEvent]:
 
 
 # ---------------------------------------------------------------------------
-# Property 13 — predicate decision table
+# Predicate decision table
 # ---------------------------------------------------------------------------
 
 
 class TestIsWriteIntentDecisionTable:
-    """**Validates: Requirements 1.3**
-
-    The three-row decision table from design.md
-    §"WriteActionIntercept" expressed as a universal property over
+    """The three-row write-action decision table expressed as a universal property over
     ``(tool_name, intent)``.
     """
 
@@ -499,7 +491,6 @@ class TestIsWriteIntentDecisionTable:
 class TestWriteActionToolsCatalogueInvariants:
     """Structural pins on the canonical write-tool catalogue.
 
-    **Validates: Requirements 1.3**
 
     Strict typing and cardinality guard against the most common
     silent regression — an entry being added or removed without the
@@ -527,14 +518,12 @@ class TestWriteActionToolsCatalogueInvariants:
 
 
 # ---------------------------------------------------------------------------
-# Property 13 — handler-level invariants
+# Handler-level invariants
 # ---------------------------------------------------------------------------
 
 
 class TestChatHandlerWriteActionIntercept:
-    """**Validates: Requirements 1.3**
-
-    The redirect-and-stop invariant of
+    """The redirect-and-stop invariant of
     :meth:`ChatHandler.stream` for any ``(tool_name, intent)`` whose
     :func:`is_write_intent` is ``True``, and the no-redirect
     invariant for any pair whose predicate is ``False``.
@@ -666,7 +655,7 @@ class TestChatHandlerWriteActionIntercept:
     ) -> None:
         """The ``redirect_to_task_creator`` payload echoes the
         intercepted tool name and the LLM-supplied intent so the
-        Streamlit UI (task 9.1) can pre-populate the Task Creator
+        Streamlit UI can pre-populate the Task Creator
         form. Pinning the payload shape keeps the handler's
         contract observable from outside the unit tests."""
 
@@ -732,16 +721,12 @@ class TestChatHandlerWriteActionIntercept:
 
 
 # ---------------------------------------------------------------------------
-# Feature: platform-quick-fixes, Property 4: Write-Action Intent Detection
+# Write-Action Intent Detection
 # ---------------------------------------------------------------------------
 
 
 class TestWriteActionIntentDetection:
-    """**Property 4: Write-Action Intent Detection**
-
-    **Validates: Requirements 1.9**
-
-    *For any* user message containing a write-action intent (commit,
+    """For any user message containing a write-action intent (commit,
     deploy, push, create PR vb.), the chat handler SHALL produce
     ``intent: write_action_requested`` metadata and emit a
     ``redirect_to_task_creator`` SSE event.
@@ -850,7 +835,7 @@ class TestWriteActionIntentDetection:
         ``intent: write_action_requested`` metadata (via the
         ``reason`` field in the payload).
 
-        This is the end-to-end validation of Requirement 1.9: the
+        This is the end-to-end validation of the redirect behavior: the
         user's write-action request triggers the Task Creator
         redirect mechanism.
         """
@@ -937,7 +922,7 @@ class TestWriteActionIntentDetection:
         the handler SHALL NOT emit ``redirect_to_task_creator`` and
         SHALL reach the terminal ``done`` event normally.
 
-        This validates the complement of Requirement 1.9 — only
+        This validates the complement: only
         actual write-action intents trigger the redirect mechanism.
         """
 

@@ -51,17 +51,6 @@ def _deployment(credential: Any) -> str:
     return str(getattr(credential, "deployment", "cloud") or "cloud").lower()
 
 
-def _is_bitbucket_workspace_token(token: str) -> bool:
-    """Return whether a Bitbucket Cloud token should be sent as bearer/PAT.
-
-    Workspace access tokens are documented in the local credential file as
-    bearer tokens and currently use the ``ATCTT`` prefix. Atlassian account
-    API tokens use Basic auth with email + token.
-    """
-
-    return token.strip().startswith("ATCTT")
-
-
 def _mcp_headers(credential_for: CredentialGetter) -> dict[str, str]:
     headers = {
         "Accept": "application/json, text/event-stream",
@@ -86,11 +75,14 @@ def _mcp_headers(credential_for: CredentialGetter) -> dict[str, str]:
     bitbucket = credential_for("bitbucket")
     if bitbucket is not None:
         headers["X-Atlassian-Bitbucket-Url"] = bitbucket.url
-        if _deployment(bitbucket) == "server" or _is_bitbucket_workspace_token(
-            bitbucket.api_token
-        ):
+        if _deployment(bitbucket) == "server":
+            # Bitbucket Server/DC -> Personal Access Token (Bearer).
             headers["X-Atlassian-Bitbucket-Personal-Token"] = bitbucket.api_token
         else:
+            # Bitbucket Cloud -> Atlassian API token (ATATT...) + email via Basic
+            # auth, exactly like Jira/Confluence Cloud. App passwords and
+            # workspace access tokens (ATCTT...) are NOT used: the MCP truth-table
+            # discards a Personal-Token/Bearer header on a Cloud URL and returns 401.
             headers["X-Atlassian-Bitbucket-Username"] = bitbucket.email
             headers["X-Atlassian-Bitbucket-App-Password"] = bitbucket.api_token
             headers["X-Atlassian-Bitbucket-Api-Token"] = bitbucket.api_token

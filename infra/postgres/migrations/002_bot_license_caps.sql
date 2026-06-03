@@ -1,5 +1,5 @@
 -- 002_bot_license_caps.sql
--- Spec: platform-mimari-uyumluluk — Task 1.2 (R16 / Q20 — Bot license hard-cap)
+-- Bot license hard-cap migration.
 --
 -- Adds:
 --   1. automation.bot_license_caps — per-license hard-cap configuration
@@ -8,7 +8,7 @@
 --      so each department can opt into a license tier.
 --
 -- Idempotent — uses IF NOT EXISTS guards so re-running on an already-migrated
--- database is a no-op (Requirements: 16.1, 16.2).
+-- database is a no-op.
 
 -- pgcrypto provides gen_random_uuid(); already created by 10_automation.sql,
 -- but we re-declare for migration self-sufficiency.

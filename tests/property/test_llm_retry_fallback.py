@@ -1,82 +1,67 @@
-"""Property test 15 — LLM rate-limit retry + provider fallback.
+"""LLM rate-limit retry and provider fallback behavior.
 
-**Property 15: LLM rate-limit retry + provider fallback**
 
-**Validates: Requirements 1.9, 1.10**
 
-This file owns Property 15 of ``platform-mimari-ops`` (design.md
-§"Property 15: LLM rate-limit retry + provider fallback", task 4.10).
-It pins the deterministic retry / fallback semantics of
-:class:`llm_orchestrator.orchestrator.LlmOrchestrator.stream_with_tool_loop`
-described in design.md §"LlmOrchestrator.stream_with_tool_loop":
+This file pins the deterministic retry / fallback semantics of:class:`llm_orchestrator.orchestrator.LlmOrchestrator.stream_with_tool_loop`:
 
 * Three consecutive ``RateLimitError`` responses STOP the loop and
-  emit exactly one ``rate_limit_exhausted`` SSE event; a fourth
-  attempt is never made.
+ emit exactly one ``rate_limit_exhausted`` SSE event; a fourth
+ attempt is never made.
 * Successive ``RateLimitError`` retries sleep for an exponentially
-  growing duration whose values are powers of two — the universal
-  shape required by Requirement 1.9 and design §"Property 15"
-  clause (b). The exact base ("1, 2, 4" — i.e. ``2 ** k`` for
-  ``k ∈ {0, 1, 2}`` — vs. the slightly different ``2 ** k`` for
-  ``k ∈ {1, 2}`` produced by the in-design pseudocode) is left
-  flexible because the property is "delay doubles each retry"; the
-  invariant assertions below are tight enough to catch any
-  regression that forgets to back off, that backs off linearly, or
-  that overshoots the cap of two pre-exhaust sleeps.
+ growing duration whose values are powers of two. The exact base is
+ left flexible because the property is "delay doubles each retry";
+ the assertions below are tight enough to catch any
+ regression that forgets to back off, that backs off linearly, or
+ that overshoots the cap of two pre-exhaust sleeps.
 * A ``ProviderUnavailable`` exception combined with
-  ``primary.downtime() >= 60`` flips the active provider to the
-  fallback and emits exactly one ``fallback_provider_active`` SSE
-  event; otherwise the exception propagates.
+ ``primary.downtime >= 60`` flips the active provider to the
+ fallback and emits exactly one ``fallback_provider_active`` SSE
+ event; otherwise the exception propagates.
 * The ``attempts_429`` counter is **not** reset by an interleaving
-  successful chunk — it is a global counter for the whole stream
-  (clause (d)).
+ successful chunk — it is a global counter for the whole stream.
 * Determinism: the same ``(failure_sequence, primary_downtime_s)``
-  with the same monkey-patched clock produces the same SSE event
-  sequence on every run.
+ with the same monkey-patched clock produces the same SSE event
+ sequence on every run.
 
-Surface under test
-------------------
+Code under test
+---------------
 
 The orchestrator lives at
 ``platform/libs/llm-orchestrator/src/llm_orchestrator/orchestrator.py``
-(task 4.3) and exposes:
+ and exposes:.. code-block:: python
 
-.. code-block:: python
-
-    class LlmOrchestrator:
-        def stream_with_tool_loop(
-            self,
-            *,
-            system: str,
-            history: list[Message],
-            tools: list[ToolSpec],
-            on_tool_call: Callable[[ToolCall], Awaitable[ToolResult]],
-            token_cap: int,
-        ) -> AsyncIterator[SseEvent]: ...
+ class LlmOrchestrator:
+ def stream_with_tool_loop(
+ self,
+ *,
+ system: str,
+ history: list[Message],
+ tools: list[ToolSpec],
+ on_tool_call: Callable[[ToolCall], Awaitable[ToolResult]],
+ token_cap: int,) -> AsyncIterator[SseEvent]:...
 
 The shared ``SseEvent`` dataclass is the chat-protocol type from
-``libs/messages/src/messages/chat.py`` (task 4.6); the property
+``libs/messages/src/messages/chat.py``; the property
 imports the canonical class so a wire-format drift surfaces here as
 an attribute error rather than a silent contract divergence.
 
 Reference oracle
 ----------------
 
-Until task 4.3 lands the real orchestrator, this property is also
+Until the real orchestrator is importable, this property is also
 exercised against a *reference* orchestrator that re-states the
-design pseudocode verbatim. The two-layer setup means:
+expected state machine. The two-layer setup means:
 
-* The property statement is encoded once and tested twice — against
-  the production class (when present) and against the oracle.
-* When task 4.3 lands, the production layer becomes the primary
-  signal and the oracle layer doubles as a regression net for the
-  spec interpretation (e.g. catches the case where someone "fixes"
-  the design pseudocode in-place by accident).
+* The expected behavior is encoded once and tested twice — against
+ the production class (when present) and against the oracle.
+* When the production layer is available, it becomes the primary
+ signal and the oracle layer doubles as a regression net for the
+ intended behavior.
 
 If the real orchestrator is not yet importable, the production-layer
 tests are skipped with a precise reason string (mirroring
 ``test_sliding_window.py``); the oracle layer keeps running so
-Property 15 has continuous CI coverage from day one.
+the behavior has continuous CI coverage from day one.
 """
 
 from __future__ import annotations
@@ -122,13 +107,13 @@ for _src in _LIB_SRC_DIRS:
 from messages import Message, SseEvent  # noqa: E402
 
 # ---------------------------------------------------------------------------
-# Optional production-layer import — task 4.3 may not have landed yet.
+# Optional production-layer import — may not have landed yet.
 # When the import fails we set ``_REAL_ORCHESTRATOR`` to ``None``; the
 # production-layer test class is then skipped via ``pytest.mark.skipif``.
 # This mirrors the pattern in ``test_sliding_window.py``.
 # ---------------------------------------------------------------------------
 
-try:  # pragma: no cover - guard collapses once task 4.3 lands
+try:  # pragma: no cover - guard collapses once the implementation is importable
     from llm_orchestrator.orchestrator import LlmOrchestrator  # noqa: E402
 
     _REAL_ORCHESTRATOR: type | None = LlmOrchestrator
@@ -139,17 +124,15 @@ except ModuleNotFoundError as exc:  # pragma: no cover
 
 
 # ---------------------------------------------------------------------------
-# Tunables from design.md §"Property 15" / §"LlmOrchestrator"
+# Tunables for retry exhaustion and fallback activation.
 # ---------------------------------------------------------------------------
 
 #: Max number of consecutive ``RateLimitError`` responses before the
-#: orchestrator stops and emits ``rate_limit_exhausted``. Per design
-#: pseudocode ``if attempts_429 >= 3: yield ...; return``.
+#: orchestrator stops and emits ``rate_limit_exhausted``.
 MAX_429_ATTEMPTS: int = 3
 
 #: Downtime threshold (in seconds) at which a ``ProviderUnavailable``
-#: failure flips the active provider to the fallback. Per design
-#: pseudocode ``self.primary.downtime() >= 60``.
+#: failure flips the active provider to the fallback.
 FALLBACK_DOWNTIME_THRESHOLD_S: int = 60
 
 
@@ -161,17 +144,17 @@ FALLBACK_DOWNTIME_THRESHOLD_S: int = 60
 class _RateLimitError(Exception):
     """Stand-in for the production ``RateLimitError``.
 
-    The real exception class lives in
-    ``libs/llm-orchestrator/src/llm_orchestrator/errors.py`` (task 4.3).
-    We cannot rely on it being importable while the orchestrator is
-    still under construction, so the oracle layer uses this local
-    surrogate that satisfies the same ``isinstance`` checks against
-    the orchestrator's ``except`` clauses.
+ The real exception class lives in
+ ``libs/llm-orchestrator/src/llm_orchestrator/errors.py``.
+ We cannot rely on it being importable while the orchestrator is
+ still under construction, so the oracle layer uses this local
+ surrogate that satisfies the same ``isinstance`` checks against
+ the orchestrator's ``except`` clauses.
 
-    The production-layer test class swaps in the real exception class
-    at import time when available; both classes share the same name
-    and are caught by the same ``except RateLimitError`` block.
-    """
+ The production-layer test class swaps in the real exception class
+ at import time when available; both classes share the same name
+ and are caught by the same ``except RateLimitError`` block.
+ """
 
 
 class _ProviderUnavailable(Exception):
@@ -182,16 +165,16 @@ class _ProviderUnavailable(Exception):
 class _Failure:
     """One element of the ``failure_sequence`` strategy alphabet.
 
-    ``kind`` selects the runtime behaviour the fake provider should
-    exhibit on the next ``stream`` invocation:
+ ``kind`` selects the runtime behaviour the fake provider should
+ exhibit on the next ``stream`` invocation:
 
-    * ``"success"`` — yield one terminal token-chunk and a ``done``
-      event; the orchestrator's outer loop returns afterwards.
-    * ``"rate_limit"`` — raise ``RateLimitError`` mid-stream so the
-      orchestrator's ``except RateLimitError`` branch fires.
-    * ``"unavailable"`` — raise ``ProviderUnavailable`` mid-stream so
-      the orchestrator's ``except ProviderUnavailable`` branch fires.
-    """
+ * ``"success"`` — yield one terminal token-chunk and a ``done``
+ event; the orchestrator's outer loop returns afterwards.
+ * ``"rate_limit"`` — raise ``RateLimitError`` mid-stream so the
+ orchestrator's ``except RateLimitError`` branch fires.
+ * ``"unavailable"`` — raise ``ProviderUnavailable`` mid-stream so
+ the orchestrator's ``except ProviderUnavailable`` branch fires.
+ """
 
     kind: str  # Literal["success", "rate_limit", "unavailable"]
 
@@ -214,8 +197,8 @@ _failure_sequence_strategy: st.SearchStrategy[tuple[_Failure, ...]] = st.lists(
 ).map(tuple)
 
 
-# Primary downtime in seconds — bracketed by design.md §"Property 15"
-# at ``[0, 300]``. Includes the boundary value 60 so the
+# Primary downtime in seconds, sampled from ``[0, 300]``. Includes
+# the boundary value 60 so the
 # fallback-vs-raise branch is exercised on the exact threshold.
 _primary_downtime_strategy: st.SearchStrategy[int] = st.integers(
     min_value=0, max_value=300
@@ -223,7 +206,7 @@ _primary_downtime_strategy: st.SearchStrategy[int] = st.integers(
 
 
 # ---------------------------------------------------------------------------
-# Reference oracle — re-implementation of the design pseudocode.
+# Reference oracle — re-implementation of the expected state machine.
 # ---------------------------------------------------------------------------
 
 
@@ -231,12 +214,12 @@ _primary_downtime_strategy: st.SearchStrategy[int] = st.integers(
 class _SleepRecorder:
     """Captures every ``asyncio.sleep`` invocation as a (delay, attempt) pair.
 
-    The oracle and the production orchestrator both call into this
-    recorder via the ``sleep`` keyword argument — patching the
-    coroutine instead of monkey-patching ``asyncio.sleep`` keeps the
-    test self-contained and immune to other concurrent tests that
-    might also stub the global function.
-    """
+ The oracle and the production orchestrator both call into this
+ recorder via the ``sleep`` keyword argument — patching the
+ coroutine instead of monkey-patching ``asyncio.sleep`` keeps the
+ test self-contained and immune to other concurrent tests that
+ might also stub the global function.
+ """
 
     delays: list[float] = field(default_factory=list)
 
@@ -251,20 +234,20 @@ class _SleepRecorder:
 class _FakeProvider:
     """Async generator factory whose ``stream`` replays a scripted plan.
 
-    The provider consumes the ``failure_sequence`` once: each call to
-    ``stream`` advances the cursor by one element and either raises
-    the encoded exception or yields a terminal-success chunk.
+ The provider consumes the ``failure_sequence`` once: each call to
+ ``stream`` advances the cursor by one element and either raises
+ the encoded exception or yields a terminal-success chunk.
 
-    ``downtime()`` returns a constant value supplied at construction
-    time; the orchestrator calls it on the ``ProviderUnavailable``
-    branch to decide whether to fall back.
+ ``downtime`` returns a constant value supplied at construction
+ time; the orchestrator calls it on the ``ProviderUnavailable``
+ branch to decide whether to fall back.
 
-    Two providers are passed to the orchestrator (``primary`` and
-    ``fallback``); the property tests configure their ``failure_plan``
-    independently so the fallback branch can be exercised by giving
-    the primary a ``ProviderUnavailable`` and the fallback a
-    ``success``.
-    """
+ Two providers are passed to the orchestrator (``primary`` and
+ ``fallback``); the tests configure their ``failure_plan``
+ independently so the fallback branch can be exercised by giving
+ the primary a ``ProviderUnavailable`` and the fallback a
+ ``success``.
+ """
 
     def __init__(
         self,
@@ -325,10 +308,10 @@ class _FakeProvider:
 class _Chunk:
     """Stand-in for the production provider chunk dataclass.
 
-    Mirrors the keys read by the orchestrator pseudocode
-    (``token_count``, ``kind``, ``call``, ``text``, ``is_final``).
-    The oracle never uses the ``call`` field so it is omitted.
-    """
+ Mirrors the keys read by the orchestrator pseudocode
+ (``token_count``, ``kind``, ``call``, ``text``, ``is_final``).
+ The oracle never uses the ``call`` field so it is omitted.
+ """
 
     text: str
     token_count: int
@@ -347,17 +330,16 @@ async def _reference_stream_with_tool_loop(
     token_cap: int,
     sleep: Callable[[float], Awaitable[None]],
 ) -> AsyncIterator[SseEvent]:
-    """Reference orchestrator faithful to design.md §"LlmOrchestrator".
+    """Reference orchestrator faithful to the expected state machine.
 
-    This is the oracle the property tests run *every* time, even
-    when the production class has not yet been authored. It encodes
-    the design pseudocode verbatim — copy-paste-translated from the
-    Markdown — so a deviation in the production code surfaces as a
-    direct mismatch between the two SSE event traces.
+ This is the oracle the tests run *every* time, even
+ when the production class has not yet been authored. It encodes
+ the expected control flow so a deviation in the production code
+ surfaces as a direct mismatch between the two SSE event traces.
 
-    The ``sleep`` parameter is the seam through which the test
-    asserts on the exponential backoff durations.
-    """
+ The ``sleep`` parameter is the seam through which the test
+ asserts on the exponential backoff durations.
+ """
 
     used_tokens = 0
     provider = primary
@@ -375,7 +357,7 @@ async def _reference_stream_with_tool_loop(
                     return
                 if chunk.kind == "tool_call":
                     # The oracle does not exercise the tool-call
-                    # branch (Property 16/13 cover it); we re-emit a
+                    # branch (separate coverage handles it); we re-emit a
                     # ``tool_result`` to match the protocol.
                     result = await on_tool_call(chunk)
                     yield SseEvent(
@@ -426,12 +408,12 @@ def _split_primary_fallback(
 ) -> tuple[Sequence[_Failure], Sequence[_Failure]]:
     """Split a single failure sequence into primary / fallback plans.
 
-    The first half drives the primary provider; the second half drives
-    the fallback. We split deterministically (slice at midpoint) so
-    Hypothesis can shrink predictably and the fallback branch always
-    has at least one element — when the original sequence has length
-    1 we duplicate the single element so both providers have a plan.
-    """
+ The first half drives the primary provider; the second half drives
+ the fallback. We split deterministically (slice at midpoint) so
+ Hypothesis can shrink predictably and the fallback branch always
+ has at least one element — when the original sequence has length
+ 1 we duplicate the single element so both providers have a plan.
+ """
 
     plan = list(failure_sequence)
     if len(plan) <= 1:
@@ -446,21 +428,21 @@ def _expected_terminal_event(
 ) -> str | None:
     """Return the expected terminal SSE event type (oracle reasoning).
 
-    The function walks the same state machine as the orchestrator and
-    returns the first terminal event reached:
+ The function walks the same state machine as the orchestrator and
+ returns the first terminal event reached:
 
-    * ``"rate_limit_exhausted"`` after ``MAX_429_ATTEMPTS`` 429 errors.
-    * ``"done"`` when a ``"success"`` step is reached on the active
-      provider.
-    * ``None`` when the sequence ends with a ``ProviderUnavailable``
-      whose downtime is below the fallback threshold (the
-      orchestrator re-raises in that case — surfaced as a Python
-      exception, not an SSE event).
+ * ``"rate_limit_exhausted"`` after ``MAX_429_ATTEMPTS`` 429 errors.
+ * ``"done"`` when a ``"success"`` step is reached on the active
+ provider.
+ * ``None`` when the sequence ends with a ``ProviderUnavailable``
+ whose downtime is below the fallback threshold (the
+ orchestrator re-raises in that case — surfaced as a Python
+ exception, not an SSE event).
 
-    The property tests use this oracle as one of two cross-checks
-    (the other being the SSE event sequence equality between the
-    reference and the implementation under test).
-    """
+ The tests use this oracle as one of two cross-checks
+ (the other being the SSE event sequence equality between the
+ reference and the implementation under test).
+ """
 
     primary_plan, fallback_plan = _split_primary_fallback(failure_sequence)
     attempts_429 = 0
@@ -508,17 +490,15 @@ _PROPERTY_SETTINGS = settings(
 
 
 # ---------------------------------------------------------------------------
-# Oracle-layer property tests (always run)
+# Oracle-layer checks (always run)
 # ---------------------------------------------------------------------------
 
 
 class TestReferenceOrchestrator:
-    """**Validates: Requirements 1.9, 1.10**
-
-    Property 15 against the reference orchestrator. These tests
-    exercise the design pseudocode itself — a regression here means
-    the *spec* changed, not the implementation.
-    """
+    """Checks against the reference orchestrator. These tests
+ exercise the local oracle itself, so a regression here means the
+ expected state machine changed.
+ """
 
     @_PROPERTY_SETTINGS
     @given(
@@ -531,14 +511,14 @@ class TestReferenceOrchestrator:
         primary_downtime_s: int,
     ) -> None:
         """The reference orchestrator produces the SSE terminal event
-        predicted by an independent oracle that walks the same state
-        machine in plain Python.
+ predicted by an independent oracle that walks the same state
+ machine in plain Python.
 
-        Validates clauses (a), (c) and (d) of Property 15: 429
-        accumulation, fallback flip on downtime, and the
-        non-resetting global counter (the oracle does not reset
-        ``attempts_429`` on a fallback flip either).
-        """
+ Checks the core behaviors: 429 accumulation, fallback flip on
+ downtime, and the
+ non-resetting global counter (the oracle does not reset
+ ``attempts_429`` on a fallback flip either).
+ """
 
         primary_plan, fallback_plan = _split_primary_fallback(failure_sequence)
         primary = _FakeProvider(
@@ -614,13 +594,13 @@ class TestReferenceOrchestrator:
         failure_sequence: tuple[_Failure, ...],
         primary_downtime_s: int,
     ) -> None:
-        """Property 15 (a) — three consecutive ``RateLimitError``
-        responses produce exactly one ``rate_limit_exhausted`` event
-        and **no** further provider invocation past the third.
+        """Three consecutive ``RateLimitError``
+ responses produce exactly one ``rate_limit_exhausted`` event
+ and **no** further provider invocation past the third.
 
-        We pre-cap the failure sequence to a 3×rate_limit prefix so
-        the property holds independently of the trailing draw.
-        """
+ We pre-cap the failure sequence to a 3×rate_limit prefix so
+ the property holds independently of the trailing draw.
+ """
 
         prefix = (
             _Failure(kind="rate_limit"),
@@ -665,12 +645,12 @@ class TestReferenceOrchestrator:
         assert types.count("rate_limit_exhausted") == 1, types
         assert types[-1] == "rate_limit_exhausted", types
         # The provider was invoked at most ``MAX_429_ATTEMPTS`` times
-        # (clause (a): the 4th attempt is never made). Because the
+        # because the 4th attempt is never made. Because the
         # fake provider re-enters ``stream`` on every retry, this
-        # also pins the "no extra retries past the cap" invariant.
+        # also pins the "no extra retries past the cap" behavior.
         assert primary.calls == MAX_429_ATTEMPTS, (
             f"primary.stream invoked {primary.calls} times; "
-            f"Property 15 (a) caps the call count at "
+            f"retry exhaustion caps the call count at "
             f"{MAX_429_ATTEMPTS}."
         )
         # And no fallback flip happened (the failures were 429s, not
@@ -684,20 +664,19 @@ class TestReferenceOrchestrator:
         self,
         primary_downtime_s: int,
     ) -> None:
-        """Property 15 (b) — successive 429 retries sleep for an
-        exponentially-growing duration.
+        """Successive 429 retries sleep for an
+ exponentially-growing duration.
 
-        The exact base ("1, 2, 4" vs "2, 4") differs between the
-        property statement and the in-design pseudocode; the
-        invariant that holds in both readings is:
+ The exact base is intentionally flexible; the behavior that must
+ hold is:
 
-        * each delay is a positive power of two,
-        * each successive delay is **strictly greater** than the
-          previous (i.e. the sequence is monotonically increasing),
-        * there are at most ``MAX_429_ATTEMPTS - 1`` delays before
-          the loop exits (the third 429 raises ``rate_limit_exhausted``
-          *without* sleeping).
-        """
+ * each delay is a positive power of two,
+ * each successive delay is **strictly greater** than the
+ previous (i.e. the sequence is monotonically increasing),
+ * there are at most ``MAX_429_ATTEMPTS - 1`` delays before
+ the loop exits (the third 429 raises ``rate_limit_exhausted``
+ *without* sleeping).
+ """
 
         plan = (
             _Failure(kind="rate_limit"),
@@ -738,11 +717,11 @@ class TestReferenceOrchestrator:
 
         # Delays are bounded by ``MAX_429_ATTEMPTS - 1``: the first
         # two 429s sleep, the third triggers exhaustion without a
-        # sleep call (per design pseudocode the ``return`` branch
-        # short-circuits the ``await asyncio.sleep`` line).
+        # sleep call because the ``return`` branch short-circuits
+        # the ``await asyncio.sleep`` line.
         assert len(recorder.delays) <= MAX_429_ATTEMPTS - 1, (
             f"orchestrator slept {len(recorder.delays)} times; "
-            f"Property 15 (a) caps pre-exhaust sleeps at "
+            f"retry exhaustion caps pre-exhaust sleeps at "
             f"{MAX_429_ATTEMPTS - 1} (delays={recorder.delays!r})."
         )
         # Every delay is a positive power of two.
@@ -754,16 +733,15 @@ class TestReferenceOrchestrator:
             as_int = int(d)
             assert as_int == d, f"delay {d!r} is not integral"
             assert (as_int & (as_int - 1)) == 0, (
-                f"delay {d!r} is not a power of two; design.md "
-                f"§'Property 15' clause (b) requires exponential "
-                f"backoff."
+                f"delay {d!r} is not a power of two; exponential "
+                f"backoff is required."
             )
         # Strictly monotonic (each retry waits longer than the
         # previous one).
         for prev, nxt in zip(recorder.delays, recorder.delays[1:]):
             assert nxt > prev, (
                 f"backoff is not strictly increasing: "
-                f"{recorder.delays!r}; Property 15 (b) requires "
+                f"{recorder.delays!r}; exponential backoff requires "
                 f"successive delays to grow."
             )
 
@@ -773,9 +751,9 @@ class TestReferenceOrchestrator:
         self,
         primary_downtime_s: int,
     ) -> None:
-        """Property 15 (c) — ``ProviderUnavailable`` with downtime
-        below 60s is re-raised; no ``fallback_provider_active`` event.
-        """
+        """``ProviderUnavailable`` with downtime
+ below 60s is re-raised; no ``fallback_provider_active`` event.
+ """
 
         downtime = min(primary_downtime_s, FALLBACK_DOWNTIME_THRESHOLD_S - 1)
         plan = (_Failure(kind="unavailable"),)
@@ -826,11 +804,11 @@ class TestReferenceOrchestrator:
         self,
         primary_downtime_s: int,
     ) -> None:
-        """Property 15 (c) — ``ProviderUnavailable`` with downtime
-        ≥ 60s flips to the fallback provider and emits exactly one
-        ``fallback_provider_active`` event whose payload identifies
-        the fallback by name.
-        """
+        """``ProviderUnavailable`` with downtime
+ ≥ 60s flips to the fallback provider and emits exactly one
+ ``fallback_provider_active`` event whose payload identifies
+ the fallback by name.
+ """
 
         downtime = max(primary_downtime_s, FALLBACK_DOWNTIME_THRESHOLD_S)
         # Primary fails, fallback succeeds — the orchestrator must
@@ -870,9 +848,7 @@ class TestReferenceOrchestrator:
         assert types.count("fallback_provider_active") == 1, (
             f"expected exactly one fallback banner; got types={types!r}"
         )
-        # The banner identifies the fallback by name (design clause
-        # (c): "yield SseEvent('fallback_provider_active',
-        # {'provider': 'openai'})").
+        # The banner identifies the fallback by name.
         banner = next(
             e for e in events if e.type == "fallback_provider_active"
         )
@@ -896,10 +872,10 @@ class TestReferenceOrchestrator:
         failure_sequence: tuple[_Failure, ...],
         primary_downtime_s: int,
     ) -> None:
-        """Property 15 (e) — same ``(failure_sequence, downtime)``
-        with the same patched clock produces the same SSE event
-        sequence on every run.
-        """
+        """The same ``(failure_sequence, downtime)``
+ with the same patched clock produces the same SSE event
+ sequence on every run.
+ """
 
         async def _on_tool_call(call: Any) -> Any:
             return {"ok": True}
@@ -964,26 +940,23 @@ class TestReferenceOrchestrator:
 
 
 # ---------------------------------------------------------------------------
-# Concrete regression anchors — pinned examples for clause (b) "1, 2, 4"
+# Concrete regression anchors for exponential backoff.
 # ---------------------------------------------------------------------------
 
 
 class TestBackoffPinnedExamples:
-    """Deterministic pins for the design.md §"Property 15" clause (b)
-    sequence.
+    """Deterministic pins for the exponential backoff sequence.
 
-    These tests do **not** assert on the exact "1, 2, 4" values —
-    the design pseudocode and the property statement disagree by one
-    exponent (see module docstring). What they pin is:
+ These tests do **not** assert on exact delay values. What they pin is:
 
-    * the *count* of delays before exhaustion,
-    * the *doubling* between successive delays,
-    * the absence of a delay after the third 429.
+ * the *count* of delays before exhaustion,
+ * the *doubling* between successive delays,
+ * the absence of a delay after the third 429.
 
-    A regression that linearises the backoff (e.g. ``sleep(2)`` flat)
-    or drops it entirely would fail here even when Hypothesis
-    happens to draw a sequence that ends quickly.
-    """
+ A regression that linearises the backoff (e.g. ``sleep(2)`` flat)
+ or drops it entirely would fail here even when Hypothesis
+ happens to draw a sequence that ends quickly.
+ """
 
     def test_two_consecutive_429s_then_success_emits_done(self) -> None:
         """Two 429s ⇒ one delay, then a success completes the stream."""
@@ -1030,10 +1003,10 @@ class TestBackoffPinnedExamples:
         self,
     ) -> None:
         """Three 429s ⇒ exhaustion; only **one** sleep was issued
-        between the first 429 (attempts_429 → 1, sleep) and the
-        second 429 (attempts_429 → 2, sleep), but the third 429
-        (attempts_429 → 3, exhausted) does NOT sleep.
-        """
+ between the first 429 (attempts_429 → 1, sleep) and the
+ second 429 (attempts_429 → 2, sleep), but the third 429
+ (attempts_429 → 3, exhausted) does NOT sleep.
+ """
 
         plan = (
             _Failure(kind="rate_limit"),
@@ -1073,7 +1046,7 @@ class TestBackoffPinnedExamples:
 
 
 # ---------------------------------------------------------------------------
-# Production-layer property tests — skipped until task 4.3 lands.
+# Production-layer checks — skipped until the real class is importable.
 # ---------------------------------------------------------------------------
 
 
@@ -1081,42 +1054,37 @@ pytestmark_production = pytest.mark.skipif(
     _REAL_ORCHESTRATOR is None,
     reason=(
         "llm_orchestrator.orchestrator.LlmOrchestrator is not yet "
-        f"implemented (task 4.3 of platform-mimari-ops is still "
-        f"``[~]``); import failed with: {_IMPORT_ERROR!r}. Property "
-        "15 is fully exercised against the reference orchestrator "
-        "above and will additionally run against the production "
-        "class as soon as task 4.3 ships."
+        f"implemented; import failed with: {_IMPORT_ERROR!r}. The "
+        "retry/fallback behavior is fully exercised against the "
+        "reference orchestrator above and will additionally run "
+        "against the production class as soon as it is importable."
     ),
 )
 
 
 @pytestmark_production
 class TestProductionOrchestrator:
-    """**Validates: Requirements 1.9, 1.10**
+    """Checks against the production:class:`llm_orchestrator.orchestrator.LlmOrchestrator`. The class
+ is expected to satisfy the same SSE event contract as the
+ reference orchestrator above; the production-layer tests
+ therefore re-issue the oracle assertions using the real class
+ instead of the reference factory function.
 
-    Property 15 against the production
-    :class:`llm_orchestrator.orchestrator.LlmOrchestrator`. The class
-    is expected to satisfy the same SSE event contract as the
-    reference orchestrator above; the production-layer tests
-    therefore re-issue the oracle assertions using the real class
-    instead of the reference factory function.
-
-    The tests instantiate the production class with two
-    :class:`_FakeProvider` instances (the orchestrator depends only
-    on a ``stream`` async generator + a ``downtime`` int callable,
-    so the duck-typed fakes plug in directly). When the production
-    class adds extra constructor arguments, the call sites here are
-    the single place to update.
-    """
+ The tests instantiate the production class with two:class:`_FakeProvider` instances (the orchestrator depends only
+ on a ``stream`` async generator + a ``downtime`` int callable,
+ so the duck-typed fakes plug in directly). When the production
+ class adds extra constructor arguments, the call sites here are
+ the single place to update.
+ """
 
     def _build(self, primary: _FakeProvider, fallback: _FakeProvider) -> Any:
         """Construct the production orchestrator.
 
-        The constructor signature is fixed by design.md §"LlmOrchestrator"
-        as ``LlmOrchestrator(primary, fallback)``; we mirror that here
-        and let any future extension surface as a ``TypeError`` that
-        a developer can react to in one place.
-        """
+ The constructor signature is expected to accept
+ ``LlmOrchestrator(primary, fallback)``; we mirror that here and let
+ any future extension surface as a ``TypeError`` that
+ a developer can react to in one place.
+ """
 
         assert _REAL_ORCHESTRATOR is not None  # for the type checker
         return _REAL_ORCHESTRATOR(primary=primary, fallback=fallback)
@@ -1132,8 +1100,8 @@ class TestProductionOrchestrator:
         primary_downtime_s: int,
     ) -> None:
         """The production orchestrator's terminal SSE event matches
-        the oracle prediction for any draw of
-        ``(failure_sequence, primary_downtime_s)``."""
+ the oracle prediction for any draw of
+ ``(failure_sequence, primary_downtime_s)``."""
 
         primary_plan, fallback_plan = _split_primary_fallback(failure_sequence)
         primary = _FakeProvider(
@@ -1183,7 +1151,7 @@ class TestProductionOrchestrator:
             )
 
     def test_three_429s_emits_exhaustion_no_fourth_call(self) -> None:
-        """Concrete pin for Property 15 (a) on the production class."""
+        """Concrete production pin for retry exhaustion."""
 
         plan = (
             _Failure(kind="rate_limit"),
@@ -1221,7 +1189,7 @@ class TestProductionOrchestrator:
         assert fallback.calls == 0
 
     def test_provider_unavailable_at_threshold_falls_back(self) -> None:
-        """Concrete pin for Property 15 (c) on the production class."""
+        """Concrete production pin for fallback activation."""
 
         primary = _FakeProvider(
             failure_plan=(_Failure(kind="unavailable"),),

@@ -1,53 +1,53 @@
 """``AuditPruneWorkflow`` — daily Temporal cron for audit retention.
 
-Validates Requirements: **R6.3** (daily cron archives audit_events older
-than ``RETENTION_DAYS`` to MinIO, then deletes them) and **R6.4**
-(any failure invokes ``notify_audit_prune_failed`` which sends a
-**mandatory** admin Slack alarm).
+The daily cron archives ``audit_events`` older than
+``RETENTION_DAYS`` to MinIO, then deletes them. Any failure invokes
+``notify_audit_prune_failed`` which sends a **mandatory** admin Slack
+alarm.
 
 Lifecycle (one cron tick)::
 
-    1. ``get_retention_setting()``    → int (env / DB; default 90)
-    2. ``cutoff = workflow.now() - timedelta(days=retention_days)``
-    3. ``archive_audit_to_minio(cutoff)`` → AuditArchiveResult
-    4. ``delete_audit_older_than(cutoff)`` → AuditDeleteResult
-    5. return ``AuditPruneReport(archived, deleted, cutoff)``
+ 1. ``get_retention_setting`` → int (env / DB; default 90)
+ 2. ``cutoff = workflow.now - timedelta(days=retention_days)``
+ 3. ``archive_audit_to_minio(cutoff)`` → AuditArchiveResult
+ 4. ``delete_audit_older_than(cutoff)`` → AuditDeleteResult
+ 5. return ``AuditPruneReport(archived, deleted, cutoff)``
 
-    On any exception inside steps 1-4:
-        ``notify_audit_prune_failed(error_text)`` is invoked with its
-        own retry policy (3 attempts), then the original exception is
-        re-raised so Temporal records the workflow as failed and the
-        next cron tick fires the day after.
+ On any exception inside steps 1-4:
+ ``notify_audit_prune_failed(error_text)`` is invoked with its
+ own retry policy (3 attempts), then the original exception is
+ re-raised so Temporal records the workflow as failed and the
+ next cron tick fires the day after.
 
-Determinism contract (Spec 2 Property 2 / Property 11 parity)
+Determinism contract
 -------------------------------------------------------------
 
 This workflow body uses **only** Temporal-deterministic primitives:
 
-* ``workflow.now()`` for the wallclock cutoff (never ``datetime.now``,
-  ``time.time``, ``datetime.utcnow``).
+* ``workflow.now`` for the wallclock cutoff (never ``datetime.now``,
+ ``time.time``, ``datetime.utcnow``).
 * ``workflow.execute_activity(...)`` for every side-effecting step
-  (no direct httpx / asyncpg / aioboto3 calls).
-* No ``random.*``, no ``uuid.uuid4()``, no ``os.environ`` reads.
+ (no direct httpx / asyncpg / aioboto3 calls).
+* No ``random.*``, no ``uuid.uuid4``, no ``os.environ`` reads.
 * No imports of activity modules at workflow-module import time —
-  activities are referenced **by string name** so the workflow module
-  loads cleanly inside the Temporal sandbox even before the activity
-  modules (Spec 3 task 13.2) exist on disk.
+ activities are referenced **by string name** so the workflow module
+ loads cleanly inside the Temporal sandbox even before the activity
+ modules exist on disk.
 
-Idempotent run semantics (Property 10 parity)
+Idempotent run semantics
 ---------------------------------------------
 
 Running the workflow twice on the same day is a *safe* no-op once the
 activities are wired:
 
 * ``archive_audit_to_minio(cutoff)`` writes to a deterministic
-  ``audit-archive/{Y}/{M}/{D}/audit-N.jsonl.gz`` key shape; a re-run
-  for the same cutoff overwrites the same object byte-for-byte (the
-  underlying SELECT is bounded by ``cutoff`` and the ordering by
-  ``(created_at, id)`` is total).
+ ``audit-archive/{Y}/{M}/{D}/audit-N.jsonl.gz`` key shape; a re-run
+ for the same cutoff overwrites the same object byte-for-byte (the
+ underlying SELECT is bounded by ``cutoff`` and the ordering by
+ ``(created_at, id)`` is total).
 * ``delete_audit_older_than(cutoff)`` is a SQL ``DELETE`` filtered by
-  ``created_at < cutoff``; the second run finds zero matching rows and
-  returns ``deleted=0``.
+ ``created_at < cutoff``; the second run finds zero matching rows and
+ returns ``deleted=0``.
 
 Therefore the workflow body itself does **not** need a "did we run
 today already?" guard — idempotence is delegated to the activities,
@@ -56,18 +56,15 @@ which keeps the workflow logic minimal and replay-clean.
 Cron schedule registration
 --------------------------
 
-``automation-worker``'s boot script (Spec 3 task 13.3) registers this
+``automation-worker``'s boot script registers this
 workflow with::
 
-    await client.start_workflow(
-        AuditPruneWorkflow.run,
-        id="audit-prune-cron",
-        task_queue="automation-tq",
-        cron_schedule="0 3 * * *",
-    )
+ await client.start_workflow(AuditPruneWorkflow.run,
+ id="audit-prune-cron",
+ task_queue="automation-tq",
+ cron_schedule="0 3 * * *",)
 
-The constants :data:`AUDIT_PRUNE_WORKFLOW_ID`,
-:data:`AUTOMATION_TASK_QUEUE`, and :data:`AUDIT_PRUNE_CRON_SCHEDULE`
+The constants:data:`AUDIT_PRUNE_WORKFLOW_ID`,:data:`AUTOMATION_TASK_QUEUE`, and:data:`AUDIT_PRUNE_CRON_SCHEDULE`
 expose the exact strings so the boot script and tests share a single
 source of truth.
 """
@@ -86,7 +83,7 @@ from temporalio.common import RetryPolicy
 
 #: Temporal task queue name on which the ``automation-worker`` polls.
 #:
-#: Mirrors the Spec 3 task 13.3 boot-script constant; kept here so
+#: Mirrors the boot-script constant; kept here so
 #: tests can assert against a single source of truth without importing
 #: the boot module (which would pull in the Temporal client / network
 #: dependencies).
@@ -96,7 +93,7 @@ AUTOMATION_TASK_QUEUE: str = "automation-tq"
 #:
 #: Temporal uses this ID for cron-schedule book-keeping; reusing the
 #: same ID across restarts means a single in-flight cron lineage rather
-#: than one per process restart.
+#: than one process restart.
 AUDIT_PRUNE_WORKFLOW_ID: str = "audit-prune-cron"
 
 #: Cron schedule expression — daily at 03:00 UTC.
@@ -106,9 +103,8 @@ AUDIT_PRUNE_WORKFLOW_ID: str = "audit-prune-cron"
 AUDIT_PRUNE_CRON_SCHEDULE: str = "0 3 * * *"
 
 #: Fallback ``RETENTION_DAYS`` if ``get_retention_setting`` returns a
-#: falsy value or the activity is not yet wired (Spec 3 task 13.2 still
-#: pending). The value mirrors design.md §"AuditPruneWorkflow"
-#: (RETENTION_DAYS=90).
+#: falsy value or the activity is not yet wired (still
+#: pending).
 DEFAULT_RETENTION_DAYS: int = 90
 
 
@@ -117,10 +113,9 @@ DEFAULT_RETENTION_DAYS: int = 90
 # ---------------------------------------------------------------------------
 
 #: Activity name strings — the workflow calls
-#: ``workflow.execute_activity(<name>, ...)`` rather than importing the
+#: ``workflow.execute_activity(<name>,...)`` rather than importing the
 #: activity callable, so the workflow module stays decoupled from the
-#: ``automation_worker.activities.audit_prune`` module that Spec 3 task
-#: 13.2 will introduce.
+#: ``automation_worker.activities.audit_prune`` module.
 _ACT_GET_RETENTION_SETTING: str = "get_retention_setting"
 _ACT_ARCHIVE_AUDIT_TO_MINIO: str = "archive_audit_to_minio"
 _ACT_DELETE_AUDIT_OLDER_THAN: str = "delete_audit_older_than"
@@ -188,24 +183,22 @@ _NOTIFY_RETRY: RetryPolicy = RetryPolicy(
 class AuditArchiveResult:
     """Result returned by ``archive_audit_to_minio``.
 
-    Attributes
-    ----------
-    archived_rows:
-        Number of audit rows successfully written to MinIO.
-    archive_uri:
-        ``s3://audit-archive/{Y}/{M}/{D}/audit-N.jsonl.gz`` URI of the
-        object written this run, or an empty string when the run had
-        zero rows to archive (still reported back so the workflow can
-        emit an idempotent ``AuditPruneReport`` either way).
+ Attributes
+ ----------
+ archived_rows:
+ Number of audit rows successfully written to MinIO.
+ archive_uri:
+ ``s3://audit-archive/{Y}/{M}/{D}/audit-N.jsonl.gz`` URI of the
+ object written this run, or an empty string when the run had
+ zero rows to archive (still reported back so the workflow can
+ emit an idempotent ``AuditPruneReport`` either way).
 
-    Notes
-    -----
-    The dataclass mirror is here so the workflow body has a stable
-    typed shape to destructure even before Spec 3 task 13.2 introduces
-    the concrete activity. Activities in task 13.2 will return objects
-    with these field names; Temporal dataclass conversion handles the
-    rest.
-    """
+ Notes
+ -----
+ The dataclass mirror is here so the workflow body has a stable
+ typed shape to destructure. Activities return objects with these
+ field names; Temporal dataclass conversion handles the rest.
+ """
 
     archived_rows: int
     archive_uri: str
@@ -215,13 +208,13 @@ class AuditArchiveResult:
 class AuditDeleteResult:
     """Result returned by ``delete_audit_older_than``.
 
-    Attributes
-    ----------
-    deleted_rows:
-        Number of rows removed from ``audit_events`` (and any sibling
-        retention-bound tables wired by task 13.2, e.g.
-        ``cost_tracking``).
-    """
+ Attributes
+ ----------
+ deleted_rows:
+ Number of rows removed from ``audit_events`` (and any sibling
+ retention-bound tables wired by, e.g.
+ ``cost_tracking``).
+ """
 
     deleted_rows: int
 
@@ -230,26 +223,26 @@ class AuditDeleteResult:
 class AuditPruneReport:
     """Final result of a single ``AuditPruneWorkflow`` cron run.
 
-    Attributes
-    ----------
-    archived_rows:
-        Number of audit rows archived to MinIO.
-    deleted_rows:
-        Number of audit rows deleted from Postgres.
-    cutoff:
-        The cutoff timestamp used (``workflow.now() - retention_days``).
-        Stored in the report so downstream observers (admin UI archive
-        index, Loki search) can reconstruct the exact slice that was
-        moved on this run without re-deriving it from the schedule.
-    retention_days:
-        The retention window in days (as resolved by
-        ``get_retention_setting``); echoed into the report for audit
-        clarity — the operator can read the report and immediately see
-        the policy under which the cron ran.
-    archive_uri:
-        URI of the MinIO object written by the archive activity, or an
-        empty string when no rows fell within the cutoff.
-    """
+ Attributes
+ ----------
+ archived_rows:
+ Number of audit rows archived to MinIO.
+ deleted_rows:
+ Number of audit rows deleted from Postgres.
+ cutoff:
+ The cutoff timestamp used (``workflow.now - retention_days``).
+ Stored in the report so downstream observers (admin UI archive
+ index, Loki search) can reconstruct the exact slice that was
+ moved on this run without re-deriving it from the schedule.
+ retention_days:
+ The retention window in days (as resolved by
+ ``get_retention_setting``); echoed into the report for audit
+ clarity — the operator can read the report and immediately see
+ the policy under which the cron ran.
+ archive_uri:
+ URI of the MinIO object written by the archive activity, or an
+ empty string when no rows fell within the cutoff.
+ """
 
     archived_rows: int
     deleted_rows: int
@@ -283,19 +276,18 @@ def _result_str(result: object, attr: str) -> str:
 class AuditPruneWorkflow:
     """Daily Temporal cron that archives + prunes ``audit_events``.
 
-    See module docstring for the full lifecycle and determinism /
-    idempotence contracts. The workflow takes no input — every per-run
-    parameter (retention days, cutoff timestamp) is derived inside
-    :meth:`run` so the cron schedule needs no per-tick payload.
-    """
+ See module docstring for the full lifecycle and determinism /
+ idempotence contracts. The workflow takes no input — every per-run
+ parameter (retention days, cutoff timestamp) is derived inside:meth:`run` so the cron schedule needs no per-tick payload.
+ """
 
     @workflow.run
     async def run(self) -> AuditPruneReport:
         # 1. Resolve the retention window. The activity is responsible
-        #    for env / config-flag lookup; we fall back to the
-        #    constant default if the activity returns a falsy value
-        #    (None / 0) so a bad config never silently produces a
-        #    "delete everything" run.
+        # for env / config-flag lookup; we fall back to the
+        # constant default if the activity returns a falsy value
+        # (None / 0) so a bad config never silently produces a
+        # "delete everything" run.
         retention_days_raw: int | None = await workflow.execute_activity(
             _ACT_GET_RETENTION_SETTING,
             start_to_close_timeout=_GET_RETENTION_TIMEOUT,
@@ -308,16 +300,16 @@ class AuditPruneWorkflow:
         )
 
         # 2. Compute the cutoff using the deterministic Temporal clock.
-        #    ``workflow.now()`` is the only legal time source in a
-        #    workflow body — replay must produce the identical value.
+        # ``workflow.now`` is the only legal time source in a
+        # workflow body — replay must produce the identical value.
         cutoff: datetime = workflow.now() - timedelta(days=retention_days)
 
         # 3-4. Archive then delete. Wrapped in a try/except so any
-        #      exception path triggers the **mandatory** admin alarm
-        #      before re-raising. The archive activity runs first so
-        #      we never delete rows we have not yet archived (the only
-        #      ordering invariant the workflow guarantees on top of
-        #      the activities' own idempotence).
+        # exception path triggers the **mandatory** admin alarm
+        # before re-raising. The archive activity runs first so
+        # we never delete rows we have not yet archived (the only
+        # ordering invariant the workflow guarantees on top of
+        # the activities' own idempotence).
         try:
             archive_result: AuditArchiveResult = await workflow.execute_activity(
                 _ACT_ARCHIVE_AUDIT_TO_MINIO,
@@ -347,10 +339,10 @@ class AuditPruneWorkflow:
             raise
 
         # 5. Success path — produce a typed report. Field types are
-        #    coerced defensively (Temporal converts dataclasses by
-        #    field name; if the activity ever returns an int directly
-        #    instead of an ``AuditArchiveResult``, the workflow body
-        #    still produces a sensible report).
+        # coerced defensively (Temporal converts dataclasses by
+        # field name; if the activity ever returns an int directly
+        # instead of an ``AuditArchiveResult``, the workflow body
+        # still produces a sensible report).
         archived_rows = _result_int(archive_result, "archived_rows")
         archive_uri = _result_str(archive_result, "archive_uri")
         deleted_rows = _result_int(delete_result, "deleted_rows")
@@ -368,18 +360,18 @@ class AuditPruneWorkflow:
     async def _notify_failure(self, exc: BaseException) -> None:
         """Invoke the mandatory ``notify_audit_prune_failed`` activity.
 
-        The helper is its own coroutine (not inlined into the except
-        block) so:
+ The helper is its own coroutine (not inlined into the except
+ block) so:
 
-        1. The retry policy / timeout are declared in one place and
-           cannot drift between the two failure call-sites if a future
-           refactor adds another guarded section.
-        2. Any exception raised by the alarm activity itself is
-           swallowed — the workflow's job at this point is to surface
-           the *original* prune failure, and an alarm-side failure
-           must not mask the underlying root cause when the operator
-           reads the Temporal failure event.
-        """
+ 1. The retry policy / timeout are declared in one place and
+ cannot drift between the two failure call-sites if a future
+ refactor adds another guarded section.
+ 2. Any exception raised by the alarm activity itself is
+ swallowed — the workflow's job at this point is to surface
+ the *original* prune failure, and an alarm-side failure
+ must not mask the underlying root cause when the operator
+ reads the Temporal failure event.
+ """
         # Stringify the exception once so the activity payload stays
         # JSON-serialisable. The activity is responsible for any
         # log-redaction / PII filtering on the message body before it

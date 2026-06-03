@@ -1,8 +1,6 @@
 """Integration test: ``PromptLoader._read`` runs ``validate_template_format``.
 
-Validates: Requirements 2.9 (template format escape applied at boot)
-
-Task 2.3 specifies that the loader must reject malformed prompt
+The loader must reject malformed prompt
 bodies *at read time* — i.e. ``load`` (and the hot-reload
 ``poll_loop``) surfaces a :class:`PromptTemplateError` instead of
 caching the bad body and surfacing a confusing ``KeyError`` later

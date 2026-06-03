@@ -13,15 +13,13 @@ follows the same wiring contract as the rest of the service:
 Modules:
 
 * :mod:`automation_service.api.cancel` — ``POST
-  /api/workflows/{workflow_id}/cancel`` (R11.1, design Property 11
-  predicate ``is_cancel_authorized``).
+  /api/workflows/{workflow_id}/cancel`` with the
+  ``is_cancel_authorized`` predicate.
 * :mod:`automation_service.api.repo_sync` — ``POST
-  /admin/departments/{id}/repo-mappings/sync`` (R10.7 / MIMARI §16.16
-  N7, design "repo_mapping_sync API"). Pure diff helper at
+  /admin/departments/{id}/repo-mappings/sync``. Pure diff helper at
   :mod:`temporal_shared.repo_sync`; HTTP shim + admin RBAC live here.
 * :mod:`automation_service.api.po_review` — ``GET /api/orphan-branches``
-  + ``GET /api/po-review-inbox`` + the three per-PR POST actions
-  (R10.3, R10.4 — workflows spec, design "PO Review API"). Pure
+  + ``GET /api/po-review-inbox`` + the three per-PR POST actions. Pure
   set-algebra helpers at :mod:`temporal_shared.po_review`; HTTP
   shim + RBAC + diff-summary cache live here.
 """
@@ -57,24 +55,24 @@ from .webhooks import (
 )
 
 __all__ = [
-    # cancel API (R11.1)
+    # cancel API
     "CancelEndpointDeps",
     "IssueRef",
     "cancel_router",
     "is_cancel_authorized",
-    # po_review API (R10.3, R10.4)
+    # po_review API
     "BitbucketBranchScanner",
     "BitbucketPullRequestScanner",
     "DiffSummaryProvider",
     "PoReviewActions",
     "PoReviewEndpointDeps",
     "po_review_router",
-    # repo_sync API (R10.7 / N7)
+    # repo_sync API
     "BitbucketRepoScanner",
     "RepoSyncEndpointDeps",
     "SupportsDepartmentsRepo",
     "repo_sync_router",
-    # webhooks API (R3.1, R3.2, R3.3, R3.9)
+    # webhooks API
     "BITBUCKET_LOOP_GUARD_EVENTS",
     "BITBUCKET_SUPPORTED_EVENTS",
     "JIRA_SUPPORTED_EVENTS",

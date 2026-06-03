@@ -1,8 +1,4 @@
-"""Property tests for SSE Event Stream Completeness.
-
-**Validates: Requirements 4.2**
-
-Property 7: SSE Event Stream Completeness
+"""Property-based tests for SSE event stream completeness.
 
 *For any* sequence of test output lines (stdout/stderr), the SSE stream
 SHALL emit exactly one event per line in the original order. No lines
@@ -197,7 +193,7 @@ def _parse_sse_frames(frames: list[bytes]) -> tuple[list[str], dict | None]:
 
 
 # ---------------------------------------------------------------------------
-# Property Test
+# SSE event stream behavior
 # ---------------------------------------------------------------------------
 
 
@@ -207,11 +203,7 @@ def _parse_sse_frames(frames: list[bytes]) -> tuple[list[str], dict | None]:
     exit_code=_EXIT_CODES,
 )
 def test_sse_stream_completeness(lines: list[str], exit_code: int) -> None:
-    """Feature: production-hardening, Property 7: SSE Event Stream Completeness
-
-    **Validates: Requirements 4.2**
-
-    For any sequence of output lines, the SSE stream emits exactly one
+    """For any sequence of output lines, the SSE stream emits exactly one
     event per line in the original order with no drops or reorders.
     The final event contains the exit code.
     """
@@ -230,21 +222,21 @@ def test_sse_stream_completeness(lines: list[str], exit_code: int) -> None:
         # Parse frames into data lines and done event
         data_lines, done_event = _parse_sse_frames(frames)
 
-        # Property 1: Exactly one SSE event per line — no drops
+    # Exactly one SSE event per line — no drops
         assert len(data_lines) == len(lines), (
             f"Expected {len(lines)} data events, got {len(data_lines)}. "
             f"Input lines: {lines!r}, "
             f"Received data events: {data_lines!r}"
         )
 
-        # Property 2: Original order preserved — no reorders
+    # Original order preserved — no reorders
         assert data_lines == lines, (
             f"SSE data lines do not match original order.\n"
             f"Expected: {lines!r}\n"
             f"Got:      {data_lines!r}"
         )
 
-        # Property 3: Final event contains exit code
+    # Final event contains exit code
         assert done_event is not None, (
             "Missing 'event: done' frame in SSE stream. "
             f"All frames: {[f.decode('utf-8') for f in frames]!r}"

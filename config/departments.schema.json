@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "departments-schema-v1",
   "title": "departments.json",
-  "description": "AI bot departman tanimlari sema. automation-service ve admin-dashboard tarafindan startup ve admin endpoint'lerinde valide edilir. Referans: MIMARI.md sec 2.5 ve sec 16.9 E3. JSON Schema 2020-12 spec ile valide edin.",
+  "description": "AI bot departman tanimlari sema. automation-service ve admin-dashboard tarafindan startup ve admin endpoint'lerinde valide edilir. JSON Schema 2020-12 ile valide edin.",
   "type": "object",
   "required": [
     "version",
@@ -95,7 +95,7 @@
             "disabled"
           ],
           "default": "active",
-          "description": "Departman calisma modu. 'active': normal operasyon. 'shadow': bot plan uretir ama output_actions execute edilmez (sec 16.6.49). 'disabled': capability gate departmandan gelen tum workflow start cagrilarini reddeder, acik workflow'lar drain edilir. Bk. requirements R3.2 ve R10.10; design 'mode enum migration' karari."
+          "description": "Departman calisma modu. 'active': normal operasyon. 'shadow': bot plan uretir ama output_actions execute edilmez. 'disabled': capability gate departmandan gelen tum workflow start cagrilarini reddeder, acik workflow'lar drain edilir."
         },
         "approval_required_paths": {
           "type": "array",
@@ -103,7 +103,7 @@
             "type": "string"
           },
           "default": [],
-          "description": "Bu regex'lere uyan dosyalara commit oncesi Jira'da [approve] beklenir. Bk. sec 16.6.93."
+          "description": "Bu regex'lere uyan dosyalara commit oncesi Jira'da [approve] beklenir."
         },
         "approvers": {
           "type": "array",
@@ -112,7 +112,7 @@
             "minLength": 1
           },
           "default": [],
-          "description": "Approval Gate icin yetkili Jira account ID listesi. approval_required_paths ile birlikte kullanilir. Bk. platform-completion requirements R11.1, R11.6."
+          "description": "Approval Gate icin yetkili Jira account ID listesi. approval_required_paths ile birlikte kullanilir."
         },
         "pr_draft_strategy": {
           "type": "string",
@@ -139,7 +139,7 @@
           ],
           "minimum": 1,
           "maximum": 50,
-          "description": "Departman bazli paralel is limiti. Bk. sec 16.9 E6."
+          "description": "Departman bazli paralel is limiti."
         },
         "ssh_workspace_quota_mb": {
           "type": [
@@ -148,11 +148,11 @@
           ],
           "minimum": 100,
           "deprecated": true,
-          "description": "DEPRECATED (single-runner canonical contract — G1). Per-department disk kotası artık kullanılmıyor; tek SSH runner host'u tüm departmanlarca paylaşılır ve disk yönetimi global ``RUNNER_DISK_WARN_PCT`` / ``RUNNER_DISK_EVICT_PCT`` eşikleri üzerinden ``WorkspaceCleanupSchedulerWorkflow`` (G2) tarafından yapılır. Mevcut JSON dosyalarındaki değerler schema validasyonu için kabul edilmeye devam eder ancak runtime tarafından yok sayılır. Gelecekteki bir release'de schema'dan kaldırılacaktır. Eski referans: sec 16.6.84."
+          "description": "DEPRECATED. Per-department disk kotası artık kullanılmıyor; tek SSH runner host'u tüm departmanlarca paylaşılır ve disk yönetimi global ``RUNNER_DISK_WARN_PCT`` / ``RUNNER_DISK_EVICT_PCT`` eşikleri üzerinden ``WorkspaceCleanupSchedulerWorkflow`` tarafından yapılır. Mevcut JSON dosyalarındaki değerler schema validasyonu için kabul edilmeye devam eder ancak runtime tarafından yok sayılır. Gelecekteki bir release'de schema'dan kaldırılacaktır."
         },
         "docker_defaults": {
           "$ref": "#/$defs/DockerDefaults",
-          "description": "Docker container calistirma varsayilan ayarlari. cpu_limit, memory_limit_mb, timeout ve cleanup policy. Bk. platform-completion requirements R1.3, R1.5, R1.6."
+          "description": "Docker container calistirma varsayilan ayarlari. cpu_limit, memory_limit_mb, timeout ve cleanup policy."
         },
         "pii_filter": {
           "type": "boolean"
@@ -162,7 +162,7 @@
         },
         "llm_overrides": {
           "type": ["object", "null"],
-          "description": "Departman bazli LLM provider override. primary ve fallback provider tanimlari icerir. Bk. design sec 3.6.",
+          "description": "Departman bazli LLM provider override. primary ve fallback provider tanimlari icerir.",
           "additionalProperties": false,
           "properties": {
             "primary": {
@@ -175,7 +175,7 @@
         },
         "llm_overrides_by_activity": {
           "type": "object",
-          "description": "Activity bazli LLM override. Bk. sec 16.8.5 (G4).",
+          "description": "Activity bazli LLM override.",
           "additionalProperties": {
             "$ref": "#/$defs/LLMConfig"
           }
@@ -212,7 +212,7 @@
               ]
             }
           ],
-          "description": "En az bir servis (jira/bitbucket/confluence) tanimlanmalidir. Bk. design sec 3.6."
+          "description": "En az bir servis (jira/bitbucket/confluence) tanimlanmalidir."
         },
         "repo_mappings": {
           "type": "array",
@@ -223,7 +223,7 @@
         "branch_pattern_rules": {
           "type": "array",
           "default": [],
-          "description": "Hotfix/release branch routing kurallari (U6, R7.9). Her giris bir glob + denied_workflow_types XOR allowed_workflow_types tasir; AutomationWorkflow router LLM cikan workflow_type ile birlikte ilk eslesen kuralin kararini uygular. Default bos liste; bu durumda branch routing acik default ile gecer (no_rule_matched). Bk. design 'branch_pattern_rules bir saf fonksiyon'.",
+          "description": "Hotfix/release branch routing kurallari. Her giris bir glob + denied_workflow_types XOR allowed_workflow_types tasir; AutomationWorkflow router LLM cikan workflow_type ile birlikte ilk eslesen kuralin kararini uygular. Default bos liste; bu durumda branch routing acik default ile gecer (no_rule_matched).",
           "items": {
             "$ref": "#/$defs/BranchPatternRule"
           },
@@ -234,7 +234,7 @@
         },
         "status_mapping": {
           "type": "object",
-          "description": "Jira project'inde kullanilan gercek status adlarina esleme. Bk. sec 16.9 E13.",
+          "description": "Jira project'inde kullanilan gercek status adlarina esleme.",
           "additionalProperties": false,
           "properties": {
             "todo": {
@@ -260,7 +260,7 @@
         "notify_on_success": {
           "type": "boolean",
           "default": false,
-          "description": "Workflow basarili tamamlandiginda bildirim gonderilsin mi. Default false (sec 16.13 S8: failure her zaman, success opsiyonel). Bk. platform-mimari-ops requirements R5.2."
+          "description": "Workflow basarili tamamlandiginda bildirim gonderilsin mi. Default false: failure her zaman, success opsiyonel."
         },
         "notify_channels": {
           "type": "array",
@@ -274,7 +274,7 @@
           },
           "uniqueItems": true,
           "default": [],
-          "description": "Bu departman icin etkin bildirim kanallari. Failure bildirimleri dept config'den bagimsiz Slack'e her zaman gider; bu liste success-gated bildirimler ve ek kanallar (email/teams) icin. Bk. platform-mimari-ops requirements R5.1, R5.2."
+          "description": "Bu departman icin etkin bildirim kanallari. Failure bildirimleri dept config'den bagimsiz Slack'e her zaman gider; bu liste success-gated bildirimler ve ek kanallar (email/teams) icin."
         },
         "slack_webhook_ref": {
           "type": [
@@ -282,7 +282,7 @@
             "null"
           ],
           "pattern": "^vault:[a-zA-Z0-9/_-]+$",
-          "description": "Departmanin Slack webhook URL'sini iceren Vault path'i. Plain-text webhook URL JSON'a yazilmaz. Bk. platform-mimari-ops requirements R5.1."
+          "description": "Departmanin Slack webhook URL'sini iceren Vault path'i. Plain-text webhook URL JSON'a yazilmaz."
         },
         "notify_email": {
           "type": [
@@ -290,7 +290,7 @@
             "null"
           ],
           "format": "email",
-          "description": "RFC 5322 formatinda bildirim e-posta adresi. SMTP credential ayri Vault path'inden cozulur (vault:notifications/smtp/credential). Bk. platform-mimari-ops requirements R5.1."
+          "description": "RFC 5322 formatinda bildirim e-posta adresi. SMTP credential ayri Vault path'inden cozulur (vault:notifications/smtp/credential)."
         },
         "teams_webhook_ref": {
           "type": [
@@ -298,7 +298,7 @@
             "null"
           ],
           "pattern": "^vault:[a-zA-Z0-9/_-]+$",
-          "description": "MS Teams webhook URL'sini iceren Vault path'i. notify_channels icinde 'teams' varsa bu ref cozulerek bildirim gonderilir. Bk. platform-completion requirements R18.1."
+          "description": "MS Teams webhook URL'sini iceren Vault path'i. notify_channels icinde 'teams' varsa bu ref cozulerek bildirim gonderilir."
         },
         "feature_flag_overrides": {
           "type": "object",
@@ -306,7 +306,7 @@
             "type": "boolean"
           },
           "default": {},
-          "description": "Departman bazli feature flag override'lari (free-form bool map). Global feature_flags tablosundaki default degeri override eder. Bk. platform-mimari-ops requirements R4.10."
+          "description": "Departman bazli feature flag override'lari (free-form bool map). Global feature_flags tablosundaki default degeri override eder."
         }
       }
     },
@@ -324,7 +324,7 @@
             "string",
             "null"
           ],
-          "description": "Atlassian accountId. Bossa probe ile auto-fetch. Bk. sec 2.5.4."
+          "description": "Atlassian accountId. Bossa probe ile auto-fetch."
         },
         "username": {
           "type": [
@@ -342,7 +342,7 @@
             "server",
             null
           ],
-          "description": "Yalnizca service=bitbucket icin anlamli. Bk. sec 16.6.52."
+          "description": "Yalnizca service=bitbucket icin anlamli."
         },
         "email": {
           "type": [
@@ -373,7 +373,7 @@
           ]
         }
       ],
-      "description": "Bot servis kimligi. Vault tabanli kimlik icin 'credential_ref' (MIMARI sec 2.5.2) ya da inline kimlik icin 'email' + 'api_token_ref' (Requirement 7.5). En az biri zorunludur."
+      "description": "Bot servis kimligi. Vault tabanli kimlik icin 'credential_ref' ya da inline kimlik icin 'email' + 'api_token_ref'. En az biri zorunludur."
     },
     "LLMConfig": {
       "type": "object",
@@ -476,7 +476,7 @@
         "glob"
       ],
       "additionalProperties": false,
-      "description": "Tek bir branch-pattern routing kurali. glob ile eslesn dallarda denied_workflow_types XOR allowed_workflow_types uygulanir. Bk. design 'branch_pattern_rules', requirements R7.9 (MIMARI sec 16.15.6 U6).",
+      "description": "Tek bir branch-pattern routing kurali. glob ile eslesn dallarda denied_workflow_types XOR allowed_workflow_types uygulanir.",
       "properties": {
         "glob": {
           "type": "string",
@@ -621,7 +621,7 @@
         "monthly_usd_user"
       ],
       "additionalProperties": false,
-      "description": "Departman ve kullanici bazli haftalik/aylik USD harcama limitleri. Tum alanlar zorunlu ve >= 0. Asildiginda yeni workflow start cagrilari HTTP 429 + audit budget_exceeded ile reddedilir. Bk. platform-mimari-ops requirements R5.5; design Property 7.",
+      "description": "Departman ve kullanici bazli haftalik/aylik USD harcama limitleri. Tum alanlar zorunlu ve >= 0. Asildiginda yeni workflow start cagrilari HTTP 429 + audit budget_exceeded ile reddedilir.",
       "properties": {
         "weekly_usd_dept": {
           "type": "number",
@@ -648,7 +648,7 @@
     "DockerDefaults": {
       "type": "object",
       "additionalProperties": false,
-      "description": "Docker container calistirma varsayilan ayarlari. Departman bazli kaynak limitleri, timeout ve cleanup policy tanimlar. Bk. platform-completion requirements R1.3, R1.5, R1.6, R1.7.",
+      "description": "Docker container calistirma varsayilan ayarlari. Departman bazli kaynak limitleri, timeout ve cleanup policy tanimlar.",
       "properties": {
         "cpu_limit": {
           "type": "number",

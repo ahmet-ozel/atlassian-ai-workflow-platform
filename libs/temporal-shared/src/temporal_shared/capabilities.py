@@ -1,12 +1,11 @@
 """Workflow-type → required capability set mapping and capability gate.
 
 This module is the **single source of truth** for the workflow-type →
-capability mapping defined in ``platform-mimari-foundation`` design.md
-(``libs/temporal-shared.capabilities``). Other modules import these
+capability mapping. Other modules import these
 symbols rather than redefining them. The constant
 :data:`WORKFLOW_TYPE_CAPABILITIES` is wrapped in
 :class:`types.MappingProxyType` so it cannot be mutated at runtime
-(Requirement 4.1, design Property 7).
+.
 
 Capability vocabulary (closed set):
 
@@ -22,18 +21,17 @@ Capability vocabulary (closed set):
 Public API:
 
 * :data:`WORKFLOW_TYPE_CAPABILITIES` — immutable mapping (13 entries —
-  EK3: ``script_execute``, ``research_publish_confluence``,
-  ``research_summary_jira`` added to match
+  includes ``script_execute``, ``research_publish_confluence``,
+  and ``research_summary_jira`` to match
   ``task_analyzer.VALID_WORKFLOW_TYPES``)
 * :func:`derive_capabilities` — pure function (no I/O)
 * :func:`gate` — pure function returning :class:`GateDecision`
 * :class:`GateDecision` — frozen dataclass with ``allowed`` and ``missing``
 * :class:`HasCredential` — structural protocol for bot entries
 * :class:`SupportsBot`, :class:`SupportsDepartment` — structural protocols
-  used by ``derive_capabilities`` (duck-typed; the real ``Department``
-  loader lives in a later task)
+  used by ``derive_capabilities`` (duck-typed; the concrete ``Department``
+  loader is intentionally not required here)
 
-Validates: Requirements 4.1, 4.3, 4.4, 4.7, 4.8, 4.9.
 """
 
 from __future__ import annotations
@@ -61,9 +59,9 @@ __all__ = [
 # ---------------------------------------------------------------------------
 
 #: Workflow type → frozenset of required capabilities. Mirrors
-#: ``platform-mimari-foundation`` design.md §"libs/temporal-shared.capabilities".
+#: the workflow capability table.
 #: Wrapped in ``MappingProxyType`` so callers cannot mutate the shared
-#: dictionary at runtime (Requirement 4.1).
+#: dictionary at runtime.
 WORKFLOW_TYPE_CAPABILITIES: Final[Mapping[str, frozenset[str]]] = MappingProxyType(
     {
         "code_change_with_test": frozenset(
@@ -136,8 +134,8 @@ WORKFLOW_TYPE_CAPABILITIES: Final[Mapping[str, frozenset[str]]] = MappingProxyTy
                 "execution",
             }
         ),
-        # EK3 fix (GEREKSINIM_ANALIZI.md): the three entries below were
-        # previously in ``task_analyzer.VALID_WORKFLOW_TYPES`` (13 types)
+        # The three entries below were previously in
+        # ``task_analyzer.VALID_WORKFLOW_TYPES`` (13 types)
         # but missing from this table (10 types). When the analyzer
         # produced them, ``required_capabilities()`` raised KeyError and
         # the gateway denied the task as ``unknown_workflow_type`` even
@@ -192,7 +190,7 @@ class SupportsBot(Protocol):
 class SupportsDepartment(Protocol):
     """Minimal structural shape required by :func:`derive_capabilities`.
 
-    The full ``Department`` dataclass / loader lives in a later task; this
+    The full ``Department`` dataclass / loader is not required here; this
     Protocol lets us write the pure capability logic without depending on
     a concrete schema and keeps the function trivially unit-testable.
     """
@@ -234,9 +232,9 @@ def derive_capabilities(
     """Derive the capability frozenset for *dept* given the environment.
 
     The function is **pure**: it performs no network or filesystem I/O.
-    All input must be supplied via ``dept`` and ``env`` (Requirement 4.7).
+    All input must be supplied via ``dept`` and ``env``.
 
-    Rules (Requirement 4.3):
+    Rules:
 
     1. ``bot.jira`` has a credential → ``jira_read``, ``jira_write``.
     2. ``bot.bitbucket`` has a credential → ``bitbucket_read``,
@@ -248,9 +246,9 @@ def derive_capabilities(
        canonical contract: the platform runs **exactly one** SSH host
        shared by all departments under ``RUNNER_BASE_PATH``; per-dept
        host overrides are not supported.
-       (Requirement 4.8: ``SSH_RUNNER_DEPT_PINNING_ENABLED`` is *not*
-       consulted here; the flag is now a deprecated no-op under the
-       single-runner contract — G1.)
+       ``SSH_RUNNER_DEPT_PINNING_ENABLED`` is *not* consulted here; the
+       flag is now a deprecated no-op under the
+       single-runner contract.)
     5. ``dept.web_search_enabled`` and ``env["FIRECRAWL_ENABLED"] == "true"``
        → ``web_search``.
 
@@ -341,7 +339,7 @@ def gate(
 
     Computes the set difference ``required - have`` and packages the
     answer into a :class:`GateDecision`. Pure function — no I/O
-    (Requirement 4.4, 4.7).
+    .
 
     Args:
         workflow_type: Key into :data:`WORKFLOW_TYPE_CAPABILITIES`.
@@ -369,7 +367,7 @@ def gate(
 #
 # The :data:`WORKFLOW_TYPE_CAPABILITIES` table uses the *split* capability
 # vocabulary (``"jira_read"`` / ``"jira_write"`` / ``"bitbucket_read"``…)
-# that mirrors design.md §"libs/temporal-shared.capabilities". Most call
+# that mirrors the workflow capability table. Most call
 # sites — :class:`AutomationWorkflow.run`, the automation-service webhook
 # decision layer, and the integration tests — talk in the simpler service
 # vocabulary (``"jira"`` / ``"bitbucket"`` / ``"confluence"`` / ``"execution"``

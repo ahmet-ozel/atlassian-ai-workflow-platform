@@ -1,6 +1,5 @@
 # Runbook: Webhook Setup (Jira + Bitbucket)
 
-> **Spec:** `platform-mimari-workflows` — Requirement 3.10 (`MIMARI §16.14.3 V3` — dept başına ayrı webhook secret).
 > **Audience:** Platform `admin` rolü; Atlassian organizasyon admin'i (Jira Cloud/DC) ve Bitbucket workspace admin'i ile birlikte.
 > **Scope:** Bir departmanın (`dept_id`) Jira ve Bitbucket webhook abonelikleriyle `automation-service` gateway'ine bağlanması; HMAC secret'inin Vault'a yazılması; 1 saatlik overlap rotation prosedürü.
 > **Reversibility:** Tüm adımlar geri alınabilir; yanlış konfigüre edilmiş bir webhook abonelik silinerek baştan kurulabilir.
@@ -9,7 +8,7 @@
 
 Bu runbook, bir departman için **tek bir Jira webhook** ve **tek bir Bitbucket webhook** aboneliğinin nasıl açılacağını, gövdesinin `automation-service` gateway'i tarafından HMAC-SHA256 ile doğrulanabilmesi için Vault'a hangi secret'ın hangi path'e yazılacağını ve bu secret'ın 1 saatlik overlap penceresiyle nasıl döndürüleceğini anlatır.
 
-Mimari kuralı (R3.10, MIMARI §16.14.3 V3):
+Kurulum kuralları:
 
 - Her departman **tek bir** Jira webhook subscription kullanır; URL `{public_url}/webhooks/jira`'dır ve abonelik filtresi o dept'in `jira_project_keys[]` listesindeki tüm projeleri kapsar.
 - Her departman **tek bir** Bitbucket webhook subscription kullanır; URL `{public_url}/webhooks/bitbucket`'dir ve abonelik scope'u dept'in `bitbucket_workspace`'i ile uyumludur.
@@ -32,7 +31,7 @@ Mimari kuralı (R3.10, MIMARI §16.14.3 V3):
 
 > **`dept_id` çözümlemesi:** `dept_id` değerini `platform/config/departments.json` dosyasındaki `id` alanından oku. Vault path'lerinde **bu değer aynen** kullanılır; lower-case ve `[a-z0-9_-]` ile sınırlıdır.
 
-> **Vault path naming convention** (R3.4 / V3):
+> **Vault path naming convention**:
 >
 > - Jira: `vault:webhooks/jira/{dept_id}` — KV v2 secret; alanlar: `secret_current`, `secret_previous` (rotation overlap için), `rotated_at` (ISO-8601).
 > - Bitbucket: `vault:webhooks/bitbucket/{dept_id}` — aynı şema.
@@ -321,10 +320,10 @@ Beklenen: en üst satır `webhook_event_dispatched` olmalı; HMAC test'i başar�
 |---|---|---|
 | HTTP 401 + audit `webhook_hmac_invalid` | UI'daki secret ile Vault'taki `secret_current` eşleşmiyor; veya rotation overlap penceresi 1 saatten kısa tutuldu ve eski secret silindi | Vault'taki `secret_current`'ı UI'daki secret ile yeniden senkronla; gerekirse Adım 3.1.1 / 4.1.1'i tekrarla. Rotation sırasında 1h pencereyi tam doldur. |
 | HTTP 400 + audit `webhook_dept_unresolved` | Webhook payload'ındaki `project.key` veya `repository.workspace.slug` hiçbir dept'in `jira_project_keys[]` / `bitbucket_workspace`'i ile eşleşmiyor | `platform/config/departments.json` içinde ilgili dept'in alanlarını doğrula; mapping admin endpoint'i ile sync et (`POST /admin/departments/{id}/repo-mappings/sync`) |
-| HTTP 200 + audit `loop_guard_dropped` | Event'in `actor.account_id`'si bir dept'in `bot.<service>.account_id`'sine eşit; bot kendi event'ini tetiklemiş | Aksiyon gerekmez; bu beklenen davranış (MIMARI §1 Kural 7). Tetikleyenin gerçekten bot olmadığını doğrulamak için `audit_events` tablosunda actor_account_id alanını incele. |
-| HTTP 200 + audit `duplicate_event_dropped` | Aynı `delivery_id` (X-Atlassian-Webhook-Identifier veya X-Hook-UUID) `processed_events` tablosunda mevcut; provider retry yapmış | Aksiyon gerekmez; idempotency koruması (R1.8, R2.5). Ardışık aynı event ile workflow başlatılmaz. |
-| HTTP 200 + audit `comment_ignored_unauthorized_actor` | `jira:issue_commented` event'inin yazarı bot mention setinde değil ve iter > 1 | Aksiyon gerekmez; mention filter (Y6). Yorumcu bot'u mention etmeli (`@bot-username`) veya issue reporter olmalı (Z6 first-iter exception). |
-| Webhook UI'sında "delivery failed: timeout" | `automation-service` 500 ms'i aştı (R3.9) veya gateway down | Gateway loglarını incele; uzun süren işlem webhook handler içinde değil, workflow içinde yürütülmelidir. Activity'ye taşı. |
+| HTTP 200 + audit `loop_guard_dropped` | Event'in `actor.account_id`'si bir dept'in `bot.<service>.account_id`'sine eşit; bot kendi event'ini tetiklemiş | Aksiyon gerekmez; bu beklenen davranış. Tetikleyenin gerçekten bot olmadığını doğrulamak için `audit_events` tablosunda actor_account_id alanını incele. |
+| HTTP 200 + audit `duplicate_event_dropped` | Aynı `delivery_id` (X-Atlassian-Webhook-Identifier veya X-Hook-UUID) `processed_events` tablosunda mevcut; provider retry yapmış | Aksiyon gerekmez; idempotency koruması aynı event ile tekrar workflow başlatılmasını engeller. |
+| HTTP 200 + audit `comment_ignored_unauthorized_actor` | `jira:issue_commented` event'inin yazarı bot mention setinde değil ve iter > 1 | Aksiyon gerekmez; mention filter devrededir. Yorumcu bot'u mention etmeli (`@bot-username`) veya issue reporter olmalı. |
+| Webhook UI'sında "delivery failed: timeout" | `automation-service` 500 ms'i aştı veya gateway down | Gateway loglarını incele; uzun süren işlem webhook handler içinde değil, workflow içinde yürütülmelidir. Activity'ye taşı. |
 | Replay rejection (HTTP 401, audit `replay_window_exceeded`) | Bazı imza şemalarında timestamp pencereli replay koruması var; sistem saati senkron değil veya event çok eski | NTP doğrula; gerekirse provider ile senkronla. |
 | Bitbucket DC `pr:opened` geliyor ama workflow başlamıyor | Event normalize tablosunda DC dialect kaydedilmemiş | Gateway loglarında `event_type` alanını incele; gerekirse `webhook_event_ignored` audit'lendi mi kontrol et. |
 
@@ -332,7 +331,7 @@ Beklenen: en üst satır `webhook_event_dispatched` olmalı; HMAC test'i başar�
 
 ## 8. Loop guard caveats
 
-Webhook gateway'i, bot'un kendi event'leriyle sonsuz döngüye girmesini engellemek için iki kademeli bir loop guard uygular (R4.1, R4.2; MIMARI §1 Kural 7, §16.16 N15). Bu bölüm operatörlerin runbook 3-4'teki webhook'u kurarken dikkat etmesi gereken iki konuyu özetler.
+Webhook gateway'i, bot'un kendi event'leriyle sonsuz döngüye girmesini engellemek için iki kademeli bir loop guard uygular. Bu bölüm operatörlerin webhook'u kurarken dikkat etmesi gereken iki konuyu özetler.
 
 ### 8.1 Bot account ID'leri `departments.json`'da kayıtlı olmalı
 
@@ -358,7 +357,7 @@ Bu mekanizmanın çalışabilmesi için her dept'in `platform/config/departments
 }
 ```
 
-> **Doğrulama:** Yeni bir dept eklediğinde, foundation'ın credential probe testi (`test_credential_probe.py`) bot account_id'nin Atlassian/Bitbucket'ta gerçekten resolve edildiğini ve `whoami` çağrısı ile dönen ID ile `departments.json`'daki değerin eşleştiğini doğrular. Probe başarısız olursa loop guard güvenilir çalışmaz.
+> **Doğrulama:** Yeni bir dept eklediğinde credential probe testi (`test_credential_probe.py`) bot account_id'nin Atlassian/Bitbucket'ta gerçekten resolve edildiğini ve `whoami` çağrısı ile dönen ID ile `departments.json`'daki değerin eşleştiğini doğrular. Probe başarısız olursa loop guard güvenilir çalışmaz.
 
 ### 8.2 Regex fallback for legacy installs without `account_id`
 
@@ -368,17 +367,17 @@ Bu mekanizmanın çalışabilmesi için her dept'in `platform/config/departments
 ^\s*\[bot:
 ```
 
-Yani yorum baştan boşluklarla başlayıp ardından `[bot:` ön ekiyle devam ediyorsa event drop edilir (`loop_guard_regex_dropped` audit). Bu pattern, bot'un her yorumunun başına `[bot:summary]`, `[bot:needs_info]`, `[bot:explain]` gibi etiketler koyma kuralı ile birlikte çalışır (S6 / B7 — bot output attribution standardı).
+Yani yorum baştan boşluklarla başlayıp ardından `[bot:` ön ekiyle devam ediyorsa event drop edilir (`loop_guard_regex_dropped` audit). Bu pattern, bot'un her yorumunun başına `[bot:summary]`, `[bot:needs_info]`, `[bot:explain]` gibi etiketler koyma kuralı ile birlikte çalışır.
 
 > **Operatör için anlamı:**
 >
 > - Manuel olarak yazılan yorumlar **asla** `[bot:` ile başlamamalıdır; aksi halde yorum drop edilir ve workflow tetiklenmez.
-> - Streamlit inline reply (V12) `[bot:hear]` etiketini kullanır, bu mention filter bypass içindir; loop guard regex'i `[bot:hear]` ile başlayan yorumları da drop eder — bunlar Streamlit tarafında **bot olmayan** kullanıcılar adına yazıldığı için account_id ile loop guard'a takılmazlar; yine de Streamlit'in bot account ID'sini kullanmaması ve etiketin `[bot:hear]` yerine alternatif bir prefix'e taşınması ileride değerlendirilebilir.
+> - Streamlit inline reply `[bot:hear]` etiketini kullanır, bu mention filter bypass içindir; loop guard regex'i `[bot:hear]` ile başlayan yorumları da drop eder — bunlar Streamlit tarafında **bot olmayan** kullanıcılar adına yazıldığı için account_id ile loop guard'a takılmazlar; yine de Streamlit'in bot account ID'sini kullanmaması ve etiketin `[bot:hear]` yerine alternatif bir prefix'e taşınması ileride değerlendirilebilir.
 > - Modern Jira Cloud / Bitbucket Cloud kurulumları her zaman `account_id` gönderir; bu fallback yalnızca legacy DC kurulumları için geçerlidir.
 
 ### 8.3 Loop guard'ın atlanmaması gereken event tipleri
 
-`pullrequest:fulfilled` (PR merge) event'i bot'un kendi PR'ını merge ettiğinde de tetiklenir. Bu event her zaman loop guard ile drop edilmelidir; hiçbir workflow type'ı `pullrequest:fulfilled`'a tepki olarak başlatılmaz. Webhook UI'sında bu trigger'ı işaretli bırakmak güvenlidir; gateway zaten bu event'i drop eder (MIMARI §5).
+`pullrequest:fulfilled` (PR merge) event'i bot'un kendi PR'ını merge ettiğinde de tetiklenir. Bu event her zaman loop guard ile drop edilmelidir; hiçbir workflow type'ı `pullrequest:fulfilled`'a tepki olarak başlatılmaz. Webhook UI'sında bu trigger'ı işaretli bırakmak güvenlidir; gateway zaten bu event'i drop eder.
 
 ---
 
@@ -386,6 +385,3 @@ Yani yorum baştan boşluklarla başlayıp ardından `[bot:` ön ekiyle devam ed
 
 - [`platform/config/departments.json`](../../config/departments.json) — `dept_id`, `jira_project_keys[]`, `bitbucket_workspace` alanları.
 - [`platform/config/departments.schema.json`](../../config/departments.schema.json) — alanların tip ve constraint tanımları.
-- `MIMARI.md §5` — webhook gateway tasarımı.
-- `MIMARI.md §16.14.3 V3` — dept başına ayrı webhook secret kuralı.
-- Spec: `platform-mimari-workflows` Requirement 3.10.

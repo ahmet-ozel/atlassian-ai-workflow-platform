@@ -2,7 +2,7 @@
 
 /**
  * Lightweight line-by-line diff helper for the prompt editor
- * (`platform-gap-fill` task 14.2 — Requirement 14.5).
+ * used by the prompt editor.
  *
  * The admin-dashboard ships **no** runtime dependencies beyond
  * Next.js itself (see `package.json`); pulling in the `diff` npm

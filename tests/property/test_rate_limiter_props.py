@@ -1,16 +1,10 @@
-"""Property tests for Rate Limiter middleware.
-
-**Validates: Requirements 8.1, 8.2, 8.3**
-
-Property 2: Rate Limiter Enforcement
+"""Behavioral tests for Rate Limiter middleware.
 
 For any sequence of requests from the same key (IP or user_id) within a
 sliding window, the rate limiter SHALL allow the first N requests (where N
 is the configured limit) and reject all subsequent requests with HTTP 429
 until the window resets. The ``Retry-After`` header value SHALL be a
 positive integer representing the seconds until the window resets.
-
-Property 3: Rate Limiter Path Exemption
 
 For any request to a path in the exempt set (``/healthz``, ``/readyz``),
 the rate limiter SHALL never return HTTP 429 regardless of the request
@@ -50,7 +44,7 @@ _ADMIN_LIMIT = 60
 
 
 # ---------------------------------------------------------------------------
-# Property 2: Rate Limiter Enforcement
+# Rate limiter enforcement
 # ---------------------------------------------------------------------------
 
 
@@ -59,11 +53,7 @@ _ADMIN_LIMIT = 60
     num_requests=st.integers(min_value=1, max_value=120),
 )
 def test_rate_limiter_enforcement(num_requests: int) -> None:
-    """Feature: production-hardening, Property 2: Rate Limiter Enforcement
-
-    **Validates: Requirements 8.1, 8.2**
-
-    For any sequence of requests from the same key within a window,
+    """For any sequence of requests from the same key within a window,
     the first N requests (where N is the configured limit) are allowed
     and all subsequent requests are rejected with HTTP 429. The
     Retry-After header is a positive integer.
@@ -128,7 +118,7 @@ def test_rate_limiter_enforcement(num_requests: int) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Property 3: Rate Limiter Path Exemption
+# Rate limiter path exemption
 # ---------------------------------------------------------------------------
 
 # Exempt paths that should never be rate-limited.
@@ -161,11 +151,7 @@ def _create_exempt_test_app() -> FastAPI:
     num_requests=_EXEMPT_REQUEST_COUNT,
 )
 def test_rate_limiter_path_exemption(path: str, num_requests: int) -> None:
-    """Feature: production-hardening, Property 3: Rate Limiter Path Exemption
-
-    **Validates: Requirements 8.3**
-
-    For any request to a path in the exempt set (/healthz, /readyz),
+    """For any request to a path in the exempt set (/healthz, /readyz),
     the rate limiter SHALL never return HTTP 429 regardless of the
     request volume from the same key within any time window.
     """

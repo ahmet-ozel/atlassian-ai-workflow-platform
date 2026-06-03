@@ -1,17 +1,13 @@
-"""Property test: YAML front-matter priority over LLM (Property 7).
+"""YAML front-matter priority over LLM.
 
-Feature: platform-gap-fill, Property 7 — *For any* task description
-containing a valid YAML front-matter block (with ``workflow_type``),
-the parsed values SHALL be used directly and the LLM SHALL NOT be
+For any task description containing a valid YAML front-matter block with
+``workflow_type``, the parsed values are used directly and the LLM is not
 invoked.
 
-The complementary direction (Requirement 5.4 — "if YAML cannot be
-parsed or is absent, the LLM SHALL be invoked") is exercised by a
-second property in this module so the implication is tested in both
-directions: ``yaml_present ⇒ ¬llm_called`` *and*
+The complementary direction, where YAML cannot be parsed or is absent, is
+exercised by a second check in this module so the implication is tested in
+both directions: ``yaml_present ⇒ ¬llm_called`` *and*
 ``yaml_absent ⇒ llm_called``.
-
-**Validates: Requirements 5.3, 5.4, 11.1**
 """
 from __future__ import annotations
 
@@ -105,7 +101,7 @@ _DEFAULT_DEPT_CONFIG: dict[str, Any] = {
     "available_capabilities": ["jira_read", "jira_write"],
     "default_language": "tr",
     # Web search enabled so research_with_web doesn't downgrade —
-    # the downgrade itself doesn't affect Property 7 but keeping the
+    # the downgrade itself doesn't affect this behavior, but keeping the
     # flag on means the result objects survive equality checks.
     "web_search_enabled": True,
     "docker_defaults": {
@@ -117,7 +113,7 @@ _DEFAULT_DEPT_CONFIG: dict[str, Any] = {
 
 # Create a tmp prompt file once at module import time so the LLM branch
 # can read *something* if we ever land there (the negative test for
-# R5.4 explicitly requires the LLM branch to succeed). We keep this
+# the LLM branch requires it to succeed). We keep this
 # file outside any pytest tmp_path because Hypothesis re-uses the same
 # database across runs and the path must outlive any single example.
 _TMP_PROMPT_FILE: Path = (
@@ -125,7 +121,7 @@ _TMP_PROMPT_FILE: Path = (
     / "_property_tmp_task_analysis.md"
 )
 _TMP_PROMPT_FILE.write_text(
-    "# Property test prompt\n\nReturn JSON.\n",
+    "# Test prompt\n\nReturn JSON.\n",
     encoding="utf-8",
 )
 set_prompt_path(_TMP_PROMPT_FILE)
@@ -137,7 +133,7 @@ set_prompt_path(_TMP_PROMPT_FILE)
 
 
 # Workflow types are drawn from the authoritative closed set so the
-# YAML block is always *valid* (Property 7 requires a valid block).
+# YAML block is always valid for this behavior.
 _workflow_type_strategy = st.sampled_from(sorted(VALID_WORKFLOW_TYPES))
 
 # Cleanup policies likewise.
@@ -270,7 +266,7 @@ def _make_input(
 
 
 # ---------------------------------------------------------------------------
-# Property 7 — valid YAML block ⇒ LLM not invoked, source=yaml_frontmatter
+# Valid YAML block ⇒ LLM not invoked, source=yaml_frontmatter
 # ---------------------------------------------------------------------------
 
 
@@ -283,18 +279,15 @@ def test_yaml_frontmatter_skips_llm(
     description: str,
     issue_key: str,
 ) -> None:
-    """Validates: Requirements 5.3, 11.1.
-
-    For any description starting with a valid ``ai-bot`` YAML block
-    (carrying ``workflow_type``), the analyzer SHALL take the
-    deterministic path: ``source == "yaml_frontmatter"`` and the LLM
-    caller SHALL NOT be invoked.
+    """For any description starting with a valid ``ai-bot`` YAML block
+    carrying ``workflow_type``, the analyzer takes the deterministic path:
+    ``source == "yaml_frontmatter"`` and the LLM caller is not invoked.
     """
     fake_llm = _wire_fakes()
 
     result = asyncio.run(analyze_task(_make_input(description, issue_key=issue_key)))
 
-    # Property 7 — LLM was never called.
+    # LLM was never called.
     assert fake_llm.calls == [], (
         f"LLM was called {len(fake_llm.calls)} time(s) despite a valid "
         f"YAML front-matter block. Description prefix: "
@@ -312,7 +305,7 @@ def test_yaml_frontmatter_skips_llm(
 
 
 # ---------------------------------------------------------------------------
-# Requirement 5.4 — no front-matter ⇒ LLM IS invoked
+# No front-matter ⇒ LLM is invoked
 # ---------------------------------------------------------------------------
 
 
@@ -325,11 +318,9 @@ def test_no_frontmatter_invokes_llm(
     description: str,
     issue_key: str,
 ) -> None:
-    """Validates: Requirement 5.4.
+    """When there is no YAML front-matter block, the analyzer uses the LLM.
 
-    The converse direction of Property 7: when the description does
-    *not* contain a YAML front-matter block, the analyzer SHALL fall
-    through to the LLM branch. This guarantees Property 7 is not
+    This converse direction prevents the YAML priority behavior from being
     trivially satisfied by an analyzer that simply never calls the LLM.
     """
     fake_llm = _wire_fakes()

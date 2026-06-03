@@ -1,9 +1,7 @@
 """Unit tests for ``libs/llm-orchestrator`` providers and factory.
 
-These tests are intentionally example-based (no Hypothesis) per
-``tasks.md`` task 14.1 and design §6.3 (Property → test mapping does not
-include a property for these stubs). They exercise the four behaviours
-the scaffold needs to guarantee:
+These tests are intentionally example-based (no Hypothesis). They exercise
+the four behaviours the provider package needs to guarantee:
 
 1. ``LLMProviderFactory.from_env`` defaults to ``OpenAIProvider`` when
    ``LLM_PROVIDER`` is unset and dispatches correctly when it is set
@@ -16,12 +14,10 @@ the scaffold needs to guarantee:
    ``test_from_env_dispatches_real_providers_to_not_implemented`` and
    ``test_real_providers_raise_not_implemented_on_direct_instantiation``
    for the original stub-era contract and why the inverted semantics are
-   recorded under the historical test names (preservation clause 3.6 of
-   the ``fix-pre-existing-test-failures`` bugfix design).
+   recorded under the historical test names.
 4. An unknown ``LLM_PROVIDER`` value raises ``ValueError`` rather than
    silently falling back, so misconfiguration fails loudly.
 
-Validates: Requirements 5.2.
 """
 
 from __future__ import annotations
@@ -115,19 +111,15 @@ def test_from_env_dispatches_real_providers_to_not_implemented(
     """The factory dispatches to the real provider class and constructs it.
 
     .. note::
-       Historically (scaffold/stub era) the three real providers raised
+       Historically the three real providers raised
        ``NotImplementedError`` on instantiation and this test asserted
        that the factory surfaced that error. The providers have since
        been promoted to real implementations (``@dataclass``-based,
        ``httpx``-backed), so their ``__init__`` no longer raises.
 
-       The function name is preserved verbatim per preservation clause
-       3.6 of ``.kiro/specs/fix-pre-existing-test-failures/design.md``
-       (Surface 4): "Every test file currently failing in one of the
-       five surfaces SHALL continue to exist with the same set of test
-       functions; the fix SHALL address root causes by editing
-       assertions ... rather than by removing or skipping tests." The
-       semantic is inverted to match the current production contract:
+       The function name is preserved verbatim for compatibility with
+       existing test references. The semantic is inverted to match the
+       current production contract:
        ``from_env(LLM_PROVIDER=<real>)`` returns a constructed instance
        of the expected provider class.
 
@@ -160,14 +152,13 @@ def test_real_providers_raise_not_implemented_on_direct_instantiation(
     """Direct ``OpenAIProvider()`` / etc. construct successfully.
 
     .. note::
-       Historically (scaffold/stub era) ``OpenAIProvider()`` /
+       Historically ``OpenAIProvider()`` /
        ``AnthropicProvider()`` / ``VLLMProvider()`` raised
        ``NotImplementedError`` to flag "stub, wire me up later". They
        are now real implementations and construct without error.
 
-       The function name is preserved verbatim per preservation clause
-       3.6 of ``.kiro/specs/fix-pre-existing-test-failures/design.md``
-       (Surface 4). The semantic is inverted to match the current
+       The function name is preserved verbatim for compatibility with
+       existing test references. The semantic is inverted to match the current
        production contract: zero-argument construction succeeds and
        yields an instance with the documented ``name`` attribute.
     """

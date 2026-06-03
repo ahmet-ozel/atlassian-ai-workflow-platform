@@ -1,11 +1,7 @@
 """Unit tests for the ``POST /auth/bootstrap`` endpoint.
-
-Validates Requirements 2.3, 2.4, 2.5 from the production-hardening spec:
-
-* Requirement 2.3: Valid token → create admin user, invalidate token, 201.
-* Requirement 2.4: Expired/used token → 401 with error body.
-* Requirement 2.5: OIDC active → 410 with bootstrap_disabled_oidc_active.
-"""
+* : Valid token → create admin user, invalidate token, 201.
+* : Expired/used token → 401 with error body.
+* : OIDC active → 410 with bootstrap_disabled_oidc_active."""
 
 from __future__ import annotations
 
@@ -114,7 +110,7 @@ class TestBootstrapEndpoint:
             yield c
 
     def test_oidc_active_returns_410(self, client, mock_pool) -> None:
-        """Requirement 2.5: OIDC active → 410 Gone."""
+        """OIDC active → 410 Gone."""
         with patch(
             "src.auth.bootstrap.BootstrapTokenService.is_oidc_configured",
             return_value=True,
@@ -130,7 +126,7 @@ class TestBootstrapEndpoint:
         assert body["detail"]["error"] == "bootstrap_disabled_oidc_active"
 
     def test_invalid_token_format_returns_400(self, client) -> None:
-        """Requirement 2.3: Invalid format → 400."""
+        """Invalid format → 400."""
         with patch(
             "src.auth.bootstrap.BootstrapTokenService.is_oidc_configured",
             return_value=False,
@@ -146,7 +142,7 @@ class TestBootstrapEndpoint:
         assert body["detail"]["error"] == "invalid_token_format"
 
     def test_expired_or_used_token_returns_401(self, client, mock_pool) -> None:
-        """Requirement 2.4: Expired/used token → 401."""
+        """Expired/used token → 401."""
         with patch(
             "src.auth.bootstrap.BootstrapTokenService.is_oidc_configured",
             return_value=False,
@@ -168,7 +164,7 @@ class TestBootstrapEndpoint:
     def test_valid_token_creates_admin_returns_201(
         self, client, mock_pool
     ) -> None:
-        """Requirement 2.3: Valid token → create admin, 201."""
+        """Valid token → create admin, 201."""
         with patch(
             "src.auth.bootstrap.BootstrapTokenService.is_oidc_configured",
             return_value=False,

@@ -1,7 +1,7 @@
 """Unit tests for ``temporal_shared.start_helper``.
 
-Validates the idempotency contract documented in design.md
-§"WorkflowAlreadyStarted" and Requirement 1.6:
+Validates the idempotency contract
+§"WorkflowAlreadyStarted" and the idempotency contract:
 
   WHEN aynı `workflow_id` ile bir Temporal workflow zaten
   çalışıyorken ikinci bir start denemesi gelirse, THE
@@ -10,7 +10,7 @@ Validates the idempotency contract documented in design.md
   HTTP 202 ile çağırana mevcut workflow'un id'sini döner.
 
 The helper itself is the *catch* + *return existing id* mechanism;
-the signal-redirect is the caller's responsibility (task 5.2).
+the signal-redirect is the caller's responsibility.
 
 Tests use a hand-rolled async fake instead of ``unittest.mock`` for
 two reasons:
@@ -21,7 +21,6 @@ two reasons:
   time — only ``WorkflowAlreadyStartedError`` from
   ``temporalio.exceptions`` is needed.
 
-Validates: Requirement 1.6.
 """
 
 from __future__ import annotations
@@ -78,7 +77,6 @@ class TestFreshStart:
 
     @pytest.mark.asyncio
     async def test_returns_was_existing_false(self) -> None:
-        """**Validates: Requirement 1.6**"""
         client = _RecordingClient()
 
         result = await start_workflow_idempotent(
@@ -95,7 +93,7 @@ class TestFreshStart:
 
     @pytest.mark.asyncio
     async def test_forwards_workflow_type_and_args_positionally(self) -> None:
-        """**Validates: Requirement 1.6**
+        """
 
         The Temporal SDK splats positional args; the helper must too.
         """
@@ -120,7 +118,7 @@ class TestFreshStart:
 
     @pytest.mark.asyncio
     async def test_forwards_extra_start_kwargs(self) -> None:
-        """**Validates: Requirement 1.6**
+        """
 
         Optional Temporal SDK kwargs (timeouts, reuse policy, retry
         policy) must reach the underlying client unchanged.
@@ -144,7 +142,6 @@ class TestFreshStart:
 
     @pytest.mark.asyncio
     async def test_empty_args_sequence_yields_no_positional_payload(self) -> None:
-        """**Validates: Requirement 1.6**"""
         client = _RecordingClient()
 
         await start_workflow_idempotent(
@@ -170,7 +167,6 @@ class TestDuplicateStart:
 
     @pytest.mark.asyncio
     async def test_catches_workflow_already_started_error(self) -> None:
-        """**Validates: Requirement 1.6**"""
         client = _RecordingClient(
             raise_exc=WorkflowAlreadyStartedError(
                 workflow_id="automation-jira-PAY-4211",
@@ -193,7 +189,7 @@ class TestDuplicateStart:
 
     @pytest.mark.asyncio
     async def test_returns_caller_supplied_workflow_id(self) -> None:
-        """**Validates: Requirement 1.6**
+        """
 
         The helper must echo the caller's ``workflow_id`` rather than
         whatever the SDK exception happens to carry — this keeps the
@@ -220,7 +216,7 @@ class TestDuplicateStart:
     async def test_two_consecutive_starts_with_same_id_yield_one_was_existing(
         self,
     ) -> None:
-        """**Validates: Requirement 1.6**
+        """
 
         Realistic idempotency scenario: first call starts, second call
         sees ``WorkflowAlreadyStartedError`` and returns existing.
@@ -263,7 +259,6 @@ class TestOtherErrorsPropagate:
 
     @pytest.mark.asyncio
     async def test_runtime_error_propagates(self) -> None:
-        """**Validates: Requirement 1.6**"""
         client = _RecordingClient(raise_exc=RuntimeError("connection refused"))
 
         with pytest.raises(RuntimeError, match="connection refused"):
@@ -277,7 +272,6 @@ class TestOtherErrorsPropagate:
 
     @pytest.mark.asyncio
     async def test_value_error_propagates(self) -> None:
-        """**Validates: Requirement 1.6**"""
         client = _RecordingClient(raise_exc=ValueError("bad payload"))
 
         with pytest.raises(ValueError, match="bad payload"):
@@ -291,7 +285,7 @@ class TestOtherErrorsPropagate:
 
     @pytest.mark.asyncio
     async def test_subclass_of_workflow_already_started_is_caught(self) -> None:
-        """**Validates: Requirement 1.6**
+        """
 
         Defensive: any subclass of the SDK exception is also a duplicate.
         """
@@ -317,7 +311,7 @@ class TestOtherErrorsPropagate:
 
     @pytest.mark.asyncio
     async def test_service_level_workflow_already_started_is_caught(self) -> None:
-        """**Validates: Requirement 1.6**
+        """
 
         Production service wrappers may translate the SDK duplicate
         into a local error class with the same semantic name.
@@ -372,7 +366,7 @@ class TestStartResult:
 
 @pytest.mark.asyncio
 async def test_works_with_async_mock_client() -> None:
-    """**Validates: Requirement 1.6**
+    """
 
     Exercises the helper against the canonical ``unittest.mock``
     pattern callers will use in higher-level tests, ensuring the

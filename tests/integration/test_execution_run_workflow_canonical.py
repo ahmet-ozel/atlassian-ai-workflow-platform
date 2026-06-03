@@ -1,11 +1,10 @@
 """End-to-end integration test for the canonical ``ExecutionRunWorkflow``.
 
-**Validates: Requirements 1.1, 1.6**
 
 This test exercises the canonical :class:`ExecutionRunWorkflow` defined
 in ``platform/workers/execution-runner-worker/src/workflows/execution_run_workflow.py``
-(spec ``platform-mimari-workflows`` task 2.3).  The workflow consumes a
-single :class:`ExecutionRunWorkflowInput` and emits a single
+by the execution-runner worker. The workflow consumes a single
+:class:`ExecutionRunWorkflowInput` and emits a single
 :class:`ExecutionRunWorkflowOutput` after delegating to the
 ``ssh_run_test`` activity.
 
@@ -14,25 +13,24 @@ Test scope decision
 
 The canonical workflow is a thin orchestrator: the heavy lifting
 (credential fetch, paramiko SSH, MinIO upload, heartbeating) lives in
-the ``ssh_run_test`` activity which has its own unit tests.  Here we
+the ``ssh_run_test`` activity which has its own unit tests. Here we
 mock the activity and verify that the workflow:
 
 1. Calls ``ssh_run_test`` with the exact arguments derived from the
-   input dataclass (R1.1 — single input dataclass contract).
+ input dataclass.
 2. Falls back to the documented ``DEFAULT_START_TO_CLOSE`` /
-   ``DEFAULT_HEARTBEAT`` values when the input leaves the timeout
-   overrides as ``None`` — the activity always gets a bounded
-   ``start_to_close_timeout`` regardless of caller configuration
-   (R1.6 — config-driven timeouts).
+ ``DEFAULT_HEARTBEAT`` values when the input leaves the timeout
+ overrides as ``None`` — the activity always gets a bounded
+ ``start_to_close_timeout`` regardless of caller configuration.
 3. Maps the activity result dict onto :class:`ExecutionRunWorkflowOutput`
-   for the three terminal statuses ``"passed"`` / ``"failed"`` /
-   ``"timeout"`` and propagates ``exit_code`` / ``stdout_uri`` /
-   ``stderr_uri`` / ``runner_id`` / ``failure_reason`` verbatim
-   (R1.6 — output shape).
+ for the three terminal statuses ``"passed"`` / ``"failed"`` /
+ ``"timeout"`` and propagates ``exit_code`` / ``stdout_uri`` /
+ ``stderr_uri`` / ``runner_id`` / ``failure_reason`` verbatim
+ to preserve the output shape.
 
 Production callers (e.g. :class:`AutomationWorkflow`) currently always
 pass ``start_to_close_timeout=None`` / ``heartbeat_timeout=None`` so the
-workflow body uses its built-in defaults.  We mirror that production
+workflow body uses its built-in defaults. We mirror that production
 pattern in the test inputs because Temporal's default JSON converter
 does not serialise :class:`datetime.timedelta` values across the
 workflow boundary; the dataclass field shape (``timedelta | None``) is
@@ -47,7 +45,7 @@ Test isolation
 
 ``isolate_worker("execution-runner")`` snapshots ``sys.path`` /
 ``sys.modules`` so the ``src.*`` namespace points to the
-execution-runner-worker tree only inside the with-block.  This mirrors
+execution-runner-worker tree only inside the with-block. This mirrors
 the pattern already used by ``test_execution_runner.py`` for the legacy
 workflow.
 """
@@ -80,13 +78,13 @@ class _ActivityCallLog:
 
 
 # ---------------------------------------------------------------------------
-# Status mapping matrix (R1.6)
+# Status mapping matrix 
 #
 # Each row encodes the canonical mapping the workflow MUST preserve:
-#   ssh_run_test result dict  →  ExecutionRunWorkflowOutput fields
+# ssh_run_test result dict → ExecutionRunWorkflowOutput fields
 #
 # (status, exit_code, stdout_uri, stderr_uri, duration_seconds,
-#  runner_id, failure_reason, scenario_id)
+# runner_id, failure_reason, scenario_id)
 # ---------------------------------------------------------------------------
 
 
@@ -155,24 +153,21 @@ async def test_canonical_execution_run_status_mapping(
     failure_reason: str | None,
     scenario: str,
 ) -> None:
-    """**Validates: Requirements 1.1, 1.6**
+    """Drive the canonical :class:`ExecutionRunWorkflow` against a mocked
+ ``ssh_run_test`` activity for each terminal status. Verifies:
 
-    Drives the canonical :class:`ExecutionRunWorkflow` against a mocked
-    ``ssh_run_test`` activity for each terminal status.  Verifies:
-
-    * The workflow accepts a single :class:`ExecutionRunWorkflowInput`
-      and returns a single :class:`ExecutionRunWorkflowOutput`
-      (R1.1 / R1.9 contract).
-    * ``ssh_run_test`` is invoked exactly once with the runner id,
-      command, environment, MinIO prefix, workdir, and parent workflow
-      id derived from the input (R1.6).
-    * The activity ``start_to_close_timeout`` and ``heartbeat_timeout``
-      overrides supplied by the input flow through to the activity
-      options (R1.6 — config-driven).
-    * The output ``status`` / ``exit_code`` / ``stdout_uri`` /
-      ``stderr_uri`` / ``runner_id`` / ``failure_reason`` mirror the
-      activity's result dict verbatim (R1.6).
-    """
+ * The workflow accepts a single :class:`ExecutionRunWorkflowInput`
+ and returns a single :class:`ExecutionRunWorkflowOutput`.
+ * ``ssh_run_test`` is invoked exactly once with the runner id,
+ command, environment, MinIO prefix, workdir, and parent workflow
+ id derived from the input.
+ * The activity ``start_to_close_timeout`` and ``heartbeat_timeout``
+ overrides supplied by the input flow through to the activity
+ options.
+ * The output ``status`` / ``exit_code`` / ``stdout_uri`` /
+ ``stderr_uri`` / ``runner_id`` / ``failure_reason`` mirror the
+ activity's result dict verbatim.
+ """
 
     log = _ActivityCallLog()
 
@@ -265,7 +260,7 @@ async def test_canonical_execution_run_status_mapping(
     # ----- Assertions --------------------------------------------------
 
     # The activity was invoked exactly once with the expected arguments
-    # derived from the input dataclass (R1.1, R1.6).
+    # derived from the input dataclass.
     assert len(log.calls) == 1, f"expected 1 ssh_run_test call, got {log.calls}"
     (
         runner_id_called,
@@ -284,7 +279,7 @@ async def test_canonical_execution_run_status_mapping(
     assert workdir_called == workdir
     assert parent_called == parent_workflow_id
 
-    # The output dataclass mirrors the activity result verbatim (R1.6).
+    # The output dataclass mirrors the activity result verbatim.
     assert isinstance(result, ExecutionRunWorkflowOutput)
     assert result.status == status
     assert result.exit_code == exit_code
@@ -296,23 +291,21 @@ async def test_canonical_execution_run_status_mapping(
 
 
 # ---------------------------------------------------------------------------
-# Default-timeout fallback test (R1.6)
+# Default-timeout fallback test 
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.asyncio
 @pytest.mark.integration
 async def test_canonical_execution_run_uses_default_timeouts_when_none() -> None:
-    """**Validates: Requirements 1.1, 1.6**
-
-    When the input leaves ``start_to_close_timeout`` and
-    ``heartbeat_timeout`` unset, the workflow MUST fall back to its
-    documented defaults (``DEFAULT_START_TO_CLOSE`` /
-    ``DEFAULT_HEARTBEAT``) — NOT call the activity with an open-ended
-    timeout (R1.6).  We assert the activity completes successfully under
-    the fallback configuration; an open-ended timeout would surface as
-    a Temporal "start_to_close_timeout required" validation error.
-    """
+    """When the input leaves ``start_to_close_timeout`` and
+ ``heartbeat_timeout`` unset, the workflow MUST fall back to its
+ documented defaults (``DEFAULT_START_TO_CLOSE`` /
+ ``DEFAULT_HEARTBEAT``) — NOT call the activity with an open-ended
+ timeout. We assert the activity completes successfully under
+ the fallback configuration; an open-ended timeout would surface as
+ a Temporal "start_to_close_timeout required" validation error.
+ """
 
     log = _ActivityCallLog()
 
@@ -358,7 +351,7 @@ async def test_canonical_execution_run_uses_default_timeouts_when_none() -> None
 
         # Sanity-check that the defaults are positive timedeltas — the
         # workflow contract relies on this so that the activity gets a
-        # bounded ``start_to_close_timeout`` (R1.6).
+        # bounded ``start_to_close_timeout``.
         assert DEFAULT_START_TO_CLOSE > timedelta(0)
         assert DEFAULT_HEARTBEAT > timedelta(0)
 

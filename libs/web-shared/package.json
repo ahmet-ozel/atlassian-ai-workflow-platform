@@ -1,7 +1,7 @@
 {
   "name": "@yeni-atlassian/web-shared",
   "version": "0.0.0",
-  "description": "Shared TypeScript helpers for web UIs (deeplink builders, etc.). Part of the multi-service scaffold.",
+  "description": "Shared TypeScript helpers for web UIs, including deeplink builders.",
   "private": true,
   "type": "module",
   "main": "./dist/index.js",

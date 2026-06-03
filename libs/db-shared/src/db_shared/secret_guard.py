@@ -1,7 +1,7 @@
 """Dev-secret boot guard (Y1).
 
-GEREKSINIM_ANALIZI.md Y1 fix: the base ``infra/docker-compose.yml`` ships
-dev-only credentials (``ai_dev_only``, ``dev-token-not-for-prod``,
+The base ``infra/docker-compose.yml`` ships dev-only credentials
+(``ai_dev_only``, ``dev-token-not-for-prod``,
 ``miniosecret_dev_only``, ``AUTH_PROVIDER=local``). The production
 override (``docker-compose.prod.yml``) sets ``REJECT_DEV_SECRETS=true``
 so any service that boots with this guard refuses to start when one of

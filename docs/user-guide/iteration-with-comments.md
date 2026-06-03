@@ -32,8 +32,7 @@ ve mevcut PR/branch'e yeni commit atar.
 
 ## Kaç Kez `[fix]` Yapabilirim?
 
-Default **iterasyon limiti 5** (departman config'inde değiştirilebilir,
-[detay: §16.6.20](../../MIMARI.md)). Limite ulaşırsan bot şunu der:
+Default **iterasyon limiti 5** (departman config'inde değiştirilebilir). Limite ulaşırsan bot şunu der:
 
 > 🤖 Bu task için 5 iterasyon tamamlandı. Daha fazla düzeltme istiyorsan **yeni bir
 > task aç** — orada baştan başlayabilirim.
@@ -46,7 +45,7 @@ Bot her iterasyonda **aynı branch**'e yeni commit atar (`ai/PAY-4211`). PR
 güncellenmiş olarak kalır. Eğer:
 
 - **PR merge edildi** ve sen yeni comment yazıyorsan → bot yeni branch açar
-  (`ai/PAY-4211-iter-2`), yeni PR açar ([detay: §16.6.3](../../MIMARI.md)).
+  (`ai/PAY-4211-iter-2`), yeni PR açar.
 - **PR kapatıldı (decline)** → bot yeni iterasyona başlamaz, *"PR kapatılmış, ne
   yapacağımı söyle"* der.
 
@@ -94,7 +93,7 @@ Bot bazen `[fix]`'i anlamayıp soru sorabilir. Bu durumda:
 > RequestException, ConnectionError, Timeout? Hangisi?
 
 Cevap ver. Bot 7 güne kadar bekler. Yanlış cevap verirsen `needs_info loop cap`
-devreye girer ([detay: §16.6.50](../../MIMARI.md)).
+devreye girer.
 
 ## Onay Gerektiren Durumlar
 
@@ -107,7 +106,7 @@ Tahmini maliyet limit'in %70'ine ulaşırsa:
 > 🤖 Tahmini maliyet $0.85 — limitin %70'i üstünde ($1.00). Devam edeyim mi?
 > (`onaylıyorum` veya `iptal`)
 
-### Kritik dosya onayı (S8)
+### Kritik dosya onayı
 
 Bot infrastructure/Dockerfile/migrations gibi kritik dosyalara dokunacağında:
 
@@ -118,8 +117,7 @@ Bot infrastructure/Dockerfile/migrations gibi kritik dosyalara dokunacağında:
 
 ### Confluence küçülme onayı
 
-Var olan Confluence sayfasını %30+ küçültecekse onay ister
-([detay: §16.6.61](../../MIMARI.md)).
+Var olan Confluence sayfasını %30+ küçültecekse onay ister.
 
 ## İptal
 
@@ -150,8 +148,7 @@ Bot eski branch'i değil yeni branch açar (eski merge edilmediği için temiz b
 ## Auto `[fix]` (CI Fail Sonrası)
 
 Eğer departmanında `auto_fix_on_ci_fail` açıksa, PR CI'sı fail olduğunda bot
-**otomatik** `[fix]` çalıştırır — sen comment yazmadan
-([detay: §16.6.47](../../MIMARI.md)).
+**otomatik** `[fix]` çalıştırır — sen comment yazmadan.
 
 ---
 

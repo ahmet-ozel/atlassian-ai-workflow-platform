@@ -1,26 +1,18 @@
-"""Unit tests for ``src.routers.capabilities`` (platform-gap-fill task 9.1).
-
-**Validates: Requirements 10.1, 10.2, 10.3, 10.4, 10.5**
-
+"""Unit tests for ``src.routers.capabilities``.
 The router exposes two endpoints:
-
-* ``GET  /api/v1/departments/capabilities`` — read the cached matrix.
+* ``GET /api/v1/departments/capabilities`` — read the cached matrix.
 * ``POST /api/v1/departments/{dept_id}/probe/{service}`` — re-run one probe.
-
 These tests inject:
-
 * A :class:`_FakeProber` that records every call and lets each test
   script the response per ``(dept_id, service)`` pair.
 * The bundled :class:`InMemoryCapabilityProbeStore` for the cache.
 * An override on :func:`require_admin` so the OIDC layer can be
   bypassed while still exercising the FastAPI request pipeline
   through :class:`fastapi.testclient.TestClient`.
-
 The tests do **not** depend on the asyncpg-backed cache adapter from
-task 9.3 — the router is wired against the
+— the router is wired against the
 :class:`SupportsCapabilityProbeStore` protocol so the in-memory variant
-is enough to verify routing / serialisation.
-"""
+is enough to verify routing / serialisation."""
 
 from __future__ import annotations
 
@@ -168,14 +160,12 @@ def test_matrix_returns_all_departments_with_six_services() -> None:
 
 def test_matrix_marks_unconfigured_services_as_not_configured() -> None:
     """When the dept config doesn't declare a service, the cell is
-    ``not_configured`` — even without a cached row (Requirement 10.5).
-
+    ``not_configured`` — even without a cached row .
     The bundled ``config/departments.json`` declares a non-empty
     ``credential_ref`` under ``bot.{jira,bitbucket,confluence}`` for
     every dept and an ``llm_overrides`` block for ``payment`` only.
     HR and Legal have no LLM override so their ``llm`` cell must be
-    ``not_configured`` straight out of the gate.
-    """
+    ``not_configured`` straight out of the gate."""
 
     app, _prober, _cache = _build_app()
     client = TestClient(app)
@@ -226,7 +216,7 @@ def test_matrix_returns_cached_results_when_available() -> None:
 
 
 def test_matrix_endpoint_does_not_call_prober() -> None:
-    """The GET endpoint reads cache only — no fresh probes (Requirement 10.1)."""
+    """The GET endpoint reads cache only — no fresh probes ."""
 
     app, prober, _cache = _build_app()
     client = TestClient(app)
@@ -268,7 +258,7 @@ def test_single_probe_returns_fresh_result_and_caches_it() -> None:
 
 def test_single_probe_for_unconfigured_service_skips_prober() -> None:
     """When dept config doesn't declare the service, the prober is
-    NOT called and the response is ``not_configured`` (Requirement 10.5)."""
+    NOT called and the response is ``not_configured`` ."""
 
     app, prober, _cache = _build_app()
     client = TestClient(app)

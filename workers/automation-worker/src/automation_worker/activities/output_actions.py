@@ -10,8 +10,6 @@ next action. After all actions complete, any failures are reported
 back as a summary Jira comment on the issue.
 
 Design reference: design.md §3 (Output Action Executor)
-Validates Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8,
-                        3.9, 3.10, 3.11
 """
 
 from __future__ import annotations
@@ -58,11 +56,11 @@ ACTION_TIMEOUT_SECONDS: float = 30.0
 class OutputAction:
     """A single output action to be executed.
 
-    Attributes:
-        type: The action type (from ActionType enum).
-        params: Action-specific parameters dictionary.
-        index: Execution order index (0-based).
-    """
+ Attributes:
+ type: The action type (from ActionType enum).
+ params: Action-specific parameters dictionary.
+ index: Execution order index (0-based).
+ """
 
     type: ActionType
     params: dict[str, Any]
@@ -73,13 +71,13 @@ class OutputAction:
 class ActionResult:
     """Result of executing a single output action.
 
-    Attributes:
-        action_type: The type of action that was executed.
-        index: The action's position in the execution batch.
-        status: Outcome — success, failed, skipped, or timeout.
-        error: Error message if the action failed (None on success).
-        timestamp: When the action completed execution.
-    """
+ Attributes:
+ action_type: The type of action that was executed.
+ index: The action's position in the execution batch.
+ status: Outcome — success, failed, skipped, or timeout.
+ error: Error message if the action failed (None on success).
+ timestamp: When the action completed execution.
+ """
 
     action_type: ActionType
     index: int
@@ -92,12 +90,12 @@ class ActionResult:
 class ExecutionBatchInput:
     """Input for the execute_output_actions activity.
 
-    Attributes:
-        actions: List of output actions to execute (max 20).
-        issue_key: The Jira issue key for context and error reporting.
-        dept_id: Department identifier for credential resolution.
-        workflow_id: Parent workflow identifier for tracing.
-    """
+ Attributes:
+ actions: List of output actions to execute (max 20).
+ issue_key: The Jira issue key for context and error reporting.
+ dept_id: Department identifier for credential resolution.
+ workflow_id: Parent workflow identifier for tracing.
+ """
 
     actions: list[OutputAction | dict[str, Any]]
     issue_key: str
@@ -109,11 +107,11 @@ class ExecutionBatchInput:
 class ExecutionBatchResult:
     """Result of executing a batch of output actions.
 
-    Attributes:
-        results: Individual result for each action in execution order.
-        all_succeeded: True if every action completed successfully.
-        failed_actions: Subset of results where status != "success".
-    """
+ Attributes:
+ results: Individual result for each action in execution order.
+ all_succeeded: True if every action completed successfully.
+ failed_actions: Subset of results where status != "success".
+ """
 
     results: list[ActionResult]
     all_succeeded: bool
@@ -129,10 +127,10 @@ class ExecutionBatchResult:
 class MCPCallerProtocol(Protocol):
     """Protocol for making authenticated MCP Server calls.
 
-    Production wires this to an HTTP client that calls the MCP Server
-    endpoints. Tests inject a fake that records calls and returns
-    predetermined responses.
-    """
+ Production wires this to an HTTP client that calls the MCP Server
+ endpoints. Tests inject a fake that records calls and returns
+ predetermined responses.
+ """
 
     async def call_tool(
         self,
@@ -144,19 +142,19 @@ class MCPCallerProtocol(Protocol):
     ) -> dict[str, Any]:
         """Call an MCP Server tool with the given parameters.
 
-        Args:
-            tool_name: The MCP tool name to invoke.
-            params: Tool-specific parameters.
-            dept_id: Department ID for credential resolution.
-            timeout: Maximum seconds to wait for a response.
+ Args:
+ tool_name: The MCP tool name to invoke.
+ params: Tool-specific parameters.
+ dept_id: Department ID for credential resolution.
+ timeout: Maximum seconds to wait for a response.
 
-        Returns:
-            The tool's response payload.
+ Returns:
+ The tool's response payload.
 
-        Raises:
-            asyncio.TimeoutError: If the call exceeds timeout.
-            Exception: On any other failure.
-        """
+ Raises:
+ asyncio.TimeoutError: If the call exceeds timeout.
+ Exception: On any other failure.
+ """
         ...
 
 
@@ -166,10 +164,10 @@ _mcp_caller: MCPCallerProtocol | None = None
 def set_mcp_caller(caller: MCPCallerProtocol) -> None:
     """Register the MCP caller used by the output actions activity.
 
-    Called once at worker boot after the HTTP client and credential
-    resolver are constructed. Unit tests call this with an in-memory
-    fake before invoking the activity directly.
-    """
+ Called once at worker boot after the HTTP client and credential
+ resolver are constructed. Unit tests call this with an in-memory
+ fake before invoking the activity directly.
+ """
     global _mcp_caller  # noqa: PLW0603
     _mcp_caller = caller
 
@@ -179,7 +177,7 @@ def get_mcp_caller() -> MCPCallerProtocol:
     if _mcp_caller is None:
         raise RuntimeError(
             "output_actions activity: MCP caller not initialised; "
-            "call set_mcp_caller() during worker startup."
+            "call set_mcp_caller during worker startup."
         )
     return _mcp_caller
 
@@ -196,8 +194,7 @@ async def _handle_jira_comment(
 ) -> dict[str, Any]:
     """Execute a jira_comment action via MCP Server.
 
-    Validates: Requirement 3.2
-    """
+ """
     return await caller.call_tool(
         "jira_add_comment",
         _drop_control_params(params, keep_issue_key=True),
@@ -213,25 +210,24 @@ async def _handle_jira_attachment(
 ) -> dict[str, Any]:
     """Execute a jira_attachment action via MCP Server.
 
-    Two upload modes are supported:
+ Two upload modes are supported:
 
-    * **MinIO pipeline** — when ``params`` carries both ``bucket`` and
-      ``key`` the action is dispatched to the
-      ``upload_artifact_to_jira`` activity (registered on the
-      ``agent-runner-tq`` queue). That activity downloads the artifact
-      from MinIO, stages it to a tempfile, and forwards the upload
-      through the ``jira_add_attachment`` MCP tool. This is the
-      preferred path for agent-runner-produced artifacts (markdown
-      reports, generated PDFs, …).
-    * **Local file fallback** — when ``bucket``/``key`` are absent the
-      action keeps the legacy contract and is forwarded directly to the
-      ``jira_add_attachment`` MCP tool with whatever ``file_path`` the
-      caller provided. This preserves backward compatibility with
-      existing description-parser payloads that reference a local
-      file path.
+ * **MinIO pipeline** — when ``params`` carries both ``bucket`` and
+ ``key`` the action is dispatched to the
+ ``upload_artifact_to_jira`` activity (registered on the
+ ``agent-runner-tq`` queue). That activity downloads the artifact
+ from MinIO, stages it to a tempfile, and forwards the upload
+ through the ``jira_add_attachment`` MCP tool. This is the
+ preferred path for agent-runner-produced artifacts (markdown
+ reports, generated PDFs, …).
+ * **Local file fallback** — when ``bucket``/``key`` are absent the
+ action keeps the legacy contract and is forwarded directly to the
+ ``jira_add_attachment`` MCP tool with whatever ``file_path`` the
+ caller provided. This preserves backward compatibility with
+ existing description-parser payloads that reference a local
+ file path.
 
-    Validates: Requirement 3.3
-    """
+ """
 
     normalized = _drop_control_params(params, keep_issue_key=True)
     if "bucket" in normalized and "key" in normalized:
@@ -263,9 +259,8 @@ async def _handle_bitbucket_pr(
 ) -> dict[str, Any]:
     """Execute a bitbucket_pr action via MCP Server.
 
-    Creates a draft PR from source to target branch.
-    Validates: Requirement 3.4
-    """
+ Creates a draft PR from source to target branch.
+ """
     normalized = _drop_control_params(params, keep_issue_key=False)
     if "from_branch" not in normalized and "source" in normalized:
         normalized["from_branch"] = normalized["source"]
@@ -286,11 +281,11 @@ async def _handle_bitbucket_commit(
 ) -> dict[str, Any]:
     """Execute a single-file Bitbucket commit via MCP Server.
 
-    The mounted Bitbucket MCP exposes file writes as
-    ``bitbucket_put_file_content``. This output action provides a
-    friendlier task-level alias (``bitbucket_commit``) for publishing
-    generated reports or small code/result files to a branch.
-    """
+ The mounted Bitbucket MCP exposes file writes as
+ ``bitbucket_put_file_content``. This output action provides a
+ friendlier task-level alias (``bitbucket_commit``) for publishing
+ generated reports or small code/result files to a branch.
+ """
 
     normalized = _drop_control_params(params, keep_issue_key=False)
     if "file_path" not in normalized and "path" in normalized:
@@ -314,10 +309,9 @@ async def _handle_confluence_page(
 ) -> dict[str, Any]:
     """Execute a confluence_page action via MCP Server.
 
-    If page_id is present in params, updates the existing page.
-    If page_id is absent, creates a new page in the specified space.
-    Validates: Requirement 3.5
-    """
+ If page_id is present in params, updates the existing page.
+ If page_id is absent, creates a new page in the specified space.
+ """
     normalized = _drop_control_params(params, keep_issue_key=False)
     if normalized.get("page_id"):
         tool_name = "confluence_update_page"
@@ -338,11 +332,10 @@ async def _handle_jira_transition(
 ) -> dict[str, Any]:
     """Execute a jira_transition action via MCP Server.
 
-    Uses the department's status_mapping configuration to resolve
-    the target Jira status. If no mapping is found, the action is
-    skipped.
-    Validates: Requirements 3.6, 3.11
-    """
+ Uses the department's status_mapping configuration to resolve
+ the target Jira status. If no mapping is found, the action is
+ skipped.
+ """
     return await caller.call_tool(
         "jira_transition_issue",
         _drop_control_params(params, keep_issue_key=True),
@@ -381,7 +374,7 @@ def _drop_control_params(
 
 
 def _coerce_action_type(raw: Any) -> ActionType | None:
-    """Decode Temporal/JSON variants into an :class:`ActionType`."""
+    """Decode Temporal/JSON variants into an:class:`ActionType`."""
 
     if isinstance(raw, ActionType):
         return raw
@@ -452,9 +445,8 @@ async def _execute_single_action(
 ) -> ActionResult:
     """Execute a single output action with timeout handling.
 
-    Returns an ActionResult regardless of outcome — never raises.
-    Validates: Requirements 3.7, 3.8, 3.9
-    """
+ Returns an ActionResult regardless of outcome — never raises.
+ """
     handler = _ACTION_HANDLERS.get(action.type)
     if handler is None:
         activity.logger.warning(
@@ -513,8 +505,7 @@ async def _execute_single_action(
 def _build_failure_comment(failed_actions: list[ActionResult]) -> str:
     """Build a Jira comment summarizing failed actions.
 
-    Validates: Requirement 3.7
-    """
+ """
     lines = ["⚠️ Aşağıdaki output action'lar başarısız oldu:\n"]
     for result in failed_actions:
         status_label = "timeout" if result.status == "timeout" else "hata"
@@ -529,17 +520,16 @@ def _build_failure_comment(failed_actions: list[ActionResult]) -> str:
 async def execute_output_actions(input: ExecutionBatchInput) -> ExecutionBatchResult:
     """Execute a batch of output actions sequentially.
 
-    Actions are executed in strict index order (0, 1, 2, ...). Each
-    action has a 30-second timeout. Failures are logged and execution
-    continues to the next action. After all actions complete, if any
-    failed, a summary comment is posted to the Jira issue.
+ Actions are executed in strict index order (0, 1, 2,...). Each
+ action has a 30-second timeout. Failures are logged and execution
+ continues to the next action. After all actions complete, if any
+ failed, a summary comment is posted to the Jira issue.
 
-    If the actions list is empty or None, returns immediately with a
-    successful result.
+ If the actions list is empty or None, returns immediately with a
+ successful result.
 
-    Validates: Requirements 3.1, 3.7, 3.8, 3.9, 3.10
-    """
-    # Handle empty/null actions list — Requirement 3.10
+ """
+    # Handle empty/null actions list — 
     if not input.actions:
         activity.logger.info(
             "output_actions: empty action list for workflow %s, "
@@ -553,7 +543,7 @@ async def execute_output_actions(input: ExecutionBatchInput) -> ExecutionBatchRe
             failed_actions=[],
         )
 
-    # Enforce max batch size — Requirement 3.1
+    # Enforce max batch size — 
     normalised_actions: list[OutputAction] = []
     for fallback_index, raw_action in enumerate(input.actions):
         action = _normalise_action(raw_action, fallback_index)
@@ -578,12 +568,12 @@ async def execute_output_actions(input: ExecutionBatchInput) -> ExecutionBatchRe
 
     caller = get_mcp_caller()
 
-    # Sort by index to ensure strict sequential order — Requirement 3.1
+    # Sort by index to ensure strict sequential order — 
     sorted_actions = sorted(actions_to_execute, key=lambda a: a.index)
 
     results: list[ActionResult] = []
 
-    # Execute actions sequentially — Requirement 3.1
+    # Execute actions sequentially — 
     for action in sorted_actions:
         activity.logger.info(
             "output_actions: executing action %s at index %d "
@@ -600,7 +590,7 @@ async def execute_output_actions(input: ExecutionBatchInput) -> ExecutionBatchRe
     failed_actions = [r for r in results if r.status != "success"]
     all_succeeded = len(failed_actions) == 0
 
-    # Post failure summary to Jira if any actions failed — Requirement 3.7
+    # Post failure summary to Jira if any actions failed — 
     if failed_actions:
         failure_comment = _build_failure_comment(failed_actions)
         try:

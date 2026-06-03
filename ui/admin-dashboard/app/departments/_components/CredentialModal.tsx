@@ -2,7 +2,7 @@
 
 /**
  * CredentialModal — 3-tab credential management modal for a single
- * department (uyumluluk task 4.1, R1.8 / R1.9 / Q1).
+ * department.
  *
  * Tabs:
  *   * "Jira Credential"
@@ -38,7 +38,7 @@
  *     }
  *
  * The modal owns its own GET on mount + after every save / remove.
- * The parent route only owns the open/close state (R1.9 — modal
+ * The parent route only owns the open/close state; modal
  * closes on save success; the dept catalog listens to ``onClosed``
  * to refetch its row for that dept).
  */
@@ -208,7 +208,7 @@ export default function CredentialModal({
 
   const handleSaved = useCallback(() => {
     // Refresh dept detail in-place so the other tabs see the new
-    // credential_ref / account_id, then close the modal per R1.9.
+    // credential_ref / account_id, then close the modal.
     void fetchDetail();
     onClose();
   }, [fetchDetail, onClose]);

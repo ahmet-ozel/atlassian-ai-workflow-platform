@@ -1,8 +1,6 @@
 """Prompt template variable contract — :class:`PromptVars` value object.
 
-The schema is taken verbatim from
-``.kiro/specs/platform-mimari-ops/design.md`` §`Components and Interfaces`
-(``ChatHandler.stream`` pseudocode) and pinned by Requirement 2.7:
+The schema defines the prompt variables used by chat rendering:
 
     THE Prompt_Loader SHALL prompt template variable injection'ı şu
     zorunlu alanlarla yapar: ``{department_id}``, ``{department_repos}``,
@@ -33,7 +31,7 @@ Rationale
   ``departments.json`` schema field; a typo at the call site is
   caught at type-check time rather than only when the LLM produces
   an unexpected reply.
-* No defaults — every placeholder declared by Requirement 2.7 is
+* No defaults — every placeholder is
   mandatory. Forcing callers to populate each field explicitly is
   the cheapest way to keep the rendered system prompt deterministic
   across departments.
@@ -65,8 +63,8 @@ __all__ = [
 PromptLanguage = Literal["tr", "en"]
 
 
-#: The exact set of template variables Requirement 2.7 declares as
-#: mandatory. Used by :func:`inject_template_vars` (and, in task 2.3,
+#: The exact set of mandatory template variables. Used by
+#: :func:`inject_template_vars` (and
 #: :func:`validate_template_format`) to reject prompt bodies that
 #: reference an unknown placeholder. Kept as a ``frozenset`` so it
 #: cannot drift at runtime.
@@ -91,9 +89,9 @@ class PromptVars:
     """Frozen value object carrying the five mandatory template vars.
 
     A :class:`PromptVars` instance is the only thing the rendering
-    layer accepts — :class:`PromptLoader.render` (task 2.1) calls
+    layer accepts — :class:`PromptLoader.render` calls
     :func:`inject_template_vars` with this dataclass, and
-    :func:`validate_template_format` (task 2.3) cross-checks every
+    :func:`validate_template_format` cross-checks every
     placeholder discovered in a prompt body against
     :data:`TEMPLATE_VARIABLE_NAMES` (which is derived from the field
     names declared here). The contract is intentionally narrow so a
@@ -121,7 +119,7 @@ class PromptVars:
             user-facing prompts (eg. ``"bot.payment"``). Used by the
             assistant chat system prompt to refer to itself in the
             third person when guiding the user toward Task Creator
-            (Requirement 1.4).
+            .
     """
 
     department_id: str
@@ -142,26 +140,25 @@ def inject_template_vars(body: str, vars: PromptVars) -> str:
     Thin wrapper around ``body.format(**dataclasses.asdict(vars))``
     that exists for two reasons:
 
-    1. **Single render entry-point.** Task 2.1's :class:`PromptLoader`
-       calls this helper instead of ``str.format`` directly, so the
-       upcoming validator (task 2.3) and any future template engine
+    1. **Single render entry-point.** :class:`PromptLoader` calls
+       this helper instead of ``str.format`` directly, so the
+       validator and any future template engine
        swap only have to touch one site.
     2. **Audit clarity.** Callers always pass a typed
        :class:`PromptVars` rather than an arbitrary mapping, which
        keeps the payload that lands on the
        ``audit_events.payload.prompt_vars`` field shaped exactly the
-       way design.md describes.
+       expected way.
 
     The helper does **not** raise a custom error type yet — that is
-    task 2.3's job (``PromptTemplateError`` lives in
-    ``prompts.validate``). Until then, a missing placeholder
+    ``PromptTemplateError`` lives in ``prompts.validate``. Until then, a missing placeholder
     propagates the underlying ``KeyError`` from ``str.format``, which
-    is the behaviour task 2.1's loader expects to catch and convert.
+    is the behaviour the loader expects to catch and convert.
 
     Args:
         body: Raw prompt body — typically the contents of a
             ``prompts/<name>.md`` file. Curly-brace literals must be
-            escaped as ``{{`` / ``}}``; task 2.3's
+            escaped as ``{{`` / ``}}``;
             ``validate_template_format`` enforces this at boot.
         vars: The fully-populated :class:`PromptVars` value object.
 
@@ -171,9 +168,9 @@ def inject_template_vars(body: str, vars: PromptVars) -> str:
 
     Raises:
         KeyError: If ``body`` references a placeholder name that is
-            not a field on :class:`PromptVars`. The caller (task 2.1)
+            not a field on :class:`PromptVars`. The caller
             converts this to ``PromptTemplateError`` so the CI gate
-            (task 2.6) fails fast.
+            fails fast.
     """
 
     return body.format(**asdict(vars))
@@ -193,9 +190,9 @@ class _PromptEntry:
 
     * ``body`` — the raw markdown read from disk.
     * ``mtime`` — last-modification timestamp used by the 30-second
-      hot-reload poll (Requirement 2.5).
+      hot-reload poll.
     * ``git_hash`` — short commit hash that produced the body, written
-      to the audit row as ``prompt_version`` (Requirement 2.6). Falls
+      to the audit row as ``prompt_version``. Falls
       back to ``"unknown"`` when ``git`` is unavailable.
 
     The leading underscore marks it as package-private; callers

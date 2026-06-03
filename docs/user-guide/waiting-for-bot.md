@@ -28,12 +28,12 @@ sonunda───  🤖 "✅ Tamamlandı." veya
 2. **Issue'nun durumunu kontrol et** — Bot sadece "To Do", "Open", "In Progress"
    durumundaki issue'ları alır. "Done", "Closed", "Resolved" ise webhook'u görmezden gelir.
 3. **Departman eşleşmesi** — Issue'nun project key'i bir departmana atanmış mı? Atanmamışsa
-   bot sessiz fail eder ([detay: §16.6.9](../../MIMARI.md)). AI Admin'e haber ver.
+   bot sessiz fail eder. AI Admin'e haber ver.
 4. **30 saniye bekle** — webhook gecikmesi olabilir. Hâlâ yoksa AI Admin Slack kanalı.
 
 > **Not:** Atlassian webhook'larında nadir kayıp olabiliyor. Sistem `automation-service`
 > her 5 dakikada bir "atanmış ama webhook gelmemiş" task'ları tarar ve eksik webhook'ları
-> retroaktif başlatır ([detay: §16.6.19](../../MIMARI.md)).
+> retroaktif başlatır.
 
 ## Süre Tahmini
 
@@ -49,7 +49,7 @@ sonunda───  🤖 "✅ Tamamlandı." veya
 | Epic (multi_step, N subtask) | N × subtask süresi |
 
 > Bot tahmini gerçekle eşleşmiyorsa AI Admin haftalık dashboard'da görür ve prompt'u
-> kalibre eder ([detay: §16.7.16](../../MIMARI.md)).
+> kalibre eder.
 
 ## "Çok Uzun Sürüyor" Hissi
 
@@ -58,8 +58,7 @@ Bot 30+ dakika tahmin etti ama sen 10 dakika bekleyebilecek durumdasın:
 - **İptal et** — Jira'da `[cancel]` yazarak comment ekle. Bot temiz şekilde durur,
   branch'i siler, commit etmez.
 - **Workflow'u izle** — Streamlit "Workflows" sayfası → bot şu an hangi step'te?
-- **Maliyet endişesi** — bot tahmini maliyetin %70'ine ulaşırsa zaten sana onay sorar
-  ([detay: §16.6.8](../../MIMARI.md)).
+- **Maliyet endişesi** — bot tahmini maliyetin %70'ine ulaşırsa zaten sana onay sorar.
 
 ## Bot Soru Sorduğunda
 
@@ -67,7 +66,7 @@ Bot bazen `🤖 Şu bilgiye ihtiyacım var: ...` der. Bu durumda:
 
 1. **Comment ile cevap ver** (Jira'ya). Bot 7 güne kadar bekler.
 2. Cevap bot'u tatmin etmezse tekrar sorar (max 5 kez — sonra `[fix]` döngüsünü
-   sonlandırır, [detay: §16.6.50](../../MIMARI.md)).
+   sonlandırır).
 3. Cevap vermek istemiyorsan: `[cancel]` yazarak iptal et.
 
 > Bot'un sorusu net değilse: cevap olarak *"daha açık sor"* yazabilirsin. LLM yeniden
@@ -83,7 +82,7 @@ sözleşme imzalama gibi. Bot bunları reddeder ve alternatif önerir. Detay:
 
 Bir task'ı bot'a atadıktan sonra başka task'lar da açabilirsin — bot paralel çalışır.
 Ancak departmanına concurrency limit'i tanımlıdır (default 5 paralel iş —
-[detay: §16.6.15](../../MIMARI.md)). Limit aşılırsa bot kuyruğa alır, biri bitince
+departman config'inde değiştirilebilir). Limit aşılırsa bot kuyruğa alır, biri bitince
 sıradaki başlar.
 
 ## Bot Tamamlayınca

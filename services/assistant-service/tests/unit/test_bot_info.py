@@ -1,4 +1,4 @@
-"""Unit tests for the bot-info endpoint (R7.6, Task 7.1).
+"""Unit tests for the bot-info endpoint.
 
 Tests the ``GET /api/dept/{id}/bot-info`` endpoint with a fake database
 pool to verify:

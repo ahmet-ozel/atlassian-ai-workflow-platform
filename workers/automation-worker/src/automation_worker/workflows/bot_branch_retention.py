@@ -1,27 +1,24 @@
 """``BotBranchRetention`` — daily Temporal cron for ``ai/*`` branch cleanup.
 
-Validates Requirements: **R10.2** (workflows spec) — *"THE Platform SHALL
-``bot_branch_retention`` adında bir Temporal cron workflow'u sağlar; bu
-workflow her gün 30 günden eski ``ai/{issue_key}`` branch'lerini tarar,
-ilgili Jira issue'su ``Done`` veya ``Closed`` durumundaysa branch'i
-siler (MIMARI §16.16 N5)."*
+The workflow scans ``ai/{issue_key}`` branches older than 30 days and
+deletes them when the linked Jira issue is ``Done`` or ``Closed``.
 
 Lifecycle (one cron tick)::
 
-    1. ``list_bot_departments()``                       → tuple of dept ids
-    2. for each dept:
-         a. ``list_ai_branches(dept_id)``               → tuple of BotBranch
-         b. for each branch (filtered by age):
-              i.  ``get_jira_issue_status(dept_id, key)`` → str
-              ii. if ``should_delete_branch(age, status)`` is True:
-                    ``delete_ai_branch(dept_id, branch)``  (idempotent)
-                    ``post_branch_retention_jira_comment(dept_id, key, branch)``
-    3. return ``BotBranchRetentionReport(scanned, deleted, skipped, …)``
+ 1. ``list_bot_departments`` → tuple of dept ids
+ 2. for each dept:
+ a. ``list_ai_branches(dept_id)`` → tuple of BotBranch
+ b. for each branch (filtered by age):
+ i. ``get_jira_issue_status(dept_id, key)`` → str
+ ii. if ``should_delete_branch(age, status)`` is True:
+ ``delete_ai_branch(dept_id, branch)`` (idempotent)
+ ``post_branch_retention_jira_comment(dept_id, key, branch)``
+ 3. return ``BotBranchRetentionReport(scanned, deleted, skipped, …)``
 
 The workflow body is **pure orchestration** — every side effect goes
 through a Temporal activity referenced by string name so the workflow
 sandbox never imports network-side machinery (asyncpg / httpx / atlassian
-clients).  The :func:`should_delete_branch` predicate is a pure function
+clients). The:func:`should_delete_branch` predicate is a pure function
 (no time / random / I/O) which makes it trivially unit-testable as a
 truth table and replay-safe inside the workflow.
 
@@ -30,38 +27,37 @@ Cron schedule registration
 
 The workflow runs daily at **02:30 UTC**, half an hour before
 ``audit-prune-cron`` (03:00 UTC) so the two cron jobs do not contend
-for the worker's activity slots.  Constants
-:data:`BOT_BRANCH_RETENTION_WORKFLOW_ID`, :data:`AUTOMATION_TASK_QUEUE`
-and :data:`BOT_BRANCH_RETENTION_CRON_SCHEDULE` expose the exact strings
+for the worker's activity slots. Constants:data:`BOT_BRANCH_RETENTION_WORKFLOW_ID`,:data:`AUTOMATION_TASK_QUEUE`
+and:data:`BOT_BRANCH_RETENTION_CRON_SCHEDULE` expose the exact strings
 the boot script needs (mirroring the ``audit_prune`` module's pattern).
 
-Determinism contract (Spec 2 Property 2 / Property 11 parity)
+Determinism contract
 -------------------------------------------------------------
 
 Inside the workflow body we use **only** Temporal-deterministic
 primitives:
 
-* ``workflow.now()`` for the wallclock cutoff (never ``datetime.now``,
-  ``time.time``, ``datetime.utcnow``).
+* ``workflow.now`` for the wallclock cutoff (never ``datetime.now``,
+ ``time.time``, ``datetime.utcnow``).
 * ``workflow.execute_activity(...)`` for every side-effecting step
-  (no direct httpx / asyncpg calls).
-* No ``random.*``, no ``uuid.uuid4()``, no ``os.environ`` reads.
+ (no direct httpx / asyncpg calls).
+* No ``random.*``, no ``uuid.uuid4``, no ``os.environ`` reads.
 * Activities are referenced **by string name** so the workflow module
-  loads cleanly inside the Temporal sandbox even before the activity
-  modules are wired (Spec 2 task 2.5+).
+ loads cleanly inside the Temporal sandbox even before the activity
+ modules are wired.
 
-Idempotent run semantics (Property 10 / Property 8 parity)
+Idempotent run semantics
 ----------------------------------------------------------
 
 Running the workflow twice on the same day is a *safe* no-op:
 
-* :func:`should_delete_branch` is a pure predicate — same inputs
-  always yield the same decision.
+*:func:`should_delete_branch` is a pure predicate — same inputs
+ always yield the same decision.
 * ``delete_ai_branch`` is idempotent at the activity layer: a second
-  attempt against an already-deleted branch returns success without
-  side effect (mirroring Bitbucket's ``DELETE`` semantics).
+ attempt against an already-deleted branch returns success without
+ side effect (mirroring Bitbucket's ``DELETE`` semantics).
 * The Jira "branch retention" comment activity de-dupes on the
-  branch name so the same retention notice is not posted twice.
+ branch name so the same retention notice is not posted twice.
 
 Therefore the workflow body itself does **not** carry a "did we run
 today already?" guard — idempotence is delegated to the activities.
@@ -81,33 +77,32 @@ from temporalio.common import RetryPolicy
 # Public constants (re-exported via ``__init__``)
 # ---------------------------------------------------------------------------
 
-#: Temporal task queue on which ``automation-worker`` polls.  Re-exported
+#: Temporal task queue on which ``automation-worker`` polls. Re-exported
 #: from this module so a future split between the gateway workflow and
 #: the cron workflow does not require boot-script churn.
 AUTOMATION_TASK_QUEUE: Final[str] = "automation-tq"
 
-#: Stable workflow id used when scheduling the daily cron.  Reusing the
+#: Stable workflow id used when scheduling the daily cron. Reusing the
 #: same id across worker restarts keeps a single in-flight cron lineage
-#: rather than one per process restart.
+#: rather than one process restart.
 BOT_BRANCH_RETENTION_WORKFLOW_ID: Final[str] = "bot-branch-retention-cron"
 
-#: Cron schedule expression — daily at **02:30 UTC**.  Picked half an
+#: Cron schedule expression — daily at **02:30 UTC**. Picked half an
 #: hour before ``audit-prune-cron`` (03:00 UTC) so the two daily jobs
-#: do not contend for the worker's activity slots.  5-field POSIX cron
+#: do not contend for the worker's activity slots. 5-field POSIX cron
 #: syntax (minute, hour, day-of-month, month, day-of-week).
 BOT_BRANCH_RETENTION_CRON_SCHEDULE: Final[str] = "30 2 * * *"
 
 #: Hard retention cutoff for ``ai/*`` branches — branches older than
 #: this AND linked to a closed Jira issue are eligible for deletion
-#: (R10.2 / MIMARI §16.16 N5).
+#: deletion.
 BRANCH_RETENTION_DAYS: Final[int] = 30
 
 #: Closed Jira statuses for which the bot is allowed to clean up the
-#: associated ``ai/*`` branch.  Both upper- and mixed-case are accepted
+#: associated ``ai/*`` branch. Both upper- and mixed-case are accepted
 #: by the predicate via case-insensitive comparison so JIRA hosts that
 #: localise the workflow status names (eg. "DONE", "Closed") still
-#: match.  The set is defined here in canonical (capitalised) form to
-#: mirror the spec language exactly.
+#: match. The set is defined here in canonical (capitalised) form.
 CLOSED_JIRA_STATUSES: Final[frozenset[str]] = frozenset({"Done", "Closed"})
 
 
@@ -116,21 +111,21 @@ CLOSED_JIRA_STATUSES: Final[frozenset[str]] = frozenset({"Done", "Closed"})
 # ---------------------------------------------------------------------------
 
 #: List the bot-managed department ids (one cron tick fans out across
-#: all departments). Returns ``tuple[str, ...]``.
+#: all departments). Returns ``tuple[str,...]``.
 _ACT_LIST_BOT_DEPARTMENTS: Final[str] = "list_bot_departments"
 
-#: List ``ai/*`` branches for one department. Returns ``tuple[BotBranch, ...]``.
+#: List ``ai/*`` branches for one department. Returns ``tuple[BotBranch,...]``.
 _ACT_LIST_AI_BRANCHES: Final[str] = "list_ai_branches"
 
 #: Fetch the Jira issue status for one ``(dept_id, issue_key)`` pair.
 _ACT_GET_JIRA_ISSUE_STATUS: Final[str] = "get_jira_issue_status"
 
-#: Delete one ``ai/*`` branch on Bitbucket.  Idempotent — repeated
+#: Delete one ``ai/*`` branch on Bitbucket. Idempotent — repeated
 #: calls against an already-deleted branch return success.
 _ACT_DELETE_AI_BRANCH: Final[str] = "delete_ai_branch"
 
 #: Post the "branch retained / branch removed" notification comment on
-#: the linked Jira issue.  Idempotent: the activity de-dupes on
+#: the linked Jira issue. Idempotent: the activity de-dupes on
 #: ``(issue_key, branch)`` so a re-run does not double-post.
 _ACT_POST_RETENTION_COMMENT: Final[str] = "post_branch_retention_jira_comment"
 
@@ -177,24 +172,24 @@ _DEFAULT_RETRY: Final[RetryPolicy] = RetryPolicy(
 class BotBranch:
     """A single ``ai/*`` branch surfaced by the listing activity.
 
-    Attributes
-    ----------
-    department_id:
-        Department slug owning the repo / branch.
-    repo_slug:
-        Bitbucket repo slug.
-    branch_name:
-        Full branch name (eg. ``"ai/PAY-4211"`` or
-        ``"ai/PAY-4211-iter2"``).
-    issue_key:
-        Linked Jira issue key derived from the branch name.  ``None``
-        when the branch does not follow the ``ai/{ISSUE_KEY}[-iter*]``
-        convention; such branches are skipped (the workflow refuses to
-        delete branches it cannot trace back to a Jira issue).
-    last_commit_at:
-        Wall-clock timestamp of the most recent commit on the branch
-        (UTC).  Drives the age comparison inside the predicate.
-    """
+ Attributes
+ ----------
+ department_id:
+ Department slug owning the repo / branch.
+ repo_slug:
+ Bitbucket repo slug.
+ branch_name:
+ Full branch name (eg. ``"ai/PAY-4211"`` or
+ ``"ai/PAY-4211-iter2"``).
+ issue_key:
+ Linked Jira issue key derived from the branch name. ``None``
+ when the branch does not follow the ``ai/{ISSUE_KEY}[-iter*]``
+ convention; such branches are skipped (the workflow refuses to
+ delete branches it cannot trace back to a Jira issue).
+ last_commit_at:
+ Wall-clock timestamp of the most recent commit on the branch
+ (UTC). Drives the age comparison inside the predicate.
+ """
 
     department_id: str
     repo_slug: str
@@ -207,32 +202,32 @@ class BotBranch:
 class BranchRetentionDecision:
     """Outcome for one inspected branch.
 
-    Surfaces every consideration the workflow made so callers (admin
-    UI, audit log) can reconstruct *why* a branch was kept or removed
-    without re-deriving the rule.
+ Surfaces every consideration the workflow made so callers (admin
+ UI, audit log) can reconstruct *why* a branch was kept or removed
+ without re-deriving the rule.
 
-    Attributes
-    ----------
-    branch:
-        The :class:`BotBranch` the decision applies to.
-    branch_age:
-        Computed branch age (``workflow.now() - last_commit_at``).
-    issue_status:
-        Jira status string fetched for ``branch.issue_key``;
-        ``None`` when the issue could not be resolved (eg. Jira API
-        error or missing ``issue_key``).
-    deleted:
-        ``True`` when the branch was successfully deleted on this run.
-    skip_reason:
-        Stable category for non-deleted decisions:
-        ``"too_young"``,
-        ``"issue_not_closed"``,
-        ``"issue_status_unknown"``,
-        ``"missing_issue_key"``,
-        ``"delete_failed"``,
-        ``"jira_lookup_failed"``,
-        or ``None`` when ``deleted is True``.
-    """
+ Attributes
+ ----------
+ branch:
+ The:class:`BotBranch` the decision applies to.
+ branch_age:
+ Computed branch age (``workflow.now - last_commit_at``).
+ issue_status:
+ Jira status string fetched for ``branch.issue_key``;
+ ``None`` when the issue could not be resolved (eg. Jira API
+ error or missing ``issue_key``).
+ deleted:
+ ``True`` when the branch was successfully deleted on this run.
+ skip_reason:
+ Stable category for non-deleted decisions:
+ ``"too_young"``,
+ ``"issue_not_closed"``,
+ ``"issue_status_unknown"``,
+ ``"missing_issue_key"``,
+ ``"delete_failed"``,
+ ``"jira_lookup_failed"``,
+ or ``None`` when ``deleted is True``.
+ """
 
     branch: BotBranch
     branch_age: timedelta
@@ -243,29 +238,28 @@ class BranchRetentionDecision:
 
 @dataclass(frozen=True, slots=True)
 class BotBranchRetentionReport:
-    """Final result of a single :class:`BotBranchRetention` cron run.
+    """Final result of a single:class:`BotBranchRetention` cron run.
 
-    Attributes
-    ----------
-    scanned_branches:
-        Number of branches inspected across all departments.
-    deleted_branches:
-        Number of branches removed on this run.
-    skipped_too_young:
-        Branches younger than :data:`BRANCH_RETENTION_DAYS`.
-    skipped_issue_open:
-        Branches whose linked issue is still open (status not in
-        :data:`CLOSED_JIRA_STATUSES`).
-    skipped_issue_unknown:
-        Branches whose Jira status could not be resolved (lookup
-        failed or ``issue_key`` could not be parsed).
-    cutoff:
-        ``workflow.now() - timedelta(days=BRANCH_RETENTION_DAYS)`` —
-        echoed back so observers can reconstruct the slice without
-        re-deriving it from the schedule.
-    departments_scanned:
-        Number of departments the cron tick fanned out across.
-    """
+ Attributes
+ ----------
+ scanned_branches:
+ Number of branches inspected across all departments.
+ deleted_branches:
+ Number of branches removed on this run.
+ skipped_too_young:
+ Branches younger than:data:`BRANCH_RETENTION_DAYS`.
+ skipped_issue_open:
+ Branches whose linked issue is still open (status not in:data:`CLOSED_JIRA_STATUSES`).
+ skipped_issue_unknown:
+ Branches whose Jira status could not be resolved (lookup
+ failed or ``issue_key`` could not be parsed).
+ cutoff:
+ ``workflow.now - timedelta(days=BRANCH_RETENTION_DAYS)`` —
+ echoed back so observers can reconstruct the slice without
+ re-deriving it from the schedule.
+ departments_scanned:
+ Number of departments the cron tick fanned out across.
+ """
 
     scanned_branches: int
     deleted_branches: int
@@ -277,70 +271,66 @@ class BotBranchRetentionReport:
 
 
 # ---------------------------------------------------------------------------
-# Pure predicate (Property 8 parity)
+# Pure predicate
 # ---------------------------------------------------------------------------
 
 
 def should_delete_branch(branch_age: timedelta, issue_status: str) -> bool:
     """Decide whether an ``ai/*`` branch is eligible for deletion.
 
-    The predicate is the **single source of truth** for the deletion
-    rule documented in design.md §"Property 8: Multi-iter / PO Review
-    invariants" and in MIMARI §16.16 N5:
+ The predicate is the **single source of truth** for the deletion
+ rule:
 
-        ``True`` ⇔ ``branch_age > 30 days AND issue_status ∈ {Done, Closed}``
+ ``True`` ⇔ ``branch_age > 30 days AND issue_status ∈ {Done, Closed}``
 
-    Both conditions must hold — a young branch on a closed issue is
-    kept (so a contributor can still rebase against it for a few days
-    after merge), and an aged branch on an open issue is kept (so the
-    bot does not accidentally remove ongoing work).
+ Both conditions must hold — a young branch on a closed issue is
+ kept (so a contributor can still rebase against it for a few days
+ after merge), and an aged branch on an open issue is kept (so the
+ bot does not accidentally remove ongoing work).
 
-    Comparison rules:
+ Comparison rules:
 
-    * ``branch_age`` uses *strict* inequality (``> 30 days``) so a
-      branch that has not yet crossed the boundary survives the
-      current cron tick and is reconsidered tomorrow.  This mirrors
-      the requirement language ("30 günden eski") which excludes
-      the boundary itself.
-    * ``issue_status`` is compared **case-insensitively** against
-      :data:`CLOSED_JIRA_STATUSES` so JIRA instances that surface
-      ``"DONE"``, ``"closed"``, or other casings still match.  Empty
-      / ``None`` / non-string inputs return ``False``.
-    * ``branch_age`` must be non-negative.  A negative duration
-      (eg. clock skew producing ``last_commit_at`` in the future)
-      returns ``False`` — the branch is treated as "too young".
+ * ``branch_age`` uses *strict* inequality (``> 30 days``) so a
+ branch that has not yet crossed the boundary survives the
+ current cron tick and is reconsidered tomorrow.
+ * ``issue_status`` is compared **case-insensitively** against:data:`CLOSED_JIRA_STATUSES` so JIRA instances that surface
+ ``"DONE"``, ``"closed"``, or other casings still match. Empty
+ / ``None`` / non-string inputs return ``False``.
+ * ``branch_age`` must be non-negative. A negative duration
+ (eg. clock skew producing ``last_commit_at`` in the future)
+ returns ``False`` — the branch is treated as "too young".
 
-    Parameters
-    ----------
-    branch_age:
-        How long ago the most recent commit landed on the branch.
-    issue_status:
-        Jira issue status string (canonical form is capitalised:
-        ``"Done"``, ``"Closed"``).
+ Parameters
+ ----------
+ branch_age:
+ How long ago the most recent commit landed on the branch.
+ issue_status:
+ Jira issue status string (canonical form is capitalised:
+ ``"Done"``, ``"Closed"``).
 
-    Returns
-    -------
-    bool
-        ``True`` when both conditions hold; ``False`` otherwise.
+ Returns
+ -------
+ bool
+ ``True`` when both conditions hold; ``False`` otherwise.
 
-    Examples
-    --------
-    >>> from datetime import timedelta
-    >>> should_delete_branch(timedelta(days=31), "Done")
-    True
-    >>> should_delete_branch(timedelta(days=31), "Closed")
-    True
-    >>> should_delete_branch(timedelta(days=31), "DONE")  # case-insensitive
-    True
-    >>> should_delete_branch(timedelta(days=30), "Done")  # boundary kept
-    False
-    >>> should_delete_branch(timedelta(days=31), "In Progress")
-    False
-    >>> should_delete_branch(timedelta(days=29), "Done")
-    False
-    >>> should_delete_branch(timedelta(days=31), "")
-    False
-    """
+ Examples
+ --------
+ >>> from datetime import timedelta
+ >>> should_delete_branch(timedelta(days=31), "Done")
+ True
+ >>> should_delete_branch(timedelta(days=31), "Closed")
+ True
+ >>> should_delete_branch(timedelta(days=31), "DONE") # case-insensitive
+ True
+ >>> should_delete_branch(timedelta(days=30), "Done") # boundary kept
+ False
+ >>> should_delete_branch(timedelta(days=31), "In Progress")
+ False
+ >>> should_delete_branch(timedelta(days=29), "Done")
+ False
+ >>> should_delete_branch(timedelta(days=31), "")
+ False
+ """
 
     if not isinstance(issue_status, str):
         return False
@@ -361,25 +351,24 @@ def should_delete_branch(branch_age: timedelta, issue_status: str) -> bool:
 class BotBranchRetention:
     """Daily Temporal cron — clean up stale bot ``ai/*`` branches.
 
-    The workflow takes no input — every per-run parameter (cutoff,
-    department list) is derived inside :meth:`run` so the cron schedule
-    needs no per-tick payload.  Output is a typed
-    :class:`BotBranchRetentionReport` summarising the slice the cron
-    processed; details for individual branches stay in the audit log
-    (emitted by the activity layer).
-    """
+ The workflow takes no input — every per-run parameter (cutoff,
+ department list) is derived inside:meth:`run` so the cron schedule
+ needs no per-tick payload. Output is a typed:class:`BotBranchRetentionReport` summarising the slice the cron
+ processed; details for individual branches stay in the audit log
+ (emitted by the activity layer).
+ """
 
     @workflow.run
     async def run(self) -> BotBranchRetentionReport:
         # 1. Compute the cutoff using the deterministic Temporal clock.
-        #    ``workflow.now()`` is the only legal time source in a
-        #    workflow body — replay must produce the identical value.
+        # ``workflow.now`` is the only legal time source in a
+        # workflow body — replay must produce the identical value.
         now: datetime = workflow.now()
         cutoff: datetime = now - timedelta(days=BRANCH_RETENTION_DAYS)
 
-        # 2. Resolve the department list.  An empty list is a valid
-        #    outcome (eg. fresh deployment with no bot dept yet) — we
-        #    still emit a clean report so the cron tick is observable.
+        # 2. Resolve the department list. An empty list is a valid
+        # outcome (eg. fresh deployment with no bot dept yet) — we
+        # still emit a clean report so the cron tick is observable.
         departments: tuple[str, ...] = await self._list_departments()
 
         scanned = 0
@@ -389,11 +378,11 @@ class BotBranchRetention:
         skipped_issue_unknown = 0
 
         for dept_id in departments:
-            # 2a. List ``ai/*`` branches for this department.  A
-            #     listing failure for one dept must not abort the
-            #     other departments' cleanup — the activity handles
-            #     its own retry budget; if it still fails after that
-            #     we log and skip to the next dept.
+            # 2a. List ``ai/*`` branches for this department. A
+            # listing failure for one dept must not abort the
+            # other departments' cleanup — the activity handles
+            # its own retry budget; if it still fails after that
+            # we log and skip to the next dept.
             try:
                 branches = await self._list_branches(dept_id)
             except Exception as exc:  # noqa: BLE001
@@ -415,7 +404,7 @@ class BotBranchRetention:
                     continue
 
                 # Without an issue key we cannot ask Jira about the
-                # status — refuse to delete (defensive).  This also
+                # status — refuse to delete (defensive). This also
                 # protects against branches that follow a future
                 # naming convention the parser does not yet recognise.
                 if not branch.issue_key:
@@ -443,7 +432,7 @@ class BotBranchRetention:
                     skipped_issue_open += 1
                     continue
 
-                # 2b.ii — delete + comment.  Both activities are
+                # 2b.ii — delete + comment. Both activities are
                 # idempotent (Bitbucket DELETE returns 404 cleanly,
                 # Jira comment activity de-dupes on (issue, branch)).
                 try:
@@ -487,14 +476,14 @@ class BotBranchRetention:
     async def _list_departments(self) -> tuple[str, ...]:
         """Resolve the bot-managed department ids.
 
-        Wrapped in a helper so a transient lookup failure can be
-        caught at the workflow boundary; the activity itself already
-        retries up to 3 times via ``_DEFAULT_RETRY``.  When the
-        retries are exhausted we re-raise so Temporal records the
-        cron run as failed and the next tick fires the day after —
-        the alternative (silently skipping the entire run) would
-        mask a misconfiguration.
-        """
+ Wrapped in a helper so a transient lookup failure can be
+ caught at the workflow boundary; the activity itself already
+ retries up to 3 times via ``_DEFAULT_RETRY``. When the
+ retries are exhausted we re-raise so Temporal records the
+ cron run as failed and the next tick fires the day after —
+ the alternative (silently skipping the entire run) would
+ mask a misconfiguration.
+ """
 
         result = await workflow.execute_activity(
             _ACT_LIST_BOT_DEPARTMENTS,
@@ -598,11 +587,11 @@ class BotBranchRetention:
     ) -> None:
         """Post the retention notification comment, swallowing failures.
 
-        The branch deletion has already succeeded by the time we
-        reach this helper.  A comment failure is non-fatal: the
-        operator can reconcile by reading the audit log emitted at
-        the activity layer.
-        """
+ The branch deletion has already succeeded by the time we
+ reach this helper. A comment failure is non-fatal: the
+ operator can reconcile by reading the audit log emitted at
+ the activity layer.
+ """
 
         if branch.issue_key is None:
             # Should not happen — the workflow body filters on

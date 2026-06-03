@@ -11,8 +11,7 @@ Provides two client factories:
    tracking, rate-limit, prompt versioning — all in one place).
 
 Both factories delegate to ``libs/http-shared``'s :func:`make_mcp_client`
-for the ``X-Client-Source`` header injection (MIMARI §6.6, Requirement 13;
-platform-gap-fill task 8.2 / Requirement 9.4). Going through the shared
+for the ``X-Client-Source`` header injection. Going through the shared
 factory means the Streamlit UI cannot drift out of the
 :data:`http_shared.KNOWN_CLIENT_SOURCES` invariant and inherits the
 ``X-Trace-Id`` injection hook for free.
@@ -50,8 +49,7 @@ import streamlit as st
 
 from config import Settings
 
-# platform-gap-fill task 8.2 / Requirement 9.4 — the Streamlit UI must
-# stamp every outgoing MCP / assistant-service request with
+# The Streamlit UI must stamp every outgoing MCP / assistant-service request with
 # ``X-Client-Source: streamlit-app``. Use the shared factory so the
 # header (and the trace-id hook it carries) is wired identically with
 # the workers.
@@ -178,8 +176,7 @@ class MCPClient:
     _client: httpx.AsyncClient = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
-        # platform-gap-fill task 8.2 / R9.4 — go through the shared
-        # factory so ``X-Client-Source: streamlit-app`` is injected
+        # Go through the shared factory so ``X-Client-Source: streamlit-app`` is injected
         # consistently with every other Component. Falls back to a
         # plain ``httpx.AsyncClient`` only in environments where the
         # shared lib is not on the import path; the explicit header
@@ -317,7 +314,7 @@ class AssistantClient:
     def __post_init__(self) -> None:
         # See ``MCPClient.__post_init__`` — same shared-factory contract
         # so the assistant proxy traffic also carries
-        # ``X-Client-Source: streamlit-app`` (Requirement 9.4).
+        # ``X-Client-Source: streamlit-app``.
         if _make_http_shared_client is not None:
             self._client = _make_http_shared_client(
                 _CLIENT_SOURCE,

@@ -1,10 +1,8 @@
-"""Property test: SSH healthcheck state machine.
+"""SSH healthcheck state machine.
 
-Feature: platform-completion, Property 28: For any sequence of SSH healthcheck results,
-the system SHALL transition to "unhealthy" after 3 consecutive failures and
-restore to "healthy" after 2 consecutive successes (while in unhealthy state).
-
-Validates: Requirements 14.3, 14.4
+For any sequence of SSH healthcheck results, the system transitions to
+"unhealthy" after 3 consecutive failures and restores to "healthy" after 2
+consecutive successes while in unhealthy state.
 """
 from __future__ import annotations
 import sys

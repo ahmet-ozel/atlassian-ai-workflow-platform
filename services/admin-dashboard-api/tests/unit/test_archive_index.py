@@ -1,11 +1,8 @@
-"""Unit tests for ``src.audit.archive_index`` (platform-mimari-ops 13.4).
-
+"""Unit tests for ``src.audit.archive_index`` (the project 13.4).
 The tests exercise the MinIO archive index through an in-process
 :class:`httpx.MockTransport`; no real MinIO, no network, no disk I/O.
-
 Coverage
 --------
-
 * ``_date_prefixes`` derives the right set of ``Y/M/D/`` partitions
   for any half-open :class:`TimeRange` (single day, multi-day,
   exact-midnight upper boundary, multi-month spans).
@@ -19,8 +16,7 @@ Coverage
 * Non-200 responses raise :class:`MinIOArchiveError` with the
   truncated body and originating prefix preserved.
 * Missing credentials short-circuit with a friendly error before any
-  HTTP call is issued.
-"""
+  HTTP call is issued."""
 
 from __future__ import annotations
 

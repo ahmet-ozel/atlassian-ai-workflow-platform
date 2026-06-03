@@ -7,8 +7,6 @@ Every stage result is written to the audit log.
 
 Also exposes a FastAPI router with ``POST /webhooks/jira`` that feeds
 into the pipeline.
-
-Requirements: 1.1-1.7, 2.1-2.5, 3.1-3.5
 """
 
 from __future__ import annotations
@@ -81,7 +79,7 @@ class WebhookPayload:
         The account ID of the issue assignee.
     reporter_account_id : str | None
         The account ID of the issue reporter. Used for iteration
-        authorization (Requirement 12.6).
+        authorization.
     comment_body : str | None
         The comment text (for ``comment_created`` events).
     trace_id : str | None
@@ -610,8 +608,8 @@ def build_webhook_pipeline(
     jira_commenter:
         Optional Jira commenter used by the dispatcher to post
         rejection notes when the per-dept concurrency cap fires
-        (task 19.1) or when the budget enforcement runtime guard
-        denies a workflow start.
+        or when the budget enforcement runtime guard denies a workflow
+        start.
     admin_notifier:
         Optional admin notifier used by the loop guard for storm
         alerts.
@@ -763,8 +761,8 @@ async def post_jira_webhook_pipeline(request: Request) -> JSONResponse:
 
     # HTTP status mapping:
     # - 429 when the dispatcher rejected on the concurrency cap
-    #   (Requirement 19.2 — DispatchResult.reason="concurrency_limit_exceeded"
-    #   surfaces as HTTP 429 at the FastAPI layer).
+    #   (DispatchResult.reason="concurrency_limit_exceeded" surfaces
+    #   as HTTP 429 at the FastAPI layer).
     # - 429 + deny_response_body when the dispatcher rejected on the
     #   budget enforcement runtime guard (BUDGET_EXCEEDED action).
     # - 422 + configuration_error_response when the dispatcher

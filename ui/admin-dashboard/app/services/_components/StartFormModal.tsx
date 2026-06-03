@@ -1,56 +1,26 @@
 "use client";
 
 /**
- * StartFormModal — Servis Yapılandırma Formu (Requirement 5).
+ * StartFormModal - Servis Yapilandirma Formu.
  *
- * Implements task 8.2 of the admin-dashboard-control-plane spec. The
- * component is rendered when the operator clicks "Start" on a row of
- * the Servis Kataloğu (Requirement 4.4) and walks them through three
- * stages:
+ * The component is rendered when the operator clicks "Start" on a service
+ * catalog row. It fetches the service manifest, renders one field per
+ * form_schema entry, and submits env_overrides only after explicit user input.
  *
- *   1. Fetch ``GET /admin/services/{name}`` to retrieve the manifest
- *      entry plus the ``form_schema.fields`` array. The shape mirrors
- *      :class:`src.routers._models.ServiceDetail` exactly
- *      (Requirement 6.2).
- *   2. Render one input per ``FormSchemaField``. Sensitive fields are
- *      rendered as ``<input type="password" required>`` (Requirement
- *      5.3, 5.7); non-sensitive fields use ``<input type="text">``
- *      with the field's ``default_value`` as the HTML placeholder
- *      (Requirement 5.2). Any preceding ``.env.example`` comment is
- *      surfaced as a ``<small id="{key}-help">`` element wired up
- *      with ``aria-describedby`` (Requirement 5.4).
- *   3. On *explicit* submit (button click or Enter — never automatic;
- *      Requirement 5.5), build ``env_overrides``: empty values fall
- *      back to ``default_value`` for *non*-sensitive fields with a
- *      non-empty default; sensitive empty values raise an inline
- *      validation error (Requirement 5.7) and the request is *not*
- *      sent. Non-sensitive empty values without defaults are sent as
- *      empty strings so the client preserves backend form-schema
- *      parity. POST ``/admin/services/{name}/start`` with the body
- *      ``{env_overrides: {...}}`` (Requirement 5.5).
+ * Sensitive fields render as required password inputs. Non-sensitive fields use
+ * text inputs, display API defaults as placeholders, and fall back to those
+ * defaults when submitted blank. Empty sensitive values raise an inline
+ * validation error and the start request is not sent.
  *
- * Error surface (matching the router envelopes in design §3.3):
+ * Error envelopes are surfaced inline. Upstream failures include the
+ * correlation_id so the operator can pivot into audit logs or structured logs.
  *
- * * ``404`` (unknown service) — inline message; close to retry.
- * * ``422`` (form schema mismatch) — inline message lists the
- *   server-supplied detail (e.g. extra/missing keys) so the operator
- *   can correct without reopening the modal.
- * * ``502`` (Vault / Audit / Compose upstream failure) — inline
- *   message *plus* the ``correlation_id`` UUID copied from the
- *   :class:`~src.routers._models.ErrorEnvelope` body so the operator
- *   can pivot into the audit log / structured logs (Requirement 6.7,
- *   11.8).
+ * Defense-in-depth: backend is_sensitive is authoritative, but the UI also
+ * applies the shared sensitive-key matcher so a stale server cache cannot render
+ * a token field as plain text.
  *
- * Defense-in-depth: even though ``is_sensitive`` in the schema is
- * authoritative (the backend computes it via the Python twin of
- * ``isSensitiveEnvKey`` — Property C4), we OR it with the result of
- * :func:`isSensitiveEnvKey` from ``web-shared`` so a stale server
- * cache cannot trick the UI into rendering a token field as plain
- * text (Requirement 5.3, 7.7, 11.3).
- *
- * The component is a pure modal: it only talks to the API on mount
- * (``GET``) and on explicit submit (``POST``). No polling, no auto-
- * retry, no preflight start (Requirement 5.5).
+ * The modal only calls the API on mount and explicit submit. There is no
+ * polling, automatic retry, or preflight start.
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -64,7 +34,7 @@ import { apiFetch } from "../../../lib/api-client";
 
 /**
  * One row of ``form_schema.fields`` returned by ``GET /admin/services/{name}``.
- * Mirrors :class:`src.routers._models.FormSchemaField` (Requirement 6.2).
+ * Mirrors :class:`src.routers._models.FormSchemaField`.
  */
 type FormSchemaField = {
   key: string;
@@ -84,7 +54,7 @@ type ServiceDetailSubset = {
 };
 
 /**
- * 502 :class:`ErrorEnvelope` shape (Requirement 6.7). The router emits
+ * 502 :class:`ErrorEnvelope` shape. The router emits
  * this body for every Vault / Audit / Compose upstream failure.
  */
 type ErrorEnvelope = {
@@ -126,13 +96,13 @@ export type StartFormModalProps = {
   /**
    * Called when the start request returns 409 ``feature_flag_disabled``.
    * The parent is responsible for showing the FeatureFlagDisabledModal
-   * with the blocking flag name (Requirement 10.3 / Q12).
+   * with the blocking flag name.
    */
   onFeatureFlagDisabled?: (blockingFlag: string) => void;
 };
 
 // ---------------------------------------------------------------------------
-// Inline styles (no design system in this scaffold yet — design.md §3.10
+// Inline styles (no shared design system is available here yet
 // renders the catalog with raw <table>; we follow the same minimalism)
 // ---------------------------------------------------------------------------
 
@@ -270,7 +240,7 @@ export default function StartFormModal({
   const formRef = useRef<HTMLFormElement | null>(null);
 
   // -------------------------------------------------------------------------
-  // Schema fetch (Requirement 4.4, 5.1) — runs once per mount.
+  // Schema fetch — runs once per mount.
   // -------------------------------------------------------------------------
 
   useEffect(() => {
@@ -333,7 +303,7 @@ export default function StartFormModal({
   }, [onClose, submitting]);
 
   // -------------------------------------------------------------------------
-  // Submit handler (Requirement 5.5, 5.7) — only fires on explicit user
+  // Submit handler — only fires on explicit user
   // action (form's onSubmit). preventDefault() blocks the implicit GET
   // navigation Next.js would otherwise pick up.
   // -------------------------------------------------------------------------
@@ -341,7 +311,7 @@ export default function StartFormModal({
   /**
    * Resolve the *effective* sensitivity of a field by OR-ing the
    * server-supplied flag with the local regex check
-   * (defense-in-depth — Requirement 5.3, 7.7).
+   * (defense-in-depth).
    */
   const isFieldSensitive = useMemo(
     () =>
@@ -396,7 +366,7 @@ export default function StartFormModal({
           continue;
         }
         // Sensitive_Env_Key default_value is *never* used — the
-        // operator must explicitly type one (Requirement 5.7).
+        // operator must explicitly type one.
         newValidationErrors[field.key] =
           `${field.key} is required for LLM_PROVIDER=${effectiveProvider}.`;
         continue;
@@ -430,13 +400,13 @@ export default function StartFormModal({
       );
 
       if (res.ok) {
-        // 202 Accepted (design §3.3). Notify parent and dismiss.
+        // 202 Accepted. Notify parent and dismiss.
         onStarted?.();
         onClose();
         return;
       }
 
-      // 409 feature_flag_disabled — delegate to parent modal (Requirement 10.3).
+      // 409 feature_flag_disabled — delegate to parent modal.
       if (res.status === 409) {
         try {
           const ct = res.headers.get("content-type") ?? "";
@@ -585,9 +555,9 @@ export default function StartFormModal({
                         type={sensitive ? "password" : "text"}
                       // Sensitive fields never display the .env.example
                       // default — operator must type one explicitly
-                      // (Requirement 5.7). Non-sensitive fields show the
+                      // Non-sensitive fields show the
                       // default as the placeholder so the operator can
-                      // submit blank to accept it (Requirement 5.2).
+                      // submit blank to accept it.
                         placeholder={
                           sensitive
                             ? fieldRequired
@@ -678,7 +648,7 @@ async function safeReadDetail(res: Response): Promise<string> {
 /**
  * Render an error response from the start endpoint into the two
  * pieces of UI state. 502 envelopes carry a ``correlation_id`` UUID
- * (Requirement 6.7, 11.8) which we surface verbatim so the operator
+ * which we surface verbatim so the operator
  * can pivot into ``shared.audit_log``.
  */
 async function renderErrorFromResponse(

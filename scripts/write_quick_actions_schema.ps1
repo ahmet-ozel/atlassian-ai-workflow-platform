@@ -1,5 +1,5 @@
 # Writes config/quick_actions.schema.json (JSON Schema 2020-12) for the
-# platform-mimari-ops spec, task 1.4. Built as a script because the
+# quick actions config. Built as a script because the
 # fs_write tool refuses files whose literal text contains a remote JSON Schema
 # $schema URL; here we assemble that URL at runtime, matching the convention
 # used by write_services_manifest_schema.ps1.
@@ -13,7 +13,7 @@ $json = @"
   "`$schema": "$schemaUrl",
   "`$id": "quick-actions-schema-v1",
   "title": "quick_actions.yaml",
-  "description": "Streamlit chat sayfasindaki sik kullanilan komut chip'lerinin tanimi. streamlit-app/pages/1_chat.py tarafindan render edilir; her chip basildiginda chip'in prompt_template'i kullanicinin chat input'una basilir ve assistant-service uzerinden gonderilir. required_capabilities listesi chip'in dept'in capability set'inde mevcut olup olmadigina gore aktiflesmesini saglar; eksik capability varsa chip gri + tooltip ile gosterilir. Capability vocabulary 'platform-mimari-foundation' libs/temporal-shared.capabilities WORKFLOW_TYPE_CAPABILITIES ile tutarlidir. Referans: requirements.md R3.1, R3.12, design.md Component 'streamlit-ui/pages/1_chat.py'. JSON Schema 2020-12 ile valide edin.",
+  "description": "Streamlit chat sayfasindaki sik kullanilan komut chip'lerinin tanimi. streamlit-app/pages/1_chat.py tarafindan render edilir; her chip basildiginda chip'in prompt_template'i kullanicinin chat input'una basilir ve assistant-service uzerinden gonderilir. required_capabilities listesi chip'in dept'in capability set'inde mevcut olup olmadigina gore aktiflesmesini saglar; eksik capability varsa chip gri + tooltip ile gosterilir. Capability vocabulary libs/temporal-shared.capabilities WORKFLOW_TYPE_CAPABILITIES ile tutarlidir. JSON Schema 2020-12 ile valide edin.",
   "type": "object",
   "required": ["version", "chips"],
   "additionalProperties": false,

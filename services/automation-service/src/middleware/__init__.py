@@ -1,9 +1,8 @@
 """Automation-service request-time guard middleware.
 
 Exports the :mod:`license_cap` enforcement helper used by the
-workflow-start path to apply per-license hard caps (R16 / Q20 —
-uyumluluk spec) and the :mod:`webhook_auth` per-department HMAC
-authentication middleware (R8 — platform-completion spec).
+workflow-start path to apply per-license hard caps and the
+:mod:`webhook_auth` per-department HMAC authentication middleware.
 """
 
 from .license_cap import (

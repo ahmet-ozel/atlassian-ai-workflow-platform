@@ -23,9 +23,8 @@ Module-level invariants
    external id** (see :func:`build_inbound_workflow_id`). This makes
    ``start_workflow_idempotent`` collapse retries from the same
    Slack/email source onto a single Temporal execution
-   (Requirement 1.6 idempotency parity).
+   using the same idempotency semantics as the webhook flow.
 
-Validates Requirement 5.10.
 """
 
 from __future__ import annotations
@@ -76,13 +75,12 @@ _SLACK_SIG_VERSION: str = "v0"
 #: Maximum age (in seconds) of an accepted Slack request timestamp.
 #: Slack's documented replay window is 5 minutes; we adopt the same
 #: figure so a request whose ``X-Slack-Request-Timestamp`` is older
-#: than 300s is rejected as a likely replay (Requirement 6.4 parity).
+#: than 300s is rejected as a likely replay.
 SLACK_TIMESTAMP_TOLERANCE_S: int = 300
 
 #: Workflow type started for inbound-channel requests. The same
-#: ``AutomationWorkflow`` powers the Jira-webhook flow (R5.10 says
-#: the inbound adapter "creates a Jira task via the standard
-#: task-creator path"); the channel-specific input flag below makes
+#: ``AutomationWorkflow`` powers the Jira-webhook flow; the
+#: channel-specific input flag below makes
 #: the workflow call the *task-creator* assistant prompt with
 #: ``auto_assign=True`` and ``smart_defaults=True``.
 INBOUND_WORKFLOW_NAME: str = "AutomationWorkflow"

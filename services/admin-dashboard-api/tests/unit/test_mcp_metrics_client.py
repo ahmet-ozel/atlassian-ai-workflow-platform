@@ -1,11 +1,7 @@
-"""Unit tests for ``src.clients.mcp_metrics_client`` (platform-gap-fill task 8.3).
-
-**Validates: Requirement 9.5**
-
+"""Unit tests for ``src.clients.mcp_metrics_client`` .
 Covers parsing the MCP server's Prometheus exposition format and the
 HTTP fetch flow against an :class:`httpx.MockTransport` so the suite
-stays hermetic.
-"""
+stays hermetic."""
 
 from __future__ import annotations
 

@@ -1,27 +1,21 @@
 """
-Test 39: LLM Provider Management — Admin UI End-to-End (R39).
+Test 39: LLM Provider Management — Admin UI End-to-End .
 
-Validates that the ``/admin/llm-providers`` Next.js page shipped by
-``.kiro/specs/llm-provider-management`` renders against the live
-``admin-dashboard-ui`` container, that its structural anchors are
-present (table, Add Provider button, modal entry points), and that
-the page never leaks an unmasked credential through the rendered
-HTML.
+Validates that the ``/admin/llm-providers`` Next.js page renders
+against the live ``admin-dashboard-ui`` container, that its structural
+anchors are present (table, Add Provider button, modal entry points),
+and that the page never leaks an unmasked credential through the
+rendered HTML.
 
 This test follows the same Playwright-MCP-friendly pattern used by
 ``test_03_playwright_dashboard.py`` and ``test_07_wizard_department``:
 * httpx for HTML / API smoke checks.
 * PlaywrightState for cross-test browser coordination (the actual
-  Playwright MCP interactions happen via the harness's MCP tool calls
-  during interactive runs; this file's assertions remain valid even
-  when the browser is not driven, so the suite stays green on
-  headless CI).
+ Playwright MCP interactions happen via the harness's MCP tool calls
+ during interactive runs; this file's assertions remain valid even
+ when the browser is not driven, so the suite stays green on
+ headless CI).
 
-Spec references:
-* ``.kiro/specs/llm-provider-management/requirements.md`` — R14.1 — R14.9.
-* ``.kiro/specs/llm-provider-management/design.md`` — Frontend modules.
-
-Requirements: R39.1, R39.2, R39.3, R39.4, R39.5
 """
 
 from __future__ import annotations
@@ -47,7 +41,7 @@ DASHBOARD_API_URL = "http://localhost:8082"
 #: backend API surface lives at ``/admin/llm-providers`` but the UI
 #: route is the bare ``/llm-providers`` because the Next.js ``app/``
 #: directory layout maps ``app/llm-providers/page.tsx`` directly to
-#: that URL — see the spec's design document, "Frontend modules".
+#: that URL.
 LLM_PROVIDERS_PAGE_PATH = "/llm-providers"
 LLM_PROVIDERS_FULL_URL = f"{DASHBOARD_UI_URL}{LLM_PROVIDERS_PAGE_PATH}"
 
@@ -56,14 +50,13 @@ SCREENSHOT_FILENAME = "39-llm-providers-page.png"
 
 #: Structural anchors the page must expose so Playwright MCP can
 #: locate the controls reliably across UI re-styles. These mirror the
-#: ``data-testid`` attributes baked into the React components shipped
-#: by the spec.
+#: ``data-testid`` attributes baked into the React components.
 EXPECTED_TESTIDS: tuple[str, ...] = (
     "llm-provider-add-button",
     "llm-provider-table",
 )
 
-#: Credential markers per the spec's Sensitive_Field_Set (R13.1) —
+#: Credential markers that must remain masked in rendered HTML.
 #: the rendered HTML must never contain a verbatim match for any of
 #: these prefixes (only the masked ``"…<last4>"`` form may leak).
 SENSITIVE_MARKERS: tuple[str, ...] = (
@@ -104,7 +97,7 @@ def _require_ui_or_skip() -> None:
     if not _dashboard_ui_reachable():
         pytest.skip(
             f"admin-dashboard-ui not reachable at {DASHBOARD_UI_URL}; "
-            "run `make boot` first (R39 requires a live UI container)."
+            "run `make boot` first ( requires a live UI container)."
         )
 
 
@@ -125,11 +118,11 @@ def _goto_llm_providers(page: Page) -> None:
 def _page_source_path() -> Path:
     """Return the on-disk path of the page TSX (for source-level checks).
 
-    The Playwright MCP harness asserts against the live DOM during
-    interactive runs; in headless CI we additionally pin the TSX
-    source contracts so the component shape doesn't regress in lock-
-    step with the test running.
-    """
+ The Playwright MCP harness asserts against the live DOM during
+ interactive runs; in headless CI we additionally pin the TSX
+ source contracts so the component shape doesn't regress in lock-
+ step with the test running.
+ """
 
     workspace = Path(__file__).resolve().parents[3]
     return (
@@ -144,13 +137,13 @@ def _page_source_path() -> Path:
 
 
 # ---------------------------------------------------------------------------
-# R39.1 — Page is served by the UI container
+# — Page is served by the UI container
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.llm_providers
 class TestLlmProvidersPageReachable:
-    """R39.1 — ``GET /llm-providers`` returns HTTP 200 HTML."""
+    """ — ``GET /llm-providers`` returns HTTP 200 HTML."""
 
     def test_page_returns_200(self) -> None:
         _require_ui_or_skip()
@@ -164,13 +157,13 @@ class TestLlmProvidersPageReachable:
 
 
 # ---------------------------------------------------------------------------
-# R39.2 — Structural anchors / testids are present in the rendered HTML
+# — Structural anchors / testids are present in the rendered HTML
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.llm_providers
 class TestPageStructuralAnchors:
-    """R39.2 — Add Provider button + provider table render in the page."""
+    """ — Add Provider button + provider table render in the page."""
 
     def test_add_provider_button_testid_present(self) -> None:
         _require_ui_or_skip()
@@ -204,19 +197,19 @@ class TestPageStructuralAnchors:
 
 
 # ---------------------------------------------------------------------------
-# R39.3 — Page must not leak credential markers in rendered HTML
+# — Page must not leak credential markers in rendered HTML
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.llm_providers
 class TestPageDoesNotLeakCredentials:
-    """R39.3 — Server-rendered HTML carries no Sensitive_Field_Set markers.
+    """ — Server-rendered HTML carries no Sensitive_Field_Set markers.
 
-    The DTO surface returns only ``api_key_masked``; this is a defence
-    in depth check that asserts the rendered HTML does not contain a
-    verbatim Anthropic / OpenAI / Gemini key prefix from a stale
-    fixture or a debug dump.
-    """
+ The DTO surface returns only ``api_key_masked``; this is a defence
+ in depth check that asserts the rendered HTML does not contain a
+ verbatim Anthropic / OpenAI / Gemini key prefix from a stale
+ fixture or a debug dump.
+ """
 
     def test_no_sensitive_markers_in_html(self) -> None:
         _require_ui_or_skip()
@@ -238,18 +231,18 @@ class TestPageDoesNotLeakCredentials:
 
 
 # ---------------------------------------------------------------------------
-# R39.4 — Page composes the expected components per the spec
+# — Page composes the expected components
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.llm_providers
 class TestPageComposition:
-    """R39.4 — Source-level structural contract on page.tsx.
+    """ — Source-level structural contract on page.tsx.
 
-    The Playwright MCP harness validates the DOM; this test pins the
-    source-level contract so a refactor that removes a component is
-    caught at unit time too.
-    """
+ The Playwright MCP harness validates the DOM; this test pins the
+ source-level contract so a refactor that removes a component is
+ caught at unit time too.
+ """
 
     def test_page_composes_expected_components(self) -> None:
         path = _page_source_path()
@@ -264,7 +257,7 @@ class TestPageComposition:
         ), "Add Provider button must declare its testid"
 
     def test_disable_wires_to_api_disable(self) -> None:
-        """Wiring contract for Requirement 14.7 — Disable row action."""
+        """Wiring contract for Disable row action."""
 
         path = _page_source_path()
         if not path.exists():
@@ -276,13 +269,13 @@ class TestPageComposition:
 
 
 # ---------------------------------------------------------------------------
-# R39.5 — Evidence emission + Playwright state coordination
+# — Evidence emission + Playwright state coordination
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.llm_providers
 class TestLlmProviderPlaywrightFlows:
-    """R39.2 - R39.8 via real Playwright browser interaction."""
+    """ - via real Playwright browser interaction."""
 
     def test_add_provider_modal_and_unsaved_test_connection(
         self,
@@ -411,18 +404,18 @@ class TestEmitEvidence:
             playwright_state.mark_navigated(LLM_PROVIDERS_FULL_URL)
 
         evidence_collector.emit_json(
-            requirement_id="R39",
+            requirement_id="",
             filename=EVIDENCE_FILENAME,
             data={
                 "snapshot": snapshot,
                 "requirements_validated": [
-                    "R39.1 — /llm-providers page returns HTTP 200",
-                    "R39.2 — Add Provider button + provider table testids "
+                    "/llm-providers page returns HTTP 200",
+                    "Add Provider button + provider table testids "
                     "present in HTML or source",
-                    "R39.3 — No Sensitive_Field_Set markers in rendered HTML",
-                    "R39.4 — page.tsx composes ProviderTable + "
+                    "No Sensitive_Field_Set markers in rendered HTML",
+                    "page.tsx composes ProviderTable + "
                     "ProviderModal + DeleteConfirm",
-                    "R39.5 — Evidence emitted to e2e-evidence/",
+                    "Evidence emitted to e2e-evidence/",
                 ],
             },
         )

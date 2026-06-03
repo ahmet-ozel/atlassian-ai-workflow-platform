@@ -1,15 +1,13 @@
 """Asyncpg-backed audit writer for prompt mutation events.
 
-Task 6.3 calls for an asyncpg-backed audit sink that persists
+Provides an asyncpg-backed audit sink that persists
 ``prompt_draft_created``, ``prompt_pr_opened``, ``prompt_render_failed``
 and ``prompt_pr_conflict`` rows to ``automation.audit_events``
-(Requirement 7.7 — ``actor_role NOT NULL`` CHECK; Spec 1 task group 4).
+(including the ``actor_role NOT NULL`` CHECK).
 This module provides that adapter.
 
-Design references
------------------
-* design.md §`Komponent Sahipliği Özeti` — ``audit_logger`` rows live
-  in ``automation.audit_events``.
+Storage references
+------------------
 * infra/postgres/init/10_automation.sql — column list, CHECK
   constraints, RLS policy ``audit_dept_isolation``.
 * libs/audit_logger — :class:`audit_logger.AuditEvent` and
@@ -150,7 +148,7 @@ class AsyncpgAuditEventsWriter:
     invariant (mirrors :class:`src.audit_sink.LoggingAuditSink`).
 
     The class is the canonical asyncpg wiring for prompt mutation
-    events (task 6.3). It can be reused for any other ``audit_events``
+    events (audit sink wiring). It can be reused for any other ``audit_events``
     writer call site without modification — the SQL is parameterised
     on the entire event shape.
     """
@@ -182,7 +180,7 @@ class AsyncpgAuditEventsWriter:
         Implements the :class:`audit_logger.AuditWriter` protocol so
         :class:`audit_logger.AuditLogger` can wrap this writer and
         enforce its application-layer ``actor_role`` validation
-        (Requirement 7.7) before a row ever reaches Postgres.
+        (behavior 7.7) before a row ever reaches Postgres.
 
         Failures are classified into two buckets:
 
@@ -287,7 +285,7 @@ class AsyncpgAuditSink:
         """Validate + persist ``event``.
 
         :class:`audit_logger.AuditLogger.write` enforces the
-        ``actor_role IS NOT NULL`` invariant (Requirement 7.7) before
+        ``actor_role IS NOT NULL`` invariant (behavior 7.7) before
         delegating to ``insert_audit``. Validation failures
         (``ValueError``) are NOT swallowed — the router's
         ``_safe_audit`` already wraps every call and logs them, so

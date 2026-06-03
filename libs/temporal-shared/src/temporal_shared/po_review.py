@@ -3,8 +3,7 @@
 This module hosts two **pure** decision helpers used by the
 ``automation-service`` API endpoints
 ``GET /api/orphan-branches`` and ``GET /api/po-review-inbox``
-(see ``platform-mimari-workflows`` requirements.md §R10.3 / §R10.4 and
-design.md §"Components and Interfaces" — task 14.1):
+for post-commit bot output:
 
 * :func:`compute_orphan_branches` — set-algebra helper that returns
   the subset of ``ai/*`` branches that **do not** appear as the
@@ -12,12 +11,12 @@ design.md §"Components and Interfaces" — task 14.1):
   bot branches the platform produced via ``code_change_commit_only``
   but for which no PR was ever opened.  The Orphan Branches Streamlit
   page surfaces them so the PO can decide whether to open a draft PR
-  or let the cron retention reaper sweep them out (R10.2 / R10.3).
+  or let the cron retention reaper sweep them out.
 * :func:`compute_po_review_inbox` — pure filter that returns the
   draft pull requests authored by a known bot account.  These are
   the PRs the bot has prepared but the PO has not yet reviewed; the
   PO Review Inbox Streamlit page surfaces them with the "PR Aç
-  (Draft)", "Düzeltme İste", "Onaylama notu" actions (R10.4).
+  (Draft)", "Düzeltme İste", "Onaylama notu" actions.
 
 Why a separate module?
 ----------------------
@@ -46,10 +45,8 @@ Every public function in this module is **pure**:
 
 This makes the helpers safe to call from anywhere the runtime imposes
 replay determinism (Temporal workflow body, Hypothesis property test,
-HTTP handler).  The matching AST replay-determinism property test
-(``platform/tests/property/test_workflow_determinism_static.py``,
-task 2.7) will fire if a future edit introduces a forbidden import
-here.
+HTTP handler).  The matching AST replay-determinism property test will
+fire if a future edit introduces a forbidden import here.
 
 Returning ``frozenset``
 -----------------------
@@ -58,16 +55,13 @@ Both helpers return a :class:`frozenset` rather than a bare ``set``:
 
 * The dataclasses are frozen, so :class:`frozenset` is well-defined
   on them.
-* Returning an immutable container makes Property 8's "deterministic"
-  invariant trivially provable — the caller cannot mutate the
+* Returning an immutable container makes the determinism invariant
+  trivially provable — the caller cannot mutate the
   returned aggregate, so two calls with the same input always return
   equal aggregates.
 * The HTTP endpoint converts the result to a list and sorts it by
   ``last_commit_at`` (oldest-first) before serialising; ``frozenset``
   is a valid input to :func:`sorted` so the conversion is one line.
-
-Validates: Requirements 10.3, 10.4 (Property 8 — Multi-iter / PO
-Review invariants).
 """
 
 from __future__ import annotations
@@ -96,7 +90,7 @@ __all__ = [
 #: Prefix every bot-authored branch name carries.  Mirrors the
 #: ``ai/{issue_key}`` shape produced by
 #: :func:`temporal_shared.identifiers.branch_name` and
-#: :func:`temporal_shared.code_change.compute_branch_name` (R7.1).
+#: :func:`temporal_shared.code_change.compute_branch_name`.
 #:
 #: The orphan-branch helper uses ``startswith(AI_BRANCH_PREFIX)`` to
 #: include both the iter-1 form ``ai/PAY-1`` **and** the multi-iter
@@ -170,8 +164,7 @@ class PullRequest:
         prefix before constructing this dataclass.
     is_draft:
         Whether Bitbucket reports the PR as a draft.  The platform
-        only ever opens draft PRs (foundation R1.10 — bot draft PR
-        enforcement), but this field is read from Bitbucket rather
+        only ever opens draft PRs, but this field is read from Bitbucket rather
         than assumed so a hypothetical human-promoted PR is correctly
         excluded from the PO Review Inbox.
     author_account_id:
@@ -201,7 +194,7 @@ class PullRequest:
 
 
 # ---------------------------------------------------------------------------
-# compute_orphan_branches  (Requirement 10.3, Property 8.b)
+# compute_orphan_branches
 # ---------------------------------------------------------------------------
 
 
@@ -223,9 +216,9 @@ def compute_orphan_branches(
     The helper does not consult :attr:`PullRequest.is_draft` or any
     other PR field — a closed, declined, merged, or draft PR all
     "claim" their source branch, so the branch is not orphan.  The
-    Orphan Branches API endpoint (task 14.2) wraps the returned set
-    with sorting by :attr:`Branch.last_commit_at` (oldest-first) so
-    the PO surfaces the longest-orphan branches first.
+    Orphan Branches API endpoint wraps the returned set with sorting by
+    :attr:`Branch.last_commit_at` (oldest-first) so the PO surfaces the
+    longest-orphan branches first.
 
     Set-algebra form
     ----------------
@@ -253,7 +246,7 @@ def compute_orphan_branches(
     endpoint may sweep a large Bitbucket workspace and the naive
     ``any(...)`` form is :math:`O(|B| \\cdot |P|)`.
 
-    Determinism / idempotency invariants (Property 8)
+    Determinism / idempotency invariants
     -------------------------------------------------
 
     * **Determinism.** Calling the function twice with the same input
@@ -328,7 +321,7 @@ def compute_orphan_branches(
 
 
 # ---------------------------------------------------------------------------
-# compute_po_review_inbox  (Requirement 10.4, Property 8.c)
+# compute_po_review_inbox
 # ---------------------------------------------------------------------------
 
 
@@ -365,7 +358,7 @@ def compute_po_review_inbox(
         {pr for pr in prs
          if pr.is_draft and pr.author_account_id in bot_ids}
 
-    Determinism / filter invariants (Property 8)
+    Determinism / filter invariants
     --------------------------------------------
 
     * **Every result is a draft.** ``all(pr.is_draft for pr in

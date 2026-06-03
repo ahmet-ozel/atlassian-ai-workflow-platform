@@ -2,9 +2,7 @@
   default.html.j2 — Default PDF template for ``jira_attachment`` output
   actions (workflow type ``research_summary_jira`` and friends).
 
-  Owned by: ``platform-mimari-workflows`` task 8.3.
-  Validates: Requirements 8.8 (V5 — A4, Latin/Türkçe glyph desteği),
-  12.4 (jira_attachment format ∈ {pdf, md}).
+  Default workflow report template.
 
   Contract:
     * Page size pinned to A4 with 18 mm margins via ``@page`` so the
@@ -13,7 +11,7 @@
       sans-serif stack (DejaVu Sans → Liberation Sans → sans-serif).
       Turkish glyphs (ç, ğ, ı, ö, ş, ü, Ç, Ğ, İ, Ö, Ş, Ü) are part of
       Latin Extended-A and therefore covered by every fallback in the
-      stack — see Requirement 8.8 / V5.
+      stack.
     * UTF-8 throughout; no inline JavaScript, no remote fetches, no
       `<style>` directives that would force a network round-trip.
       WeasyPrint resolves CSS deterministically from this single

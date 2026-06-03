@@ -1,6 +1,6 @@
-"""Integration smoke — dept decommission (`platform-mimari-ops` task 16.7).
+"""Integration smoke — dept decommission (`ops work` the implementation).
 
-Spec 1 R10 parity check: calling
+Calling
 ``/admin/departments/{id}/decommission`` triggers the drain mode +
 Vault revoke + audit chain end-to-end.
 """

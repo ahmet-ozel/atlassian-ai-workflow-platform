@@ -6,8 +6,7 @@
 # gonderilir.
 #
 # `required_capabilities` listesi dept'in capability set'inde tam karsiligi
-# yoksa chip gri + tooltip ile gosterilir (R3.12 — dept_probe denied → chip
-# gri). Capability vocabulary 'platform-mimari-foundation'
+# yoksa chip gri + tooltip ile gosterilir. Capability vocabulary
 # libs/temporal-shared.capabilities WORKFLOW_TYPE_CAPABILITIES ile tutarlidir:
 # jira_read, jira_write, bitbucket_read, bitbucket_write, confluence_read,
 # confluence_write, execution, web_search.
@@ -16,11 +15,6 @@
 # Loader: streamlit-app tarafindan boot anida valide edilir; sema dishi
 # girisler veya tekrarlanan id'ler boot'u keser.
 #
-# Referans:
-#   - requirements.md R3.1 (6 sayfa + Quick Action chips)
-#   - requirements.md R3.12 (dept_probe denied chip gri)
-#   - design.md Component 'streamlit-ui/pages/1_chat.py'
-
 version: 1
 
 chips:

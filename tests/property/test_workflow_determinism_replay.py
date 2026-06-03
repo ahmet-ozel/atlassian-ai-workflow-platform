@@ -1,8 +1,4 @@
-"""Property tests for workflow determinism (Temporal replay invariant).
-
-**Validates: Requirements 5.9, 6.12, 10.1, 10.2, 10.3**
-
-Property 11 (replay): Workflow determinism — Temporal replay invariance
+"""Property-based tests for workflow determinism via Temporal replay.
 
 For every sample workflow history under
 ``platform/tests/fixtures/histories/*.json``, ``temporalio.worker.
@@ -14,7 +10,7 @@ deviation surfaces as a ``temporalio.worker.workflow_sandbox`` /
 This test complements the static AST scan
 (``test_workflow_determinism_static.py``). Together they cover both the
 syntactic (no banned-call) and semantic (replay-stable behaviour) sides
-of Property 11.
+of the workflow determinism guarantee.
 
 Fixture generation strategy
 ---------------------------
@@ -43,10 +39,9 @@ AgentRunnerWorkflow note
 ------------------------
 
 ``src.workflows.agent_runner_workflow.AgentRunnerWorkflow`` is currently
-a stub (no ``@workflow.defn`` body) — see the AgentRunner task in
-``.kiro/specs/p0-critical-path/tasks.md``. The replay test for that
+a stub (no ``@workflow.defn`` body). The replay test for that
 workflow type is wired in but ``skip``s until the body is implemented.
-Removing the skip is part of that follow-up task.
+Removing the skip belongs with that implementation work.
 """
 
 from __future__ import annotations
@@ -159,7 +154,7 @@ async def _replay(history: Any, *workflow_classes: type) -> None:
 
     ``raise_on_replay_failure=True`` (the SDK default) makes the call
     throw on any non-determinism; we additionally read
-    ``replay_failure`` for diagnostic clarity per Property 11.
+    ``replay_failure`` for diagnostic clarity.
     """
 
     from temporalio.worker import Replayer
@@ -213,9 +208,7 @@ def _ensure_fixtures() -> None:
 
 
 def test_history_directory_exists() -> None:
-    """**Validates: Requirements 5.9, 6.12, 10.1, 10.2, 10.3**
-
-    The fixtures directory must exist; otherwise the parametrised tests
+    """The fixtures directory must exist; otherwise the parametrised tests
     below collect zero items and the property silently degrades to
     vacuous-true. Mirrors the non-vacuity guard in the static-AST test.
     The session-scoped ``_ensure_fixtures`` autouse fixture creates
@@ -238,9 +231,7 @@ def test_history_directory_exists() -> None:
 async def test_automation_workflow_replays_deterministically(
     fixture: HistoryFixture,
 ) -> None:
-    """**Validates: Requirements 5.9, 6.12, 10.1, 10.2, 10.3**
-
-    Replay each pre-recorded ``AutomationWorkflow`` history. The current
+    """Replay each pre-recorded ``AutomationWorkflow`` history. The current
     workflow code MUST be replay-compatible (no replay failure) against
     every sample history; any deviation indicates a determinism
     violation in the workflow body.
@@ -275,10 +266,8 @@ async def test_automation_workflow_replays_deterministically(
 async def test_agent_runner_workflow_replays_deterministically(
     fixture: HistoryFixture,
 ) -> None:
-    """**Validates: Requirements 5.9, 6.12, 10.1, 10.2, 10.3**
-
-    Replay each pre-recorded ``AgentRunnerWorkflow`` history. The
-    AgentRunnerWorkflow body is implemented in a follow-up task; until
+    """Replay each pre-recorded ``AgentRunnerWorkflow`` history. The
+    AgentRunnerWorkflow body is implemented in follow-up work; until
     then this test ``skip``s to keep the suite green without hiding the
     requirement. The test will start running automatically once the
     fixture file exists and the class carries a ``@workflow.defn``

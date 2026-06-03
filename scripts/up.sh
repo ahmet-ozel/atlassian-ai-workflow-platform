@@ -2,8 +2,7 @@
 # =============================================================================
 # platform/scripts/up.sh — POSIX equivalent of `make boot` / `make up-all`
 # =============================================================================
-# Implements platform-mimari-foundation task 10.3 / Requirement 2.8 for hosts
-# without GNU make AND platform-real-usage-gaps R2 (R2.1, R2.2, R2.4).
+# Compose lifecycle wrapper for hosts without GNU make.
 #
 # Default semantics ("boot bundle"):
 #

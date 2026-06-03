@@ -1,19 +1,10 @@
-"""Property test 16 — Pre-commit secret scan (T2).
-
-**Validates: Requirements 7.10**
+"""Property-based test for the pre-commit secret scan.
 
 Hypothesis-driven verification of the ``precommit_scanner`` activity's
 pure regex-based detection core,
-:func:`src.activities.precommit_scan.scan_diff`. The property-test
-oracle is documented at:
+:func:`src.activities.precommit_scan.scan_diff`.
 
-* ``platform-mimari-workflows`` requirements.md §R7.10 — pre-commit
-  static analysis + secret scan (T2 — P0): the ``AgentRunnerWorkflow``
-  runs the hook before every ``bitbucket_commit_patch`` call, fails
-  the commit when a secret pattern matches, and writes a single
-  ``precommit_secret_leak_blocked`` audit row.
-* ``platform-mimari-workflows`` design.md §"Property 16: Pre-commit
-  secret scan (T2)": for any hypothesis-generated diff variant
+For any hypothesis-generated diff variant
   (random clean code with optionally injected secret patterns:
   AWS access key, Atlassian API token, Bearer header, password=),
   ``precommit_scanner(diff)`` must (a) return ``"block"`` for every
@@ -21,10 +12,6 @@ oracle is documented at:
   pattern matched, (b) return ``"pass"`` for every diff containing
   no secret pattern, (c) return the same :class:`ScanResult` for
   the same diff on repeated invocations (determinism).
-* tasks.md §7.4 — the activity implementation
-  (``platform/workers/agent-runner-worker/src/activities/precommit_scan.py``).
-* tasks.md §7.8 — this property test.
-* MIMARI v3.25 §16.15 T2 — pre-commit secret scan hook.
 
 Property statements
 -------------------
@@ -43,18 +30,15 @@ For any hypothesis-generated diff string ``d`` and pattern selection
      spliced in) returns ``decision == "block"`` and the corresponding
      pattern name(s) appear in ``matched_patterns``. The "block
      decision must include ``secret_pattern_matched`` field" clause of
-     R7.10 is satisfied by the non-empty ``matched_patterns`` tuple
+     the blocking contract is satisfied by the non-empty ``matched_patterns`` tuple
      (the field is named ``matched_patterns`` rather than
-     ``secret_pattern_matched``; see tasks.md §7.4 for the canonical
-     contract — the property here is that the block decision carries
+     ``secret_pattern_matched``; the contract here is that the block decision carries
      a non-empty enumeration of which secret pattern fired).
 
 (P3) **Idempotence / determinism.** ``scan_diff(d) == scan_diff(d)``
      for every ``d``: scanning the same diff twice yields the same
      :class:`ScanResult` (same ``decision``, same ``matched_patterns``
-     in the same order). This is the literal idempotence clause from
-     the task brief and the determinism clause of design.md
-     §"Property 16".
+     in the same order).
 
 Strategy design
 ---------------
@@ -86,7 +70,7 @@ trivially replay-safe.
 Hypothesis configuration
 ------------------------
 
-* ``max_examples=100`` — design.md §"Property 16" sample budget;
+* ``max_examples=100`` — sample budget;
   matches the rest of this property suite (``test_fix_keyword.py``,
   ``test_explain_keyword.py``).
 * ``deadline=None`` — the regex sweep is fast but pytest's default
@@ -134,7 +118,7 @@ try:
 except ImportError as exc:  # pragma: no cover - defensive guard
     pytest.skip(
         "precommit_scanner pure helper not yet available: "
-        f"{exc!r}. Property 16 will run automatically once "
+        f"{exc!r}. This coverage will run automatically once "
         "src.activities.precommit_scan lands.",
         allow_module_level=True,
     )
@@ -336,7 +320,7 @@ def _dirty_diffs(draw: st.DrawFn) -> tuple[str, frozenset[str]]:
 
 
 # ---------------------------------------------------------------------------
-# Property tests
+# Property-based tests
 # ---------------------------------------------------------------------------
 
 
@@ -381,7 +365,7 @@ def test_clean_diff_returns_pass(diff: str) -> None:
 def test_dirty_diff_blocks_with_matched_pattern(
     payload: tuple[str, frozenset[str]],
 ) -> None:
-    """(P2) A diff with at least one secret literal returns ``block``.
+    """A diff with at least one secret literal returns ``block``.
 
     The dirty-diff generator splices one or more synthesised secret
     literals into a clean carrier and reports the set of pattern
@@ -396,7 +380,7 @@ def test_dirty_diff_blocks_with_matched_pattern(
       "block decision must include the injected pattern", not
       "exactly that and nothing else".
     * carry a non-empty ``matched_patterns`` tuple — the
-      "secret_pattern_matched field" clause of R7.10.
+      "secret_pattern_matched field" clause.
     """
 
     diff, injected_names = payload
@@ -408,7 +392,7 @@ def test_dirty_diff_blocks_with_matched_pattern(
     )
     # The "block decision must include ``secret_pattern_matched``
     # field" clause is satisfied by the non-empty tuple — the field
-    # is named ``matched_patterns`` per tasks.md §7.4 contract.
+    # is named ``matched_patterns`` by the helper contract.
     assert result.matched_patterns, (
         "block decision missing matched_patterns enumeration "
         f"(diff={diff!r})"

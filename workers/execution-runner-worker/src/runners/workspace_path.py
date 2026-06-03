@@ -1,31 +1,28 @@
 """Deterministic, traversal-safe workspace path builder for the execution runner.
 
-Spec: ``platform-mimari-uyumluluk`` Requirement 11 (Q13 — ``RUNNER_BASE_PATH``
-env standard) — task 13.1.
-
 The execution-runner places task workspaces under a fixed layout::
 
     {RUNNER_BASE_PATH}/{ISSUE_KEY}/iter-{N}/
 
-This layout is referenced by ``task-creation-assistant-prompt.md`` v1.9 and
-is the contract between the runner workflow and the prompt template. To
-avoid drift, both ``runners/remote_ssh.py`` and ``runners/remote_ssh_docker.py``
-are expected to derive the workspace path **only** through
+This layout is the contract between the runner workflow and the prompt
+template. To avoid drift, both ``runners/remote_ssh.py`` and
+``runners/remote_ssh_docker.py`` are expected to derive the workspace path
+**only** through
 :func:`build_workspace_path`.
 
 The helper is intentionally tiny and dependency-free — Python stdlib only —
 because it sits on the hot path of every execution-runner activity invocation
 and is exercised by the property test in
-``platform/tests/property/test_runner_workspace_path.py`` (task 13.5).
+``platform/tests/property/test_runner_workspace_path.py``.
 
-Validation rules (acceptance criteria 11.3, 11.6):
+Validation rules:
 
-* ``issue_key`` MUST match ``^[A-Z][A-Z0-9_]*-\\d+$`` — a Jira-style key
+* ``issue_key`` must match ``^[A-Z][A-Z0-9_]*-\\d+$`` — a Jira-style key
   (e.g. ``PAY-4211``, ``OPS_CORE-12``). Anything else (path traversal vectors
   like ``..``, ``../etc``, or shell metachars like ``;``, ``&``, ``|``,
   newline, null-byte) is rejected with :class:`InvalidIssueKeyError` — the
   function never touches the filesystem with an unvalidated key.
-* ``iter_n`` MUST be an ``int`` in ``[0, 999]``; outside that range raises
+* ``iter_n`` must be an ``int`` in ``[0, 999]``; outside that range raises
   :class:`InvalidIterError`. Booleans are rejected (``bool`` is a subclass of
   ``int`` in Python, but a workspace iteration of ``True`` / ``False`` is
   almost certainly a caller bug, not an intent).
@@ -56,7 +53,6 @@ __all__ = [
 
 #: Compiled regex that ``issue_key`` MUST satisfy. Matches Jira-style project
 #: keys followed by a numeric issue id, e.g. ``PAY-4211`` or ``OPS_CORE-12``.
-#: Pattern source: requirements.md R11.3 / tasks.md 13.1.
 ISSUE_KEY_PATTERN: Final[re.Pattern[str]] = re.compile(r"^[A-Z][A-Z0-9_]*-\d+$")
 
 #: Inclusive lower bound for the iteration counter.
@@ -132,7 +128,7 @@ def build_workspace_path(base: str, issue_key: str, iter_n: int) -> str:
         >>> build_workspace_path("/var/ai-runner/", "OPS_CORE-12", 3)
         '/var/ai-runner/OPS_CORE-12/iter-3'
     """
-    # --- issue_key guard (path-traversal safety, R11.3 / R11.6) -----------
+    # --- issue_key guard (path-traversal safety) --------------------------
     # ``re.fullmatch`` returns ``None`` when no match; ``isinstance`` guard
     # short-circuits non-str inputs (``re.fullmatch`` would raise a
     # ``TypeError`` otherwise, but a typed exception is friendlier for
@@ -152,7 +148,7 @@ def build_workspace_path(base: str, issue_key: str, iter_n: int) -> str:
     # Strip trailing forward slashes so that the helper is deterministic for
     # callers that pass either ``/var/ai-runner`` or ``/var/ai-runner/``.
     # ``base`` is a trusted env-derived value (settings.runner_base_path);
-    # the helper does not validate it further per task 13.1.
+    # the helper does not validate it further.
     normalised_base = base.rstrip("/") if isinstance(base, str) else base
 
     return f"{normalised_base}/{issue_key}/iter-{iter_n}"

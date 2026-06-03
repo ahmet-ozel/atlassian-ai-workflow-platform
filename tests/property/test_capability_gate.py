@@ -1,67 +1,62 @@
-"""Property tests for the capability gate (Property 7).
+"""Capability gate behavioral properties.
 
-**Validates: Requirements 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 10.10**
 
-Property 7 — Capability gate determinism + feature flag default-off + mode=disabled
------------------------------------------------------------------------------------
+
+Capability gate determinism + feature flag default-off + mode=disabled
+----------------------------------------------------------------------
 
 For every triple ``(Department, workflow_type, env)`` drawn from a
 schema-faithful Hypothesis strategy:
 
-(a) Determinism / purity.
-    :func:`derive_capabilities` is a pure function — it consults only the
-    fields of ``dept`` and the keys of ``env`` documented in
-    :mod:`temporal_shared.capabilities`. It performs no network or
-    filesystem I/O. We enforce this by patching every common I/O entry
-    point (``socket.socket``, ``socket.create_connection``,
-    ``urllib.request.urlopen``, ``httpx.Client``, ``httpx.AsyncClient``,
-    ``requests.request``, ``builtins.open``) and asserting the mocks
-    are never called during evaluation.
+(a) Determinism / purity.:func:`derive_capabilities` is a pure function — it consults only the
+ fields of ``dept`` and the keys of ``env`` documented in:mod:`temporal_shared.capabilities`. It performs no network or
+ filesystem I/O. We enforce this by patching every common I/O entry
+ point (``socket.socket``, ``socket.create_connection``,
+ ``urllib.request.urlopen``, ``httpx.Client``, ``httpx.AsyncClient``,
+ ``requests.request``, ``builtins.open``) and asserting the mocks
+ are never called during evaluation.
 
 (b) Capability derivation rule equivalence.
-    The output of :func:`derive_capabilities` matches the exact rule
-    table in design.md (`derive_capabilities` block):
+ The output of:func:`derive_capabilities` matches the exact rule
+ table used by ``derive_capabilities``:
 
-      - ``jira_read``+``jira_write``         iff ``dept.bot.jira.has_credential()``
-      - ``bitbucket_read``+``bitbucket_write`` iff ``dept.bot.bitbucket.has_credential()``
-      - ``confluence_read``+``confluence_write`` iff ``dept.bot.confluence.has_credential()``
-      - ``execution``                        iff any key in ``env`` starts with ``SSH_HOST_``
-      - ``web_search``                       iff ``dept.web_search_enabled and env["FIRECRAWL_ENABLED"] == "true"``
+ - ``jira_read``+``jira_write`` iff ``dept.bot.jira.has_credential``
+ - ``bitbucket_read``+``bitbucket_write`` iff ``dept.bot.bitbucket.has_credential``
+ - ``confluence_read``+``confluence_write`` iff ``dept.bot.confluence.has_credential``
+ - ``execution`` iff any key in ``env`` starts with ``SSH_HOST_``
+ - ``web_search`` iff ``dept.web_search_enabled and env["FIRECRAWL_ENABLED"] == "true"``
 
-    Any other capability string never appears in the output.
+ Any other capability string never appears in the output.
 
 (c) Gate set algebra.
-    For any workflow type *w* with required capabilities ``R``, the
-    derived capability set ``D``, and the result of ``gate(w, dept, env)``:
+ For any workflow type *w* with required capabilities ``R``, the
+ derived capability set ``D``, and the result of ``gate(w, dept, env)``:
 
-      - ``allowed`` is True iff ``R ⊆ D``
-      - ``missing`` equals ``R - D`` exactly (frozenset)
-      - Monotonicity: enlarging ``D`` can never turn ``allowed=True``
-        into ``allowed=False`` and ``missing`` can only shrink.
-      - Workflow-start invariant: a thin caller that consults
-        :class:`GateDecision` MUST NOT call ``start_workflow`` when
-        ``allowed`` is False. We model this with a Mock and assert
-        ``not mock.called`` whenever the gate denies.
+ - ``allowed`` is True iff ``R ⊆ D``
+ - ``missing`` equals ``R - D`` exactly (frozenset)
+ - Monotonicity: enlarging ``D`` can never turn ``allowed=True``
+ into ``allowed=False`` and ``missing`` can only shrink.
+ - Workflow-start rule: a thin caller that consults:class:`GateDecision` MUST NOT call ``start_workflow`` when
+ ``allowed`` is False. We model this with a Mock and assert
+ ``not mock.called`` whenever the gate denies.
 
 (d) ``dept.mode == "disabled"`` blocks workflow start unconditionally.
-    The pure :func:`gate` function does not consult ``mode`` — that
-    invariant is enforced by the layer above (automation-service). We
-    therefore wrap ``gate`` with the reference helper
-    :func:`_should_start_workflow` defined in this module: it returns
-    ``False`` whenever ``mode == "disabled"`` regardless of the gate
-    result, and audit emits a ``dept_disabled`` event. The helper is
-    the test-time spec for what task 5.2's ``automation-service``
-    webhook handler must implement.
+ The pure:func:`gate` function does not consult ``mode`` — that
+ rule is enforced by the layer above (automation-service). We
+ therefore wrap ``gate`` with the reference helper:func:`_should_start_workflow` defined in this module: it returns
+ ``False`` whenever ``mode == "disabled"`` regardless of the gate
+ result, and audit emits a ``dept_disabled`` event. The helper is
+ the reference behavior for the ``automation-service``
+ webhook handler must implement.
 
 (e) ``SSH_RUNNER_DEPT_PINNING_ENABLED`` and ``SSH_DEPT_QUOTA_ENABLED``
-    feature-flags default to off.
-    Setting either flag in the environment to ``"false"`` (or omitting
-    it entirely) MUST NOT change the output of
-    :func:`derive_capabilities`. Only the presence of at least one
-    ``SSH_HOST_<n>`` key drives the ``execution`` capability. The flag
-    is *not yet* consulted by the resolver — turning it on is a future
-    spec that introduces dept-pinning logic. This test pins the
-    default-off behaviour so the regression cannot land silently.
+ feature-flags default to off.
+ Setting either flag in the environment to ``"false"`` (or omitting
+ it entirely) MUST NOT change the output of:func:`derive_capabilities`. Only the presence of at least one
+ ``SSH_HOST_<n>`` key drives the ``execution`` capability. The flag
+ is *not yet* consulted by the resolver — turning it on is a future
+ behavior that introduces dept-pinning logic. This test pins the
+ default-off behaviour so the regression cannot land silently.
 """
 
 from __future__ import annotations
@@ -85,7 +80,7 @@ from temporal_shared.capabilities import (
 # Schema-faithful test doubles for ``Department``
 # ---------------------------------------------------------------------------
 #
-# The full ``Department`` dataclass / loader lives in a later task; the
+# The full ``Department`` dataclass / loader lives outside this test; the
 # capability resolver itself only requires the structural protocol
 # ``SupportsDepartment`` (see capabilities.py). We therefore mint
 # minimal duck-typed stand-ins here so Hypothesis can drive every
@@ -95,7 +90,7 @@ from temporal_shared.capabilities import (
 
 @dataclass(frozen=True)
 class _StubBotEntry:
-    """Implements :class:`temporal_shared.capabilities.HasCredential`."""
+    """Implements:class:`temporal_shared.capabilities.HasCredential`."""
 
     present: bool
 
@@ -105,7 +100,7 @@ class _StubBotEntry:
 
 @dataclass(frozen=True)
 class _StubBot:
-    """Mirror of design ``Department.bot`` (jira / bitbucket / confluence)."""
+    """Minimal ``Department.bot`` shape for jira / bitbucket / confluence."""
 
     jira: _StubBotEntry | None = None
     bitbucket: _StubBotEntry | None = None
@@ -114,12 +109,12 @@ class _StubBot:
 
 @dataclass(frozen=True)
 class _StubDepartment:
-    """Mirror of design ``Department`` — minimal fields used by the gate.
+    """Minimal ``Department`` shape with the fields used by the gate.
 
-    The ``mode`` field is carried alongside the capability-relevant ones
-    so the workflow-start wrapper (Requirement 10.10) can consult it,
-    even though the pure :func:`gate` function does not.
-    """
+ The ``mode`` field is carried alongside the capability-relevant ones
+ so the workflow-start wrapper can consult it,
+ even though the pure:func:`gate` function does not.
+ """
 
     web_search_enabled: bool
     bot: _StubBot
@@ -128,23 +123,23 @@ class _StubDepartment:
 
 
 # ---------------------------------------------------------------------------
-# Reference workflow-start wrapper (Requirement 10.10)
+# Reference workflow-start wrapper
 # ---------------------------------------------------------------------------
 #
-# This helper is the test-time spec for what the automation-service
-# webhook handler (task 5.2) MUST implement. It documents the layered
+# This helper is the reference behavior for what the automation-service
+# webhook handler MUST implement. It documents the layered
 # contract:
 #
-#   1. If ``dept.mode == "disabled"``, deny unconditionally; emit
-#      ``dept_disabled`` audit event; do not consult capability gate;
-#      do not call ``start_workflow``.
-#   2. Otherwise consult :func:`gate`. If denied, emit
-#      ``capability_denied`` audit event; do not call ``start_workflow``.
-#   3. Otherwise call ``start_workflow``.
+# 1. If ``dept.mode == "disabled"``, deny unconditionally; emit
+# ``dept_disabled`` audit event; do not consult capability gate;
+# do not call ``start_workflow``.
+# 2. Otherwise consult:func:`gate`. If denied, emit
+# ``capability_denied`` audit event; do not call ``start_workflow``.
+# 3. Otherwise call ``start_workflow``.
 #
 # The helper returns the audit action string actually emitted (or
 # ``None`` if the workflow was started) so tests can assert audit
-# correctness alongside the call invariant.
+# correctness alongside the call rule.
 
 
 def _should_start_workflow(
@@ -157,12 +152,12 @@ def _should_start_workflow(
 ) -> bool:
     """Reference wrapper: returns True iff the workflow was started.
 
-    Side effects:
-      - Appends an audit event tag to ``audit_log`` describing the
-        outcome (``"workflow_started"``, ``"capability_denied"``, or
-        ``"dept_disabled"``).
-      - Calls ``start_workflow`` exactly once iff the result is True.
-    """
+ Side effects:
+ - Appends an audit event tag to ``audit_log`` describing the
+ outcome (``"workflow_started"``, ``"capability_denied"``, or
+ ``"dept_disabled"``).
+ - Calls ``start_workflow`` exactly once iff the result is True.
+ """
     if dept.mode == "disabled":
         audit_log.append("dept_disabled")
         return False
@@ -196,7 +191,7 @@ def _bot_strategy(draw: st.DrawFn) -> _StubBot:
     )
 
 
-#: Modes drawn from the schema-extended enum (Requirement 3.2 + 10.10).
+#: Modes drawn from the schema-extended enum.
 mode_strategy = st.sampled_from(["active", "shadow", "disabled"])
 
 
@@ -217,12 +212,12 @@ def _department_strategy(draw: st.DrawFn) -> _StubDepartment:
 def _env_strategy(draw: st.DrawFn) -> dict[str, str]:
     """Generate an environment mapping with realistic noise.
 
-    The strategy intentionally mixes capability-relevant keys
-    (``SSH_HOST_*``, ``FIRECRAWL_ENABLED``) with feature-flag keys
-    (``SSH_RUNNER_DEPT_PINNING_ENABLED``, ``SSH_DEPT_QUOTA_ENABLED``)
-    and arbitrary unrelated keys so Property 7 part (e) — *flags
-    default-off do not affect derivation* — is exercised.
-    """
+ The strategy intentionally mixes capability-relevant keys
+ (``SSH_HOST_*``, ``FIRECRAWL_ENABLED``) with feature-flag keys
+ (``SSH_RUNNER_DEPT_PINNING_ENABLED``, ``SSH_DEPT_QUOTA_ENABLED``)
+ and arbitrary unrelated keys so the feature-flag default-off behavior
+ default-off do not affect derivation* — is exercised.
+ """
     env: dict[str, str] = {}
 
     # Zero or more SSH_HOST_<n> entries.
@@ -272,7 +267,7 @@ workflow_type_strategy = st.sampled_from(sorted(WORKFLOW_TYPE_CAPABILITIES.keys(
 
 
 # ---------------------------------------------------------------------------
-# Closed capability vocabulary (matches design.md)
+# Closed capability vocabulary used by the derivation rules
 # ---------------------------------------------------------------------------
 
 ALL_CAPABILITIES: frozenset[str] = frozenset(
@@ -290,17 +285,17 @@ ALL_CAPABILITIES: frozenset[str] = frozenset(
 
 
 # ---------------------------------------------------------------------------
-# Helper: expected derivation (oracle) — mirrors design.md verbatim
+# Helper: expected derivation (oracle) — mirrors the derivation rules
 # ---------------------------------------------------------------------------
 
 
 def _expected_caps(dept: _StubDepartment, env: Mapping[str, str]) -> frozenset[str]:
     """Independent oracle implementation of the derivation rules.
 
-    Re-deriving the expected capability set from the dept + env using a
-    second implementation lets the tests catch regressions where the
-    production code drifts away from the rule table in the design doc.
-    """
+ Re-deriving the expected capability set from the dept + env using a
+ second implementation lets the tests catch regressions where the
+ production code drifts away from the rule table.
+ """
     caps: set[str] = set()
     if dept.bot.jira is not None and dept.bot.jira.has_credential():
         caps |= {"jira_read", "jira_write"}
@@ -316,7 +311,7 @@ def _expected_caps(dept: _StubDepartment, env: Mapping[str, str]) -> frozenset[s
 
 
 # ---------------------------------------------------------------------------
-# Property 7 (a) — Determinism and purity (no I/O)
+# Behavior: Determinism and purity (no I/O)
 # ---------------------------------------------------------------------------
 
 
@@ -333,7 +328,7 @@ _IO_PATCH_TARGETS: tuple[str, ...] = (
 
 
 class TestDeterminismAndPurity:
-    """Property 7 (a) — pure function, no I/O (Requirement 4.7)."""
+    """Pure function behavior with no I/O."""
 
     @settings(
         max_examples=200,
@@ -344,12 +339,10 @@ class TestDeterminismAndPurity:
     def test_derive_capabilities_makes_no_io_calls(
         self, dept: _StubDepartment, env: Mapping[str, str]
     ) -> None:
-        """**Validates: Requirements 4.7**
-
-        ``derive_capabilities`` must not call any documented I/O entry
-        point. Each is wrapped in a MagicMock for the duration of the
-        call and verified to remain untouched.
-        """
+        """``derive_capabilities`` must not call any documented I/O entry
+ point. Each is wrapped in a MagicMock for the duration of the
+ call and verified to remain untouched.
+ """
         with patch("socket.socket") as mock_socket, patch(
             "socket.create_connection"
         ) as mock_create, patch(
@@ -384,10 +377,8 @@ class TestDeterminismAndPurity:
         env: Mapping[str, str],
         workflow_type: str,
     ) -> None:
-        """**Validates: Requirements 4.7**
-
-        Same purity invariant for the higher-level :func:`gate`.
-        """
+        """Same purity rule for the higher-level:func:`gate`.
+ """
         with patch("socket.socket") as mock_socket, patch(
             "socket.create_connection"
         ) as mock_create, patch(
@@ -407,11 +398,9 @@ class TestDeterminismAndPurity:
     def test_derive_capabilities_is_referentially_transparent(
         self, dept: _StubDepartment, env: Mapping[str, str]
     ) -> None:
-        """**Validates: Requirements 4.7**
-
-        Calling the function repeatedly with the same inputs always
-        yields the same output (referential transparency).
-        """
+        """Calling the function repeatedly with the same inputs always
+ yields the same output (referential transparency).
+ """
         r1 = derive_capabilities(dept, env)
         r2 = derive_capabilities(dept, env)
         r3 = derive_capabilities(dept, env)
@@ -429,14 +418,14 @@ class TestDeterminismAndPurity:
         env: Mapping[str, str],
         workflow_type: str,
     ) -> None:
-        """**Validates: Requirements 4.4, 4.7**"""
+        """Repeated ``gate`` calls with identical inputs return the same result."""
         d1 = gate(workflow_type, dept, env)
         d2 = gate(workflow_type, dept, env)
         assert d1 == d2
 
 
 # ---------------------------------------------------------------------------
-# Property 7 (b) — Capability derivation rule equivalence
+# Behavior: Capability derivation rule equivalence
 # ---------------------------------------------------------------------------
 
 
@@ -448,10 +437,8 @@ class TestDerivationRules:
     def test_matches_oracle(
         self, dept: _StubDepartment, env: Mapping[str, str]
     ) -> None:
-        """**Validates: Requirements 4.3**
-
-        The production output equals the independent oracle.
-        """
+        """The production output equals the independent oracle.
+ """
         assert derive_capabilities(dept, env) == _expected_caps(dept, env)
 
     @settings(max_examples=200, deadline=2000)
@@ -459,10 +446,8 @@ class TestDerivationRules:
     def test_output_is_subset_of_known_universe(
         self, dept: _StubDepartment, env: Mapping[str, str]
     ) -> None:
-        """**Validates: Requirements 4.3**
-
-        No capability string outside the closed vocabulary appears.
-        """
+        """No capability string outside the closed vocabulary appears.
+ """
         caps = derive_capabilities(dept, env)
         assert caps <= ALL_CAPABILITIES
 
@@ -471,7 +456,7 @@ class TestDerivationRules:
     def test_output_is_frozenset(
         self, dept: _StubDepartment, env: Mapping[str, str]
     ) -> None:
-        """**Validates: Requirements 4.3**"""
+        """The capability resolver returns an immutable set."""
         assert isinstance(derive_capabilities(dept, env), frozenset)
 
     @settings(max_examples=200, deadline=2000)
@@ -479,11 +464,9 @@ class TestDerivationRules:
     def test_jira_capabilities_iff_jira_credential(
         self, dept: _StubDepartment, env: Mapping[str, str]
     ) -> None:
-        """**Validates: Requirements 4.3**
-
-        ``jira_read`` and ``jira_write`` appear iff ``bot.jira`` carries
-        a credential. The two capabilities are always coupled.
-        """
+        """``jira_read`` and ``jira_write`` appear iff ``bot.jira`` carries
+ a credential. The two capabilities are always coupled.
+ """
         caps = derive_capabilities(dept, env)
         has_jira = dept.bot.jira is not None and dept.bot.jira.has_credential()
         assert ("jira_read" in caps) is has_jira
@@ -494,7 +477,7 @@ class TestDerivationRules:
     def test_bitbucket_capabilities_iff_bitbucket_credential(
         self, dept: _StubDepartment, env: Mapping[str, str]
     ) -> None:
-        """**Validates: Requirements 4.3**"""
+        """Bitbucket read and write capabilities follow the credential state."""
         caps = derive_capabilities(dept, env)
         has_bb = (
             dept.bot.bitbucket is not None and dept.bot.bitbucket.has_credential()
@@ -507,7 +490,7 @@ class TestDerivationRules:
     def test_confluence_capabilities_iff_confluence_credential(
         self, dept: _StubDepartment, env: Mapping[str, str]
     ) -> None:
-        """**Validates: Requirements 4.3**"""
+        """Confluence read and write capabilities follow the credential state."""
         caps = derive_capabilities(dept, env)
         has_cf = (
             dept.bot.confluence is not None
@@ -521,12 +504,10 @@ class TestDerivationRules:
     def test_execution_capability_iff_any_ssh_host(
         self, dept: _StubDepartment, env: Mapping[str, str]
     ) -> None:
-        """**Validates: Requirements 4.3, 4.8**
-
-        ``execution`` appears iff at least one ``SSH_HOST_<n>`` key is in
-        the environment, regardless of department fields and regardless
-        of feature-flag values.
-        """
+        """``execution`` appears iff at least one ``SSH_HOST_<n>`` key is in
+ the environment, regardless of department fields and regardless
+ of feature-flag values.
+ """
         caps = derive_capabilities(dept, env)
         has_ssh = any(k.startswith("SSH_HOST_") for k in env)
         assert ("execution" in caps) is has_ssh
@@ -536,11 +517,9 @@ class TestDerivationRules:
     def test_web_search_capability_iff_dept_opt_in_and_global_flag(
         self, dept: _StubDepartment, env: Mapping[str, str]
     ) -> None:
-        """**Validates: Requirements 4.3**
-
-        Both conditions are required: ``web_search`` appears iff
-        ``dept.web_search_enabled`` AND ``env["FIRECRAWL_ENABLED"] == "true"``.
-        """
+        """Both conditions are required: ``web_search`` appears iff
+ ``dept.web_search_enabled`` AND ``env["FIRECRAWL_ENABLED"] == "true"``.
+ """
         caps = derive_capabilities(dept, env)
         expected = (
             dept.web_search_enabled
@@ -550,7 +529,7 @@ class TestDerivationRules:
 
 
 # ---------------------------------------------------------------------------
-# Property 7 (c) — Gate set algebra
+# Behavior: Gate set algebra
 # ---------------------------------------------------------------------------
 
 
@@ -569,7 +548,7 @@ class TestGateSetAlgebra:
         env: Mapping[str, str],
         workflow_type: str,
     ) -> None:
-        """**Validates: Requirements 4.4**"""
+        """Gate decisions expose the expected result shape."""
         decision = gate(workflow_type, dept, env)
         assert isinstance(decision, GateDecision)
         assert isinstance(decision.allowed, bool)
@@ -587,10 +566,8 @@ class TestGateSetAlgebra:
         env: Mapping[str, str],
         workflow_type: str,
     ) -> None:
-        """**Validates: Requirements 4.4**
-
-        ``allowed`` is True iff ``required ⊆ derive_capabilities(dept, env)``.
-        """
+        """``allowed`` is True iff ``required ⊆ derive_capabilities(dept, env)``.
+ """
         required = WORKFLOW_TYPE_CAPABILITIES[workflow_type]
         derived = derive_capabilities(dept, env)
         decision = gate(workflow_type, dept, env)
@@ -608,10 +585,8 @@ class TestGateSetAlgebra:
         env: Mapping[str, str],
         workflow_type: str,
     ) -> None:
-        """**Validates: Requirements 4.4**
-
-        ``missing`` exactly equals ``required - derived`` as a frozenset.
-        """
+        """``missing`` exactly equals ``required - derived`` as a frozenset.
+ """
         required = WORKFLOW_TYPE_CAPABILITIES[workflow_type]
         derived = derive_capabilities(dept, env)
         decision = gate(workflow_type, dept, env)
@@ -629,18 +604,18 @@ class TestGateSetAlgebra:
         env: Mapping[str, str],
         workflow_type: str,
     ) -> None:
-        """**Validates: Requirements 4.4**"""
+        """The allowed flag is consistent with the missing-capability set."""
         decision = gate(workflow_type, dept, env)
         assert decision.allowed is (len(decision.missing) == 0)
 
 
 # ---------------------------------------------------------------------------
-# Property 7 (c) continued — workflow-start invariant via Mock
+# Behavior: workflow-start rule via Mock
 # ---------------------------------------------------------------------------
 
 
 class TestWorkflowStartInvariant:
-    """Denial → no ``start_workflow`` call (Requirements 4.4, 4.5, 4.6)."""
+    """Denial → no ``start_workflow`` call."""
 
     @settings(max_examples=300, deadline=2000)
     @given(
@@ -654,12 +629,10 @@ class TestWorkflowStartInvariant:
         env: Mapping[str, str],
         workflow_type: str,
     ) -> None:
-        """**Validates: Requirements 4.4, 4.5, 4.6**
-
-        For every input where the gate denies AND the dept is active,
-        the reference wrapper MUST NOT call ``start_workflow`` and MUST
-        emit a ``capability_denied`` audit event.
-        """
+        """For every input where the gate denies AND the dept is active,
+ the reference wrapper MUST NOT call ``start_workflow`` and MUST
+ emit a ``capability_denied`` audit event.
+ """
         # Force the dept active so the dept_disabled branch doesn't
         # mask the capability check; that branch has its own test.
         dept = _StubDepartment(
@@ -697,18 +670,16 @@ class TestWorkflowStartInvariant:
         workflow_type: str,
         dept_id: str,
     ) -> None:
-        """**Validates: Requirements 4.4**
+        """For every workflow type, a department wired with every possible
+ credential and an env that satisfies every env-driven capability
+ MUST pass the gate and trigger ``start_workflow`` exactly once
+ with a ``workflow_started`` audit event.
 
-        For every workflow type, a department wired with every possible
-        credential and an env that satisfies every env-driven capability
-        MUST pass the gate and trigger ``start_workflow`` exactly once
-        with a ``workflow_started`` audit event.
-
-        We construct a maximally-capable dept directly rather than
-        sampling-then-filtering — random departments are denied far
-        more often than allowed, so an ``assume(allowed)`` filter would
-        trigger ``HealthCheck.filter_too_much``.
-        """
+ We construct a maximally-capable dept directly rather than
+ sampling-then-filtering — random departments are denied far
+ more often than allowed, so an ``assume(allowed)`` filter would
+ trigger ``HealthCheck.filter_too_much``.
+ """
         max_dept = _StubDepartment(
             web_search_enabled=True,
             bot=_StubBot(
@@ -744,7 +715,7 @@ class TestWorkflowStartInvariant:
 
 
 # ---------------------------------------------------------------------------
-# Property 7 (c) continued — Monotonicity
+# Behavior: Monotonicity
 # ---------------------------------------------------------------------------
 
 
@@ -763,12 +734,10 @@ class TestMonotonicity:
         env: Mapping[str, str],
         workflow_type: str,
     ) -> None:
-        """**Validates: Requirements 4.4, 4.8**
-
-        Adding a new ``SSH_HOST_<n>`` to the env can only turn a denied
-        decision into allowed (or keep it as-is). It cannot flip an
-        allowed decision to denied.
-        """
+        """Adding a new ``SSH_HOST_<n>`` to the env can only turn a denied
+ decision into allowed (or keep it as-is). It cannot flip an
+ allowed decision to denied.
+ """
         before = gate(workflow_type, dept, env)
         env_after = dict(env)
         env_after["SSH_HOST_NEW"] = "host-new"
@@ -792,7 +761,7 @@ class TestMonotonicity:
         env: Mapping[str, str],
         workflow_type: str,
     ) -> None:
-        """**Validates: Requirements 4.3, 4.4**"""
+        """Enabling web search can only add capability coverage."""
         # Force the dept opt-in so toggling FIRECRAWL_ENABLED actually
         # changes the derivation.
         dept = _StubDepartment(
@@ -815,7 +784,7 @@ class TestMonotonicity:
 
 
 # ---------------------------------------------------------------------------
-# Property 7 (d) — dept.mode == "disabled" blocks start unconditionally
+# Behavior: dept.mode == "disabled" blocks start unconditionally
 # ---------------------------------------------------------------------------
 
 
@@ -834,12 +803,10 @@ class TestModeDisabledBlocks:
         env: Mapping[str, str],
         workflow_type: str,
     ) -> None:
-        """**Validates: Requirements 10.10**
-
-        Regardless of capability sufficiency, a department in
-        ``mode=disabled`` MUST NOT have ``start_workflow`` called and
-        the audit log MUST contain a single ``dept_disabled`` event.
-        """
+        """Regardless of capability sufficiency, a department in
+ ``mode=disabled`` MUST NOT have ``start_workflow`` called and
+ the audit log MUST contain a single ``dept_disabled`` event.
+ """
         disabled_dept = _StubDepartment(
             web_search_enabled=dept.web_search_enabled,
             bot=dept.bot,
@@ -874,13 +841,10 @@ class TestModeDisabledBlocks:
         env: Mapping[str, str],
         workflow_type: str,
     ) -> None:
-        """**Validates: Requirements 10.10**
-
-        ``mode=disabled`` MUST short-circuit *before* the capability
-        gate runs — no ``capability_denied`` audit may appear, only
-        ``dept_disabled``. This locks the layering documented in
-        :func:`_should_start_workflow`.
-        """
+        """``mode=disabled`` MUST short-circuit *before* the capability
+ gate runs — no ``capability_denied`` audit may appear, only
+ ``dept_disabled``. This locks the layering documented in:func:`_should_start_workflow`.
+ """
         # Synthesise a dept that *would* pass the gate so the test
         # provably exercises the short-circuit path even when caps are
         # sufficient.
@@ -921,14 +885,14 @@ class TestModeDisabledBlocks:
 
 
 # ---------------------------------------------------------------------------
-# Property 7 (e) — feature flags default-off
+# Behavior: feature flags default-off
 # ---------------------------------------------------------------------------
 
 
 class TestFeatureFlagsDefaultOff:
     """``SSH_RUNNER_DEPT_PINNING_ENABLED`` and ``SSH_DEPT_QUOTA_ENABLED``
-    must not influence ``derive_capabilities`` while their defaults are off.
-    """
+ must not influence ``derive_capabilities`` while their defaults are off.
+ """
 
     _IRRELEVANT_FLAGS: tuple[str, ...] = (
         "SSH_RUNNER_DEPT_PINNING_ENABLED",
@@ -949,14 +913,12 @@ class TestFeatureFlagsDefaultOff:
         flag_value: str,
         flag_name: str,
     ) -> None:
-        """**Validates: Requirements 4.8, 4.9**
-
-        Setting either flag to any value (truthy or falsy) MUST NOT
-        change the derived capability set vs. omitting the flag
-        entirely. This pins the *default-off* contract: flag-driven
-        logic has not been wired in yet, so the resolver must ignore
-        the flag completely.
-        """
+        """Setting either flag to any value (truthy or falsy) MUST NOT
+ change the derived capability set vs. omitting the flag
+ entirely. This pins the *default-off* contract: flag-driven
+ logic has not been wired in yet, so the resolver must ignore
+ the flag completely.
+ """
         env_without = {k: v for k, v in env.items() if k != flag_name}
         env_with = {**env_without, flag_name: flag_value}
 
@@ -975,13 +937,11 @@ class TestFeatureFlagsDefaultOff:
         dept: _StubDepartment,
         env: Mapping[str, str],
     ) -> None:
-        """**Validates: Requirements 4.8**
-
-        Concrete invariant: with ``SSH_RUNNER_DEPT_PINNING_ENABLED=false``
-        (default) and at least one ``SSH_HOST_<n>`` defined, every
-        department gets ``execution`` regardless of dept-specific
-        attributes.
-        """
+        """Concrete behavior: with ``SSH_RUNNER_DEPT_PINNING_ENABLED=false``
+ (default) and at least one ``SSH_HOST_<n>`` defined, every
+ department gets ``execution`` regardless of dept-specific
+ attributes.
+ """
         env_pinned_off = {
             **env,
             "SSH_HOST_0": "runner-0",
@@ -997,12 +957,10 @@ class TestFeatureFlagsDefaultOff:
         dept: _StubDepartment,
         env: Mapping[str, str],
     ) -> None:
-        """**Validates: Requirements 4.9**
-
-        With ``SSH_DEPT_QUOTA_ENABLED=false`` (default), no quota check
-        runs; ``execution`` is granted purely on the env-level
-        ``SSH_HOST_<n>`` presence.
-        """
+        """With ``SSH_DEPT_QUOTA_ENABLED=false`` (default), no quota check
+ runs; ``execution`` is granted purely on the env-level
+ ``SSH_HOST_<n>`` presence.
+ """
         env_quota_off = {
             **env,
             "SSH_HOST_0": "runner-0",
@@ -1012,10 +970,8 @@ class TestFeatureFlagsDefaultOff:
         assert "execution" in caps
 
     def test_flag_off_when_no_ssh_host_yields_no_execution(self) -> None:
-        """**Validates: Requirements 4.8, 4.9**
-
-        Flags-off + no ``SSH_HOST_<n>`` keys → no ``execution``.
-        """
+        """Flags-off + no ``SSH_HOST_<n>`` keys → no ``execution``.
+ """
         dept = _StubDepartment(
             web_search_enabled=False,
             bot=_StubBot(),
@@ -1030,19 +986,19 @@ class TestFeatureFlagsDefaultOff:
 
 
 # ---------------------------------------------------------------------------
-# Property 7 (b) lock-in — WORKFLOW_TYPE_CAPABILITIES is a closed mapping
+# Behavior: WORKFLOW_TYPE_CAPABILITIES is a closed mapping
 # ---------------------------------------------------------------------------
 
 
 class TestWorkflowTypeCapabilitiesShape:
-    """Structural invariants on the single-source-of-truth mapping (R4.1)."""
+    """Structural rules for the single-source-of-truth mapping."""
 
     def test_mapping_has_exactly_thirteen_entries(self) -> None:
-        """**Validates: Requirements 4.1**"""
+        """The workflow capability mapping has the expected size."""
         assert len(WORKFLOW_TYPE_CAPABILITIES) == 13
 
     def test_mapping_keys_match_design(self) -> None:
-        """**Validates: Requirements 4.1**"""
+        """The workflow capability mapping exposes the expected workflow keys."""
         expected = {
             "code_change_with_test",
             "code_change_commit_only",
@@ -1061,17 +1017,15 @@ class TestWorkflowTypeCapabilitiesShape:
         assert set(WORKFLOW_TYPE_CAPABILITIES.keys()) == expected
 
     def test_all_values_are_frozensets_within_known_universe(self) -> None:
-        """**Validates: Requirements 4.1**"""
+        """All mapped capability sets stay within the closed capability vocabulary."""
         for wf, caps in WORKFLOW_TYPE_CAPABILITIES.items():
             assert isinstance(caps, frozenset), wf
             assert caps <= ALL_CAPABILITIES, wf
 
     def test_mapping_is_immutable(self) -> None:
-        """**Validates: Requirements 4.1**
-
-        ``MappingProxyType`` rejects mutation at runtime. We verify
-        every documented mutation method raises ``TypeError``.
-        """
+        """``MappingProxyType`` rejects mutation at runtime. We verify
+ every documented mutation method raises ``TypeError``.
+ """
         # ``MappingProxyType`` lacks ``__setitem__`` / ``__delitem__``
         # / ``clear`` / ``pop`` / ``popitem`` / ``update``; calling any
         # raises TypeError.
@@ -1105,16 +1059,15 @@ class TestUnknownWorkflowType:
         dept: _StubDepartment,
         env: Mapping[str, str],
     ) -> None:
-        """**Validates: Requirements 4.1, 4.4**"""
+        """Unknown workflow types are rejected."""
         with pytest.raises(KeyError):
             gate(unknown, dept, env)
 
 
 # ---------------------------------------------------------------------------
-# Feature: platform-quick-fixes, Property 7: Capability Gate Execution Predicate
 # ---------------------------------------------------------------------------
 #
-# Property 7 — Async resolve_dept_capabilities execution predicate
+# Behavior: Async resolve_dept_capabilities execution predicate
 # ----------------------------------------------------------------
 #
 # For any department, the ``execution`` capability SHALL be present in
@@ -1194,12 +1147,12 @@ class _RunnerConfig:
 def _runner_list_strategy(draw: st.DrawFn) -> list[_RunnerConfig]:
     """Generate a list of 0-5 runners with random statuses.
 
-    This covers:
-    - No runners assigned (empty list)
-    - All runners disabled/quarantine (no active)
-    - At least one active runner
-    - Mix of active and non-active runners
-    """
+ This covers:
+ - No runners assigned (empty list)
+ - All runners disabled/quarantine (no active)
+ - At least one active runner
+ - Mix of active and non-active runners
+ """
     n_runners = draw(st.integers(min_value=0, max_value=5))
     runners = []
     for i in range(n_runners):
@@ -1233,11 +1186,11 @@ def _make_mock_pool(
 ) -> AsyncMock:
     """Build a mock asyncpg.Pool that returns controlled query results.
 
-    The mock simulates the three queries in ``resolve_dept_capabilities``:
-    1. SELECT service FROM automation.department_bots WHERE department_id = $1
-    2. SELECT web_search_enabled FROM automation.departments WHERE id = $1
-    3. SELECT COUNT(*) FROM ... WHERE a.dept_id = $1 AND r.status = 'active'
-    """
+ The mock simulates the three queries in ``resolve_dept_capabilities``:
+ 1. SELECT service FROM automation.department_bots WHERE department_id = $1
+ 2. SELECT web_search_enabled FROM automation.departments WHERE id = $1
+ 3. SELECT COUNT(*) FROM... WHERE a.dept_id = $1 AND r.status = 'active'
+ """
     active_count = sum(1 for r in runners if r.status == "active")
 
     # Mock connection that handles the three queries
@@ -1264,7 +1217,7 @@ def _make_mock_pool(
     mock_conn.fetchrow = mock_fetchrow
     mock_conn.fetchval = mock_fetchval
 
-    # Mock the pool's acquire() context manager
+    # Mock the pool's acquire context manager
     mock_pool = AsyncMock()
 
     class _AcquireCtx:
@@ -1280,16 +1233,16 @@ def _make_mock_pool(
 
 
 # ---------------------------------------------------------------------------
-# Property 7 — Capability Gate Execution Predicate (async DB-backed)
+# Behavior: Capability Gate Execution Predicate (async DB-backed)
 # ---------------------------------------------------------------------------
 
 
 class TestCapabilityGateExecutionPredicate:
-    """Property 7: execution ∈ resolve_dept_capabilities(db, dept_id) ⟺
-    at least one runner with status='active' is assigned to that department.
+    """execution ∈ resolve_dept_capabilities(db, dept_id) ⟺
+ at least one runner with status='active' is assigned to that department.
 
-    **Validates: Requirements 4.9**
-    """
+
+ """
 
     @settings(
         max_examples=100,
@@ -1309,13 +1262,11 @@ class TestCapabilityGateExecutionPredicate:
         web_search_enabled: bool,
         runners: list[_RunnerConfig],
     ) -> None:
-        """**Validates: Requirements 4.9**
-
-        The biconditional: ``execution`` ∈ capabilities ⟺
-        active_runner_count > 0. This must hold regardless of what
-        other bot services are registered or whether web_search is
-        enabled.
-        """
+        """The biconditional: ``execution`` ∈ capabilities ⟺
+ active_runner_count > 0. This must hold regardless of what
+ other bot services are registered or whether web_search is
+ enabled.
+ """
         mock_pool = _make_mock_pool(
             dept_id, bot_services, web_search_enabled, runners
         )
@@ -1351,12 +1302,10 @@ class TestCapabilityGateExecutionPredicate:
         web_search_enabled: bool,
         runners: list[_RunnerConfig],
     ) -> None:
-        """**Validates: Requirements 4.9**
-
-        When all assigned runners have status ∈ {disabled, quarantine}
-        OR no runners are assigned at all, ``execution`` MUST NOT
-        appear in the capability set.
-        """
+        """When all assigned runners have status ∈ {disabled, quarantine}
+ OR no runners are assigned at all, ``execution`` MUST NOT
+ appear in the capability set.
+ """
         # Filter to only non-active runners for this test
         non_active_runners = [r for r in runners if r.status != "active"]
 
@@ -1393,12 +1342,10 @@ class TestCapabilityGateExecutionPredicate:
         n_active: int,
         n_inactive: int,
     ) -> None:
-        """**Validates: Requirements 4.9**
-
-        When at least one runner with status='active' is assigned,
-        ``execution`` MUST appear in the capability set, regardless
-        of how many disabled/quarantine runners also exist.
-        """
+        """When at least one runner with status='active' is assigned,
+ ``execution`` MUST appear in the capability set, regardless
+ of how many disabled/quarantine runners also exist.
+ """
         runners = [
             _RunnerConfig(runner_id=f"active-{i}", status="active")
             for i in range(n_active)
@@ -1438,12 +1385,10 @@ class TestCapabilityGateExecutionPredicate:
         web_search_enabled: bool,
         runners: list[_RunnerConfig],
     ) -> None:
-        """**Validates: Requirements 4.9**
-
-        The ``execution`` predicate is independent of other capabilities.
-        Bot services and web_search are determined by their own rules
-        and are not affected by runner assignment state.
-        """
+        """The ``execution`` predicate is independent of other capabilities.
+ Bot services and web_search are determined by their own rules
+ and are not affected by runner assignment state.
+ """
         mock_pool = _make_mock_pool(
             dept_id, bot_services, web_search_enabled, runners
         )

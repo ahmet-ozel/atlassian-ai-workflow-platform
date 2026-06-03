@@ -95,7 +95,7 @@ describe("TestResultBadge rendering invariants", () => {
   });
 
   it("rendered label never carries an unredacted Sensitive_Field_Set marker", () => {
-    // Sensitive_Field_Set markers per the design's Property 13. The
+    // Sensitive_Field_Set markers used by the provider form. The
     // component receives a pre-redacted message from the backend, so
     // any failing variant whose message we synthesise here MUST NOT
     // contain a verbatim marker (the backend would have replaced it

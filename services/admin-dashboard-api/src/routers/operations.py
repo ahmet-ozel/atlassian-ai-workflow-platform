@@ -1,6 +1,4 @@
-"""``OperationsRouter`` — operations dashboard endpoints (task 16.3).
-
-**Validates: Requirements 16.6** (``platform-mimari-uyumluluk`` R16 / Q20)
+"""``OperationsRouter`` — operations dashboard endpoints.
 
 Exposes the ``GET /admin/operations/license`` endpoint that returns
 current license cap usage for every license tier visible to the

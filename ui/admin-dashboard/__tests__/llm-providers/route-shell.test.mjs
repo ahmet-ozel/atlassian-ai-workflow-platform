@@ -1,6 +1,6 @@
 // Component test — /admin/llm-providers route shell.
 //
-// Validates Requirement 14.1: the page renders the provider table and
+// Verifies the page renders the provider table and
 // the `Add Provider` button. node:test runs without RTL / jsdom, so
 // the test asserts against the page's declared TSX file by parsing
 // it as text and confirming the structural anchors exist.
@@ -22,7 +22,7 @@ const PAGE_PATH = path.resolve(
 );
 
 
-describe("/admin/llm-providers route shell (R14.1)", () => {
+describe("/admin/llm-providers route shell", () => {
   const source = readFileSync(PAGE_PATH, "utf-8");
 
   it("page file exists", () => {
@@ -50,7 +50,7 @@ describe("/admin/llm-providers route shell (R14.1)", () => {
   it("wires Disable to PUT { status: \"inactive\" }", () => {
     // The page calls api.disable(row.id) which uses
     // PUT /admin/llm-providers/{id} body { status: "inactive" } per
-    // R14.7. We assert the call-site exists; the API hook test
+    // Assert the call-site exists; the API hook test
     // covers the body shape itself.
     assert.ok(
       source.includes("handleDisable"),

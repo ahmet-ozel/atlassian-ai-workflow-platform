@@ -1,10 +1,9 @@
 """Unit tests for ``temporal_shared.noop_formatter``.
 
 Validates the pure :func:`format_noop_result_comment` Jira-comment
-formatter against ``platform-mimari-workflows`` requirements.md §R6.8
-and the user-pinned worked examples in tasks.md §10.4 (success case
-``exit_code=0`` with ``stdout="ok\\n"``, failure case ``exit_code != 0``
-with the exit code listed, truncation cap above 1024 characters).
+formatter against worked examples: success with ``exit_code=0`` and
+``stdout="ok\\n"``, failure with the exit code listed, and truncation
+above 1024 characters.
 
 The module is **pure**: every test below constructs inputs locally,
 calls the formatter, and asserts on the returned string — no clocks,
@@ -12,7 +11,6 @@ no I/O, no fixtures.  This mirrors the test style of
 ``test_confluence_dedup.py`` (the closest existing analogue in this
 package).
 
-Validates: Requirements 6.8.
 """
 
 from __future__ import annotations
@@ -37,18 +35,18 @@ from temporal_shared.noop_formatter import (
 
 
 class TestModuleSurface:
-    """The pinned constants are part of the requirement-driven contract."""
+    """The pinned constants are part of the formatter contract."""
 
     def test_truncation_cap_is_1024(self) -> None:
-        """**Validates: Requirement 6.8**
+        """
 
-        Task 10.4 explicitly pins the stdout truncation cap to
-        1024 characters so the comment renders cleanly in Jira.
+        The stdout truncation cap is fixed at 1024 characters so the
+        comment renders cleanly in Jira.
         """
         assert NOOP_STDOUT_TRUNCATE_CHARS == 1024
 
     def test_success_prefix_is_pinned(self) -> None:
-        """**Validates: Requirement 6.8**
+        """
 
         Downstream tooling (smoke-test scrapers, audit log readers)
         match Jira comments by this prefix; the literal text must
@@ -57,15 +55,13 @@ class TestModuleSurface:
         assert NOOP_SUCCESS_PREFIX == "✅ noop_test sonucu"
 
     def test_failure_prefix_is_pinned(self) -> None:
-        """**Validates: Requirement 6.8**"""
         assert NOOP_FAILURE_PREFIX == "❌ noop_test sonucu"
 
     def test_unknown_exit_code_marker_is_pinned(self) -> None:
-        """**Validates: Requirement 6.8**"""
         assert NOOP_EXIT_CODE_UNKNOWN == "n/a"
 
     def test_truncation_marker_is_pinned(self) -> None:
-        """**Validates: Requirement 6.8**
+        """
 
         The marker is rendered verbatim inside a fenced code block
         — its leading ellipsis character makes it visually distinct
@@ -80,13 +76,13 @@ class TestModuleSurface:
 
 
 class TestSuccessCases:
-    """Concrete examples for the success branch (R6.8, task 10.4)."""
+    """Concrete examples for the success branch."""
 
     def test_canonical_success_with_ok_stdout(self) -> None:
-        """**Validates: Requirement 6.8**
+        """
 
-        Task 10.4 worked example: ``exit_code=0`` with
-        ``stdout="ok\\n"`` produces the success comment.
+        ``exit_code=0`` with ``stdout="ok\\n"`` produces the
+        success comment.
         """
         body = format_noop_result_comment(exit_code=0, stdout="ok\n")
         assert body.startswith(NOOP_SUCCESS_PREFIX)
@@ -96,7 +92,7 @@ class TestSuccessCases:
         assert "```\nok\n\n```" in body
 
     def test_success_without_trailing_newline(self) -> None:
-        """**Validates: Requirement 6.8**
+        """
 
         ``echo -n "ok"`` produces output without a trailing newline;
         the formatter still renders it inside a code block.
@@ -108,7 +104,7 @@ class TestSuccessCases:
         )
 
     def test_success_with_empty_stdout_renders_no_output_marker(self) -> None:
-        """**Validates: Requirement 6.8**
+        """
 
         Empty stdout collapses to ``çıktı: <yok>`` (no fenced block)
         so a Jira reader does not see an empty code block.
@@ -118,7 +114,7 @@ class TestSuccessCases:
         assert "```" not in body
 
     def test_success_with_none_stdout_renders_no_output_marker(self) -> None:
-        """**Validates: Requirement 6.8**
+        """
 
         ``stdout=None`` (e.g. the runner did not surface a payload)
         renders identically to the empty-string case.
@@ -127,7 +123,7 @@ class TestSuccessCases:
         assert body == "✅ noop_test sonucu: exit_code=0, çıktı: <yok>"
 
     def test_success_no_trailing_newline_in_comment(self) -> None:
-        """**Validates: Requirement 6.8**
+        """
 
         Jira's markdown renderer adds its own paragraph spacing; a
         trailing newline on our side would produce an awkward gap.
@@ -142,13 +138,13 @@ class TestSuccessCases:
 
 
 class TestFailureCases:
-    """Concrete examples for the failure branch (R6.8, task 10.4)."""
+    """Concrete examples for the failure branch."""
 
     def test_non_zero_exit_code_renders_failure_prefix(self) -> None:
-        """**Validates: Requirement 6.8**
+        """
 
-        Task 10.4 explicitly requires the failure comment to list the
-        exit code so the reader can correlate with runner logs.
+        The failure comment lists the exit code so the reader can
+        correlate it with runner logs.
         """
         body = format_noop_result_comment(exit_code=1, stdout="boom")
         assert body.startswith(NOOP_FAILURE_PREFIX)
@@ -156,7 +152,7 @@ class TestFailureCases:
         assert "```\nboom\n```" in body
 
     def test_negative_exit_code_renders_verbatim(self) -> None:
-        """**Validates: Requirement 6.8**
+        """
 
         Some runners surface signal-style negative exit codes
         (``-9`` for SIGKILL).  The formatter passes the integer
@@ -167,14 +163,13 @@ class TestFailureCases:
         assert "exit_code=-9" in body
 
     def test_large_exit_code_renders_verbatim(self) -> None:
-        """**Validates: Requirement 6.8**"""
         body = format_noop_result_comment(exit_code=255, stdout="")
         assert body == "❌ noop_test sonucu: exit_code=255, çıktı: <yok>"
 
     def test_none_exit_code_renders_unknown_marker_and_failure_prefix(
         self,
     ) -> None:
-        """**Validates: Requirement 6.8**
+        """
 
         A missing exit code (e.g. workflow timed out before the SSH
         command completed) is treated as failure with a distinctive
@@ -187,7 +182,7 @@ class TestFailureCases:
         assert "```\nok\n```" in body
 
     def test_failure_with_empty_stdout(self) -> None:
-        """**Validates: Requirement 6.8**
+        """
 
         A failed run that produced no stdout still renders the
         ``<yok>`` marker — the failure prefix alone signals the
@@ -203,10 +198,10 @@ class TestFailureCases:
 
 
 class TestTruncation:
-    """Concrete examples for the 1024-character cap (R6.8, task 10.4)."""
+    """Concrete examples for the 1024-character cap."""
 
     def test_stdout_at_cap_is_not_truncated(self) -> None:
-        """**Validates: Requirement 6.8**
+        """
 
         Output exactly at the cap is preserved verbatim — the
         truncation marker only fires when the cap is *exceeded*.
@@ -217,17 +212,17 @@ class TestTruncation:
         assert stdout in body
 
     def test_stdout_just_above_cap_is_truncated(self) -> None:
-        """**Validates: Requirement 6.8**
+        """
 
         One character over the cap is enough to trigger the marker
-        — the cap is strict, matching the task description.
+        — the cap is strict by design.
         """
         stdout = "a" * (NOOP_STDOUT_TRUNCATE_CHARS + 1)
         body = format_noop_result_comment(exit_code=0, stdout=stdout)
         assert NOOP_TRUNCATION_MARKER in body
 
     def test_truncation_preserves_first_n_chars(self) -> None:
-        """**Validates: Requirement 6.8**
+        """
 
         The leading 1024 characters survive intact so a Jira reader
         sees the actual start of the runner output before the
@@ -242,7 +237,7 @@ class TestTruncation:
         assert tail not in body
 
     def test_truncation_marker_is_inside_code_block(self) -> None:
-        """**Validates: Requirement 6.8**
+        """
 
         The fenced code block must close *after* the marker so a
         Jira reader sees the marker rendered as code rather than
@@ -258,7 +253,7 @@ class TestTruncation:
         )
 
     def test_multibyte_characters_count_as_one(self) -> None:
-        """**Validates: Requirement 6.8**
+        """
 
         The cap operates on **characters**, not bytes.  Turkish
         characters in the captured output count as one each, which
@@ -287,7 +282,7 @@ class TestTypeValidation:
     """The formatter rejects malformed inputs at the boundary."""
 
     def test_bool_exit_code_is_rejected(self) -> None:
-        """**Validates: Requirement 6.8**
+        """
 
         ``isinstance(True, int)`` is True in Python; the formatter
         rejects booleans explicitly so a wrong call site does not
@@ -300,7 +295,6 @@ class TestTypeValidation:
             )
 
     def test_string_exit_code_is_rejected(self) -> None:
-        """**Validates: Requirement 6.8**"""
         with pytest.raises(TypeError, match="exit_code must be int or None"):
             format_noop_result_comment(
                 exit_code="0",  # type: ignore[arg-type]
@@ -308,7 +302,6 @@ class TestTypeValidation:
             )
 
     def test_float_exit_code_is_rejected(self) -> None:
-        """**Validates: Requirement 6.8**"""
         with pytest.raises(TypeError, match="exit_code must be int or None"):
             format_noop_result_comment(
                 exit_code=0.0,  # type: ignore[arg-type]
@@ -316,7 +309,7 @@ class TestTypeValidation:
             )
 
     def test_bytes_stdout_is_rejected(self) -> None:
-        """**Validates: Requirement 6.8**
+        """
 
         The activity must decode the runner's bytes payload before
         passing it through; passing raw bytes would silently render
@@ -329,7 +322,6 @@ class TestTypeValidation:
             )
 
     def test_int_stdout_is_rejected(self) -> None:
-        """**Validates: Requirement 6.8**"""
         with pytest.raises(TypeError, match="stdout must be str or None"):
             format_noop_result_comment(
                 exit_code=0,
@@ -346,7 +338,7 @@ class TestPurity:
     """The formatter must be a pure function of its inputs."""
 
     def test_repeated_calls_produce_identical_output(self) -> None:
-        """**Validates: Requirement 6.8**
+        """
 
         Two calls with identical inputs must return identical
         strings — the formatter has no hidden state.
@@ -356,11 +348,11 @@ class TestPurity:
         assert first == second
 
     def test_module_does_not_import_clocks_or_randomness(self) -> None:
-        """**Validates: Requirement 6.8, design.md replay determinism**
+        """
 
         A workflow / activity that imported ``time`` / ``random`` /
         ``uuid`` here would fail the AST-based replay-determinism
-        property test (task 2.7).  Asserting the source text catches
+        property test.  Asserting the source text catches
         the violation early with a clear error message.
         """
         from temporal_shared import noop_formatter
@@ -391,7 +383,7 @@ class TestPackageReexports:
     """The public formatter is reachable through the package facade."""
 
     def test_format_function_is_reexported(self) -> None:
-        """**Validates: Requirement 6.8**
+        """
 
         Call sites import from :mod:`temporal_shared`; if the
         re-export is dropped, every consumer breaks at import time.
@@ -406,7 +398,6 @@ class TestPackageReexports:
         )
 
     def test_constants_are_reexported(self) -> None:
-        """**Validates: Requirement 6.8**"""
         import temporal_shared
 
         assert (

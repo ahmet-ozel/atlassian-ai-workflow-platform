@@ -1,4 +1,4 @@
-"""Email → Jira task adapter (B19, Requirement 5.10).
+"""Email → Jira task adapter.
 
 Polls an IMAP mailbox at a fixed cadence and creates a Jira task per
 accepted message. Configured by the ``EMAIL_INBOUND_ADDRESS`` env var
@@ -34,7 +34,6 @@ also keeps an in-memory ``frozenset`` of recently seen UIDs so the
 typical "fetch + start" path is a no-op for already-processed
 messages.
 
-Validates Requirement 5.10.
 """
 
 from __future__ import annotations

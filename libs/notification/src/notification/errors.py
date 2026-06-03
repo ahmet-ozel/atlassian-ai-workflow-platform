@@ -8,7 +8,7 @@ callers (typically a Temporal activity) can apply different retry policies:
   retryable — the workflow should fail-fast and surface the validation error
   to the operator.
 * :class:`NotificationError` — generic transport / persistence failure. Used
-  by sibling task 8.1's adapters when Slack returns non-2xx, SMTP times out,
+  by concrete adapters when Slack returns non-2xx, SMTP times out,
   or the Postgres ``notification_log`` insert fails for a non-unique reason.
 
 The base :class:`NotificationError` is also the catch-all that

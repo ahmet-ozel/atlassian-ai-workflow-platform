@@ -1,7 +1,7 @@
 """Unit tests for ``temporal_shared.identifiers`` — workflow ID, branch, and
 artifact-key formatters.
 
-Validated invariants (task 2.2 in ``.kiro/specs/p0-critical-path/tasks.md``):
+Validated invariants:
 
 1. Each formatter produces the exact string template documented in design.md
    §Workflow ID ve Idempotency Şeması.
@@ -227,18 +227,18 @@ class TestPurityInvariant:
 
 
 # ---------------------------------------------------------------------------
-# Round-trippable workflow_id (platform-mimari-workflows task 1.2, R2.1)
+# Round-trippable workflow_id
 # ---------------------------------------------------------------------------
 #
 # These helpers add a structured ``WorkflowIdRef`` plus
 # ``jira_workflow_id`` / ``bitbucket_pr_workflow_id`` / ``parse_workflow_id``
-# alongside the existing foundation-spec formatters.  The unit tests below
-# pin the documented format regexes from design.md Property 1:
+# alongside the existing formatters. The unit tests below pin the
+# documented format regexes:
 #
 #   ^automation-jira-[A-Z][A-Z0-9_]{1,9}-\d+$
 #   ^automation-bb-[a-z0-9-]+-pr-\d+$
 #
-# A companion property-based test (task 1.4) exercises the round-trip
+# A companion property-based test exercises the round-trip
 # invariant ``parse(format(x)) == x`` across a Hypothesis-generated input
 # space.
 import re
@@ -422,10 +422,9 @@ class TestParseWorkflowId:
 class TestRoundTripInvariants:
     """``parse(format(x)) == x`` round-trip checked on representative inputs.
 
-    Property 1 in design.md mandates this invariant for any
-    ``(project_key, issue_num)`` Jira tuple and any
-    ``(repo_slug, pr_id)`` Bitbucket tuple.  Hypothesis-driven coverage
-    lives in ``tests/property/test_workflow_id.py`` (task 1.4); the
+    This invariant holds for any ``(project_key, issue_num)`` Jira tuple
+    and any ``(repo_slug, pr_id)`` Bitbucket tuple. Hypothesis-driven
+    coverage lives in ``tests/property/test_workflow_id.py``; the
     examples below pin a handful of explicit cases so a regression in
     either direction is caught at unit-test scope as well.
     """

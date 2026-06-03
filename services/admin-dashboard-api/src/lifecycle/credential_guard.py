@@ -1,9 +1,9 @@
 """Credential Guard — blocks production boot when dev-default credentials are detected.
 
-This module implements the fail-fast guard described in Requirements 1.1, 1.2,
-1.4, and 1.5 of the production-hardening spec. It checks environment variables
-against a configurable list of known insecure dev-default values and prevents
-the service from starting in production when any match is found.
+This module implements the fail-fast guard for production startup. It checks
+environment variables against a configurable list of known insecure dev-default
+values and prevents the service from starting in production when any match is
+found.
 
 Usage (inside the FastAPI lifespan)::
 
@@ -18,9 +18,9 @@ Usage (inside the FastAPI lifespan)::
         app.state.credential_blocked = True
         # skip remaining lifespan steps
 
-The ``DEV_DEFAULTS`` tuple is the single source of truth for insecure
-values. Adding a new dev-default credential requires only appending a
-new ``DevDefault`` entry to this tuple (Requirement 1.5).
+The ``DEV_DEFAULTS`` tuple is the single source of truth for insecure values.
+Adding a new dev-default credential requires only appending a new ``DevDefault``
+entry to this tuple.
 """
 
 from __future__ import annotations
@@ -47,7 +47,7 @@ class DevDefault:
     description: str
 
 
-# Extensible configuration list (Requirement 1.5).
+# Extensible configuration list for known dev-default credentials.
 # To add a new dev-default credential, simply append a DevDefault entry here.
 DEV_DEFAULTS: Sequence[DevDefault] = (
     DevDefault("POSTGRES_PASSWORD", "ai_dev_only", "Dev-only Postgres password"),
@@ -60,9 +60,8 @@ DEV_DEFAULTS: Sequence[DevDefault] = (
     DevDefault(
         "MINIO_ROOT_PASSWORD", "miniosecret_dev_only", "Dev-only MinIO password"
     ),
-    # Y1 fix (GEREKSINIM_ANALIZI.md): ``AUTH_PROVIDER=local`` accepts
-    # any non-empty bearer token — fine for dev, a complete
-    # authentication bypass in production. Block boot when detected.
+    # ``AUTH_PROVIDER=local`` accepts any non-empty bearer token, which is fine
+    # for dev but a complete authentication bypass in production.
     DevDefault(
         "AUTH_PROVIDER",
         "local",
@@ -95,14 +94,12 @@ def check_credentials(
 
     When ``platform_env`` equals ``"production"`` and any credential in
     ``env_vars`` matches a value in the ``dev_defaults`` list, the function
-    returns ``blocked=True`` and logs a CRITICAL message for each violation
-    (Requirements 1.1, 1.2).
+    returns ``blocked=True`` and logs a CRITICAL message for each violation.
 
     When ``platform_env`` is anything other than ``"production"`` (including
     ``"development"``, empty string, or undefined), the function returns
     ``blocked=False`` regardless of credential values. If dev-default
-    credentials are detected in non-production mode, a WARNING is logged
-    (Requirement 1.4).
+    credentials are detected in non-production mode, a WARNING is logged.
 
     Args:
         platform_env: The value of the PLATFORM_ENV environment variable.

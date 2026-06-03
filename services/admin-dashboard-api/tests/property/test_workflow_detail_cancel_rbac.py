@@ -1,16 +1,12 @@
-# Feature: platform-mimari-uyumluluk
-# Property 9: Workflow Cancel Button RBAC (Q9)
-# Validates: Requirements 8.3
-"""Property test: Workflow Cancel Button RBAC (Q9).
-
-**Property 9: Workflow Cancel Button RBAC (Q9)**
-**Validates: Requirements 8.3**
-
+#
+# Workflow Cancel Button RBAC
+#
+"""Workflow Cancel Button RBAC.
+Workflow Cancel Button RBAC**
 For any ``(role, viewer_dept_ids, workflow.dept_id, workflow.state)``
 quadruple, the Cancel button on the workflow detail page and the
 ``POST /admin/workflows/{id}/cancel`` endpoint must behave
 deterministically according to the RBAC matrix:
-
 - ``workflow.state != "running"`` → button **disabled** (regardless of role).
 - ``role == "admin"`` ∧ ``workflow.state == "running"`` → button **enabled**,
   endpoint returns 200.
@@ -18,32 +14,25 @@ deterministically according to the RBAC matrix:
   ∧ ``workflow.state == "running"`` → button **enabled**, endpoint returns 200.
 - All other cases (``lead``, ``viewer``, ``dept_admin`` outside own dept,
   unknown role) → button **disabled**, endpoint returns 403.
-
 Strategy
 --------
 Hypothesis generates random combinations of:
-
 1. ``role`` — one of ``{"admin", "dept_admin", "lead", "viewer", "unknown"}``.
 2. ``viewer_dept_ids`` — a frozenset of dept-id strings (0-5 elements).
 3. ``workflow_dept_id`` — a dept-id string (may or may not be in
    ``viewer_dept_ids``).
 4. ``workflow_state`` — one of the known workflow states.
-
 All sub-properties are exercised as separate ``@given`` tests so
 Hypothesis can shrink counterexamples independently.
-
 Implementation note
 -------------------
 The RBAC decision is tested through a ``_cancel_rbac_decision`` helper
-that encodes the matrix from the spec (design.md §R8 / requirements.md
-§8.3). The helper is extracted from the router logic so the property
-test does not depend on FastAPI's HTTP machinery. When the real
-implementation is available the import resolves to it; otherwise the
-reference implementation defined here is used.
-
+that encodes the matrix. The helper is extracted from the router logic so the
+property test does not depend on FastAPI's HTTP machinery. When the real
+implementation is available the import resolves to it; otherwise the reference
+implementation defined here is used.
 The cancel endpoint is also exercised through the FastAPI
-``TestClient`` to verify the HTTP-level 200/403 contract.
-"""
+``TestClient`` to verify the HTTP-level 200/403 contract."""
 
 from __future__ import annotations
 
@@ -79,7 +68,7 @@ from src.routers.workflows_drilldown import router  # noqa: E402
 # RBAC decision logic
 # ---------------------------------------------------------------------------
 # The cancel endpoint (``POST /admin/workflows/{id}/cancel``) enforces the
-# RBAC matrix from requirements.md §8.3 and design.md Property 9.
+#  RBAC matrix used by the workflow cancel endpoint.
 #
 # We define a reference ``_cancel_rbac_decision`` function that encodes the
 # matrix. When the real router exposes this helper it will be imported;
@@ -117,16 +106,13 @@ def _cancel_rbac_decision(
     workflow_state: str,
 ) -> CancelDecision:
     """Encode the RBAC matrix for the workflow cancel button / endpoint.
-
     This is the reference implementation of the decision logic described
-    in requirements.md §8.3 and design.md Property 9:
-
+    in the workflow cancel RBAC matrix:
     - ``workflow.state != "running"`` → disabled (regardless of role).
     - ``role == "admin"`` ∧ ``state == "running"`` → enabled / 200.
     - ``role == "dept_admin"`` ∧ ``dept_id ∈ viewer_dept_ids``
       ∧ ``state == "running"`` → enabled / 200.
-    - All other cases → disabled / 403.
-    """
+    - All other cases → disabled / 403."""
     if workflow_state != "running":
         return CancelDecision(
             button_enabled=False,
@@ -266,7 +252,7 @@ _WORKFLOW_STATE_STRATEGY = st.sampled_from(
 _WORKFLOW_ID_STRATEGY = st.uuids().map(str)
 
 # ---------------------------------------------------------------------------
-# Property 9a — non-running workflow → button always disabled
+#  — non-running workflow → button always disabled
 # ---------------------------------------------------------------------------
 
 
@@ -289,15 +275,11 @@ def test_non_running_workflow_cancel_always_disabled(
     workflow_dept_id: str,
     workflow_state: str,
 ) -> None:
-    """Property 9a — non-running workflow → Cancel button always disabled.
-
-    **Validates: Requirements 8.3**
-
+    """— non-running workflow → Cancel button always disabled.
     For any role and any workflow state that is NOT ``"running"``, the
     Cancel button must be disabled. This is the primary guard: the
     button state is determined by ``workflow.state`` first, before any
-    role check.
-    """
+    role check."""
     decision = _cancel_rbac_decision(
         role=role,
         viewer_dept_ids=viewer_dept_ids,
@@ -318,7 +300,7 @@ def test_non_running_workflow_cancel_always_disabled(
     )
 
 # ---------------------------------------------------------------------------
-# Property 9b — admin role + running workflow → button always enabled
+#  — admin role + running workflow → button always enabled
 # ---------------------------------------------------------------------------
 
 
@@ -335,14 +317,10 @@ def test_admin_running_workflow_cancel_always_enabled(
     viewer_dept_ids: FrozenSet[str],
     workflow_dept_id: str,
 ) -> None:
-    """Property 9b — admin role + running workflow → Cancel always enabled.
-
-    **Validates: Requirements 8.3**
-
+    """— admin role + running workflow → Cancel always enabled.
     An ``admin`` can cancel any running workflow regardless of which
     dept it belongs to. The ``viewer_dept_ids`` set is irrelevant for
-    the admin role.
-    """
+    the admin role."""
     decision = _cancel_rbac_decision(
         role="admin",
         viewer_dept_ids=viewer_dept_ids,
@@ -363,7 +341,7 @@ def test_admin_running_workflow_cancel_always_enabled(
 
 
 # ---------------------------------------------------------------------------
-# Property 9c — dept_admin in own dept + running → button enabled
+#  — dept_admin in own dept + running → button enabled
 # ---------------------------------------------------------------------------
 
 
@@ -380,13 +358,9 @@ def test_dept_admin_own_dept_running_workflow_cancel_enabled(
     viewer_dept_ids: FrozenSet[str],
     workflow_dept_id: str,
 ) -> None:
-    """Property 9c — dept_admin in own dept + running → Cancel enabled.
-
-    **Validates: Requirements 8.3**
-
+    """— dept_admin in own dept + running → Cancel enabled.
     A ``dept_admin`` can cancel a running workflow if and only if the
-    workflow's ``dept_id`` is in their ``viewer_dept_ids`` set.
-    """
+    workflow's ``dept_id`` is in their ``viewer_dept_ids`` set."""
     # Pick a dept_id that IS in the viewer set.
     dept_id_in_set = next(iter(viewer_dept_ids))
 
@@ -409,7 +383,7 @@ def test_dept_admin_own_dept_running_workflow_cancel_enabled(
     )
 
 # ---------------------------------------------------------------------------
-# Property 9d — dept_admin outside own dept + running → button disabled
+#  — dept_admin outside own dept + running → button disabled
 # ---------------------------------------------------------------------------
 
 
@@ -426,13 +400,9 @@ def test_dept_admin_outside_own_dept_running_workflow_cancel_disabled(
     viewer_dept_ids: FrozenSet[str],
     workflow_dept_id: str,
 ) -> None:
-    """Property 9d — dept_admin outside own dept + running → Cancel disabled.
-
-    **Validates: Requirements 8.3**
-
+    """— dept_admin outside own dept + running → Cancel disabled.
     A ``dept_admin`` must NOT be able to cancel a running workflow whose
-    ``dept_id`` is NOT in their ``viewer_dept_ids`` set.
-    """
+    ``dept_id`` is NOT in their ``viewer_dept_ids`` set."""
     # Ensure the workflow dept is NOT in the viewer set.
     assume(workflow_dept_id not in viewer_dept_ids)
 
@@ -456,7 +426,7 @@ def test_dept_admin_outside_own_dept_running_workflow_cancel_disabled(
 
 
 # ---------------------------------------------------------------------------
-# Property 9e — lead/viewer roles → button always disabled (running or not)
+#  — lead/viewer roles → button always disabled (running or not)
 # ---------------------------------------------------------------------------
 
 
@@ -477,13 +447,9 @@ def test_lead_viewer_cancel_always_disabled(
     workflow_dept_id: str,
     workflow_state: str,
 ) -> None:
-    """Property 9e — lead/viewer roles → Cancel always disabled.
-
-    **Validates: Requirements 8.3**
-
+    """— lead/viewer roles → Cancel always disabled.
     ``lead`` and ``viewer`` roles cannot cancel workflows regardless of
-    the workflow state or dept membership. They are read-only roles.
-    """
+    the workflow state or dept membership. They are read-only roles."""
     decision = _cancel_rbac_decision(
         role=role,
         viewer_dept_ids=viewer_dept_ids,
@@ -504,7 +470,7 @@ def test_lead_viewer_cancel_always_disabled(
     )
 
 # ---------------------------------------------------------------------------
-# Property 9f — decision is deterministic (same inputs → same output)
+#  — decision is deterministic (same inputs → same output)
 # ---------------------------------------------------------------------------
 
 
@@ -525,15 +491,11 @@ def test_cancel_rbac_decision_is_deterministic(
     workflow_dept_id: str,
     workflow_state: str,
 ) -> None:
-    """Property 9f — RBAC decision is deterministic.
-
-    **Validates: Requirements 8.3**
-
+    """— RBAC decision is deterministic.
     Calling ``_cancel_rbac_decision`` twice with the same inputs must
     produce the same ``(button_enabled, http_status)`` pair. This
     confirms the decision is a pure function of its inputs with no
-    hidden state or randomness.
-    """
+    hidden state or randomness."""
     kwargs = dict(
         role=role,
         viewer_dept_ids=viewer_dept_ids,
@@ -557,7 +519,7 @@ def test_cancel_rbac_decision_is_deterministic(
 
 
 # ---------------------------------------------------------------------------
-# Property 9g — button_enabled ↔ http_status=200 are always consistent
+#  — button_enabled ↔ http_status=200 are always consistent
 # ---------------------------------------------------------------------------
 
 
@@ -578,18 +540,13 @@ def test_button_enabled_iff_http_200(
     workflow_dept_id: str,
     workflow_state: str,
 ) -> None:
-    """Property 9g — button_enabled ↔ http_status=200 are always consistent.
-
-    **Validates: Requirements 8.3**
-
+    """— button_enabled ↔ http_status=200 are always consistent.
     The ``button_enabled`` flag and the ``http_status`` must always agree:
     - ``button_enabled=True`` ↔ ``http_status=200``
     - ``button_enabled=False`` ↔ ``http_status=403``
-
     This invariant ensures the UI and the API are never out of sync:
     if the button is shown as enabled, the API will accept the request,
-    and if the button is disabled, the API will reject it.
-    """
+    and if the button is disabled, the API will reject it."""
     decision = _cancel_rbac_decision(
         role=role,
         viewer_dept_ids=viewer_dept_ids,
@@ -613,7 +570,7 @@ def test_button_enabled_iff_http_200(
         )
 
 # ---------------------------------------------------------------------------
-# Property 9h — cancel endpoint HTTP contract (admin path via TestClient)
+#  — cancel endpoint HTTP contract (admin path via TestClient)
 # ---------------------------------------------------------------------------
 
 
@@ -632,14 +589,10 @@ def test_admin_cancel_endpoint_returns_200(
     viewer_dept_ids: FrozenSet[str],
     workflow_dept_id: str,
 ) -> None:
-    """Property 9h — admin cancel endpoint returns 200 via TestClient.
-
-    **Validates: Requirements 8.3**
-
+    """— admin cancel endpoint returns 200 via TestClient.
     For an ``admin`` actor, ``POST /admin/workflows/{id}/cancel`` must
     return 200 (the proxy forwards the request and returns the upstream
-    response). This exercises the full FastAPI request pipeline.
-    """
+    response). This exercises the full FastAPI request pipeline."""
     app = _build_app(role="admin", viewer_dept_ids=viewer_dept_ids)
     client = TestClient(app)
 
@@ -653,7 +606,7 @@ def test_admin_cancel_endpoint_returns_200(
 
 
 # ---------------------------------------------------------------------------
-# Property 9i — full RBAC matrix exhaustive check (logic layer)
+#  — full RBAC matrix exhaustive check (logic layer)
 # ---------------------------------------------------------------------------
 
 
@@ -674,20 +627,15 @@ def test_full_rbac_matrix_is_correct(
     workflow_dept_id: str,
     workflow_state: str,
 ) -> None:
-    """Property 9i — full RBAC matrix is correct for all input combinations.
-
-    **Validates: Requirements 8.3**
-
+    """— full RBAC matrix is correct for all input combinations.
     This is the comprehensive matrix test. For every combination of
     ``(role, viewer_dept_ids, workflow_dept_id, workflow_state)``, the
-    decision must satisfy exactly one of the four cases from the spec:
-
+    decision must satisfy exactly one of the four RBAC cases:
     Case 1: ``workflow_state != "running"`` → disabled / 403.
     Case 2: ``role == "admin"`` ∧ ``state == "running"`` → enabled / 200.
     Case 3: ``role == "dept_admin"`` ∧ ``dept_id ∈ viewer_dept_ids``
             ∧ ``state == "running"`` → enabled / 200.
-    Case 4: All other cases → disabled / 403.
-    """
+    Case 4: All other cases → disabled / 403."""
     decision = _cancel_rbac_decision(
         role=role,
         viewer_dept_ids=viewer_dept_ids,

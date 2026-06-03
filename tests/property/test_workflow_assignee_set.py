@@ -1,8 +1,4 @@
-"""Property test — Workflow ilk-aksiyon assignee atama (Property 18 / R10.1).
-
-**Property 18: Workflow ilk-aksiyon assignee atama**
-
-**Validates: Requirements 10.1**
+"""Workflow ilk-aksiyon assignee atama.
 
 For every ``(Department, issue_key)`` pair drawn from a
 schema-faithful Hypothesis strategy, the first activity of any
@@ -11,31 +7,27 @@ department's ``bot.jira.account_id``. If the assignee-set call fails,
 the workflow MUST NOT proceed to its second action and an audit event
 with ``action="assignee_set_failed"`` MUST be written.
 
-Source of truth
----------------
+Behavior
+--------
 
-* Requirements §10.1 — *"… ilk aksiyon olarak Jira issue'nun
+* The first action sets the Jira issue's
   ``assignee`` alanını departmanın ``bot.jira.account_id`` değerine
-  set eden bir activity sağlar (MIMARI §16.14 Y1 — bot assignee
-  step)."*
-* Design §"Property 18" — *"… workflow'un ilk activity'si Jira
+  set eden bir activity sağlar.
+* The workflow's first activity sets the Jira
   issue'nun ``assignee`` alanını ilgili ``dept.bot.jira.account_id``
   değerine set eder; assignee set'i başarısız olursa workflow
-  ilerleyemez ve hata audit'e ``assignee_set_failed`` ile yazılır."*
-* Tasks §12.1 — activity will live at
-  ``platform/workers/agent-runner-worker/src/agent_runner/activities/jira_assign.py``
-  with signature ``set_assignee_to_bot(issue_key, dept_bot_account_id)``.
-  Task 12.1 is currently in-progress (``[-]``) so the concrete
-  activity is not yet available; per the task brief, this property
-  test is written against the documented contract using a reference
-  helper that any future implementation must satisfy.
+  ilerleyemez ve hata audit'e ``assignee_set_failed`` ile yazılır.
+* The assignee activity is represented here by
+  ``set_assignee_to_bot(issue_key, dept_bot_account_id)`` so the
+  workflow behavior can be verified independently from the concrete
+  MCP call path.
 
 Reference helper
 ----------------
 
 The :func:`run_workflow_first_action` helper below is the
-**test-time specification** for the first-action sequence that the
-real ``AgentRunnerWorkflow`` (Spec 2) must implement. It documents
+**test-time reference** for the first-action sequence that the
+real ``AgentRunnerWorkflow`` must implement. It documents
 the layered contract:
 
 1. Resolve the bot's ``account_id`` from
@@ -49,7 +41,7 @@ the layered contract:
 4. Otherwise advance to the second action (a no-op MagicMock here)
    and return ``True``.
 
-Property tests below assert each branch of the contract. When
+Tests below assert each branch of the contract. When
 the real activity is wired in, the same property file can be re-pointed
 at the production import path with the ``run_workflow_first_action``
 helper retired — the assertions remain identical.
@@ -108,28 +100,27 @@ class _StubJiraBot:
 
 @dataclass(frozen=True)
 class _StubBot:
-    """Mirror of design ``Department.bot`` — only Jira slot consulted."""
+    """Mirror of ``Department.bot`` — only Jira slot consulted."""
 
     jira: _StubJiraBot | None
 
 
 @dataclass(frozen=True)
 class _StubDepartment:
-    """Mirror of design ``Department`` — minimal fields used by Property 18."""
+    """Mirror of ``Department`` — minimal fields used by these tests."""
 
     id: str
     bot: _StubBot
 
 
 # ---------------------------------------------------------------------------
-# Reference workflow first-action helper (Property 18 contract)
+# Reference workflow first-action helper
 # ---------------------------------------------------------------------------
 
 
 #: Audit ``action`` strings used by the reference helper. The
 #: ``assignee_set`` event is the success path; ``assignee_set_failed``
-#: is the canonical denial action enumerated in design §"Error
-#: Handling" and Requirement 10.1.
+#: is the canonical denial action used for assignment failures.
 ASSIGNEE_SET_OK_ACTION = "assignee_set"
 ASSIGNEE_SET_FAILED_ACTION = "assignee_set_failed"
 
@@ -137,7 +128,7 @@ ASSIGNEE_SET_FAILED_ACTION = "assignee_set_failed"
 class AssigneeSetError(RuntimeError):
     """Raised by the (mocked) ``set_assignee_to_bot`` activity on failure.
 
-    The real activity (task 12.1) will raise an equivalent error from
+    The real activity will raise an equivalent error from
     inside the MCP call path; the property test only depends on the
     fact that the workflow first-action wrapper must distinguish a
     raised exception from a successful return.
@@ -147,7 +138,7 @@ class AssigneeSetError(RuntimeError):
 # Shape of the activity callable. Real implementation lives at
 # ``agent_runner.activities.jira_assign.set_assignee_to_bot``; tests
 # inject a MagicMock that satisfies this shape so we don't depend on
-# the in-progress task 12.1 activity.
+# the activity implementation.
 SetAssigneeFn = Callable[[str, str], Awaitable[None]]
 
 
@@ -309,7 +300,7 @@ def _depts_without_jira_account_id(draw: st.DrawFn) -> _StubDepartment:
 def _run(coro: Awaitable[bool]) -> bool:
     """Run a coroutine to completion in a fresh event loop.
 
-    Property tests are synchronous; using ``asyncio.run`` keeps each
+    Tests are synchronous; using ``asyncio.run`` keeps each
     Hypothesis example self-contained.
     """
 
@@ -345,14 +336,13 @@ def _make_second_action() -> MagicMock:
 
 
 # ---------------------------------------------------------------------------
-# Property 18 (a) — first activity sets ``assignee = bot.jira.account_id``
+# First activity sets ``assignee = bot.jira.account_id``
 # ---------------------------------------------------------------------------
 
 
 class TestFirstActivitySetsAssignee:
     """The first activity always issues a ``set_assignee_to_bot`` call.
 
-    **Validates: Requirements 10.1**
     """
 
     @settings(
@@ -364,7 +354,7 @@ class TestFirstActivitySetsAssignee:
     def test_calls_set_assignee_with_dept_bot_account_id(
         self, dept: _StubDepartment, issue_key: str
     ) -> None:
-        """**Validates: Requirements 10.1**
+        """The first activity issues a single assignee-set call.
 
         The first activity issues a single call to
         ``set_assignee_to_bot`` with the issue key and the
@@ -396,7 +386,7 @@ class TestFirstActivitySetsAssignee:
     def test_call_is_first_action_before_second_action(
         self, dept: _StubDepartment, issue_key: str
     ) -> None:
-        """**Validates: Requirements 10.1**
+        """The assignee is set before the second action.
 
         ``set_assignee_to_bot`` MUST be invoked *before* the
         second action, so the issue carries the correct assignee
@@ -432,7 +422,7 @@ class TestFirstActivitySetsAssignee:
     def test_workflow_advances_to_second_action_on_success(
         self, dept: _StubDepartment, issue_key: str
     ) -> None:
-        """**Validates: Requirements 10.1**
+        """The success path advances to the second action.
 
         On a successful ``set_assignee_to_bot`` call the workflow
         MUST advance to its second action exactly once.
@@ -459,7 +449,7 @@ class TestFirstActivitySetsAssignee:
     def test_success_audit_event_carries_account_id(
         self, dept: _StubDepartment, issue_key: str
     ) -> None:
-        """**Validates: Requirements 10.1**
+        """The success path emits a single audit event.
 
         The success path emits a single audit event whose
         ``payload["account_id"]`` matches the value used in the
@@ -490,14 +480,13 @@ class TestFirstActivitySetsAssignee:
 
 
 # ---------------------------------------------------------------------------
-# Property 18 (b) — failure path halts workflow + audits ``assignee_set_failed``
+# Failure path halts workflow + audits ``assignee_set_failed``
 # ---------------------------------------------------------------------------
 
 
 class TestAssigneeSetFailureBlocksWorkflow:
     """If the assignee-set call fails the workflow does not advance.
 
-    **Validates: Requirements 10.1**
     """
 
     @settings(
@@ -509,7 +498,7 @@ class TestAssigneeSetFailureBlocksWorkflow:
     def test_second_action_not_called_when_set_assignee_raises(
         self, dept: _StubDepartment, issue_key: str
     ) -> None:
-        """**Validates: Requirements 10.1**
+        """The second action is not invoked when assignment fails.
 
         When ``set_assignee_to_bot`` raises, the second action MUST
         NOT be invoked — the workflow is halted before any
@@ -541,12 +530,11 @@ class TestAssigneeSetFailureBlocksWorkflow:
     def test_failure_audit_event_uses_canonical_action_string(
         self, dept: _StubDepartment, issue_key: str
     ) -> None:
-        """**Validates: Requirements 10.1**
+        """The failure path emits a single audit event.
 
         The failure path emits a single audit event with
         ``action="assignee_set_failed"`` and ``result="error"`` —
-        the canonical names enumerated in Requirement 10.1 and
-        design §"Error Handling".
+        the canonical names used by the workflow.
         """
 
         set_assignee = _make_set_assignee_mock(fails=True)
@@ -582,7 +570,7 @@ class TestAssigneeSetFailureBlocksWorkflow:
         issue_key: str,
         exc_message: str,
     ) -> None:
-        """**Validates: Requirements 10.1**
+        """The failure audit carries the expected account ID.
 
         The failure audit's ``payload`` carries the
         ``expected_account_id`` so operators can replay the missing
@@ -616,16 +604,15 @@ class TestAssigneeSetFailureBlocksWorkflow:
 
 
 # ---------------------------------------------------------------------------
-# Property 18 (c) — missing ``bot.jira.account_id`` is treated as failure
+# Missing ``bot.jira.account_id`` is treated as failure
 # ---------------------------------------------------------------------------
 
 
 class TestMissingJiraAccountIdIsFailure:
     """Departments with no usable Jira ``account_id`` cannot start.
 
-    **Validates: Requirements 10.1**
 
-    Requirement 10.1 names the dept's ``bot.jira.account_id`` as the
+    The dept's ``bot.jira.account_id`` is the
     *only* acceptable assignee value. If the dept never registered a
     Jira bot, the bot has no ``account_id``, or the value is empty,
     the workflow MUST NOT call the activity, MUST NOT advance, and
@@ -642,7 +629,7 @@ class TestMissingJiraAccountIdIsFailure:
     def test_set_assignee_is_not_called(
         self, dept: _StubDepartment, issue_key: str
     ) -> None:
-        """**Validates: Requirements 10.1**
+        """With no usable account ID, the activity is not called.
 
         With no usable ``account_id`` the activity MUST NOT be
         called at all — there is no valid value to pass for the
@@ -672,7 +659,7 @@ class TestMissingJiraAccountIdIsFailure:
     def test_audits_assignee_set_failed_with_missing_reason(
         self, dept: _StubDepartment, issue_key: str
     ) -> None:
-        """**Validates: Requirements 10.1**
+        """A missing account ID emits a failure audit event.
 
         The missing-account-id branch emits the same
         ``assignee_set_failed`` action as the activity-raised
@@ -705,14 +692,13 @@ class TestMissingJiraAccountIdIsFailure:
 
 
 # ---------------------------------------------------------------------------
-# Property 18 (d) — ``set_assignee_to_bot`` is called exactly once per run
+# ``set_assignee_to_bot`` is called exactly once per run
 # ---------------------------------------------------------------------------
 
 
 class TestSingleCallPerRun:
     """The first activity is invoked exactly once per workflow run.
 
-    **Validates: Requirements 10.1**
 
     Workflows must not retry the assignee-set call from inside the
     same first-action wrapper — Temporal's own retry policy applies
@@ -764,11 +750,11 @@ class TestSingleCallPerRun:
 
 
 def test_canonical_example_payment_dept_assigns_to_bot() -> None:
-    """**Validates: Requirements 10.1**
+    """Identical inputs produce identical traces.
 
-    Hand-rolled example mirroring the design.md sequence diagram —
-    pins the success-path shape so the property suite stays anchored
-    to a concrete real-world scenario alongside the random ones.
+    Hand-rolled example for the success-path shape so the property
+    suite stays anchored to a concrete real-world scenario alongside
+    the random ones.
     """
 
     payment = _StubDepartment(
@@ -798,7 +784,7 @@ def test_canonical_example_payment_dept_assigns_to_bot() -> None:
 
 
 def test_canonical_example_dept_without_bot_audits_failure() -> None:
-    """**Validates: Requirements 10.1**
+    """Audit payloads are JSON serializable.
 
     Hand-rolled example for the missing-bot branch — pins the
     ``assignee_set_failed`` audit shape against a concrete dept
@@ -839,14 +825,13 @@ def test_canonical_example_dept_without_bot_audits_failure() -> None:
 
 @pytest.mark.parametrize("issue_key", ["PAY-1", "API-42", "INFRA-99"])
 def test_audit_actor_role_is_system(issue_key: str) -> None:
-    """**Validates: Requirements 10.1, 7.7**
+    """The assignee account ID comes from ``bot.jira.account_id``.
 
     Every event emitted by the first-action wrapper carries
     ``actor_role="system"`` — the canonical role for background
     workflow steps (see ``audit_logger.AUDIT_ACTOR_ROLES``). This
-    pins the dependency on Requirement 7.7 (``actor_role`` mandatory
-    + restricted vocabulary) so a regression in either spec is
-    caught here.
+    pins the dependency on ``actor_role`` being mandatory and drawn
+    from the restricted vocabulary.
     """
 
     dept = _StubDepartment(

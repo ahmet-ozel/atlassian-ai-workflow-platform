@@ -1,12 +1,11 @@
-"""Property tests for the output-action size cap with MinIO redirection.
+"""Property-based tests for the output-action size cap with MinIO redirection.
 
-Validates: Requirements 5.9, 12.3
-Property 10(e) (size-cap branch): an :class:`OutputAction` whose
+An :class:`OutputAction` whose
 JSON-encoded payload exceeds :data:`MAX_OUTPUT_BYTES` is offloaded to
 MinIO and rewritten with a ``summary + minio_uri`` payload; payloads
 within the cap pass through unchanged.
 
-This file pins the four invariants documented by the task brief:
+This file pins four invariants:
 
 1. **Identity below the cap.**  When the encoded payload size is
    ≤ 1 MiB the helper returns the action **unchanged** and never
@@ -18,8 +17,7 @@ This file pins the four invariants documented by the task brief:
    ``summary``/``minio_uri``/``size_bytes`` triple.
 3. **Determinism.**  Calling the helper twice on the same input
    (with a deterministic callback) produces the same returned action
-   on both calls — required by Property 10(e) so replay-time
-   reasoning about the offload is sound.
+   on both calls so replay-time reasoning about the offload is sound.
 4. **``format_final_jira_comment`` line presence rules.**  The ``✅``
    line is omitted when ``critical_done`` is empty; the ``⚠️`` line
    is omitted when ``best_effort_failed`` is empty; both empty →
@@ -69,8 +67,7 @@ class _MinioRecorder:
 
     Each ``__call__`` records ``(key, body)`` and returns a
     deterministic URI derived from the key — so two calls with the
-    same key produce the same URI, satisfying the determinism
-    requirement of Property 10(e).
+    same key produce the same URI.
     """
 
     calls: list[tuple[str, bytes]] = field(default_factory=list)
@@ -163,7 +160,7 @@ _OVERSIZED_PAYLOAD: Final = st.integers(
 
 
 # ---------------------------------------------------------------------------
-# Property 1: identity below the cap
+# Identity below the cap
 # ---------------------------------------------------------------------------
 
 
@@ -187,13 +184,12 @@ class TestRedirectIdentityBelowCap:
         workflow_id: str,
         idx: int,
     ) -> None:
-        """**Validates: Requirement 5.9, Property 10(e) identity branch**
+        """Small payloads return the original action unchanged.
 
         For any payload whose JSON encoding fits within
         :data:`MAX_OUTPUT_BYTES`, :func:`redirect_oversized_payload`
         returns the input action **as-is** (``is`` identity) and never
-        calls the MinIO callback.  This is the identity branch of
-        Property 10(e) — it pins the no-op contract for small
+        calls the MinIO callback. It pins the no-op contract for small
         payloads so the offload path stays cold for every
         well-behaved activity.
         """
@@ -223,7 +219,7 @@ class TestRedirectIdentityBelowCap:
 
 
 # ---------------------------------------------------------------------------
-# Property 2: replacement above the cap
+# Replacement above the cap
 # ---------------------------------------------------------------------------
 
 
@@ -254,13 +250,13 @@ class TestRedirectReplacementAboveCap:
         workflow_id: str,
         idx: int,
     ) -> None:
-        """**Validates: Requirement 5.9, Property 10(e) offload branch**
+        """Oversized payloads are offloaded and summarised.
 
         For any payload whose JSON encoding exceeds
         :data:`MAX_OUTPUT_BYTES`, the helper:
 
         * Calls :class:`MinioCallback` exactly once with the
-          spec-mandated key
+          expected key
           ``ai-runs/{workflow_id}/output-{idx}.json`` and the
           full encoded body.
         * Returns a new :class:`OutputAction` whose
@@ -323,7 +319,7 @@ class TestRedirectReplacementAboveCap:
 
 
 # ---------------------------------------------------------------------------
-# Property 3: determinism — same input twice yields the same output
+# Determinism — same input twice yields the same output
 # ---------------------------------------------------------------------------
 
 
@@ -351,12 +347,11 @@ class TestRedirectDeterminism:
         workflow_id: str,
         idx: int,
     ) -> None:
-        """**Validates: Requirement 5.9, Property 10(e) determinism clause**
+        """Redirecting the same input twice yields the same output.
 
         Two evaluations of :func:`redirect_oversized_payload` with the
         same inputs and a deterministic callback produce equal
-        :class:`OutputAction` instances.  This is the determinism
-        clause of Property 10(e) — the helper must be replay-safe
+        :class:`OutputAction` instances. The helper must be replay-safe
         when it lands inside :class:`AgentRunnerWorkflow`.
         """
         kind, severity = kind_severity
@@ -392,7 +387,7 @@ class TestRedirectDeterminism:
 
 
 # ---------------------------------------------------------------------------
-# Property 4: format_final_jira_comment line-presence rules
+# format_final_jira_comment line-presence rules
 # ---------------------------------------------------------------------------
 
 
@@ -423,10 +418,10 @@ _FAILED_LIST: Final = st.lists(
 
 
 class TestFormatFinalJiraCommentInvariants:
-    """Line-presence rules pinned by Requirement 12.3."""
+    """Line-presence rules for final Jira comments."""
 
     def test_both_empty_returns_empty_string(self) -> None:
-        """**Validates: Requirement 12.3 — both empty → empty string**
+        """Both empty inputs produce an empty string.
 
         Pins the documented edge case: when the workflow produced
         neither completed critical steps nor failed best-effort
@@ -440,7 +435,7 @@ class TestFormatFinalJiraCommentInvariants:
     def test_only_critical_omits_warning_line(
         self, critical_done: list[str]
     ) -> None:
-        """**Validates: Requirement 12.3 — empty failed → no ⚠️ line**
+        """Empty failed list emits no warning line.
 
         With ``best_effort_failed`` empty the formatter must not
         emit the ``⚠️`` prefix anywhere in the result regardless of
@@ -468,7 +463,7 @@ class TestFormatFinalJiraCommentInvariants:
     def test_only_failed_omits_check_line(
         self, best_effort_failed: list[tuple[str, str]]
     ) -> None:
-        """**Validates: Requirement 12.3 — empty critical → no ✅ line**
+        """Empty critical list emits no success line.
 
         With ``critical_done`` empty the formatter must not emit
         the ✅ prefix.  When ``best_effort_failed`` is non-empty
@@ -504,7 +499,7 @@ class TestFormatFinalJiraCommentInvariants:
         critical_done: list[str],
         best_effort_failed: list[tuple[str, str]],
     ) -> None:
-        """**Validates: Requirement 12.3 — both lines, ✅ before ⚠️**
+        """Both lines are emitted with success before warning.
 
         When both lists carry at least one non-empty name the
         formatter emits two lines separated by ``\\n`` with the
@@ -542,10 +537,10 @@ class TestFormatFinalJiraCommentExamples:
     """Concrete examples reproducing the requirement's prose verbatim."""
 
     def test_canonical_example_from_requirement(self) -> None:
-        """**Validates: Requirement 12.3 — canonical sample**
+        """Canonical sample.
 
-        Pins the exact sample shape from the task brief so a future
-        refactor cannot accidentally drift the prose.
+        Pins the exact sample shape so a future refactor cannot
+        accidentally drift the prose.
         """
         result = format_final_jira_comment(
             ["a", "b", "c"],
@@ -558,13 +553,13 @@ class TestFormatFinalJiraCommentExamples:
         )
 
     def test_critical_only_example(self) -> None:
-        """**Validates: Requirement 12.3 — critical-only sample**"""
+        """Critical-only sample."""
         assert format_final_jira_comment(["alpha"], []) == (
             "\u2705 Tamamlanan kritik ad\u0131mlar: alpha"
         )
 
     def test_failed_only_example(self) -> None:
-        """**Validates: Requirement 12.3 — failed-only sample**"""
+        """Failed-only sample."""
         assert format_final_jira_comment(
             [], [("slack_notify", "rate_limited")]
         ) == (
@@ -583,7 +578,7 @@ class TestRedirectArgumentValidation:
     """Defensive checks documented in :func:`redirect_oversized_payload`."""
 
     def test_rejects_non_outputaction(self) -> None:
-        """**Validates: Requirement 5.9 — type contract**"""
+        """Type contract."""
         recorder = _MinioRecorder()
         with pytest.raises(TypeError, match="action must be"):
             _run(
@@ -596,7 +591,7 @@ class TestRedirectArgumentValidation:
             )
 
     def test_rejects_empty_workflow_id(self) -> None:
-        """**Validates: Requirement 5.9 — workflow_id required for key**"""
+        """workflow_id is required for the offload key."""
         action = OutputAction(
             kind="jira_comment",
             severity="critical",
@@ -614,7 +609,7 @@ class TestRedirectArgumentValidation:
             )
 
     def test_rejects_negative_idx(self) -> None:
-        """**Validates: Requirement 5.9 — idx must be non-negative**"""
+        """idx must be non-negative."""
         action = OutputAction(
             kind="jira_comment",
             severity="critical",
@@ -632,7 +627,7 @@ class TestRedirectArgumentValidation:
             )
 
     def test_rejects_bool_idx(self) -> None:
-        """**Validates: Requirement 5.9 — bool rejected as idx**
+        """bool is rejected as idx.
 
         ``bool`` is a subclass of ``int`` in Python; the helper
         rejects it explicitly so a stray ``True``/``False`` cannot
@@ -655,7 +650,7 @@ class TestRedirectArgumentValidation:
             )
 
     def test_rejects_non_callable_callback(self) -> None:
-        """**Validates: Requirement 5.9 — callback must be callable**"""
+        """callback must be callable."""
         action = OutputAction(
             kind="jira_comment",
             severity="critical",
@@ -681,7 +676,7 @@ class TestPublicConstants:
     """Public constants are pinned by the requirement text."""
 
     def test_max_output_bytes_is_one_mebibyte(self) -> None:
-        """**Validates: Requirement 5.9 — 1 MB cap**
+        """1 MiB cap.
 
         The cap is exactly 1 MiB (2**20 bytes), matching the
         S3/MinIO size-header convention.
@@ -690,7 +685,7 @@ class TestPublicConstants:
         assert MAX_OUTPUT_BYTES == 1_048_576
 
     def test_minio_key_template_matches_requirement(self) -> None:
-        """**Validates: Requirement 5.9 — canonical MinIO key shape**"""
+        """Canonical MinIO key shape."""
         assert MINIO_KEY_TEMPLATE == "ai-runs/{workflow_id}/output-{idx}.json"
         # Round-trip a sample to pin the substitution semantics.
         assert MINIO_KEY_TEMPLATE.format(
@@ -698,11 +693,11 @@ class TestPublicConstants:
         ) == "ai-runs/automation-jira-PAY-1/output-3.json"
 
     def test_final_comment_prefixes_use_real_glyphs(self) -> None:
-        """**Validates: Requirement 12.3 — emoji + Turkish prose**
+        """Emoji and Turkish prose are preserved.
 
         The runtime values must be the real ✅ and ⚠️ glyphs (not
         the escape sequences) and must contain the Turkish dotted-i
-        / s-cedilla characters from the spec text.
+        / s-cedilla characters from the expected text.
         """
         assert FINAL_COMMENT_CRITICAL_PREFIX.startswith("\u2705")
         assert "ad\u0131mlar" in FINAL_COMMENT_CRITICAL_PREFIX

@@ -1,16 +1,16 @@
-"""Property test 19 — Bot license hard-cap concurrency queue.
+"""invariant 19 — Bot license hard-cap concurrency queue.
 
-**Validates: Requirements 4.6 / Q20**
+
 
 For every Hypothesis-generated ``(capacity, sequence_of_acquire_release)``
-trace, :class:`BotLicenseHardCap` satisfies:
+trace,:class:`BotLicenseHardCap` satisfies:
 
 (a) ``in_use`` never exceeds ``capacity``.
 (b) FIFO fairness — pending waiters are released in arrival order.
 (c) ``acquire`` followed by an exception inside the with-body still
-    releases the slot.
-(d) Deterministic stats: ``stats()`` reflects the running
-    ``(in_use, capacity, queued)`` counters.
+ releases the slot.
+(d) Deterministic stats: ``stats`` reflects the running
+ ``(in_use, capacity, queued)`` counters.
 """
 
 from __future__ import annotations
@@ -45,7 +45,7 @@ pytestmark = pytest.mark.skipif(
     BotLicenseHardCap is None,
     reason=(
         "src.lifecycle.bot_license_cap not yet importable "
-        f"(task 11.9 is still [-]); error: {_IMPORT_ERROR!r}"
+        f"(implementation milestone is still [-]); error: {_IMPORT_ERROR!r}"
     ),
 )
 

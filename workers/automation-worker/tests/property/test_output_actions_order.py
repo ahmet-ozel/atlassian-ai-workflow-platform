@@ -1,11 +1,9 @@
-"""Property test: Output actions sequential execution order.
+"""Invariant test: Output actions sequential execution order.
 
-**Validates: Requirements 3.1, 3.7**
-
-Property 5: Output actions sequential execution order
+**: Output actions sequential execution order
 -----------------------------------------------------
 *For any* list of output actions (up to 20), the Output_Action_Executor
-SHALL execute them in strict index order (0, 1, 2, ...) and SHALL NOT
+SHALL execute them in strict index order (0, 1, 2,...) and SHALL NOT
 skip or reorder any action regardless of previous action outcomes.
 
 Strategy
@@ -87,9 +85,9 @@ action_type_st = st.sampled_from(list(ActionType))
 def output_actions_st(max_size: int = 20) -> st.SearchStrategy[list[OutputAction]]:
     """Generate a list of OutputAction objects with unique shuffled indices.
 
-    Each action carries its own index in the params dict so the fake
-    MCP caller can record execution order.
-    """
+ Each action carries its own index in the params dict so the fake
+ MCP caller can record execution order.
+ """
 
     @st.composite
     def _build(draw: st.DrawFn) -> list[OutputAction]:
@@ -122,15 +120,14 @@ def output_actions_st(max_size: int = 20) -> st.SearchStrategy[list[OutputAction
 
 
 # ---------------------------------------------------------------------------
-# Property test
+# Invariant test
 # ---------------------------------------------------------------------------
 
 
 class TestOutputActionsSequentialOrder:
-    """Property 5: Output actions sequential execution order.
+    """: Output actions sequential execution order.
 
-    **Validates: Requirements 3.1, 3.7**
-    """
+ **"""
 
     @given(actions=output_actions_st())
     @settings(max_examples=100, deadline=None)
@@ -138,10 +135,9 @@ class TestOutputActionsSequentialOrder:
         self, actions: list[OutputAction]
     ) -> None:
         """For any shuffled list of actions, execution order is always
-        ascending by index, regardless of input order.
+ ascending by index, regardless of input order.
 
-        **Validates: Requirements 3.1, 3.7**
-        """
+ **"""
         caller = _OrderRecordingMCPCaller()
         set_mcp_caller(caller)
 
@@ -180,10 +176,9 @@ class TestOutputActionsSequentialOrder:
         self, actions: list[OutputAction]
     ) -> None:
         """For any input order, all actions are executed — none are
-        skipped or dropped.
+ skipped or dropped.
 
-        **Validates: Requirements 3.1, 3.7**
-        """
+ **"""
         caller = _OrderRecordingMCPCaller()
         set_mcp_caller(caller)
 

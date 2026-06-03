@@ -1,40 +1,38 @@
 """End-to-end integration test for the ``code_change_with_test`` flow.
 
-**Validates: Requirements 11.1, 11.3, 11.5, 6.3, 6.7, 6.10**
 
-Property under test (`.kiro/specs/p0-critical-path/tasks.md` task 15.1)::
+Flow under test::
 
-    webhook payload
-        → AutomationWorkflow
-            → (LLM analysis returns code_change_with_test)
-            → AgentRunnerWorkflow child
-                → branch + commit + draft PR
-        → completion comment + Done transition + work_items.status='completed'
+ webhook payload
+ → AutomationWorkflow
+ → (LLM analysis returns code_change_with_test)
+ → AgentRunnerWorkflow child
+ → branch + commit + draft PR
+ → completion comment + Done transition + work_items.status='completed'
 
 Reality check
 -------------
 
 ``src.workflows.agent_runner_workflow.AgentRunnerWorkflow`` is currently a
-stub (no ``@workflow.defn`` body — see the dedicated AgentRunner task in
-``.kiro/specs/p0-critical-path/tasks.md``). This test therefore registers
+stub (no ``@workflow.defn`` body yet). This test therefore registers
 a *test double* AgentRunnerWorkflow that returns a canned success result
 matching the shape ``AutomationWorkflow`` consumes (a ``summary`` field
-plus a ``draft`` flag mirroring MIMARI §1 Kural 10 — PRs are always
-opened as drafts).
+plus a ``draft`` flag for the invariant that PRs are always opened as
+drafts).
 
 The double captures:
 
 * the ``_AgentRunnerInputShape`` it received (so the test asserts the
-  parent populated branch / repo / output_actions correctly), and
+ parent populated branch / repo / output_actions correctly), and
 * the ``draft=True`` invariant on the bitbucket_pr output_action, which
-  is enforced statically by the ``parse_task_analysis`` parser
-  (`platform/workers/agent-runner-worker/src/prompts/parser.py`,
-  function ``_coerce_draft_true``).
+ is enforced statically by the ``parse_task_analysis`` parser
+ (`platform/workers/agent-runner-worker/src/prompts/parser.py`,
+ function ``_coerce_draft_true``).
 
 Test environment
 ----------------
 
-The ``temporalio.testing.WorkflowEnvironment.start_time_skipping()``
+The ``temporalio.testing.WorkflowEnvironment.start_time_skipping``
 test server is used so the suite is hermetic — no external Temporal
 cluster, no Docker. Activities are mocked in-process with the names
 ``AutomationWorkflow`` invokes (``jira_add_comment``, ``jira_get_issue``,
@@ -43,10 +41,10 @@ cluster, no Docker. Activities are mocked in-process with the names
 The ``update_work_item_status`` mock keeps an in-memory state machine
 that funnels through :func:`validate_work_item_transition`, ensuring the
 pending → running → completed path passes the same validator the real
-activity uses (Property 9). MinIO upload assertions are **out of scope
+activity uses (the invariant). MinIO upload assertions are **out of scope
 for this test**: artifact upload happens inside the AgentRunnerWorkflow
-child, which is mocked here. A separate task covers the AgentRunner
-body and its real S3/MinIO interactions; running that test against real
+child, which is mocked here. Separate AgentRunner coverage exercises
+its real S3/MinIO interactions; running that test against real
 MinIO from Compose is gated behind the ``--run-docker`` pytest CLI
 flag the workspace already exposes.
 
@@ -97,9 +95,9 @@ for _candidate in (_AGENT_RUNNER_WORKER,):
 class _RecordedState:
     """Mutable bag the activity mocks write into so the test can assert.
 
-    Using a dataclass (not a dict) gives us attribute-level autocomplete
-    in IDEs and makes the assertion section read-as-prose.
-    """
+ Using a dataclass (not a dict) gives us attribute-level autocomplete
+ in IDEs and makes the assertion section read-as-prose.
+ """
 
     # Jira side effects
     comments: list[str] = field(default_factory=list)
@@ -117,7 +115,7 @@ class _RecordedState:
 #
 # ``temporalio`` re-imports any module containing a ``@workflow.defn``
 # class under its sandbox to validate the workflow body. That sandbox
-# bans calls like ``Path(__file__).resolve()`` — which this test module
+# bans calls like ``Path(__file__).resolve`` — which this test module
 # performs at import time for the sys.path bootstrap. Keeping the
 # workflow double in a separate, minimal module
 # (``_e2e_doubles.py``) lets the test do its own setup at import time
@@ -136,19 +134,19 @@ from tests.integration._e2e_doubles import (  # noqa: E402
 
 @pytest.mark.asyncio
 async def test_code_change_with_test_e2e_flow_completes() -> None:
-    """**Validates: Requirements 11.1, 11.3, 11.5, 6.3, 6.7, 6.10**
+    """Drive the AutomationWorkflow code-change orchestration path.
 
-    Drive the AutomationWorkflow with a webhook-style ``AutomationInput``
-    that the (mocked) LLM analyses as ``code_change_with_test``. The
-    AgentRunnerWorkflow child is mocked at the workflow level so the
-    test focuses on the orchestration contract:
+ Drive the AutomationWorkflow with a webhook-style ``AutomationInput``
+ that the (mocked) LLM analyses as ``code_change_with_test``. The
+ AgentRunnerWorkflow child is mocked at the workflow level so the
+ test focuses on the orchestration contract:
 
-    1. work_items.status reaches ``"completed"``.
-    2. The bitbucket_pr output_action carries ``draft=True`` (PR draft
-       invariant — MIMARI §1 Kural 10) by the time it reaches the child.
-    3. A completion comment is posted to Jira and the issue transitions
-       to ``Done``.
-    """
+ 1. work_items.status reaches ``"completed"``.
+ 2. The bitbucket_pr output_action carries ``draft=True`` by the
+ time it reaches the child.
+ 3. A completion comment is posted to Jira and the issue transitions
+ to ``Done``.
+ """
 
     # Local imports keep import-time side effects (Temporal sandbox
     # initialisation) out of pytest's collection phase.
@@ -215,8 +213,9 @@ async def test_code_change_with_test_e2e_flow_completes() -> None:
                         "payload": {
                             # NB: ``draft`` is intentionally False here
                             # to verify the parser coerces it to True
-                            # (MIMARI §1 Kural 10). The assertion
-                            # downstream reads it from the child input.
+                            # to verify the parser enforces draft PRs.
+                            # The assertion downstream reads it from
+                            # the child input.
                             "draft": False,
                             "title": "Add /healthz endpoint",
                             "branch": "ai/PAY-4211/iter-1",
@@ -237,7 +236,7 @@ async def test_code_change_with_test_e2e_flow_completes() -> None:
         state.transitions.append(target_status)
 
     # In-memory state machine for work_items. Funnels through the same
-    # pure validator the real activity uses (Property 9) so the test
+    # pure validator the real activity uses (the invariant) so the test
     # exercises the canonical edge set, not a parallel definition.
     @activity.defn(name="update_work_item_status")
     async def update_work_item_status(
@@ -293,8 +292,8 @@ async def test_code_change_with_test_e2e_flow_completes() -> None:
 
     # --- Assertions --------------------------------------------------------
 
-    # 1. Terminal status is "completed" (Requirement 11.5 — work_items
-    #    state machine reaches the success terminal state).
+    # 1. Terminal status is "completed"; the work_items state
+    # machine reaches the success terminal state.
     assert result.status == "completed", (
         f"AutomationWorkflow did not reach completed: {result!r}"
     )
@@ -309,10 +308,9 @@ async def test_code_change_with_test_e2e_flow_completes() -> None:
     )
 
     # 3. The AgentRunnerWorkflow child was invoked exactly once with the
-    #    expected shape (target_repo, target_branch, output_actions
-    #    populated and the bitbucket_pr action's draft flag coerced to
-    #    True by parse_task_analysis — Requirement 6.10 / MIMARI §1
-    #    Kural 10).
+    # expected shape (target_repo, target_branch, output_actions
+    # populated and the bitbucket_pr action's draft flag coerced to
+    # True by parse_task_analysis.
     assert _LAST_RUN["invocations"] == 1, (
         f"AgentRunnerWorkflow invoked {_LAST_RUN['invocations']} times; "
         "expected exactly once"
@@ -333,14 +331,14 @@ async def test_code_change_with_test_e2e_flow_completes() -> None:
     )
     pr_payload = _attr(pr_actions[0], "payload")
     # PR ``draft`` MUST be True regardless of what the LLM returned
-    # (parser coerces the value — MIMARI §1 Kural 10, Property 11.3).
+    # (parser coerces the value to enforce draft PRs).
     assert pr_payload.get("draft") is True, (
         f"bitbucket_pr.draft must be True, got payload={pr_payload!r}"
     )
 
     # 4. Completion comment posted (✅ prefix per
-    #    AutomationWorkflow._format_completion_comment) and the issue
-    #    transitioned to Done.
+    # AutomationWorkflow._format_completion_comment) and the issue
+    # transitioned to Done.
     assert any(c.startswith("✅") for c in state.comments), (
         f"completion comment missing in {state.comments!r}"
     )
@@ -357,13 +355,13 @@ async def test_code_change_with_test_e2e_flow_completes() -> None:
 def _attr(obj: Any, name: str, default: Any = None) -> Any:
     """Read ``name`` from ``obj`` whether it is a dataclass or a dict.
 
-    Temporal serialises payloads on the workflow boundary, so the child
-    input the double receives may arrive either as the original
-    ``_AgentRunnerInputShape`` instance (when running in-process under
-    the test server) or as a plain dict reconstituted from JSON. The
-    test asserts equally well against both shapes via this duck-typing
-    accessor.
-    """
+ Temporal serialises payloads on the workflow boundary, so the child
+ input the double receives may arrive either as the original
+ ``_AgentRunnerInputShape`` instance (when running in-process under
+ the test server) or as a plain dict reconstituted from JSON. The
+ test asserts equally well against both shapes via this duck-typing
+ accessor.
+ """
 
     if isinstance(obj, dict):
         return obj.get(name, default)

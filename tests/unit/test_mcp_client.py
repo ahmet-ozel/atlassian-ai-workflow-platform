@@ -1,20 +1,16 @@
 """Unit tests for the ``mcp_client`` package.
 
-Validates: Requirements 1.8 (banned MCP tool list) and 1.9 (PR draft
-enforcement) — task 2.5 of
-``.kiro/specs/platform-mimari-foundation/tasks.md``.
-
 The tests cover three concerns:
 
-1. :data:`BANNED_TOOLS` exposes the canonical pair from MIMARI §1
-   Kural 9 and :func:`filter_tools` strips them across the supported
+1. :data:`BANNED_TOOLS` exposes the canonical banned pair and
+   :func:`filter_tools` strips them across the supported
    tool-shape forms (string, ``dict``, attribute object).
 2. :func:`enforce_pr_draft` rewrites ``draft`` to ``True`` for every
    well-formed input shape and emits a single ``pr_draft_enforced``
    audit event whenever it had to flip the field.
 3. :class:`AtlassianClient` is the single chokepoint that binds the
    two helpers; its placeholder transport raises with a useful
-   pointer to the spec that delivers the HTTP wiring.
+   pointer to the HTTP wiring work.
 """
 
 from __future__ import annotations
@@ -68,7 +64,7 @@ def _make_logger() -> tuple[Any, _CapturingAuditWriter]:
 
 
 class TestBannedTools:
-    """``BANNED_TOOLS`` matches MIMARI §1 Rule 9 (Requirement 1.8)."""
+    """``BANNED_TOOLS`` lists the tools blocked by policy."""
 
     def test_banned_tools_contains_canonical_pair(self) -> None:
         """The two design.md members are present and only those."""
@@ -188,7 +184,7 @@ class TestFilterTools:
 
 
 class TestEnforcePrDraftCoercion:
-    """``enforce_pr_draft`` always returns ``draft=True`` (Requirement 1.9)."""
+    """``enforce_pr_draft`` always returns ``draft=True``."""
 
     @pytest.mark.parametrize(
         "given",
@@ -313,7 +309,7 @@ class TestEnforcePrDraftAuditing:
 
 
 # ---------------------------------------------------------------------------
-# atlassian_client — single chokepoint binding R1.8 + R1.9
+# atlassian_client — single chokepoint for tool policy and PR draft enforcement
 # ---------------------------------------------------------------------------
 
 
@@ -381,7 +377,7 @@ class TestAtlassianClientSkeleton:
         assert client._mcp_base_url == "http://atlassian-mcp:8090"
 
     # ------------------------------------------------------------------
-    # G6 — client_source enforcement (platform-quick-fixes)
+    # client_source enforcement
     # ------------------------------------------------------------------
 
     def test_constructor_requires_client_source(self) -> None:

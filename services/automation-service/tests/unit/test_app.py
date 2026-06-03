@@ -1,9 +1,8 @@
 """Unit tests for the canonical ``automation_service.app`` factory.
 
-Covers Requirement 1.10 (``automation-service`` exposes an HTTP surface
-with a ``/healthz`` endpoint that the Compose stack can probe) and the
-shape of the legacy ``/readyz`` contract carried over from the
-multi-service-scaffold skeleton.
+Covers the ``automation-service`` HTTP surface with a ``/healthz``
+endpoint that the Compose stack can probe, plus the shape of the legacy
+``/readyz`` contract retained for existing deployment checks.
 
 The tests deliberately exercise both the module-level ``app`` object
 (used by ``uvicorn src.main:app``) and the factory ``create_app()``
@@ -35,7 +34,7 @@ from src.config import Settings  # noqa: E402
 
 
 class TestHealthz:
-    """``GET /healthz`` always returns 200 (Requirement 1.10)."""
+    """``GET /healthz`` always returns 200."""
 
     def test_module_level_app_returns_ok(self) -> None:
         with TestClient(module_app) as client:
@@ -57,7 +56,7 @@ class TestHealthz:
 
         Even if every downstream is unreachable, ``/healthz`` returns
         200 so the orchestrator does not kill an otherwise-healthy
-        process (per design §"Liveness vs readiness").
+        process while readiness reports downstream failures separately.
         """
 
         class BrokenSettings(Settings):

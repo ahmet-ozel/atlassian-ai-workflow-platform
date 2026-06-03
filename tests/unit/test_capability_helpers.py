@@ -1,20 +1,15 @@
-# Surface 2 alignment direction (fix-pre-existing-test-failures task 8.1):
-# update tests to assert the SIMPLE/collapsed vocabulary
+# Alignment note: tests assert the SIMPLE/collapsed vocabulary
 # ({"jira","bitbucket","confluence","execution","web_search"}) emitted by
 # ``temporal_shared.capabilities.required_capabilities`` rather than the raw
-# split vocabulary stored in ``WORKFLOW_TYPE_CAPABILITIES``. This is the same
-# DIRECTION as Surface 1 (test-side alignment, no production edit) but the
-# OPPOSITE token form (simple, not split): ``required_capabilities`` is a
+# split vocabulary stored in ``WORKFLOW_TYPE_CAPABILITIES``. This uses the
+# simple token form, not the split form: ``required_capabilities`` is a
 # deliberate collapse helper whose docstring explicitly documents the simple
-# return vocabulary, so the canonical emission is simple here. See design §
-# "Surface 2 — Specific Changes" step 1 for the consistency clause and §
-# "Hypothesized Root Cause" item 1 for the smaller-and-safer rationale.
+# return vocabulary, so the canonical emission is simple here.
 """Unit tests for capability gate set-algebra helpers.
 
 Tests the pure functions ``required_capabilities``, ``missing_capabilities``,
 and ``has_jira_credential`` from ``temporal_shared.capabilities``.
 
-Validates: Requirements 2.11, 5.2, 5.3
 """
 
 from __future__ import annotations
@@ -97,14 +92,13 @@ class TestRequiredCapabilities:
     def test_research_summary_jira(self) -> None:
         """``research_summary_jira`` is NOT a key in ``WORKFLOW_TYPE_CAPABILITIES``.
 
-        Function name preserved per fix-pre-existing-test-failures preservation
-        clause 3.6. The historical assumption (that ``research_summary_jira``
-        was a key in the foundation-spec mapping) no longer holds: the
-        workflow-spec aliases ``research_publish_confluence`` and
+        The historical assumption (that ``research_summary_jira``
+        was a key in the base mapping) no longer holds: the
+        workflow aliases ``research_publish_confluence`` and
         ``research_summary_jira`` live in the automation-worker layer
         (``automation_worker.activities.task_analyzer.VALID_WORKFLOW_TYPES``)
         as task-analyzer aliases, while ``WORKFLOW_TYPE_CAPABILITIES`` ships
-        the foundation-spec keys (``research_basic`` / ``research_with_web``)
+        the base keys (``research_basic`` / ``research_with_web``)
         — see the comment on this in
         ``platform/tests/property/test_task_analysis_parser.py``. So
         ``required_capabilities("research_summary_jira")`` raises ``KeyError``
@@ -118,14 +112,13 @@ class TestRequiredCapabilities:
     def test_multi_step_raises_key_error(self) -> None:
         """``multi_step`` IS a key in the current production mapping.
 
-        Function name preserved per fix-pre-existing-test-failures preservation
-        clause 3.6. The historical assumption (that ``multi_step`` was
+        The historical assumption (that ``multi_step`` was
         computed at runtime as the union of its sub-workflows and therefore
         absent from ``WORKFLOW_TYPE_CAPABILITIES``) no longer holds: the
         production literal in ``temporal_shared.capabilities`` ships
         ``multi_step`` as a static frozenset entry, mirroring the inversion
-        applied to ``test_temporal_shared.py::test_multi_step_is_not_a_key``
-        by Surface 1 (task 7.2). So ``required_capabilities("multi_step")``
+        applied to ``test_temporal_shared.py::test_multi_step_is_not_a_key``.
+        So ``required_capabilities("multi_step")``
         succeeds and returns the collapsed-simple form of the static entry.
         """
 

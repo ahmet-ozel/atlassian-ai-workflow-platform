@@ -5,11 +5,11 @@ build-backend = "hatchling.build"
 [project]
 name = "automation-service"
 version = "0.0.0"
-description = "Automation HTTP service skeleton (FastAPI on :8080) for the multi-service scaffold."
+description = "Automation HTTP service skeleton (FastAPI on :8080) for the platform."
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 license = { text = "Proprietary" }
-authors = [{ name = "Multi-Service Scaffold" }]
+authors = [{ name = "Platform" }]
 dependencies = [
     "fastapi",
     "pydantic>=2,<3",
@@ -21,14 +21,14 @@ dependencies = [
     "mcp",
     # Workspace path dependency on the shared HTTP / logging utilities.
     # ``http-shared`` ships the secret-redaction logging filter wired
-    # in ``src/main.py`` (Requirement 6.10, task 9.1). ``hatchling``
+    # in ``src/main.py``. ``hatchling``
     # accepts PEP 508 direct references when ``allow-direct-references``
     # is enabled below.
     "http-shared @ file:libs/http-shared",
-    # platform-gap-fill task 7.2 — :class:`observability.TraceMiddleware`
+    # :class:`observability.TraceMiddleware`
     # is mounted on the FastAPI app to extract / generate the
     # ``X-Trace-Id`` header for end-to-end correlation
-    # (Requirement 8.2 — automation-service trace boundary).
+    # marks the automation-service trace boundary.
     "observability @ file:libs/observability",
 ]
 
@@ -41,7 +41,7 @@ allow-direct-references = true
 [tool.hatch.build.targets.wheel]
 # ``src`` keeps the legacy ``src.main`` / ``src.webhooks`` / ``src.decision``
 # entry points working (Dockerfile, existing tests). ``src/automation_service``
-# is the canonical package per the platform-mimari-foundation design and is
+# is the canonical package for shared Temporal capability helpers and is
 # remapped to the top-level ``automation_service`` import path.
 packages = ["src", "src/automation_service"]
 

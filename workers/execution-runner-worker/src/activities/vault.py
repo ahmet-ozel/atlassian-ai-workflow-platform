@@ -4,15 +4,13 @@ Provides :func:`vault_fetch_ssh_credentials`, a Temporal activity that
 reads SSH connection credentials from HashiCorp Vault KV-v2 and returns
 them as a frozen :class:`SSHCred` dataclass.
 
-Each activity invocation creates a fresh Vault HTTP client (no persistent
-session or cached token) per MIMARI §16.6.5 — this ensures token expiry
-during long-running workflows does not affect subsequent activities.
+Each activity invocation creates a fresh Vault HTTP client with no persistent
+session or cached token, ensuring token expiry during long-running workflows
+does not affect subsequent activities.
 
-Vault path layout (MIMARI §8, §13):
+Vault path layout:
     ``{VAULT_KV_MOUNT}/data/ssh/runner/current``
     Expected secret keys: ``host``, ``port``, ``user``, ``private_key``
-
-Requirements: 8.1, 8.7
 """
 
 from __future__ import annotations
@@ -204,8 +202,8 @@ async def vault_fetch_ssh_credentials(
 ) -> SSHCred:
     """Fetch SSH credentials from Vault KV-v2 for the given workflow.
 
-    K2 fix (GEREKSINIM_ANALIZI.md): previously this function ignored its
-    arguments for path selection and ALWAYS read the fixed
+    Previously this function ignored its arguments for path selection and
+    ALWAYS read the fixed
     ``VAULT_SSH_SECRET_PATH`` env (default ``ssh/runner/current``). That
     made the admin SSH runner pool (``infrastructure.ssh_runners`` +
     ``dept_ssh_assignments`` + ``runner_resolver``) decorative — runners

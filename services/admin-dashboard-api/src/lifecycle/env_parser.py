@@ -3,20 +3,10 @@
 This module turns the textual contents of a Component's
 ``.env.example`` file into a list of :class:`EnvField` records that the
 admin-dashboard control plane uses to render the *Servis Yapılandırma
-Formu* (Requirement 5) and to validate operator-supplied
-``Env_Override`` payloads (Requirement 5.6, Property P4).
+Formu* and to validate operator-supplied ``Env_Override`` payloads.
 
-Design references
------------------
-* design §4.7 — ``.env.example`` Parse Modeli (line classification,
-  comment buffer, quote handling, ordering).
-* design §4.6 — form schema field shape (``key``, ``default_value``,
-  ``comment``, ``is_sensitive``).
-* Requirements 5.1, 5.2, 5.4, 5.6 — form-schema fidelity, comment
-  surfacing, deterministic ordering, LHS-key set equality.
-
-Parser contract (per design §4.7)
----------------------------------
+Parser contract
+---------------
 Lines are classified in this order:
 
 1. **Assignment** — matches ``^[A-Z][A-Z0-9_]*=.*$``. Produces an
@@ -44,8 +34,8 @@ from dataclasses import dataclass
 from .sensitive import is_sensitive_env_key
 
 # Assignment line — uppercase identifier, ``=``, then arbitrary value.
-# Matches design §4.7's regex character-for-character so the form-schema
-# LHS set is deterministic across Python and TypeScript consumers.
+# Keeps the form-schema LHS set deterministic across Python and TypeScript
+# consumers.
 _ASSIGNMENT_RE: re.Pattern[str] = re.compile(r"^([A-Z][A-Z0-9_]*)=(.*)$")
 
 # Quote characters that participate in default-value stripping.
@@ -77,7 +67,7 @@ class EnvField:
         Result of :func:`.sensitive.is_sensitive_env_key` on
         :attr:`key`. Mirrored on the TypeScript side via
         ``libs/web-shared/src/sensitive.ts`` so the form renders
-        ``<input type="password">`` consistently (Property C4).
+        ``<input type="password">`` consistently.
     """
 
     key: str
@@ -89,7 +79,7 @@ class EnvField:
 def _strip_quotes(value: str) -> str:
     """Strip a single matching pair of outer ASCII quotes from ``value``.
 
-    Mirrors the dotenv subset described in design §4.7: ``KEY="abc"``
+    Mirrors the supported dotenv subset: ``KEY="abc"``
     and ``KEY='abc'`` both yield ``abc``. Mismatched, unclosed or
     interior quotes are left untouched so the parser does not silently
     reshape values it cannot unambiguously decode.
@@ -134,14 +124,14 @@ def parse_env_example(text: str) -> list[EnvField]:
         appear in ``text``. Empty input yields an empty list. Lines
         that match no rule (e.g. lowercase ``key=value`` or naked
         identifiers) are silently skipped without resetting the
-        comment buffer — this preserves the spec rule that *only*
+        comment buffer — this preserves the parser rule that *only*
         blank lines reset comment accumulation.
 
     Notes
     -----
     The parser is intentionally permissive on malformed input: it
-    cannot raise. Design §4.7 only mandates behaviour for the three
-    recognised line shapes; anything else is treated as harmless
+    cannot raise. The parser only assigns meaning to the three recognised
+    line shapes; anything else is treated as harmless
     noise so a stray BOM or editor artefact does not break the form
     schema for an entire service.
     """

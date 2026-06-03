@@ -63,7 +63,7 @@ function Copy-ToVps {
     .PARAMETER LocalPath
         Path to the local file or directory to transfer.
     .PARAMETER RemotePath
-        Destination path on VPS_Host (e.g., /opt/yeni_atlassian/platform/.env).
+        Destination path on VPS_Host (e.g., /opt/atlassian-ai-workflow-platform/.env).
     .PARAMETER Recursive
         If set, uses -r flag for directory transfer.
     #>

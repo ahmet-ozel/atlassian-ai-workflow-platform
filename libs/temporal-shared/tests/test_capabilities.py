@@ -2,9 +2,8 @@
 
 Validates the :data:`WORKFLOW_TYPE_CAPABILITIES` mapping shape, the
 :func:`derive_capabilities` rule table, and the :func:`gate` set-algebra
-function against the ``platform-mimari-foundation`` design.
+function.
 
-Validates: Requirements 4.1, 4.3, 4.4, 4.7, 4.8, 4.9.
 """
 
 from __future__ import annotations
@@ -56,7 +55,7 @@ def _empty_env() -> Mapping[str, str]:
 
 
 # ---------------------------------------------------------------------------
-# WORKFLOW_TYPE_CAPABILITIES — structural shape (Requirement 4.1)
+# WORKFLOW_TYPE_CAPABILITIES — structural shape
 # ---------------------------------------------------------------------------
 
 
@@ -96,11 +95,9 @@ class TestMappingShape:
     }
 
     def test_has_exactly_thirteen_entries(self) -> None:
-        """**Validates: Requirement 4.1**"""
         assert len(WORKFLOW_TYPE_CAPABILITIES) == 13
 
     def test_keys_match_design(self) -> None:
-        """**Validates: Requirement 4.1**"""
         assert set(WORKFLOW_TYPE_CAPABILITIES.keys()) == set(self.EXPECTED.keys())
 
     @pytest.mark.parametrize(
@@ -111,20 +108,17 @@ class TestMappingShape:
     def test_each_entry_matches_design(
         self, wf_type: str, expected: frozenset[str]
     ) -> None:
-        """**Validates: Requirement 4.1**"""
         assert WORKFLOW_TYPE_CAPABILITIES[wf_type] == expected
 
     def test_full_mapping_equals_design_literal(self) -> None:
-        """**Validates: Requirement 4.1**"""
         assert dict(WORKFLOW_TYPE_CAPABILITIES) == self.EXPECTED
 
     @pytest.mark.parametrize("wf_type", sorted(EXPECTED.keys()))
     def test_value_is_frozenset(self, wf_type: str) -> None:
-        """**Validates: Requirement 4.1**"""
         assert isinstance(WORKFLOW_TYPE_CAPABILITIES[wf_type], frozenset)
 
     def test_mapping_is_immutable_proxy(self) -> None:
-        """**Validates: Requirement 4.1**
+        """
 
         ``MappingProxyType`` rejects mutation attempts with ``TypeError``.
         """
@@ -134,7 +128,6 @@ class TestMappingShape:
             WORKFLOW_TYPE_CAPABILITIES["new_workflow"] = frozenset({"jira_read"})  # noqa: B018
 
     def test_capabilities_drawn_from_closed_vocabulary(self) -> None:
-        """**Validates: Requirement 4.1**"""
         allowed: frozenset[str] = frozenset(
             {
                 "jira_read",
@@ -156,7 +149,7 @@ class TestMappingShape:
 
 
 # ---------------------------------------------------------------------------
-# derive_capabilities — rule table (Requirement 4.3, 4.7, 4.8, 4.9)
+# derive_capabilities — rule table
 # ---------------------------------------------------------------------------
 
 
@@ -164,38 +157,32 @@ class TestDeriveCapabilities:
     """Each rule in the design is exercised in isolation."""
 
     def test_empty_dept_empty_env_yields_empty_caps(self) -> None:
-        """**Validates: Requirement 4.3**"""
         d = _Dept(bot=_Bot(), web_search_enabled=False)
         assert derive_capabilities(d, _empty_env()) == frozenset()
 
     def test_jira_credential_grants_jira_read_and_write(self) -> None:
-        """**Validates: Requirement 4.3 (a)**"""
         d = _Dept(bot=_Bot(jira=_BotEntry(present=True)))
         assert derive_capabilities(d, _empty_env()) == frozenset(
             {"jira_read", "jira_write"}
         )
 
     def test_jira_credential_absent_grants_no_jira_caps(self) -> None:
-        """**Validates: Requirement 4.3 (a)**"""
         d = _Dept(bot=_Bot(jira=_BotEntry(present=False)))
         assert derive_capabilities(d, _empty_env()) == frozenset()
 
     def test_bitbucket_credential_grants_bitbucket_read_and_write(self) -> None:
-        """**Validates: Requirement 4.3 (b)**"""
         d = _Dept(bot=_Bot(bitbucket=_BotEntry(present=True)))
         assert derive_capabilities(d, _empty_env()) == frozenset(
             {"bitbucket_read", "bitbucket_write"}
         )
 
     def test_confluence_credential_grants_confluence_read_and_write(self) -> None:
-        """**Validates: Requirement 4.3 (c)**"""
         d = _Dept(bot=_Bot(confluence=_BotEntry(present=True)))
         assert derive_capabilities(d, _empty_env()) == frozenset(
             {"confluence_read", "confluence_write"}
         )
 
     def test_all_three_credentials_grant_all_six_caps(self) -> None:
-        """**Validates: Requirement 4.3 (a)(b)(c)**"""
         d = _Dept(
             bot=_Bot(
                 jira=_BotEntry(present=True),
@@ -215,7 +202,7 @@ class TestDeriveCapabilities:
         )
 
     def test_ssh_host_env_grants_execution_capability(self) -> None:
-        """**Validates: Requirements 4.3 (d), 4.8**
+        """
 
         Default flag values mean dept-pinning is *off*: presence of
         any ``SSH_HOST_<n>`` key in env grants ``execution`` regardless
@@ -226,7 +213,6 @@ class TestDeriveCapabilities:
         assert "execution" in derive_capabilities(d, env)
 
     def test_multiple_ssh_hosts_still_grants_execution_once(self) -> None:
-        """**Validates: Requirement 4.3 (d)**"""
         d = _Dept(bot=_Bot())
         env = {
             "SSH_HOST_1": "runner-a.example.com",
@@ -238,7 +224,7 @@ class TestDeriveCapabilities:
         assert sum(1 for c in caps if c == "execution") == 1
 
     def test_ssh_runner_dept_pinning_flag_is_not_consulted(self) -> None:
-        """**Validates: Requirement 4.8**
+        """
 
         Setting ``SSH_RUNNER_DEPT_PINNING_ENABLED`` to any value must not
         change the result of :func:`derive_capabilities` — the flag is
@@ -255,14 +241,12 @@ class TestDeriveCapabilities:
         )
 
     def test_ssh_dept_quota_flag_is_not_consulted(self) -> None:
-        """**Validates: Requirement 4.9**"""
         d = _Dept(bot=_Bot())
         env_off = {"SSH_HOST_1": "h"}
         env_flag_true = {"SSH_HOST_1": "h", "SSH_DEPT_QUOTA_ENABLED": "true"}
         assert derive_capabilities(d, env_off) == derive_capabilities(d, env_flag_true)
 
     def test_web_search_requires_dept_optin_and_firecrawl_flag(self) -> None:
-        """**Validates: Requirement 4.3 (e)**"""
         # Both off
         d_off = _Dept(bot=_Bot(), web_search_enabled=False)
         assert "web_search" not in derive_capabilities(d_off, {"FIRECRAWL_ENABLED": "true"})
@@ -280,13 +264,12 @@ class TestDeriveCapabilities:
         )
 
     def test_returns_frozenset(self) -> None:
-        """**Validates: Requirement 4.3**"""
         d = _Dept(bot=_Bot(jira=_BotEntry(present=True)))
         result = derive_capabilities(d, _empty_env())
         assert isinstance(result, frozenset)
 
     def test_is_pure_deterministic(self) -> None:
-        """**Validates: Requirement 4.7**
+        """
 
         Repeated calls with identical input return equal results.
         """
@@ -304,7 +287,7 @@ class TestDeriveCapabilities:
 
 
 # ---------------------------------------------------------------------------
-# gate — set-algebra (Requirement 4.4)
+# gate — set-algebra
 # ---------------------------------------------------------------------------
 
 
@@ -325,26 +308,22 @@ class TestGate:
         return {"SSH_HOST_1": "runner.example.com", "FIRECRAWL_ENABLED": "true"}
 
     def test_returns_gate_decision(self) -> None:
-        """**Validates: Requirement 4.4**"""
         d = _Dept(bot=_Bot(jira=_BotEntry()))
         decision = gate("noop_test", d, _empty_env())
         assert isinstance(decision, GateDecision)
 
     def test_allowed_when_all_required_caps_present(self) -> None:
-        """**Validates: Requirement 4.4**"""
         decision = gate("code_change_with_test", self._full_dept(), self._full_env())
         assert decision.allowed is True
         assert decision.missing == frozenset()
 
     def test_denied_when_capability_missing(self) -> None:
-        """**Validates: Requirement 4.4**"""
         d = _Dept(bot=_Bot(jira=_BotEntry()))  # no bitbucket
         decision = gate("code_change_commit_only", d, _empty_env())
         assert decision.allowed is False
         assert decision.missing == frozenset({"bitbucket_read", "bitbucket_write"})
 
     def test_missing_is_set_difference(self) -> None:
-        """**Validates: Requirement 4.4**"""
         # No credentials at all, but workflow_type only needs jira_read
         d = _Dept(bot=_Bot())
         decision = gate("noop_test", d, _empty_env())
@@ -352,13 +331,12 @@ class TestGate:
         assert decision.missing == frozenset({"jira_read"})
 
     def test_unknown_workflow_type_raises_key_error(self) -> None:
-        """**Validates: Requirement 4.4**"""
         d = _Dept(bot=_Bot())
         with pytest.raises(KeyError):
             gate("definitely_not_a_workflow", d, _empty_env())
 
     def test_decision_is_frozen(self) -> None:
-        """**Validates: Requirement 4.4**
+        """
 
         ``GateDecision`` is a frozen dataclass; attribute assignment fails.
         """
@@ -368,7 +346,6 @@ class TestGate:
             decision.allowed = False  # type: ignore[misc]
 
     def test_remote_ssh_test_only_requires_jira_read_and_execution(self) -> None:
-        """**Validates: Requirement 4.4**"""
         # Jira present but no SSH_HOST in env
         d = _Dept(bot=_Bot(jira=_BotEntry()))
         decision = gate("remote_ssh_test_only", d, _empty_env())
@@ -383,14 +360,13 @@ class TestGate:
         assert decision_ok.missing == frozenset()
 
     def test_research_with_web_requires_web_search(self) -> None:
-        """**Validates: Requirement 4.4**"""
         d = _Dept(bot=_Bot(jira=_BotEntry()), web_search_enabled=False)
         decision = gate("research_with_web", d, {"FIRECRAWL_ENABLED": "true"})
         assert decision.allowed is False
         assert "web_search" in decision.missing
 
     def test_pure_no_io(self) -> None:
-        """**Validates: Requirement 4.7**
+        """
 
         ``gate`` must not depend on global state or perform I/O.
         Repeated calls return equal decisions.

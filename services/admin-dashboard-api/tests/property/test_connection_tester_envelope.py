@@ -1,13 +1,8 @@
-"""Property 7 — Connection_Tester emits the exact upstream envelope per provider.
-
-# Feature: llm-provider-management, Property 7: Connection_Tester emits the exact upstream envelope per provider
-
-Validates Requirements 5.4, 7.1, 7.2, 7.3, 7.4, 7.5, 8.1, 8.2 of the
-``llm-provider-management`` spec: the per-provider URL, method, headers
+"""— Connection_Tester emits the exact upstream envelope per provider.
+the project spec: the per-provider URL, method, headers
 and body produced by :class:`ConnectionTester` exactly match the
-design table.  ``Authorization`` / ``OpenAI-Organization`` headers are
-present iff the corresponding credential is non-empty.
-"""
+design table. ``Authorization`` / ``OpenAI-Organization`` headers are
+present iff the corresponding credential is non-empty."""
 
 from __future__ import annotations
 

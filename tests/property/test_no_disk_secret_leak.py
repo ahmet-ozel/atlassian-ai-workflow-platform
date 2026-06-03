@@ -1,8 +1,8 @@
-"""Property test P2 — Env_Override values are never persisted to disk.
+"""Env_Override values are never persisted to disk.
 
-Validates: Requirements 9.2, 9.4
 
-Property P2 (admin-dashboard-control-plane spec, design §3.5 + §3.4):
+
+Operational invariant:
 After a successful ``LifecycleService.start`` call the operator-supplied
 ``env_overrides`` map MUST exist **only** inside Vault (in this test:
 the in-memory ``_FakeVaultClient.stored`` dict) and inside the spawned
@@ -17,20 +17,20 @@ Strategy
 values=st.text(min_size=8, max_size=64))`` produces a random
 ``Env_Override`` map. For each draw the test:
 
-1. Builds a fresh synthetic workspace under :func:`tempfile.mkdtemp`
-   so each Hypothesis example starts from a clean slate.
+1. Builds a fresh synthetic workspace under:func:`tempfile.mkdtemp`
+ so each Hypothesis example starts from a clean slate.
 2. Materialises a ``services/automation-service/.env.example`` whose
-   LHS keys exactly match the generated override map (the form-schema
-   parity check inside ``LifecycleService.start`` requires this).
+ LHS keys exactly match the generated override map (the form-schema
+ parity check inside ``LifecycleService.start`` requires this).
 3. Wires fake Vault / Compose / Health / Audit collaborators and
-   invokes ``LifecycleService.start``.
+ invokes ``LifecycleService.start``.
 4. Walks every file under the workspace (excluding ``.git/``,
-   ``node_modules/``, ``tests/.hypothesis/``, ``__pycache__/``) and
-   asserts that no override **value** substring appears in any file's
-   bytes.
+ ``node_modules/``, ``tests/.hypothesis/``, ``__pycache__/``) and
+ asserts that no override **value** substring appears in any file's
+ bytes.
 5. Asserts that the recorded Compose argv contains no ``--env-file``
-   or ``--env`` flag, and that the ``_FakeVaultClient`` recorded one
-   write per generated key.
+ or ``--env`` flag, and that the ``_FakeVaultClient`` recorded one
+ write per generated key.
 
 This file deliberately constructs its own synthetic workspace inside
 each Hypothesis example rather than relying on pytest's ``tmp_path``
@@ -116,11 +116,10 @@ class _FakeAuditWriter:
 class _FakeVaultClient:
     """Records every Vault write so the test can assert every key landed.
 
-    Property P2 checks the *negative* invariant (no plain-text value on
-    disk); this fake confirms the *positive* contract: every operator
-    override is round-tripped through Vault, exactly once per key
-    (Requirement 9.1, 9.6).
-    """
+ invariant checks the *negative* invariant (no plain-text value on
+ disk); this fake confirms the *positive* contract: every operator
+ override is round-tripped through Vault, exactly once per key.
+ """
 
     writes: list[tuple[str, str, str]] = field(default_factory=list)
     stored: dict[str, dict[str, str]] = field(default_factory=dict)
@@ -144,14 +143,14 @@ class _FakeVaultClient:
 class _FakeComposeRunner:
     """Records every ``up``/``stop``/``logs`` call's argv-shaped kwargs.
 
-    The orchestrator does not give us direct access to the OS-level
-    argv list (that is the responsibility of the real ``ComposeRunner``
-    in ``src/lifecycle/compose_runner.py``), but the lifecycle handler
-    only ever invokes the runner via these high-level methods. This
-    fake mirrors the recorded-call shape used by the unit tests so we
-    can assert no ``--env-file`` / ``--env`` flag was ever requested
-    via the orchestrator's public surface.
-    """
+ The orchestrator does not give us direct access to the OS-level
+ argv list (that is the responsibility of the real ``ComposeRunner``
+ in ``src/lifecycle/compose_runner.py``), but the lifecycle handler
+ only ever invokes the runner via these high-level methods. This
+ fake mirrors the recorded-call shape used by the unit tests so we
+ can assert no ``--env-file`` / ``--env`` flag was ever requested
+ via the orchestrator's public surface.
+ """
 
     up_calls: list[dict[str, Any]] = field(default_factory=list)
     stop_calls: list[dict[str, Any]] = field(default_factory=list)
@@ -244,7 +243,7 @@ class _FakeHealthProbe:
 # ---------------------------------------------------------------------------
 
 #: Directory names that are excluded from the file walk. Mirrors the
-#: spec's exclusion list (tasks.md task 7.2): ``.git/``,
+#: runtime cache and dependency directories: ``.git/``,
 #: ``node_modules/``, ``tests/.hypothesis/``, ``__pycache__/``. The
 #: ``.hypothesis`` exclusion has to handle both the ``tests/.hypothesis``
 #: form (the project layout) and any nested cache directory the
@@ -265,34 +264,32 @@ _MIN_VALUE_LENGTH_FOR_SWEEP: int = 4
 
 def _build_synthetic_workspace(root: Path, override_keys: list[str]) -> None:
     """Materialise the minimum synthetic workspace ``LifecycleService.start``
-    needs to run end-to-end against the fakes.
+ needs to run end-to-end against the fakes.
 
-    The workspace contains:
+ The workspace contains:
 
-    * ``services/automation-service/.env.example`` — the LHS key set
-      MUST equal ``override_keys`` because
-      ``LifecycleService._validate_env_overrides`` raises
-      :class:`FormSchemaMismatchError` on any mismatch (Requirement
-      5.6).
-    * ``infra/docker-compose.yml`` — placeholder so the file walk has
-      something to inspect under ``infra/`` (no Compose CLI is
-      actually invoked — the runner is a fake).
-    * ``config/services.manifest.json`` — placeholder for the same
-      reason.
-    * Top-level ``.env.example`` and ``README.md`` so the workspace
-      root has artefacts to scan.
+ * ``services/automation-service/.env.example`` — the LHS key set
+ MUST equal ``override_keys`` because
+ ``LifecycleService._validate_env_overrides`` raises:class:`FormSchemaMismatchError` on any mismatch (the operational rule).
+ * ``infra/docker-compose.yml`` — placeholder so the file walk has
+ something to inspect under ``infra/`` (no Compose CLI is
+ actually invoked — the runner is a fake).
+ * ``config/services.manifest.json`` — placeholder for the same
+ reason.
+ * Top-level ``.env.example`` and ``README.md`` so the workspace
+ root has artefacts to scan.
 
-    Every Sensitive_Env_Key field in the ``.env.example`` is given an
-    empty default — the operator's override is the *only* permissible
-    source of sensitive values (Requirement 5.7) and the validator
-    inside ``LifecycleService.start`` requires non-empty submitted
-    values for those keys.
-    """
+ Every Sensitive_Env_Key field in the ``.env.example`` is given an
+ empty default — the operator's override is the *only* permissible
+ source of sensitive values and the validator
+ inside ``LifecycleService.start`` requires non-empty submitted
+ values for those keys.
+ """
 
     service_dir = root / "services" / "automation-service"
     service_dir.mkdir(parents=True)
     env_example_lines: list[str] = [
-        "# automation-service .env.example (synthetic test fixture)",
+        "# automation-service.env.example (synthetic test fixture)",
     ]
     for key in override_keys:
         # Every key gets an empty default; the operator's override is
@@ -343,16 +340,16 @@ def _make_manifest_entry() -> ManagedServiceEntry:
 def _walk_workspace_files(root: Path) -> list[Path]:
     """Yield every file path under ``root`` that participates in the sweep.
 
-    Directories whose ``name`` is in :data:`_EXCLUDED_DIR_NAMES` are
-    pruned in-place during the walk so we never descend into them.
-    Only regular files are returned — symlinks, sockets and other
-    special files are skipped (none should exist in the synthetic
-    workspace, but the guard keeps the walk hermetic).
-    """
+ Directories whose ``name`` is in:data:`_EXCLUDED_DIR_NAMES` are
+ pruned in-place during the walk so we never descend into them.
+ Only regular files are returned — symlinks, sockets and other
+ special files are skipped (none should exist in the synthetic
+ workspace, but the guard keeps the walk hermetic).
+ """
 
     out: list[Path] = []
     for current, dirs, files in _os_walk(root):
-        # Prune excluded dirs in-place so :func:`os.walk` does not
+        # Prune excluded dirs in-place so:func:`os.walk` does not
         # descend into them.
         dirs[:] = [d for d in dirs if d not in _EXCLUDED_DIR_NAMES]
         for name in files:
@@ -366,12 +363,12 @@ def _walk_workspace_files(root: Path) -> list[Path]:
 
 
 def _os_walk(root: Path):
-    """Wrapper around :func:`os.walk` returning ``(path, dirs, files)``.
+    """Wrapper around:func:`os.walk` returning ``(path, dirs, files)``.
 
-    Pulled out of :func:`_walk_workspace_files` so the signature the
-    walker expects (a list of subdirectory names that can be mutated
-    in place) stays compatible with the standard-library helper.
-    """
+ Pulled out of:func:`_walk_workspace_files` so the signature the
+ walker expects (a list of subdirectory names that can be mutated
+ in place) stays compatible with the standard-library helper.
+ """
 
     import os
 
@@ -381,10 +378,10 @@ def _os_walk(root: Path):
 def _file_contains(path: Path, needle_bytes: bytes) -> bool:
     """Return ``True`` iff ``needle_bytes`` appears anywhere in ``path``.
 
-    Reads the file in binary mode so non-UTF-8 content does not raise.
-    Empty needles are treated as "always absent" (the guard upstream
-    in :func:`_assert_no_disk_leak` already filters these out).
-    """
+ Reads the file in binary mode so non-UTF-8 content does not raise.
+ Empty needles are treated as "always absent" (the guard upstream
+ in:func:`_assert_no_disk_leak` already filters these out).
+ """
 
     if not needle_bytes:
         return False
@@ -401,13 +398,12 @@ def _assert_no_disk_leak(
 ) -> None:
     """Assert that no override value appears in any file under the workspace.
 
-    For each ``(key, value)`` pair where ``value`` is at least
-    :data:`_MIN_VALUE_LENGTH_FOR_SWEEP` characters long, walk every
-    eligible file and assert the value's UTF-8 byte sequence does not
-    appear. Failure messages cite the exact file (workspace-relative)
-    and the offending key so the operator can locate the leak quickly
-    without exposing the value itself.
-    """
+ For each ``(key, value)`` pair where ``value`` is at least:data:`_MIN_VALUE_LENGTH_FOR_SWEEP` characters long, walk every
+ eligible file and assert the value's UTF-8 byte sequence does not
+ appear. Failure messages cite the exact file (workspace-relative)
+ and the offending key so the operator can locate the leak quickly
+ without exposing the value itself.
+ """
 
     files = _walk_workspace_files(workspace_root)
     for key, value in env_overrides.items():
@@ -423,14 +419,14 @@ def _assert_no_disk_leak(
                 # Do NOT print the value — the leak itself is the
                 # contract violation. Cite key + file only.
                 raise AssertionError(
-                    f"P2 violated: value of override key {key!r} appears "
+                    f"Disk secrecy invariant violated: value of override key {key!r} appears "
                     f"in workspace file {rel!r}. Env_Override values must "
-                    f"never reach disk (Requirement 9.2)."
+                    f"never reach disk (the operational rule)."
                 )
 
 
 # ---------------------------------------------------------------------------
-# Property P2
+# invariant
 # ---------------------------------------------------------------------------
 
 
@@ -450,7 +446,7 @@ def _assert_no_disk_leak(
         # keeps Hypothesis's regex engine fast.
         keys=st.from_regex(r"\A[A-Z][A-Z0-9_]{0,30}\Z", fullmatch=True),
         # min_size=8 satisfies the orchestrator's "non-empty sensitive
-        # value" check (Requirement 5.7) without any classification
+        # value" check without any classification
         # guesswork — every value is non-empty regardless of whether
         # the key happens to match a Sensitive_Env_Key pattern.
         values=st.text(min_size=8, max_size=64),
@@ -461,18 +457,18 @@ def _assert_no_disk_leak(
 def test_env_override_values_are_not_persisted_to_disk(
     env_overrides: dict[str, str],
 ) -> None:
-    """Property P2 — Env_Override values never reach disk.
+    """invariant — Env_Override values never reach disk.
 
-    Validates: Requirements 9.2, 9.4.
 
-    Every ``(key, value)`` pair sent through
-    ``LifecycleService.start`` MUST exist only inside Vault (the
-    in-memory ``_FakeVaultClient.stored`` dict for this test) and
-    inside the spawned subprocess's ``env`` mapping. No value
-    substring may appear in any file on disk under the synthetic
-    workspace, and the recorded Compose argv must not contain any
-    ``--env-file`` / ``--env`` flag derived from the override map.
-    """
+
+ Every ``(key, value)`` pair sent through
+ ``LifecycleService.start`` MUST exist only inside Vault (the
+ in-memory ``_FakeVaultClient.stored`` dict for this test) and
+ inside the spawned subprocess's ``env`` mapping. No value
+ substring may appear in any file on disk under the synthetic
+ workspace, and the recorded Compose argv must not contain any
+ ``--env-file`` / ``--env`` flag derived from the override map.
+ """
 
     workspace_root = Path(tempfile.mkdtemp(prefix="p2-no-disk-leak-"))
     try:
@@ -505,13 +501,13 @@ def test_env_override_values_are_not_persisted_to_disk(
                 actor="ops-1",
             )
             assert response.state == "running", (
-                f"start() did not reach running; got {response.state!r}"
+                f"start did not reach running; got {response.state!r}"
             )
 
         asyncio.run(run())
 
         # ------------------------------------------------------------------
-        # Positive contract: Vault saw every key (Requirement 9.1, 9.6).
+        # Positive contract: Vault saw every key.
         # ------------------------------------------------------------------
         recorded_pairs = {(k, v) for _svc, k, v in vault.writes}
         expected_pairs = {(k, v) for k, v in env_overrides.items()}
@@ -521,8 +517,7 @@ def test_env_override_values_are_not_persisted_to_disk(
         )
 
         # ------------------------------------------------------------------
-        # Compose argv must not contain ``--env-file`` / ``--env`` flags
-        # (Requirement 9.3 + design §3.4 surface).
+        # Compose argv must not contain ``--env-file`` / ``--env`` flags.
         # ------------------------------------------------------------------
         assert len(compose.up_calls) == 1, (
             f"Expected exactly one compose.up call; got {len(compose.up_calls)}"
@@ -531,12 +526,12 @@ def test_env_override_values_are_not_persisted_to_disk(
         assert "--env-file" not in up_argv, (
             f"compose.up argv contains --env-file flag: {up_argv!r}. "
             f"Env_Override values must not be staged to a temporary "
-            f"file on disk (Requirement 9.3)."
+            f"file on disk (the operational rule)."
         )
         assert "--env" not in up_argv, (
             f"compose.up argv contains a --env flag: {up_argv!r}. "
             f"Env_Override values must travel via the subprocess env "
-            f"mapping, not as argv tokens (Requirement 9.3)."
+            f"mapping, not as argv tokens (the operational rule)."
         )
         # And no value string may bleed into the argv tokens themselves.
         for token in up_argv:
@@ -544,7 +539,7 @@ def test_env_override_values_are_not_persisted_to_disk(
                 if len(value) >= _MIN_VALUE_LENGTH_FOR_SWEEP:
                     assert value not in token, (
                         f"Override value leaked into compose argv token "
-                        f"{token!r} (Requirement 9.2)."
+                        f"{token!r} (the operational rule)."
                     )
 
         # ------------------------------------------------------------------
@@ -554,7 +549,7 @@ def test_env_override_values_are_not_persisted_to_disk(
         _assert_no_disk_leak(workspace_root, env_overrides)
 
         # ------------------------------------------------------------------
-        # Audit details_json must not carry values either (Property P6
+        # Audit details_json must not carry values either (invariant
         # surface; relevant here because the audit writer is a fake and
         # therefore in-memory only — we still verify the *contract* the
         # orchestrator delivers to it).
@@ -565,24 +560,23 @@ def test_env_override_values_are_not_persisted_to_disk(
                 if len(value) >= _MIN_VALUE_LENGTH_FOR_SWEEP:
                     assert value not in details_repr, (
                         f"Override value leaked into audit details_json "
-                        f"for action={entry.action!r} (Requirement 11.3)."
+                        f"for action={entry.action!r} (the operational rule)."
                     )
     finally:
         shutil.rmtree(workspace_root, ignore_errors=True)
 
 
 # ---------------------------------------------------------------------------
-# Property 9 — platform-mimari-foundation (task 9.2)
+# invariant
 # ---------------------------------------------------------------------------
 #
-# Validates: Requirements 6.2, 6.3, 6.10, 9.6, 9.7
 #
-# Property P2 above pins the lifecycle-orchestrator's negative
-# disk-leak invariant. Property 9 below complements it from the
+# invariant above pins the lifecycle-orchestrator's negative
+# disk-leak invariant. invariant below complements it from the
 # *log-sink* angle: if a service's logs are persisted to disk
 # (rotating file handler, journald, container stdout captured by the
 # Docker daemon, etc.) then the platform's
-# :class:`http_shared.redaction.RedactionFilter` MUST guarantee that
+#:class:`http_shared.redaction.RedactionFilter` MUST guarantee that
 # the on-disk artefact carries the redaction sentinel and *not* the
 # original credential bytes.
 #
@@ -590,15 +584,15 @@ def test_env_override_values_are_not_persisted_to_disk(
 # --------
 #
 # * Generate random log lines containing one or more of the five
-#   credential families enumerated in Requirement 6.10
-#   (``Authorization: Basic …``, ``Bearer …``, ``api_token=…``,
-#   ``password=…``, ``secret=…``).
-# * Wire a :class:`logging.FileHandler` against a temp file and
-#   attach the platform's :class:`RedactionFilter`.
+# credential families enumerated in
+# (``Authorization: Basic …``, ``Bearer …``, ``api_token=…``,
+# ``password=…``, ``secret=…``).
+# * Wire a:class:`logging.FileHandler` against a temp file and
+# attach the platform's:class:`RedactionFilter`.
 # * Emit the generated line through both common log-call shapes
-#   (positional ``msg`` + ``args``, pre-rendered ``msg``).
+# (positional ``msg`` + ``args``, pre-rendered ``msg``).
 # * Read the temp file back from disk and assert no generated
-#   secret value survives.
+# secret value survives.
 #
 # This is the integration counterpart of the pure-string property
 # in ``test_log_redaction.py``: it exercises the full
@@ -606,12 +600,12 @@ def test_env_override_values_are_not_persisted_to_disk(
 # regressions where, for example, a custom formatter or a
 # ``handler.format(...)`` override bypasses the filter.
 
-import logging  # noqa: E402  -- placed near use site for locality
-import re  # noqa: E402  -- placed near use site for locality
-import string  # noqa: E402  -- placed near use site for locality
+import logging  # noqa: E402 -- placed near use site for locality
+import re  # noqa: E402 -- placed near use site for locality
+import string  # noqa: E402 -- placed near use site for locality
 import uuid as _uuid  # noqa: E402
 
-from http_shared.redaction import (  # noqa: E402  -- module-level import OK
+from http_shared.redaction import (  # noqa: E402 -- module-level import OK
     REDACTION_PLACEHOLDER,
     RedactionFilter as _PlatformRedactionFilter,
 )
@@ -630,23 +624,23 @@ _PROP9_NOISE_ALPHABET: str = string.ascii_lowercase + string.digits
 _PROP9_DETECTORS: tuple[tuple[str, "re.Pattern[str]"], ...] = (
     (
         "Authorization: Basic <blob>",
-        re.compile(r"(?i)Authorization:\s*Basic\s+(?!\*)[A-Za-z0-9+/=._\-]{4,}"),
+        re.compile(r"(sectioni)Authorization:\s*Basic\s+(section!\*)[A-Za-z0-9+/=._\-]{4,}"),
     ),
     (
         "Bearer <token>",
-        re.compile(r"(?i)Bearer\s+(?!\*)[A-Za-z0-9+/=._\-]{4,}"),
+        re.compile(r"(sectioni)Bearer\s+(section!\*)[A-Za-z0-9+/=._\-]{4,}"),
     ),
     (
         "api_token=<value>",
-        re.compile(r"(?i)api_token=(?!\*)[A-Za-z0-9+/=._\-]{4,}"),
+        re.compile(r"(sectioni)api_token=(section!\*)[A-Za-z0-9+/=._\-]{4,}"),
     ),
     (
         "password=<value>",
-        re.compile(r"(?i)password=(?!\*)[A-Za-z0-9+/=._\-]{4,}"),
+        re.compile(r"(sectioni)password=(section!\*)[A-Za-z0-9+/=._\-]{4,}"),
     ),
     (
         "secret=<value>",
-        re.compile(r"(?i)secret=(?!\*)[A-Za-z0-9+/=._\-]{4,}"),
+        re.compile(r"(sectioni)secret=(section!\*)[A-Za-z0-9+/=._\-]{4,}"),
     ),
 )
 
@@ -666,10 +660,10 @@ _prop9_noise_word: st.SearchStrategy[str] = st.text(
 
 @st.composite
 def _prop9_credential(draw: st.DrawFn) -> tuple[str, str, str]:
-    """Draw one credential token in one of the five Requirement 6.10 families.
+    """Draw one credential token in one of the five families.
 
-    Returns ``(family, value, rendered_token)``.
-    """
+ Returns ``(family, value, rendered_token)``.
+ """
 
     family = draw(
         st.sampled_from(
@@ -709,8 +703,8 @@ def _prop9_log_payload(
 ) -> tuple[str, list[tuple[str, str, str]], list[str]]:
     """Draw a credential-bearing log line.
 
-    Returns ``(line, credentials, noise_words)``.
-    """
+ Returns ``(line, credentials, noise_words)``.
+ """
 
     creds = draw(st.lists(_prop9_credential(), min_size=1, max_size=3))
     noise = draw(st.lists(_prop9_noise_word, min_size=0, max_size=3))
@@ -729,30 +723,28 @@ def _prop9_log_payload(
 def test_property9_redacted_logs_do_not_persist_to_disk(
     payload: tuple[str, list[tuple[str, str, str]], list[str]],
 ) -> None:
-    """Property 9 — redacted log lines do not leak credentials to disk.
+    """Redacted log lines do not leak credentials to disk.
 
-    Validates: Requirements 6.2, 6.3, 6.10, 9.6, 9.7
 
-    For an arbitrary credential-bearing log line, after emitting
-    through a logger whose handlers all carry the platform's
-    :class:`RedactionFilter`, the on-disk log file MUST contain:
 
-    * **No plain-text secret bytes** — every generated secret value
-      is absent from the persisted file content (Requirement 6.3,
-      9.7 — no plain-text in CI build outputs / artifact directories).
-    * **No detector-shaped survivor** — the file MUST NOT contain
-      any ``KEY=blob``, ``Authorization: Basic blob`` or
-      ``Bearer blob`` shape that another consumer might later
-      mis-classify as a credential (Requirement 9.6 — failed test
-      reports the leak with file location + offending pattern).
+ For an arbitrary credential-bearing log line, after emitting
+ through a logger whose handlers all carry the platform's:class:`RedactionFilter`, the on-disk log file MUST contain:
 
-    The test creates a fresh temp file per Hypothesis example so
-    there is no cross-example contamination.
-    """
+ * **No plain-text secret bytes** — every generated secret value
+ is absent from the persisted file content and generated artifacts.
+ * **No detector-shaped survivor** — the file MUST NOT contain
+ any ``KEY=blob``, ``Authorization: Basic blob`` or
+ ``Bearer blob`` shape that another consumer might later
+ mis-classify as a credential; failed test reports identify the
+ file location and offending pattern.
+
+ The test creates a fresh temp file per Hypothesis example so
+ there is no cross-example contamination.
+ """
 
     line, creds, noise = payload
 
-    # Same ``assume()`` filter as the pure-string property: discard
+    # Same ``assume`` filter as the pure-string property: discard
     # examples where a generated secret value coincides with — or is
     # a substring of — a noise word, since the noise word is not
     # something the redactor is responsible for masking.
@@ -791,7 +783,7 @@ def test_property9_redacted_logs_do_not_persist_to_disk(
         # Invariant 1 — no generated secret value appears in the file.
         for family, value, token in creds:
             assert value not in on_disk, (
-                f"Property 9 violated (disk path): secret value "
+                f"invariant violated (disk path): secret value "
                 f"from family {family!r} (token={token!r}, "
                 f"value={value!r}) leaked through "
                 f"RedactionFilter into on-disk log "
@@ -804,7 +796,7 @@ def test_property9_redacted_logs_do_not_persist_to_disk(
         for label, detector in _PROP9_DETECTORS:
             match = detector.search(on_disk)
             assert match is None, (
-                f"Property 9 violated (disk path): detector {label!r} "
+                f"invariant violated (disk path): detector {label!r} "
                 f"matched {match.group(0)!r} in on-disk log "
                 f"{log_path.name!r}: {on_disk!r}. "
                 f"Original line: {line!r}."
@@ -815,7 +807,7 @@ def test_property9_redacted_logs_do_not_persist_to_disk(
         # silent regression that *drops* every record would also
         # pass invariants 1 and 2).
         assert REDACTION_PLACEHOLDER in on_disk, (
-            f"Property 9 violated (disk path): redaction sentinel "
+            f"invariant violated (disk path): redaction sentinel "
             f"``{REDACTION_PLACEHOLDER}`` is missing from on-disk "
             f"log {log_path.name!r}: {on_disk!r}. "
             f"This suggests the RedactionFilter never fired. "

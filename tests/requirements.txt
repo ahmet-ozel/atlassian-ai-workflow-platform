@@ -1,4 +1,4 @@
-# Test dependency manifest for the multi-service-scaffold workspace.
+# Test dependency manifest for the platform workspace.
 #
 # Mirrors the ``[project.dependencies]`` block in ``tests/pyproject.toml``;
 # this file exists so the suite can be installed without a PEP-517 build
@@ -6,9 +6,8 @@
 #
 #     pip install -r tests/requirements.txt
 #
-# Pins follow design §6.8 (multi-service-scaffold) and the task 13.2
-# notes in ``tasks.md``. All ranges use compatible-major upper bounds so
-# property tests stay reproducible across CI runs.
+# Pins follow the test dependency baseline. All ranges use compatible-major
+# upper bounds so property tests stay reproducible across CI runs.
 
 # --- Core test runner / property engine -------------------------------------
 pytest>=8,<9

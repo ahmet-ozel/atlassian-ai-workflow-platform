@@ -23,7 +23,7 @@
 # =============================================================================
 set -euo pipefail
 
-PLATFORM_DIR="/opt/yeni_atlassian/platform"
+PLATFORM_DIR="/opt/atlassian-ai-workflow-platform"
 COMPOSE_FILE="$PLATFORM_DIR/infra/docker-compose.yml"
 EVIDENCE_DIR="/tmp"
 OBSERVABILITY_JSON="$EVIDENCE_DIR/17-observability.json"

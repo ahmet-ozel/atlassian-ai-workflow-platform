@@ -13,21 +13,18 @@ Public surface:
 * :class:`BudgetDecision` — allow / deny outcome with scope label.
 * :class:`BudgetCheckResult` — enhanced outcome with 90% warnings.
 * :class:`BudgetCapPolicy` — async ``enforce(dept_id, user_id)``
-  helper that the workflow start endpoint calls (task 7.3).
+  helper that the workflow start endpoint calls.
 * :func:`check_budget` — enhanced pre-workflow check with 90%
-  threshold warnings and Jira comment posting (task 10.1).
-* :func:`pre_llm_budget_guard` — inline guard before LLM calls
-  (task 10.1, Requirement 10.4).
-* :func:`get_budget_usage_snapshot` — Admin Dashboard data exposure
-  (task 10.1, Requirement 10.5).
+  threshold warnings and Jira comment posting.
+* :func:`pre_llm_budget_guard` — inline guard before LLM calls.
+* :func:`get_budget_usage_snapshot` — Admin Dashboard data exposure.
 * :func:`post_cost_prediction_comment` — best-effort Jira yorum
   poster invoked **after** ``BudgetCapPolicy.enforce`` returns
-  ``allow`` (task 7.4 — Spec 2 ``best_effort`` partition).
+  ``allow``.
 * :class:`CostCommentOutcome` / :class:`CostPredictionLike` — value
   objects exposed alongside the function above so callers can type
   their integration without importing the implementation module.
 
-Validates: Requirements 5.5, 5.6, 5.7, 10.1, 10.2, 10.3, 10.4, 10.5, 10.6.
 """
 
 from __future__ import annotations

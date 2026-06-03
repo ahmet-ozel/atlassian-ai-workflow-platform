@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Service detail page — platform-mimari-uyumluluk task 7.6 (R9.5 / Q10).
+ * Service detail page.
  *
  * Renders the manifest entry, the cached lifecycle state (via
  * :func:`StateBadge`) and a credentials banner reflecting the most
@@ -13,7 +13,7 @@
  * the connectivity probe fields added in this same task) and
  * :class:`src.routers._models.ProbeResponse`.
  *
- * Banner rules (R9.5):
+ * Banner rules:
  * --------------------
  * - ``credentials_status === "ok"``      → green "Credentials OK".
  * - ``credentials_status === "failed"``  → yellow banner with detail

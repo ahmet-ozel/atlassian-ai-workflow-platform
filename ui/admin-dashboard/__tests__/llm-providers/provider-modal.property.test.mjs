@@ -1,8 +1,8 @@
 // Feature: llm-provider-management, Property: ProviderModal field visibility + api_key omit
 //
 // Property tests for the modal's per-provider_type field visibility
-// (Requirements 2.1 — 2.4 + 4.5) and the credential-omit invariant
-// on edit (Requirement 4.6 — empty api_key input → PUT body omits the
+// and the credential-omit invariant
+// on edit: empty api_key input → PUT body omits the
 // field so the backend service preserves the persisted credential).
 
 import { describe, it } from "node:test";
@@ -40,7 +40,7 @@ function visibleFields(providerType) {
 }
 
 /**
- * Builds the PUT body for the edit form per R4.6.
+ * Builds the PUT body for the edit form.
  *
  * The form omits `api_key` when the input is empty so the backend
  * service merges only the fields the operator actually changed.

@@ -1,8 +1,6 @@
 -- =============================================================================
 -- Migration 008: budget_alarm_thresholds
 -- =============================================================================
--- Requirement: R13.1 (platform-real-usage-gaps)
---
 -- Creates the automation.budget_alarm_thresholds table for per-department
 -- budget alarm configuration. Each row defines a threshold percentage at which
 -- a notification is fired (slack/email/teams) for a given period and scope.

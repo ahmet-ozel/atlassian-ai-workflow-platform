@@ -1,6 +1,5 @@
-"""``CapabilitiesRouter`` (`platform-gap-fill` task 9.1).
+"""``CapabilitiesRouter`` capability router wiring.
 
-**Validates: Requirements 10.1, 10.2, 10.3, 10.4, 10.5**
 
 Capability probe matrix surface for the admin dashboard. The router
 exposes two endpoints that let an admin inspect the live connectivity
@@ -8,10 +7,10 @@ between every department and every external service the platform
 talks to (Jira, Bitbucket, Confluence, LLM, SSH, Docker):
 
 * ``GET /api/v1/departments/capabilities`` — full ``dept × service``
-  matrix served from the cache (Requirement 10.1).
+  matrix served from the cache.
 * ``POST /api/v1/departments/{dept_id}/probe/{service}`` — re-run a
   single probe synchronously and return the fresh result
-  (Requirement 10.3).
+  for the requested department and service.
 
 Design notes
 ------------
@@ -21,18 +20,18 @@ The router is intentionally agnostic of *how* probes are executed and
 endpoints and the production wiring:
 
 * :class:`SupportsCapabilityProbeStore` — the cache backed by
-  ``shared.capability_probes`` (Requirement 10.1). Task 9.3 ships
+  ``shared.capability_probes``. Production wiring provides
   the asyncpg-backed implementation; this module also provides
   :class:`InMemoryCapabilityProbeStore` so the router can be wired
-  end-to-end while task 9.3 is still in flight (and so unit tests
+  end-to-end while capability persistence wiring is still in flight (and so unit tests
   do not need a Postgres).
 * :class:`SupportsCapabilityProber` — the actual probe runner that
   knows how to call ``/myself``, ``docker info``, etc. Production
   wires this against the foundation MCP / SSH / Vault clients;
   tests inject a stub that scripts each service's outcome.
 
-Probe contract (Requirement 10.4)
----------------------------------
+Probe contract
+--------------
 
 Service value → probe action:
 
@@ -53,10 +52,10 @@ Each probe returns a :class:`ProbeResult` with one of three statuses:
   service (eg. dept has no ``bot.bitbucket`` section, or no
   ``llm_overrides`` block when ``service == "llm"``). This branch
   short-circuits the prober so we never call out to a non-existent
-  endpoint (Requirement 10.5).
+  endpoint.
 
-Status persistence (Requirement 10.1)
--------------------------------------
+Status persistence
+------------------
 
 After every probe the router upserts the result into
 ``shared.capability_probes`` via :class:`SupportsCapabilityProbeStore`.
@@ -66,7 +65,7 @@ to a 30-second hang.
 
 The ``GET`` endpoint does **not** trigger fresh probes; the UI's
 auto-refresh + the explicit ``POST .../probe/{service}`` button are
-the two write paths into the cache (Requirement 10.6).
+the two write paths into the cache.
 """
 
 from __future__ import annotations
@@ -108,11 +107,11 @@ logger = logging.getLogger(__name__)
 #: declared by migration ``008_capability_probes.sql``: ``ok`` /
 #: ``error`` / ``not_configured``. The router exposes these to the FE
 #: under the historical names ``healthy`` / ``unhealthy`` /
-#: ``not_configured`` (Requirement 10.6) so the UI's CSS classes
+#: ``not_configured`` so the UI's CSS classes
 #: continue to match — translation happens at the persistence boundary.
 ProbeStatus = Literal["healthy", "unhealthy", "not_configured"]
 
-#: The six services the matrix reports on (Requirement 10.4). Order
+#: The six services the matrix reports on. Order
 #: matches the UI column order so the matrix endpoint produces stable
 #: JSON for snapshot tests and screenshot diffs.
 SUPPORTED_SERVICES: tuple[str, ...] = (
@@ -235,7 +234,7 @@ class SupportsCapabilityProber(Protocol):
     Implementations MUST honour the ``not_configured`` short-circuit:
     when the dept config does not declare the service, return
     ``ProbeResult(status="not_configured")`` without performing any
-    network call (Requirement 10.5).
+    network call.
     """
 
     async def probe(self, *, dept_id: str, service: str) -> ProbeResult: ...
@@ -246,7 +245,7 @@ class SupportsCapabilityProbeStore(Protocol):
     """Cache layer for :class:`ProbeResult` rows.
 
     Production wires this against the ``shared.capability_probes``
-    table (task 9.3). Until that wiring lands the router ships an
+    table (capability persistence wiring). Until that wiring lands the router ships an
     in-memory implementation so the FE can be developed end-to-end.
 
     The contract is intentionally minimal:
@@ -271,7 +270,7 @@ class SupportsCapabilityProbeStore(Protocol):
 
 
 # ---------------------------------------------------------------------------
-# In-memory probe store (default until task 9.3's asyncpg adapter lands)
+# In-memory probe store (default until capability persistence wiring's asyncpg adapter lands)
 # ---------------------------------------------------------------------------
 
 
@@ -371,7 +370,7 @@ async def _assigned_runner_ids(request: Request, dept_id: str) -> list[str]:
 def _is_service_configured(dept: Mapping[str, Any], service: str) -> bool:
     """Return ``True`` when ``dept`` declares ``service`` in its config.
 
-    The mapping mirrors Requirement 10.5: a probe row is
+    The mapping mirrors the probe contract: a probe row is
     ``not_configured`` when the dept config does not declare the
     service we are probing. Concretely:
 
@@ -488,8 +487,8 @@ def _get_store(request: Request) -> SupportsCapabilityProbeStore:
     so the matrix endpoint always has *some* cache to read from.
     The in-memory variant is process-local so a restart loses the
     history; this matches the documented behaviour of the in-memory
-    fallback (Requirement 10.1 — "results are cached" — does not
-    mandate durability across restarts when no DB is wired).
+    fallback, which caches current results without requiring
+    durability across restarts when no DB is wired.
     """
 
     store = getattr(request.app.state, "capability_probe_store", None)
@@ -543,7 +542,6 @@ def _find_department(dept_id: str) -> dict[str, Any]:
 async def get_capability_matrix(request: Request) -> dict[str, Any]:
     """Return the cached capability matrix for every department.
 
-    **Validates: Requirements 10.1, 10.5**
 
     Response shape::
 
@@ -575,9 +573,8 @@ async def get_capability_matrix(request: Request) -> dict[str, Any]:
     so the FE can render a grey placeholder. Cells whose dept config
     does not declare the service are reported as
     ``status="not_configured"`` even when no row has been written yet
-    — this matches Requirement 10.5 ("the cell SHALL be marked
-    ``not_configured`` when the service is not declared in dept
-    config") so an operator who has never run a probe still sees the
+    — this keeps unconfigured cells marked as ``not_configured`` so an
+    operator who has never run a probe still sees the
     right colour for a cell that *will* always be ``not_configured``.
     """
 
@@ -656,7 +653,6 @@ async def run_single_probe(
 ) -> dict[str, Any]:
     """Run one probe synchronously and return the fresh result.
 
-    **Validates: Requirements 10.2, 10.3, 10.4, 10.5**
 
     Behaviour:
 
@@ -665,7 +661,7 @@ async def run_single_probe(
     2. Verify the department exists (returns 404 otherwise).
     3. When the service is not declared in the dept config, write a
        ``not_configured`` row to the cache and return it without
-       touching the prober (Requirement 10.5).
+       touching the prober.
     4. Otherwise call the prober's :meth:`probe` method, persist the
        result via :meth:`SupportsCapabilityProbeStore.upsert`, and
        return the row.
@@ -680,8 +676,8 @@ async def run_single_probe(
     dept_with_runtime = {**dept, "ssh_runner_ids": runner_ids}
     store = _get_store(request)
 
-    # Requirement 10.5 short-circuit: never call out to a service the
-    # dept does not declare. We persist the synthetic row so the
+    # Short-circuit: never call out to a service the dept does not
+    # declare. We persist the synthetic row so the
     # matrix endpoint and the single-probe endpoint stay consistent
     # — both will see the same ``not_configured`` value.
     if not _is_service_configured(dept_with_runtime, service):

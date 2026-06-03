@@ -1,26 +1,24 @@
-"""Integration smoke test: Standalone Mode build & run for one HTTP service
+"""Integration smoke test: Standalone Mode build and run for one HTTP service
 and one Temporal worker.
 
-Implements task 14.5 from
-``.kiro/specs/multi-service-scaffold/tasks.md`` and validates the
-"Standalone Mode" guarantees from Requirements 3.7, 9.9, and 15.3:
+Validates the Standalone Mode guarantees:
 
 * Every Component can be built in isolation with ``docker build .`` from
-  its own directory — no parent traversal required (Property 12.3).
+ its own directory, with no parent traversal required.
 * Every Component can be run with ``docker run --env-file .env`` using
-  only its own ``.env.example`` — no external orchestrator needed.
+ only its own ``.env.example``, with no external orchestrator needed.
 
 To keep wall-clock time bounded the test exercises **one** representative
 of each Component runtime profile rather than the full manifest:
 
-* HTTP service:  ``services/automation-service`` (FastAPI on port 8080).
+* HTTP service: ``services/automation-service`` (FastAPI on port 8080).
 * Temporal worker: ``workers/agent-runner-worker`` (no exposed port).
 
 These two cover the divergent code paths in the Dockerfiles (HTTP
 ``EXPOSE`` + ``curl`` healthcheck vs worker no-port + Temporal client
 healthcheck) and in ``.env.example`` (HTTP service block vs worker
-block). The other Components share the same shape (Property 6) so a
-green run on these two is a strong signal that the entire scaffold
+block). The other Components share the same shape, so a
+green run on these two is a strong signal that the entire project
 satisfies the Standalone-Mode contract.
 
 Gating
@@ -38,32 +36,31 @@ Behavior
 
 For the **HTTP service**:
 
-1. Stage ``.env`` by copying ``.env.example`` (Requirement 15.4 — the
-   ``.env.example`` is the only env file the repo ships).
+1. Stage ``.env`` by copying ``.env.example`` the
+ ``.env.example`` is the only env file the repo ships).
 2. ``docker build`` from the Component directory with no parent
-   context. Build success alone validates Requirement 9.9 (Standalone
-   Mode build) and Property 12.3 (no ``COPY ../...`` escape).
+ context. Build success alone validates (Standalone
+ Mode build) and the invariant (no ``COPY ../...`` escape).
 3. ``docker run -d -p 18080:8080 --env-file .env`` with a host port
-   chosen high enough to avoid colliding with any Compose-published
-   port (8080 is taken by ``automation-service`` in the stack itself).
+ chosen high enough to avoid colliding with any Compose-published
+ port (8080 is taken by ``automation-service`` in the stack itself).
 4. Poll ``GET http://localhost:18080/healthz`` until it returns 200
-   within a bounded timeout. The endpoint is the only contract the
-   scaffold guarantees in isolation — ``/readyz`` would also return
-   200 today because ``Settings.dependencies_reachable()`` is a stub
-   that returns ``True`` unconditionally; future tasks will tighten
-   this once the readiness probe wires up real dependency checks.
+ within a bounded timeout. The endpoint is the only contract the
+ project guarantees in isolation — ``/readyz`` would also return
+ 200 today because ``Settings.dependencies_reachable`` is a stub
+  that returns ``True`` unconditionally; future dependency checks can tighten
+ this once the readiness probe wires up real dependency checks.
 
 For the **Temporal worker**:
 
 1. Stage ``.env`` by copying ``.env.example``.
 2. ``docker build`` from the worker directory.
 3. ``docker run --env-file .env`` with ``TEMPORAL_HOST=invalid:1`` so
-   the entry point's ``Client.connect`` call fails fast. We then wait
-   for the container to exit and assert the exit code is non-zero
-   (Requirement 3.7 — non-zero on connect failure so a supervisor can
-   restart the process). This covers both the build path *and* the
-   "the entrypoint at least tries to connect" branch from the task
-   description.
+ the entry point's ``Client.connect`` call fails fast. We then wait
+ for the container to exit and assert the exit code is non-zero
+ non-zero on connect failure so a supervisor can
+ restart the process). This covers both the build path *and* the
+ "the entrypoint at least tries to connect" behavior.
 
 All resources (containers, images, ``.env`` files) are cleaned up in a
 ``finally`` block so a failed run does not leave dangling state on the
@@ -90,7 +87,7 @@ class StandaloneTarget:
     """A single Component to exercise in Standalone Mode."""
 
     #: Component path relative to the workspace root (Compose-free build
-    #: context per Property 12.3 / Requirement 9.9).
+    #: context per the invariant / .
     path: str
 
     #: Image tag used for the smoke build. The ``:smoke`` suffix keeps
@@ -162,12 +159,12 @@ DOCKER_CLI_TIMEOUT_SECONDS: float = 60.0
 
 def _docker_available() -> bool:
     """Returns True iff a usable ``docker`` CLI is on PATH and the daemon
-    responds to ``docker info``.
+ responds to ``docker info``.
 
-    We probe ``docker info`` instead of ``docker version`` because the
-    latter succeeds even when the daemon is offline; ``docker info``
-    requires a live daemon connection.
-    """
+ We probe ``docker info`` instead of ``docker version`` because the
+ latter succeeds even when the daemon is offline; ``docker info``
+ requires a live daemon connection.
+ """
 
     if shutil.which("docker") is None:
         return False
@@ -190,13 +187,13 @@ def _docker_available() -> bool:
 
 def _stage_env_file(component_dir: Path) -> Path | None:
     """Copy ``.env.example`` → ``.env`` inside ``component_dir`` if no
-    ``.env`` already exists.
+ ``.env`` already exists.
 
-    Returns the path of the file this call created (so teardown can
-    remove only files it staged itself, leaving any pre-existing
-    developer override untouched), or ``None`` when ``.env`` already
-    existed.
-    """
+ Returns the path of the file this call created (so teardown can
+ remove only files it staged itself, leaving any pre-existing
+ developer override untouched), or ``None`` when ``.env`` already
+ existed.
+ """
 
     env_file = component_dir / ".env"
     env_example = component_dir / ".env.example"
@@ -220,11 +217,11 @@ def _stage_env_file(component_dir: Path) -> Path | None:
 def _docker_build(component_dir: Path, image_tag: str) -> subprocess.CompletedProcess:
     """``docker build -t <image_tag> .`` inside ``component_dir``.
 
-    The build context is the Component directory itself (no parent
-    traversal) — Standalone Mode (Property 12.3) requires that
-    ``docker build .`` works from inside the Component folder without
-    any ``..`` escape.
-    """
+ The build context is the Component directory itself (no parent
+ traversal) — Standalone Mode (the invariant) requires that
+ ``docker build .`` works from inside the Component folder without
+ any ``..`` escape.
+ """
 
     return subprocess.run(
         ["docker", "build", "-t", image_tag, "."],
@@ -243,11 +240,11 @@ def _docker_run_http(
     container_port: int,
 ) -> subprocess.CompletedProcess:
     """Start the HTTP service container in detached mode with port mapping
-    and the staged ``.env`` file.
+ and the staged ``.env`` file.
 
-    ``--rm`` ensures the container is removed on stop so we don't have
-    to do a separate ``docker rm`` round-trip in the happy path.
-    """
+ ``--rm`` ensures the container is removed on stop so we don't have
+ to do a separate ``docker rm`` round-trip in the happy path.
+ """
 
     return subprocess.run(
         [
@@ -276,16 +273,16 @@ def _docker_run_worker(
     target: StandaloneTarget,
 ) -> subprocess.CompletedProcess:
     """Start the worker container in detached mode with the staged
-    ``.env`` file plus a ``TEMPORAL_HOST`` override that is guaranteed
-    to be unreachable.
+ ``.env`` file plus a ``TEMPORAL_HOST`` override that is guaranteed
+ to be unreachable.
 
-    The override drives the entry point's ``Client.connect`` call into
-    its failure branch (Requirement 3.7) so we can observe the
-    "non-zero exit on connect failure" behaviour from the host.
-    The ``--rm`` flag is intentionally **not** used here so we can
-    inspect the exit code via ``docker inspect`` after the container
-    terminates.
-    """
+ The override drives the entry point's ``Client.connect`` call into
+ its failure branch so we can observe the
+ "non-zero exit on connect failure" behaviour from the host.
+ The ``--rm`` flag is intentionally **not** used here so we can
+ inspect the exit code via ``docker inspect`` after the container
+ terminates.
+ """
 
     return subprocess.run(
         [
@@ -347,8 +344,8 @@ def _docker_rmi(image_tag: str) -> None:
 def _docker_logs(container_name: str) -> str:
     """Return the captured stdout+stderr of ``container_name``.
 
-    Used for diagnostics when an assertion fails; never raises.
-    """
+ Used for diagnostics when an assertion fails; never raises.
+ """
 
     try:
         result = subprocess.run(
@@ -365,12 +362,12 @@ def _docker_logs(container_name: str) -> str:
 
 def _docker_inspect_state(container_name: str) -> dict[str, str]:
     """Parse ``docker inspect`` and return a small dict with the
-    container's running flag and exit code.
+ container's running flag and exit code.
 
-    Keys: ``status`` ("running"/"exited"/"created"/...), ``exit_code``
-    (string form of the integer), ``running`` ("true"/"false"). All
-    values are strings so the helper has zero JSON-parsing dependency.
-    """
+ Keys: ``status`` ("running"/"exited"/"created"/...), ``exit_code``
+ (string form of the integer), ``running`` ("true"/"false"). All
+ values are strings so the helper has zero JSON-parsing dependency.
+ """
 
     result = subprocess.run(
         [
@@ -401,9 +398,9 @@ def _docker_inspect_state(container_name: str) -> dict[str, str]:
 def _wait_for_http_healthy(url: str, timeout: float, interval: float) -> str | None:
     """Poll ``url`` until it returns 2xx or the timeout expires.
 
-    Returns ``None`` on success, or the last error string (for use in
-    the assertion message) on timeout.
-    """
+ Returns ``None`` on success, or the last error string (for use in
+ the assertion message) on timeout.
+ """
 
     import httpx  # local import keeps module import cheap when skipped
 
@@ -428,11 +425,11 @@ def _wait_for_container_exit(
     container_name: str, timeout: float, interval: float
 ) -> dict[str, str] | None:
     """Poll ``docker inspect`` until ``State.Running`` is ``false`` or the
-    timeout expires.
+ timeout expires.
 
-    Returns the final inspect dict on success, or ``None`` if the
-    container was still running when the timeout fired.
-    """
+ Returns the final inspect dict on success, or ``None`` if the
+ container was still running when the timeout fired.
+ """
 
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
@@ -453,14 +450,14 @@ def test_standalone_mode_builds_and_runs_for_http_service_and_worker(
     request: pytest.FixtureRequest, repo_root: Path
 ) -> None:
     """One HTTP service and one Temporal worker can be built and run in
-    Standalone Mode using only their own ``.env.example``.
+ Standalone Mode using only their own ``.env.example``.
 
-    Validates Requirements 3.7, 9.9, and 15.3.
+ Validates and 15.3.
 
-    The test is opt-in via ``--run-docker``. Without the flag (the
-    default) it skips with a clear reason so CI fast-lanes don't pay
-    for a Docker daemon spin-up.
-    """
+ The test is opt-in via ``--run-docker``. Without the flag (the
+ default) it skips with a clear reason so CI fast-lanes don't pay
+ for a Docker daemon spin-up.
+ """
 
     if not request.config.getoption("--run-docker"):
         pytest.skip(
@@ -489,7 +486,7 @@ def test_standalone_mode_builds_and_runs_for_http_service_and_worker(
         http_build = _docker_build(http_dir, HTTP_TARGET.image_tag)
         assert http_build.returncode == 0, (
             f"`docker build` failed for {HTTP_TARGET.path} "
-            "(Standalone Mode / Property 12.3 requires a parent-free build "
+            "(Standalone Mode / the invariant requires a parent-free build "
             "context):\n"
             f"  stdout: {http_build.stdout[-2000:]}\n"
             f"  stderr: {http_build.stderr[-2000:]}"
@@ -524,11 +521,11 @@ def test_standalone_mode_builds_and_runs_for_http_service_and_worker(
 
         # The HTTP container is still running here; the cleanup block
         # below will stop it. We *don't* assert on /readyz: the
-        # ``Settings.dependencies_reachable()`` stub returns ``True``
-        # unconditionally in this scaffold (see
+        # ``Settings.dependencies_reachable`` stub returns ``True``
+        # unconditionally in this project (see
         # services/automation-service/src/config.py), so /readyz would
-        # return 200 today rather than the 503 documented in tasks.md.
-        # Future tasks that wire up real dependency probes can extend
+        # return 200 today rather than the dependency-failure status.
+        # Future dependency probes can extend
         # this assertion.
 
         _docker_stop(HTTP_TARGET.container_name)
@@ -541,7 +538,7 @@ def test_standalone_mode_builds_and_runs_for_http_service_and_worker(
         worker_build = _docker_build(worker_dir, WORKER_TARGET.image_tag)
         assert worker_build.returncode == 0, (
             f"`docker build` failed for {WORKER_TARGET.path} "
-            "(Standalone Mode / Property 12.3 requires a parent-free build "
+            "(Standalone Mode requires a parent-free build "
             "context):\n"
             f"  stdout: {worker_build.stdout[-2000:]}\n"
             f"  stderr: {worker_build.stderr[-2000:]}"
@@ -565,7 +562,7 @@ def test_standalone_mode_builds_and_runs_for_http_service_and_worker(
                 f"{WORKER_TARGET.path} did not exit within "
                 f"{WORKER_EXIT_TIMEOUT_SECONDS:.0f}s after being started "
                 "with an unreachable TEMPORAL_HOST; the entry point should "
-                "fail fast on connect error per Requirement 3.7.\n"
+                "fail fast on connect error per \n"
                 f"container logs:\n{logs}"
             )
 
@@ -576,7 +573,7 @@ def test_standalone_mode_builds_and_runs_for_http_service_and_worker(
 
         assert exit_code != 0, (
             f"{WORKER_TARGET.path} exited with code {exit_code}; "
-            "Requirement 3.7 mandates a non-zero exit code when the worker "
+            "mandates a non-zero exit code when the worker "
             "cannot reach Temporal so a supervisor can restart it.\n"
             f"docker inspect state: {final_state}\n"
             f"container logs:\n{_docker_logs(WORKER_TARGET.container_name)}"
@@ -596,5 +593,5 @@ def test_standalone_mode_builds_and_runs_for_http_service_and_worker(
                 env_file.unlink(missing_ok=True)
             except OSError:
                 # Cleanup is best-effort; a leftover .env is matched by
-                # the workspace .gitignore (``*.env`` per Requirement 11.6).
+                # the workspace .gitignore (``*.env`` per .
                 pass

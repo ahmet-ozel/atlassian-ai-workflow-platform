@@ -1,24 +1,20 @@
-"""Property test: Setup Wizard step order and completion invariants.
-
-Spec: ``platform-real-usage-gaps`` — Property 5.
-
-**Validates: Requirements 5.1, 5.3, 5.6, 5.8**
+"""Property-based tests for Setup Wizard step order and completion invariants.
 
 Background
 ----------
 
 The Setup Wizard guides admins through a sequential series of steps
-to bootstrap the platform. Requirement 5.1 mandates that
+to bootstrap the platform.
 ``add_first_department`` is appended as the **last** step in
 ``STEP_ORDER``, preserving the existing six steps unchanged.
 
 The ``all_complete`` field in the ``GET /api/v1/setup/status`` response
 MUST remain ``false`` until every step — including the new final step —
-is marked ``completed`` (Requirement 5.2).
+is marked ``completed``.
 
 The final step's completion logic (``POST /api/v1/setup/add_first_department/check``)
 requires at least one row in ``automation.departments`` with
-``mode='active'`` (Requirement 5.3). Without an active department the
+``mode='active'``. Without an active department the
 step stays ``pending``.
 
 Strategy
@@ -73,7 +69,7 @@ from routers.setup_wizard import (  # noqa: E402
 # Constants
 # ---------------------------------------------------------------------------
 
-#: The six original steps that existed before R5.
+#: The six original steps that existed before the department step.
 _ORIGINAL_STEPS: Final[tuple[str, ...]] = (
     "vault",
     "postgresql",
@@ -83,31 +79,29 @@ _ORIGINAL_STEPS: Final[tuple[str, ...]] = (
     "services",
 )
 
-#: The new step appended by R5.1.
+#: The new department step appended to the wizard.
 _NEW_FINAL_STEP: Final[str] = "add_first_department"
 
 
 # ---------------------------------------------------------------------------
-# Property 5: Setup Wizard Flow
+# Setup Wizard Flow
 # ---------------------------------------------------------------------------
 
 
 class TestSetupWizardStepOrder:
-    """**Validates: Requirements 5.1, 5.3, 5.6, 5.8**
-
-    The Setup Wizard STEP_ORDER list maintains the original six steps
+    """The Setup Wizard STEP_ORDER list maintains the original six steps
     unchanged and appends ``add_first_department`` as the final step.
     """
 
     def test_step_order_last_element_is_add_first_department(self) -> None:
-        """R5.1 — STEP_ORDER[-1] == 'add_first_department'."""
+        """STEP_ORDER[-1] == 'add_first_department'."""
         assert STEP_ORDER[-1] == _NEW_FINAL_STEP, (
             f"Expected last step to be '{_NEW_FINAL_STEP}', "
             f"got '{STEP_ORDER[-1]}'"
         )
 
     def test_step_order_preserves_original_six_steps(self) -> None:
-        """R5.1 — The original six steps remain in order and unchanged."""
+        """The original six steps remain in order and unchanged."""
         assert len(STEP_ORDER) == 7, (
             f"Expected 7 steps (6 original + 1 new), got {len(STEP_ORDER)}"
         )
@@ -133,9 +127,7 @@ class TestSetupWizardStepOrder:
 
 
 class TestSetupWizardAllComplete:
-    """**Validates: Requirements 5.1, 5.2, 5.8**
-
-    The ``all_complete`` field in the status response MUST be ``false``
+    """The ``all_complete`` field in the status response MUST be ``false``
     until every step (including ``add_first_department``) is completed.
     """
 
@@ -214,9 +206,7 @@ class TestSetupWizardAllComplete:
 
 
 class TestAddFirstDepartmentCheckEndpoint:
-    """**Validates: Requirements 5.3, 5.6, 5.8**
-
-    The ``POST /api/v1/setup/add_first_department/check`` endpoint
+    """The ``POST /api/v1/setup/add_first_department/check`` endpoint
     requires at least one active department in ``automation.departments``
     to mark the step as completed.
     """
@@ -248,7 +238,7 @@ class TestAddFirstDepartmentCheckEndpoint:
     async def test_check_returns_completed_when_active_dept_exists(
         self, app, mock_pool_with_active_dept
     ) -> None:
-        """R5.3 — At least one active dept → step completed."""
+        """At least one active dept means the step is completed."""
         from httpx import ASGITransport, AsyncClient
 
         app.state.pg_pool = mock_pool_with_active_dept
@@ -276,7 +266,7 @@ class TestAddFirstDepartmentCheckEndpoint:
     async def test_check_returns_pending_when_no_active_dept(
         self, app, mock_pool_without_active_dept
     ) -> None:
-        """R5.3 — No active dept → step stays pending."""
+        """No active dept means the step stays pending."""
         from httpx import ASGITransport, AsyncClient
 
         app.state.pg_pool = mock_pool_without_active_dept
@@ -297,7 +287,7 @@ class TestAddFirstDepartmentCheckEndpoint:
     async def test_check_queries_automation_departments_table(
         self, app, mock_pool_without_active_dept
     ) -> None:
-        """R5.3 — The check queries automation.departments for active rows."""
+        """The check queries automation.departments for active rows."""
         from httpx import ASGITransport, AsyncClient
 
         app.state.pg_pool = mock_pool_without_active_dept

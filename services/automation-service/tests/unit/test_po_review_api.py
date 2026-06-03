@@ -1,13 +1,9 @@
 """Unit tests for the PO Review API endpoints.
 
-Validates: Requirements 10.3, 10.4 (workflows spec, task 14.2 — Orphan
-Branches + PO Review Inbox + per-PR action endpoints).
-
 Exercises the FastAPI router end-to-end via :class:`TestClient` plus
 hand-rolled fakes for every collaborator (OIDC validator, Bitbucket
 branch / PR scanners, bot-id resolver, diff-summary cache, Bitbucket
-action adapter, audit logger). Four properties are covered, mirroring
-the bullet list in the task description:
+action adapter, audit logger). Four endpoint behaviors are covered:
 
 * **403 when ``dept_admin`` requests another dept** — a dept_admin
   token whose ``dept_ids`` does not include the requested ``dept_id``
@@ -402,7 +398,7 @@ def _post_action(
 
 
 class TestOrphanBranchesShape:
-    """**Validates: Requirements 10.3** — orphan list matches helper output."""
+    """Orphan list matches helper output."""
 
     def test_orphan_list_matches_compute_orphan_branches_output(
         self,
@@ -470,7 +466,7 @@ class TestOrphanBranchesShape:
 
 
 class TestPoReviewInboxShape:
-    """**Validates: Requirements 10.4** — inbox matches helper output."""
+    """Inbox matches helper output."""
 
     def test_inbox_returns_only_draft_bot_authored_prs(
         self,
@@ -505,7 +501,7 @@ class TestPoReviewInboxShape:
 
 
 class TestDeptAdminCrossDeptForbidden:
-    """**Validates: Requirements 10.3 + 10.4** — dept-scope is enforced."""
+    """Dept-scope is enforced."""
 
     def test_dept_admin_other_dept_returns_403_on_orphans(
         self,
@@ -581,7 +577,7 @@ class TestDeptAdminCrossDeptForbidden:
 
 
 class TestAdminBypassesDeptScope:
-    """**Validates: Requirements 10.3 + 10.4** — admin role passes globally."""
+    """Admin role passes globally."""
 
     def test_admin_can_read_orphans_for_any_dept(
         self,
@@ -622,7 +618,7 @@ class TestAdminBypassesDeptScope:
 
 
 class TestActionEndpointsCallActions:
-    """**Validates: Requirement 10.4** — action endpoints invoke adapter."""
+    """Action endpoints invoke the adapter."""
 
     def test_open_draft_calls_actions_open_draft_once(
         self,

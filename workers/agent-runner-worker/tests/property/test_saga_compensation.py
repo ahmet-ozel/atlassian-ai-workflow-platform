@@ -1,8 +1,6 @@
-"""Property tests for AgentRunnerWorkflow saga compensation.
+"""Tests for AgentRunnerWorkflow saga compensation.
 
-**Validates: Requirement 6.8**
-
-Property 10: Saga compensation determinism and idempotence.
+Saga compensation determinism and idempotence.
 
 For any execution history ``H = [a_1, a_2, ..., a_k]`` of completed
 side-effecting activities (recorded in workflow state via append-only
@@ -28,7 +26,6 @@ The activity inverses are mocked (synchronous instrumented callables)
 so this suite does *not* require a Temporal worker, MinIO, Bitbucket,
 or any other external dependency.
 
-Design reference: ``.kiro/specs/p0-critical-path/design.md`` §"Property 10".
 """
 
 from __future__ import annotations
@@ -65,11 +62,11 @@ from workflows.compensation import (  # noqa: E402  — sys.path bootstrap above
 
 
 # ---------------------------------------------------------------------------
-# Domain fixtures: P0 inverse table per design.md
+# Domain fixtures: P0 inverse table
 # ---------------------------------------------------------------------------
 
-# Per design.md the P0 saga has *two* compensable forward actions; every
-# other recorded action has no inverse and must be skipped.
+# The P0 saga has *two* compensable forward actions; every other
+# recorded action has no inverse and must be skipped.
 _FORWARD_ACTIONS_WITH_INVERSE: tuple[str, ...] = (
     "bitbucket_create_branch",
     "artifact_upload",
@@ -180,7 +177,7 @@ _HISTORIES = st.lists(_compensable_actions(), min_size=0, max_size=16)
 
 
 # ---------------------------------------------------------------------------
-# Property 10.1 — Reverse order
+# Reverse order
 # ---------------------------------------------------------------------------
 
 
@@ -216,7 +213,7 @@ def test_compensation_invokes_inverses_in_reverse_order(
 
 
 # ---------------------------------------------------------------------------
-# Property 10.2 — Inverse-only (no rollback for unrecorded ops)
+# Inverse-only (no rollback for unrecorded ops)
 # ---------------------------------------------------------------------------
 
 
@@ -256,7 +253,7 @@ def test_only_recorded_actions_with_inverse_get_called(
 
 
 # ---------------------------------------------------------------------------
-# Property 10.3 — Idempotence (re-running compensation is a no-op)
+# Idempotence (re-running compensation is a no-op)
 # ---------------------------------------------------------------------------
 
 
@@ -293,7 +290,7 @@ def test_compensation_is_idempotent(
 
 
 # ---------------------------------------------------------------------------
-# Property 10.4 — Determinism (pure function of H)
+# Determinism (pure function of H)
 # ---------------------------------------------------------------------------
 
 
@@ -329,7 +326,7 @@ def test_compensation_is_deterministic(
 
 
 # ---------------------------------------------------------------------------
-# Property 10.5 — Empty history is a no-op
+# Empty history is a no-op
 # ---------------------------------------------------------------------------
 
 
@@ -358,11 +355,11 @@ def test_empty_history_is_a_noop() -> None:
 def test_realistic_code_change_history_compensates_in_p0_order() -> None:
     """Anchor example mirroring the ``code_change_with_test`` flow.
 
-    Forward order (per design §"AgentRunnerWorkflow"):
+    Forward order:
         bitbucket_create_branch
         opencode_generate_code     (no inverse)
         bitbucket_create_commit    (no inverse)
-        bitbucket_open_pr          (no inverse — P0; later spec adds decline)
+        bitbucket_open_pr          (no inverse in P0)
         artifact_upload
 
     Compensation order (reverse, inverse-only):
@@ -438,7 +435,7 @@ def test_history_with_only_non_compensable_actions_is_a_noop(
 ) -> None:
     """A history made entirely of no-inverse actions triggers no calls.
 
-    This is a stronger statement than Property 10.2: even when every
+    This is a stronger statement than the inverse-only case: even when every
     entry in ``H`` is a *recorded* action, if none of them have an
     inverse the compensation MUST be a complete no-op.
     """

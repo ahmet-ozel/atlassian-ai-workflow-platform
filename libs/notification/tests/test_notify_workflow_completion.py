@@ -1,8 +1,6 @@
 """Unit tests for ``NotificationService.notify_workflow_completion``.
 
-Covers the decision table from
-``.kiro/specs/platform-mimari-ops/design.md`` §`NotificationService`
-(task 8.2):
+Covers the workflow notification decision table:
 
 * ``status == "failed"`` ⇒ Slack send is **mandatory** regardless of
   ``dept.notify_on_success``; email is sent iff ``notify_email`` is
@@ -19,8 +17,7 @@ Covers the decision table from
 
 The tests run on lightweight in-memory fakes for the four injected
 collaborators so the suite has no network / Postgres dependency. The
-fakes are also useful for sibling task 8.6 (Property 18 hypothesis
-test) which will reuse them as the SUT.
+fakes are also useful for property-style tests that reuse them as the SUT.
 """
 
 from __future__ import annotations
@@ -181,7 +178,7 @@ def _run(coro):
 
 
 def test_completed_with_notify_on_success_false_is_noop() -> None:
-    """R5.2 — success-gated branch: no dispatch when dept opted out."""
+    """Success-gated branch: no dispatch when dept opted out."""
 
     service, slack, email, prompts, store = _service_with_fakes()
     dept = _dept(
@@ -206,7 +203,7 @@ def test_completed_with_notify_on_success_false_is_noop() -> None:
 
 
 def test_partial_with_notify_on_success_false_is_noop() -> None:
-    """``"partial"`` is treated as success for gating (design §`NotificationService`)."""
+    """``"partial"`` is treated as success for gating."""
 
     service, slack, email, _, store = _service_with_fakes()
     dept = _dept(notify_on_success=False, notify_channels=frozenset({"slack"}))
@@ -280,7 +277,7 @@ def test_completed_with_only_slack_in_channels_skips_email() -> None:
 
 
 def test_failed_dispatches_slack_even_when_notify_on_success_false() -> None:
-    """R5.3 — failure-mandatory branch: Slack always fires."""
+    """Failure-mandatory branch: Slack always fires."""
 
     service, slack, email, prompts, store = _service_with_fakes()
     # notify_on_success=False AND notify_channels=∅ — dept opted out
@@ -314,7 +311,7 @@ def test_failed_dispatches_slack_even_when_notify_on_success_false() -> None:
 
 
 def test_failed_with_email_configured_also_sends_email() -> None:
-    """R5.3 nuance — failure path emails when ``notify_email`` is configured."""
+    """Failure path emails when ``notify_email`` is configured."""
 
     service, _, email, _, store = _service_with_fakes()
     dept = _dept(
@@ -362,7 +359,7 @@ def test_failed_with_no_email_configured_skips_email_channel() -> None:
 
 
 def test_failed_with_no_slack_webhook_skips_slack_channel() -> None:
-    """No dept Slack webhook ⇒ skip Slack (sibling task 8.3 covers admin)."""
+    """No dept Slack webhook ⇒ skip Slack."""
 
     service, slack, _, _, store = _service_with_fakes()
     dept = _dept(
@@ -390,7 +387,7 @@ def test_failed_with_no_slack_webhook_skips_slack_channel() -> None:
 
 
 def test_dedup_key_is_deterministic_per_workflow_channel_kind() -> None:
-    """Property 18 (d) — dedup_key is sha256(workflow_id, channel, kind)."""
+    """dedup_key is sha256(workflow_id, channel, kind)."""
 
     service, _, _, _, store = _service_with_fakes()
     dept = _dept(
@@ -413,7 +410,7 @@ def test_dedup_key_is_deterministic_per_workflow_channel_kind() -> None:
 
 
 def test_idempotent_retry_skips_second_adapter_send() -> None:
-    """Property 18 (d) — second attempt with same dedup_key is a no-op send."""
+    """Second attempt with same dedup_key is a no-op send."""
 
     service, slack, _, _, store = _service_with_fakes()
     dept = _dept(
@@ -455,7 +452,7 @@ def test_idempotent_retry_skips_second_adapter_send() -> None:
 
 
 def test_log_row_stores_hashed_target_not_plain_webhook() -> None:
-    """Foundation R7.8 parity — webhook URL never lands in the table."""
+    """Webhook URL never lands in the table."""
 
     service, _, _, _, store = _service_with_fakes()
     webhook = "https://hooks.slack.com/services/T0/B0/SECRET"

@@ -1,9 +1,8 @@
-"""Property test: Workflow type validation.
+"""Workflow type validation.
 
-Feature: platform-gap-fill, Property 9 — For any ``workflow_type`` value
-(from YAML or LLM), the ``analyze_task`` activity SHALL accept it iff
-the value exists in :data:`VALID_WORKFLOW_TYPES`; all other values
-SHALL cause task rejection with a Jira comment posted.
+For any ``workflow_type`` value from YAML or LLM, the ``analyze_task``
+activity accepts it only if the value exists in :data:`VALID_WORKFLOW_TYPES`;
+all other values cause task rejection with a Jira comment posted.
 
 The two complementary properties checked here are:
 
@@ -11,11 +10,9 @@ The two complementary properties checked here are:
   results in ``status == "ready"`` (when confidence ≥ 0.7 and the
   department has ``web_search_enabled = True`` so the downgrade rule
   is bypassed).
-* **Rejection** — every text value whose stripped form is NOT in
+* **Rejection** — every text value whose stripped form is not in
   ``VALID_WORKFLOW_TYPES`` results in ``status == "rejected"`` and a
   Jira comment is posted reporting the invalid type.
-
-**Validates: Requirements 5.7, 5.8**
 """
 
 from __future__ import annotations
@@ -61,7 +58,7 @@ from automation_worker.activities.task_analyzer import (  # noqa: E402
 _TMP_PROMPT_DIR: Path = Path(tempfile.mkdtemp(prefix="task_analyzer_pbt_p9_"))
 _PROMPT_PATH: Path = _TMP_PROMPT_DIR / "task_analysis.md"
 _PROMPT_PATH.write_text(
-    "# Stub prompt for Property 9 (workflow_type validation)\n",
+    "# Stub prompt for workflow_type validation\n",
     encoding="utf-8",
 )
 set_prompt_path(_PROMPT_PATH)
@@ -130,7 +127,7 @@ def _make_input(issue_key: str = "PAY-9") -> TaskAnalysisInput:
     """
     return TaskAnalysisInput(
         issue_key=issue_key,
-        title="Property 9 — workflow_type validation",
+        title="workflow_type validation",
         description="Plain description with no YAML front-matter.",
         labels=[],
         custom_fields={},
@@ -161,16 +158,14 @@ def _llm_payload(workflow_type: str, *, confidence: float = 0.9) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Property 9 (acceptance): every value in VALID_WORKFLOW_TYPES is accepted.
+# Acceptance: every value in VALID_WORKFLOW_TYPES is accepted.
 # ---------------------------------------------------------------------------
 
 
 @settings(max_examples=50, deadline=None)
 @given(workflow_type=st.sampled_from(sorted(VALID_WORKFLOW_TYPES)))
 def test_valid_workflow_types_are_accepted(workflow_type: str) -> None:
-    """Validates: Requirements 5.7
-
-    For any value drawn from VALID_WORKFLOW_TYPES (with confidence
+    """For any value drawn from VALID_WORKFLOW_TYPES (with confidence
     ≥ 0.7 and a dept that does not disable web search), ``analyze_task``
     produces ``status == "ready"`` and posts no rejection comment.
     """
@@ -201,8 +196,8 @@ def test_valid_workflow_types_are_accepted(workflow_type: str) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Property 9 (rejection): every text value NOT in VALID_WORKFLOW_TYPES
-# is rejected with a Jira comment.
+# Rejection: every text value not in VALID_WORKFLOW_TYPES is rejected with a
+# Jira comment.
 # ---------------------------------------------------------------------------
 
 
@@ -221,9 +216,7 @@ _INVALID_WORKFLOW_TYPE = st.text(min_size=0, max_size=80).filter(
 def test_invalid_workflow_types_are_rejected_with_comment(
     workflow_type: str,
 ) -> None:
-    """Validates: Requirements 5.8
-
-    For any text value NOT in VALID_WORKFLOW_TYPES, ``analyze_task``
+    """For any text value not in VALID_WORKFLOW_TYPES, ``analyze_task``
     produces ``status == "rejected"`` and posts a Jira comment listing
     the invalid value.  The original LLM confidence is irrelevant —
     validation runs *before* the confidence gate.
@@ -259,14 +252,13 @@ def test_invalid_workflow_types_are_rejected_with_comment(
 
 
 # ---------------------------------------------------------------------------
-# Sanity check — make sure the VALID_WORKFLOW_TYPES set still matches
-# the spec (Requirement 5.7).  Catches accidental drift in the source
-# of truth.
+# Sanity check: make sure the VALID_WORKFLOW_TYPES set still matches the
+# expected source of truth.
 # ---------------------------------------------------------------------------
 
 
 def test_valid_workflow_types_matches_spec() -> None:
-    """The closed set in source matches Requirement 5.7's enumeration."""
+    """The closed set in source matches the expected enumeration."""
     expected = frozenset({
         "code_change_with_test",
         "code_change_commit_only",

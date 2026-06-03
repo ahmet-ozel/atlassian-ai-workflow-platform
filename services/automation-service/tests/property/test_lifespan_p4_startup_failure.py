@@ -1,6 +1,4 @@
-"""Property 4 — startup failure aborts cleanly without partial wiring.
-
-# Feature: automation-service-wiring, Property 4: Startup failure cleanup
+"""Startup failure aborts cleanly without partial wiring.
 
 For any startup phase that raises during construction of one of the
 shared infrastructure objects (pool, vault, audit, temporal, oidc),
@@ -9,8 +7,6 @@ the lifespan handler propagates the exception out of
 wiring on ``app.state``. Any resource that was successfully
 constructed before the failing one is closed before the exception
 propagates.
-
-Validates Requirements 2.5 and 6.4 of the ``automation-service-wiring`` spec.
 """
 
 from __future__ import annotations

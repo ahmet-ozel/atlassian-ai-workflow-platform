@@ -1,24 +1,19 @@
-"""Unit tests for ``src.lifecycle.compose_runner`` (task 5.2).
-
+"""Unit tests for ``src.lifecycle.compose_runner``.
 These tests exercise the public surface of :class:`ComposeRunner` as a
 black box, with :func:`asyncio.create_subprocess_exec` patched out.
 The patch lets us:
-
 * Capture and assert the exact ``argv`` shape passed to the OS
-  (Requirement 8.3 — argv list, ``shell=False``, no shell metacharacter
+  — argv list, ``shell=False``, no shell metacharacter
   expansion).
 * Assert the subprocess ``env`` dict only contains the allow-listed
   host keys plus the operator-supplied overrides — never the host's
   arbitrary secrets such as ``VAULT_TOKEN`` or ``OPENAI_API_KEY``.
 * Assert no temporary ``.env`` files are created under the workspace
-  root during ``up``/``stop``/``restart``/``exec_test`` (Requirement
-  9.3, Property P2 surface).
-
+  root during ``up``/``stop``/``restart``/``exec_test``.
 The tests are deliberately mock-heavy because the production target is
 the *argv shape* and *environment scrubbing*, not the behaviour of
 ``docker compose`` itself; we have no docker daemon in the unit-test
-lane.
-"""
+lane."""
 
 from __future__ import annotations
 
@@ -135,7 +130,7 @@ def _runner() -> ComposeRunner:
 
 
 def test_up_argv_shape_uses_profile_and_service_name() -> None:
-    """``up`` builds the canonical Compose argv documented in design §3.4."""
+    """``up`` builds the canonical Compose argv for a profiled service."""
 
     recorder = _make_recorder(_FakeProcess(returncode=0, stdout=b"ok"))
     with patch("asyncio.create_subprocess_exec", recorder):
@@ -163,13 +158,11 @@ def test_up_argv_shape_uses_profile_and_service_name() -> None:
 
 
 def test_up_does_not_pass_env_overrides_as_cli_flags() -> None:
-    """Property P2 surface: env_overrides go through the env dict only.
-
+    """env_overrides go through the env dict only.
     The recorded argv must NEVER contain ``--env`` flags constructed
     from the override map, and override values must never appear on
     the command line. They live solely in the subprocess's ``env``
-    mapping.
-    """
+    mapping."""
 
     recorder = _make_recorder(_FakeProcess(returncode=0))
     with patch("asyncio.create_subprocess_exec", recorder):
@@ -243,14 +236,12 @@ def test_stop_argv_shape() -> None:
 
 def test_stop_with_remove_volumes_runs_rm_fv() -> None:
     """``remove_volumes=True`` follows ``stop`` with ``rm -fv``.
-
-    Named volumes (Requirement 13.5 — ``pg_data``, ``minio_data``,
+    Named volumes — ``pg_data``, ``minio_data``,
     ``agent_workspace``) are owned by the top-level ``volumes:`` block
     in ``docker-compose.yml``, so ``rm -fv <service>`` only purges the
-    service's *anonymous* volumes (Requirement 6.4). This test asserts
+    service's *anonymous* volumes. This test asserts
     the argv contract; the volume-ownership invariant lives in the
-    Compose file itself.
-    """
+    Compose file itself."""
 
     recorder = _make_recorder(
         _FakeProcess(returncode=0),
@@ -344,10 +335,8 @@ def test_logs_argv_with_follow_appends_flag_and_returns_iterator() -> None:
 
 def test_exec_test_argv_uses_compose_exec_dash_capital_t() -> None:
     """``exec_test`` runs ``docker compose exec -T <svc> <argv...>``.
-
     The ``-T`` flag disables TTY allocation so the call is safe inside
-    a non-interactive HTTP handler (Requirement 8.4 surface).
-    """
+    a non-interactive HTTP handler ."""
 
     recorder = _make_recorder(
         _FakeProcess(returncode=0, stdout=b"== 3 passed in 0.42s ==")
@@ -383,12 +372,9 @@ def test_exec_test_argv_uses_compose_exec_dash_capital_t() -> None:
 
 
 def test_up_non_zero_exit_raises_compose_failure_error() -> None:
-    """Requirement 6.7 — non-zero ``docker compose`` exit → 502 upstream.
-
-    The runner surfaces this as :class:`ComposeFailureError` so the
+    """    The runner surfaces this as :class:`ComposeFailureError` so the
     router layer can render the canonical error envelope without
-    duplicating exit-code checks.
-    """
+    duplicating exit-code checks."""
 
     recorder = _make_recorder(
         _FakeProcess(returncode=1, stdout=b"", stderr=b"image not found")
@@ -486,11 +472,8 @@ def test_environ_is_scrubbed_to_allowlist_only() -> None:
 
 def test_env_overrides_are_passed_via_subprocess_env_dict() -> None:
     """``env_overrides`` reach the child *only* through the env mapping.
-
-    This is the structural enforcement of Requirement 9.3 / Property
-    P2: Vault-sourced secrets never touch the disk and never appear
-    on the command line.
-    """
+    This enforces that Vault-sourced secrets never touch the disk and never appear
+    on the command line."""
 
     recorder = _make_recorder(_FakeProcess(returncode=0))
     overrides = {
@@ -547,19 +530,17 @@ def test_overrides_can_shadow_allowlisted_host_keys() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Property P2 surface — no temporary .env files written under workspace
+#  surface — no temporary.env files written under workspace
 # ---------------------------------------------------------------------------
 
 
 def test_no_temp_env_files_written_under_workspace_root(tmp_path: Path) -> None:
     """No file is created under ``workspace_root`` during ``up`` / ``stop``.
-
     This complements the env-scrubbing test by walking the workspace
     tree before and after the subprocess boundary and asserting that
     no new files (especially nothing matching ``.env*``) appeared.
     Combined with the env-dict assertion above, this is the unit-test
-    surface of Property P2 (Requirement 9.3).
-    """
+    surface of."""
 
     # Materialise a synthetic workspace so we can walk it.
     (tmp_path / "infra").mkdir()
@@ -608,16 +589,13 @@ def test_no_temp_env_files_written_under_workspace_root(tmp_path: Path) -> None:
 
 def test_create_subprocess_exec_called_with_pipes_and_no_shell_kwarg() -> None:
     """We rely on ``create_subprocess_exec`` (argv) — never ``..._shell``.
-
     This is the structural guarantee that no shell metacharacter
-    expansion can occur (Requirement 8.3): the API used here takes an
+    expansion can occur : the API used here takes an
     argv list and forwards it to ``execve`` directly, without an
     intermediate ``/bin/sh -c`` invocation.
-
     ``create_subprocess_exec`` does not accept a ``shell`` kwarg at
     all, so the assertion is "we used this function, and no caller
-    passed a stray ``shell=True``-style kwarg".
-    """
+    passed a stray ``shell=True``-style kwarg"."""
 
     recorder = _make_recorder(_FakeProcess(returncode=0))
     with patch("asyncio.create_subprocess_exec", recorder):

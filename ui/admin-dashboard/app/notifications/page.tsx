@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Notifications panel — `platform-mimari-ops` task 12.7 (R4.1 / R5.1).
+ * Notifications panel.
  *
  * Surfaces dept-level notification configuration (Slack webhook
  * vault refs, email recipients, notify_on_success toggle).

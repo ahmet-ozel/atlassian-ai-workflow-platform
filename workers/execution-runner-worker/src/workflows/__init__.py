@@ -2,18 +2,17 @@
 
 Exports:
 
-* :class:`ExecutionRunWorkflow` — the canonical workflow defined by
-  ``platform-mimari-workflows`` task 2.3 / Requirements 1.1, 1.6.
-  Accepts :class:`ExecutionRunWorkflowInput` and returns
+* :class:`ExecutionRunWorkflow` — the canonical workflow. Accepts
+  :class:`ExecutionRunWorkflowInput` and returns
   :class:`ExecutionRunWorkflowOutput` from
   :mod:`temporal_shared.messages`.
-* :class:`LegacyExecutionRunWorkflow` — the foundation-spec scaffold
-  preserved (under a Temporal-distinct name) so the integration test
+* :class:`LegacyExecutionRunWorkflow` — the legacy workflow preserved under a
+  Temporal-distinct name so the integration test
   ``tests/integration/test_execution_runner.py`` keeps green.  Imports
   alias ``ExecutionRunInput`` / ``ExecutionRunResult`` for the legacy
   class still resolve through this module.
 * :class:`SSHHealthcheckCronWorkflow` — Temporal cron workflow for
-  proactive SSH runner monitoring (task 20.1, Requirements 14.1-14.5).
+  proactive SSH runner monitoring.
 """
 
 from .execution_run_workflow import (
@@ -30,15 +29,15 @@ from .ssh_healthcheck_cron import (
 )
 
 __all__ = [
-    # canonical (task 2.3 — Requirements 1.1, 1.6)
+    # canonical
     "ExecutionRunWorkflow",
     "DEFAULT_HEARTBEAT",
     "DEFAULT_START_TO_CLOSE",
-    # legacy (foundation scaffold)
+    # legacy
     "LegacyExecutionRunWorkflow",
     "ExecutionRunInput",
     "ExecutionRunResult",
-    # SSH healthcheck cron (task 20.1 — Requirements 14.1-14.5)
+    # SSH healthcheck cron
     "SSHHealthcheckCronWorkflow",
     "HealthcheckState",
 ]

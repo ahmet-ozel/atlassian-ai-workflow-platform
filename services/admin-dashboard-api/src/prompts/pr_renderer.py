@@ -10,22 +10,22 @@ state, and no global mutation — every piece of context is passed in:
 * ``diff``                — unified-format diff produced by
   :meth:`git_shared.GitRepo.diff` against ``main``.
 * ``sandbox_history``     — zero or more :class:`SandboxRunSummary`
-  rows produced by task 6.2's ``PromptSandbox.run`` calls. Empty
+  rows produced by service lifecycle wiring's ``PromptSandbox.run`` calls. Empty
   when the operator has not exercised the sandbox yet (acceptable
-  per design.md §`PromptSandbox` — the sandbox is opt-in).
+  per design notes §`PromptSandbox` — the sandbox is opt-in).
 * ``v15_status``          — :class:`V15SyncStatus` record describing
   whether every backlog ID mentioned by the prompt body also
-  appears in ``MIMARI.md`` (Requirement 2.8 / V15 CI gate). The
+  appears in ``architecture notes`` (behavior 2.8 / V15 CI gate). The
   renderer surfaces *informational* status only — the hard CI gate
-  is owned by ``tests/test_taskprompt_mimari_sync.py`` (task 6.4).
+  is owned by ``tests/test_taskprompt_mimari_sync.py`` (prompt sync wiring).
 
 Design references
 -----------------
-* design.md §`PromptsGitRouter.post_pr` — ``description = diff
+* design notes §`PromptsGitRouter.post_pr` — ``description = diff
   summary + sandbox results + V15 sync info``.
-* tasks.md §6.3 — "deterministic Markdown including diff vs main,
-  sandbox results from task 6.2 if available, V15 sync info".
-* Requirements 2.2, 2.4, 2.8.
+* implementation notes §6.3 — "deterministic Markdown including diff vs main,
+  sandbox results from service lifecycle wiring if available, V15 sync info".
+* behaviors 2.2, 2.4, 2.8.
 
 Determinism guarantees
 ----------------------
@@ -40,11 +40,11 @@ order:
        history is empty — replaced by a short "no sandbox runs
        recorded" notice.
     4. V15 sync section: known backlog IDs in the prompt body, plus
-       any IDs that the caller flagged as missing from MIMARI.md.
+       any IDs that the caller flagged as missing from architecture notes.
 
 Identical inputs therefore always produce a byte-identical output,
 which makes the renderer trivially testable and lets the property
-test suite (Property 5 — audit log integrity) compare the rendered
+test suite (invariant 5 — audit log integrity) compare the rendered
 description to a golden snapshot when needed.
 """
 
@@ -65,11 +65,11 @@ from typing import Iterable, Sequence
 class SandboxRunSummary:
     """One row in the sandbox-results table inside the PR description.
 
-    Mirrors the public surface of task 6.2's ``SandboxResult`` dataclass
+    Mirrors the public surface of service lifecycle wiring's ``SandboxResult`` dataclass
     so the router can pass the sandbox history through without
     re-shaping it. Kept here (rather than imported from a future
     ``sandbox`` module) so this renderer stays import-clean and can
-    be tested before task 6.2 lands.
+    be tested before service lifecycle wiring lands.
 
     Attributes:
         invoked_at: ISO-8601 timestamp of the sandbox run. Treated as
@@ -96,7 +96,7 @@ class SandboxRunSummary:
 
 @dataclass(frozen=True)
 class V15SyncStatus:
-    """V15 (prompt MD ↔ MIMARI.md) sync status snapshot.
+    """V15 (prompt MD ↔ architecture notes) sync status snapshot.
 
     The router computes this via :func:`extract_v15_status` (or, in
     tests, builds it explicitly) and hands it to the renderer.
@@ -104,12 +104,12 @@ class V15SyncStatus:
     Attributes:
         all_ids: Backlog IDs found in the prompt body (sorted, unique).
         missing_in_mimari: Subset of ``all_ids`` that the caller could
-            not find in ``MIMARI.md``. Empty tuple ⇒ everything is in
+            not find in ``architecture notes``. Empty tuple ⇒ everything is in
             sync. The renderer surfaces this as a callout when
             non-empty so the reviewer notices before merging.
         mimari_available: ``True`` when the caller successfully read
-            ``MIMARI.md``; ``False`` when the file was missing /
-            unreadable (the renderer then prints "MIMARI.md not
+            ``architecture notes``; ``False`` when the file was missing /
+            unreadable (the renderer then prints "architecture notes not
             available — V15 sync could not be verified" instead of
             making confident claims).
     """
@@ -119,7 +119,7 @@ class V15SyncStatus:
     mimari_available: bool = True
 
     def in_sync(self) -> bool:
-        """Return True when every prompt backlog ID also lives in MIMARI."""
+        """Return True when every prompt backlog ID also lives in architecture."""
 
         return self.mimari_available and not self.missing_in_mimari
 
@@ -139,8 +139,8 @@ PR_DESCRIPTION_HEADER: str = "# Prompt change"
 _MAX_DIFF_CHARS: int = 8000
 
 #: The V15 backlog series — every letter that may carry a 1-2 digit
-#: numeric suffix in the MIMARI cross-reference table. Mirror of the
-#: regex used by ``tests/test_taskprompt_mimari_sync.py`` (Requirement
+#: numeric suffix in the architecture cross-reference table. Mirror of the
+#: regex used by ``tests/test_taskprompt_mimari_sync.py``
 #: 2.8 / V15 CI gate).
 _V15_ID_RE: re.Pattern[str] = re.compile(r"\b([XYZNVWGSBEQRT]\d{1,2})\b")
 
@@ -157,14 +157,14 @@ def extract_v15_status(
 ) -> V15SyncStatus:
     """Compute the V15 sync status for a prompt body.
 
-    Pure function — no I/O. Callers that want to read ``MIMARI.md``
-    from disk should do so themselves (e.g. ``Path("MIMARI.md")
+    Pure function — no I/O. Callers that want to read ``architecture notes``
+    from disk should do so themselves (e.g. ``Path("architecture notes")
     .read_text()``) and pass the contents in; ``None`` means the file
     was unavailable and the renderer should soften its claims.
 
     Args:
         body: Full Markdown body of the prompt under review.
-        mimari_text: Contents of ``MIMARI.md`` (or ``None`` when the
+        mimari_text: Contents of ``architecture notes`` (or ``None`` when the
             caller could not read it).
 
     Returns:
@@ -248,7 +248,7 @@ def _render_header(path: str) -> str:
     """Render the title + provenance lead-in.
 
     The lead-in cites the spec / requirement so a reviewer landing on
-    the PR has a stable handle for context (Requirement 2.2). The
+    the PR has a stable handle for context (behavior 2.2). The
     leading line is kept *exactly* equal to ``PR_DESCRIPTION_HEADER``
     + ``: ``+ path so existing tests / dashboards that grep on the
     prefix keep working.
@@ -258,10 +258,10 @@ def _render_header(path: str) -> str:
         f"{PR_DESCRIPTION_HEADER}: `{path}`\n"
         f"\n"
         f"This PR was opened automatically by the admin-dashboard "
-        f"prompt editor (platform-mimari-ops Requirement 2.2). The "
+        f"prompt editor (operations surface behavior 2.2). The "
         f"description below is rendered deterministically from the "
         f"diff, the sandbox history, and the V15 cross-reference "
-        f"table (Requirement 2.8)."
+        f"table (behavior 2.8)."
     )
 
 
@@ -297,7 +297,7 @@ def _render_sandbox_section(history: Sequence[SandboxRunSummary]) -> str:
             "\n"
             "_No sandbox runs were recorded for this draft._ The "
             "operator may exercise the sandbox via "
-            "`POST /admin/prompts/{path}/sandbox-test` (task 6.2) "
+            "`POST /admin/prompts/{path}/sandbox-test` (service lifecycle wiring) "
             "before merging this PR."
         )
 
@@ -321,23 +321,23 @@ def _render_sandbox_section(history: Sequence[SandboxRunSummary]) -> str:
     rows.append("")
     rows.append(
         "_Sandbox runs are tagged `cost_tag='sandbox'` and never "
-        "deduct from the dept production budget (Requirement 2.4)._"
+        "deduct from the dept production budget (behavior 2.4)._"
     )
     return "\n".join(rows)
 
 
 def _render_v15_section(v15: V15SyncStatus | None) -> str:
-    """Render the V15 (prompt ↔ MIMARI) sync section."""
+    """Render the V15 (prompt ↔ architecture) sync section."""
 
     if v15 is None:
         return (
-            "## V15 cross-reference (Requirement 2.8)\n"
+            "## V15 cross-reference (behavior 2.8)\n"
             "\n"
             "_(V15 sync info not available for this PR.)_"
         )
 
     lines: list[str] = [
-        "## V15 cross-reference (Requirement 2.8)",
+        "## V15 cross-reference (behavior 2.8)",
         "",
     ]
 
@@ -354,23 +354,23 @@ def _render_v15_section(v15: V15SyncStatus | None) -> str:
 
     if not v15.mimari_available:
         lines.append(
-            "⚠️ `MIMARI.md` was not available when this PR description "
+            "⚠️ `architecture notes` was not available when this PR description "
             "was rendered — V15 sync could not be verified. The CI "
-            "gate `tests/test_taskprompt_mimari_sync.py` (task 6.4) "
+            "gate `tests/test_taskprompt_mimari_sync.py` (prompt sync wiring) "
             "remains the source of truth and will fail the build if "
-            "any of the IDs above are missing from `MIMARI.md`."
+            "any of the IDs above are missing from `architecture notes`."
         )
     elif v15.missing_in_mimari:
         missing = ", ".join(f"`{_id}`" for _id in v15.missing_in_mimari)
         lines.append(
             f"⚠️ The following backlog IDs are **missing** from "
-            f"`MIMARI.md`: {missing}. The V15 CI gate will fail this "
-            f"PR until each ID is documented in `MIMARI.md` or "
+            f"`architecture notes`: {missing}. The V15 CI gate will fail this "
+            f"PR until each ID is documented in `architecture notes` or "
             f"removed from the prompt body."
         )
     else:
         lines.append(
-            "✅ All backlog IDs above are present in `MIMARI.md`. "
+            "✅ All backlog IDs above are present in `architecture notes`. "
             "V15 sync gate is satisfied."
         )
     return "\n".join(lines)

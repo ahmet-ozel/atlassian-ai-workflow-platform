@@ -13,9 +13,6 @@ When ``SSH_HOST`` is **not** set and the ``infrastructure.ssh_runners`` table
 is empty, the function logs a ``runner_pool_empty`` warning so operators are
 aware that no execution capability is available until runners are configured
 via the admin panel.
-
-Spec: platform-quick-fixes — Task 7.2
-Requirements: 4.3, 4.17, 4.19
 """
 
 from __future__ import annotations
@@ -66,12 +63,12 @@ async def seed_default_runner(pool) -> None:
         departments are not duplicated.
     - If ``SSH_HOST`` is not set:
       - Checks whether ``infrastructure.ssh_runners`` has any rows.
-      - If empty, logs a ``runner_pool_empty`` warning (R4.19).
+      - If empty, logs a ``runner_pool_empty`` warning.
     """
     ssh_host = _resolve_ssh_host()
 
     if not ssh_host:
-        # R4.19: SSH_HOST not set — check if runner pool is empty
+        # SSH_HOST not set; check if runner pool is empty.
         try:
             count = await pool.fetchval(
                 "SELECT COUNT(*) FROM infrastructure.ssh_runners"
@@ -92,7 +89,7 @@ async def seed_default_runner(pool) -> None:
             )
         return
 
-    # SSH_HOST is set — seed the default runner (R4.3)
+    # SSH_HOST is set; seed the default runner.
     logger.info(
         "SSH_HOST is set (%s) — seeding default runner for backward compatibility. "
         "DEPRECATED: migrate to infrastructure.ssh_runners table via admin panel.",

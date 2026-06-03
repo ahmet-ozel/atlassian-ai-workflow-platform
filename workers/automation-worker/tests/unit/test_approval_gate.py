@@ -4,10 +4,6 @@ Tests exercise the pure helper functions (``match_approval_paths``,
 ``is_authorized_approver``, ``parse_approval_decision``) without
 spinning up a Temporal worker. These functions contain the core logic
 that the workflow delegates to.
-
-Validates Requirements: **11.1** (regex matching), **11.3** ([approve]),
-**11.4** ([reject]), **11.6** (authorization check), **11.7** (empty
-paths skip).
 """
 
 from __future__ import annotations
@@ -36,7 +32,7 @@ from automation_worker.workflows.approval_gate import (  # noqa: E402
 
 
 # ===========================================================================
-# 1. match_approval_paths tests (Requirement 11.1)
+# 1. match_approval_paths tests
 # ===========================================================================
 
 
@@ -74,7 +70,7 @@ class TestMatchApprovalPaths:
         assert result == []
 
     def test_empty_patterns_returns_empty(self) -> None:
-        """Empty patterns list — returns empty (Requirement 11.7)."""
+        """Empty patterns list returns empty."""
         files = ["src/core/auth.py"]
         result = match_approval_paths(files, [])
         assert result == []
@@ -101,7 +97,7 @@ class TestMatchApprovalPaths:
 
 
 # ===========================================================================
-# 2. is_authorized_approver tests (Requirement 11.6)
+# 2. is_authorized_approver tests
 # ===========================================================================
 
 
@@ -126,7 +122,7 @@ class TestIsAuthorizedApprover:
 
 
 # ===========================================================================
-# 3. parse_approval_decision tests (Requirements 11.3, 11.4)
+# 3. parse_approval_decision tests
 # ===========================================================================
 
 

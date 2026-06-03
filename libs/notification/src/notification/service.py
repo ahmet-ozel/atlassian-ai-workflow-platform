@@ -1,16 +1,14 @@
 """``NotificationService`` — success-gated, failure-mandatory dispatcher.
 
-Implementation of task 8.2 of
-``.kiro/specs/platform-mimari-ops/tasks.md``. The dispatch policy is
-specified in design.md §`NotificationService` and verified by Property 18.
+Implements the workflow notification dispatch policy.
 
-Decision table (R5.2 + R5.3):
+Decision table:
 
 +---------------------+-----------------------+-----------------------+----------------------------------+
 | ``result.status``   | ``notify_on_success`` | Slack send?           | Email send?                       |
 +=====================+=======================+=======================+==================================+
 | ``"failed"``        | (any)                 | **always**            | iff ``"email"`` ∈ channels OR    |
-|                     |                       | (mandatory, R5.3)     | ``notify_email`` is set          |
+|                     |                       | (mandatory)           | ``notify_email`` is set          |
 +---------------------+-----------------------+-----------------------+----------------------------------+
 | ``"completed"``     | ``True``              | iff ``"slack"`` ∈     | iff ``"email"`` ∈ channels       |
 |                     |                       | channels              |                                  |
@@ -32,8 +30,7 @@ Two additional invariants the implementation enforces:
   ``shared.notification_log.body_hash``. Plain Slack webhook URLs and
   email addresses are never persisted verbatim — the ``target`` column
   stores a sha256 hash so dispatch history can be correlated with a
-  webhook without leaking the secret (parity with foundation R7.8 log
-  redaction).
+  webhook without leaking the secret.
 """
 
 from __future__ import annotations
@@ -70,20 +67,20 @@ _log = logging.getLogger(__name__)
 
 
 #: Logical prompt names rendered by :meth:`notify_workflow_completion`. The
-#: actual ``.md`` files are produced by sibling task 8.4
+#: actual ``.md`` files are produced by the prompt layer
 #: (``platform/prompts/notifications/*.md``); the dispatcher only knows the
 #: *names*. The mapping is keyed by ``WorkflowStatus``-derived branch:
 #: ``"failed"`` always picks the failure template; everything else picks
-#: the success template, matching design §`NotificationService` pseudocode
+#: the success template, matching the notification template selection rule
 #: (``"workflow_failed" if is_failure else "workflow_succeeded"``).
 _FAILURE_TEMPLATE: str = "notifications/workflow_failed"
 _SUCCESS_TEMPLATE: str = "notifications/workflow_succeeded"
 
 
 #: Stable separator for ``dedup_key`` and ``target`` hashes. Picked because
-#: ``":"`` is forbidden inside a workflow_id (Spec 2 ``workflow_id`` shape:
-#: ``"<dept>-<issue>-<n>"`` with hyphens only), so it cannot appear in any
-#: hashed component and produce a collision through string concatenation.
+#: ``":"`` is forbidden inside a workflow_id shaped as
+#: ``"<dept>-<issue>-<n>"``, so it cannot appear in any hashed component
+#: and produce a collision through string concatenation.
 _HASH_SEP: str = ":"
 
 
@@ -91,15 +88,15 @@ _HASHED_TARGET_NONE: str = "none"
 
 
 #: Logical prompt name for the mandatory admin Slack alarm written when
-#: ``AuditPruneWorkflow`` fails (R6.4). The body is rendered by sibling
-#: task 8.4 (``platform/prompts/notifications/audit_prune_failed.md``); the
+#: ``AuditPruneWorkflow`` fails. The body is rendered from
+#: ``platform/prompts/notifications/audit_prune_failed.md``; the
 #: dispatcher only knows the *name*.
 _AUDIT_PRUNE_FAILED_TEMPLATE: str = "notifications/audit_prune_failed"
 
 
 #: Stable identifier for the ``audit_prune_failed`` alarm class. Mirrors
-#: the ``alert_type`` argument the design (§`NotificationService`) pins on
-#: the ``slack.send_admin_channel`` call and the ``kind`` literal already
+#: the ``alert_type`` argument used by the ``slack.send_admin_channel``
+#: call and the ``kind`` literal already
 #: reserved in :data:`notification.types.NotificationKind` (so the
 #: ``shared.notification_log`` row can carry the same string verbatim).
 _AUDIT_PRUNE_FAILED_ALERT_TYPE: str = "audit_prune_failed"
@@ -107,8 +104,8 @@ _AUDIT_PRUNE_FAILED_ALERT_TYPE: str = "audit_prune_failed"
 
 #: Pseudo workflow id used as the first component of the
 #: :func:`_dedup_key` hash for an admin alarm. The audit prune alarm is
-#: NOT scoped to a workflow_id from the workflow domain (Spec 2's
-#: ``"<dept>-<issue>-<n>"`` shape); it is a platform-wide ops alarm. We
+#: NOT scoped to a workflow_id from the workflow domain
+#: (``"<dept>-<issue>-<n>"``); it is a platform-wide ops alarm. We
 #: still feed the dedup_key helper a deterministic non-empty string so a
 #: single ``AuditPruneWorkflow`` cron run cannot double-deliver under
 #: retry. Callers that need stricter idempotency (eg. one alarm per
@@ -181,12 +178,8 @@ class NotificationOutcome:
 class NotificationService:
     """Success-gated + failure-mandatory notification dispatcher.
 
-    Validates:
-        * R5.1 (Slack + email adapters; templates from
-          ``prompts/notifications/<name>.md``)
-        * R5.2 (success path is gated by ``dept.notify_on_success``)
-        * R5.3 (failure path is mandatory regardless of dept config)
-        * Property 18 invariants (a)–(e).
+    Coordinates Slack and email adapters, notification templates,
+    success gating, mandatory failure notifications, and idempotency.
 
     Args:
         slack: Adapter conforming to :class:`SlackAdapter`. Sibling task
@@ -197,8 +190,7 @@ class NotificationService:
             :class:`prompts.loader.PromptLoader`). The dispatcher only
             uses :meth:`PromptRenderer.render`.
         log_store: :class:`NotificationLogStore` backed by
-            ``shared.notification_log`` Postgres table. Sibling task 8.1
-            provides the concrete ``asyncpg`` implementation.
+            ``shared.notification_log`` Postgres table.
     """
 
     def __init__(
@@ -226,7 +218,7 @@ class NotificationService:
         result: WorkflowResult,
         prompt_vars: "Mapping[str, object] | object | None" = None,
     ) -> NotificationOutcome:
-        """Dispatch a terminal workflow notification per R5.2 / R5.3.
+        """Dispatch a terminal workflow notification.
 
         Args:
             workflow_id: Stable id of the completed workflow. Hashed into
@@ -256,9 +248,9 @@ class NotificationService:
         """
 
         # ------------------------------------------------------------------
-        # 1. Decide whether this call notifies at all (success-gated; R5.2).
+        # 1. Decide whether this call notifies at all (success-gated).
         #
-        # The failure path (R5.3) bypasses this gate: even when
+        # The failure path bypasses this gate: even when
         # ``dept.notify_on_success == False`` we MUST notify on
         # ``status == "failed"``.
         # ------------------------------------------------------------------
@@ -310,7 +302,7 @@ class NotificationService:
         if slack_eligible:
             if dept.slack_webhook is None:
                 # Failure-mandatory but no dept Slack webhook configured.
-                # Sibling task 8.3's ``notify_audit_prune_failed`` covers
+                # ``notify_audit_prune_failed`` covers
                 # the admin Slack channel for system-wide alarms; this
                 # branch logs and skips so the failure is still observable
                 # in audit but does not hard-error the workflow.
@@ -377,15 +369,14 @@ class NotificationService:
         error: str,
         run_id: str | None = None,
     ) -> NotificationOutcome:
-        """Dispatch the mandatory admin Slack alarm on ``AuditPruneWorkflow`` failure (R6.4).
+        """Dispatch the mandatory admin Slack alarm on ``AuditPruneWorkflow`` failure.
 
         Posts the rendered ``notifications/audit_prune_failed`` body to
         the platform admin Slack channel through
         :meth:`SlackAdapter.send_admin_channel`. The destination webhook
         is fixed by the adapter to the vault-resolved value at
         ``vault:notifications/slack/admin`` and is **not configurable
-        per call** — by design (Property 10 invariant: "AuditPruneWorkflow
-        fail'i sessizleştirilemez") this alarm is delivered regardless
+        per call**; this alarm is delivered regardless
         of any dept config.
 
         The dispatcher reuses the same ``shared.notification_log`` row +
@@ -513,7 +504,7 @@ class NotificationService:
         #    NotificationError so the Temporal activity's RetryPolicy
         #    can replay. Failure here is **never** swallowed — this is
         #    the platform's mandatory ops alarm channel and a silent
-        #    failure would violate Property 10 (d).
+        #    failure would violate the mandatory alarm contract.
         # ------------------------------------------------------------------
         try:
             await self._slack.send_admin_channel(
@@ -560,16 +551,16 @@ class NotificationService:
         3. Invoke the adapter. If it raises, mark the outcome's
            ``*_failed`` flag and let step 6 of the caller decide whether
            to re-raise. The log row stays at ``status='sent'`` from the
-           caller's optimistic insert; sibling task 8.1 will follow up
-           with a corrective UPDATE inside its retry policy. For 8.2 we
+           caller's optimistic insert; retry policy can follow up with
+           a corrective UPDATE.
            keep the contract simple: ``failed`` flag is in the outcome,
            and the log row remains as the optimistic ``sent``.
 
-        NOTE on step 3: design.md does not pin the row-update timing on
+        NOTE on step 3: the contract does not pin the row-update timing on
         adapter failure — it only asserts (d) "``notification_log``
         receives one row per attempt with ``UNIQUE(dedup_key)``". We
-        meet (d) via the optimistic insert; refining ``status`` after
-        a transport failure is sibling task 8.1's concern.
+        meet the idempotency contract via the optimistic insert; refining
+        ``status`` after a transport failure is handled by retry policy.
         """
 
         kind: NotificationKind = "workflow_completion"
@@ -636,8 +627,7 @@ def _sha256_hex(value: str) -> str:
 
     Used for both ``body_hash`` (forensic correlation without storing
     plaintext) and the ``target`` column (so a Slack webhook URL never
-    lands in the table verbatim — log redaction parity with foundation
-    R7.8).
+    lands in the table verbatim.
     """
 
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
@@ -660,8 +650,8 @@ def _dedup_key(
     * ``workflow_id`` — distinguishes calls across workflows.
     * ``channel`` — lets a single workflow drive Slack *and* email
       without colliding (we want one row per channel).
-    * ``kind`` — currently always ``"workflow_completion"`` for 8.2 but
-      sibling task 8.3's ``notify_audit_prune_failed`` reuses the same
+    * ``kind`` — currently always ``"workflow_completion"`` for normal
+      workflow notifications; ``notify_audit_prune_failed`` reuses the same
       ``notification_log`` table with ``kind="audit_prune_failed"``;
       including ``kind`` in the hash future-proofs the schema.
 
@@ -757,12 +747,12 @@ def _outcome_with_failure(
 def _used_status(  # noqa: D401 — internal helper
     status: NotificationStatus,
 ) -> NotificationStatus:
-    """Identity helper kept for forward-compat with sibling task 8.1.
+    """Identity helper kept for forward compatibility.
 
-    Task 8.1's retry path may want to coerce ``"sent"`` to ``"retrying"``
-    inside a token-bucket back-pressure loop. Pinning the helper now keeps
-    the type signature stable so 8.1 can drop in the coercion without a
-    breaking change to consumers.
+    A retry path may want to coerce ``"sent"`` to ``"retrying"`` inside a
+    token-bucket back-pressure loop. Pinning the helper now keeps the type
+    signature stable so the coercion can be added without a breaking change
+    to consumers.
     """
 
     return status

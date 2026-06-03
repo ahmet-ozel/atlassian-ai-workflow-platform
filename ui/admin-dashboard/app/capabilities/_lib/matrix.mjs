@@ -1,13 +1,12 @@
 /**
- * Capability matrix data shape + pure helpers — `platform-gap-fill`
- * task 9.2 (Requirement 10.6).
+ * Capability matrix data shape + pure helpers.
  *
  * The Admin Dashboard surfaces every ``(dept × service)`` connectivity
- * check the platform-gap-fill capability prober cares about
- * (Requirement 10.4 — Jira / Bitbucket / Confluence / LLM / SSH /
+ * check the capability prober cares about
+ * (Jira / Bitbucket / Confluence / LLM / SSH /
  * Docker). The corresponding API lives in
  * ``platform/services/admin-dashboard-api/src/routers/capabilities.py``
- * and was shipped under task 9.1.
+ * and is shared with the page renderer.
  *
  * This module is **pure, framework-free ESM** so:
  *
@@ -104,7 +103,7 @@ export const SUPPORTED_SERVICES = Object.freeze([
 ]);
 
 /**
- * Cell colour buckets (Requirement 10.6 — "yeşil/kırmızı/gri").
+ * Cell colour buckets ("yeşil/kırmızı/gri").
  *
  * The mapping deliberately collapses ``not_configured`` and
  * ``unknown`` onto the same grey colour: from an operator's
@@ -123,7 +122,7 @@ export const STATUS_TO_COLOR = Object.freeze({
 
 /**
  * Auto-refresh interval — 10 minutes in milliseconds
- * (Requirement 10.6 — "10dk auto-refresh").
+ * ("10dk auto-refresh").
  *
  * Exposed as a named export so the test can pin the value and so
  * future tuning happens in one place.

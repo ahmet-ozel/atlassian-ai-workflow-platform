@@ -1,12 +1,10 @@
-"""``GET /api/orphan-branches`` + PO Review Inbox API endpoints (R10.3, R10.4).
-
-Implements task 14.2 (``platform-mimari-workflows`` tasks.md):
+"""``GET /api/orphan-branches`` + PO Review Inbox API endpoints.
 
 * ``GET /api/orphan-branches?dept_id=<id>`` — list ``ai/*`` branches
   in the dept's Bitbucket workspace that have no associated pull
   request. Each entry carries an LLM-rendered diff summary served
-  through the foundation :class:`DiffSummaryCacheRepo` (cache hit
-  path — Property 15: only the *first* observer of a given
+  through :class:`DiffSummaryCacheRepo` (cache hit path: only the
+  *first* observer of a given
   ``diff_hash`` pays the LLM call).
 * ``GET /api/po-review-inbox?dept_id=<id>`` — list the dept's draft
   pull requests authored by a known bot account (the "PO Review
@@ -23,15 +21,14 @@ Implements task 14.2 (``platform-mimari-workflows`` tasks.md):
 Authorization
 -------------
 
-Every endpoint is gated by foundation
-:func:`auth_shared.check`:
+Every endpoint is gated by :func:`auth_shared.check`:
 
 * ``viewer`` role (or higher) is required to *read* the two list
   endpoints — the PO Review pages render in the Streamlit dashboard
   and any authenticated user with dept membership may consult them.
 * ``lead`` role (or higher) is required to *act* on a PR (open-draft,
   request-changes, approve-note). ``lead`` is the lowest role that
-  the spec admits as "PO" (foundation R7.3 / Requirement 10.4).
+  can perform PO actions.
 * ``dept_admin`` is dept-scoped: it may **only** access PRs / branches
   inside its own ``dept_ids``. A ``dept_admin`` requesting another
   ``dept_id`` receives HTTP 403 + ``rbac_denied`` audit.
@@ -42,18 +39,11 @@ required_role, dept_id=...)`` — because the foundation
 :func:`auth_shared.check` already encodes "admin always passes;
 dept-scoped roles must match ``dept_ids``".
 
-Design references
------------------
-
-* ``platform-mimari-workflows/requirements.md`` — Requirements 10.3,
-  10.4.
-* ``platform-mimari-workflows/design.md`` — Components and Interfaces
-  §"PO Review API (R10.3, R10.4)" + Property 8.
-* ``temporal_shared.po_review`` (task 14.1) owns the pure set-algebra
+``temporal_shared.po_review`` owns the pure set-algebra
   helpers (:func:`compute_orphan_branches`,
   :func:`compute_po_review_inbox`); this module is the HTTP /
   authorization / MCP wiring shim.
-* The module mirrors the dependency-container pattern used by
+The module mirrors the dependency-container pattern used by
   :mod:`automation_service.api.cancel` and
   :mod:`automation_service.api.repo_sync` for collaborator
   injection — the router itself is stateless; tests build a
@@ -212,7 +202,7 @@ class DiffSummaryProvider(Protocol):
     Production wiring binds this directly to the
     :class:`DiffSummaryCacheRepo` instance held on the application
     state. The router only needs the read + cached-compute surface
-    (R10.6 / Property 15: only the first observer of a given
+    (only the first observer of a given
     ``diff_hash`` pays the LLM call); the protocol declares both
     methods so test doubles can short-circuit either path.
     """
@@ -705,8 +695,6 @@ async def list_orphan_branches(
 ) -> JSONResponse:
     """Return the dept's ``ai/*`` branches that have no associated PR.
 
-    Validates Requirements 10.3 + 10.6.
-
     The endpoint:
 
     1. Authenticates and authorises the caller (``viewer`` role
@@ -719,7 +707,7 @@ async def list_orphan_branches(
     4. For each orphan looks up an LLM-rendered diff summary via
        :meth:`DiffSummaryProvider.get_or_compute` (cache hit on
        repeat calls; only the first observer of a given
-       ``diff_hash`` pays the LLM call — Property 15).
+       ``diff_hash`` pays the LLM call).
     5. Returns the orphan list as JSON, sorted oldest-first by
        ``last_commit_at`` so the longest-orphan branch surfaces at
        the top of the Streamlit page.
@@ -845,8 +833,6 @@ async def list_po_review_inbox(
     authorization: str | None = Header(default=None),
 ) -> JSONResponse:
     """Return the dept's draft PRs authored by a known bot account.
-
-    Validates Requirement 10.4.
 
     The endpoint:
 
@@ -1012,10 +998,8 @@ async def open_draft(
 ) -> JSONResponse:
     """Flip a draft PR back to open so the bot can re-iterate.
 
-    Validates Requirement 10.4.
-
-    Required role: ``lead`` (R7.3 — PO actions are above viewer).
-    ``dept_admin`` must match ``dept_id`` (R10.4 — dept-scope
+    Required role: ``lead`` because PO actions are above viewer.
+    ``dept_admin`` must match ``dept_id`` (dept-scope
     enforcement); ``admin`` passes globally.
     """
 
@@ -1063,8 +1047,6 @@ async def request_changes(
     authorization: str | None = Header(default=None),
 ) -> JSONResponse:
     """Post a request-changes review on a draft bot PR.
-
-    Validates Requirement 10.4.
 
     Required role: ``lead``. The PO leaves a structured comment
     asking the bot for revisions; the bot picks the comment up via
@@ -1138,12 +1120,9 @@ async def approve_note(
 ) -> JSONResponse:
     """Post an approve **note** on a draft bot PR.
 
-    Validates Requirement 10.4.
-
     Required role: ``lead``. The note is an inline comment, *not* a
     Bitbucket approval — the platform never marks a bot-authored
-    PR as approved on the human's behalf (foundation R1.10 / MIMARI
-    §1 Kural 10). The note signals intent so the workflow can
+    PR as approved on the human's behalf. The note signals intent so the workflow can
     advance without the human relinquishing the merge decision.
     """
 

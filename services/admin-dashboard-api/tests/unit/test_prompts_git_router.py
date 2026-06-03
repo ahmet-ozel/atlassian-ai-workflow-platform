@@ -1,14 +1,13 @@
-"""FastAPI router tests for ``src.routers.prompts_git`` (task 6.1).
+"""FastAPI router tests for ``src.routers.prompts_git``.
 
 These tests wire the PromptsGitRouter into a throwaway FastAPI app
 with a real on-disk git repository (created in a ``tmp_path`` fixture)
 and a stub :class:`PullRequestOpener`. The goal is to verify the
 router-level glue end-to-end:
 
-* Listing / reading / drafting / PR-opening behave per design.md
-  §`PromptsGitRouter`.
+* Listing / reading / drafting / PR-opening exercise the router contract.
 * ``validate_template_format`` rejects bodies with unbalanced braces
-  or unknown placeholders before any git mutation runs (R2.9).
+  or unknown placeholders before any git mutation runs.
 * Path-traversal attempts are rejected at the API boundary.
 * Audit events are emitted for every mutation outcome
   (``prompt_draft_created``, ``prompt_pr_opened``,

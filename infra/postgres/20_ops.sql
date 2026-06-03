@@ -1,5 +1,5 @@
 -- 20_ops.sql
--- platform-mimari-ops spec — Task 1.1
+-- Ops schema additions.
 -- Ops-scope additions on top of foundation 10_automation.sql.
 -- Idempotent — safe to run multiple times without side effects.
 --
@@ -12,7 +12,7 @@
 --                     versions/feature flags ops tables.
 --
 -- Schema choice: tables live in the `shared` schema.
---   - Requirement 5.4 explicitly references `shared.cost_tracking`.
+--   - LLM activity cost records are stored in `shared.cost_tracking`.
 --   - These tables are cross-cutting ops/analytics state (cost
 --     tracking, notification deliveries, prompt cache, runtime
 --     toggles), not core automation domain state, and therefore
@@ -24,27 +24,27 @@
 --   ENABLE + FORCE ROW LEVEL SECURITY, dept_isolation policy that
 --   compares `dept_id` to `current_setting('app.current_dept_id', true)`
 --   with an admin escape hatch via `current_setting('app.current_role',
---   true) = 'admin'`. The `db-shared` helper (foundation R7.4) is
+--   true) = 'admin'`. The `db-shared` helper is
 --   responsible for setting these GUCs per request.
 --
--- Validates: Requirements 2.6, 4.6, 5.4, 5.5, 6.1
+-- Defines the ops tables used for prompt auditing, feature flags, cost tracking,
+-- budget enforcement, and notifications.
 -- Design ref: design.md "Postgres Şema Eklemeleri (`infra/postgres/init/20_ops.sql`)"
 
 
 -- ===========================================================================
 -- 1. shared.cost_tracking — per-LLM-activity cost record (idempotent insert)
 -- ===========================================================================
--- Validates: R5.4 (Cost_Tracker writes token_in/out, model, provider,
---            cost_usd to shared.cost_tracking on every LLM activity),
---            R5.5 (budget cap enforcement reads this table),
---            R6.1 (audit-grade record retention).
+-- Cost_Tracker writes token_in/out, model, provider, and cost_usd to
+-- shared.cost_tracking on every LLM activity. Budget cap enforcement reads
+-- this table, and rows are retained as audit-grade records.
 -- Idempotency: `activity_id` is the Temporal activity id, which is
 -- globally unique per workflow execution. The UNIQUE constraint plus
 -- `INSERT ... ON CONFLICT (activity_id) DO NOTHING` from
 -- `libs/cost-tracking/CostTracker.record(...)` makes the write safely
--- replayable on activity retry (Property 6 in design.md).
+-- replayable on activity retry.
 -- `cost_tag` partitions production usage from sandbox prompt tests
--- (Q4 — R2.4) and probe-time LLM calls so neither contaminates dept
+-- and probe-time LLM calls so neither contaminates dept
 -- budget queries (BudgetCapPolicy filters on `cost_tag='production'`).
 CREATE TABLE IF NOT EXISTS shared.cost_tracking (
     id              BIGSERIAL PRIMARY KEY,
@@ -81,7 +81,7 @@ CREATE INDEX IF NOT EXISTS idx_cost_dept_time
     ON shared.cost_tracking (dept_id, created_at DESC);
 
 -- `idx_cost_user_time`: per-user weekly/monthly cap enforcement
--- (R5.5 user-level limit) + Streamlit "kendi cost widget" (R5.8).
+-- for user-level limits and Streamlit "kendi cost widget" reads.
 -- Partial index — `user_id` is NULL for system/automation events
 -- (e.g. automation-driven workflows without an attributed end-user)
 -- and indexing those rows would only inflate the index without
@@ -104,14 +104,14 @@ CREATE POLICY cost_dept_isolation ON shared.cost_tracking
 -- ===========================================================================
 -- 2. shared.budget_caps — dept- and user-level weekly/monthly limits
 -- ===========================================================================
--- Validates: R5.5 (budget caps source for HTTP 429 enforcement).
+-- Budget caps are the source for HTTP 429 enforcement.
 -- Mirror of `departments.json` `budget_caps` block (design.md
 -- "departments.json Şema Eklemeleri") — a query-friendly projection
 -- so `BudgetCapPolicy.enforce(...)` can join with
 -- `shared.cost_tracking` aggregates in a single SQL round-trip
 -- instead of re-parsing JSON.
 -- Source of truth remains `config/departments.json`; a small
--- reconciliation helper (Task 1.2) keeps this table in sync on
+-- reconciliation helper keeps this table in sync on
 -- config reload.
 CREATE TABLE IF NOT EXISTS shared.budget_caps (
     dept_id             TEXT PRIMARY KEY
@@ -147,14 +147,13 @@ CREATE POLICY budget_dept_isolation ON shared.budget_caps
 -- ===========================================================================
 -- 3. shared.notification_log — Slack/email send history (audit + retry idempotency)
 -- ===========================================================================
--- Validates: R5.1 (Slack + email adapter dispatch),
---            R5.2 (success notification when notify_on_success=true),
---            R5.3 (failure notification mandatory regardless of dept config),
---            R6.4 (audit_prune_failed admin alarm row).
+-- Records Slack/email adapter dispatch, success notifications when
+-- notify_on_success=true, mandatory failure notifications regardless of dept
+-- config, and audit_prune_failed admin alarm rows.
 -- Idempotency: `dedup_key` is sha256 of (workflow_id, channel, kind)
 -- so a retried notify call cannot double-deliver. `target` stores
 -- a hashed webhook URL or a redacted email; raw recipients never
--- land in this table (log redaction parity with foundation R7.8).
+-- land in this table so log redaction behavior stays consistent.
 -- This table intentionally has no `dept_id` column and no RLS:
 -- send history is system-internal and read only by admins via the
 -- `/notifications` panel. Body content lives off-table; only the
@@ -180,8 +179,8 @@ CREATE TABLE IF NOT EXISTS shared.notification_log (
 -- ===========================================================================
 -- 4. shared.prompt_versions — cache of (path, commit_hash, body_hash) for audit
 -- ===========================================================================
--- Validates: R2.6 (`prompt_version` git short hash recorded on audit
---            events; drill-down across iterations).
+-- Records the `prompt_version` git short hash for audit events and
+-- drill-down across iterations.
 -- Authoritative source remains git (`platform/prompts/`,
 -- `services/<svc>/prompts/`, `workers/<svc>/prompts/`); this table
 -- is a queryable projection populated by
@@ -203,12 +202,12 @@ CREATE TABLE IF NOT EXISTS shared.prompt_versions (
 -- ===========================================================================
 -- 5. shared.feature_flags — runtime toggles (audit-tracked)
 -- ===========================================================================
--- Validates: R4.6 (Q8 — admin-dashboard `/feature-flags` panel:
+-- Supports the admin-dashboard `/feature-flags` panel:
 --            on/off, description, default, "açıldığında ne değişir"
 --            note; toggle aksiyonları audit'e yazılır).
 -- This is the canonical store for runtime toggles consumed by every
 -- service. Per-dept overrides live in `departments.json`
--- `feature_flag_overrides` (Task 1.2); this table holds the
+-- `feature_flag_overrides`; this table holds the
 -- platform-wide default and the human-facing copy admins see in
 -- the toggle panel. `updated_by` carries the admin actor_id so that
 -- the panel can render "last changed by" without joining

@@ -1,13 +1,8 @@
-"""Property 6 — Update preserves credentials when api_key is omitted.
-
-# Feature: llm-provider-management, Property 6: Update preserves credentials when api_key is omitted
-
-Validates Requirement 4.6: a ``PUT`` body that omits ``api_key`` MUST
+"""— Update preserves credentials when api_key is omitted.
 NOT touch Vault — the persisted credential survives verbatim. When
 ``api_key`` is present, the new value lands in Vault and the
 post-update payload's ``api_key`` equals the patch value while every
-other persisted credential field is preserved.
-"""
+other persisted credential field is preserved."""
 
 from __future__ import annotations
 

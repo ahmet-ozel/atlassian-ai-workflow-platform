@@ -2,9 +2,9 @@
 
 The lifespan handler wraps an :class:`AuditLogger` around this writer so
 every router that pulls an ``audit_logger`` collaborator off
-``app.state`` lands its rows in ``automation.audit_events`` (Requirement
-3.10 — same singleton across containers; Requirement 7.7 — mandatory
-``actor_role`` enforced by the application-layer
+``app.state`` lands its rows in ``automation.audit_events`` (the same
+singleton is shared across containers; mandatory ``actor_role`` is
+enforced by the application-layer
 :class:`audit_logger.AuditLogger.write` guard before the SQL fires).
 
 The shape mirrors the canonical asyncpg writer that already ships in

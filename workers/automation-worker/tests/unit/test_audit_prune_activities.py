@@ -1,10 +1,9 @@
-"""Unit tests for the ``audit_prune`` activities (Spec 3 task 13.2).
+"""Unit tests for the ``audit_prune`` activities.
 
-Validates Requirements **R6.3** (daily cron archives audit_events older
-than ``RETENTION_DAYS`` to MinIO and then deletes them) and **R6.4**
-(failure path invokes ``notify_audit_prune_failed`` mandatory admin
-Slack alarm) at the activity layer. The matching workflow contract is
-tested by ``test_audit_prune_workflow.py`` (task 13.1).
+These tests cover archive/delete behavior for audit_events older than
+``RETENTION_DAYS`` and the failure path that invokes the mandatory admin
+Slack alarm at the activity layer. The matching workflow contract is tested
+by ``test_audit_prune_workflow.py``.
 
 Strategy
 --------
@@ -194,7 +193,7 @@ def cutoff_utc() -> datetime:
 
 
 class TestGetRetentionSetting:
-    """R6.3 — ``RETENTION_DAYS`` resolved from env, then feature_flags,
+    """``RETENTION_DAYS`` resolved from env, then feature_flags,
     then the default constant ``DEFAULT_RETENTION_DAYS``."""
 
     def test_default_when_no_overrides(
@@ -356,7 +355,7 @@ def patch_httpx_client(monkeypatch: pytest.MonkeyPatch):
 
 
 class TestArchiveAuditToMinio:
-    """R6.3 — archive activity writes ordered JSONL gzip to MinIO."""
+    """Archive activity writes ordered JSONL gzip to MinIO."""
 
     def test_zero_rows_returns_empty_uri(self, cutoff_utc: datetime) -> None:
         conn = _FakeConn(fetch_pages=[[]])
@@ -437,7 +436,7 @@ class TestArchiveAuditToMinio:
         patch_httpx_client: dict[str, Any],
     ) -> None:
         # Two independent runs with the same cutoff produce the same
-        # object key (idempotence — Property 10 parity).
+        # object key for idempotence.
         rows = [
             {
                 "id": 1,
@@ -540,7 +539,7 @@ class TestArchiveAuditToMinio:
 
 
 class TestDeleteAuditOlderThan:
-    """R6.3 — DELETE both audit_events and cost_tracking rows."""
+    """DELETE both audit_events and cost_tracking rows."""
 
     def test_returns_audit_delete_count(self, cutoff_utc: datetime) -> None:
         conn = _FakeConn(
@@ -607,7 +606,7 @@ class TestDeleteAuditOlderThan:
 
 
 class TestNotifyAuditPruneFailed:
-    """R6.4 — failure path forwards to NotificationService."""
+    """Failure path forwards to NotificationService."""
 
     def test_dispatches_to_notification_service(self) -> None:
         service = _FakeNotificationService()

@@ -1,8 +1,6 @@
-"""Property test 10 — AuditPruneWorkflow daily cycle + idempotent + fail alarm + archive flag.
+"""AuditPruneWorkflow daily cycle, idempotency, failure alarm, and archive flag.
 
-**Validates: Requirements 6.3, 6.4, 6.9**
-
-The workflow's correctness contract has four invariants:
+The workflow's correctness contract has four guarantees:
 
 (a) Daily cycle — running the workflow with cutoff `T` archives every
     audit row with `created_at < T` and deletes the same set.
@@ -76,7 +74,7 @@ def _run_cycle(
     rows=st.integers(min_value=0, max_value=1000),
 )
 def test_archive_equals_delete_count(days_old: int, rows: int) -> None:
-    """Property (a): archived count == deleted count for a single cutoff."""
+    """Archived count equals deleted count for a single cutoff."""
 
     audit = _Audit()
     day_str = (
@@ -89,7 +87,7 @@ def test_archive_equals_delete_count(days_old: int, rows: int) -> None:
 
 
 def test_idempotent_second_run_is_noop() -> None:
-    """Property (b): second cycle on the same day archives 0 rows."""
+    """A second cycle on the same day archives 0 rows."""
 
     audit = _Audit()
     audit.rows_by_day["2024/01/01"] = 5
@@ -101,7 +99,7 @@ def test_idempotent_second_run_is_noop() -> None:
 
 
 def test_archive_failure_triggers_alarm_and_reraises() -> None:
-    """Property (c): archive failure ⇒ alarm + re-raise."""
+    """Archive failure triggers an alarm and re-raises."""
 
     audit = _Audit()
     cutoff = datetime.now(timezone.utc)
@@ -111,7 +109,7 @@ def test_archive_failure_triggers_alarm_and_reraises() -> None:
 
 
 def test_delete_failure_triggers_alarm_and_reraises() -> None:
-    """Property (c): delete failure ⇒ alarm + re-raise."""
+    """Delete failure triggers an alarm and re-raises."""
 
     audit = _Audit()
     cutoff = datetime.now(timezone.utc)
@@ -121,7 +119,7 @@ def test_delete_failure_triggers_alarm_and_reraises() -> None:
 
 
 def test_archive_uri_layout_is_daily_partitioned() -> None:
-    """Property (d): every archive URI follows audit-archive/{Y}/{M}/{D}/audit-N.jsonl.gz."""
+    """Every archive URI follows audit-archive/{Y}/{M}/{D}/audit-N.jsonl.gz."""
 
     audit = _Audit()
     audit.rows_by_day["2024/01/01"] = 3

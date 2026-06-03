@@ -1,26 +1,19 @@
-"""Property test: Docker Inspect Health State Mapping (Q14).
-
-**Property 13: Docker Inspect Health State Mapping (Q14)**
-**Validates: Requirements 12.1, 12.4**
-
+"""Docker Inspect Health State Mapping (Q14).
+Docker Inspect Health State Mapping (Q14)**
 For any docker inspect `.State.Health.Status` output `S`, the
 `_probe_assume_running` behaviour is deterministic:
-
 - ``S == "healthy"``   → snapshot.state = ``"healthy"``
 - ``S == "unhealthy"`` → snapshot.state = ``"unhealthy"``
 - ``S == "starting"``  → snapshot.state = ``"starting"``
 - ``S == ""`` or ``S == "<no value>"`` or subprocess fail
   (timeout, FileNotFoundError) → snapshot.state = ``"running_unmonitored"``
 - Any unknown value   → snapshot.state = ``"running_unmonitored"``
-
 The old ``unknown`` literal is **not** emitted by ``_probe_assume_running``;
 it is retained in ``HealthState`` for backwards compatibility only.
-
 Strategy
 --------
 We mock ``asyncio.create_subprocess_exec`` to return a fake process that
 yields a configurable stdout string. Hypothesis generates:
-
 1. **Known-good statuses** — drawn from the three mapped values
    (``"healthy"``, ``"unhealthy"``, ``"starting"``); the expected state
    is the same string.
@@ -29,10 +22,8 @@ yields a configurable stdout string. Hypothesis generates:
    known-good set; the expected state is always ``"running_unmonitored"``.
 3. **Subprocess failure modes** — ``FileNotFoundError`` on spawn and a
    simulated timeout; both must yield ``"running_unmonitored"``.
-
 All three groups are exercised as separate ``@given`` properties so that
-Hypothesis can shrink counterexamples independently.
-"""
+Hypothesis can shrink counterexamples independently."""
 
 from __future__ import annotations
 
@@ -151,7 +142,7 @@ _UNKNOWN_STATUS = st.text(
 
 
 # ---------------------------------------------------------------------------
-# Property 13a — known-good statuses map deterministically
+#  — known-good statuses map deterministically
 # ---------------------------------------------------------------------------
 
 
@@ -165,14 +156,10 @@ def test_known_docker_status_maps_deterministically(
     docker_status: str,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Property 13a — known docker health statuses map to the correct HealthState.
-
-    **Validates: Requirements 12.1, 12.4**
-
+    """— known docker health statuses map to the correct HealthState.
     For every ``S ∈ {"healthy", "unhealthy", "starting"}``, calling
     ``_probe_assume_running`` with a mocked ``docker inspect`` that returns
-    ``S`` must yield ``snapshot.state == S`` deterministically.
-    """
+    ``S`` must yield ``snapshot.state == S`` deterministically."""
     expected_state = _DOCKER_HEALTH_STATUS_MAP[docker_status]
 
     async def _fake_create_subprocess_exec(*args, **kwargs):  # noqa: ANN001, ANN002, ANN003
@@ -200,12 +187,12 @@ def test_known_docker_status_maps_deterministically(
     # The state must never be the legacy "unknown" literal from _probe_assume_running.
     assert snap.state != "unknown", (
         "_probe_assume_running must not emit 'unknown'; "
-        "use 'running_unmonitored' for unobservable containers (R12/Q14)"
+        "use 'running_unmonitored' for unobservable containers"
     )
 
 
 # ---------------------------------------------------------------------------
-# Property 13b — sentinel / empty / unknown statuses → running_unmonitored
+#  — sentinel / empty / unknown statuses → running_unmonitored
 # ---------------------------------------------------------------------------
 
 
@@ -224,14 +211,10 @@ def test_unmonitored_docker_status_yields_running_unmonitored(
     docker_status: str,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Property 13b — empty / sentinel / unknown statuses → running_unmonitored.
-
-    **Validates: Requirements 12.1, 12.4**
-
+    """— empty / sentinel / unknown statuses → running_unmonitored.
     For any ``S ∉ {"healthy", "unhealthy", "starting"}``, including the
     empty string and the Go-template ``"<no value>"`` sentinel,
-    ``_probe_assume_running`` must yield ``snapshot.state == "running_unmonitored"``.
-    """
+    ``_probe_assume_running`` must yield ``snapshot.state == "running_unmonitored"``."""
 
     async def _fake_create_subprocess_exec(*args, **kwargs):  # noqa: ANN001, ANN002, ANN003
         return _make_fake_proc(docker_status)
@@ -253,12 +236,12 @@ def test_unmonitored_docker_status_yields_running_unmonitored(
         f"got {snap.state!r}"
     )
     assert snap.state != "unknown", (
-        "_probe_assume_running must not emit 'unknown' (R12/Q14)"
+        "_probe_assume_running must not emit 'unknown'"
     )
 
 
 # ---------------------------------------------------------------------------
-# Property 13c — subprocess failure modes → running_unmonitored
+#  — subprocess failure modes → running_unmonitored
 # ---------------------------------------------------------------------------
 
 
@@ -272,16 +255,11 @@ def test_subprocess_failure_yields_running_unmonitored(
     failure_mode: str,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Property 13c — subprocess failures always yield running_unmonitored.
-
-    **Validates: Requirements 12.1, 12.4**
-
+    """— subprocess failures always yield running_unmonitored.
     Three subprocess failure modes must all map to ``"running_unmonitored"``:
-
     * ``FileNotFoundError`` on spawn (no ``docker`` binary on PATH).
     * Timeout (``asyncio.TimeoutError`` from ``wait_for``).
-    * Non-zero exit code (container not found, Docker daemon error).
-    """
+    * Non-zero exit code (container not found, Docker daemon error)."""
     import src.lifecycle.health_probe as hp
 
     if failure_mode == "file_not_found":
@@ -322,12 +300,12 @@ def test_subprocess_failure_yields_running_unmonitored(
     assert snap.healthz_status == -1
     assert snap.readyz_status is None
     assert snap.state != "unknown", (
-        "_probe_assume_running must not emit 'unknown' (R12/Q14)"
+        "_probe_assume_running must not emit 'unknown'"
     )
 
 
 # ---------------------------------------------------------------------------
-# Property 13d — determinism: same input → same output (idempotency)
+# same input → same output (idempotency)
 # ---------------------------------------------------------------------------
 
 
@@ -347,14 +325,10 @@ def test_probe_assume_running_is_deterministic(
     docker_status: str,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Property 13d — _probe_assume_running is deterministic for any input.
-
-    **Validates: Requirements 12.1, 12.4**
-
+    """— _probe_assume_running is deterministic for any input.
     Calling ``_probe_assume_running`` twice with the same ``docker inspect``
     output must yield the same ``state`` both times. This confirms the
-    mapping is a pure function of the docker status string.
-    """
+    mapping is a pure function of the docker status string."""
 
     call_count = 0
 

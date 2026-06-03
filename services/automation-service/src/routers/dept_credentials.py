@@ -1,12 +1,10 @@
 """FastAPI router — per-service department credential CRUD + probe.
 
-Implements task 3.2 of the ``platform-mimari-uyumluluk`` spec — the
-HTTP surface for Requirement 1 (Q1, "Departman/Bot Credential
-Yönetimi UI ve API").  The router is the **thin shim** layer: every
-endpoint parses the request, dispatches to
-:class:`services.dept_credential_service.DeptCredentialService`
-(task 3.1) and translates the orchestrator's exception ladder into
-deterministic HTTP responses.
+The router is the **thin shim** layer for department and bot
+credential management: every endpoint parses the request, dispatches
+to :class:`services.dept_credential_service.DeptCredentialService`,
+and translates the orchestrator's exception ladder into deterministic
+HTTP responses.
 
 Endpoints
 ---------
@@ -29,7 +27,7 @@ The :func:`automation_service.app.create_app` factory populates
 ``request.app.state.dept_credentials`` with a single
 :class:`DeptCredentialEndpointDeps` instance.  It carries:
 
-* ``service`` — the :class:`DeptCredentialService` from task 3.1.
+* ``service`` — the :class:`DeptCredentialService` instance.
 * ``connection_factory`` — async factory returning a fresh
   :class:`db_shared.AsyncConnection`.  Used only by the read-side
   endpoints (list / detail) — the mutating endpoints delegate
@@ -41,10 +39,9 @@ The :func:`automation_service.app.create_app` factory populates
 Authentication / authorization
 ------------------------------
 
-Per Requirement 3.5 the router sits **behind** the
-``admin-dashboard-api`` ``AdminProxy``.  The proxy performs the
-OIDC + RBAC pre-check and stamps three headers on every forwarded
-request:
+The router sits **behind** the ``admin-dashboard-api`` ``AdminProxy``.
+The proxy performs the OIDC + RBAC pre-check and stamps three headers
+on every forwarded request:
 
 * ``X-Actor-Id`` — the OIDC ``sub`` of the human admin (or the bot
   ``account_id`` for a system caller).
@@ -81,8 +78,6 @@ mutation (``dept_credential_added``, ``_updated``, ``_removed``,
 ``rbac_denied`` row when the dept-scope mismatch fires so the
 denial trail is symmetrical across all admin endpoints.
 
-Validates: Requirements 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7
-(uyumluluk R1 / Q1).
 """
 
 from __future__ import annotations
@@ -164,7 +159,7 @@ class DeptCredentialEndpointDeps:
     instance with hand-built fakes.
 
     Attributes:
-        service: The credential CRUD orchestrator (task 3.1).
+        service: The credential CRUD orchestrator.
         connection_factory: Async factory returning a fresh
             :class:`db_shared.AsyncConnection`.  Used by the read
             endpoints for SELECTs against
@@ -815,7 +810,6 @@ async def list_departments(
           ]
         }
 
-    Validates: Requirement 1.1.
     """
 
     actor = _extract_actor(request)
@@ -860,7 +854,6 @@ async def get_department(
     per-dept ``jira_project_keys`` / ``confluence_space_keys`` /
     ``bots`` arrays.
 
-    Validates: Requirement 1.2.
     """
 
     validated = _validate_dept_path_param(dept_id)
@@ -922,7 +915,6 @@ async def add_or_update_credential(
     (the orchestrator has already cleaned up staging Vault keys
     and rolled the SQL transaction back).
 
-    Validates: Requirements 1.3, 1.6.
     """
 
     validated_dept = _validate_dept_path_param(dept_id)
@@ -1004,7 +996,6 @@ async def remove_credential(
     written a ``dept_credential_add_failed`` audit row carrying
     the reason).
 
-    Validates: Requirement 1.4.
     """
 
     validated_dept = _validate_dept_path_param(dept_id)
@@ -1092,7 +1083,6 @@ async def probe_credentials(
           "probed_at": "2025-01-01T00:00:00+00:00"
         }
 
-    Validates: Requirement 1.5.
     """
 
     validated_dept = _validate_dept_path_param(dept_id)
@@ -1194,7 +1184,6 @@ async def bulk_import_departments(
     Plain-text tokens are **never** written to audit; the existing
     :class:`RedactionFilter` masks them in log output.
 
-    Validates: Requirements 11.1, 11.6, 11.7.
     """
 
     # RBAC: only admin / system may bulk-import
@@ -1351,7 +1340,7 @@ async def _select_departments(
                 "credential_refs": {
                     b["service"]: b["credential_ref"] for b in bots
                 },
-                "last_probe_at": None,  # populated once R9 lands
+                "last_probe_at": None,  # populated after a successful probe
             }
         )
     return out

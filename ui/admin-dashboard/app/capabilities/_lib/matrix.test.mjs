@@ -1,6 +1,5 @@
 /**
- * Unit tests for the capability matrix data layer (`platform-gap-fill`
- * task 9.2 / Requirement 10.6).
+ * Unit tests for the capability matrix data layer.
  *
  * The admin-dashboard UI does not currently bundle vitest / jest, so
  * these tests use Node's built-in :mod:`node:test` runner. They are

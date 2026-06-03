@@ -1,14 +1,12 @@
-"""Unit tests for ``NotificationService.notify_audit_prune_failed`` (task 8.3).
+"""Unit tests for ``NotificationService.notify_audit_prune_failed``.
 
-Covers the contract pinned by:
+Covers the mandatory admin alarm contract:
 
-* design.md §`NotificationService` pseudocode
-  (``slack.send_admin_channel(body, alert_type="audit_prune_failed")``).
-* design.md §`Property 10` invariant (d) — the admin alarm is mandatory
-  and re-uses the dedup_key + ``shared.notification_log`` machinery.
-* requirements.md R6.4 — "WHEN AuditPruneWorkflow fail olursa, THE
-  Notification_Service SHALL admin'e zorunlu Slack alarmı gönderir;
-  ``alert_type: audit_prune_failed``".
+* ``slack.send_admin_channel(body, alert_type="audit_prune_failed")``.
+* The admin alarm is mandatory and reuses the dedup_key +
+  ``shared.notification_log`` machinery.
+* Audit prune workflow failures send a mandatory Slack alarm with
+  ``alert_type: audit_prune_failed``.
 
 The tests run on the same in-memory fakes the workflow-completion suite
 uses (``_FakeSlackAdapter`` extended with ``send_admin_channel``,
@@ -92,7 +90,7 @@ def _run(coro):
 
 
 def test_alarm_posts_to_admin_channel_with_alert_type() -> None:
-    """R6.4 — admin Slack channel receives the alarm with the pinned alert_type."""
+    """Admin Slack channel receives the alarm with the pinned alert_type."""
 
     service, slack, email, prompts, _ = _service_with_fakes()
 
@@ -121,7 +119,7 @@ def test_alarm_posts_to_admin_channel_with_alert_type() -> None:
 
 
 def test_alarm_writes_one_notification_log_row() -> None:
-    """Property 10 (d) parity — the alarm carries a ``notification_log`` row."""
+    """The alarm carries a ``notification_log`` row."""
 
     service, _, _, _, store = _service_with_fakes()
 
@@ -172,7 +170,7 @@ def test_dedup_key_custom_run_id_is_reflected_in_hash() -> None:
 
 
 def test_idempotent_retry_skips_second_admin_send() -> None:
-    """Property 10 (d) — same run, second attempt is a no-op send."""
+    """Same run, second attempt is a no-op send."""
 
     service, slack, _, _, store = _service_with_fakes()
 
@@ -212,7 +210,7 @@ def test_distinct_run_ids_produce_distinct_dedup_keys() -> None:
 
 
 def test_log_row_records_admin_channel_label_not_webhook_url() -> None:
-    """Foundation R7.8 parity — webhook URL never lands in the table.
+    """Webhook URL never lands in the table.
 
     The admin webhook URL is resolved by the adapter from
     ``vault:notifications/slack/admin`` and never crosses the dispatcher

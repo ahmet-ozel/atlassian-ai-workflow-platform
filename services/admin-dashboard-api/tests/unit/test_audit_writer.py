@@ -1,27 +1,23 @@
-"""Unit tests for ``src.lifecycle.audit_writer`` (task 5.4).
-
+"""Unit tests for ``src.lifecycle.audit_writer`` .
 These tests exercise :class:`AuditWriter` against a hand-rolled fake
 :class:`asyncpg.Pool` so we can verify the contract without spinning up
 PostgreSQL:
-
 * :meth:`AuditWriter.precheck` issues ``SELECT 1`` and propagates
-  connection errors as :class:`AuditUnreachableError` (Requirement 11.6).
+  connection errors as :class:`AuditUnreachableError` .
 * :meth:`AuditWriter.write` builds the full INSERT argument tuple in
   column order and surfaces connection errors as
   :class:`AuditUnreachableError`.
 * :meth:`AuditWriter.write_with_retry` returns ``deferred=False`` on
   success and ``deferred=True`` (queueing the entry) on connection
-  failure (Requirement 11.7).
+  failure .
 * :func:`details_with_env_keys` produces an env-key-only payload, never
   embeds Env_Override values, and refuses ``extra={"env_keys": ...}``
-  (Property P6 / Requirement 11.3).
+  .
 * The deferred-queue drainer retries entries that previously failed
   once the database becomes reachable again.
-
 The tests use the standard library only (``asyncio``, ``unittest``-
 style patterns are avoided in favour of the project's pytest +
-``asyncio.run`` convention seen in ``test_require_admin.py``).
-"""
+``asyncio.run`` convention seen in ``test_require_admin.py``)."""
 
 from __future__ import annotations
 
@@ -199,7 +195,7 @@ async def _build_writer(
 
 
 # ---------------------------------------------------------------------------
-# details_with_env_keys (Property P6 / Requirement 11.3)
+# details_with_env_keys
 # ---------------------------------------------------------------------------
 
 
@@ -250,7 +246,7 @@ def test_details_with_env_keys_with_empty_iterable() -> None:
 
 
 # ---------------------------------------------------------------------------
-# precheck() — Requirement 11.6
+#  precheck —
 # ---------------------------------------------------------------------------
 
 
@@ -344,7 +340,7 @@ def test_precheck_propagates_non_connection_errors_verbatim() -> None:
 
 
 # ---------------------------------------------------------------------------
-# write() — Requirement 11.1, 11.2, 11.6
+#  write —
 # ---------------------------------------------------------------------------
 
 
@@ -402,7 +398,7 @@ def test_write_raises_audit_unreachable_on_connection_error() -> None:
 
 
 def test_write_does_not_serialise_env_override_values() -> None:
-    """Property P6 spot-check: only env *keys* end up in the serialised payload."""
+    """only env *keys* end up in the serialised payload."""
 
     async def run() -> None:
         pool = _FakePool()
@@ -442,7 +438,7 @@ def test_write_before_start_raises_runtime_error() -> None:
 
 
 # ---------------------------------------------------------------------------
-# write_with_retry() — Requirement 11.7
+#  write_with_retry —
 # ---------------------------------------------------------------------------
 
 

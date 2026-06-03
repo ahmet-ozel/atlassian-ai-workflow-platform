@@ -1,8 +1,4 @@
-"""Property tests for Readiness Probe Aggregation.
-
-**Validates: Requirements 11.4, 11.5, 11.6**
-
-Property 5: Readiness Probe Aggregation
+"""Behavioral tests for readiness probe aggregation.
 
 For any set of dependency probe results (each either reachable or
 unreachable), the readiness endpoint SHALL return HTTP 200 with
@@ -75,18 +71,14 @@ def _make_probe_callable(result: DependencyProbeResult):
 
 
 # ---------------------------------------------------------------------------
-# Property Test
+# Readiness aggregation behavior
 # ---------------------------------------------------------------------------
 
 
 @settings(max_examples=100)
 @given(probe_results=_PROBE_RESULTS_LIST)
 def test_readiness_probe_aggregation(probe_results: list[DependencyProbeResult]) -> None:
-    """Feature: production-hardening, Property 5: Readiness Probe Aggregation
-
-    **Validates: Requirements 11.4, 11.5, 11.6**
-
-    For any set of dependency probe results, check_readiness returns
+    """For any set of dependency probe results, check_readiness returns
     (True, {"status": "ready"}) iff ALL are reachable. Otherwise it
     returns (False, {"status": "not_ready", "failed_dependencies": [...]})
     with exactly the names of unreachable dependencies.
@@ -101,7 +93,7 @@ def test_readiness_probe_aggregation(probe_results: list[DependencyProbeResult])
     expected_failed = [r.name for r in probe_results if not r.reachable]
     all_reachable = len(expected_failed) == 0
 
-    # Property assertion: all_ready iff every dependency is reachable
+    # all_ready iff every dependency is reachable
     assert all_ready == all_reachable, (
         f"Expected all_ready={all_reachable}, got all_ready={all_ready}. "
         f"Probe results: {probe_results!r}"

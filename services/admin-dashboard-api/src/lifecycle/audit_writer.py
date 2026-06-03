@@ -1,13 +1,11 @@
 """``shared.audit_log`` writer with deferred-queue retry semantics.
 
-This module implements task 5.4 from the
-``admin-dashboard-control-plane`` spec: the
-:class:`AuditWriter` is the single component that writes
+This module implements audit writer wiring: the :class:`AuditWriter`
+is the single component that writes
 :class:`AuditEntry` rows into ``shared.audit_log`` (DDL appended in
-task 1.2, see ``infra/postgres/50_shared.sql``).
+the shared schema migration, see ``infra/postgres/50_shared.sql``).
 
-The writer enforces the **audit-or-rollback** semantics described in
-Requirement 11.6 / 11.7 and design §3.7:
+The writer enforces **audit-or-rollback** semantics:
 
 * :meth:`AuditWriter.precheck` issues ``SELECT 1`` on a pooled
   connection. The lifecycle handler calls it **before** invoking
@@ -24,19 +22,19 @@ Requirement 11.6 / 11.7 and design §3.7:
   completes (success or failure). If the row cannot be written the
   entry is pushed onto :attr:`AuditWriter._deferred_queue` and the
   outcome flags ``deferred=True`` so the handler can advertise
-  ``audit_write_deferred`` in the response body (Requirement 11.7).
+  ``audit_write_deferred`` in the response body.
 
 * :meth:`AuditWriter._drain_deferred_queue` is a background task
   that pops entries off the queue and retries them with exponential
   backoff. It is started by :meth:`AuditWriter.start` and stopped
   cleanly by :meth:`AuditWriter.close`.
 
-Property P6 (Requirement 11.3) — the ``details_json`` column **must
-not** contain any Env_Override *values*. The
+The ``details_json`` column **must not** contain any Env_Override
+*values*. The
 :func:`details_with_env_keys` helper builds a payload with only the
 *key list* and optional non-secret metadata; it is the canonical way
-for callers to construct ``details_json`` payloads so the property
-test ``tests/property/test_audit_one_to_one.py`` can be confident no
+for callers to construct ``details_json`` payloads so
+``tests/property/test_audit_one_to_one.py`` can be confident no
 secret value ever reaches the audit table.
 
 Notes on pool-construction
@@ -77,22 +75,22 @@ AuditAction = Literal[
     "restart",
     "run_tests",
     "health_streak_alert",
-    # platform-mimari-uyumluluk R10 / Q12 — feature-flag start gate.
-    # Emitted by ``LifecycleService._check_feature_flags`` (Step 1.5)
+    # Feature-flag start gate.
+    # Emitted by ``LifecycleService._check_feature_flags``
     # when a manifest ``feature_flag_dependency`` is disabled. Migration
     # ``003_audit_log_feature_flag_action.sql`` widens the CHECK
     # constraint to include this name.
     "service_start_blocked_feature_flag",
-    # platform-mimari-uyumluluk R14 / Q16 — stop + purge_vault profile
-    # guard. Emitted by the lifecycle stop endpoint when an operator
+    # Stop + purge_vault profile guard. Emitted by the lifecycle stop
+    # endpoint when an operator
     # passes ``purge_vault=true`` while ``settings.deployment_profile``
     # resolves to ``"production"``. The router rejects with 403 and
     # records the attempt for audit. Migration
     # ``004_audit_log_purge_vault_action.sql`` widens the CHECK
     # constraint to include this name.
     "purge_vault_blocked_in_production",
-    # platform-mimari-uyumluluk R14 / Q16 — stop + purge_vault Vault
-    # purge outcome. ``vault_overrides_purged`` is emitted by
+    # Stop + purge_vault Vault purge outcome.
+    # ``vault_overrides_purged`` is emitted by
     # :meth:`LifecycleService.stop` when ``purge_vault=true`` is
     # accepted (non-production profile) and the post-stop Vault list +
     # delete sequence completes successfully; the payload carries
@@ -106,8 +104,8 @@ AuditAction = Literal[
     # constraint to include both names.
     "vault_overrides_purged",
     "vault_purge_partial_failure",
-    # platform-real-usage-gaps R10 / Task 10.4 — external provider
-    # probe audit actions. ``external_provider_probe_failed`` is
+    # External provider probe audit actions.
+    # ``external_provider_probe_failed`` is
     # emitted on every failed probe; ``external_provider_streak_alert``
     # fires once when a provider accumulates 3 consecutive failures
     # (mirrors the ``health_streak_alert`` pattern). Migration
@@ -127,8 +125,7 @@ class AuditEntry:
     """Immutable representation of a row destined for ``shared.audit_log``.
 
     The field set mirrors the table schema exactly. Field order and types
-    are validated against the DDL by the property test
-    ``test_audit_one_to_one.py`` (Property P6).
+    are validated against the DDL by ``test_audit_one_to_one.py``.
 
     Critical invariant: ``details_json`` MUST NOT contain Env_Override
     *values*. Use :func:`details_with_env_keys` to construct a compliant
@@ -153,7 +150,7 @@ class AuditWriteOutcome:
     ``deferred=True`` means the row could not be written immediately and
     has been pushed onto the deferred queue. The lifecycle handler
     surfaces this flag as ``audit_write_deferred`` in the response body
-    so the operator knows the audit row is queued (Requirement 11.7).
+    so the operator knows the audit row is queued.
     """
 
     deferred: bool
@@ -163,8 +160,7 @@ class AuditUnreachableError(RuntimeError):
     """Raised when the audit log database cannot be reached.
 
     The lifecycle handler must convert this into a ``502 Bad Gateway``
-    response and abort the request **without** running Compose, per
-    Requirement 11.6 (audit-or-rollback).
+    response and abort the request **without** running Compose.
     """
 
 
@@ -223,7 +219,7 @@ def _is_connection_error(exc: BaseException) -> bool:
     """Return ``True`` if ``exc`` represents a database-unreachable failure.
 
     The list intentionally errs on the side of declaring an exception as
-    "connection-level". The lifecycle contract (Requirement 11.6) is
+    "connection-level". The lifecycle contract is
     that *anything* preventing the audit row from being durably stored
     must abort the request — the alternative is silently dropping audit
     data, which violates audit-or-rollback.
@@ -264,8 +260,8 @@ def details_with_env_keys(
 ) -> dict[str, Any]:
     """Build a ``details_json`` payload that contains only the env-key *list*.
 
-    Property P6 (Requirement 11.3) forbids Env_Override *values* from
-    ever appearing in the audit log. This helper is the canonical way
+    Env_Override *values* must never appear in the audit log. This
+    helper is the canonical way
     to construct the ``details_json`` field for a Lifecycle_Action: it
     accepts the **list of keys** the operator overrode and an optional
     ``extra`` dict for non-secret metadata (e.g. ``{"reason":
@@ -445,7 +441,7 @@ class AuditWriter:
         """Issue ``SELECT 1`` to verify the audit DB is reachable.
 
         Called by the lifecycle handler **before** any Compose command
-        is invoked (Requirement 11.6). On failure raises
+        is invoked. On failure raises
         :class:`AuditUnreachableError` so the caller can return ``502``
         without performing any side-effect.
         """
@@ -519,7 +515,7 @@ class AuditWriter:
         Used for the pre-Compose "pending" audit row written by the
         lifecycle handler. On a connection-level failure raises
         :class:`AuditUnreachableError` so the caller can roll back the
-        request before any Compose command runs (Requirement 11.6).
+        request before any Compose command runs.
 
         Other database errors (e.g. CHECK constraint violations) are
         re-raised verbatim — they indicate a programming error, not a
@@ -551,8 +547,8 @@ class AuditWriter:
     async def write_with_retry(self, entry: AuditEntry) -> AuditWriteOutcome:
         """Write the entry, deferring on connection failure.
 
-        Called **after** the Compose lifecycle command has completed
-        (Requirement 11.7). On a connection-level failure the entry is
+        Called **after** the Compose lifecycle command has completed.
+        On a connection-level failure the entry is
         pushed onto the deferred queue (where the background drainer
         will retry it) and ``AuditWriteOutcome(deferred=True)`` is
         returned, so the caller can attach ``audit_write_deferred`` to

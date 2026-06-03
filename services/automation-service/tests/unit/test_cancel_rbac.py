@@ -1,10 +1,7 @@
 """Unit tests for :func:`automation_service.api.cancel.is_cancel_authorized`.
 
-Validates: Requirements 11.1 (workflows spec, task 13.1).
-
 The predicate is a tiny pure function; the unit test enumerates the
-truth table called out in the workflows-spec design document
-(Property 11(a)):
+truth table for cancel authorization:
 
 * ``actor == reporter`` -> ``True``
 * ``actor ∈ past_assignees`` -> ``True``
@@ -50,7 +47,7 @@ from automation_service.api.cancel import is_cancel_authorized  # noqa: E402
 
 
 class TestIsCancelAuthorizedTruthTable:
-    """Truth table from workflows-spec Property 11(a).
+    """Truth table for cancel authorization.
 
     ``is_cancel_authorized(actor, reporter, past_assignees) == True``
     iff ``actor == reporter OR actor ∈ past_assignees``.

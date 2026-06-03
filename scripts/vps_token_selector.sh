@@ -19,15 +19,15 @@
 #   1 = both_fail — critical Open_Issue logged, halt
 #   2 = MCP never became healthy
 #
-# Requirements: R5.3, R5.4, R5.5, R5.6
+# Token selection must finish with a usable MCP credential mode.
 # =============================================================================
 set -euo pipefail
 
 # --- Configuration -----------------------------------------------------------
 
-PLATFORM_DIR="/opt/yeni_atlassian/platform"
+PLATFORM_DIR="/opt/atlassian-ai-workflow-platform"
 COMPOSE_FILE="$PLATFORM_DIR/infra/docker-compose.yml"
-MCP_ENV_FILE="$PLATFORM_DIR/services/atlassian_unified/.env"
+MCP_ENV_FILE="$PLATFORM_DIR/services/atlassian_mcp_bitbucket/.env"
 MCP_ENDPOINT="http://localhost:8090/mcp"
 EVIDENCE_FILE="/tmp/05-token-selection.json"
 

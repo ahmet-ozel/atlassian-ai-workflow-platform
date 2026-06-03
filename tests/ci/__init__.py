@@ -1,4 +1,4 @@
-"""CI gate tests for the multi-service-scaffold workspace.
+"""CI gate tests for the workspace.
 
 The ``tests/ci/`` directory hosts cross-cutting build-time gates that
 run on every commit. They are example-based (not Hypothesis property
@@ -8,9 +8,8 @@ counterexample.
 
 Current gates:
 
-* :mod:`tests.ci.test_taskprompt_mimari_sync` — V15 sync gate
-  (Requirement 2.8 / MIMARI §16.14.15). Asserts every backlog ID
-  mentioned by a prompt under ``platform/prompts/`` (or any other
-  ``prompts/`` directory shipped with the platform tree) also appears
-  in the workspace-root ``MIMARI.md``.
+* :mod:`tests.ci.test_taskprompt_mimari_sync` - prompt backlog sync gate.
+ Asserts every backlog ID mentioned by a prompt under ``platform/prompts/``
+ (or any other ``prompts/`` directory shipped with the platform tree) also
+ appears in the workspace backlog document.
 """

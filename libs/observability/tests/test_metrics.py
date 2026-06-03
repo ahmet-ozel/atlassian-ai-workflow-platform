@@ -4,8 +4,7 @@ These are *example-based* sanity checks that lock in the public
 contract of the package: which collectors exist, which label sets they
 declare, and that `render()` emits the canonical exposition format.
 
-Validates: Requirement 6.6 (platform-mimari-ops) — Prometheus metric
-catalogue.
+Checks the Prometheus metric catalogue.
 """
 
 from __future__ import annotations

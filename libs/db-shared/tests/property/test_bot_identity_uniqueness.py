@@ -1,9 +1,6 @@
-# Feature: platform-gap-fill
-# Property 16: Bot account_id uniqueness across departments × services
-# Validates: Requirements 18.1, 18.2, 18.3, 18.4
-"""Property tests for bot ``account_id`` uniqueness (R18 / Property 16).
+"""Invariant tests for bot ``account_id`` uniqueness.
 
-The R18 invariant has three enforcement layers:
+The uniqueness invariant has three enforcement layers:
 
 * DB layer — partial UNIQUE INDEX on
   ``automation.department_bots(service, account_id) WHERE account_id <> ''``.
@@ -13,8 +10,8 @@ The R18 invariant has three enforcement layers:
 * Boot-time — :func:`db_shared.bot_identity.validate_bot_account_id_uniqueness`
   scans the parsed ``departments.json`` document at service start-up.
 
-This module exercises the **boot-time** validator (Properties A–D) and the
-**CRUD** detector (Property E) as a single Hypothesis suite so the two
+This module exercises the **boot-time** validator and the
+**CRUD** detector as a single Hypothesis suite so the two
 implementations stay in lock-step. The same ``(service, account_id)``
 pair MUST never reach a "claimed by two depts" state regardless of which
 layer the operator hits.
@@ -70,7 +67,7 @@ from hypothesis import HealthCheck, assume, given, settings, strategies as st
 # sys.path bootstrap
 # ---------------------------------------------------------------------------
 # ``tests/conftest.py`` already injects ``libs/db-shared/src`` so the
-# boot-time validator import below resolves. For Property E we additionally
+# boot-time validator import below resolves. For the CRUD detector we additionally
 # need the admin-dashboard-api source tree (CRUD detector) and the
 # ``auth-shared`` / ``http-shared`` libs that ``routers.departments``
 # transitively imports.
@@ -98,9 +95,9 @@ from db_shared.bot_identity import (  # noqa: E402
 )
 
 
-# Property E imports the CRUD detector lazily so a missing optional dep
-# (eg. ``filelock``) inside ``routers.departments`` only skips Property
-# E rather than aborting the whole module collection.
+# The CRUD detector is imported lazily so a missing optional dep
+# (eg. ``filelock``) inside ``routers.departments`` only skips that
+# check rather than aborting the whole module collection.
 try:  # pragma: no cover — import-time guard, exercised in CI
     from src.routers.departments import (  # type: ignore[import-not-found]
         _extract_bot_identities,
@@ -136,7 +133,7 @@ def _account_id_strategy() -> st.SearchStrategy[str]:
 
     The placeholder branch is intentionally weighted lower than the real
     branch so the bulk of generated inputs exercise the conflict path; we
-    still get enough placeholder coverage to validate Property C without
+    still get enough placeholder coverage to validate that branch without
     needing a separate strategy.
     """
 
@@ -210,7 +207,7 @@ def _has_collision(depts: list[dict[str, Any]]) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# Property A — clean inputs pass silently.
+# Clean inputs pass silently.
 # ---------------------------------------------------------------------------
 
 
@@ -233,7 +230,7 @@ def test_no_collision_passes_silently(depts: list[dict[str, Any]]) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Property B — injected collision is reported with the exact tuple.
+# Injected collision is reported with the exact tuple.
 # ---------------------------------------------------------------------------
 
 
@@ -297,7 +294,7 @@ def test_collision_raises_with_exact_pair(
 
 
 # ---------------------------------------------------------------------------
-# Property C — placeholders never trigger a conflict.
+# Placeholders never trigger a conflict.
 # ---------------------------------------------------------------------------
 
 
@@ -327,7 +324,7 @@ def test_placeholder_account_ids_never_conflict(
 
 
 # ---------------------------------------------------------------------------
-# Property D — duplicate dept rows are deduped, not flagged.
+# Duplicate dept rows are deduped, not flagged.
 # ---------------------------------------------------------------------------
 
 
@@ -356,7 +353,7 @@ def test_intra_dept_duplicate_is_single_claim(
 
 
 # ---------------------------------------------------------------------------
-# Property E — CRUD detector ``_find_account_id_conflicts`` matches the
+# CRUD detector ``_find_account_id_conflicts`` matches the
 # oracle's set-intersection semantics, with ``skip_dept_id`` honoured.
 # ---------------------------------------------------------------------------
 

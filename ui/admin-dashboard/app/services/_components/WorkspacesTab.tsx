@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * WorkspacesTab — Services panel'inin alt sekmesi (task 14.1, R13.2).
+ * WorkspacesTab — Services panel'inin alt sekmesi.
  *
  * SSH üzerindeki ``$RUNNER_BASE_PATH`` altındaki task workspace'lerini
  * tablo halinde listeler ve admin'in tek tıkla silmesini sağlar. UI
@@ -20,7 +20,7 @@
  *
  * Sayfaya ``app/services/page.tsx`` `Workspaces` sekmesini açtığında
  * bu komponenti render eder. Şimdilik komponent kendisi sekme
- * mekanizmasına bağlanmaz; ``page.tsx`` task 14.2 (UI: services
+ * mekanizmasına bağlanmaz; ``page.tsx`` UI tarafı services
  * panelinde sub-tab) çerçevesinde komponenti monte eder.
  */
 

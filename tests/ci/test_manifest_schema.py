@@ -1,27 +1,26 @@
 """CI test 1.4 — services.manifest schema + manifest content checks.
 
-Spec: ``.kiro/specs/platform-mimari-uyumluluk/tasks.md`` task 1.4.
 
 Scope
 -----
 This file covers the static, schema-level invariants introduced by
-``platform-mimari-uyumluluk`` task 1.3 (R5, R9, R10):
+``compliance work`` the implementation (, , ):
 
 1. ``connectivity_probe_command`` is declared as an **optional** field
-   with default ``null`` on every entry, accepts both ``string`` and
-   ``null`` values, and validates a manifest that omits the field
-   entirely (Requirements 9.1).
+ with default ``null`` on every entry, accepts both ``string`` and
+ ``null`` values, and validates a manifest that omits the field
+ entirely .
 2. ``depends_on_services`` values populated in
-   ``config/services.manifest.json`` cover at least the design's
-   minimum set (R5, Requirements 5.8):
+ ``config/services.manifest.json`` cover at least the design's
+ minimum set (, :
 
-   - ``automation-service`` → ``{"postgres", "vault", "temporal", "atlassian-mcp"}``
-   - ``admin-dashboard-api`` → ``{"postgres", "vault", "automation-service"}``
-   - ``agent-runner-worker`` → ``{"temporal", "atlassian-mcp", "vault"}``
-   - ``execution-runner-worker`` → ``{"temporal", "vault"}``
+ - ``automation-service`` → ``{"postgres", "vault", "temporal", "atlassian-mcp"}``
+ - ``admin-dashboard-api`` → ``{"postgres", "vault", "automation-service"}``
+ - ``agent-runner-worker`` → ``{"temporal", "atlassian-mcp", "vault"}``
+ - ``execution-runner-worker`` → ``{"temporal", "vault"}``
 3. ``feature_flag_dependency`` for ``task-intake-service`` covers the
-   design minimum ``{"FEATURE_FLAG_TASK_INTAKE_ENABLED"}``
-   (Requirements 10.5).
+ design minimum ``{"FEATURE_FLAG_TASK_INTAKE_ENABLED"}``
+ .
 
 These are pure file/JSON-Schema assertions and need no Docker; they run
 in the workspace fast lane.
@@ -39,10 +38,10 @@ from jsonschema.validators import Draft202012Validator
 
 
 # ---------------------------------------------------------------------------
-# Constants — design's minimum sets (Requirements 5.8, 10.5)
+# Constants — design's minimum sets 
 # ---------------------------------------------------------------------------
 
-#: Minimum required entries in ``depends_on_services`` per service. The
+#: Minimum required entries in ``depends_on_services`` service. The
 #: manifest may declare additional entries; this test only asserts that
 #: the design baseline is present.
 MIN_DEPENDS_ON_SERVICES: dict[str, set[str]] = {
@@ -52,7 +51,7 @@ MIN_DEPENDS_ON_SERVICES: dict[str, set[str]] = {
     "execution-runner-worker": {"temporal", "vault"},
 }
 
-#: Minimum required entries in ``feature_flag_dependency`` per service.
+#: Minimum required entries in ``feature_flag_dependency`` service.
 MIN_FEATURE_FLAG_DEPENDENCY: dict[str, set[str]] = {
     "task-intake-service": {"FEATURE_FLAG_TASK_INTAKE_ENABLED"},
 }
@@ -98,7 +97,7 @@ def manifest_by_name(manifest: dict[str, Any]) -> dict[str, dict[str, Any]]:
 
 
 class TestConnectivityProbeCommandIsOptional:
-    """Validates Requirement 9.1 — optional ``connectivity_probe_command``."""
+    """Validates optional ``connectivity_probe_command``."""
 
     def test_field_declared_in_schema(self, schema: dict[str, Any]) -> None:
         """``connectivity_probe_command`` must be declared on ManagedService."""
@@ -106,7 +105,7 @@ class TestConnectivityProbeCommandIsOptional:
         managed = schema["$defs"]["ManagedService"]
         assert "connectivity_probe_command" in managed["properties"], (
             "connectivity_probe_command is missing from "
-            "$defs.ManagedService.properties — task 1.3 contract violated."
+            "$defs.ManagedService.properties — the implementation contract violated."
         )
 
     def test_field_is_not_required(self, schema: dict[str, Any]) -> None:
@@ -302,7 +301,7 @@ class TestConnectivityProbeCommandIsOptional:
 
 
 class TestDependsOnServicesMinimumSet:
-    """Validates Requirement 5.8 — depends_on_services minimum coverage."""
+    """Validates depends_on_services minimum coverage."""
 
     @pytest.mark.parametrize(
         "service_name,required_deps",
@@ -319,7 +318,7 @@ class TestDependsOnServicesMinimumSet:
 
         assert service_name in manifest_by_name, (
             f"Service {service_name!r} missing from services.manifest.json; "
-            "task 1.3 expected it to be present."
+            "the implementation expected it to be present."
         )
         entry = manifest_by_name[service_name]
         actual = set(entry.get("depends_on_services", []))
@@ -338,7 +337,7 @@ class TestDependsOnServicesMinimumSet:
 
 
 class TestFeatureFlagDependencyMinimumSet:
-    """Validates Requirement 10.5 — feature_flag_dependency baseline."""
+    """Validates feature_flag_dependency baseline."""
 
     @pytest.mark.parametrize(
         "service_name,required_flags",
@@ -355,7 +354,7 @@ class TestFeatureFlagDependencyMinimumSet:
 
         assert service_name in manifest_by_name, (
             f"Service {service_name!r} missing from services.manifest.json; "
-            "task 1.3 expected it to be present."
+            "the implementation expected it to be present."
         )
         entry = manifest_by_name[service_name]
         actual = set(entry.get("feature_flag_dependency", []))

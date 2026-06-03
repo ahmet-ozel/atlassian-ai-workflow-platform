@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "comment": "Default Jira Issue Template definition deployed by platform/scripts/deploy_jira_issue_template.py (platform-mimari-foundation task 12.2, requirement 10.2). The template aligns the target Jira site with a canonical 'AI Bot Task' shape: one issue type, three custom fields, and a screen-scheme association. Re-running the script with this same definition is a no-op.",
+  "comment": "Default Jira Issue Template definition deployed by platform/scripts/deploy_jira_issue_template.py. The template aligns the target Jira site with a canonical 'AI Bot Task' shape: one issue type, three custom fields, and a screen-scheme association. Re-running the script with this same definition is a no-op.",
   "issue_type": {
     "name": "AI Bot Task",
     "description": "Issue template optimised for AI bot consumption. The description body is the PRIMARY contract — see prompts/task_creation_assistant.md for the YAML frontmatter syntax (workflow_type, repo, branch, cleanup, output, web_search, timeout_seconds, needs_ssh, needs_docker). The three custom fields below (AI Bot Repo / Branch / Cleanup) are convenience shortcuts that mirror the most common frontmatter keys; everything else (workflow_type, output destinations, Confluence space, language, etc.) goes inside the YAML block at the top of the description.",

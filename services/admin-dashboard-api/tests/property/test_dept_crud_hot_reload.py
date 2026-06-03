@@ -1,11 +1,8 @@
-# Feature: platform-gap-fill
-# Property 15: Department CRUD hot-reload signal
-# Validates: Requirement 17.4
-"""Property test: Department CRUD hot-reload signal (Property 15).
-
-**Property 15: Department CRUD hot-reload signal**
-**Validates: Requirement 17.4**
-
+#
+# Department CRUD hot-reload signal
+#
+"""Department CRUD hot-reload signal .
+Department CRUD hot-reload signal**
 For any successful CRUD operation against
 ``src.routers.departments.crud_router`` (``POST /api/v1/departments``,
 ``PATCH /api/v1/departments/{dept_id}``, ``DELETE
@@ -13,18 +10,15 @@ For any successful CRUD operation against
 hot-reload signal carrying the dept id and the matching action label
 (``dept_created`` / ``dept_updated`` / ``dept_decommissioned``) before
 the response returns. This is the publisher-side guarantee that backs
-the 10-second consumer-side propagation budget called out in R17.4 —
+the 10-second consumer-side propagation budget called out in —
 the consumer cannot meet the SLA if the publisher never fires.
-
 The complementary invariants on the failure / idempotent paths are
 also covered:
-
 * A 409 ``dept_id_conflict`` on POST MUST NOT emit a signal.
 * A 404 on PATCH / DELETE MUST NOT emit a signal.
 * A DELETE on an already-disabled dept (``status="already_disabled"``)
   MUST NOT emit a signal — the implementation early-returns without
   rewriting the file, so consumers do not need to be poked.
-
 Strategy
 --------
 Hypothesis generates random short sequences of CRUD operations against
@@ -32,21 +26,17 @@ a transient ``departments.json`` rooted in ``tmp_path``. The module-level
 ``_DEPARTMENTS_CONFIG_PATH`` and ``_DEPARTMENTS_LOCK_PATH`` symbols on
 ``src.routers.departments`` are monkey-patched per example so the test
 never touches the real platform config file.
-
 The publisher is replaced with an :class:`_RecordingPublisher` instance
 that captures every ``(dept_id, action)`` tuple. Each Hypothesis example
 asserts:
-
 1. After every successful POST / PATCH / DELETE the recorded list grew
    by exactly one tuple ``(dept_id, expected_action)``.
 2. After every conflict / not-found / already-disabled response the
    list did not grow.
 3. The total count of recorded signals across the whole sequence equals
    the number of mutations that landed on disk.
-
 The actor is wired through a ``require_admin`` dependency override
-mirroring the convention in ``test_workflow_control_audit_trail.py``.
-"""
+mirroring the convention in ``test_workflow_control_audit_trail.py``."""
 
 from __future__ import annotations
 
@@ -127,12 +117,10 @@ def _minimal_dept(
     mode: str = "active",
 ) -> dict[str, Any]:
     """Build a payload that passes ``departments.schema.json`` validation.
-
     Only the schema-required fields are populated; everything else is
     left to the schema defaults. We intentionally leave every bot
-    ``account_id`` blank so the unique-account check (Requirement 17.6)
-    cannot trip on the synthetic payloads — that branch is covered by
-    the dedicated property tests for R17.6.
+    ``account_id`` blank so the unique-account check cannot trip on
+    the synthetic payloads; that branch is covered by dedicated tests.
     """
 
     return {
@@ -350,7 +338,7 @@ def _execute_step(
 
 
 # ---------------------------------------------------------------------------
-# Property 15 — every successful CRUD emits exactly one matching signal
+#  — every successful CRUD emits exactly one matching signal
 # ---------------------------------------------------------------------------
 
 
@@ -365,16 +353,12 @@ def test_every_successful_crud_signals_hot_reload_once(
     tmp_path: Path,
     monkeypatch: Any,
 ) -> None:
-    """Property 15 — successful CRUD triggers exactly one signal each.
-
-    **Validates: Requirement 17.4**
-
+    """— successful CRUD triggers exactly one signal each.
     For every randomly generated sequence of CRUD operations the
     publisher MUST receive one ``(dept_id, action)`` tuple per
     successful mutation, no tuples on conflict / not-found /
     idempotent paths, and the per-step ``action`` label MUST match
-    the kind of mutation that landed on disk.
-    """
+    the kind of mutation that landed on disk."""
 
     _redirect_config_paths(monkeypatch, tmp_path, seed_ids=())
     publisher = _RecordingPublisher()
@@ -392,8 +376,8 @@ def test_every_successful_crud_signals_hot_reload_once(
             assert publisher.calls == before, (
                 f"step={step!r} returned a non-mutating response but the "
                 f"publisher recorded a new signal (before={before!r}, "
-                f"after={publisher.calls!r}); Requirement 17.4 forbids "
-                f"hot-reload chatter on failed / no-op CRUD."
+                f"after={publisher.calls!r}); failed / no-op CRUD must "
+                f"not emit hot-reload chatter."
             )
             continue
 
@@ -416,7 +400,7 @@ def test_every_successful_crud_signals_hot_reload_once(
 
 
 # ---------------------------------------------------------------------------
-# Property 15a — POST conflict (409) does not signal hot-reload
+#  — POST conflict (409) does not signal hot-reload
 # ---------------------------------------------------------------------------
 
 
@@ -431,15 +415,11 @@ def test_post_conflict_does_not_signal_hot_reload(
     tmp_path: Path,
     monkeypatch: Any,
 ) -> None:
-    """Property 15a — duplicate POST must not signal hot-reload.
-
-    **Validates: Requirement 17.4 (negative invariant), Requirement 17.6**
-
+    """— duplicate POST must not signal hot-reload.
     When a ``POST /api/v1/departments`` returns 409
     ``dept_id_conflict``, no ``departments.json`` write happened, so
     the publisher MUST stay silent — anything else would burn the
-    consumer-side reload budget on a no-op.
-    """
+    consumer-side reload budget on a no-op."""
 
     _redirect_config_paths(monkeypatch, tmp_path, seed_ids=(dept_id,))
     publisher = _RecordingPublisher()
@@ -460,7 +440,7 @@ def test_post_conflict_does_not_signal_hot_reload(
 
 
 # ---------------------------------------------------------------------------
-# Property 15b — DELETE on already-disabled dept does not signal hot-reload
+#  — DELETE on already-disabled dept does not signal hot-reload
 # ---------------------------------------------------------------------------
 
 
@@ -475,15 +455,11 @@ def test_delete_already_disabled_does_not_signal_hot_reload(
     tmp_path: Path,
     monkeypatch: Any,
 ) -> None:
-    """Property 15b — DELETE on a disabled dept is a no-op signal-wise.
-
-    **Validates: Requirement 17.4 (idempotent path)**
-
+    """— DELETE on a disabled dept is a no-op signal-wise.
     When the dept is already at ``mode=disabled`` the router
     short-circuits with ``status="already_disabled"`` and skips the
     file rewrite. No consumer cache needs to refresh, so the publisher
-    MUST stay silent on this path.
-    """
+    MUST stay silent on this path."""
 
     cfg = tmp_path / "departments.json"
     lock = tmp_path / ".departments.json.lock"
@@ -518,7 +494,7 @@ def test_delete_already_disabled_does_not_signal_hot_reload(
 
 
 # ---------------------------------------------------------------------------
-# Property 15c — coverage of all three action labels
+#  — coverage of all three action labels
 # ---------------------------------------------------------------------------
 
 
@@ -533,15 +509,11 @@ def test_full_lifecycle_covers_all_three_actions(
     tmp_path: Path,
     monkeypatch: Any,
 ) -> None:
-    """Property 15c — create → patch → delete fires the three action labels.
-
-    **Validates: Requirement 17.4**
-
+    """— create → patch → delete fires the three action labels.
     Walks one dept through its whole lifecycle and asserts the
     publisher tape is exactly ``[(id, dept_created), (id, dept_updated),
     (id, dept_decommissioned)]`` — confirming the three constants from
-    the router are wired into the signal payload, in order.
-    """
+    the router are wired into the signal payload, in order."""
 
     _redirect_config_paths(monkeypatch, tmp_path, seed_ids=())
     publisher = _RecordingPublisher()

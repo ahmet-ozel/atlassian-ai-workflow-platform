@@ -3,7 +3,7 @@
 /**
  * Pure status pill for an LLM provider row.
  *
- * Color rules (Requirement 9.5):
+ * Color rules:
  *
  * - **Green** when the provider has been tested AND the last test
  *   succeeded (`last_tested_at != null && last_test_error == null`).

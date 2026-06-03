@@ -2,14 +2,13 @@
 
 This module hosts two **pure** helper functions used by the
 ``confluence_doc_create`` and ``confluence_doc_update`` flows of the
-``AgentRunnerWorkflow`` (see ``platform-mimari-workflows`` design.md
-§"Components and Interfaces" and Property 9):
+``AgentRunnerWorkflow``:
 
 * :func:`format_page_title` — composes a Confluence page title in the
-  format ``{topic_in_target_lang} - {YYYY-MM-DD}`` (Requirement 8.1).
+  format ``{topic_in_target_lang} - {YYYY-MM-DD}``.
 * :func:`compute_provenance_footer` — returns the collapsible markdown
   provenance footer that is appended to every bot-authored Confluence
-  page (Requirement 8.6).
+  page.
 
 Both functions perform **string composition + structural validation
 only** — no I/O, no clocks, no random numbers, no UUIDs, no external
@@ -20,12 +19,10 @@ inside Temporal workflow code: a workflow that called
 deterministically (e.g. ``workflow.now().date()``).
 
 The module is the single source of truth for these two formats.
-``platform/tests/property/test_confluence_invariants.py`` (Property 9,
-task 8.5) and the unit tests in
+Invariant-style tests and the unit tests in
 ``platform/libs/temporal-shared/tests/test_confluence.py`` validate
 the contracts pinned here.
 
-Validates: Requirements 8.1, 8.6.
 """
 
 from __future__ import annotations
@@ -52,18 +49,17 @@ __all__ = [
 # Public type aliases and constants
 # ---------------------------------------------------------------------------
 
-#: Languages supported for Confluence page titles per Requirement 8.1.
+#: Languages supported for Confluence page titles.
 #: Mirrors the ``departments.default_language`` Literal used throughout
 #: the platform (``Literal["tr", "en"]``).
 TargetLang = Literal["tr", "en"]
 
 #: Default ``target_lang`` value when the caller does not specify one
-#: (task 8.1 explicitly pins this to ``"tr"``).
+#: defaults to ``"tr"``.
 _DEFAULT_TARGET_LANG: Final[TargetLang] = "tr"
 
 #: Date format applied to ``current_date`` in :func:`format_page_title`.
-#: ISO-8601 calendar date (``YYYY-MM-DD``), matching design.md Property
-#: 9.a and Requirement 8.1's worked example
+#: ISO-8601 calendar date (``YYYY-MM-DD``), matching the worked example
 #: (``"KVKK Yönetmelik Analizi - 2026-05-14"``).
 PAGE_TITLE_DATE_FORMAT: Final[str] = "%Y-%m-%d"
 
@@ -79,7 +75,7 @@ PAGE_TITLE_SEPARATOR: Final[str] = " - "
 #: time rather than surfacing as a 400 from the Atlassian REST API.
 PAGE_TITLE_MAX_LENGTH: Final[int] = 255
 
-#: Footer body in Turkish (Requirement 8.6, design.md Property 9.c).
+#: Footer body in Turkish.
 #: Stored as a module constant so the property test can assert the
 #: literal substring is present in the output verbatim.
 PROVENANCE_FOOTER_TEXT_TR: Final[str] = (
@@ -134,7 +130,7 @@ class InvalidTopicError(ValueError):
 class InvalidTargetLangError(ValueError):
     """Raised when ``target_lang`` is not one of the supported values.
 
-    Pinned to ``Literal["tr", "en"]`` per Requirement 8.1 / task 8.1.
+    Pinned to ``Literal["tr", "en"]``.
     """
 
     def __init__(self, target_lang: object) -> None:
@@ -164,7 +160,7 @@ class InvalidJiraIssueLinkError(ValueError):
 
 
 # ---------------------------------------------------------------------------
-# format_page_title  (Requirement 8.1, Property 9.a)
+# format_page_title
 # ---------------------------------------------------------------------------
 
 
@@ -188,7 +184,7 @@ def format_page_title(
 
     The ``topic`` argument is assumed to **already be expressed in
     ``target_lang``** — the upstream LLM activity is responsible for
-    translation per Requirement 8.1.  This helper does **not**
+    translation. This helper does **not**
     translate; it only composes and validates.  The ``target_lang``
     argument is therefore part of the structural contract (the
     workflow always passes the resolved department language to make
@@ -206,7 +202,7 @@ def format_page_title(
         :data:`PAGE_TITLE_MAX_LENGTH` characters.
     target_lang:
         ISO-639-1 code for the page language; one of ``"tr"`` or
-        ``"en"``.  Defaults to ``"tr"`` per task 8.1.
+        ``"en"``. Defaults to ``"tr"``.
     current_date:
         Calendar date to embed in the title.  Required.  Passing
         ``None`` raises :class:`TypeError`; we deliberately do **not**
@@ -301,15 +297,14 @@ def format_page_title(
 
 
 # ---------------------------------------------------------------------------
-# compute_provenance_footer  (Requirement 8.6, Property 9.c)
+# compute_provenance_footer
 # ---------------------------------------------------------------------------
 
 
 def compute_provenance_footer(jira_issue_link: str) -> str:
     """Return the collapsible provenance footer for a bot-authored page.
 
-    The footer body is pinned by Requirement 8.6 / design.md Property
-    9.c and reads:
+    The footer body reads:
 
         🤖 Bu sayfa AI asistanı yardımıyla yazılmıştır. Kaynak:
         ``{jira_issue_link}``
@@ -317,8 +312,7 @@ def compute_provenance_footer(jira_issue_link: str) -> str:
     Confluence's storage format renders the standard HTML5
     ``<details>`` / ``<summary>`` element as a collapsible section, so
     we wrap the body in that element to satisfy the "collapsible
-    markdown blok" requirement spelled out in task 8.1.  The ``>``
-    blockquote marker from design.md Property 9.c is preserved inside
+    markdown block requirement. The ``>`` blockquote marker is preserved inside
     the ``<details>`` body so the rendered prose still reads as a
     quoted note, while the surrounding ``<details>`` makes the entire
     footer collapsible by readers.

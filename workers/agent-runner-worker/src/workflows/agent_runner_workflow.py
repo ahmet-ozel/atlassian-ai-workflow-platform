@@ -1,17 +1,15 @@
 """Compatibility shim — re-exports the canonical AgentRunnerWorkflow.
 
 The canonical implementation moved to
-:mod:`agent_runner.workflows.agent_runner_workflow` as part of
-``platform-mimari-workflows`` task 2.2 (the new package layout that
-mirrors the ``automation-worker`` structure introduced by task 2.1).
+:mod:`agent_runner.workflows.agent_runner_workflow` to mirror the
+``automation-worker`` package layout.
 
 This module remains importable under the legacy ``src.workflows`` path
 so that historical test fixtures and the ``automation_workflow`` /
 ``compensation`` siblings under ``src/workflows/`` keep working without
 churn. New code SHOULD import from :mod:`agent_runner.workflows`.
 
-Validates Requirements: 1.1, 5.1, 5.7, 6.3 (transitively via the
-re-exported canonical implementation).
+Behavior is provided by the re-exported canonical implementation.
 """
 
 from __future__ import annotations

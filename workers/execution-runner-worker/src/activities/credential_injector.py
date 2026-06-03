@@ -17,8 +17,6 @@ Credential Masking:
 Retry Policy (caller-configured):
     max 2 retries, 5s backoff — applied via Temporal RetryPolicy on the
     activity options in the calling workflow.
-
-Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7
 """
 
 from __future__ import annotations
@@ -154,7 +152,7 @@ class CredentialInjectInput:
         Parent workflow ID for audit/logging context.
     ttl_minutes : int
         Time-to-live for the credential helper configuration on SSH.
-        Defaults to 15 minutes per Requirement 2.2.
+        Defaults to 15 minutes.
     """
 
     dept_id: str
@@ -220,16 +218,16 @@ def _kv_mount() -> str:
     return os.environ.get("VAULT_KV_MOUNT", "secret")
 
 
-#: Vault fetch timeout in seconds (Requirement 2.1: max 30s).
+#: Vault fetch timeout in seconds, capped at 30s.
 VAULT_TIMEOUT_SECONDS: float = 30.0
 
-#: Maximum retry attempts for Vault fetch (Requirement 2.4: max 2 retries).
+#: Maximum retry attempts for Vault fetch.
 VAULT_MAX_RETRIES: int = 2
 
-#: Backoff between retries in seconds (Requirement 2.4: 5s backoff).
+#: Backoff between retries in seconds.
 VAULT_RETRY_BACKOFF_SECONDS: float = 5.0
 
-#: Cleanup timeout in seconds (Requirement 2.3: within 5s).
+#: Cleanup timeout in seconds.
 CLEANUP_TIMEOUT_SECONDS: float = 5.0
 
 
@@ -244,7 +242,7 @@ async def _fetch_credential_from_vault(
 ) -> dict[str, str]:
     """Fetch Bitbucket credentials from Vault with retry logic.
 
-    Implements Requirement 2.1 (30s timeout) and 2.4 (2 retries, 5s backoff).
+    Uses a 30s timeout with 2 retries and 5s backoff.
 
     Parameters
     ----------
@@ -504,7 +502,7 @@ async def inject_git_credentials(
     2. Configure git credential helper on SSH runner (15 min TTL)
     3. Return masked username for audit
 
-    All credential values are masked in log output (Requirement 2.7).
+    All credential values are masked in log output.
 
     Parameters
     ----------
@@ -528,8 +526,7 @@ async def inject_git_credentials(
             input.ttl_minutes,
         )
 
-        # Step 1: Fetch credentials from Vault
-        # Requirement 2.1: 30s timeout, Requirement 2.4: 2 retries, 5s backoff
+        # Step 1: Fetch credentials from Vault with timeout and retry backoff.
         try:
             credentials = await _fetch_credential_from_vault(
                 dept_id=input.dept_id,
@@ -546,7 +543,7 @@ async def inject_git_credentials(
         username = credentials["username"]
         app_password = credentials["app_password"]
 
-        # Register sensitive values for masking (Requirement 2.7)
+        # Register sensitive values for masking.
         masking_filter.add_sensitive(username)
         masking_filter.add_sensitive(app_password)
 
@@ -558,8 +555,7 @@ async def inject_git_credentials(
             masked_user,
         )
 
-        # Step 2: Configure git credential helper on SSH runner
-        # Requirement 2.2: 15 min TTL
+        # Step 2: Configure git credential helper on SSH runner.
         configure_script = _build_credential_helper_script(
             username=username,
             app_password=app_password,
@@ -628,9 +624,9 @@ async def inject_git_credentials(
 async def cleanup_git_credentials(workflow_id: str) -> None:
     """Remove git credential configuration from the SSH runner.
 
-    Cleans up the credential helper and cached credentials within 5 seconds
-    (Requirement 2.3). This activity is called after git push completes
-    (success or failure) to ensure no credentials remain on the runner.
+    Cleans up the credential helper and cached credentials within 5 seconds.
+    This activity is called after git push completes (success or failure) to
+    ensure no credentials remain on the runner.
 
     Best-effort: if cleanup fails, the error is logged but not propagated
     since the credential cache has a TTL and will expire naturally.

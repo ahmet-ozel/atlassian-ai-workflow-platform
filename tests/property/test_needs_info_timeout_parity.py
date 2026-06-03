@@ -1,8 +1,6 @@
-"""Property test: ``needs_info`` timeout parity across workers.
+"""``needs_info`` timeout parity across workers.
 
-Spec: ``platform-real-usage-gaps`` — Property 1.
 
-**Validates: Requirements 1.1, 1.2, 1.6, 1.7**
 
 Background
 ----------
@@ -11,19 +9,16 @@ Two Temporal workers park on a ``wait_condition`` for the
 ``info_received`` (or sibling ``CommentAddedSignal``) signal when the
 gateway / agent-runner detects ambiguous task metadata:
 
-* ``automation-worker`` —
-  :data:`automation_worker.workflows.automation_workflow._NEEDS_INFO_TIMEOUT`.
-* ``agent-runner-worker`` —
-  :data:`agent_runner.workflows.agent_runner_workflow.SIGNAL_WAIT_TIMEOUT`.
+* ``automation-worker`` —:data:`automation_worker.workflows.automation_workflow._NEEDS_INFO_TIMEOUT`.
+* ``agent-runner-worker`` —:data:`agent_runner.workflows.agent_runner_workflow.SIGNAL_WAIT_TIMEOUT`.
 
-Before this spec the two constants disagreed: the gateway parked for
-24 hours while the agent-runner parked for 7 days, and the Jira
+The two constants previously disagreed: the gateway parked for 24
+hours while the agent-runner parked for 7 days, and the Jira
 ``_format_needs_info_timeout_comment`` helper printed *"24 saat"*.
-End-users who relied on the visible wording were burnt — the bot
-"vazgeçti" before the printed deadline. R1.1 / R1.2 / R1.3 lock the
-three values to a single source of truth (``timedelta(days=7)`` /
-"7 gün"). R1.6 renames the legacy ``test_timeout_is_24_hours`` unit
-test; R1.7 (this file) is the **CI parity test** that prevents drift.
+End-users who relied on the visible wording saw the bot "vazgeçti"
+before the printed deadline. These tests lock the three values to a
+single source of truth (``timedelta(days=7)`` / "7 gün") and prevent
+future drift.
 
 Strategy
 --------
@@ -39,7 +34,7 @@ example test is the right shape. Any drift surfaces immediately at
 CI time.
 
 The test file itself lives under ``platform/tests/property/`` (the
-shared property suite) rather than under either worker's own test
+shared invariant) rather than under either worker's own test
 tree because **its purpose is to bridge the two workers**: it must
 import both modules at once, which neither worker's pytest config
 allows in isolation.
@@ -89,27 +84,27 @@ from agent_runner.workflows.agent_runner_workflow import (  # noqa: E402
 # Canonical value — single source of truth.
 # ---------------------------------------------------------------------------
 
-#: The canonical needs_info timeout value pinned by R1.1 / R1.2.
+#: The canonical needs_info timeout value used across workers.
 #: Any drift in either constant or the Jira comment string fails the
 #: matrix below.
 _CANONICAL_TIMEOUT: Final[timedelta] = timedelta(days=7)
 
 
 # ---------------------------------------------------------------------------
-# Property 1: needs_info Timeout Parity
+# invariant: needs_info Timeout Parity
 # ---------------------------------------------------------------------------
 
 
 class TestNeedsInfoTimeoutParity:
-    """**Validates: Requirements 1.1, 1.2, 1.6, 1.7**
+    """Workers and user-visible timeout text share one value.
 
-    The two workers' park-on-signal timeouts and the user-visible
-    Jira comment string MUST agree on a single value
-    (:data:`_CANONICAL_TIMEOUT` = ``timedelta(days=7)``).
-    """
+ The two workers' park-on-signal timeouts and the user-visible
+ Jira comment string MUST agree on a single value
+ (:data:`_CANONICAL_TIMEOUT` = ``timedelta(days=7)``).
+ """
 
     def test_automation_worker_timeout_is_seven_days(self) -> None:
-        # R1.1 — ``automation_worker._NEEDS_INFO_TIMEOUT`` MUST be
+        # — ``automation_worker._NEEDS_INFO_TIMEOUT`` MUST be
         # ``timedelta(days=7)``; the legacy ``timedelta(hours=24)``
         # value is removed.
         assert _NEEDS_INFO_TIMEOUT == _CANONICAL_TIMEOUT
@@ -117,7 +112,7 @@ class TestNeedsInfoTimeoutParity:
         assert _NEEDS_INFO_TIMEOUT.total_seconds() == 7 * 24 * 60 * 60
 
     def test_agent_runner_signal_wait_timeout_is_seven_days(self) -> None:
-        # R1.2 — ``agent_runner.SIGNAL_WAIT_TIMEOUT`` MUST be the same
+        # — ``agent_runner.SIGNAL_WAIT_TIMEOUT`` MUST be the same
         # value so the two workers do not disagree on how long they
         # wait for the user.
         assert SIGNAL_WAIT_TIMEOUT == _CANONICAL_TIMEOUT
@@ -133,9 +128,9 @@ class TestNeedsInfoTimeoutParity:
         )
 
     def test_jira_comment_mentions_seven_days(self) -> None:
-        # R1.3 / R1.7 — the Jira comment posted when the wait expires
-        # MUST mention "7 gün" so the user-visible wording matches the
-        # actual constant. The legacy "24 saat" string is removed.
+        # The Jira comment posted when the wait expires MUST mention
+        # "7 gün" so the user-visible wording matches the actual
+        # constant. The legacy "24 saat" string is removed.
         body = _format_needs_info_timeout_comment()
         assert "7 gün" in body, (
             f"Jira timeout comment does not mention '7 gün'; got: {body!r}"
@@ -146,9 +141,8 @@ class TestNeedsInfoTimeoutParity:
         )
 
     def test_jira_comment_marks_issue_as_stale(self) -> None:
-        # The terminal transition is ``stale`` (R4.5 of the upstream
-        # gap-fill spec, preserved by R1.x); the comment surface must
-        # reference it so operators can grep for the audit trail.
+        # The terminal transition is ``stale``; the comment surface
+        # must reference it so operators can grep for the audit trail.
         body = _format_needs_info_timeout_comment()
         assert "stale" in body
 

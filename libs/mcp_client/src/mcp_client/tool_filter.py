@@ -1,4 +1,4 @@
-"""Banned MCP tool list — MIMARI §1 Rule 9 (Requirement 1.8).
+"""Banned MCP tool list.
 
 The :data:`BANNED_TOOLS` constant is the **single source of truth** for
 the tools the LLM is never allowed to call. Anything that hands a tool
@@ -6,19 +6,17 @@ catalog to an LLM (assistant-service, agent-runner-worker, future
 admin-dashboard tooling) must route the catalog through
 :func:`filter_tools` first.
 
-Two members are mandated by R1.8 / MIMARI §1 Kural 9:
+Two members are always banned:
 
 - ``bitbucket_merge_pr`` — merging a pull request is a human
-  decision; coupling it with R1.9 (always-draft) keeps the platform
+  decision; coupling it with always-draft PR creation keeps the platform
   from auto-merging anything an LLM produces.
 - ``confluence_delete_page`` — page deletes are irreversible at the
-  Confluence API level. Probe artifacts (R5.4) are cleaned up via the
+  Confluence API level. Probe artifacts are cleaned up via the
   admin "Probe Artifacts" UI, never via this MCP tool.
 
 Adding a tool to this list is intentionally a *code* change so the
-review trail is preserved and the property test
-(``platform/tests/property/test_tool_filter.py`` — task 2.8) catches
-any drift.
+review trail is preserved and tests catch any drift.
 """
 
 from __future__ import annotations
@@ -26,7 +24,7 @@ from __future__ import annotations
 from typing import Any, Final, Iterable
 
 # ---------------------------------------------------------------------------
-# Banned tool list (Requirement 1.8, MIMARI §1 Rule 9)
+# Banned tool list
 # ---------------------------------------------------------------------------
 
 #: Tools the LLM is *never* allowed to invoke.
@@ -76,7 +74,7 @@ def filter_tools(tools: Iterable[Any]) -> list[Any]:
     The function is intentionally tolerant of catalog shape — see
     :func:`_tool_name` for the supported input forms. Tools whose name
     we cannot inspect are kept as-is; they cannot match a banned name
-    and therefore cannot violate R1.8.
+    and therefore cannot violate the ban.
 
     Args:
         tools: An iterable of tool descriptors. Strings, ``dict``
@@ -103,12 +101,9 @@ def filter_tools(tools: Iterable[Any]) -> list[Any]:
         ['jira_get_issue']
 
     Notes:
-        :data:`BANNED_TOOLS` is the *single source of truth* (R1.8 /
-        MIMARI §1 Kural 9). Callers must not maintain a private deny
+        :data:`BANNED_TOOLS` is the *single source of truth*. Callers must not maintain a private deny
         list — adding a tool there is intentionally a code change so
-        the property test
-        (``tests/property/test_tool_filter.py``, task 2.8) catches
-        any drift.
+        tests catch any drift.
     """
 
     return [tool for tool in tools if _tool_name(tool) not in BANNED_TOOLS]

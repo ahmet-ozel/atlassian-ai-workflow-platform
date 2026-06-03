@@ -11,8 +11,8 @@ probes and produces a summary suitable for the ``/readyz`` endpoint.
 
 Design references
 -----------------
-* design.md §Component 6 — Readiness Probe (Gerçek İmplementasyon).
-* Requirements 11.1, 11.2, 11.3, 11.4, 11.5, 11.6.
+* design notes §Component 6 — Readiness Probe (Gerçek İmplementasyon).
+* behaviors 11.1, 11.2, 11.3, 11.4, 11.5, 11.6.
 """
 
 from __future__ import annotations
@@ -54,7 +54,7 @@ class DependencyProbeResult:
 # ---------------------------------------------------------------------------
 
 #: Per-probe timeout in seconds. Any probe exceeding this duration is
-#: classified as unreachable (Requirement 11.4).
+#: classified as unreachable (behavior 11.4).
 PROBE_TIMEOUT_SECONDS: float = 10.0
 
 
@@ -68,7 +68,7 @@ async def probe_postgres(dsn: str) -> DependencyProbeResult:
 
     Uses ``asyncpg`` to open a connection and run a trivial query.
     The connection is closed immediately after the probe regardless
-    of outcome (Requirement 11.1).
+    of outcome (behavior 11.1).
     """
     import asyncpg  # Lazy import to keep module importable without asyncpg
 
@@ -106,7 +106,7 @@ async def probe_redis(url: str) -> DependencyProbeResult:
     Uses a raw asyncio TCP connection to send the RESP PING command
     and verify the PONG response. This avoids requiring a heavy Redis
     client library while still performing a real connectivity check
-    (Requirement 11.2).
+    (behavior 11.2).
     """
     start = time.monotonic()
     try:
@@ -162,7 +162,7 @@ async def probe_temporal(host: str) -> DependencyProbeResult:
 
     Attempts to connect to the Temporal frontend service using the
     ``temporalio`` client library. A successful connection confirms
-    the gRPC endpoint is reachable (Requirement 11.3).
+    the gRPC endpoint is reachable (behavior 11.3).
     """
     from temporalio.client import Client  # type: ignore[import-not-found]
 
@@ -195,7 +195,7 @@ async def probe_vault(addr: str) -> DependencyProbeResult:
     successful HTTP response (regardless of status code) as
     "reachable" since it confirms the Vault process is alive and
     responding. Only connection failures and timeouts are treated as
-    unreachable (Requirement 11.4).
+    unreachable (behavior 11.4).
     """
     start = time.monotonic()
     try:

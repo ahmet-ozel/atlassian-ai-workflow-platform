@@ -1,11 +1,11 @@
 """Unit tests for the readiness probe module.
 
-Validates Requirements 11.1, 11.4, 11.5, 11.6 from the production-hardening spec:
+These tests cover the readiness probe outcomes:
 
-* Requirement 11.1: PostgreSQL probe executes SELECT 1.
-* Requirement 11.4: Each probe has 3s timeout; timeout → unreachable.
-* Requirement 11.5: Any unreachable → 503 with failed_dependencies list.
-* Requirement 11.6: All reachable → 200 with {"status": "ready"}.
+* PostgreSQL probe executes SELECT 1.
+* Each probe has 3s timeout; timeout → unreachable.
+* Any unreachable dependency returns 503 with failed_dependencies list.
+* All reachable dependencies return 200 with {"status": "ready"}.
 """
 
 from __future__ import annotations
@@ -83,7 +83,7 @@ class TestProbePostgres:
     """Tests for the PostgreSQL probe."""
 
     def test_successful_probe(self) -> None:
-        """Requirement 11.1: SELECT 1 succeeds → reachable."""
+        """SELECT 1 succeeds → reachable."""
         mock_conn = AsyncMock()
         mock_conn.fetchval = AsyncMock(return_value=1)
         mock_conn.close = AsyncMock()
@@ -100,7 +100,7 @@ class TestProbePostgres:
         assert result.latency_ms >= 0
 
     def test_connection_timeout(self) -> None:
-        """Requirement 11.4: Timeout → unreachable."""
+        """Timeout → unreachable."""
 
         async def slow_connect(*args, **kwargs):
             await asyncio.sleep(10)
@@ -135,7 +135,7 @@ class TestProbeRedis:
     """Tests for the Redis probe."""
 
     def test_successful_ping(self) -> None:
-        """Requirement 11.2: PING → PONG means reachable."""
+        """PING → PONG means reachable."""
 
         async def _run():
             # Create a mock server that responds with +PONG
@@ -181,7 +181,7 @@ class TestProbeTemporal:
     """Tests for the Temporal probe."""
 
     def test_successful_connect(self) -> None:
-        """Requirement 11.3: gRPC connect succeeds → reachable."""
+        """gRPC connect succeeds → reachable."""
 
         async def mock_connect(host, **kwargs):
             return MagicMock()
@@ -194,7 +194,7 @@ class TestProbeTemporal:
         assert result.latency_ms is not None
 
     def test_connect_timeout(self) -> None:
-        """Requirement 11.4: Timeout → unreachable."""
+        """Timeout → unreachable."""
 
         async def slow_connect(host, **kwargs):
             await asyncio.sleep(10)
@@ -264,7 +264,7 @@ class TestProbeVault:
         assert result.reachable is True
 
     def test_connection_timeout(self) -> None:
-        """Requirement 11.4: Timeout → unreachable."""
+        """Timeout → unreachable."""
         import httpx as httpx_mod
 
         with patch("httpx.AsyncClient") as MockClient:
@@ -290,7 +290,7 @@ class TestCheckReadiness:
     """Tests for the readiness aggregation function."""
 
     def test_all_dependencies_reachable(self) -> None:
-        """Requirement 11.6: All reachable → ready."""
+        """All reachable → ready."""
 
         async def probe_ok_1():
             return DependencyProbeResult(name="postgres", reachable=True, latency_ms=1.5)
@@ -304,7 +304,7 @@ class TestCheckReadiness:
         assert details == {"status": "ready"}
 
     def test_one_dependency_unreachable(self) -> None:
-        """Requirement 11.5: One unreachable → not_ready with failed list."""
+        """One unreachable → not_ready with failed list."""
 
         async def probe_ok():
             return DependencyProbeResult(name="postgres", reachable=True, latency_ms=1.5)
@@ -375,10 +375,10 @@ class TestCheckReadiness:
 
 
 class TestConstants:
-    """Verify module constants match spec requirements."""
+    """Verify module constants."""
 
     def test_probe_timeout_is_3_seconds(self) -> None:
-        """Requirement 11.4: 3 second timeout."""
+        """3 second timeout."""
         assert PROBE_TIMEOUT_SECONDS == 3.0
 
 
@@ -396,13 +396,13 @@ class TestCredentialGuardIntegration:
     This prevents traffic from being routed to an instance that
     refused to boot due to insecure credentials.
 
-    Validates: Requirements 11.1, 11.5 (credential guard interaction).
+    The tests cover the credential guard interaction.
     """
 
     def test_healthz_503_when_credential_blocked(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Requirement 1.3/11.5: /healthz → 503 when credential_blocked is True."""
+        """/healthz → 503 when credential_blocked is True."""
         from starlette.testclient import TestClient
         import src.main as main_module
         from src.main import app

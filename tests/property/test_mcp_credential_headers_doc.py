@@ -1,11 +1,9 @@
 """Parity property test: ``mcp-credential-headers.md`` ↔ Python constants.
 
-Spec: ``platform-quick-fixes`` G2 + G6.
-
 The doc at ``platform/docs/api-contracts/mcp-credential-headers.md`` is the
 canonical contract for every header name a caller must set when talking to
-the ``atlassian_unified`` MCP service. The Python constants (Bitbucket auth
-headers in ``services/atlassian_unified/.../utils/environment.py``, Jira /
+the ``atlassian_mcp_bitbucket`` MCP service. The Python constants (Bitbucket auth
+headers in ``services/atlassian_mcp_bitbucket/.../utils/environment.py``, Jira /
 Confluence URL+token header pairs in ``.../servers/dependencies.py``, the
 ``X-Client-Source`` header in ``libs/mcp_client/.../atlassian_client.py``)
 mirror the same strings.
@@ -41,7 +39,7 @@ _DOC_PATH = _PLATFORM_ROOT / "docs" / "api-contracts" / "mcp-credential-headers.
 _BITBUCKET_ENV_PATH = (
     _PLATFORM_ROOT
     / "services"
-    / "atlassian_unified"
+    / "atlassian_mcp_bitbucket"
     / "src"
     / "mcp_atlassian"
     / "utils"
@@ -50,7 +48,7 @@ _BITBUCKET_ENV_PATH = (
 _DEPENDENCIES_PATH = (
     _PLATFORM_ROOT
     / "services"
-    / "atlassian_unified"
+    / "atlassian_mcp_bitbucket"
     / "src"
     / "mcp_atlassian"
     / "servers"
@@ -249,7 +247,7 @@ def test_dependencies_module_consults_each_documented_header(
 
 
 # ---------------------------------------------------------------------------
-# Doc → mcp_client X-Client-Source parity (G6)
+# Doc → mcp_client X-Client-Source parity
 # ---------------------------------------------------------------------------
 
 
@@ -257,7 +255,7 @@ def test_mcp_client_defines_x_client_source_constant(
     mcp_client_source: str,
 ) -> None:
     """``mcp_client.AtlassianClient`` exposes ``CLIENT_SOURCE_HEADER`` set to
-    ``X-Client-Source`` (G6)."""
+    ``X-Client-Source``."""
 
     assert 'CLIENT_SOURCE_HEADER: Final[str] = "X-Client-Source"' in mcp_client_source, (
         "mcp_client.atlassian_client must define "
@@ -271,7 +269,7 @@ def test_mcp_client_constructor_requires_client_source(
 ) -> None:
     """The constructor signature lists ``client_source`` as keyword-only +
     required (no default value). Drift from this contract reopens the
-    G6 gap (callers can wire the client without identifying themselves)."""
+    caller-identification gap."""
 
     # The signature is split across multiple lines; we look for the
     # specific shape produced by the implementation: ``client_source: str,``
@@ -283,6 +281,6 @@ def test_mcp_client_constructor_requires_client_source(
     )
     assert pattern.search(mcp_client_source), (
         "AtlassianClient.__init__ must declare client_source as required "
-        "(no default value). G6 makes this an enforcement chokepoint — "
+        "(no default value). This is an enforcement chokepoint — "
         "see platform/docs/api-contracts/mcp-credential-headers.md §1."
     )

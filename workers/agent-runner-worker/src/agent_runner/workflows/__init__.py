@@ -1,9 +1,9 @@
 """Temporal workflows hosted by the ``agent-runner-worker``.
 
-Currently exposes :class:`AgentRunnerWorkflow` (task 2.2). The
+Currently exposes :class:`AgentRunnerWorkflow`. The
 per-workflow-type bodies (code-change, pr_review, confluence,
 research, multi_step) plug into this same workflow class via the
-``_dispatch_workflow_type`` extension point (tasks 7-10).
+``_dispatch_workflow_type`` extension point.
 """
 
 from agent_runner.workflows.agent_runner_workflow import (

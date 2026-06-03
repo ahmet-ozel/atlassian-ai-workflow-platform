@@ -1,7 +1,5 @@
 """Integration test — admin departments POST/GET round trip.
 
-Validates: Requirements 5.1, 5.2 of the ``automation-service-wiring`` spec.
-
 Use the existing Compose harness for ``automation-service`` +
 ``postgres`` + ``vault`` + ``temporal`` (defined in
 ``platform/infra/docker-compose.yml``); perform an authenticated
@@ -18,8 +16,8 @@ end-to-end without external infrastructure.
 
 This file is the canonical place the end-to-end round trip belongs;
 the in-process verification of the wiring already lives in the
-property suite (Property 1 — every router slot populated — and
-Property 8 — no router replies with ``Router_Not_Wired_Error``).
+property suite (every router slot populated, and no router replies
+with ``Router_Not_Wired_Error``).
 """
 
 from __future__ import annotations
@@ -85,10 +83,9 @@ def test_admin_departments_round_trip_compose(
 
     The test deliberately exercises the production lifespan handler's
     end-to-end contract: a successful ``POST /admin/departments``
-    proves every ``*EndpointDeps`` container is wired
-    (Requirements 3.1 — 3.10) and a follow-up ``GET`` proves the
-    dept-credentials router serves the same data the admin router
-    persisted (Requirement 5.2).
+    proves every ``*EndpointDeps`` container is wired and a follow-up
+    ``GET`` proves the dept-credentials router serves the same data
+    the admin router persisted.
     """
 
     _require_docker_or_skip(request)
@@ -116,14 +113,13 @@ def test_admin_departments_round_trip_compose(
     #
     # The shape above is intentionally a docstring rather than executed
     # code: the dev-mode Vault token + per-dept bot credentials harness
-    # is delivered by the ``platform-mimari-foundation`` Compose smoke
+    # is delivered by the wider Compose smoke
     # suite (``platform/tests/integration/test_admin_departments_*``);
-    # this file exists so the ``automation-service-wiring`` spec's
-    # integration tier is addressable without duplicating the harness
-    # bootstrap.
+    # this file exists so the integration tier is addressable without
+    # duplicating the harness bootstrap.
     pytest.skip(
         "Compose-harness round trip is delivered by "
         "``platform/tests/integration/`` — this placeholder marks the "
-        "spec's task 8.1 as covered by the wider Compose smoke suite "
+        "covered by the wider Compose smoke suite "
         "rather than duplicating the harness bootstrap here."
     )

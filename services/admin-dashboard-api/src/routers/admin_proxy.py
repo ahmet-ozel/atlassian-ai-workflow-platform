@@ -1,26 +1,25 @@
 """FastAPI router that mounts :class:`src.proxy.AdminProxy`.
 
-This router wires the BFF proxy from task 8.2 of
-``platform-mimari-foundation`` into the admin-dashboard-api FastAPI
+This router wires the BFF proxy from admin proxy wiring of
+``platform foundation`` into the admin-dashboard-api FastAPI
 app. It registers a catch-all handler on the admin endpoints that are
-**owned by automation-service** (Requirement 3.5 / design §`AdminProxy`):
+**owned by automation-service**:
 
 * ``/admin/departments`` and ``/admin/departments/...`` — atomic dept
   create, setup wizard, credential rotation, dept disable.
 * ``/admin/probe-artifacts`` and ``/admin/probe-artifacts/...`` —
-  partial-orphan listing / cleanup (Requirement 5.4).
+  partial-orphan listing / cleanup.
 * ``/admin/ssh-runners`` / ``/admin/ssh-runners/...`` — SSH runner
-  configuration (Requirement 7.5 — admin only).
+  configuration for admins only.
 * ``/admin/prompts/global`` / ``/admin/prompts/global/...`` — global
-  prompt change (Requirement 7.5 — admin only).
+  prompt change for admins only.
 
 The router deliberately does **not** mount under bare ``/admin`` —
 the existing ``/admin/services`` surface from the
-``admin-dashboard-control-plane`` spec is owned locally by
-admin-dashboard-api (Compose orchestration on the local Docker
-socket) and must keep its routes. ``/admin/services`` traffic is
-served by ``src.routers.services_lifecycle`` and never reaches this
-proxy.
+admin-dashboard-api is owned locally by admin-dashboard-api (Compose
+orchestration on the local Docker socket) and must keep its routes.
+``/admin/services`` traffic is served by ``src.routers.services_lifecycle``
+and never reaches this proxy.
 
 Authentication
 --------------
@@ -136,7 +135,7 @@ def get_admin_proxy(request: Request) -> AdminProxy:
     The instance is constructed during :func:`src.main.lifespan` and
     stashed on ``app.state.admin_proxy``. When that wiring has not
     been performed (eg. during a manifest-load failure or before
-    task 8.3 / 9.1 land their own bootstrap pieces) we surface a
+    metrics client wiring has completed) we surface a
     ``503`` matching the readiness probe's shape.
     """
 
@@ -214,8 +213,7 @@ async def _forward(
     body, status code and (filtered) headers.
 
     On RBAC denial the proxy returns ``status_code=403`` with a fixed
-    JSON body; the audit row is written by the proxy itself
-    (Requirement 7.7).
+    JSON body; the audit row is written by the proxy itself.
     """
 
     body = await request.body()

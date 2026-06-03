@@ -1,6 +1,5 @@
 """CI gate — Task Creation Prompt tek kanonik kaynak doğrulaması.
 
-**Validates: Requirement 3.7**
 
 `docs/task-creation-assistant-prompt.md` dosyası ya mevcut olmamalı ya da
 yalnızca `prompts/task_creation_assistant.md`'ye yönlendiren ≤5 satırlık
@@ -54,7 +53,7 @@ def test_canonical_prompt_exists() -> None:
     """Kanonik kaynak prompts/task_creation_assistant.md mevcut olmalı."""
     assert _CANONICAL_PATH.is_file(), (
         f"Kanonik prompt dosyası bulunamadı: {_CANONICAL_PATH}. "
-        "R3.1 gereği bu dosya tek kaynak olarak mevcut olmalıdır."
+        " gereği bu dosya tek kaynak olarak mevcut olmalıdır."
     )
 
 
@@ -72,5 +71,5 @@ def test_both_files_not_full_content() -> None:
         assert not _CANONICAL_PATH.is_file() or _CANONICAL_PATH.stat().st_size < 100, (
             "HER İKİ dosya da ana içerikle dolu! "
             "docs/task-creation-assistant-prompt.md ≤5 satırlık redirect stub'a "
-            "indirilmeli veya silinmeli (R3.2). Tek kanonik kaynak kuralı ihlal."
+            "indirilmeli veya silinmeli . Tek kanonik kaynak kuralı ihlal."
         )

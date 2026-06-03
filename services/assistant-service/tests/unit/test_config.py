@@ -1,4 +1,4 @@
-"""Unit tests for Settings.validate_provider_credentials (Task 5.1).
+"""Unit tests for Settings.validate_provider_credentials.
 
 Tests the fail-fast credential validation logic:
   - openai provider requires OPENAI_API_KEY

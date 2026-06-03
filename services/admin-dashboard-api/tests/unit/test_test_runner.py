@@ -1,12 +1,10 @@
-"""Unit tests for the SSE test runner endpoint (production-hardening task 6.1).
+"""Unit tests for the SSE test runner endpoint.
 
-Validates Requirements 4.1, 4.2, 4.3:
+These tests cover the streaming endpoint contract:
 
-* Requirement 4.1: POST /admin/services/{service_name}/test?stream=true
-  triggers SSE streaming.
-* Requirement 4.2: stdout/stderr streamed line-by-line as SSE events;
-  final event carries exit_code.
-* Requirement 4.3: Client disconnect terminates the subprocess.
+* POST /admin/services/{service_name}/test?stream=true triggers SSE streaming.
+* stdout/stderr stream line-by-line as SSE events; final event carries exit_code.
+* Client disconnect terminates the subprocess.
 """
 
 from __future__ import annotations
@@ -101,7 +99,7 @@ class TestStreamSubprocessSSE:
 
     @pytest.mark.asyncio
     async def test_client_disconnect_terminates_process(self) -> None:
-        """When client disconnects, subprocess is terminated (Req 4.3)."""
+        """When client disconnects, subprocess is terminated."""
         from src.routers.test_runner import stream_subprocess_sse
 
         # Mock request that reports disconnected after first frame

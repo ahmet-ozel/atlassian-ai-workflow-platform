@@ -1,9 +1,7 @@
 """Branch-pattern routing rules — pure deny/allow gate for code-change flows.
 
 This module is the **single source of truth** for the branch-pattern
-routing function defined in ``platform-mimari-workflows`` design.md
-§"`branch_pattern_rules` bir saf fonksiyon" and Requirement 7.9
-(MIMARI §16.15.6 U6).
+routing function.
 
 Public API
 ----------
@@ -24,7 +22,7 @@ Public API
   immutable tuple so the workflow_type router can load them when a
   department's config omits ``branch_pattern_rules``.
 
-Semantics (Requirement 7.9, MIMARI §16.15.6 U6)
+Semantics
 -----------------------------------------------
 
 The function applies the rules **in order** and returns the **first
@@ -47,10 +45,9 @@ or neither is rejected at construction time so the policy stays
 unambiguous. When no rule's ``glob`` matches *branch_name*, the
 function returns ``RouteDecision(allowed=True, reason="no_rule_matched")``
 — the open default, so departments that have not configured
-``branch_pattern_rules`` keep working unchanged (Requirement 7.9, the
-schema migration default ``[]``).
+``branch_pattern_rules`` keep working unchanged.
 
-Examples (from design.md and the requirements doc)
+Examples
 --------------------------------------------------
 
 * ``hotfix/*`` + ``code_change_commit_only`` → ``denied`` (PR open
@@ -65,11 +62,9 @@ Replay determinism
 The function is **pure**: it performs only string globbing and set
 membership tests. No I/O, no ``datetime`` / ``random`` / ``uuid``
 calls, no mutable global state. Safe to call directly from inside
-Temporal workflow code (design.md §"Tasarım Kararları" — replay
+Temporal workflow code (replay
 determinism).
 
-Validates: Requirement 7.9 (R7.9), Property 13 (Code-change formatters
-ve routing).
 """
 
 from __future__ import annotations
@@ -230,7 +225,7 @@ class BranchPatternRule:
 
 
 # ---------------------------------------------------------------------------
-# Default rules — pinned by design.md §Requirement 7.9
+# Default rules
 # ---------------------------------------------------------------------------
 
 #: Default deny rule for ``hotfix/*`` branches — ``code_change_commit_only``
@@ -279,7 +274,7 @@ def route_by_branch_pattern(
     matches *branch_name*, returns ``RouteDecision(allowed=True,
     reason="no_rule_matched", matched_glob=None)``.
 
-    Matching semantics (Requirement 7.9):
+    Matching semantics:
 
     * Glob matching uses :func:`fnmatch.fnmatchcase` (case-sensitive,
       shell-style globbing — ``*``, ``?``, ``[…]``).

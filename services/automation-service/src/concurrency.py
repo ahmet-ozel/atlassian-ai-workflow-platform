@@ -1,8 +1,6 @@
-"""Per-department workflow concurrency enforcement (R19 / task 19.1).
+"""Per-department workflow concurrency enforcement.
 
-Implements the *Worker Concurrency Limit* gate described in
-``.kiro/specs/platform-gap-fill/requirements.md`` §R19 and
-``design.md`` §"Concurrency". The gate is invoked **before** the
+Implements the *Worker Concurrency Limit* gate. The gate is invoked **before** the
 webhook dispatcher hands a fresh workflow start request to Temporal,
 and ensures a single department cannot exhaust the cluster's worker
 slots.
@@ -11,9 +9,9 @@ Behavioural contract
 ====================
 
 * ``max_concurrent_workflows = None`` (or absent) → check is skipped
-  and the start proceeds (R19.3). Departments without an explicit
+  and the start proceeds. Departments without an explicit
   cap fall back to the global license-tier cap enforced by
-  :mod:`middleware.license_cap` (R16) — the two gates are
+  :mod:`middleware.license_cap`; the two gates are
   complementary.
 * ``count >= max`` → :class:`ConcurrencyLimitExceeded` is raised so
   the caller can:
@@ -54,8 +52,8 @@ The fallback path uses an ``asyncpg`` query against
    --name DeptId --type Keyword`` (or the operator-API equivalent) is
    run during platform bootstrap, the visibility query returns 0 for
    every dept and the helper short-circuits to the DB fallback.
-   ``register_search_attribute`` is tracked as a separate ops task —
-   see ``MIMARI.md`` §17307. Until then this module logs a single
+   Search attribute registration is handled during platform bootstrap.
+   Until then this module logs a single
    ``concurrency_visibility_unavailable`` warning per process and
    relies on the Postgres counter, which agrees with Temporal as long
    as the workflow happy-path keeps ``automation.work_items.status``
@@ -68,7 +66,6 @@ better an over-count (some closed workflows still tagged ``running``
 in Postgres) than an under-count (silently letting a dept exceed
 its limit because Temporal failed to answer).
 
-Validates: Requirements 19.1, 19.2, 19.3.
 """
 
 from __future__ import annotations
@@ -334,8 +331,7 @@ async def check_dept_concurrency(
 ) -> ConcurrencyCheckResult:
     """Check whether a dept has slack for one more workflow start.
 
-    Implements the gate described in design.md §"Concurrency" and
-    Requirements 19.1–19.3.
+    Implements the worker concurrency gate.
 
     Parameters
     ----------
@@ -343,7 +339,7 @@ async def check_dept_concurrency(
         Department identifier.
     max_concurrent:
         The dept's ``max_concurrent_workflows`` value. ``None`` (or
-        absent) skips the cap check entirely (R19.3) — the helper
+        absent) skips the cap check entirely; the helper
         still returns the observed count so callers that want to
         surface it (eg. the admin dashboard endpoint) get a
         consistent shape.
@@ -377,7 +373,7 @@ async def check_dept_concurrency(
     )
 
     if max_concurrent is None:
-        # R19.3: cap unset → silent allow with the count populated.
+        # Cap unset: silently allow with the count populated.
         return ConcurrencyCheckResult(
             dept_id=dept_id,
             current=current,

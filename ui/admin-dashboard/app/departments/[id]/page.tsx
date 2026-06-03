@@ -1,16 +1,16 @@
 "use client";
 
 /**
- * Department detail route — uyumluluk task 4.1 (R1 / Q1).
+ * Department detail route.
  *
  * The route exists primarily as a mount point for the credential
  * modal (:file:`../_components/CredentialModal.tsx`). Operators
- * navigate here from the departments table (task 4.2 row click
+ * navigate here from the departments table (row click
  * handler) and the modal opens automatically when credentials exist.
  *
  * When no credentials are bound to the department, the page shows a
  * yellow "Pending Credentials" badge with an "Add Credential" button
- * (R3.8, R3.9). Clicking the button opens the CredentialModal.
+ * Clicking the button opens the CredentialModal.
  *
  * When credentials exist, the page shows a green "Active" badge and
  * the CredentialModal opens automatically (existing behavior).
@@ -23,7 +23,7 @@
  * assign/unassign SSH runners to this department via a multi-select
  * dropdown, and displays a table of assigned runners with metrics.
  * If the global runner pool is empty, a `runner_pool_empty` warning
- * banner is shown (R4.12, R4.13, R4.18, R4.19).
+ * banner is shown.
  */
 
 import { useRouter } from "next/navigation";
@@ -526,7 +526,7 @@ export default function DepartmentDetailPage({
       )}
 
       {/* ================================================================= */}
-      {/* Assigned SSH Runners Section (R4.12, R4.13, R4.18, R4.19)         */}
+      {/* Assigned SSH Runners Section */}
       {/* ================================================================= */}
       {state.kind === "ok" && (
         <section style={sectionStyle} aria-labelledby="ssh-runners-heading">
@@ -537,7 +537,7 @@ export default function DepartmentDetailPage({
             Atanmış SSH Runner'ları
           </h2>
 
-          {/* Runner pool empty warning banner (R4.19) */}
+          {/* Runner pool empty warning banner */}
           {runnerPoolEmpty && (
             <div
               role="alert"
@@ -571,7 +571,7 @@ export default function DepartmentDetailPage({
             </p>
           )}
 
-          {/* Multi-select dropdown for runner assignment (R4.12, R4.13) */}
+          {/* Multi-select dropdown for runner assignment */}
           {!runnersLoading && !runnerPoolEmpty && (
             <div style={multiSelectContainerStyle}>
               <label
@@ -691,7 +691,7 @@ export default function DepartmentDetailPage({
             </div>
           )}
 
-          {/* Runner Table — assigned runners with metrics (R4.14) */}
+          {/* Runner Table — assigned runners with metrics */}
           {!runnersLoading && assignedRunners.length > 0 && (
             <div style={{ overflowX: "auto" }}>
               <table style={runnerTableStyle}>

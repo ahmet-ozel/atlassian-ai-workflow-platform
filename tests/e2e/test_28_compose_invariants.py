@@ -1,17 +1,14 @@
 """
-Test 28: Hypothesis Docker Compose config invariants (R28).
+Test 28: Hypothesis Docker Compose config invariants .
 
-**Property 3: Compose healthcheck shape invariant**
-**Property 4: Compose port uniqueness invariant**
-**Property 5: Compose volume naming invariant**
-**Validates: Requirements R28.1, R28.2, R28.3**
+**the invariant: Compose healthcheck shape invariant**
+**the invariant: Compose port uniqueness invariant**
+**the invariant: Compose volume naming invariant**
 
 Parses `infra/docker-compose.yml` and validates structural invariants:
 - Healthcheck: 5s ≤ interval ≤ 30s, retries ≤ 3, timeout < interval
 - Port uniqueness: no two services share the same host port
 - Volume naming: follows `{service_name}_data` or approved exceptions
-
-Requirements: R28.1, R28.2, R28.3, R28.4, R28.5
 """
 
 import re
@@ -68,8 +65,8 @@ def _parse_compose_file() -> dict:
 def _parse_duration(duration_str: str) -> Optional[float]:
     """Parse a Docker duration string (e.g., '10s', '1m30s', '500ms') to seconds.
 
-    Returns None if the string cannot be parsed.
-    """
+ Returns None if the string cannot be parsed.
+ """
     if not duration_str or not isinstance(duration_str, str):
         return None
 
@@ -113,14 +110,14 @@ def _parse_duration(duration_str: str) -> Optional[float]:
 def _extract_host_port(port_mapping: str) -> Optional[int]:
     """Extract the host port from a Docker port mapping string.
 
-    Handles formats like:
-    - "8080:80"
-    - "127.0.0.1:8080:80"
-    - "8080:80/tcp"
-    - "8080-8090:80-90"
+ Handles formats like:
+ - "8080:80"
+ - "127.0.0.1:8080:80"
+ - "8080:80/tcp"
+ - "8080-8090:80-90"
 
-    Returns the host port as int, or None if unparseable.
-    """
+ Returns the host port as int, or None if unparseable.
+ """
     if not port_mapping or not isinstance(port_mapping, (str, int)):
         return None
 
@@ -165,7 +162,7 @@ def _get_services_with_healthchecks(compose_config: dict) -> Dict[str, dict]:
 
 
 def _get_port_mappings(compose_config: dict) -> Dict[str, List[int]]:
-    """Extract host port mappings per service."""
+    """Extract host port mappings service."""
     services = compose_config.get("services", {})
     result = {}
 
@@ -196,21 +193,19 @@ def _get_volume_names(compose_config: dict) -> List[str]:
 # ---------------------------------------------------------------------------
 
 class TestHealthcheckInvariants:
-    """Property 3: Compose healthcheck shape invariant.
+    """the invariant: Compose healthcheck shape invariant.
 
-    **Validates: Requirements R28.1**
 
-    FOR ALL services with healthcheck blocks:
-    - 5s ≤ interval ≤ 30s
-    - retries ≤ 3
-    - timeout < interval
-    """
+ FOR ALL services with healthcheck blocks:
+ - 5s ≤ interval ≤ 30s
+ - retries ≤ 3
+ - timeout < interval
+ """
 
     def test_healthcheck_interval_bounds(self):
-        """R28.1: Healthcheck interval is between 5s and 30s.
+        """: Healthcheck interval is between 5s and 30s.
 
-        **Validates: Requirements R28.1**
-        """
+ """
         compose_config = _parse_compose_file()
         healthchecks = _get_services_with_healthchecks(compose_config)
 
@@ -242,10 +237,9 @@ class TestHealthcheckInvariants:
         )
 
     def test_healthcheck_retries_limit(self):
-        """R28.1: Healthcheck retries ≤ 3.
+        """: Healthcheck retries ≤ 3.
 
-        **Validates: Requirements R28.1**
-        """
+ """
         compose_config = _parse_compose_file()
         healthchecks = _get_services_with_healthchecks(compose_config)
 
@@ -274,10 +268,9 @@ class TestHealthcheckInvariants:
         )
 
     def test_healthcheck_timeout_less_than_interval(self):
-        """R28.1: Healthcheck timeout < interval.
+        """: Healthcheck timeout < interval.
 
-        **Validates: Requirements R28.1**
-        """
+ """
         compose_config = _parse_compose_file()
         healthchecks = _get_services_with_healthchecks(compose_config)
 
@@ -307,18 +300,16 @@ class TestHealthcheckInvariants:
 
 
 class TestPortUniqueness:
-    """Property 4: Compose port uniqueness invariant.
+    """the invariant: Compose port uniqueness invariant.
 
-    **Validates: Requirements R28.2**
 
-    No two services SHALL expose the same host port.
-    """
+ No two services SHALL expose the same host port.
+ """
 
     def test_no_duplicate_host_ports(self):
-        """R28.2: No two services share the same host port.
+        """: No two services share the same host port.
 
-        **Validates: Requirements R28.2**
-        """
+ """
         compose_config = _parse_compose_file()
         port_mappings = _get_port_mappings(compose_config)
 
@@ -348,19 +339,17 @@ class TestPortUniqueness:
 
 
 class TestVolumeNaming:
-    """Property 5: Compose volume naming invariant.
+    """the invariant: Compose volume naming invariant.
 
-    **Validates: Requirements R28.3**
 
-    All named volumes SHALL follow the pattern `{service_name}_data`
-    or be in the approved exceptions list.
-    """
+ All named volumes SHALL follow the pattern `{service_name}_data`
+ or be in the approved exceptions list.
+ """
 
     def test_volume_naming_convention(self):
-        """R28.3: Volume names follow naming convention or are approved exceptions.
+        """: Volume names follow naming convention or are approved exceptions.
 
-        **Validates: Requirements R28.3**
-        """
+ """
         compose_config = _parse_compose_file()
         volume_names = _get_volume_names(compose_config)
         services = list(compose_config.get("services", {}).keys())
@@ -400,9 +389,9 @@ class TestVolumeNaming:
 class TestComposeInvariantsWithHypothesis:
     """Hypothesis-driven validation of compose config invariants.
 
-    Uses Hypothesis to generate service indices and validate that
-    the invariants hold for all services in the compose file.
-    """
+ Uses Hypothesis to generate service indices and validate that
+ the invariants hold for all services in the compose file.
+ """
 
     @settings(
         max_examples=50,
@@ -411,10 +400,9 @@ class TestComposeInvariantsWithHypothesis:
     )
     @given(data=st.data())
     def test_random_service_healthcheck_valid(self, data: st.DataObject):
-        """Property 3: Random service healthcheck satisfies constraints.
+        """the invariant: Random service healthcheck satisfies constraints.
 
-        **Validates: Requirements R28.1**
-        """
+ """
         compose_config = _parse_compose_file()
         healthchecks = _get_services_with_healthchecks(compose_config)
 
@@ -466,10 +454,9 @@ class TestComposeInvariantsWithHypothesis:
     )
     @given(data=st.data())
     def test_random_service_port_unique(self, data: st.DataObject):
-        """Property 4: Random service port is unique across all services.
+        """the invariant: Random service port is unique across all services.
 
-        **Validates: Requirements R28.2**
-        """
+ """
         compose_config = _parse_compose_file()
         port_mappings = _get_port_mappings(compose_config)
 
@@ -496,29 +483,28 @@ class TestComposeInvariantsWithHypothesis:
 
 
 class TestComposeInvariantsEvidence:
-    """R28.5: Emit structured evidence for compose invariant tests."""
+    """: Emit structured evidence for compose invariant tests."""
 
     def test_emit_evidence(self, evidence_collector):
         """Collect compose invariant results and emit evidence JSON.
 
-        **Validates: Requirements R28.4, R28.5**
-        """
+ """
         compose_config = _parse_compose_file()
 
         evidence_data: dict[str, Any] = {
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "compose_file": str(COMPOSE_FILE),
             "properties_tested": [
-                "Property 3: Healthcheck shape invariant",
-                "Property 4: Port uniqueness invariant",
-                "Property 5: Volume naming invariant",
+                "the invariant: Healthcheck shape invariant",
+                "the invariant: Port uniqueness invariant",
+                "the invariant: Volume naming invariant",
             ],
-            "validates": "Requirements R28.1, R28.2, R28.3",
+            "validates": "",
             "invariant_results": {},
             "overall_verdict": "pass",
         }
 
-        # Property 3: Healthcheck invariants
+        # the invariant: Healthcheck invariants
         healthchecks = _get_services_with_healthchecks(compose_config)
         hc_violations = []
         for service, hc in healthchecks.items():
@@ -542,7 +528,7 @@ class TestComposeInvariantsEvidence:
             "passed": len(hc_violations) == 0,
         }
 
-        # Property 4: Port uniqueness
+        # the invariant: Port uniqueness
         port_mappings = _get_port_mappings(compose_config)
         port_to_services: Dict[int, List[str]] = {}
         for service, ports in port_mappings.items():
@@ -566,7 +552,7 @@ class TestComposeInvariantsEvidence:
             "passed": len(port_duplicates) == 0,
         }
 
-        # Property 5: Volume naming
+        # the invariant: Volume naming
         volume_names = _get_volume_names(compose_config)
         vol_violations = []
         for vol_name in volume_names:
@@ -589,7 +575,7 @@ class TestComposeInvariantsEvidence:
 
         # Emit evidence
         evidence_path = evidence_collector.emit_json(
-            requirement_id="R28.1,R28.2,R28.3,R28.4,R28.5",
+            requirement_id=",,,,",
             filename=EVIDENCE_FILENAME,
             data=evidence_data,
         )

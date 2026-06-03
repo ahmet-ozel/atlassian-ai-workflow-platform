@@ -1,9 +1,5 @@
 """Remote-SSH runner — workspace path derivation + dual-slot key fallback.
 
-Spec: ``platform-mimari-uyumluluk`` Requirement 11.3 (Q13 —
-``RUNNER_BASE_PATH`` env standard) — task 13.3.
-Spec: ``platform-real-usage-gaps`` Requirement 8.7 — task 8.3.
-
 Scope of this module
 --------------------
 
@@ -11,25 +7,24 @@ Two responsibilities:
 
 1. **Workspace path derivation** — any code in the remote-SSH runner
    that needs to know **where** a task's workspace is on the remote host
-   MUST go through :func:`derive_workspace_path` so that the workspace
+   must go through :func:`derive_workspace_path` so that the workspace
    layout ``{settings.runner_base_path}/{issue_key}/iter-{iter_n}`` is
    derived in exactly one place —
    :func:`runners.workspace_path.build_workspace_path`.
 
-2. **Dual-slot SSH key fallback** (R8.7) — when establishing an SSH
-   connection, the runner tries the ``active`` Vault slot first. If the
-   connection fails with ``Permission denied`` (paramiko
-   ``AuthenticationException``), it falls back to the ``previous`` slot.
-   If both slots fail, an ``ssh_key_both_slots_failed`` audit event is
-   emitted and the workflow is signalled to enter a ``queued`` retry
-   loop.
+2. **Dual-slot SSH key fallback** — when establishing an SSH connection,
+   the runner tries the ``active`` Vault slot first. If the connection fails
+   with ``Permission denied`` (paramiko ``AuthenticationException``), it falls
+   back to the ``previous`` slot. If both slots fail, an
+   ``ssh_key_both_slots_failed`` audit event is emitted and the workflow is
+   signalled to enter a ``queued`` retry loop.
 
 Why a thin wrapper instead of inlining ``build_workspace_path``?
 
 * It binds the ``base`` argument to ``settings.runner_base_path`` once,
   so call sites cannot accidentally pass a wrong ``base`` (e.g.
   hard-coding ``/var/ai-runner``, which would silently desync from a
-  ``RUNNER_BASE_PATH`` override). Acceptance criterion 11.3.
+  ``RUNNER_BASE_PATH`` override).
 * It gives a single grep target — ``derive_workspace_path`` — for the
   next person who has to audit "every place the SSH runner builds a
   remote path".
@@ -70,7 +65,7 @@ logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# Workspace path derivation (unchanged from task 13.3)
+# Workspace path derivation
 # ---------------------------------------------------------------------------
 
 
@@ -93,7 +88,7 @@ def derive_workspace_path(
             :func:`build_workspace_path`; values that do not match
             ``^[A-Z][A-Z0-9_]*-\\d+$`` raise :class:`InvalidIssueKeyError`
             **before** any remote command is ever issued (path-traversal
-            safety, R11.3 / R11.6).
+            safety).
         iter_n: Iteration counter ``0..999``. Out-of-range or non-int
             values raise :class:`InvalidIterError`.
         settings: Optional :class:`Settings` instance; if omitted a fresh
@@ -115,7 +110,7 @@ def derive_workspace_path(
 
 
 # ---------------------------------------------------------------------------
-# Dual-slot SSH key fallback (R8.7 — task 8.3)
+# Dual-slot SSH key fallback
 # ---------------------------------------------------------------------------
 
 
@@ -292,8 +287,6 @@ class SSHDualSlotConnector:
         )
         # result.private_key contains the working key
         # result.slot_used is "active" or "previous"
-
-    Requirements: 8.7
     """
 
     def __init__(

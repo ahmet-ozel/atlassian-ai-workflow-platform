@@ -1,9 +1,8 @@
-# Feature: vps-e2e-deployment-test, Property 2: Credential leak invariant
-"""Property test for credential leak invariant.
+"""invariant for credential leak invariant.
 
-**Validates: Requirements 6.1, 6.2, 6.3, 19.4**
 
-Property 2: Credential leak invariant
+
+invariant: Credential leak invariant
 
 For any path matching sensitive credential file patterns (`.env`,
 `services/foo/.env`, `apps/bar/.env`, `CREDENTIALS.md`), the repository's
@@ -19,14 +18,14 @@ Strategy
 Hypothesis generates random paths matching `.env`-like patterns:
 - Root `.env`
 - Nested `.env` files under arbitrary directory prefixes
-  (e.g. `services/foo/.env`, `apps/bar/.env`)
+ (e.g. `services/foo/.env`, `apps/bar/.env`)
 - `CREDENTIALS.md` at root and nested locations
 
 For each generated path, the test asserts:
 1. `git check-ignore --no-index <path>` exits with code 0 (path is
-   covered by `.gitignore` rules)
+ covered by `.gitignore` rules)
 2. `git status --porcelain` output contains no lines matching the
-   sensitive patterns
+ sensitive patterns
 """
 
 from __future__ import annotations
@@ -58,9 +57,9 @@ _WORKSPACE_ROOT: Path = _PLATFORM_ROOT.parent
 def _find_git_root() -> Path | None:
     """Find the git repository root, or None if not in a git repo.
 
-    Checks both the workspace root and the platform root for a .git
-    directory or file (submodule case).
-    """
+ Checks both the workspace root and the platform root for a.git
+ directory or file (submodule case).
+ """
     for candidate in (_WORKSPACE_ROOT, _PLATFORM_ROOT):
         git_dir = candidate / ".git"
         if git_dir.exists():
@@ -82,17 +81,17 @@ def _find_git_root() -> Path | None:
 
 
 def _has_gitignore() -> bool:
-    """Check if a .gitignore file exists at the workspace root."""
+    """Check if a.gitignore file exists at the workspace root."""
     return (_WORKSPACE_ROOT / ".gitignore").is_file()
 
 
 def _git_check_ignore(path: str, cwd: Path) -> bool:
     """Return True if the given path is ignored by git (exit code 0).
 
-    Uses `git check-ignore --no-index` which checks .gitignore rules
-    without requiring the path to exist on disk and without needing
-    a full git index.
-    """
+ Uses `git check-ignore --no-index` which checks.gitignore rules
+ without requiring the path to exist on disk and without needing
+ a full git index.
+ """
     try:
         result = subprocess.run(
             ["git", "check-ignore", "--no-index", path],
@@ -109,8 +108,8 @@ def _git_check_ignore(path: str, cwd: Path) -> bool:
 def _git_status_porcelain(cwd: Path) -> str:
     """Run `git status --porcelain` and return stdout.
 
-    Returns empty string if git is not available or not in a repo.
-    """
+ Returns empty string if git is not available or not in a repo.
+ """
     try:
         result = subprocess.run(
             ["git", "status", "--porcelain"],
@@ -127,7 +126,7 @@ def _git_status_porcelain(cwd: Path) -> str:
 
 
 def _gitignore_contains_pattern(pattern: str) -> bool:
-    """Check if the workspace .gitignore contains the given literal pattern."""
+    """Check if the workspace.gitignore contains the given literal pattern."""
     gitignore_path = _WORKSPACE_ROOT / ".gitignore"
     if not gitignore_path.is_file():
         return False
@@ -159,12 +158,12 @@ def _is_git_repo(cwd: Path) -> bool:
 # Strategies
 # ---------------------------------------------------------------------------
 
-#: Directory name segments for generating nested .env paths
+#: Directory name segments for generating nested.env paths
 _dir_segment = st.from_regex(r"\A[a-z][a-z0-9_-]{0,15}\Z", fullmatch=True)
 
-#: Strategy for generating .env-pattern-matching paths
+#: Strategy for generating.env-pattern-matching paths
 _env_paths = st.one_of(
-    # Root .env
+    # Root.env
     st.just(".env"),
     # Single-level nested: <dir>/.env
     _dir_segment.map(lambda d: f"{d}/.env"),
@@ -184,7 +183,7 @@ _env_paths = st.one_of(
 
 
 # ---------------------------------------------------------------------------
-# Property 2: Credential leak invariant — gitignore coverage
+# invariant: Credential leak invariant — gitignore coverage
 # ---------------------------------------------------------------------------
 
 
@@ -198,19 +197,19 @@ _env_paths = st.one_of(
 )
 @given(path=_env_paths)
 def test_credential_paths_are_gitignored(path: str) -> None:
-    """Property 2a — every .env-pattern path is covered by .gitignore.
+    """invariant — every.env-pattern path is covered by.gitignore.
 
-    **Validates: Requirements 6.1, 6.2, 6.3, 19.4**
 
-    For any path matching sensitive credential file patterns, the
-    repository's `.gitignore` rules MUST transitively ignore that path.
-    This is verified via `git check-ignore --no-index <path>` which
-    checks gitignore rules without requiring the file to exist on disk.
 
-    If git is not initialized (no .git directory), the test falls back
-    to verifying that the .gitignore file contains the required literal
-    patterns (`.env`, `**/.env`, `CREDENTIALS.md`).
-    """
+ For any path matching sensitive credential file patterns, the
+ repository's `.gitignore` rules MUST transitively ignore that path.
+ This is verified via `git check-ignore --no-index <path>` which
+ checks gitignore rules without requiring the file to exist on disk.
+
+ If git is not initialized (no.git directory), the test falls back
+ to verifying that the.gitignore file contains the required literal
+ patterns (`.env`, `**/.env`, `CREDENTIALS.md`).
+ """
     note(f"Testing path: {path}")
 
     # Determine the working directory for git commands
@@ -220,40 +219,40 @@ def test_credential_paths_are_gitignored(path: str) -> None:
         # Full git check-ignore verification
         ignored = _git_check_ignore(path, cwd=git_root)
         assert ignored, (
-            f"Path {path!r} is NOT ignored by .gitignore rules. "
+            f"Path {path!r} is NOT ignored by.gitignore rules. "
             f"Running `git check-ignore --no-index {path}` in {git_root} "
             f"returned non-zero exit code. This path could be accidentally "
-            f"committed, leaking credentials (Requirements 6.1, 6.2, 6.3)."
+            f"committed, leaking credentials (the operational rule)."
         )
     else:
-        # Fallback: verify .gitignore file contains required patterns
+        # Fallback: verify.gitignore file contains required patterns
         assert _has_gitignore(), (
-            "No .gitignore file found at workspace root. "
+            "No.gitignore file found at workspace root. "
             "Credential files could be accidentally committed."
         )
 
         # Check that the essential patterns are present
         if path.endswith(".env"):
-            # .env files should be covered by `.env` or `**/.env`
+            #.env files should be covered by `.env` or `**/.env`
             has_env_pattern = (
                 _gitignore_contains_pattern(".env")
                 or _gitignore_contains_pattern("**/.env")
             )
             assert has_env_pattern, (
-                f"Path {path!r} is an .env file but .gitignore does not "
+                f"Path {path!r} is an.env file but.gitignore does not "
                 f"contain `.env` or `**/.env` pattern. Credential files "
-                f"could be accidentally committed (Requirements 6.1, 6.2)."
+                f"could be accidentally committed (the operational rule)."
             )
         elif "CREDENTIALS.md" in path:
             assert _gitignore_contains_pattern("CREDENTIALS.md"), (
-                f"Path {path!r} matches CREDENTIALS.md but .gitignore "
+                f"Path {path!r} matches CREDENTIALS.md but.gitignore "
                 f"does not contain `CREDENTIALS.md` pattern. Credential "
-                f"files could be accidentally committed (Requirement 6.2)."
+                f"files could be accidentally committed (the operational rule)."
             )
 
 
 # ---------------------------------------------------------------------------
-# Property 2b: git status must not show credential files
+# invariant: git status must not show credential files
 # ---------------------------------------------------------------------------
 
 
@@ -271,22 +270,22 @@ _SENSITIVE_PATTERNS = (".env", "CREDENTIALS.md")
 )
 @given(data=st.data())
 def test_git_status_has_no_credential_files(data: st.DataObject) -> None:
-    """Property 2b — git status reports no credential file matches.
+    """invariant — git status reports no credential file matches.
 
-    **Validates: Requirements 6.1, 6.3, 19.4**
 
-    The output of `git status --porcelain` in the repository root
-    MUST NOT contain any line whose path matches `.env`, `*/.env`,
-    `services/*/.env`, or `CREDENTIALS.md`. This ensures no credential
-    file is staged, modified, or untracked in the working tree.
-    """
+
+ The output of `git status --porcelain` in the repository root
+ MUST NOT contain any line whose path matches `.env`, `*/.env`,
+ `services/*/.env`, or `CREDENTIALS.md`. This ensures no credential
+ file is staged, modified, or untracked in the working tree.
+ """
     git_root = _find_git_root()
 
     if git_root is None or not _is_git_repo(git_root):
-        # If not in a git repo, verify .gitignore exists with patterns
+        # If not in a git repo, verify.gitignore exists with patterns
         # (the gitignore file IS the protection mechanism pre-init)
         assert _has_gitignore(), (
-            "No .gitignore file found and no git repo initialized. "
+            "No.gitignore file found and no git repo initialized. "
             "No protection against credential file commits exists."
         )
         return
@@ -309,31 +308,31 @@ def test_git_status_has_no_credential_files(data: st.DataObject) -> None:
         assert basename not in _SENSITIVE_PATTERNS, (
             f"git status reports a credential file in the working tree: "
             f"{file_path!r} (full line: {line!r}). This file should be "
-            f"ignored by .gitignore and must never appear in git status "
-            f"output (Requirements 6.1, 6.3, 19.4)."
+            f"ignored by.gitignore and must never appear in git status "
+            f"output (the operational rule)."
         )
 
 
 # ---------------------------------------------------------------------------
-# Property 2c: .gitignore required patterns presence
+# invariant:.gitignore required patterns presence
 # ---------------------------------------------------------------------------
 
 
 def test_gitignore_contains_required_credential_patterns() -> None:
-    """Property 2c — .gitignore contains all required credential patterns.
+    """invariant —.gitignore contains all required credential patterns.
 
-    **Validates: Requirements 6.2, 19.4**
 
-    The workspace-root `.gitignore` MUST contain literal patterns for:
-    - `.env` (root-level env file)
-    - `**/.env` (all nested env files)
-    - `CREDENTIALS.md` (credential documentation)
 
-    These patterns together ensure transitive coverage of all
-    credential file locations.
-    """
+ The workspace-root `.gitignore` MUST contain literal patterns for:
+ - `.env` (root-level env file)
+ - `**/.env` (all nested env files)
+ - `CREDENTIALS.md` (credential documentation)
+
+ These patterns together ensure transitive coverage of all
+ credential file locations.
+ """
     assert _has_gitignore(), (
-        "No .gitignore file found at workspace root "
+        "No.gitignore file found at workspace root "
         f"({_WORKSPACE_ROOT}). Cannot verify credential patterns."
     )
 
@@ -347,6 +346,6 @@ def test_gitignore_contains_required_credential_patterns() -> None:
     assert not missing, (
         f".gitignore is missing required credential patterns: {missing}. "
         f"These patterns are required to prevent accidental credential "
-        f"commits (Requirements 6.2, 19.4). "
+        f"commits (the operational rule). "
         f"File location: {_WORKSPACE_ROOT / '.gitignore'}"
     )

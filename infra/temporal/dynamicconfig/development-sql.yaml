@@ -1,6 +1,6 @@
 # Temporal dynamic config (development, SQL persistence)
-# Minimal valid YAML — required by Requirement 6.3.
-# Real production tuning belongs to a future ops spec; this file only ensures
+# Minimal valid YAML for local Temporal startup.
+# Real production tuning belongs in production configuration; this file only ensures
 # Temporal starts cleanly in dev mode.
 frontend.enableClientVersionCheck:
   - value: false

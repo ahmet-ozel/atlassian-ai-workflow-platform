@@ -1,4 +1,4 @@
-"""REST router for external provider status probes (task 10.3, R10).
+"""REST router for external provider status probes.
 
 Exposes a single endpoint:
 
@@ -10,11 +10,7 @@ Exposes a single endpoint:
 The endpoint is gated on ``Depends(require_admin)`` per the existing
 admin-dashboard RBAC pattern.
 
-Design references
------------------
-* design.md §R10 — External Provider Downtime Widget.
-* tasks.md task 10.3 — Admin Dashboard API: external endpoint.
-* Requirements 10.3.
+External provider probes feed the admin dashboard's downtime view.
 """
 
 from __future__ import annotations
@@ -258,7 +254,7 @@ async def list_external_services(
 ) -> ExternalServicesListResponse:
     """Probe all external providers and return their statuses.
 
-    Implements Requirement 10.3: ``GET /api/v1/services/external``.
+    Implements ``GET /api/v1/services/external``.
     """
     effective_env = await _get_model_env(request)
     entries = _load_external_entries(request, env=effective_env)
@@ -280,8 +276,7 @@ async def list_external_services(
             env=effective_env,
         )
 
-        # Emit audit entries for failed probes and streak alerts
-        # (Requirement 10.7, task 10.4).
+        # Emit audit entries for failed probes and streak alerts.
         try:
             await emit_probe_audit(probe_result, audit_writer=audit_writer)
         except Exception as exc:  # noqa: BLE001 - probe visibility must survive audit drift

@@ -1,14 +1,10 @@
-"""Property 6 — a failing close does not block the remaining closes.
-
-# Feature: automation-service-wiring, Property 6: Failing close cascade
+"""A failing close does not block the remaining closes.
 
 For any successful startup followed by a shutdown in which an
 arbitrary non-empty subset of the owned resources' close coroutines
 raise, every other owned resource still has its close coroutine
 awaited exactly once. Shutdown returns without re-raising as long as
 ``_close_quietly`` swallows + logs each failure.
-
-Validates Requirement 4.3 of the ``automation-service-wiring`` spec.
 """
 
 from __future__ import annotations

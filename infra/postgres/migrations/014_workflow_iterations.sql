@@ -1,7 +1,7 @@
 -- 009_workflow_iterations.sql
--- Spec: platform-gap-fill — Task 11.2 (Iteration Re-Run Schema)
+-- Iteration re-run schema migration.
 --
--- Adds the table required by the iteration manager (R12.x):
+-- Adds the table used by the iteration manager:
 --   1. shared.workflow_iterations — Per-issue iteration tracking
 --
 -- Each row represents one iter-N attempt for a Jira issue. New iterations
@@ -16,7 +16,6 @@
 -- Idempotent — uses IF NOT EXISTS guards so re-running on an already-migrated
 -- database is a no-op.
 --
--- Requirements: 12.7
 
 -- =============================================================================
 -- 1. workflow_iterations — Iteration tracking for [iterate] re-run flow

@@ -1,10 +1,9 @@
 "use client";
 
 /**
- * Feature flags panel — `platform-gap-fill` task 16.1
- * (extends the original `platform-mimari-ops` task 12.9 page).
+ * Feature flags panel.
  *
- * **Validates: Requirements R16.1, R16.2, R16.3, R16.4, R16.5**
+ * Supports listing and toggling runtime feature flags.
  *
  * Lists every flag in `shared.feature_flags` with global value and
  * per-dept overrides. Each toggle opens a 5-second countdown confirm

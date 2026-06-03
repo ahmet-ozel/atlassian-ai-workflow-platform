@@ -1,13 +1,9 @@
-"""Property test 14 — Sliding window deterministik kompresyon.
+"""Property-based tests for sliding window deterministic compression.
 
-**Validates: Requirements 1.7**
+Hypothesis-driven verification of the sliding-window compressor.
 
-Hypothesis-driven verification of the sliding-window compressor
-described in design.md §"SlidingWindow" and tasks.md §4.1 / §4.8 of
-the ``platform-mimari-ops`` spec.
-
-Property statement (design.md §"Property 14")
----------------------------------------------
+Behavior
+--------
 
 For any hypothesis-generated ``(messages, n)`` pair where
 ``messages`` is a random :class:`messages.Message` list of length
@@ -31,7 +27,7 @@ Surface under test
 
 The compressor lives at
 ``platform/services/assistant-service/src/chat/sliding_window.py``
-(task 4.1) and exposes::
+and exposes::
 
     def compress(
         messages: list[Message],
@@ -41,7 +37,7 @@ The compressor lives at
     ) -> list[Message]: ...
 
 The :class:`messages.Message` dataclass is the shared chat-protocol
-type from ``libs/messages/src/messages/chat.py`` (task 4.6); both the
+type from ``libs/messages/src/messages/chat.py``; both the
 property test and the production handler import the same class so a
 schema drift in either direction surfaces here as an attribute error
 rather than a silent contract divergence.
@@ -49,7 +45,7 @@ rather than a silent contract divergence.
 Determinism guarantee
 ---------------------
 
-Property 14 (e) requires that the compressor is fully deterministic
+The determinism invariant requires that the compressor is fully deterministic
 *given a deterministic summariser*. We cannot assert determinism
 across summariser implementations (a real LLM-backed summariser is
 nondeterministic by construction); the design pins the requirement to
@@ -113,10 +109,10 @@ for _p in (_ASSISTANT_SERVICE_ROOT, *_LIB_SRC_DIRS):
 from messages import Message  # noqa: E402
 
 # Importing ``compress`` lives behind a try/except so a clean
-# ``ModuleNotFoundError`` (task 4.1 not yet landed) surfaces as a
+# ``ModuleNotFoundError`` surfaces as a
 # pytest collection skip with a precise reason string rather than an
-# opaque traceback. Once task 4.1 ships, this becomes a normal import.
-try:  # pragma: no cover - guard branches collapse once task 4.1 lands
+# opaque traceback. Once the module is available, this becomes a normal import.
+try:  # pragma: no cover - guard branch collapses once module is available
     from src.chat.sliding_window import compress  # noqa: E402
 except ModuleNotFoundError as exc:  # pragma: no cover
     compress = None  # type: ignore[assignment]
@@ -126,12 +122,12 @@ else:
 
 
 # ---------------------------------------------------------------------------
-# Constants from the design contract
+# Constants from the compression contract
 # ---------------------------------------------------------------------------
 
-#: Substring the summary message MUST contain (design §"SlidingWindow"
-#: pseudocode: ``f"[Önceki konuşma özeti] {summary}"``). Property 14
-#: clause (d) asserts this substring's presence in the first element
+#: Substring the summary message MUST contain
+#: (``f"[Önceki konuşma özeti] {summary}"``). The tests assert this
+#: substring's presence in the first element
 #: of any compressed output.
 SUMMARY_PREFIX: str = "[Önceki konuşma özeti]"
 
@@ -196,7 +192,7 @@ _messages_strategy: st.SearchStrategy[list[Message]] = st.lists(
     _message_strategy(), min_size=0, max_size=100
 )
 
-#: ``n`` ∈ [1, 50] per design.md §"Property 14". The default
+#: ``n`` ∈ [1, 50]. The default
 #: production value is 20 (``DEFAULT_SLIDING_WINDOW_N`` in
 #: ``src/chat/handler.py``); the strategy spans both below and above
 #: that to exercise the no-op vs compress branches symmetrically.
@@ -240,24 +236,21 @@ _summariser_strategy: st.SearchStrategy[Callable[[Sequence[Message]], str]] = (
 
 
 # ---------------------------------------------------------------------------
-# Module-level skip — covers the case where task 4.1 has not landed.
+# Module-level skip — covers the case where the implementation is unavailable.
 # ---------------------------------------------------------------------------
 
 
 pytestmark = pytest.mark.skipif(
     compress is None,
     reason=(
-        "src.chat.sliding_window.compress is not yet implemented "
-        f"(task 4.1 of platform-mimari-ops is still ``[-]``); import "
-        f"failed with: {_IMPORT_ERROR!r}. Property 14 is fully "
-        "specified by design.md and will be exercised end-to-end as "
-        "soon as task 4.1 ships."
+        "src.chat.sliding_window.compress is not importable; "
+        f"import failed with: {_IMPORT_ERROR!r}."
     ),
 )
 
 
 # ---------------------------------------------------------------------------
-# Property 14 — full invariant set (a)..(f)
+# Full invariant set
 # ---------------------------------------------------------------------------
 
 
@@ -272,10 +265,7 @@ def test_sliding_window_compress_preserves_last_n_and_is_deterministic(
     n: int,
     summariser: Callable[[Sequence[Message]], str],
 ) -> None:
-    """Property 14 (a)..(f) — output shape, ordering and determinism.
-
-    Validates: Requirements 1.7.
-    """
+    """Output shape, ordering and determinism."""
 
     assert compress is not None  # for type-checker; pytestmark guards runtime
 
@@ -287,14 +277,14 @@ def test_sliding_window_compress_preserves_last_n_and_is_deterministic(
     if len(messages) <= n:
         assert result_list == list(messages), (
             f"compress({messages!r}, n={n}) returned {result_list!r}; "
-            f"Property 14 (a) requires output == messages when "
+            f"the no-op invariant requires output == messages when "
             f"len(messages) <= n."
         )
     else:
         # ----- (b) output length == n + 1 (one summary + n recent) -----
         assert len(result_list) == n + 1, (
             f"compress({messages!r}, n={n}) produced {len(result_list)} "
-            f"messages; Property 14 (b) requires exactly n + 1 = "
+            f"messages; the compressed-length invariant requires exactly n + 1 = "
             f"{n + 1} when len(messages) > n."
         )
 
@@ -306,7 +296,7 @@ def test_sliding_window_compress_preserves_last_n_and_is_deterministic(
         recent_expected = list(messages[-n:])
         assert recent_actual == recent_expected, (
             f"compress({messages!r}, n={n}) tail differs from "
-            f"messages[-n:]; Property 14 (c) requires verbatim "
+            f"messages[-n:]; the tail-preservation invariant requires verbatim "
             f"preservation. Got {recent_actual!r}, expected "
             f"{recent_expected!r}."
         )
@@ -315,12 +305,12 @@ def test_sliding_window_compress_preserves_last_n_and_is_deterministic(
         first = result_list[0]
         assert first.role == "system", (
             f"compress({messages!r}, n={n}) first element has role "
-            f"{first.role!r}; Property 14 (d) requires role == 'system'."
+            f"{first.role!r}; the summary-role invariant requires role == 'system'."
         )
         assert SUMMARY_PREFIX in first.text, (
             f"compress({messages!r}, n={n}) summary text {first.text!r} "
             f"does not contain the required substring "
-            f"{SUMMARY_PREFIX!r} (Property 14 (d))."
+            f"{SUMMARY_PREFIX!r}."
         )
 
     # ----- (e) determinism: a second invocation yields the same output -----
@@ -333,25 +323,23 @@ def test_sliding_window_compress_preserves_last_n_and_is_deterministic(
         f"input produced different outputs.\n"
         f"  first:  {result_list!r}\n"
         f"  second: {result_again!r}\n"
-        f"Property 14 (e) requires identical outputs given a "
+        f"the determinism invariant requires identical outputs given a "
         f"deterministic summariser."
     )
 
 
 # ---------------------------------------------------------------------------
-# Property 14 (f) — concrete edge case for empty input
+# Concrete edge case for empty input
 # ---------------------------------------------------------------------------
 
 
 def test_compress_empty_messages_returns_empty() -> None:
-    """Property 14 (f) — empty messages list maps to empty output.
+    """Empty messages list maps to empty output.
 
     Pinned as a deterministic example so a regression that special-
     cases ``[]`` to e.g. ``[Message("system", "[Önceki...]")]`` is
     caught even if Hypothesis happens to skip the ``len == 0`` corner
     on a given seed.
-
-    Validates: Requirements 1.7.
     """
 
     assert compress is not None
@@ -359,7 +347,7 @@ def test_compress_empty_messages_returns_empty() -> None:
     for n in (1, 5, 20, 50):
         out = compress([], n=n, summarizer=_constant_summariser)
         assert list(out) == [], (
-            f"compress([], n={n}) returned {out!r}; Property 14 (f) "
+            f"compress([], n={n}) returned {out!r}; the empty-input invariant "
             f"requires the empty list."
         )
 
@@ -372,13 +360,11 @@ def test_compress_empty_messages_returns_empty() -> None:
 def test_compress_at_window_boundary_is_noop() -> None:
     """``len(messages) == n`` falls under the (a) no-op clause.
 
-    Design pseudocode uses ``<=`` (not ``<``) for the no-op guard, so
+    The compressor uses ``<=`` (not ``<``) for the no-op guard, so
     a history that exactly fills the window MUST be returned verbatim
     without invoking the summariser. Pinned independently of the
     Hypothesis search so a regression that flips the comparison to
     ``<`` is caught deterministically.
-
-    Validates: Requirements 1.7.
     """
 
     assert compress is not None
@@ -399,13 +385,13 @@ def test_compress_at_window_boundary_is_noop() -> None:
 
     assert out == history, (
         f"compress(history, n=len(history)) returned {out!r}; "
-        "Property 14 (a) requires the no-op branch when "
+        "the no-op branch is required when "
         "len(messages) <= n."
     )
     assert summariser_calls == [], (
         "compress invoked the summariser on the no-op branch "
-        f"(calls={summariser_calls!r}); design.md §'SlidingWindow' "
-        "guards the summariser call behind len(messages) > n."
+        f"(calls={summariser_calls!r}); the compressor must guard the "
+        "summariser call behind len(messages) > n."
     )
 
 
@@ -419,11 +405,9 @@ def test_compress_single_overflow_drops_oldest_and_summarises() -> None:
 
     With one message above the window the summariser receives a list
     of length 1 and the output's ``[1:]`` slice equals the trailing
-    ``n`` messages. Anchors Property 14 (b)..(d) on a fixed example
+    ``n`` messages. Anchors the core compression invariants on a fixed example
     so a regression that off-by-ones the slice (``older =
     messages[:-(n-1)]``) is caught deterministically.
-
-    Validates: Requirements 1.7.
     """
 
     assert compress is not None
@@ -441,16 +425,16 @@ def test_compress_single_overflow_drops_oldest_and_summarises() -> None:
 
     assert len(out) == 4, (
         f"compress(history, n=3) with len(history)=4 returned "
-        f"{len(out)} messages; Property 14 (b) requires n + 1 = 4."
+        f"{len(out)} messages; the compressed-length invariant requires n + 1 = 4."
     )
     assert out[1:] == history[-3:], (
         f"compress tail {out[1:]!r} != messages[-3:] {history[-3:]!r} "
-        f"(Property 14 (c))."
+        f"(tail-preservation invariant)."
     )
     assert out[0].role == "system" and SUMMARY_PREFIX in out[0].text, (
-        f"summary message {out[0]!r} violates Property 14 (d)."
+        f"summary message {out[0]!r} violates the summary-message invariant."
     )
     assert captured == [tuple(history[:1])], (
-        f"summariser received {captured!r}; Property 14 implies the "
+        f"summariser received {captured!r}; the older-slice invariant implies the "
         f"older slice is messages[:-n] = {history[:1]!r}."
     )

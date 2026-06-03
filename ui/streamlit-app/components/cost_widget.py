@@ -1,9 +1,8 @@
-"""End-user cost / quota widget (`platform-mimari-ops` task 9.8).
+"""End-user cost / quota widget.
 
-Validates Requirements:
-    * R5.8 / N4 — Streamlit sidebar shows the running user / dept
-      cost vs. weekly cap so the user understands their remaining
-      budget before triggering an expensive workflow.
+The Streamlit sidebar shows the running user / dept cost vs. weekly cap
+so the user understands their remaining budget before triggering an
+expensive workflow.
 
 The widget reads from ``GET /api/costs/me`` (assistant-service) via
 an injected client on ``st.session_state["_costs_api"]``. The shape

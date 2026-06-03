@@ -1,5 +1,5 @@
 -- 010_llm_providers.sql
--- Spec: llm-provider-management — Task 1.1 (Requirements 1.8, 2.6, 2.7, 3.2, 9.1, 10.1)
+-- LLM provider management schema migration.
 --
 -- Adds:
 --   automation.llm_providers — operator-managed LLM provider configurations.
@@ -8,7 +8,7 @@
 -- Credential material lives EXCLUSIVELY in Vault KV-v2 at
 --   secret/data/llm-providers/{provider_id}/credentials
 -- The Postgres table carries no api_key / token / secret / credential columns
--- (Requirement 3.2; design "Data Models › Postgres").
+-- The Postgres table carries no api_key / token / secret / credential columns.
 --
 -- Idempotent — uses IF NOT EXISTS guards so re-running on an already-migrated
 -- database is a no-op.
@@ -58,7 +58,7 @@ CREATE INDEX IF NOT EXISTS idx_llm_providers_created_at
 -- =============================================================================
 -- Pins a single LLM provider to a department. ON DELETE RESTRICT on the
 -- provider FK means a referenced provider cannot be deleted while any
--- override row points at it (Requirement 1.7 — provider_in_use surface).
+-- override row points at it, which lets the API surface provider_in_use.
 CREATE TABLE IF NOT EXISTS automation.dept_llm_provider_overrides (
     dept_id      TEXT         PRIMARY KEY
         REFERENCES automation.departments(id) ON DELETE CASCADE,

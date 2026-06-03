@@ -1,10 +1,10 @@
 # llm-orchestrator
 
-Provider-agnostic LLM factory for the multi-service scaffold. Production
+Provider-agnostic LLM factory for the platform. Production
 defaults to a configured real provider; synthetic providers are reserved
 for isolated tests.
 
-The package mirrors MIMARI §6 *LLM Provider Abstraction* and is consumed
+The package provides the LLM provider abstraction and is consumed
 by every service/worker that needs to call an LLM (`automation-service`,
 `assistant-service`, `admin-dashboard-api`, `agent-runner-worker`).
 

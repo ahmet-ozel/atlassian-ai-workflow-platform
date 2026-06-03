@@ -1,7 +1,6 @@
 """Public surface of the ``libs/notification`` package.
 
-The dispatch policy implemented here mirrors
-``.kiro/specs/platform-mimari-ops/design.md`` §`NotificationService`:
+The dispatch policy implemented here:
 
 * :func:`NotificationService.notify_workflow_completion` is **success-gated**
   (`dept.notify_on_success == False` ⇒ no-op for non-failure outcomes) and
@@ -11,8 +10,8 @@ The dispatch policy implemented here mirrors
   ``dedup_key`` (sha256 of ``workflow_id`` + ``channel`` + ``kind``) is
   ``UNIQUE`` — a retried call cannot double-deliver.
 
-Task 8.1 (sibling) provides the concrete ``aiohttp`` / ``aiosmtplib`` adapter
-implementations; this package only depends on the
+Concrete ``aiohttp`` / ``aiosmtplib`` adapter implementations are provided
+separately; this package only depends on the
 :class:`SlackAdapter` / :class:`EmailAdapter` /
 :class:`NotificationLogStore` protocols defined in :mod:`notification.adapters`.
 """

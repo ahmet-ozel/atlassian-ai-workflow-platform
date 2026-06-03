@@ -2,7 +2,7 @@
 
 This package exposes the FastAPI dependency that every ``/admin/services``
 endpoint must declare in order to enforce OIDC bearer-token authentication
-(Requirement 10). The actual token validation is delegated to
+(behavior 10). The actual token validation is delegated to
 ``libs/auth-shared`` so the wire-protocol logic is shared with future
 HTTP services and Temporal workers.
 

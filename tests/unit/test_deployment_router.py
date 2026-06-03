@@ -1,9 +1,5 @@
 """Unit tests for :mod:`mcp_client.deployment_router`.
 
-Validates: Requirement 7.8 (Bitbucket Cloud vs Data Center tool
-parity, MIMARI §16.15 T9) — task 7.2 of
-``.kiro/specs/platform-mimari-workflows/tasks.md``.
-
 The tests cover three concerns:
 
 1. The two supported ``deployment`` literals (``"cloud"`` and
@@ -12,9 +8,8 @@ The tests cover three concerns:
 2. Any other value — empty string, misspelled variant, ``None``,
    non-string types — raises :class:`KeyError` so a misconfigured
    ``departments.json`` fails fast at signal-dispatch time.
-3. The exported tool-name constants match the strings the property
-   test (task 7.7, :file:`test_code_change_formatters.py`) will use as
-   its parity oracle.
+3. The exported tool-name constants match the strings the formatter
+   tests use as their parity oracle.
 """
 
 from __future__ import annotations
@@ -49,7 +44,7 @@ class TestToolNameConstants:
 
 
 # ---------------------------------------------------------------------------
-# select_pr_create_tool — happy-path mapping (R7.8)
+# select_pr_create_tool — happy-path mapping
 # ---------------------------------------------------------------------------
 
 
@@ -84,7 +79,7 @@ class TestSelectPrCreateToolMapping:
 
 
 # ---------------------------------------------------------------------------
-# select_pr_create_tool — fail-fast on unsupported values (R7.8)
+# select_pr_create_tool — fail-fast on unsupported values
 # ---------------------------------------------------------------------------
 
 

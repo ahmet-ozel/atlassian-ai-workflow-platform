@@ -5,11 +5,11 @@
 # Stage 1 (builder): install the package and its dependencies into a clean
 # prefix so the runtime stage can copy a single layer of artifacts.
 # Stage 2 (runtime): minimal python:3.12-slim with curl for HEALTHCHECK and
-# a non-root appuser (uid 10001) per Requirement 9.5.
+# a non-root appuser (uid 10001).
 #
-# Build context = this directory. No `COPY ..` directives — Standalone Mode
-# (Property 12.3) requires that `docker build .` works from inside the
-# Component folder without parent traversal.
+# Build context = this directory. No `COPY ..` directives — building from
+# inside the component folder keeps `docker build .` working without parent
+# traversal.
 #
 # Note: this service is profile-gated in Compose (`profiles: ["task-intake"]`)
 # and therefore not started by the default `up -d` flow.

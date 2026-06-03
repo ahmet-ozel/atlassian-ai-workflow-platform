@@ -2,7 +2,7 @@
 
 Temporal worker that hosts the `ExecutionRunWorkflow` and its supporting
 SSH / Docker / Vault / MinIO activities (see the
-[design](../../.kiro/specs/multi-service-scaffold/design.md) §3.2).
+the worker service contract.
 
 The worker connects to the Temporal cluster identified by the
 `TEMPORAL_HOST` environment variable (default `temporal:7233`) and
@@ -17,7 +17,7 @@ LLM-driven prompt steps.
 ## Standalone build & run
 
 The worker runs in **Standalone Mode** without the rest of the Compose
-stack (Requirement 15). It only needs a reachable Temporal endpoint;
+stack. It only needs a reachable Temporal endpoint;
 the other dependencies (Vault, MinIO, Postgres, SSH targets) are used by
 the activities at runtime.
 
@@ -42,7 +42,7 @@ docker run --rm \
 
 If the Temporal connection cannot be established the process exits
 with a non-zero status code so the orchestrator (Compose / supervisor)
-can restart it (Requirement 3.7).
+can restart it.
 
 ## Local development without Docker
 

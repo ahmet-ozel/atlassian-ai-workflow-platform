@@ -1,10 +1,8 @@
-"""Property test: Step timing metadata recording.
+"""Step timing metadata recording.
 
-Feature: platform-completion, Property 14: For any step that reaches completed
-or failed status, start_time, end_time, duration_seconds, and output_summary
-(truncated to max 500 characters) SHALL be recorded.
-
-Validates: Requirements 5.7
+For any step that reaches completed or failed status, start_time, end_time,
+duration_seconds, and output_summary are recorded. The output summary is
+truncated to at most 500 characters.
 """
 from __future__ import annotations
 import sys
@@ -48,5 +46,5 @@ def test_truncate_long_text_uses_ellipsis(text: str) -> None:
 
 
 def test_max_output_summary_length() -> None:
-    """MAX_OUTPUT_SUMMARY_LENGTH matches Requirement 5.7 (500 chars)."""
+    """MAX_OUTPUT_SUMMARY_LENGTH is 500 chars."""
     assert MAX_OUTPUT_SUMMARY_LENGTH == 500

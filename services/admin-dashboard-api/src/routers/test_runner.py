@@ -1,7 +1,7 @@
 """SSE-based test runner with true line-by-line subprocess streaming.
 
-Production-hardening task 6.1 — implements the backend infrastructure
-for ``POST /admin/services/{service_name}/test?stream=true``.
+Implements the backend infrastructure for
+``POST /admin/services/{service_name}/test?stream=true``.
 
 This module provides:
 
@@ -20,8 +20,6 @@ The streaming generator handles:
 - Final ``event: done`` with ``{"exit_code": N}`` on process exit.
 - Client disconnect detection → subprocess SIGTERM + cleanup.
 - Unexpected errors → ``event: error`` frame before stream close.
-
-Requirements: 4.1, 4.2, 4.3
 """
 
 from __future__ import annotations
@@ -130,7 +128,6 @@ async def stream_subprocess_sse(
     Yields:
         UTF-8 encoded SSE frames.
 
-    Requirements: 4.2, 4.3
     """
     process: asyncio.subprocess.Process | None = None
 
@@ -156,7 +153,7 @@ async def stream_subprocess_sse(
 
         # Stream line-by-line
         while True:
-            # Check for client disconnect (Requirement 4.3)
+            # Check for client disconnect.
             if request is not None and await request.is_disconnected():
                 logger.info(
                     "Client disconnected during test stream, "
@@ -190,7 +187,7 @@ async def stream_subprocess_sse(
         # Wait for process to finish and get exit code
         exit_code = await process.wait()
 
-        # Send final event with exit code (Requirement 4.2)
+        # Send final event with exit code.
         yield (
             f"event: done\n"
             f"data: {{\"exit_code\": {exit_code}}}\n\n"
@@ -283,7 +280,7 @@ async def run_tests(
 ) -> StreamingResponse | JSONResponse:
     """Run the test command for the specified service.
 
-    **stream=True** (Requirement 4.2):
+    **stream=True**:
       Returns a ``text/event-stream`` SSE response that streams
       stdout/stderr line-by-line. Each line is emitted as a ``data:``
       event. A final ``event: done`` carries the exit code so the
@@ -293,7 +290,7 @@ async def run_tests(
       Runs the test to completion and returns a JSON object with
       ``service_name``, ``output``, and ``exit_code``.
 
-    **Client disconnect** (Requirement 4.3):
+    **Client disconnect**:
       When the client aborts the SSE connection (e.g. Cancel button),
       the backend detects the disconnect and terminates the subprocess
       with SIGTERM, falling back to SIGKILL after 5 seconds.
@@ -325,7 +322,7 @@ async def run_tests(
     )
 
     if stream:
-        # SSE streaming response (Requirements 4.1, 4.2, 4.3)
+        # SSE streaming response.
         return StreamingResponse(
             stream_subprocess_sse(test_command, cwd, request),
             media_type="text/event-stream",

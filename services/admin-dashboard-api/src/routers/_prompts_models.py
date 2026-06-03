@@ -8,10 +8,10 @@ into the models below for FastAPI's serialiser.
 
 Design references
 -----------------
-* design.md §`PromptsGitRouter` — endpoint matrix and JSON shapes.
-* Requirement 2.2 — ``GET /admin/prompts``, ``GET /admin/prompts/{path}``,
+* design notes §`PromptsGitRouter` — endpoint matrix and JSON shapes.
+* behavior 2.2 — ``GET /admin/prompts``, ``GET /admin/prompts/{path}``,
   ``POST .../draft``, ``POST .../pr``.
-* Requirement 2.9 — every write path is preceded by
+* behavior 2.9 — every write path is preceded by
   ``validate_template_format(body)`` at the router layer.
 """
 
@@ -28,7 +28,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class PromptListItem(BaseModel):
-    """Row shape returned by ``GET /admin/prompts`` (Requirement 2.2).
+    """Row shape returned by ``GET /admin/prompts`` (behavior 2.2).
 
     Only ``path`` and ``commit_hash`` are mandatory — both come from
     the underlying :class:`git_shared.GitRepo`. ``size_bytes`` is
@@ -45,7 +45,7 @@ class PromptListItem(BaseModel):
     commit_hash: str = Field(
         description=(
             "Short SHA of the commit that last touched this file on "
-            "the configured main branch (Requirement 2.6)."
+            "the configured main branch (behavior 2.6)."
         ),
     )
     size_bytes: Optional[int] = Field(
@@ -91,7 +91,7 @@ class PromptDraftRequest(BaseModel):
     The router enforces three invariants before it touches git:
 
     1. ``body`` is non-empty (the schema does the work below).
-    2. ``validate_template_format(body)`` passes (Requirement 2.9).
+    2. ``validate_template_format(body)`` passes (behavior 2.9).
     3. The path exists on the configured main branch — the router
        rejects writes to brand-new files at the API edge so the audit
        trail is "edit existing" and "create new" stays explicit.
@@ -168,7 +168,7 @@ class PromptPrResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Sandbox test (task 6.2 — Requirement 2.4)
+# Sandbox test (service lifecycle wiring — behavior 2.4)
 # ---------------------------------------------------------------------------
 
 
@@ -177,7 +177,7 @@ class PromptSandboxRequest(BaseModel):
 
     The endpoint pairs a draft prompt body with a sample user input
     and asks :class:`src.sandbox.PromptSandbox` to issue a
-    ``cost_tag='sandbox'`` LLM call (Requirement 2.4). Two
+    ``cost_tag='sandbox'`` LLM call (behavior 2.4). Two
     invariants are enforced at the schema layer:
 
     1. ``sample_input`` is non-empty — sandbox-test calls without a
@@ -242,12 +242,12 @@ class PromptSandboxResponse(BaseModel):
     on the response makes the isolation contract auditable from a
     single response without re-reading the source.
 
-    ``sandbox_run_id`` was added by ``platform-mimari-uyumluluk``
-    task 11.1 (Requirement 7.3 / 7.5 — Q4 promote chain). It is the
+    ``sandbox_run_id`` was added by ``platform operations``
+    prompt promotion flow. It is the
     UUID primary key of the ``automation.prompt_sandbox_runs`` row
     written by the endpoint after a successful sandbox invocation;
     the caller forwards it to ``POST /admin/prompts/{path}/promote``
-    (task 11.2) so the promote handler can verify the sandbox
+    so the promote handler can verify the sandbox
     actually ``passed`` before opening a PR. The field is
     :class:`Optional` so the endpoint stays answerable even when the
     asyncpg pool is degraded — in that case the response carries
@@ -267,7 +267,7 @@ class PromptSandboxResponse(BaseModel):
     model: str
     provider: str
     cost_tag: str
-    # Additive — task 11.1 (Requirement 7.3, 7.5).
+    # Additive prompt-promotion metadata.
     sandbox_run_id: Optional[str] = Field(
         default=None,
         description=(
@@ -281,7 +281,7 @@ class PromptSandboxResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Promote (task 11.2 — Requirement 7.1, 7.5)
+# Promote
 # ---------------------------------------------------------------------------
 
 

@@ -2,12 +2,7 @@
 
 This module owns :func:`render_pdf`, the single rendering entry point
 used by the ``AgentRunnerWorkflow``'s ``jira_attachment`` output action
-when ``payload["format"] == "pdf"`` (see ``platform-mimari-workflows``
-design.md §"Components and Interfaces" → ``output_actions``, and the
-worked example in tasks.md §8.3).
-
-Validates: Requirements 8.8 (V5 — A4, Latin/Türkçe glyph desteği),
-12.4 (``jira_attachment`` format ∈ {pdf, md}).
+when ``payload["format"] == "pdf"``.
 
 Contract
 --------
@@ -20,15 +15,14 @@ would otherwise vary between runs (creation date, modification date,
 producer string) is pinned by the renderer.
 
 The companion ``jira_attachment`` output action accepts
-``format ∈ {pdf, md}`` per Requirement 12.4:
+``format ∈ {pdf, md}``:
 
 * ``format == "pdf"`` — the activity calls :func:`render_pdf` with
   the resolved template (from ``platform/prompts/pdf_templates/*.html.j2``,
   default ``default.html.j2``) and the activity-supplied context;
   the resulting bytes are uploaded as a Jira issue attachment.
 * ``format == "md"`` — the activity attaches the plain Markdown text
-  directly; this module is **not** invoked.  See task 12.x's
-  ``output_actions.py`` for the dispatch.
+  directly; this module is **not** invoked.
 
 Replay determinism
 ------------------
@@ -36,7 +30,7 @@ Replay determinism
 This module is imported at workflow-package load time, but
 :func:`render_pdf` is only ever called from inside an *activity* — never
 from workflow code.  Workflow code is forbidden from doing I/O or
-embedding clocks (design.md §"replay determinism", Requirement 1.4),
+embedding clocks,
 and PDF rendering is non-trivially side-effecting (it shells out to
 WeasyPrint's font cache).  We therefore expose a synchronous helper
 that activities wrap with ``activity.heartbeat`` + a generous
@@ -210,7 +204,7 @@ def render_pdf(html_template: str, context: Mapping[str, Any]) -> bytes:
         ``platform/prompts/pdf_templates/{name}.html.j2`` by the
         activity layer; the default template ``default.html.j2``
         ships with this package and pins A4 size + a Turkish-glyph
-        capable font stack (Requirement 8.8).
+        capable font stack.
     context:
         Substitution mapping passed to :meth:`jinja2.Template.render`.
         ``StrictUndefined`` is enabled, so every key referenced by the

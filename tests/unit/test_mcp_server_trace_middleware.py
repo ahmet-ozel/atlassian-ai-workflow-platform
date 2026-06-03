@@ -1,10 +1,9 @@
-"""Unit test — atlassian_unified MCP server's inline ``TraceMiddleware``.
+"""Unit test — atlassian_mcp_bitbucket MCP server's inline ``TraceMiddleware``.
 
-Validates: platform-gap-fill Requirements 8.2 / 8.5 / 8.7 (the MCP
-server is the central hub for every Atlassian call from every worker
-and service; it must propagate the ``X-Trace-Id`` header end-to-end so
-the Admin Dashboard log filter can correlate workflow logs with the
-Atlassian-side request log).
+The MCP server is the central hub for every Atlassian call from every
+worker and service; it must propagate the ``X-Trace-Id`` header
+end-to-end so the Admin Dashboard log filter can correlate workflow logs
+with the Atlassian-side request log.
 
 The MCP server ships a vendored virtualenv and does not import the
 workspace ``observability`` library — instead it carries an inline
@@ -23,7 +22,7 @@ from pathlib import Path
 
 import pytest
 
-# Make the in-tree atlassian_unified ``src`` directory importable
+# Make the in-tree atlassian_mcp_bitbucket ``src`` directory importable
 # without depending on the vendored ``.venv``.  The MCP server's
 # ``servers/__init__.py`` pulls in heavyweight FastMCP and Atlassian
 # dependencies; the imports work because each of those packages is
@@ -31,7 +30,7 @@ import pytest
 _ATLASSIAN_SRC = (
     Path(__file__).resolve().parents[2]
     / "services"
-    / "atlassian_unified"
+    / "atlassian_mcp_bitbucket"
     / "src"
 ).resolve()
 if str(_ATLASSIAN_SRC) not in sys.path:
@@ -44,7 +43,7 @@ try:
         _is_valid_trace_id,
     )
 except Exception as exc:  # pragma: no cover - skip if MCP deps missing
-    pytest.skip(f"atlassian_unified deps unavailable: {exc}", allow_module_level=True)
+    pytest.skip(f"atlassian_mcp_bitbucket deps unavailable: {exc}", allow_module_level=True)
 
 
 _UUID_RE = re.compile(

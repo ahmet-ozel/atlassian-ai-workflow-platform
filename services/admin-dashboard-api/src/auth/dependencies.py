@@ -3,9 +3,9 @@
 This module wires the ``libs/auth-shared`` :class:`OIDCValidator` into
 the admin-dashboard-api request pipeline. Every ``/admin/services``
 endpoint declares ``Depends(require_admin)`` so the lifecycle REST
-surface is uniformly gated (Requirement 10.1).
+surface is uniformly gated (behavior 10.1).
 
-Behaviour matrix (Requirements 10.2 / 10.3):
+Behaviour matrix (behaviors 10.2 / 10.3):
 
 * Missing or non-``Bearer`` ``Authorization`` header → ``401`` immediately,
   *before* any claim inspection, so anonymous probes never leak whether
@@ -14,7 +14,7 @@ Behaviour matrix (Requirements 10.2 / 10.3):
 * ``OIDCValidator.validate`` raises :class:`InvalidTokenError` → ``401``.
 * Validator returns claims, but neither ``groups`` nor ``roles`` contains
   ``"admin"`` → ``403``. Read-only access is *not* granted to authenticated
-  non-admin users (Requirement 10.3 second sentence).
+  non-admin users (behavior 10.3 second sentence).
 * All checks pass → :class:`AuthClaims` is returned and bound to the
   endpoint handler argument.
 
@@ -42,7 +42,7 @@ class AuthClaims:
 
     Attributes:
         sub: OIDC ``sub`` claim — used as the ``actor`` field on every
-            audit log entry written by lifecycle handlers (Requirement
+            audit log entry written by lifecycle handlers
             11.2).
         groups: Union of the validated token's ``groups`` and ``roles``
             claims, frozen as a tuple so the value is hashable and can be
@@ -126,7 +126,7 @@ async def require_admin(
 
     auth_header = request.headers.get("authorization", "")
 
-    # Per Requirement 10.2 we MUST raise 401 before any claim inspection
+    # Per behavior 10.2 we MUST raise 401 before any claim inspection
     # when the header is absent or the scheme is wrong. The
     # case-insensitive match below treats ``Bearer``, ``bearer`` and
     # ``BEARER`` identically (RFC 7235 §2.1 — schemes are case-insensitive).
@@ -168,7 +168,7 @@ async def require_admin(
         # OIDC spec mandates ``sub``; if it's missing the token is
         # malformed even though the signature checked out. Treat as 401
         # rather than 403 because we cannot reliably identify the actor
-        # (Requirement 11.2 needs a stable ``sub`` for audit entries).
+        # (behavior 11.2 needs a stable ``sub`` for audit entries).
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="invalid token",

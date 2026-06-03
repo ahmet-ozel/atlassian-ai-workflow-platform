@@ -1,6 +1,4 @@
-"""``RunnerWorkspacesRouter`` — manual SSH workspace listing + purge (task 14.1).
-
-**Validates: Requirements 13.1, 13.2, 13.3, 13.4** (`platform-mimari-uyumluluk` Q15)
+"""``RunnerWorkspacesRouter`` — manual SSH workspace listing + purge.
 
 Two admin-only endpoints backing the *Services → Workspaces* sub-tab:
 
@@ -24,7 +22,7 @@ Path-traversal guard
 construction). Anything else — ``..``, ``;``, ``&``, ``|``, ``$``,
 backtick, newline, null-byte, or simply lower-case — is rejected with
 ``400 + {"error": "invalid_issue_key_format"}`` **before** any SSH
-command is constructed (Requirement 13.4). The router never calls
+command is constructed. The router never calls
 ``str.format`` / f-string interpolation against unvalidated input;
 even after the regex passes the value is forwarded through
 :func:`shlex.quote` so any future regex relaxation cannot turn the
@@ -50,7 +48,7 @@ event; every failed purge writes one ``workspace_purge_failed`` event.
 Both carry ``actor_id``, ``actor_role="admin"``, ``dept_id=None``,
 ``resource=f"workspace:{issue_key}"`` and a payload containing
 ``issue_key``, ``freed_bytes`` (best-effort, ``0`` when unknown) and a
-trimmed ``error`` reason on failure (Requirement 13.3).
+trimmed ``error`` reason on failure.
 
 The SSH side-effect surface is injected through
 ``app.state.runner_workspaces_client``. Production wiring will bind it
@@ -92,7 +90,7 @@ logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# Path-traversal guard (Requirement 13.4)
+# Path-traversal guard
 # ---------------------------------------------------------------------------
 #
 # The regex matches Jira-style project keys followed by a numeric issue
@@ -171,9 +169,7 @@ class RunnerWorkspacesClient(Protocol):
 
     Both methods MUST be async and MUST treat ``issue_key`` as
     untrusted in spite of the router's regex guard — the contract is
-    "validate at the boundary AND escape at the call-site"
-    (Requirement 13.4 path-traversal safety, design §"Komponent
-    Etkileşim Sırası").
+    "validate at the boundary AND escape at the call-site".
     """
 
     async def list_workspaces(self) -> list[WorkspaceListEntry]:
@@ -238,7 +234,7 @@ async def _safe_audit(sink: Any | None, event: AuditEvent) -> None:
 
     Matches the contract used by every other admin-dashboard-api
     router: a transient audit-DB outage MUST NOT mask the underlying
-    HTTP outcome (Requirement 7.5 / 11.8). The helper accepts any
+    HTTP outcome. The helper accepts any
     object exposing a coroutine ``write(event)`` method; it logs at
     ``WARNING`` and swallows any exception so the request keeps its
     outcome.
@@ -275,8 +271,7 @@ async def list_runner_workspaces(request: Request) -> dict[str, Any]:
     Workspaces* tab can still render (the operator sees "no
     workspaces yet" instead of a hard error). Errors raised by the
     client (SSH unreachable, ``ls`` failure) propagate up as a logged
-    warning and an empty list — Requirement 13.2 only specifies the
-    happy-path shape.
+    warning and an empty list.
     """
 
     client = _client(request)
@@ -316,7 +311,7 @@ async def purge_runner_workspace(
 ) -> dict[str, Any]:
     """Recursively remove ``$RUNNER_BASE_PATH/{issue_key}/`` on the runner.
 
-    Validation order (Requirement 13.4):
+    Validation order:
 
     1. ``issue_key`` MUST match :data:`ISSUE_KEY_PATTERN`. Anything
        else short-circuits with ``400 +
@@ -330,7 +325,7 @@ async def purge_runner_workspace(
     3. The client's :meth:`purge_workspace` is called with the
        (already validated) ``issue_key``. The client MUST
        ``shlex.quote`` the key before constructing the SSH command;
-       the router does not double-quote here so the property test
+       the router does not double-quote here so the test
        can introspect the SSH argv that the client built.
 
     Audit:
@@ -341,7 +336,7 @@ async def purge_runner_workspace(
       payload carries the trimmed exception message and ``issue_key``).
 
     Both audit writes are best-effort; the request outcome is never
-    masked by an audit hiccup (Requirement 7.5 / 11.8).
+    masked by an audit hiccup.
     """
 
     # ---- Step 1 — path-traversal guard ---------------------------------
@@ -442,8 +437,6 @@ async def purge_runner_workspace(
 # GET /admin/runner/queue-status
 # ---------------------------------------------------------------------------
 #
-# Validates: Requirements 15.1, 15.2
-#
 # Returns the current SSH runner queue state: active count, queued count,
 # average wait time (from the last 10 completed workspaces), global
 # concurrency quota, and a per-department breakdown.
@@ -505,7 +498,7 @@ def _is_missing_execution_workspaces_error(exc: BaseException) -> bool:
 async def _fetch_queue_status(pool: Any) -> dict[str, Any]:
     """Query ``automation.execution_workspaces`` and compute queue metrics.
 
-    Returns a dict matching the R15.1 response schema:
+    Returns a dict matching the queue-status response schema:
     ``{active_count, queued_count, avg_wait_seconds, max_concurrent_global,
     by_dept: [{dept_id, active, queued, quota}]}``.
     """
@@ -596,7 +589,7 @@ async def _fetch_queue_status(pool: Any) -> dict[str, Any]:
 async def get_queue_status(request: Request) -> dict[str, Any]:
     """Return the current SSH runner queue state.
 
-    Response shape (Requirement 15.1):
+    Response shape:
 
     .. code-block:: json
 
@@ -628,8 +621,6 @@ async def get_queue_status(request: Request) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 # GET /admin/runner/queue-status/stream  (SSE)
 # ---------------------------------------------------------------------------
-#
-# Validates: Requirement 15.6
 #
 # Pushes a new queue-status snapshot every ``_QUEUE_STATUS_SSE_INTERVAL_S``
 # seconds as an SSE ``data:`` frame. The stream runs indefinitely until

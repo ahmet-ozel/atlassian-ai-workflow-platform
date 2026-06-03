@@ -1,20 +1,17 @@
 """Multi-step graceful-skip dispatch — pure aggregator for ``multi_step``.
 
 This module is the **single source of truth** for the multi-step
-dispatch decision defined in ``platform-mimari-workflows`` design.md
-§"Workflow Type Routing" (multi_step graceful skip) and Requirement
-6.3 (R6.3).
+dispatch decision used for graceful skips in ``multi_step`` workflows.
 
 The ``multi_step`` workflow type orchestrates *N* child workflows on
-behalf of a single Jira issue.  Per Requirement 6.3 the parent must
+behalf of a single Jira issue.  The parent must
 **not** fail-fast when any individual child lacks a capability — it
 must mark that child ``out_of_scope`` and continue dispatching the
 remaining children.  Splitting that decision out of the workflow body
 into a pure function keeps the behaviour replay-safe (no I/O, no
 ``datetime.now()`` / ``random`` / ``uuid`` calls), trivially unit- and
 property-testable, and reusable from the
-:class:`AutomationWorkflow.multi_step` branch (a separate task — see
-tasks.md §10.3 third bullet).
+:class:`AutomationWorkflow.multi_step` branch.
 
 Public API
 ----------
@@ -44,8 +41,8 @@ Public API
   :class:`ChildOutcome` values; raises :class:`InvariantViolation`
   when the ``started + skipped == len(children)`` invariant breaks.
 
-Skip semantics (Requirement 6.3)
---------------------------------
+Skip semantics
+--------------
 
 A child is **skipped** with ``reason="out_of_scope"`` when *any* of its
 required capabilities (per
@@ -65,8 +62,8 @@ than letting it propagate keeps the dispatcher *total* — the parent
 workflow always returns a plan list of the same length as its input
 (graceful skip; no child is silently dropped).
 
-Total-length invariant (Property 17)
-------------------------------------
+Total-length invariant
+----------------------
 
 For every input ``children`` sequence the function returns a list of
 the **same length**.  No child is ever omitted from the plan; every
@@ -82,9 +79,6 @@ pure: only set membership / set difference operations and tuple
 construction.  No ``datetime`` / ``random`` / ``uuid`` calls, no
 mutable global state, no I/O.  Safe to call directly from inside
 Temporal workflow code.
-
-Validates: Requirement 6.3 (R6.3), Property 17 (multi_step graceful
-skip aggregator).
 """
 
 from __future__ import annotations
@@ -118,7 +112,7 @@ __all__ = [
 # ---------------------------------------------------------------------------
 
 #: Plan / outcome reason — child skipped because dept lacks one or more
-#: required capabilities (R6.3).
+#: required capabilities.
 REASON_OUT_OF_SCOPE: Final[str] = "out_of_scope"
 
 #: Plan / outcome reason — child skipped because its ``workflow_type``
@@ -140,7 +134,7 @@ REASON_DISPATCHED: Final[str] = "dispatched"
 
 
 class InvariantViolation(AssertionError):
-    """Raised when ``started + skipped != total`` (R6.3, Property 17).
+    """Raised when ``started + skipped != total``.
 
     Subclassed from :class:`AssertionError` so callers that prefer the
     standard ``assert`` semantics can ``except AssertionError`` while
@@ -159,10 +153,10 @@ class InvariantViolation(AssertionError):
 class ChildProposal:
     """One child the parent is asked to dispatch.
 
-    Built by the LLM-task-analysis parser (task 10.1) from the
-    ``children`` array of a ``workflow_type="multi_step"`` analysis
-    result.  The :class:`AutomationWorkflow` (or the
-    :class:`AgentRunnerWorkflow.multi_step` branch — separate task)
+    Built by the LLM-task-analysis parser from the ``children`` array
+    of a ``workflow_type="multi_step"`` analysis result.  The
+    :class:`AutomationWorkflow` (or the
+    :class:`AgentRunnerWorkflow.multi_step` branch)
     constructs a tuple of these and passes them to
     :func:`multi_step_dispatch`.
 
@@ -301,7 +295,7 @@ class AggregatedOutput:
         ``started + skipped``; equals ``len(child_outcomes)``.  The
         constructor enforces the invariant
         ``started + skipped == total`` and raises
-        :class:`InvariantViolation` on mismatch (Property 17).
+        :class:`InvariantViolation` on mismatch.
     child_outcomes:
         Tuple of all :class:`ChildOutcome` values in the original
         dispatch order.  Stored as a tuple (not a list) so the
@@ -367,7 +361,7 @@ def multi_step_dispatch(
       :data:`REASON_OUT_OF_SCOPE` and the missing caps.  Otherwise →
       ``"start"`` with reason :data:`REASON_DISPATCHED`.
 
-    Total-length invariant (Property 17): the returned list always
+    Total-length invariant: the returned list always
     has the same length as ``children``.  No child is silently
     dropped — graceful skip is the only contract.
 
@@ -441,7 +435,7 @@ def multi_step_dispatch(
             continue
 
         # Unknown workflow type — guard the KeyError so the dispatcher
-        # remains total.  This matches Requirement 6.3 graceful skip:
+        # remains total.  This matches graceful skip behavior:
         # the LLM may occasionally produce an unknown workflow type;
         # we record it and move on rather than aborting the whole run.
         if wf_type not in WORKFLOW_TYPE_CAPABILITIES:
@@ -495,8 +489,8 @@ def aggregated_output(
     """Aggregate per-child outcomes into a single :class:`AggregatedOutput`.
 
     Pure function.  Counts ``started`` vs ``skipped`` outcomes and
-    asserts the invariant ``started + skipped == total`` (R6.3,
-    Property 17).  Raises :class:`InvariantViolation` when an outcome
+    asserts the invariant ``started + skipped == total``.  Raises
+    :class:`InvariantViolation` when an outcome
     carries an unrecognised :attr:`ChildOutcome.action` value, since
     the discriminator is the only signal the aggregator has and a
     violation would silently lose a child from the summary.

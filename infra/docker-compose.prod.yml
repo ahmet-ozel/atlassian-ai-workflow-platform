@@ -1,7 +1,7 @@
 # =============================================================================
 # infra/docker-compose.prod.yml — production override
 # =============================================================================
-# Y1 fix (GEREKSINIM_ANALIZI.md): the base compose ships dev-only
+# Production override: the base compose ships dev-only
 # defaults (``POSTGRES_PASSWORD=ai_dev_only``,
 # ``VAULT_DEV_ROOT_TOKEN_ID=dev-token-not-for-prod``,
 # ``AUTH_PROVIDER=local``). This override file:

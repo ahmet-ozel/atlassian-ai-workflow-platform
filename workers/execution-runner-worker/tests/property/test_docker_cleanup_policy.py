@@ -1,18 +1,13 @@
-"""Property tests for Docker cleanup policy correctness.
+"""Docker cleanup policy correctness.
 
-**Property 1: Docker cleanup policy correctness**
-
-**Validates: Requirements 1.6, 1.7**
-
-Per ``.kiro/specs/platform-completion/design.md`` §"Property 1", for any
-combination of cleanup policy ("on_success", "always", "never") and task
-result (success/failure), the Docker_Activity SHALL execute cleanup
+For any combination of cleanup policy ("on_success", "always", "never") and
+task result (success/failure), the Docker_Activity executes cleanup
 (docker rm + docker rmi) if and only if:
 
 - policy is "always", OR
 - policy is "on_success" AND task succeeded.
 
-Otherwise cleanup SHALL be skipped (policy is "never", or policy is
+Otherwise cleanup is skipped (policy is "never", or policy is
 "on_success" and task failed).
 
 The function under test, :func:`_should_perform_cleanup`, is a pure
@@ -62,17 +57,14 @@ _TASK_SUCCEEDED = st.booleans()
 
 
 # ---------------------------------------------------------------------------
-# Property 1: Docker cleanup policy correctness
+# Docker cleanup policy correctness
 # ---------------------------------------------------------------------------
 
 
 @given(task_succeeded=_TASK_SUCCEEDED)
 @settings(max_examples=200, suppress_health_check=[HealthCheck.function_scoped_fixture])
 def test_cleanup_policy_always_performs_cleanup(task_succeeded: bool) -> None:
-    """Policy "always" SHALL trigger cleanup regardless of task outcome.
-
-    **Validates: Requirements 1.7**
-    """
+    """Policy "always" triggers cleanup regardless of task outcome."""
     result = _should_perform_cleanup("always", task_succeeded)
     assert result is True, (
         f"Expected cleanup for policy='always', task_succeeded={task_succeeded}"
@@ -84,10 +76,7 @@ def test_cleanup_policy_always_performs_cleanup(task_succeeded: bool) -> None:
 def test_cleanup_policy_on_success_with_success_performs_cleanup(
     task_succeeded: bool,
 ) -> None:
-    """Policy "on_success" + success → cleanup (rm + rmi).
-
-    **Validates: Requirements 1.6**
-    """
+    """Policy "on_success" + success → cleanup (rm + rmi)."""
     assume(task_succeeded is True)
 
     result = _should_perform_cleanup("on_success", task_succeeded)
@@ -101,10 +90,7 @@ def test_cleanup_policy_on_success_with_success_performs_cleanup(
 def test_cleanup_policy_on_success_with_failure_skips_cleanup(
     task_succeeded: bool,
 ) -> None:
-    """Policy "on_success" + failure → skip cleanup.
-
-    **Validates: Requirements 1.6**
-    """
+    """Policy "on_success" + failure → skip cleanup."""
     assume(task_succeeded is False)
 
     result = _should_perform_cleanup("on_success", task_succeeded)
@@ -116,10 +102,7 @@ def test_cleanup_policy_on_success_with_failure_skips_cleanup(
 @given(task_succeeded=_TASK_SUCCEEDED)
 @settings(max_examples=200, suppress_health_check=[HealthCheck.function_scoped_fixture])
 def test_cleanup_policy_never_skips_cleanup(task_succeeded: bool) -> None:
-    """Policy "never" SHALL skip cleanup regardless of task outcome.
-
-    **Validates: Requirements 1.6, 1.7**
-    """
+    """Policy "never" skips cleanup regardless of task outcome."""
     result = _should_perform_cleanup("never", task_succeeded)
     assert result is False, (
         f"Expected NO cleanup for policy='never', task_succeeded={task_succeeded}"
@@ -131,7 +114,7 @@ def test_cleanup_policy_never_skips_cleanup(task_succeeded: bool) -> None:
 def test_cleanup_policy_complete_truth_table(
     policy: str, task_succeeded: bool
 ) -> None:
-    """For ANY (policy, task_succeeded) pair, cleanup decision matches spec.
+    """For any (policy, task_succeeded) pair, cleanup decision matches the truth table.
 
     The complete truth table:
     - ("always", True)  → True
@@ -143,7 +126,6 @@ def test_cleanup_policy_complete_truth_table(
 
     This is the unified property that covers all combinations.
 
-    **Validates: Requirements 1.6, 1.7**
     """
     result = _should_perform_cleanup(policy, task_succeeded)
 
@@ -156,7 +138,7 @@ def test_cleanup_policy_complete_truth_table(
 
 
 # ---------------------------------------------------------------------------
-# Property 1 (supplementary): build_docker_run_command uses --rm=false
+# Supplementary check: build_docker_run_command uses --rm=false
 # ---------------------------------------------------------------------------
 
 
@@ -165,13 +147,11 @@ def test_cleanup_policy_complete_truth_table(
 def test_docker_run_command_disables_auto_remove(
     policy: str, task_succeeded: bool
 ) -> None:
-    """Docker run command SHALL always include --rm=false.
+    """Docker run command always includes --rm=false.
 
     Cleanup is managed externally by the cleanup policy, so containers
-    must NOT be auto-removed by Docker. This ensures the cleanup activity
+    must not be auto-removed by Docker. This ensures the cleanup activity
     can inspect and remove containers according to the configured policy.
-
-    **Validates: Requirements 1.6, 1.7**
     """
     # Create a minimal DockerRunInput — the policy/task_succeeded don't
     # affect the run command itself, but we vary them to confirm --rm=false

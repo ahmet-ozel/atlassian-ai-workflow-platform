@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     )
     mcp_base_url: str = Field(
         default="http://atlassian-mcp:8090",
-        description="atlassian_unified MCP base URL.",
+        description="atlassian_mcp_bitbucket MCP base URL.",
     )
     firecrawl_base_url: str = Field(
         default="http://firecrawl:3002",
@@ -48,7 +48,7 @@ class Settings(BaseSettings):
     def dependencies_reachable(self) -> bool:
         """Stub readiness probe.
 
-        Always returns ``True`` in the scaffold. Real implementations should
+        Always returns ``True`` in this lightweight implementation. Real implementations should
         probe Postgres, Temporal, the MCP base URL, and any active channel
         adapters and return ``False`` if any required dependency is down.
         """

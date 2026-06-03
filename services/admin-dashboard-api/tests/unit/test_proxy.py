@@ -1,14 +1,12 @@
-"""Unit tests for ``src.proxy.AdminProxy`` (task 8.2).
+"""Unit tests for ``src.proxy.AdminProxy``.
 
-Covers the behaviour matrix from Requirements 3.5, 7.3, 7.5, 7.6 and
-10.6:
+Covers the proxy behaviour matrix:
 
 * Path classification (``classify_admin_path``) maps every documented
   ``/admin/*`` route to the correct ``(required_role, dept_id)``
   shape.
 * RBAC denial returns HTTP 403 + emits a single ``rbac_denied`` audit
-  row carrying ``actor_id`` / ``actor_role`` / ``dept_id`` (Requirement
-  7.7).
+  row carrying ``actor_id`` / ``actor_role`` / ``dept_id``.
 * ``dept_admin`` reaching outside its own ``dept_ids`` is denied; the
   same actor reaching its own dept is allowed.
 * Global actions (``/admin/departments``, ``/admin/probe-artifacts``,
@@ -82,7 +80,7 @@ class _RaisingAuditSink:
     """Audit sink that raises on every write.
 
     Used to verify that audit-write failures do NOT mask the
-    underlying HTTP 403 (Requirement 7.5 fail-soft semantics).
+    underlying HTTP 403 fail-soft semantics.
     """
 
     def __init__(self) -> None:
@@ -173,8 +171,7 @@ class TestClassifyAdminPath:
 
     def test_disable_department_is_admin_only_global(self) -> None:
         # Even though the path carries a dept_id, disabling is a
-        # platform-level lifecycle action — Requirement 7.5 puts it
-        # in the admin-only bucket.
+        # platform-level lifecycle action in the admin-only bucket.
         policy = classify_admin_path(
             "POST", "/admin/departments/payments/disable"
         )
@@ -200,7 +197,7 @@ class TestClassifyAdminPath:
         assert policy == PathPolicy(required_role="admin", dept_id=None)
 
     def test_ssh_runners_is_admin_only(self) -> None:
-        # SSH runner config — Requirement 7.5 explicitly admin-only.
+        # SSH runner config is explicitly admin-only.
         policy = classify_admin_path("POST", "/admin/ssh-runners")
         assert policy == PathPolicy(required_role="admin", dept_id=None)
 
@@ -210,7 +207,7 @@ class TestClassifyAdminPath:
         assert policy == PathPolicy(required_role="admin", dept_id=None)
 
     def test_global_prompt_is_admin_only(self) -> None:
-        # Global prompt change — Requirement 7.5.
+        # Global prompt change is admin-only.
         policy = classify_admin_path("PUT", "/admin/prompts/global")
         assert policy == PathPolicy(required_role="admin", dept_id=None)
 
@@ -280,7 +277,7 @@ class TestSuccessfulForward:
 
     @pytest.mark.asyncio
     async def test_dept_admin_can_rotate_own_credentials(self) -> None:
-        # Requirement 7.6 — self-service rotation.
+        # Self-service rotation.
         def handler(request: httpx.Request) -> httpx.Response:
             return httpx.Response(202, content=b'{"status":"queued"}')
 
@@ -349,11 +346,11 @@ class TestSuccessfulForward:
 
 
 class TestRbacDenial:
-    """Requirements 7.3, 7.5, 7.6 — RBAC enforcement matrix."""
+    """RBAC enforcement matrix."""
 
     @pytest.mark.asyncio
     async def test_dept_admin_cannot_create_new_department(self) -> None:
-        # Requirement 7.5 — global admin actions are admin-only.
+        # Global admin actions are admin-only.
         sink = _ListAuditSink()
         proxy, client, captured = _make_proxy(
             handler=lambda req: httpx.Response(599),
@@ -390,7 +387,7 @@ class TestRbacDenial:
 
     @pytest.mark.asyncio
     async def test_dept_admin_cannot_disable_own_department(self) -> None:
-        # Disabling is admin-only (Requirement 7.5) — even the
+        # Disabling is admin-only — even the
         # dept's own admin cannot retire it.
         sink = _ListAuditSink()
         proxy, client, captured = _make_proxy(
@@ -419,7 +416,7 @@ class TestRbacDenial:
 
     @pytest.mark.asyncio
     async def test_dept_admin_cannot_reach_other_dept(self) -> None:
-        # Requirement 7.3 — dept_admin scoped to own dept_ids.
+        # dept_admin is scoped to own dept_ids.
         sink = _ListAuditSink()
         proxy, client, captured = _make_proxy(
             handler=lambda req: httpx.Response(599),
@@ -490,7 +487,7 @@ class TestRbacDenial:
 
     @pytest.mark.asyncio
     async def test_audit_failure_does_not_mask_403(self) -> None:
-        # Requirement 7.5 — a transient audit-DB outage MUST NOT
+        # A transient audit-DB outage MUST NOT
         # convert the 403 into a 500. Best-effort audit emit.
         sink = _RaisingAuditSink()
         proxy, client, captured = _make_proxy(
@@ -515,7 +512,7 @@ class TestRbacDenial:
 
     @pytest.mark.asyncio
     async def test_global_prompt_change_admin_only(self) -> None:
-        # Requirement 7.5 — global prompt change is admin-only.
+        # Global prompt change is admin-only.
         sink = _ListAuditSink()
         proxy, client, captured = _make_proxy(
             handler=lambda req: httpx.Response(599),

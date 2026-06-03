@@ -1,39 +1,35 @@
 """End-to-end integration test for ``ExecutionRunWorkflow``.
 
-**Validates: Requirements 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.8**
 
 This test exercises the full ``ExecutionRunWorkflow`` lifecycle against
-``WorkflowEnvironment.start_time_skipping()`` with mocked SSH and an
+``WorkflowEnvironment.start_time_skipping`` with mocked SSH and an
 in-memory MinIO substitute (no Docker required). The flow under test:
 
-    vault_fetch_ssh_credentials
-        → ssh_connect_and_run (timeout, retry policy provided by workflow)
-        → minio_upload_artifact × 3 (stdout.log, stderr.log, exit_code.txt)
-        → should_cleanup(policy, exit_code) → ssh_cleanup (if True)
+ vault_fetch_ssh_credentials
+ → ssh_connect_and_run (timeout, retry policy provided by workflow)
+ → minio_upload_artifact × 3 (stdout.log, stderr.log, exit_code.txt)
+ → should_cleanup(policy, exit_code) → ssh_cleanup (if True)
 
 Test scope decision
 -------------------
 
-The spec text for task 15.6 says "mocked SSH and real MinIO". Real MinIO
-requires Docker, which is opt-in and unreliable in some CI lanes. To
-keep the test hermetic and parallel-safe, we replace the MinIO upload
-activity with an in-memory fake that records every artifact key and
-its bytes. This preserves every observable invariant of the workflow:
+The original implementation goal covered mocked SSH with MinIO-backed
+artifacts. Real MinIO requires Docker, which is opt-in and unreliable
+in some CI lanes. To keep the test hermetic and parallel-safe, we
+replace the MinIO upload activity with an in-memory fake that records
+every artifact key and its bytes. This preserves every observable
+invariant of the workflow:
 
 - ``minio_upload_artifact`` is invoked exactly three times with the
-  expected artifact keys (``stdout.log``, ``stderr.log``,
-  ``exit_code.txt``) and content (Requirement 8.3).
+ expected artifact keys (``stdout.log``, ``stderr.log``,
+ ``exit_code.txt``) and content.
 - ``should_cleanup(policy, exit_code)`` truth-table is exercised across
-  the full ``{always, on_success, never} × {0, !=0}`` matrix
-  (Requirements 8.4, 8.5).
+ the full ``{always, on_success, never} × {0, !=0}`` matrix.
 - The workflow returns ``cleanup_performed=True`` only when the truth
-  table predicts cleanup, and ``ssh_cleanup`` is invoked iff cleanup
-  is performed.
+ table predicts cleanup, and ``ssh_cleanup`` is invoked iff cleanup
+ is performed.
 - ``ssh_connect_and_run`` retry policy (3x exponential) is asserted by
-  triggering a transient failure that succeeds on retry — Requirement
-  8.6.
-
-If the project later wants a real-MinIO smoke variant, the same fake
+ triggering a transient failure that succeeds on retry — If the project later wants a real-MinIO smoke variant, the same fake
 keys / contents can be replayed against an ``--run-docker``-gated
 fixture; that variant is out of scope for the deterministic suite.
 
@@ -68,12 +64,12 @@ from tests.integration._worker_path import isolate_worker
 class _FakeMinIO:
     """In-memory MinIO substitute for the integration test.
 
-    Records every uploaded artifact as ``{(bucket, key): bytes}`` and
-    counts the number of upload calls. Each upload returns an
-    :class:`ArtifactRef`-shaped dict — the workflow does not consume
-    the return value beyond the activity-completion signal, so a
-    structural shape is sufficient.
-    """
+ Records every uploaded artifact as ``{(bucket, key): bytes}`` and
+ counts the number of upload calls. Each upload returns an
+ :class:`ArtifactRef`-shaped dict — the workflow does not consume
+ the return value beyond the activity-completion signal, so a
+ structural shape is sufficient.
+ """
 
     def __init__(self) -> None:
         self.objects: dict[tuple[str, str], bytes] = {}
@@ -107,9 +103,9 @@ class _ActivityCallLog:
 
 # (cleanup_policy, exit_code, expected_cleanup, scenario_name)
 # Mirrors the should_cleanup truth table:
-#   always   × any → cleanup
-#   on_success × 0 → cleanup, × !=0 → no cleanup
-#   never    × any → no cleanup
+# always × any → cleanup
+# on_success × 0 → cleanup, × !=0 → no cleanup
+# never × any → no cleanup
 _CLEANUP_MATRIX: list[tuple[str, int, bool, str]] = [
     ("always", 0, True, "always_with_zero_exit"),
     ("always", 7, True, "always_with_nonzero_exit"),
@@ -138,20 +134,18 @@ async def test_execution_run_cleanup_matrix(
     expected_cleanup: bool,
     scenario: str,
 ) -> None:
-    """**Validates: Requirements 8.1, 8.2, 8.3, 8.4, 8.5, 8.8**
+    """Drive ExecutionRunWorkflow across the
+ ``{always, on_success, never} × {0, !=0}`` matrix. Verifies:
 
-    Drives ExecutionRunWorkflow across the
-    ``{always, on_success, never} × {0, !=0}`` matrix. Verifies:
-
-    - vault_fetch_ssh_credentials is called once (Requirement 8.1).
-    - ssh_connect_and_run is called once with the expected command
-      and timeout configuration (Requirements 8.2, 8.8).
-    - minio_upload_artifact is called exactly three times with the
-      expected artifact keys carrying stdout, stderr, and exit_code
-      (Requirement 8.3).
-    - should_cleanup truth-table holds: ssh_cleanup runs iff the policy
-      and exit_code combination predicts cleanup (Requirements 8.4, 8.5).
-    """
+ - vault_fetch_ssh_credentials is called once.
+ - ssh_connect_and_run is called once with the expected command
+ and timeout configuration.
+ - minio_upload_artifact is called exactly three times with the
+ expected artifact keys carrying stdout, stderr, and exit_code
+ artifacts.
+ - should_cleanup truth-table holds: ssh_cleanup runs iff the policy
+ and exit_code combination predicts cleanup.
+ """
 
     log = _ActivityCallLog()
     fake_minio = _FakeMinIO()
@@ -176,7 +170,7 @@ async def test_execution_run_cleanup_matrix(
             log.calls.append(("vault_fetch_ssh_credentials", (wf_id,)))
             # Workflow passes the dict to ssh_connect_and_run as ``cred``.
             # The four required fields mirror SSHCred (host, port, user,
-            # private_key) — Requirement 8.7.
+            # private_key).
             return {
                 "host": "runner.test.invalid",
                 "port": 22,
@@ -251,7 +245,7 @@ async def test_execution_run_cleanup_matrix(
     # ----- Assertions --------------------------------------------------
 
     # The activity-call sequence is exact:
-    #   vault → ssh → upload × 3 → (cleanup?)
+    # vault → ssh → upload × 3 → (cleanup?)
     names = log.names()
     assert names[0] == "vault_fetch_ssh_credentials", names
     assert names[1] == "ssh_connect_and_run", names
@@ -262,14 +256,14 @@ async def test_execution_run_cleanup_matrix(
     # The three uploads come consecutively after ssh_connect_and_run.
     assert upload_indices == [2, 3, 4], f"upload positions: {upload_indices}"
 
-    # Vault was queried with the workflow_id (Requirement 8.1).
+    # Vault was queried with the workflow_id.
     vault_calls = [
         args for n, args in log.calls if n == "vault_fetch_ssh_credentials"
     ]
     assert vault_calls == [(workflow_id,)]
 
     # SSH ran the requested command on the configured workspace path with
-    # the 30-minute timeout (Requirements 8.2, 8.8).
+    # the 30-minute timeout.
     ssh_calls = [args for n, args in log.calls if n == "ssh_connect_and_run"]
     assert len(ssh_calls) == 1
     host_arg, command_arg, ws_arg, timeout_arg = ssh_calls[0]
@@ -279,8 +273,7 @@ async def test_execution_run_cleanup_matrix(
     assert timeout_arg == 30
 
     # MinIO upload keys follow the ``executions/{workflow_id}/{name}``
-    # contract from temporal_shared.identifiers.execution_artifact_key
-    # (Requirement 8.3).
+    # contract from temporal_shared.identifiers.execution_artifact_key.
     expected_stdout_key = f"executions/{workflow_id}/stdout.log"
     expected_stderr_key = f"executions/{workflow_id}/stderr.log"
     expected_exit_code_key = f"executions/{workflow_id}/exit_code.txt"
@@ -313,7 +306,7 @@ async def test_execution_run_cleanup_matrix(
         == str(exit_code).encode("utf-8")
     )
 
-    # Cleanup truth-table (Requirements 8.4, 8.5).
+    # Cleanup truth-table.
     cleanup_invocations = [n for n in names if n == "ssh_cleanup"]
     assert (len(cleanup_invocations) == 1) is expected_cleanup, (
         f"cleanup mismatch for policy={cleanup_policy!r} exit={exit_code}: "
@@ -337,17 +330,15 @@ async def test_execution_run_cleanup_matrix(
 @pytest.mark.asyncio
 @pytest.mark.integration
 async def test_ssh_connect_retries_on_transient_failure() -> None:
-    """**Validates: Requirement 8.6**
+    """The workflow's ssh_connect_and_run activity options carry a
+ ``RetryPolicy(maximum_attempts=3)``. A transient connection failure
+ on the first attempt is followed by success on the second — the
+ workflow must complete cleanly without surfacing the failure.
 
-    The workflow's ssh_connect_and_run activity options carry a
-    ``RetryPolicy(maximum_attempts=3)``. A transient connection failure
-    on the first attempt is followed by success on the second — the
-    workflow must complete cleanly without surfacing the failure.
-
-    This exercises the retry path without requiring a real SSH server:
-    the activity callable counts invocations and raises on the first
-    attempt, then returns a successful run on the second.
-    """
+ This exercises the retry path without requiring a real SSH server:
+ the activity callable counts invocations and raises on the first
+ attempt, then returns a successful run on the second.
+ """
 
     log = _ActivityCallLog()
     fake_minio = _FakeMinIO()

@@ -1,10 +1,10 @@
-"""Unit tests for ``AutomationWorkflow`` (Spec 2 task 2.1).
+"""Unit tests for ``AutomationWorkflow``.
 
 The workflow body is exercised **without** a Temporal worker. Two
 strategies cover the surface area the task ships:
 
 * **AST inspection** — the workflow module obeys the determinism
-  contract (Spec 2 Property 2): no ``datetime.now`` / ``time.time`` /
+  contract: no ``datetime.now`` / ``time.time`` /
   ``random`` / ``uuid`` / ``os.environ`` reads in the workflow body,
   activities referenced by string name only, no import of activity
   modules at module scope.
@@ -20,11 +20,6 @@ The full ``run()`` body lives behind ``workflow.execute_activity`` and
 sandbox to drive — those paths are covered in
 ``tests/property/test_workflow_determinism_replay.py`` (history replay)
 and the integration suite. The tests here stay deterministic and fast.
-
-Validates Requirements: **R1.1** (Temporal workflow yapısı / 3 workflow
-host'u), **R6.1** (10-girişli ``WORKFLOW_TYPE_CAPABILITIES``), **R6.2**
-(workflow type → capability eşleşmesi), **R6.4** (capability gate
-denied davranışı), **R7.9** (``branch_pattern_rules``).
 """
 
 from __future__ import annotations
@@ -85,9 +80,7 @@ from temporal_shared.messages import (  # noqa: E402
 
 
 class TestDeterminismStatic:
-    """Spec 2 Property 2 parity.
-
-    The workflow module body must be replay-safe. Only Temporal-blessed
+    """The workflow module body must be replay-safe. Only Temporal-blessed
     primitives (``workflow.now``, ``workflow.execute_activity``,
     ``workflow.start_child_workflow``, ``workflow.uuid4``) are allowed
     for non-determinism sources; activity callables must never be
@@ -232,7 +225,7 @@ class TestRoutingTables:
         )
 
     def test_branch_aware_set_is_subset_of_agent_runner(self) -> None:
-        # Branch-pattern rules (R7.9) only apply to the code-change /
+        # Branch-pattern rules only apply to the code-change /
         # pr_review group, which is itself a subset of the
         # agent-runner-targeted workflow types.
         assert _BRANCH_AWARE_WORKFLOW_TYPES <= _AGENT_RUNNER_WORKFLOW_TYPES
@@ -641,11 +634,11 @@ class TestStopToOutput:
 
 
 # ===========================================================================
-# 9. needs_info signal handling (platform-gap-fill task 3.1, R4.1–R4.6)
+# 9. needs_info signal handling
 # ===========================================================================
 #
-# Task 3.1 adds a Temporal signal handler + 24h wait_condition to the
-# gateway so a Jira reply can drive a re-analysis of an ambiguous
+# The gateway has a Temporal signal handler + wait_condition so a Jira reply
+# can drive a re-analysis of an ambiguous
 # ``llm_analyze_task`` result.  These tests cover the pure parts of
 # that path:
 #
@@ -674,20 +667,19 @@ class TestNeedsInfoConstants:
     """Lock the timeout / cap values so accidental edits surface."""
 
     def test_signal_name_matches_dispatcher_contract(self) -> None:
-        # The webhook dispatcher emits ``info_received`` (R1.7, R4.2).
+        # The webhook dispatcher emits ``info_received``.
         assert _SIGNAL_INFO_RECEIVED == "info_received"
 
     def test_timeout_is_seven_days(self) -> None:
-        # platform-real-usage-gaps R1.1 — bumped from
-        # ``timedelta(hours=24)`` to ``timedelta(days=7)`` so the
+        # Bumped from ``timedelta(hours=24)`` to ``timedelta(days=7)`` so the
         # parked window matches the Turkish prose in
         # ``_format_needs_info_timeout_comment`` ("7 gün") and the
         # sibling ``agent_runner.SIGNAL_WAIT_TIMEOUT`` constant.
         assert _NEEDS_INFO_TIMEOUT == timedelta(days=7)
 
     def test_max_iterations_is_three(self) -> None:
-        # Mirrors AgentRunnerWorkflow ``needs_info_streak`` cap (Spec 1
-        # R5.6) so operators see consistent behaviour across pathways.
+        # Mirrors AgentRunnerWorkflow ``needs_info_streak`` cap so operators
+        # see consistent behaviour across pathways.
         assert _NEEDS_INFO_MAX_ITERATIONS == 3
 
 
@@ -722,8 +714,7 @@ class TestNeedsInfoFormatters:
 
     def test_timeout_comment_mentions_seven_days_and_stale(self) -> None:
         body = _format_needs_info_timeout_comment()
-        # platform-real-usage-gaps R1.3 — Turkish prose now mentions
-        # "7 gün" (was "24 saat" before the parity bump).
+        # Turkish prose now mentions "7 gün" instead of "24 saat".
         assert "7 gün" in body
         assert "stale" in body
         # Hourglass marker so operators can grep for timeout events.
@@ -894,7 +885,7 @@ class TestWithCommentAppended:
 
 # ===========================================================================
 # 10. Determinism — the new wait_condition + signal additions still obey
-# the replay contract (Property 2).  These tests extend the AST-level
+# the replay contract. These tests extend the AST-level
 # checks at the top of the file with the new activity name and confirm
 # that the only ``wait_condition`` call sits inside the needs_info
 # helper (no top-level random / sleep was added).
@@ -902,7 +893,7 @@ class TestWithCommentAppended:
 
 
 class TestNeedsInfoDeterminism:
-    """Spec 2 Property 2 parity for the needs_info additions."""
+    """Replay-safety checks for the needs_info additions."""
 
     @pytest.fixture(scope="class")
     def module_source(self) -> str:
@@ -912,8 +903,8 @@ class TestNeedsInfoDeterminism:
     def test_jira_transition_issue_referenced_as_string(
         self, module_source: str
     ) -> None:
-        # The needs_info loop calls jira_transition_issue (R4.1 + R4.5)
-        # — like every other activity, it must be referenced by name.
+        # The needs_info loop calls jira_transition_issue; like every other
+        # activity, it must be referenced by name.
         assert (
             '"jira_transition_issue"' in module_source
             or "'jira_transition_issue'" in module_source

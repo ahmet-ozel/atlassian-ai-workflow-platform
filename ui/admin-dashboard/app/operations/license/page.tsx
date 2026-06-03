@@ -1,14 +1,13 @@
 "use client";
 
 /**
- * Operations > License sayfası — platform-mimari-uyumluluk task 16.4 (R16 / Q20).
+ * Operations > License sayfası.
  *
  * `GET /admin/operations/license` endpoint'inden bot license cap verilerini çeker;
  * her license için:
  *   - Bar chart: concurrent / daily / monthly kullanım vs. maksimum.
  *   - 30 günlük trend line chart (GET /admin/operations/license/{id}/trend).
  *
- * Requirements: 16.6
  */
 
 import { useCallback, useEffect, useState } from "react";

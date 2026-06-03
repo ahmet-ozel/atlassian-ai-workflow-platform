@@ -3,7 +3,7 @@
 Shared i18n message catalogs (Turkish + English) and the
 `messages.load(locale)` loader stub. Catalogs live alongside the
 package source in `src/messages/<locale>/messages.json` and are
-empty placeholders in the scaffold; real strings will be added when
+empty placeholders in the project; real strings will be added when
 the corresponding service features are implemented.
 
 ## Standalone build & run

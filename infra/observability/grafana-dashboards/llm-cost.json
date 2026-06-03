@@ -1,7 +1,7 @@
 {
   "title": "LLM Cost",
   "uid": "platform-llm-cost",
-  "tags": ["platform-mimari-ops", "cost", "llm"],
+  "tags": ["platform", "cost", "llm"],
   "timezone": "utc",
   "schemaVersion": 36,
   "version": 1,

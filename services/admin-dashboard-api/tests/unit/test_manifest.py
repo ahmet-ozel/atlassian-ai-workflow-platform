@@ -1,13 +1,10 @@
-"""Unit tests for ``src.manifest`` (task 3.3).
+"""Unit tests for ``src.manifest``.
 
-These tests validate the public surface defined in design §3.2:
-
+These tests validate the public manifest contract:
 * ``ManagedServiceEntry`` is frozen and exposes the seven manifest fields.
 * ``load_manifest`` returns an immutable tuple on a valid manifest.
 * ``ManifestLoadError`` is raised on missing files, malformed JSON, schema
-  violations (Requirement 3.3), and duplicate ``compose_service_name`` values
-  (Requirement 3.6).
-"""
+  violations, and duplicate ``compose_service_name`` values."""
 
 from __future__ import annotations
 
@@ -99,7 +96,7 @@ def test_load_manifest_real_workspace_returns_immutable_tuple() -> None:
     for e in entries:
         assert isinstance(e, ManagedServiceEntry)
 
-    # compose_service_name is unique (Requirement 3.6) — sanity check on the
+    # compose_service_name is unique — sanity check on the
     # repo-shipped manifest as well.
     names = [e.compose_service_name for e in entries]
     assert len(set(names)) == len(names)
@@ -163,7 +160,7 @@ def test_load_manifest_invalid_kind_raises(tmp_path: Path) -> None:
 
 
 def test_load_manifest_duplicate_compose_service_name_raises(tmp_path: Path) -> None:
-    """Requirement 3.6 — duplicate compose_service_name must be rejected."""
+    """"""
 
     dup = {
         "version": 1,

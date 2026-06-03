@@ -1,4 +1,4 @@
-# vps_repo_sync.ps1 - Repo sync: platform/ -> VPS:/opt/yeni_atlassian/platform/
+# vps_repo_sync.ps1 - Repo sync: platform/ -> VPS:/opt/atlassian-ai-workflow-platform/
 # Requirements: R3.1, R3.2, R3.3, R3.4, R3.5, R22.1, R22.3
 #
 # Usage: .\vps_repo_sync.ps1
@@ -15,7 +15,7 @@ $ErrorActionPreference = "Stop"
 
 # --- Configuration ---
 $LOCAL_PLATFORM_DIR = (Resolve-Path "$PSScriptRoot\..").Path
-$REMOTE_PLATFORM_DIR = "/opt/yeni_atlassian/platform/"
+$REMOTE_PLATFORM_DIR = "/opt/atlassian-ai-workflow-platform/"
 $WORKSPACE_ROOT = (Resolve-Path "$PSScriptRoot\..\..").Path
 $EVIDENCE_DIR = Join-Path $WORKSPACE_ROOT "vps-test-evidence"
 $EVIDENCE_FILE = Join-Path $EVIDENCE_DIR "03-sync.txt"
@@ -24,7 +24,7 @@ $EVIDENCE_FILE = Join-Path $EVIDENCE_DIR "03-sync.txt"
 $REQUIRED_REMOTE_FILES = @(
     "infra/docker-compose.yml",
     "Makefile",
-    "services/atlassian_unified/Dockerfile",
+    "services/atlassian_mcp_bitbucket/Dockerfile",
     "config/services.manifest.json"
 )
 
@@ -157,7 +157,7 @@ if ($rsyncAvailable) {
     # For scp, we need to handle the transfer differently on Windows
     # scp -r copies the directory itself, so we transfer platform/* to remote
     Write-Host "[SYNC] scp command: scp $($scpArgs -join ' ')"
-    $transferOutput = & scp -i $SSH_KEY -o "StrictHostKeyChecking=accept-new" -r "${LOCAL_PLATFORM_DIR}" "${VPS}:/opt/yeni_atlassian/" 2>&1 | Out-String
+    $transferOutput = & scp -i $SSH_KEY -o "StrictHostKeyChecking=accept-new" -r "${LOCAL_PLATFORM_DIR}" "${VPS}:/opt/atlassian-ai-workflow-platform/" 2>&1 | Out-String
     $syncExitCode = $LASTEXITCODE
 
     Write-Host "[SYNC] scp exit code: $syncExitCode"

@@ -1,5 +1,5 @@
 -- 008_capability_probes.sql
--- Spec: platform-gap-fill — Task 9.3 (Capability Probe Schema)
+-- Capability probe schema migration.
 --
 -- Adds the table required by the capability probe matrix:
 --   1. shared.capability_probes — Per-department/per-service probe result cache
@@ -12,7 +12,6 @@
 -- Idempotent — uses IF NOT EXISTS guards so re-running on an already-migrated
 -- database is a no-op.
 --
--- Requirements: 10.1
 
 -- =============================================================================
 -- 1. capability_probes — Capability probe results cache

@@ -4,8 +4,7 @@ This module hosts a single **pure** helper function used by the
 ``noop_test_post_result`` activity wired into
 :class:`automation_worker.workflows.automation_workflow.AutomationWorkflow`
 when it awaits a ``noop_test`` :class:`ExecutionRunWorkflow` child
-(see ``platform-mimari-workflows`` requirements.md §R6.8 / design.md
-§"Workflow Type Routing", task 10.4):
+execution:
 
 * :func:`format_noop_result_comment` — composes the Jira-comment body
   reporting the runner's exit code and stdout snippet for a
@@ -35,7 +34,6 @@ Purity contract
 This makes the helper safe to call from anywhere the runtime imposes
 replay determinism (Temporal workflow body, Hypothesis property test,
 activity body).  The matching AST replay-determinism property test
-(``tests/property/test_workflow_determinism_static.py``, task 2.7)
 will fire if a future edit introduces a forbidden import here.
 
 Why a dedicated module?
@@ -49,8 +47,6 @@ pinned wording, the truncation cap, and the requirement reference
 sit together where the unit tests can find them, and a future
 internationalisation effort can swap the literal strings here without
 touching unrelated formatters.
-
-Validates: Requirements 6.8.
 """
 
 from __future__ import annotations
@@ -81,9 +77,7 @@ __all__ = [
 #:
 #: 1024 characters is generous enough to preserve any reasonable
 #: ``echo "ok"``-style smoke output while still keeping the Jira
-#: comment readable on small screens.  Pinned by the user-supplied
-#: task description for task 10.4 ("stdout truncated above 1024 chars
-#: (to keep Jira comments readable)").
+#: comment readable on small screens.
 NOOP_STDOUT_TRUNCATE_CHARS: Final[int] = 1024
 
 #: Marker appended to truncated stdout snippets so a Jira reader knows
@@ -112,7 +106,7 @@ NOOP_EXIT_CODE_UNKNOWN: Final[str] = "n/a"
 
 
 # ---------------------------------------------------------------------------
-# format_noop_result_comment  (Requirement 6.8, task 10.4)
+# format_noop_result_comment
 # ---------------------------------------------------------------------------
 
 

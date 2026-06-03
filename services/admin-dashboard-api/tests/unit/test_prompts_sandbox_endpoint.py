@@ -1,6 +1,6 @@
 """HTTP tests for ``POST /admin/prompts/{path:path}/sandbox-test``.
 
-Covers task 6.2 of ``platform-mimari-ops``:
+Covers the sandbox-test endpoint:
 
 * The endpoint forwards the prompt body + sample input to
   :class:`PromptSandbox` and projects the :class:`SandboxResult`
@@ -9,10 +9,9 @@ Covers task 6.2 of ``platform-mimari-ops``:
   edits) OR ``branch`` (read the body off a draft branch). Supplying
   both / neither is rejected with HTTP 400.
 * The sandbox cost record always carries ``cost_tag="sandbox"`` so
-  ``BudgetCapPolicy`` excludes it from production budget aggregates
-  (Requirement 5.5 / 2.4).
+  ``BudgetCapPolicy`` excludes it from production budget aggregates.
 * Template format violations are rejected with HTTP 422 *before* the
-  LLM is invoked (Requirement 2.9 — fast feedback for the developer).
+  LLM is invoked for fast feedback to the developer.
 * The endpoint is gated by ``require_admin`` like every other
   ``/admin/prompts`` route.
 """
@@ -166,7 +165,7 @@ class _RecordingCostTracker:
 
 # ---------------------------------------------------------------------------
 # Fake asyncpg pool — records the INSERT against ``prompt_sandbox_runs``
-# so task 11.1 can assert the row contents without standing up Postgres.
+# so tests can assert the row contents without standing up Postgres.
 # ---------------------------------------------------------------------------
 
 
@@ -554,7 +553,7 @@ class TestSandboxNotReady:
 
 
 # ---------------------------------------------------------------------------
-# Task 11.1 — sandbox run persistence + audit (Requirement 7.3, 7.5)
+# Sandbox run persistence + audit
 # ---------------------------------------------------------------------------
 
 
@@ -698,7 +697,7 @@ class TestSandboxRunPersistence:
         assert recorded.dept_id is None
         assert recorded.resource == "prompt:prompts/assistant_chat.md"
         assert recorded.result == "ok"
-        # Payload carries exactly the four fields required by task 11.1.
+        # Payload carries exactly the four expected fields.
         assert recorded.payload == {
             "actor_id": "alice",
             "prompt_path": "prompts/assistant_chat.md",

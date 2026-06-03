@@ -116,12 +116,11 @@ CREATE INDEX IF NOT EXISTS idx_work_items_status
     ON automation.work_items (status);
 
 -- =============================================================================
--- Foundation spec additions (R2.10, R7.4, R7.7, R9.5)
--- See: .kiro/specs/platform-mimari-foundation/design.md
+-- Foundation schema additions.
 --      "Postgres şeması (yeni / değişen tablolar)"
 --
 -- This block aligns the existing automation.departments table with the
--- design schema (mirror of departments.json via config_json + RLS) and
+-- target schema (mirror of departments.json via config_json + RLS) and
 -- introduces audit_events and probe_artifacts tables.
 --
 -- Idempotent — safe to run multiple times.
@@ -145,10 +144,10 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 ALTER TABLE automation.departments
     ADD COLUMN IF NOT EXISTS config_json JSONB NOT NULL DEFAULT '{}'::jsonb;
 
--- Replace the legacy mode CHECK constraint with the design enum.
+-- Replace the legacy mode CHECK constraint with the current enum.
 -- Existing rows with legacy modes ('paused','decommissioned') must be migrated
 -- to ('disabled') by a separate data migration; this block only swaps the
--- constraint shape so new writes match the foundation spec.
+-- constraint shape so new writes match the foundation schema.
 ALTER TABLE automation.departments
     DROP CONSTRAINT IF EXISTS chk_departments_mode;
 
@@ -167,7 +166,7 @@ CREATE POLICY dept_isolation ON automation.departments
     );
 
 -- -----------------------------------------------------------------------------
--- 9. audit_events — RBAC audit trail with mandatory actor_role (R7.7)
+-- 9. audit_events - RBAC audit trail with mandatory actor_role
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS automation.audit_events (
     id          BIGSERIAL PRIMARY KEY,
@@ -180,7 +179,7 @@ CREATE TABLE IF NOT EXISTS automation.audit_events (
     payload     JSONB NULL,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-    -- R7.7: actor_role MUST be present and one of the four RBAC roles
+    -- actor_role MUST be present and one of the four RBAC roles
     -- plus the synthetic 'system' role for unattended events.
     CONSTRAINT chk_audit_events_actor_role
         CHECK (actor_role IS NOT NULL
@@ -207,7 +206,7 @@ CREATE POLICY audit_dept_isolation ON automation.audit_events
     );
 
 -- -----------------------------------------------------------------------------
--- 10. probe_artifacts — partial-orphan tracking (R5.3, V6 fallback)
+-- 10. probe_artifacts - partial-orphan tracking for failed probe cleanup
 -- -----------------------------------------------------------------------------
 -- Stores _AI_PROBE_<unix_ts>_DELETE_ME artifacts that the probe runner
 -- could not clean up (e.g. Confluence draft delete failure). Admins manage

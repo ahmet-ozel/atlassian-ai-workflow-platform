@@ -1,27 +1,26 @@
 """Service_Manifest loader for the admin-dashboard-api Control_Plane.
 
-This module is the single entry point used by ``src/main.py`` (and the
-forthcoming :class:`LifecycleService`) to load and validate the
-``config/services.manifest.json`` file produced by task 2.2.
+This module is the single entry point used by ``src/main.py`` and
+:class:`LifecycleService` to load and validate the
+``config/services.manifest.json`` file.
 
-Design references
+Manifest behavior
 -----------------
-* Requirement 3.1 — manifest is the single source of truth for every
+* The manifest is the single source of truth for every
   Managed_Service the Control_Plane orchestrates.
-* Requirement 3.3 — loading must validate against
+* Loading must validate against
   ``config/services.manifest.schema.json`` using JSON Schema 2020-12; on
   failure the readiness probe returns 503.
-* Requirement 3.6 — duplicate ``compose_service_name`` across entries
+* Duplicate ``compose_service_name`` across entries
   must be rejected. JSON Schema 2020-12 does not provide a native
   ``uniqueItemProperties`` keyword, so this check is implemented here as
   a custom Python-side validation step.
-* Design §3.2 — public surface (``ManifestLoadError``,
+* Public surface (``ManifestLoadError``,
   ``ManagedServiceEntry``, ``load_manifest``).
-* platform-mimari-ops Requirements 4.9, 4.10 (task 1.3, Q11, N20, T17)
-  — ``depends_on_services`` and ``feature_flag_dependency`` fields
-  with DFS-based cycle detection over the intra-manifest portion of
-  the dependency graph; external dependency names that do not appear
-  as manifest entries are treated as edge sinks.
+* ``depends_on_services`` and ``feature_flag_dependency`` fields use
+  DFS-based cycle detection over the intra-manifest portion of the
+  dependency graph; external dependency names that do not appear as
+  manifest entries are treated as edge sinks.
 """
 
 from __future__ import annotations
@@ -49,10 +48,9 @@ class ManifestLoadError(RuntimeError):
     The error covers three failure modes:
 
     1. The manifest or schema file is missing or unreadable.
-    2. The JSON payload does not parse, or fails schema validation
-       (Requirement 3.3).
+    2. The JSON payload does not parse, or fails schema validation.
     3. Two entries share the same ``compose_service_name`` value, which
-       JSON Schema cannot express natively (Requirement 3.6).
+       JSON Schema cannot express natively.
     """
 
 
@@ -66,15 +64,14 @@ class ManagedServiceEntry:
     ``HealthProbe``, ...) can hand entries around without worrying about
     accidental mutation.
 
-    ``depends_on_services`` and ``feature_flag_dependency`` were added by
-    platform-mimari-ops task 1.3 (Q11/Q12) and default to empty tuples
-    when the JSON field is absent — the JSON Schema marks them optional
-    with ``default: []``, but consumers always see a tuple here.
+    ``depends_on_services`` and ``feature_flag_dependency`` default to
+    empty tuples when the JSON field is absent — the JSON Schema marks
+    them optional with ``default: []``, but consumers always see a tuple
+    here.
 
-    ``connectivity_probe_command`` was added by platform-mimari-uyumluluk
-    task 1.3 (R9, Q10): an optional subprocess argv string executed by
-    :class:`LifecycleService` at Step 9.5 (after ``_wait_for_healthy``)
-    to dry-run a credential probe. Default ``None`` (no probe).
+    ``connectivity_probe_command`` is an optional subprocess argv string
+    executed by :class:`LifecycleService` after ``_wait_for_healthy`` to
+    dry-run a credential probe. Default ``None`` (no probe).
     """
 
     name: str
@@ -143,9 +140,8 @@ def _check_unique_compose_service_name(services: list[dict]) -> None:
     """Reject manifests that contain duplicate ``compose_service_name`` values.
 
     JSON Schema 2020-12 has no native ``uniqueItemProperties``; this is
-    the Python-side custom check called out by Requirement 3.6 and
-    documented in ``config/services.manifest.schema.json``'s top-level
-    description.
+    the Python-side custom check documented in
+    ``config/services.manifest.schema.json``'s top-level description.
     """
 
     seen: dict[str, int] = {}
@@ -177,18 +173,18 @@ def _check_no_dependency_cycles(services: list[dict]) -> None:
 
     JSON Schema 2020-12 cannot express cross-array constraints, so the
     boot validator and this loader perform DFS-based cycle detection
-    over the intra-manifest portion of the dependency graph
-    (platform-mimari-ops task 1.3, Q11). External dependencies that
-    reference Boot_Bundle / infra components which do not appear as
-    manifest entries (e.g. ``postgres``, ``vault``, ``temporal``,
-    ``atlassian_unified``) are skipped — they cannot participate in a
-    cycle by definition since they are not nodes in this graph.
+    over the intra-manifest portion of the dependency graph. External
+    dependencies that reference Boot_Bundle / infra components which do
+    not appear as manifest entries (e.g. ``postgres``, ``vault``,
+    ``temporal``, ``atlassian_mcp_bitbucket``) are skipped — they cannot
+    participate in a cycle by definition since they are not nodes in this
+    graph.
     """
 
     # Build adjacency over manifest-resident node names only. Edges to
     # unknown names are filtered out: they're external dependencies the
-    # cascade aggregator will treat as raw status lookups (R4.10), not
-    # cycle candidates.
+    # cascade aggregator will treat as raw status lookups, not cycle
+    # candidates.
     names: set[str] = set()
     adjacency: dict[str, list[str]] = {}
     for entry in services:

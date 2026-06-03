@@ -1,7 +1,7 @@
 # firecrawl — Egress-Allowlisted Web Search/Scrape Service
 
 Self-hosted Firecrawl-compatible web scraping/search service with **egress
-allowlist enforcement** (MIMARI §16.14 Y3, Requirement 10.3).
+allowlist enforcement**.
 
 This service is a thin Python/FastAPI wrapper that exposes Firecrawl's HTTP
 surface (`/scrape`, `/search`, `/healthz`, `/health`) and refuses to fetch any
@@ -33,7 +33,7 @@ sensitive third-party service. The wrapper closes this gap deterministically:
 The matching logic lives in
 ``src/firecrawl/egress.py`` and is exercised by both unit tests
 (``tests/unit/test_egress.py``) and the property test
-``platform/tests/property/test_firecrawl_egress.py`` (Property 16, task 12.9).
+``platform/tests/property/test_firecrawl_egress.py``.
 
 ## HTTP API
 
@@ -78,8 +78,8 @@ docker run --rm -p 3002:3002 \
 ## Tests
 
 Unit tests live under ``tests/unit/`` and cover the allowlist matcher and the
-denial path. The property test for Requirement 10.3 lives at
-``platform/tests/property/test_firecrawl_egress.py`` (separate task 12.9).
+denial path. The property test lives at
+``platform/tests/property/test_firecrawl_egress.py``.
 
 ```bash
 pytest services/firecrawl/tests/unit -v

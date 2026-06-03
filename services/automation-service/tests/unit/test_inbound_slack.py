@@ -1,7 +1,5 @@
 """Integration-style tests for ``POST /webhooks/inbound/slack``.
 
-Validates: Requirement 5.10 (Slack/Email-to-task adapter B19, task 8.5).
-
 Exercises the FastAPI route end-to-end using ``TestClient`` plus
 hand-rolled fakes for every collaborator (dept resolver, signature
 verifier, workflow client, audit logger). The tests cover:

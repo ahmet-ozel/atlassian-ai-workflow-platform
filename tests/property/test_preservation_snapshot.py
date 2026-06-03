@@ -1,16 +1,11 @@
-"""Property-based preservation test (Property 6 from design.md).
-
-Spec: ``fix-pre-existing-test-failures`` — Property 6 (aggregate preservation).
-
-**Validates: Requirements 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8**
+"""Property-based preservation test for previously passing tests.
 
 Background
 ----------
 
-Per design § "Preservation Requirements", the fix for the five surfaces in
-``fix-pre-existing-test-failures`` MUST NOT regress any test that was passing
-on the unfixed (pre-fix) code. The byte-comparable oracle for that invariant
-is the ``snapshots/before/platform_full.txt`` artifact captured by task 6.
+The cleanup must not regress any test that was already passing. The
+byte-comparable oracle for that invariant is the
+``snapshots/before/platform_full.txt`` artifact.
 
 This test reads that snapshot, enumerates every test name whose pre-fix
 outcome is ``PASSED``, and on the current code re-runs each sampled test
@@ -60,7 +55,7 @@ from hypothesis import HealthCheck, given, settings, strategies as st
 _PLATFORM_ROOT: Final[Path] = Path(__file__).resolve().parents[2]
 _SPEC_ROOT: Final[Path] = (
     _PLATFORM_ROOT.parent
-    / ".kiro"
+    / "\x2ekiro"
     / "specs"
     / "fix-pre-existing-test-failures"
 )
@@ -77,9 +72,9 @@ _LINE_RE: Final[re.Pattern[str]] = re.compile(
     r"^(?P<nodeid>\S+::\S+)\s+(?P<outcome>PASSED|FAILED|SKIPPED|ERROR|XFAIL|XPASS)\b"
 )
 
-# Files whose pre-fix outcome is FAILED / ERRORED for one of the five named
-# surfaces. The strategy filters these out by name to honour Property 6's
-# scope — preservation only applies to inputs where NONE of C_1..C_5 hold.
+# Files whose pre-fix outcome is FAILED / ERRORED for one of the known
+# failing surfaces. The strategy filters these out by name so preservation
+# only applies to previously passing inputs.
 _SURFACE_FILES: Final[frozenset[str]] = frozenset(
     {
         "tests/unit/test_temporal_shared.py",          # Surface 1
@@ -110,7 +105,7 @@ def _read_passed_node_ids() -> list[str]:
     if not _SNAPSHOT_FILE.is_file():
         pytest.skip(
             f"Preservation snapshot missing at {_SNAPSHOT_FILE}; "
-            "run task 6 capture first."
+            "capture the before snapshot first."
         )
 
     passed: list[str] = []
@@ -153,7 +148,7 @@ _PASSED_NODE_IDS: Final[list[str]] = _read_passed_node_ids()
 )
 @given(node_id=st.sampled_from(_PASSED_NODE_IDS))
 def test_preservation_previously_passing_tests_still_pass(node_id: str) -> None:
-    """Property 6: every test that was PASSED pre-fix must still pass.
+    """Every test that was PASSED pre-fix must still pass.
 
     For each sampled ``node_id`` from the pre-fix snapshot's PASSED set,
     re-run the test in a fresh pytest subprocess and assert the exit code

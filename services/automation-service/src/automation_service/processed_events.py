@@ -1,14 +1,12 @@
-"""Webhook ``delivery_id`` replay-dedup repository (task 3.2).
+"""Webhook ``delivery_id`` replay-dedup repository.
 
 The :class:`ProcessedEventsRepo` is the HTTP-layer idempotency
 ledger for webhook deliveries. It backs the ``replay_dedup`` stage of
 the :class:`automation_service.webhook_filters.WebhookFilterChain`
 and the rollback-on-503 retry path of the
-``signalWithStart`` dispatcher (R2.4).
+``signalWithStart`` dispatcher.
 
-Design contract (design.md → "Postgres şeması — yeni / değişen
-tablolar", ``processed_events`` block; tasks.md task 3.2; design.md
-"Property 18: processed_events idempotent dedup at HTTP layer")::
+Repository contract:
 
     claim(delivery_id, provider) -> bool
         INSERT ... ON CONFLICT DO NOTHING into automation.processed_events.
@@ -21,14 +19,13 @@ tablolar", ``processed_events`` block; tasks.md task 3.2; design.md
         Returns True iff a claim row exists for the given delivery id;
         used by the webhook filter chain's ``replay_dedup`` callback.
 
-Rollback contract (R2.4): when ``signalWithStart`` fails with HTTP
+Rollback contract: when ``signalWithStart`` fails with HTTP
 503 (Temporal cluster unavailable), the surrounding webhook handler
 SHALL roll back the ``processed_events`` row so the webhook provider's
 retry can re-claim the same ``delivery_id``. The repo does NOT own
 the rollback transaction itself — it exposes the explicit
 :meth:`release` helper which the handler calls inside its except
-block. Tests cover the ``claim → release → claim`` round-trip as
-part of Property 18.
+block. Tests cover the ``claim → release → claim`` round-trip.
 
 Schema reference: ``platform/infra/postgres/11_workflows.sql`` block
 1 (``automation.processed_events``):
@@ -43,7 +40,6 @@ emission, the burst-debounce window, and the ``signalWithStart``
 dispatch itself are all the webhook handler's responsibility and
 consume this repo through its narrow boolean contract.
 
-Validates: Requirements 1.8, 2.4, 2.5, 2.6.
 """
 
 from __future__ import annotations
@@ -61,14 +57,14 @@ _LOG = logging.getLogger(__name__)
 # ``provider`` mirrors the SQL CHECK constraint. Keeping it as a Literal
 # lets static type checkers reject unknown providers at the call site
 # before the database raises a constraint violation. The set is closed
-# by design (R3.1: gateway exposes exactly two webhook endpoints).
+# by design: the gateway exposes exactly two webhook endpoints.
 Provider = Literal["jira", "bitbucket"]
 
 
 # Single-source SQL strings — held at module scope so contract tests
 # can assert on the exact statement shape (the ``ON CONFLICT DO NOTHING``
 # clause IS the idempotency contract; mutating it without updating the
-# Property 18 invariants would be a silent regression on R1.8 / R2.5).
+# idempotency invariants would be a silent regression.
 _CLAIM_SQL: Final[str] = """
 INSERT INTO automation.processed_events
     (delivery_id, provider)
@@ -116,7 +112,7 @@ class ProcessedEventsRepo:
     with ``ON CONFLICT DO NOTHING`` makes :meth:`claim` linearisable
     against concurrent callers. At most one caller observes ``True``
     for any given ``delivery_id``; every other caller observes
-    ``False``. Property 18 (a) covers this invariant under
+    ``False``. State-machine tests cover this invariant under
     ``RuleBasedStateMachine`` exercise.
     """
 
@@ -196,7 +192,7 @@ class ProcessedEventsRepo:
         """Check whether a ``delivery_id`` has been claimed.
 
         Used by the webhook filter chain's ``replay_dedup`` stage as a
-        read-only predicate. Property 18 (b) requires that every
+        read-only predicate. The contract requires that every
         successful :meth:`claim` is observable through this method
         for the lifetime of the row.
 
@@ -214,7 +210,7 @@ class ProcessedEventsRepo:
         return row is not None
 
     async def release(self, delivery_id: str) -> bool:
-        """Roll back a previously-claimed ``delivery_id`` (R2.4).
+        """Roll back a previously-claimed ``delivery_id``.
 
         Called from the webhook handler's exception path when
         ``signalWithStart`` fails with HTTP 503 (Temporal cluster
@@ -225,7 +221,7 @@ class ProcessedEventsRepo:
 
         The operation is itself idempotent — releasing a
         ``delivery_id`` that was already released (or never claimed)
-        is a no-op and returns ``False``. Property 18 (c) covers the
+        is a no-op and returns ``False``. Tests cover the
         round-trip ``claim → release → claim → True`` invariant.
 
         Args:

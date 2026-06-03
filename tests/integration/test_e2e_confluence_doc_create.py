@@ -1,6 +1,5 @@
 """End-to-end integration test for the ``confluence_doc_create`` workflow.
 
-**Validates: Requirements 8.1, 8.2, 8.6**
 
 Scenario
 --------
@@ -13,46 +12,46 @@ Temporal cluster. The body is the one defined in
 
 1. ``set_assignee_to_bot`` — claim the Jira issue.
 2. ``jira_build_issue_link`` — resolve the canonical Jira URL so the
-   provenance footer can deep-link back to the originating task
-   (R8.6).
+ provenance footer can deep-link back to the originating task
+ .
 3. ``llm_generate_doc`` — token-capped LLM call that returns the page
-   body.
+ body.
 4. ``confluence_create_page`` — the body + provenance footer are
-   appended together and written through the activity layer (R8.1).
-5. ``jira_add_comment`` — best-effort completion comment (R8.6 audit
-   trail).
+ appended together and written through the activity layer .
+5. ``jira_add_comment`` — best-effort completion comment ( audit
+ trail).
 
 The integration tests drive the workflow with stub
 ``@activity.defn``-registered activities, capture every call in an
 :class:`ActivityCallLog`, and assert:
 
-* **Happy path (R8.1, R8.6)** — exactly one
-  ``confluence_create_page`` call whose body contains the verbatim
-  Jira issue link returned by ``jira_build_issue_link`` (the
-  provenance footer marker), terminal status ``"completed"``, and
-  ``get_latest_confluence_page_id``-equivalent surface (the
-  workflow's ``_latest_confluence_page_id`` field — round-tripped
-  through :class:`AgentRunnerWorkflowOutput.confluence_page_id`)
-  matches the stub page id.
+* **Happy path** — exactly one
+ ``confluence_create_page`` call whose body contains the verbatim
+ Jira issue link returned by ``jira_build_issue_link`` (the
+ provenance footer marker), terminal status ``"completed"``, and
+ ``get_latest_confluence_page_id``-equivalent surface (the
+ workflow's ``_latest_confluence_page_id`` field — round-tripped
+ through :class:`AgentRunnerWorkflowOutput.confluence_page_id`)
+ matches the stub page id.
 
-* **Invalid topic (R8.1)** — the workflow rejects topics with
-  control / XML-reserved characters with
-  ``failure_reason="confluence_title_invalid"`` (the
-  :func:`format_page_title` validation contract).
+* **Invalid topic ** — the workflow rejects topics with
+ control / XML-reserved characters with
+ ``failure_reason="confluence_title_invalid"`` (the
+ :func:`format_page_title` validation contract).
 
 The section-level dedup invariant for ``confluence_doc_update``
-(R8.2) is exercised exhaustively by the property suite under
-``platform/tests/property/test_confluence_invariants.py`` (task 8.5);
+ is exercised exhaustively by the property suite under
+``platform/tests/property/test_confluence_invariants.py``;
 the integration layer here intentionally focuses on the create-flow
 happy path so we do not couple the integration suite to two
-workflow types in one file. The companion task
+workflow types in one file. The companion test
 ``test_e2e_confluence_doc_update.py`` (when added) extends the
 coverage with a stateful update scenario.
 
 Skip gate
 ---------
 
-Mirrors the spec-extension pattern in
+Mirrors the existing integration-test pattern in
 ``test_temporal_signal.py``: when the embedded
 ``temporal-test-server`` binary cannot start (sandboxed CI, missing
 native deps, …) the tests ``pytest.skip`` cleanly so the integration
@@ -103,14 +102,14 @@ for _candidate in (
 def _temporal_env_available() -> bool:
     """Return ``True`` when the Temporal time-skipping env imports cleanly.
 
-    The module-level ``pytest.mark.skipif`` backed by this predicate
-    is applied to every test so hosts that cannot resolve the
-    ``temporalio.testing`` sub-module skip cleanly at collection
-    time. The runtime variant
-    :func:`_start_time_skipping_or_skip` covers the case where the
-    import succeeds but the embedded Temporal test server fails to
-    start.
-    """
+ The module-level ``pytest.mark.skipif`` backed by this predicate
+ is applied to every test so hosts that cannot resolve the
+ ``temporalio.testing`` sub-module skip cleanly at collection
+ time. The runtime variant
+ :func:`_start_time_skipping_or_skip` covers the case where the
+ import succeeds but the embedded Temporal test server fails to
+ start.
+ """
 
     try:
         from temporalio.testing import WorkflowEnvironment  # noqa: F401
@@ -129,11 +128,11 @@ _TEMPORAL_SKIP = pytest.mark.skipif(
 async def _start_time_skipping_or_skip() -> Any:
     """Start the Temporal time-skipping env, ``pytest.skip``ing on failure.
 
-    The embedded ``temporal-test-server`` may fail to start on hosts
-    where the binary is not bundled. Surface that cleanly as a skip
-    so the integration suite stays green on hosts that cannot host
-    Temporal locally.
-    """
+ The embedded ``temporal-test-server`` may fail to start on hosts
+ where the binary is not bundled. Surface that cleanly as a skip
+ so the integration suite stays green on hosts that cannot host
+ Temporal locally.
+ """
 
     from temporalio.testing import WorkflowEnvironment
 
@@ -154,11 +153,11 @@ async def _start_time_skipping_or_skip() -> Any:
 class ActivityCallLog:
     """Append-only log of activity invocations recorded by the stubs.
 
-    Each entry is a ``(name, args, kwargs)`` tuple appended in call
-    order. Tests inspect ``.count(name)`` for cardinality assertions
-    and ``.args_for(name)`` for payload assertions (the provenance
-    footer body, the page title, etc.).
-    """
+ Each entry is a ``(name, args, kwargs)`` tuple appended in call
+ order. Tests inspect ``.count(name)`` for cardinality assertions
+ and ``.args_for(name)`` for payload assertions (the provenance
+ footer body, the page title, etc.).
+ """
 
     calls: list[tuple[str, tuple[Any, ...], dict[str, Any]]] = field(
         default_factory=list
@@ -207,27 +206,27 @@ _STUB_LLM_BODY: str = (
 def _make_activities(log: ActivityCallLog) -> list[Any]:
     """Build the stub activity bag the ``confluence_doc_create`` body needs.
 
-    Activities registered:
+ Activities registered:
 
-    * ``set_assignee_to_bot`` — claim step (no return value).
-    * ``jira_build_issue_link`` — returns :data:`_STUB_JIRA_LINK`
-      (HTTPS URL pointing at a synthetic Jira issue) so the
-      provenance footer renders against a known link string.
-    * ``llm_generate_doc`` — returns ``{"body": _STUB_LLM_BODY}``
-      so the workflow's body extractor lifts the body verbatim.
-    * ``confluence_create_page`` — returns the
-      ``{"page_id", "url"}`` shape the workflow's extractor
-      consumes.
-    * ``jira_add_comment`` — best-effort completion comment
-      (recorded but otherwise a no-op).
-    * ``audit_emit`` — best-effort audit row sink. The
-      ``confluence_doc_create`` body itself does not emit audits
-      directly, but the iter==3 banner / token-cap branches do, so
-      registering the activity keeps the worker bootstrap forgiving.
+ * ``set_assignee_to_bot`` — claim step (no return value).
+ * ``jira_build_issue_link`` — returns :data:`_STUB_JIRA_LINK`
+ (HTTPS URL pointing at a synthetic Jira issue) so the
+ provenance footer renders against a known link string.
+ * ``llm_generate_doc`` — returns ``{"body": _STUB_LLM_BODY}``
+ so the workflow's body extractor lifts the body verbatim.
+ * ``confluence_create_page`` — returns the
+ ``{"page_id", "url"}`` shape the workflow's extractor
+ consumes.
+ * ``jira_add_comment`` — best-effort completion comment
+ (recorded but otherwise a no-op).
+ * ``audit_emit`` — best-effort audit row sink. The
+ ``confluence_doc_create`` body itself does not emit audits
+ directly, but the iter==3 banner / token-cap branches do, so
+ registering the activity keeps the worker bootstrap forgiving.
 
-    Every wrapper records the call in ``log`` so the assertions can
-    inspect call counts and payload shapes.
-    """
+ Every wrapper records the call in ``log`` so the assertions can
+ inspect call counts and payload shapes.
+ """
 
     from temporalio import activity
 
@@ -289,16 +288,16 @@ def _make_input(
 ) -> Any:
     """Build a minimal :class:`AgentRunnerWorkflowInput` for create-flow tests.
 
-    ``workflow_type="confluence_doc_create"`` routes the body to
-    :meth:`AgentRunnerWorkflow._handle_confluence_doc_create`. The
-    ``analysis.title`` is the page topic embedded in the page title;
-    callers override it to drive the invalid-topic branch.
+ ``workflow_type="confluence_doc_create"`` routes the body to
+ :meth:`AgentRunnerWorkflow._handle_confluence_doc_create`. The
+ ``analysis.title`` is the page topic embedded in the page title;
+ callers override it to drive the invalid-topic branch.
 
-    ``iteration=1`` keeps the iter==3 banner edge silent so the
-    ``jira_add_comment`` count in the happy-path assertion only
-    reflects the completion comment posted at the end of the
-    create-flow body.
-    """
+ ``iteration=1`` keeps the iter==3 banner edge silent so the
+ ``jira_add_comment`` count in the happy-path assertion only
+ reflects the completion comment posted at the end of the
+ create-flow body.
+ """
 
     from temporal_shared.messages import (
         AgentRunnerWorkflowInput,
@@ -354,7 +353,6 @@ def _output_to_dict(result: Any) -> dict[str, Any]:
 
 # ---------------------------------------------------------------------------
 # 1. Happy path — provenance footer attached, status="completed"
-#    (R8.1, R8.6)
 # ---------------------------------------------------------------------------
 
 
@@ -362,28 +360,26 @@ def _output_to_dict(result: Any) -> dict[str, Any]:
 @pytest.mark.integration
 @_TEMPORAL_SKIP
 async def test_confluence_doc_create_happy_path_includes_provenance_footer() -> None:
-    """**Validates: Requirements 8.1, 8.6**
+    """Drive ``confluence_doc_create`` end-to-end:
 
-    Drive ``confluence_doc_create`` end-to-end:
-
-    1. ``set_assignee_to_bot`` is called once (claim step).
-    2. ``jira_build_issue_link`` is called once and returns
-       :data:`_STUB_JIRA_LINK`.
-    3. ``llm_generate_doc`` is called once and returns
-       ``{"body": _STUB_LLM_BODY}``.
-    4. ``confluence_create_page`` is called exactly once. Its body
-       argument is the LLM body **plus** a provenance footer that
-       embeds :data:`_STUB_JIRA_LINK` verbatim — the marker the R8.6
-       audit grep relies on.
-    5. The terminal :class:`AgentRunnerWorkflowOutput` reports
-       ``status="completed"``, ``failure_reason is None``, and
-       ``confluence_page_id == _STUB_PAGE_ID`` — confirming the
-       workflow's ``_latest_confluence_page_id`` field round-tripped
-       through the output dataclass (the test's stand-in for the
-       ``get_latest_confluence_page_id`` query mentioned in the
-       brief; the workflow exposes the value via the output instead
-       of a dedicated query, so we assert against the output here).
-    """
+ 1. ``set_assignee_to_bot`` is called once (claim step).
+ 2. ``jira_build_issue_link`` is called once and returns
+ :data:`_STUB_JIRA_LINK`.
+ 3. ``llm_generate_doc`` is called once and returns
+ ``{"body": _STUB_LLM_BODY}``.
+ 4. ``confluence_create_page`` is called exactly once. Its body
+ argument is the LLM body **plus** a provenance footer that
+ embeds :data:`_STUB_JIRA_LINK` verbatim — the marker the 
+ audit grep relies on.
+ 5. The terminal :class:`AgentRunnerWorkflowOutput` reports
+ ``status="completed"``, ``failure_reason is None``, and
+ ``confluence_page_id == _STUB_PAGE_ID`` — confirming the
+ workflow's ``_latest_confluence_page_id`` field round-tripped
+ through the output dataclass (the test's stand-in for the
+ ``get_latest_confluence_page_id`` query mentioned in the
+ workflow behavior; the value is exposed via the output instead
+ of a dedicated query, so we assert against the output here).
+ """
 
     from temporalio.worker import Worker
 
@@ -437,7 +433,7 @@ async def test_confluence_doc_create_happy_path_includes_provenance_footer() -> 
         f"(call log: {log.names()!r})"
     )
 
-    # 2. Provenance footer (R8.6) — the body arg of
+    # 2. Provenance footer — the body arg of
     # confluence_create_page must contain the Jira link verbatim.
     create_args = log.args_for("confluence_create_page")[0]
     # Activity signature: (target_space, page_title, page_body, dept_id)
@@ -456,7 +452,7 @@ async def test_confluence_doc_create_happy_path_includes_provenance_footer() -> 
     assert isinstance(page_body_arg, str)
     assert _STUB_JIRA_LINK in page_body_arg, (
         "provenance footer must embed the Jira link verbatim "
-        f"(R8.6); body did not contain {_STUB_JIRA_LINK!r}: "
+        f"; body did not contain {_STUB_JIRA_LINK!r}: "
         f"{page_body_arg!r}"
     )
     # The collapsible <details> wrapper from
@@ -472,11 +468,11 @@ async def test_confluence_doc_create_happy_path_includes_provenance_footer() -> 
         f"LLM body must be preserved verbatim; got {page_body_arg!r}"
     )
 
-    # 3. Page title format — ``{topic} - {YYYY-MM-DD}`` (R8.1).
+    # 3. Page title format — ``{topic} - {YYYY-MM-DD}`` .
     assert isinstance(page_title_arg, str)
     assert page_title_arg.startswith("KVKK Yönetmelik Analizi - "), (
         f"page title must follow the '{{topic}} - {{date}}' format "
-        f"(R8.1); got {page_title_arg!r}"
+        f"; got {page_title_arg!r}"
     )
 
     # 4. Terminal output — completed + page id surfaces correctly.
@@ -493,7 +489,7 @@ async def test_confluence_doc_create_happy_path_includes_provenance_footer() -> 
 
 
 # ---------------------------------------------------------------------------
-# 2. Invalid topic — failure_reason="confluence_title_invalid" (R8.1)
+# 2. Invalid topic — failure_reason="confluence_title_invalid" 
 # ---------------------------------------------------------------------------
 
 
@@ -501,34 +497,32 @@ async def test_confluence_doc_create_happy_path_includes_provenance_footer() -> 
 @pytest.mark.integration
 @_TEMPORAL_SKIP
 async def test_confluence_doc_create_with_invalid_topic_fails() -> None:
-    """**Validates: Requirements 8.1**
+    """The :func:`temporal_shared.confluence.format_page_title` validator
+ rejects topics that contain control characters or XML-reserved
+ characters (``<``, ``>``, ``&``, ``"``). When the LLM emits a
+ structurally invalid title the workflow body must surface this
+ cleanly with ``failure_reason="confluence_title_invalid"`` rather
+ than leaking a raw ``InvalidTopicError`` to the terminal output —
+ the failure category is the audit-stable name the rest of the
+ platform (audit table, ops dashboards) keys off of.
 
-    The :func:`temporal_shared.confluence.format_page_title` validator
-    rejects topics that contain control characters or XML-reserved
-    characters (``<``, ``>``, ``&``, ``"``).  When the LLM emits a
-    structurally invalid title the workflow body must surface this
-    cleanly with ``failure_reason="confluence_title_invalid"`` rather
-    than leaking a raw ``InvalidTopicError`` to the terminal output —
-    the failure category is the audit-stable name the rest of the
-    platform (audit table, ops dashboards) keys off of.
+ Note on test fixture choice
+ ---------------------------
 
-    Note on test fixture choice
-    ---------------------------
-
-    The original task brief suggested *"set analysis.title to empty
-    string"* to drive this branch.  That alone does not trigger the
-    failure: the workflow body falls back to ``inp.issue_key`` when
-    ``analysis.title`` is empty (see
-    :meth:`AgentRunnerWorkflow._handle_confluence_doc_create`), so a
-    blank title produces a valid topic from the issue key.  To
-    genuinely trigger :class:`InvalidTopicError` we pass a topic
-    containing a forbidden ``<`` character, which is the smallest
-    perturbation that exercises the
-    ``confluence_title_invalid`` branch end-to-end through a real
-    Temporal cluster.  This deviation is documented in the test
-    body so a future reader does not "fix" it back to an empty
-    string.
-    """
+ The original test note suggested *"set analysis.title to empty
+ string"* to drive this branch. That alone does not trigger the
+ failure: the workflow body falls back to ``inp.issue_key`` when
+ ``analysis.title`` is empty (see
+ :meth:`AgentRunnerWorkflow._handle_confluence_doc_create`), so a
+ blank title produces a valid topic from the issue key. To
+ genuinely trigger :class:`InvalidTopicError` we pass a topic
+ containing a forbidden ``<`` character, which is the smallest
+ perturbation that exercises the
+ ``confluence_title_invalid`` branch end-to-end through a real
+ Temporal cluster. This deviation is documented in the test
+ body so a future reader does not change it back to an empty
+ string.
+ """
 
     from temporalio.worker import Worker
 
@@ -604,11 +598,10 @@ async def test_confluence_doc_create_with_invalid_topic_fails() -> None:
 
 # ---------------------------------------------------------------------------
 # 3. confluence_doc_update — section hash dedup skips repeated content
-#    (R8.2)
 # ---------------------------------------------------------------------------
 #
-# The full property-based coverage for R8.2 lives at
-# ``platform/tests/property/test_confluence_invariants.py`` (task 8.5).
+# The full property-based coverage for lives at
+# ``platform/tests/property/test_confluence_invariants.py``.
 # The integration check here is intentionally narrow: it confirms the
 # end-to-end wiring of the dedup logic when two sections in a single
 # ``confluence_doc_update`` run carry identical ``content_hash``
@@ -634,11 +627,11 @@ def _make_update_input(
 ) -> Any:
     """Build an ``AgentRunnerWorkflowInput`` for the update flow.
 
-    ``workflow_type="confluence_doc_update"`` routes the body to
-    :meth:`AgentRunnerWorkflow._handle_confluence_doc_update`.
-    ``analysis.target_page_id`` is required by the body; without it
-    the workflow returns ``failure_reason="confluence_page_id_missing"``.
-    """
+ ``workflow_type="confluence_doc_update"`` routes the body to
+ :meth:`AgentRunnerWorkflow._handle_confluence_doc_update`.
+ ``analysis.target_page_id`` is required by the body; without it
+ the workflow returns ``failure_reason="confluence_page_id_missing"``.
+ """
 
     from temporal_shared.messages import (
         AgentRunnerWorkflowInput,
@@ -672,20 +665,20 @@ def _make_update_activities(
 ) -> list[Any]:
     """Build the activity bag the ``confluence_doc_update`` body needs.
 
-    Activities registered (in addition to the ones already covered
-    by :func:`_make_activities`):
+ Activities registered (in addition to the ones already covered
+ by :func:`_make_activities`):
 
-    * ``confluence_get_page`` — returns the page metadata + the
-      caller-supplied list of sections (each with a precomputed
-      ``content_hash`` so the workflow does not have to recompute,
-      and the test can stage two sections with identical hashes).
-      ``last_editor_account_id`` is set to a synthetic non-bot
-      account but ``last_edit_at`` is left ``None`` so the
-      overwrite-protection branch falls through to the proceed
-      decision (no recent edit).
-    * ``confluence_update_page`` — recorded so the test can count
-      invocations.
-    """
+ * ``confluence_get_page`` — returns the page metadata + the
+ caller-supplied list of sections (each with a precomputed
+ ``content_hash`` so the workflow does not have to recompute,
+ and the test can stage two sections with identical hashes).
+ ``last_editor_account_id`` is set to a synthetic non-bot
+ account but ``last_edit_at`` is left ``None`` so the
+ overwrite-protection branch falls through to the proceed
+ decision (no recent edit).
+ * ``confluence_update_page`` — recorded so the test can count
+ invocations.
+ """
 
     from temporalio import activity
 
@@ -741,57 +734,55 @@ def _make_update_activities(
 @pytest.mark.integration
 @_TEMPORAL_SKIP
 async def test_confluence_doc_update_dedup_skips_seen_section() -> None:
-    """**Validates: Requirements 8.2**
+    """Drive ``confluence_doc_update`` against a page whose
+ ``confluence_get_page`` activity returns two sections carrying
+ the **same** ``content_hash`` value. The workflow body adds the
+ hash of the first section to ``_confluence_section_hashes``
+ after the first ``confluence_update_page`` succeeds; when the
+ body iterates to the second section the
+ :func:`temporal_shared.confluence_dedup.should_skip_section_update`
+ predicate sees the four-tuple
+ ``(workflow_id, page_id, section_path_2, shared_hash)`` —
+ Wait: the section_path is part of the dedup key, so two
+ sections with different paths but identical hashes are
+ technically not collisions per the four-tuple contract.
 
-    Drive ``confluence_doc_update`` against a page whose
-    ``confluence_get_page`` activity returns two sections carrying
-    the **same** ``content_hash`` value. The workflow body adds the
-    hash of the first section to ``_confluence_section_hashes``
-    after the first ``confluence_update_page`` succeeds; when the
-    body iterates to the second section the
-    :func:`temporal_shared.confluence_dedup.should_skip_section_update`
-    predicate sees the four-tuple
-    ``(workflow_id, page_id, section_path_2, shared_hash)`` —
-    Wait: the section_path is part of the dedup key, so two
-    sections with different paths but identical hashes are
-    technically not collisions per the four-tuple contract.
+ To exercise the dedup path end-to-end with a single workflow
+ run we therefore stage **two sections that share both
+ ``section_path`` AND ``content_hash``** (the same
+ section listed twice — a degenerate but valid input the
+ activity layer can produce when the page tree contains a
+ repeated section). The first occurrence updates the page; the
+ second occurrence hits the workflow's in-memory hash set and
+ is skipped via the
+ :data:`temporal_shared.confluence_dedup.AUDIT_CONFLUENCE_SECTION_DEDUP_SKIP`
+ audit row.
 
-    To exercise the dedup path end-to-end with a single workflow
-    run we therefore stage **two sections that share both
-    ``section_path`` AND ``content_hash``** (the same
-    section listed twice — a degenerate but valid input the
-    activity layer can produce when the page tree contains a
-    repeated section). The first occurrence updates the page; the
-    second occurrence hits the workflow's in-memory hash set and
-    is skipped via the
-    :data:`temporal_shared.confluence_dedup.AUDIT_CONFLUENCE_SECTION_DEDUP_SKIP`
-    audit row.
+ Assertions:
 
-    Assertions:
+ * ``confluence_update_page`` is called exactly **once** despite
+ two sections being returned by ``confluence_get_page``.
+ * The workflow's
+ :meth:`AgentRunnerWorkflow.get_confluence_section_hashes`
+ query reports the single hash (sorted, deduplicated tuple).
+ * Terminal status is ``"completed"``.
+ * The :data:`AUDIT_CONFLUENCE_SECTION_DEDUP_SKIP` audit row
+ was emitted at least once for the skipped section.
 
-    * ``confluence_update_page`` is called exactly **once** despite
-      two sections being returned by ``confluence_get_page``.
-    * The workflow's
-      :meth:`AgentRunnerWorkflow.get_confluence_section_hashes`
-      query reports the single hash (sorted, deduplicated tuple).
-    * Terminal status is ``"completed"``.
-    * The :data:`AUDIT_CONFLUENCE_SECTION_DEDUP_SKIP` audit row
-      was emitted at least once for the skipped section.
+ Single-run versus multi-run dedup
+ ---------------------------------
 
-    Single-run versus multi-run dedup
-    ---------------------------------
-
-    The brief mentions a "second iteration" pattern where a fresh
-    workflow rerun observes the prior run's hashes. That scenario
-    cannot be tested without persisting the hash set across
-    workflow runs (today the set is per-instance state). The
-    multi-run invariant is exercised by the property test at
-    ``platform/tests/property/test_confluence_invariants.py``
-    (task 8.5) which generates the hash table directly. This
-    integration test is the single-run end-to-end pin: it
-    confirms the production dedup wiring fires on a real Temporal
-    cluster.
-    """
+ The workflow can also be re-entered in a pattern where a fresh
+ workflow rerun observes the prior run's hashes. That scenario
+ cannot be tested without persisting the hash set across
+ workflow runs (today the set is per-instance state). The
+ multi-run invariant is exercised by the property test at
+ ``platform/tests/property/test_confluence_invariants.py``
+ which generates the hash table directly. This
+ integration test is the single-run end-to-end pin: it
+ confirms the production dedup wiring fires on a real Temporal
+ cluster.
+ """
 
     from temporalio.worker import Worker
 
@@ -880,7 +871,7 @@ async def test_confluence_doc_update_dedup_skips_seen_section() -> None:
     )
     assert dedup_action_seen, (
         "confluence_section_dedup_skip audit row must fire for the "
-        f"skipped section (R8.2); audit calls: "
+        f"skipped section; audit calls: "
         f"{log.args_for('audit_emit')!r}"
     )
 

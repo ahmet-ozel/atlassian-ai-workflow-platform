@@ -10,7 +10,6 @@
  * these tests validate the component's decision logic by simulating the
  * fetch response and verifying expected behavior.
  *
- * Requirements: 9.1, 9.2, 9.3
  */
 
 import { describe, it } from "node:test";
@@ -39,7 +38,7 @@ function shouldShowBanner(fetchState, activeRunners) {
 
 /**
  * Returns the banner text content when the banner is visible.
- * Matches the exact text from the component (Requirement 9.2).
+ * Matches the exact text from the component.
  */
 function getBannerText() {
   return "Tek SSH runner = Single Point of Failure. En az 2 active runner önerilir.";
@@ -84,10 +83,10 @@ function simulateFetchRunners({ responseOk = true, responseData = null, throwErr
 }
 
 // ---------------------------------------------------------------------------
-// Tests: Banner Visibility Based on Runner Count (Requirements 9.1, 9.3)
+// Tests: Banner Visibility Based on Runner Count
 // ---------------------------------------------------------------------------
 
-describe("RunnerWarningBanner — Banner Visibility (Requirements 9.1, 9.3)", () => {
+describe("RunnerWarningBanner — Banner Visibility", () => {
   it("shows banner when active_runners is 0", () => {
     const { fetchState, activeRunners } = simulateFetchRunners({
       responseOk: true,
@@ -140,10 +139,10 @@ describe("RunnerWarningBanner — Banner Visibility (Requirements 9.1, 9.3)", ()
 });
 
 // ---------------------------------------------------------------------------
-// Tests: Banner Text Content (Requirement 9.2)
+// Tests: Banner Text Content
 // ---------------------------------------------------------------------------
 
-describe("RunnerWarningBanner — Banner Text Content (Requirement 9.2)", () => {
+describe("RunnerWarningBanner — Banner Text Content", () => {
   it("displays the correct warning text in Turkish", () => {
     const text = getBannerText();
     assert.equal(

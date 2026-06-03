@@ -1,9 +1,7 @@
 """Unit tests for platform/scripts/vps_report_generator.py.
 
-Validates:
-- R20.6: 🟢/🔴 prefix logic (0 fail → 🟢, ≥1 fail → 🔴)
-- Verdict aggregation: critical/major Open_Issue → fail, only minor → partial, no issues → pass
-- Severity grouping in Open Issues section render
+Tests executive summary prefix logic, verdict aggregation, and severity
+grouping in the Open Issues section.
 """
 
 from __future__ import annotations
@@ -113,7 +111,7 @@ class TestAggregateVerdict:
 
 
 # ---------------------------------------------------------------------------
-# Executive Summary prefix tests (R20.6)
+# Executive Summary prefix tests
 # ---------------------------------------------------------------------------
 
 
@@ -207,7 +205,7 @@ class TestFullReportGeneration:
     """Integration test for the full report generation pipeline."""
 
     def test_generates_all_sections(self, evidence_dir, tmp_path):
-        """Generated report contains all required D6 sections."""
+        """Generated report contains the expected sections."""
         # Create minimal evidence
         (evidence_dir / "01-preflight.txt").write_text("nproc=4\nRAM=8192")
         _write_open_issues(evidence_dir, [])
@@ -219,7 +217,7 @@ class TestFullReportGeneration:
         assert "# Executive Summary" in content
         assert "## Token Selection Result" in content
         assert "## Requirements Verdict Table" in content
-        assert "### Property Tests (R21)" in content
+        assert "### Property Tests" in content
         assert "## Open Issues" in content
         assert "## Evidence Index" in content
         assert "## Cost & Cleanup" in content

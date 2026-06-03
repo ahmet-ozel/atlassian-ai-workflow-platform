@@ -1,26 +1,16 @@
 """
-Test 37: Automation-Service Lifespan Wiring (R37 — automation-service-wiring spec).
+Test 37: Automation-Service Lifespan Wiring.
 
 Validates that the FastAPI lifespan handler shipped by
-``.kiro/specs/automation-service-wiring`` populates every
-``app.state.<slot>`` the routers read at request time and that no
-router replies with the legacy ``"<name> router is not wired"`` error
-shape after startup completes.
+the automation service populates every ``app.state.<slot>`` the routers
+read at request time and that no router replies with the legacy
+``"<name> router is not wired"`` error shape after startup completes.
 
-Spec references:
-* ``.kiro/specs/automation-service-wiring/requirements.md`` — R1.1 — R7.3
-* ``.kiro/specs/automation-service-wiring/design.md`` §"Components and
-  Interfaces" — Property 1 (slots populated), Property 8
-  (no ``Router_Not_Wired_Error``), Property 9 (/healthz stays 200).
-
-The original ``test_07_wizard_department`` (R7) failed before this
-spec landed because ``app.state.dept_credentials`` was missing — see
-``e2e-evidence/E2E_FINAL_REPORT.md`` §"Bilinen Sınırlamalar". This
-test asserts the wiring is now in place by hitting each of the nine
-router paths with a syntactically valid request and confirming none
-of them return the wiring-error shape.
-
-Requirements: R37.1, R37.2, R37.3, R37.4, R37.5
+The original ``test_07_wizard_department`` failed before this
+check was added because ``app.state.dept_credentials`` was missing.
+This test asserts the wiring is now in place by hitting each of the
+nine router paths with a syntactically valid request and confirming
+none of them return the wiring-error shape.
 """
 
 from __future__ import annotations
@@ -47,7 +37,7 @@ AUTOMATION_SERVICE_URL = "http://localhost:8084"
 DASHBOARD_API_URL = "http://localhost:8082"
 
 #: Slot names every router pulls off ``app.state`` at request time.
-#: Mirrors the design's enumeration (Property 1).
+#: Covers the runtime slots that must be populated during startup.
 SLOT_NAMES: tuple[str, ...] = (
     "dept_credentials",
     "admin",
@@ -60,10 +50,10 @@ SLOT_NAMES: tuple[str, ...] = (
     "webhook_pipeline",
 )
 
-#: One representative endpoint per slot — chosen so the request
+#: One representative endpoint slot — chosen so the request
 #: reaches the router-level ``_deps`` resolver (which is where the
 #: ``"<name> router is not wired"`` error would surface if the
-#: lifespan failed to populate the slot).  The handler may still
+#: lifespan failed to populate the slot). The handler may still
 #: return 4xx for auth/validation reasons — that is fine; the
 #: property is purely about the response body shape.
 SLOT_PROBE_ENDPOINTS: tuple[tuple[str, str, str], ...] = (
@@ -90,10 +80,10 @@ EVIDENCE_FILENAME = "37-automation-wiring.json"
 def _wiring_error_detail(slot: str) -> str:
     """Return the legacy detail string a missing slot would produce.
 
-    The four router modules surface slightly different wording; we
-    match by the common prefix ``"<slot> router is not wired"`` so the
-    check is robust across minor wording changes.
-    """
+ The four router modules surface slightly different wording; we
+ match by the common prefix ``"<slot> router is not wired"`` so the
+ check is robust across minor wording changes.
+ """
 
     return f"{slot} router is not wired"
 
@@ -103,11 +93,11 @@ def _looks_like_wiring_error(
 ) -> tuple[bool, str | None]:
     """Return ``(is_wiring_error, message)`` for a parsed response body.
 
-    A wiring error surfaces as a JSON object with a ``detail`` (or
-    ``reason``) field starting with ``"<slot> router is not wired"``.
-    Anything else — auth failures, validation failures, gateway
-    errors — is fine and counts as the slot being correctly wired.
-    """
+ A wiring error surfaces as a JSON object with a ``detail`` (or
+ ``reason``) field starting with ``"<slot> router is not wired"``.
+ Anything else — auth failures, validation failures, gateway
+ errors — is fine and counts as the slot being correctly wired.
+ """
 
     if not isinstance(body, dict):
         return (False, None)
@@ -123,11 +113,11 @@ def _looks_like_wiring_error(
 def _probe(method: str, url: str, timeout: float = 10.0) -> dict:
     """Issue *method* against *url* and return a small result dict.
 
-    The request body is intentionally minimal (``b"{}"``) so the
-    handler reaches the ``_deps`` resolver (and therefore the
-    ``"router is not wired"`` branch when the slot is missing) without
-    needing real auth tokens or HMAC signatures.
-    """
+ The request body is intentionally minimal (``b"{}"``) so the
+ handler reaches the ``_deps`` resolver (and therefore the
+ ``"router is not wired"`` branch when the slot is missing) without
+ needing real auth tokens or HMAC signatures.
+ """
 
     try:
         response = httpx.request(
@@ -186,18 +176,18 @@ def _require_stack_or_skip() -> None:
     if not _automation_service_reachable():
         pytest.skip(
             f"automation-service not reachable at {AUTOMATION_SERVICE_URL}; "
-            "run `make boot` first (R37 requires a live stack)."
+            "run `make boot` first ( requires a live stack)."
         )
 
 
 # ---------------------------------------------------------------------------
-# R37.1 — /healthz returns 200 immediately after startup
+# — /healthz returns 200 immediately after startup
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.wiring
 class TestAutomationServiceHealthz:
-    """R37.1: ``GET /healthz`` returns 200 with ``{"status": "ok"}``."""
+    """: ``GET /healthz`` returns 200 with ``{"status": "ok"}``."""
 
     def test_healthz_returns_200_ok(self) -> None:
         _require_stack_or_skip()
@@ -214,13 +204,13 @@ class TestAutomationServiceHealthz:
 
 
 # ---------------------------------------------------------------------------
-# R37.2 — /readyz returns 200 once Postgres + Temporal probes pass
+# — /readyz returns 200 once Postgres + Temporal probes pass
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.wiring
 class TestAutomationServiceReadyz:
-    """R37.2: ``GET /readyz`` returns 200 when dependencies are reachable."""
+    """: ``GET /readyz`` returns 200 when dependencies are reachable."""
 
     def test_readyz_returns_200_when_ready(self) -> None:
         _require_stack_or_skip()
@@ -243,20 +233,19 @@ class TestAutomationServiceReadyz:
 
 
 # ---------------------------------------------------------------------------
-# R37.3 — No router replies with Router_Not_Wired_Error
+# — No router replies with Router_Not_Wired_Error
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.wiring
 class TestNoRouterNotWiredError:
-    """R37.3 — Property 8 of the design: every slot is populated.
+    """Every runtime slot is populated before router probes execute.
 
-    The legacy failure mode (``"<slot> router is not wired"``) surfaced
-    in the original ``test_07_wizard_department`` run before the
-    ``automation-service-wiring`` spec landed; this test pins the
-    invariant that the same probe never sees the wiring-error shape
-    again.
-    """
+ The legacy failure mode (``"<slot> router is not wired"``) surfaced
+ in the original ``test_07_wizard_department`` run when startup did
+ not populate all slots; this test pins the invariant that the same
+ probe never sees the wiring-error shape again.
+ """
 
     @pytest.mark.parametrize(
         "slot,method,path", SLOT_PROBE_ENDPOINTS
@@ -283,18 +272,17 @@ class TestNoRouterNotWiredError:
 
 
 # ---------------------------------------------------------------------------
-# R37.4 — Admin departments POST returns 201 (admin slot wired end-to-end)
+# — Admin departments POST returns 201 (admin slot wired end-to-end)
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.wiring
 class TestAdminDepartmentsRoundTrip:
-    """R37.4 — Admin departments POST returns 201, GET lists the new dept.
+    """Admin departments POST reaches the router without wiring errors.
 
-    The original wizard failed at this exact step (E2E_FINAL_REPORT.md
-    §"Bilinen Sınırlamalar"); the contract here is the spec's
-    Requirement 5.1 — 5.2 surfaced via the platform's admin proxy.
-    """
+ The original wizard failed at this exact step; the contract here is
+ that the platform's admin proxy can reach the admin router.
+ """
 
     def test_admin_departments_post_does_not_return_wiring_error(
         self,
@@ -312,7 +300,7 @@ class TestAdminDepartmentsRoundTrip:
             timeout=10.0,
         )
         # The handler returns 401/403/422 depending on the auth path;
-        # the spec's contract says it must NOT return 500 with a
+        # the runtime contract says it must NOT return 500 with a
         # ``"admin router is not wired"`` body.
         assert response.status_code != 500 or (
             "admin router is not wired"
@@ -324,7 +312,7 @@ class TestAdminDepartmentsRoundTrip:
 
 
 # ---------------------------------------------------------------------------
-# R37.5 — Evidence emission
+# — Evidence emission
 # ---------------------------------------------------------------------------
 
 
@@ -360,20 +348,20 @@ class TestEmitEvidence:
                 )
 
         evidence_collector.emit_json(
-            requirement_id="R37",
+            requirement_id="",
             filename=EVIDENCE_FILENAME,
             data={
                 "stack_reachable": reachable,
                 "automation_service_url": AUTOMATION_SERVICE_URL,
                 "slot_probes": probes,
                 "requirements_validated": [
-                    "R37.1 — /healthz returns 200 OK after lifespan startup",
-                    "R37.2 — /readyz returns 200 OR 503 with documented body",
-                    "R37.3 — No router returns Router_Not_Wired_Error "
+                    "/healthz returns 200 OK after lifespan startup",
+                    "/readyz returns 200 OR 503 with documented body",
+                    "No router returns Router_Not_Wired_Error "
                     "across the nine app.state slots",
-                    "R37.4 — Admin departments router reachable "
+                    "Admin departments router reachable "
                     "(no admin wiring-error)",
-                    "R37.5 — Structured evidence emitted to e2e-evidence/",
+                    "Structured evidence emitted to e2e-evidence/",
                 ],
             },
         )

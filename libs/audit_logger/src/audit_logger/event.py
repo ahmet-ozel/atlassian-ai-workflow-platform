@@ -1,7 +1,6 @@
 """``AuditEvent`` dataclass — the canonical audit row shape.
 
-The schema is taken verbatim from
-``.kiro/specs/platform-mimari-foundation/design.md`` §`libs/audit_logger`:
+The schema follows the audit table shape:
 
 .. code-block:: python
 
@@ -14,13 +13,12 @@ The schema is taken verbatim from
         resource: str
         result: Literal["ok", "denied", "error"]
         timestamp: datetime
-        payload: dict | None  # task 2.4 explicit field
+        payload: dict | None  # optional structured detail
 
 The ``payload`` field is added on top of the design pseudocode to
 capture optional structured detail (eg. ``{"missing": ["bitbucket_write"]}``
 for ``capability_denied``). It is serialised to the Postgres
-``payload jsonb NULL`` column declared in task group 4
-(``10_automation.sql``).
+``payload jsonb NULL`` column declared in ``10_automation.sql``.
 
 Rationale
 ---------
@@ -32,7 +30,7 @@ Rationale
   typo at the application layer is caught at type-check time rather
   than only at INSERT time.
 * No defaults — every column on the audit table is mandatory by
-  design (Requirement 7.7); making the dataclass mirror that shape
+  design; making the dataclass mirror that shape
   forces callers to populate each field explicitly.
 """
 
@@ -46,11 +44,11 @@ from typing import Any, Final, Literal
 # Enum-like literals
 # ---------------------------------------------------------------------------
 
-#: The four RBAC roles defined in Requirement 7.1 plus the synthetic
+#: The four RBAC roles plus the synthetic
 #: ``"system"`` role used by background processes (webhook handlers,
 #: probe runner, capability gate). These values mirror the
 #: ``actor_role`` ``CHECK`` constraint declared in
-#: ``infra/postgres/init/10_automation.sql`` (task group 4).
+#: ``infra/postgres/init/10_automation.sql``.
 AuditRole = Literal["viewer", "lead", "admin", "dept_admin", "system"]
 
 #: Mirror of ``AuditRole`` for runtime introspection (eg. for
@@ -77,7 +75,7 @@ class AuditEvent:
     """Single append-only audit row.
 
     Attributes mirror the columns of the ``audit_events`` Postgres
-    table (see task group 4):
+    table:
 
     Args:
         actor_id: The ``account_id`` (Atlassian) or OIDC ``sub`` of the

@@ -1,8 +1,7 @@
 """CI gate — PDF + notification template parity: file existence & Jinja2 syntax.
 
-**Validates: Requirement 14.5**
 
-Verifies that the minimum required template set (R14.1) exists on disk,
+Verifies that the minimum required template set exists on disk,
 each file has non-zero content, and each template is valid Jinja2 (can be
 parsed by the Jinja2 Environment without syntax errors).
 """
@@ -17,7 +16,7 @@ from jinja2 import BaseLoader, Environment, TemplateSyntaxError
 # platform/ root (tests/ci/ → tests/ → platform/)
 _PLATFORM_ROOT = Path(__file__).resolve().parent.parent.parent
 
-# R14.1 minimum template set — relative to platform/prompts/
+# minimum template set — relative to platform/prompts/
 _REQUIRED_TEMPLATES: list[str] = [
     "pdf_templates/default.html.j2",
     "notifications/slack_failure.j2",
@@ -40,7 +39,7 @@ def test_template_file_exists(template_rel: str) -> None:
     path = _template_path(template_rel)
     assert path.is_file(), (
         f"Required template file missing: {path}. "
-        f"R14.1 mandates this file as part of the minimum template set."
+        f"This file is part of the minimum template set."
     )
 
 
@@ -54,7 +53,7 @@ def test_template_file_non_empty(template_rel: str) -> None:
     content = path.read_text(encoding="utf-8")
     assert len(content.strip()) > 0, (
         f"Template file is empty: {path}. "
-        f"R14.1 requires each template to contain valid content."
+        f"Each template must contain valid content."
     )
 
 
@@ -62,10 +61,10 @@ def test_template_file_non_empty(template_rel: str) -> None:
 def test_template_jinja2_syntax_valid(template_rel: str) -> None:
     """Each template must be parseable by Jinja2 without syntax errors.
 
-    We parse the template source using a Jinja2 Environment. This catches
-    syntax errors (unclosed blocks, invalid expressions, etc.) without
-    requiring a full render context.
-    """
+ We parse the template source using a Jinja2 Environment. This catches
+ syntax errors (unclosed blocks, invalid expressions, etc.) without
+ requiring a full render context.
+ """
     path = _template_path(template_rel)
     if not path.is_file():
         pytest.skip(f"File does not exist: {path}")
@@ -81,6 +80,6 @@ def test_template_jinja2_syntax_valid(template_rel: str) -> None:
     except TemplateSyntaxError as exc:
         pytest.fail(
             f"Jinja2 syntax error in {template_rel}: {exc.message} "
-            f"(line {exc.lineno}). R14.5 requires all templates to be "
+            f"(line {exc.lineno}). all templates must be "
             f"syntactically valid Jinja2."
         )

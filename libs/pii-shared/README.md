@@ -43,7 +43,7 @@ candidates are left untouched in `masked` and are not reported in
 `(masked, matches)` tuple is byte-for-byte identical across processes,
 runs and Python versions in `>=3.12,<3.13`. This is exercised by the
 property test suite (`platform/tests/property/test_pii_filter.py`,
-Property 2 — *Validates: Requirements 1.5*).
+PII masking validation).
 
 ## Standalone build & run
 

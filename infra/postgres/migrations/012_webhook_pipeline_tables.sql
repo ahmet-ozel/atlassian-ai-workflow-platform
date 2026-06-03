@@ -1,5 +1,5 @@
 -- 007_webhook_pipeline_tables.sql
--- Spec: platform-gap-fill — Task 1.1 (Webhook Pipeline Schema)
+-- Webhook pipeline schema migration.
 --
 -- Adds tables required by the webhook processing pipeline:
 --   1. shared.webhook_dedup — Webhook event deduplication (24h TTL)
@@ -9,7 +9,6 @@
 -- Idempotent — uses IF NOT EXISTS guards so re-running on an already-migrated
 -- database is a no-op.
 --
--- Requirements: 3.1, 3.4, 2.4
 
 -- =============================================================================
 -- 1. webhook_dedup — Webhook event deduplication

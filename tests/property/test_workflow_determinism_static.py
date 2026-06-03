@@ -1,10 +1,8 @@
-"""Property tests for workflow determinism (static AST invariant).
+"""Workflow determinism static AST invariant tests.
 
-**Validates: Requirements 1.4, 1.5, 1.6, 4.1, 4.2, 5.9, 6.12, 10.1, 10.2, 10.3**
-
-Property 11 (static): Workflow determinism — banned-call AST invariant
-Property 7 (static): ``WORKFLOW_TYPE_CAPABILITIES`` single-source AST invariant
-Property 2 (workflows spec): Workflow modülü replay determinism statik tarama
+Workflow determinism — banned-call AST invariant.
+``WORKFLOW_TYPE_CAPABILITIES`` single-source AST invariant.
+Workflow modülü replay determinism statik tarama.
 
 For every Python module under
     workers/agent-runner-worker/src/workflows/
@@ -36,8 +34,7 @@ it MUST go through ``workflow.sleep(...)`` or
 with a positive assertion: when scanning a workflow that *does* contain
 a sleep, the only acceptable form is the ``workflow.*`` variant.
 
-This module also enforces, for the workflows-spec layer
-(Requirement 1.6 — activity timeout + retry):
+This module also enforces activity timeout and retry configuration:
 
 * every ``workflow.execute_activity[_*]`` and
   ``workflow.start_activity[_*]`` call site inside a ``@workflow.defn``
@@ -49,9 +46,8 @@ Activities permitted inside the Temporal sandbox escape hatch
 block contains *imports*, not workflow-time calls, and the imports
 themselves are explicitly exempted by the Temporal SDK.
 
-This is a *static* property — the AST is the source of truth. The
-``replay`` flavour of Property 11 is implemented separately in
-``test_workflow_determinism_replay.py`` (task 14.2).
+This is a static check — the AST is the source of truth. The replay
+flavour is implemented separately in ``test_workflow_determinism_replay.py``.
 """
 
 from __future__ import annotations
@@ -160,11 +156,11 @@ BANNED_DOTTED: frozenset[str] = frozenset(
 
 # Module roots whose entire attribute namespace is banned (any attribute
 # access ``X.<anything>`` used as a call target is rejected). Captures
-# ``random.*`` and ``requests.*`` per Property 11, plus the workflows
+# ``random.*`` and ``requests.*``, plus the workflows
 # spec additions: any direct ``aiohttp.*`` / ``openai.*`` / ``anthropic.*``
 # call must go through an ``@activity.defn`` activity, not the workflow
 # body — i.e. the workflow may only call into these libraries via
-# Temporal activities (Requirement 1.4).
+# Temporal activities.
 BANNED_MODULE_PREFIXES: frozenset[str] = frozenset(
     {"random", "requests", "aiohttp", "openai", "anthropic"}
 )
@@ -337,23 +333,19 @@ def workflow_files() -> tuple[Path, ...]:
 
 
 def test_workflow_dirs_exist() -> None:
-    """**Validates: Requirements 5.9, 6.12, 10.1, 10.2, 10.3**
-
-    Both workflow directories must exist; otherwise the AST scan would
+    """Both workflow directories must exist; otherwise the AST scan would
     silently degrade to a no-op and the property would be vacuous.
     """
 
     for directory in WORKFLOW_DIRS:
         assert directory.is_dir(), (
             f"workflow directory missing: {directory.relative_to(_PLATFORM_ROOT)} "
-            "— Property 11 cannot be enforced if the directory is absent."
+            "— static workflow determinism cannot be enforced if the directory is absent."
         )
 
 
 def test_at_least_one_workflow_file_collected() -> None:
-    """**Validates: Requirements 5.9, 6.12, 10.1, 10.2, 10.3**
-
-    Sanity check: collection must find at least one ``.py`` file across
+    """Sanity check: collection must find at least one ``.py`` file across
     both directories so the parametrised tests below are not empty.
     """
 
@@ -364,9 +356,7 @@ def test_at_least_one_workflow_file_collected() -> None:
 
 
 def test_at_least_one_workflow_defn_class_exists() -> None:
-    """**Validates: Requirements 5.9, 6.12, 10.1, 10.2, 10.3**
-
-    A non-vacuity guard: across both worker packages there MUST be at
+    """A non-vacuity guard: across both worker packages there MUST be at
     least one ``@workflow.defn``-decorated class. Otherwise the AST
     scan trivially passes (nothing to inspect) and the property gives a
     false sense of safety.
@@ -378,7 +368,7 @@ def test_at_least_one_workflow_defn_class_exists() -> None:
         total += len(_collect_workflow_classes(tree))
     assert total >= 1, (
         "no @workflow.defn classes discovered across both workflow packages; "
-        "Property 11 (static) requires at least one to be meaningful"
+        "static workflow determinism requires at least one to be meaningful"
     )
 
 
@@ -388,9 +378,7 @@ def test_at_least_one_workflow_defn_class_exists() -> None:
     ids=[str(p.relative_to(_PLATFORM_ROOT)).replace("\\", "/") for p in WORKFLOW_FILES],
 )
 def test_workflow_file_parses(path: Path) -> None:
-    """**Validates: Requirements 5.9, 6.12, 10.1, 10.2, 10.3**
-
-    Every workflow module must be syntactically valid Python so the
+    """Every workflow module must be syntactically valid Python so the
     AST scan can run. A SyntaxError here would also break Temporal
     worker registration at import time.
     """
@@ -405,9 +393,7 @@ def test_workflow_file_parses(path: Path) -> None:
     ids=[str(p.relative_to(_PLATFORM_ROOT)).replace("\\", "/") for p in WORKFLOW_FILES],
 )
 def test_workflow_module_has_no_banned_calls(path: Path) -> None:
-    """**Validates: Requirements 5.9, 6.12, 10.1, 10.2, 10.3**
-
-    For every class decorated with ``@workflow.defn``, walk the class
+    """For every class decorated with ``@workflow.defn``, walk the class
     body and assert that no ``Call`` node targets a banned symbol and
     no ``Subscript`` reads ``os.environ[...]``. Any violation is
     reported with the file, line, and offending dotted name.
@@ -439,7 +425,7 @@ def test_workflow_module_has_no_banned_calls(path: Path) -> None:
                 )
 
     assert not violations, (
-        "Property 11 (static) violation — workflow body must not call "
+        "Static workflow determinism violation — workflow body must not call "
         "non-deterministic or I/O symbols. Use workflow.now(), "
         "workflow.sleep(...), workflow.wait_condition(...), and "
         "@activity.defn for I/O.\n  - "
@@ -453,9 +439,7 @@ def test_workflow_module_has_no_banned_calls(path: Path) -> None:
     ids=[str(p.relative_to(_PLATFORM_ROOT)).replace("\\", "/") for p in WORKFLOW_FILES],
 )
 def test_workflow_module_sleep_uses_workflow_helpers(path: Path) -> None:
-    """**Validates: Requirements 5.9, 6.12, 10.1, 10.2, 10.3**
-
-    Positive form of the sleep/wait constraint: any sleep- or wait-
+    """Positive form of the sleep/wait constraint: any sleep- or wait-
     shaped expression inside a ``@workflow.defn`` class MUST be
     ``workflow.sleep(...)`` or ``workflow.wait_condition(...)``. Bare
     ``asyncio.sleep`` / ``time.sleep`` are caught by the negative ban
@@ -487,7 +471,7 @@ def test_workflow_module_sleep_uses_workflow_helpers(path: Path) -> None:
 
     # Negative bound: zero non-workflow sleeps allowed.
     assert not bad_sleeps, (
-        "Property 11 (static) violation — workflow sleep/wait must use "
+        "Static workflow determinism violation — workflow sleep/wait must use "
         "workflow.sleep(...) or workflow.wait_condition(...).\n  - "
         + "\n  - ".join(bad_sleeps)
     )
@@ -738,69 +722,69 @@ class TestScannerSelfChecks:
     """
 
     def test_good_workflow_has_no_violations(self) -> None:
-        """**Validates: Requirements 5.9, 6.12, 10.1, 10.2, 10.3**"""
+        """Banned datetime calls are detected."""
         assert _scan_source(_GOOD_WORKFLOW_SRC) == []
 
     def test_datetime_now_detected(self) -> None:
-        """**Validates: Requirements 5.9, 6.12, 10.1, 10.2, 10.3**"""
+        """Banned time calls are detected."""
         violations = _scan_source(_BAD_DATETIME_SRC)
         assert any("datetime" in v and "now" in v for v in violations), violations
 
     def test_random_attribute_detected(self) -> None:
-        """**Validates: Requirements 5.9, 6.12, 10.1, 10.2, 10.3**"""
+        """Banned random calls are detected."""
         violations = _scan_source(_BAD_RANDOM_SRC)
         assert any(v.startswith("call:random.") for v in violations), violations
 
     def test_requests_attribute_detected(self) -> None:
-        """**Validates: Requirements 5.9, 6.12, 10.1, 10.2, 10.3**"""
+        """Banned uuid calls are detected."""
         violations = _scan_source(_BAD_REQUESTS_SRC)
         assert any(v.startswith("call:requests.") for v in violations), violations
 
     def test_httpx_async_client_detected(self) -> None:
-        """**Validates: Requirements 5.9, 6.12, 10.1, 10.2, 10.3**"""
+        """Banned environment reads are detected."""
         violations = _scan_source(_BAD_HTTPX_SRC)
         assert "call:httpx.AsyncClient" in violations, violations
 
     def test_asyncio_sleep_detected(self) -> None:
-        """**Validates: Requirements 5.9, 6.12, 10.1, 10.2, 10.3**"""
+        """Banned file opens are detected."""
         violations = _scan_source(_BAD_ASYNCIO_SLEEP_SRC)
         assert "call:asyncio.sleep" in violations, violations
 
     def test_os_environ_get_detected(self) -> None:
-        """**Validates: Requirements 5.9, 6.12, 10.1, 10.2, 10.3**"""
+        """Banned HTTP client calls are detected."""
         violations = _scan_source(_BAD_OS_ENVIRON_GET_SRC)
         assert "call:os.environ.get" in violations, violations
 
     def test_os_environ_subscript_detected(self) -> None:
-        """**Validates: Requirements 5.9, 6.12, 10.1, 10.2, 10.3**"""
+        """Banned request calls are detected."""
         violations = _scan_source(_BAD_OS_ENVIRON_SUBSCRIPT_SRC)
         assert "subscript:os.environ" in violations, violations
 
     def test_open_builtin_detected(self) -> None:
-        """**Validates: Requirements 5.9, 6.12, 10.1, 10.2, 10.3**"""
+        """Banned asyncio sleeps are detected."""
         violations = _scan_source(_BAD_OPEN_SRC)
         assert "call:open" in violations, violations
 
     def test_uuid_uuid4_detected(self) -> None:
-        """**Validates: Requirements 5.9, 6.12, 10.1, 10.2, 10.3**"""
+        """Workflow sleep helpers are accepted."""
         violations = _scan_source(_BAD_UUID_SRC)
         assert "call:uuid.uuid4" in violations, violations
 
     def test_time_time_detected(self) -> None:
-        """**Validates: Requirements 5.9, 6.12, 10.1, 10.2, 10.3**"""
+        """Unsafe import pass-through blocks are ignored."""
         violations = _scan_source(_BAD_TIME_SRC)
         assert "call:time.time" in violations, violations
 
     def test_non_workflow_class_is_ignored(self) -> None:
-        """**Validates: Requirements 5.9, 6.12, 10.1, 10.2, 10.3**
+        """Non-workflow classes are ignored.
 
         Banned calls in classes NOT decorated with ``@workflow.defn``
-        are not Property 11's concern — only the workflow body is.
+        are not part of this scan — only the workflow body is.
         """
         assert _scan_source(_NON_WORKFLOW_CLASS_SRC) == []
 
     def test_decorator_with_keyword_args_recognised(self) -> None:
-        """**Validates: Requirements 5.9, 6.12, 10.1, 10.2, 10.3**
+        """Subscripts of ``os.environ`` are detected.
 
         ``@workflow.defn(name="X")`` (Call wrapping the Attribute)
         must be recognised as a workflow class decorator just like the
@@ -820,10 +804,10 @@ class Foo:
         assert "call:time.time" in violations, violations
 
     def test_aiohttp_attribute_detected(self) -> None:
-        """**Validates: Requirements 1.4**
+        """Direct OpenAI calls are detected.
 
         Direct ``aiohttp.*`` calls inside a workflow body are banned by
-        Property 2 of the workflows spec; the workflow must call into
+        The workflow must call into
         ``aiohttp`` only via an ``@activity.defn`` activity (which lives
         outside the deterministic replay sandbox).
         """
@@ -831,28 +815,28 @@ class Foo:
         assert any(v.startswith("call:aiohttp.") for v in violations), violations
 
     def test_openai_attribute_detected(self) -> None:
-        """**Validates: Requirements 1.4**
+        """Direct Anthropic calls are detected.
 
         Direct ``openai.*`` calls inside a workflow body are banned by
-        Property 2 of the workflows spec — every LLM call must go
-        through an activity (Requirement 1.4 — workflows do not perform
+        Every LLM call must go
+        through an activity; workflows do not perform
         I/O directly).
         """
         violations = _scan_source(_BAD_OPENAI_SRC)
         assert any(v.startswith("call:openai.") for v in violations), violations
 
     def test_anthropic_attribute_detected(self) -> None:
-        """**Validates: Requirements 1.4**
+        """Direct aiohttp calls are detected.
 
         Direct ``anthropic.*`` calls inside a workflow body are banned
-        by Property 2 of the workflows spec — every LLM call must go
+        by the workflow policy — every LLM call must go
         through an activity.
         """
         violations = _scan_source(_BAD_ANTHROPIC_SRC)
         assert any(v.startswith("call:anthropic.") for v in violations), violations
 
     def test_os_urandom_detected(self) -> None:
-        """**Validates: Requirements 1.4**
+        """Allowed workflow helpers remain accepted.
 
         ``os.urandom`` is a non-deterministic source and must not be
         called inside a workflow body. Cryptographic randomness needs
@@ -864,10 +848,8 @@ class Foo:
 
 
 # ---------------------------------------------------------------------------
-# Property 7 (b) — WORKFLOW_TYPE_CAPABILITIES single-source-of-truth AST scan
+# WORKFLOW_TYPE_CAPABILITIES single-source-of-truth AST scan
 # ---------------------------------------------------------------------------
-#
-# **Validates: Requirements 4.1, 4.2**
 #
 # The :data:`temporal_shared.capabilities.WORKFLOW_TYPE_CAPABILITIES`
 # mapping is the *single* source of truth for the workflow-type →
@@ -1024,7 +1006,7 @@ def workflow_type_capabilities_assignments() -> list[tuple[str, int]]:
 def test_workflow_type_capabilities_canonical_definition_exists(
     workflow_type_capabilities_assignments: list[tuple[str, int]],
 ) -> None:
-    """**Validates: Requirements 4.1, 4.2**
+    """The capability mapping is assigned only in its canonical module.
 
     The canonical module MUST contain at least one assignment to
     ``WORKFLOW_TYPE_CAPABILITIES``; otherwise the single-source
@@ -1038,14 +1020,14 @@ def test_workflow_type_capabilities_canonical_definition_exists(
     assert canonical_hits, (
         f"canonical WORKFLOW_TYPE_CAPABILITIES assignment not found in "
         f"{_CAPABILITIES_CANONICAL_PATH}; the constant must be defined "
-        f"there as the single source of truth (Requirement 4.1)"
+            "there as the single source of truth"
     )
 
 
 def test_workflow_type_capabilities_only_defined_in_canonical_module(
     workflow_type_capabilities_assignments: list[tuple[str, int]],
 ) -> None:
-    """**Validates: Requirements 4.1, 4.2**
+    """Each consumer imports the capability mapping from the canonical module.
 
     No ``.py`` file under the platform root other than
     :data:`_CAPABILITIES_CANONICAL_PATH` may contain a top-level or
@@ -1091,30 +1073,30 @@ def _scan_capabilities_assignments_in_source(source: str) -> list[int]:
 
 
 class TestCapabilitiesAssignmentScanner:
-    """Self-tests for the AST scanner used by Property 7 (b)."""
+    """Self-tests for the capability assignment AST scanner."""
 
     def test_module_level_assignment_detected(self) -> None:
-        """**Validates: Requirements 4.1, 4.2**"""
+        """Module-level assignment is detected."""
         src = "WORKFLOW_TYPE_CAPABILITIES = {}\n"
         assert _scan_capabilities_assignments_in_source(src) == [1]
 
     def test_annotated_assignment_detected(self) -> None:
-        """**Validates: Requirements 4.1, 4.2**"""
+        """Annotated assignment is detected."""
         src = "WORKFLOW_TYPE_CAPABILITIES: dict = {}\n"
         assert _scan_capabilities_assignments_in_source(src) == [1]
 
     def test_augmented_assignment_detected(self) -> None:
-        """**Validates: Requirements 4.1, 4.2**"""
+        """Augmented assignment is detected."""
         src = "WORKFLOW_TYPE_CAPABILITIES |= {'x': frozenset()}\n"
         assert _scan_capabilities_assignments_in_source(src) == [1]
 
     def test_tuple_assignment_detected(self) -> None:
-        """**Validates: Requirements 4.1, 4.2**"""
+        """Tuple assignment is detected."""
         src = "OTHER, WORKFLOW_TYPE_CAPABILITIES = 1, {}\n"
         assert _scan_capabilities_assignments_in_source(src) == [1]
 
     def test_class_body_assignment_detected(self) -> None:
-        """**Validates: Requirements 4.1, 4.2**
+        """Class-body assignment is detected.
 
         A class-body assignment also shadows the module-level constant
         for any consumer that accesses it through the class.
@@ -1127,7 +1109,7 @@ class TestCapabilitiesAssignmentScanner:
         assert _scan_capabilities_assignments_in_source(src) == [2]
 
     def test_function_body_assignment_ignored(self) -> None:
-        """**Validates: Requirements 4.1, 4.2**
+        """Function-body assignment is ignored.
 
         A local rebinding inside a function body does NOT shadow the
         module-level constant for outside importers; the scanner must
@@ -1141,7 +1123,7 @@ class TestCapabilitiesAssignmentScanner:
         assert _scan_capabilities_assignments_in_source(src) == []
 
     def test_import_does_not_count_as_assignment(self) -> None:
-        """**Validates: Requirements 4.1, 4.2**
+        """Imports do not count as assignments.
 
         Importing the name (the legitimate access pattern) must not be
         flagged.
@@ -1152,7 +1134,7 @@ class TestCapabilitiesAssignmentScanner:
         assert _scan_capabilities_assignments_in_source(src) == []
 
     def test_attribute_assignment_ignored(self) -> None:
-        """**Validates: Requirements 4.1, 4.2**
+        """Attribute assignments are ignored.
 
         ``ns.WORKFLOW_TYPE_CAPABILITIES = ...`` is a member write, not
         a name shadowing, and is out of scope for this scanner.
@@ -1164,7 +1146,7 @@ class TestCapabilitiesAssignmentScanner:
         assert _scan_capabilities_assignments_in_source(src) == []
 
     def test_alias_to_canonical_constant_ignored(self) -> None:
-        """**Validates: Requirements 4.1, 4.2**
+        """Aliases to the canonical constant are ignored.
 
         Defining a different-name alias (``CapMap = WORKFLOW_TYPE_CAPABILITIES``)
         is fine — it doesn't shadow the canonical name.
@@ -1176,7 +1158,7 @@ class TestCapabilitiesAssignmentScanner:
         assert _scan_capabilities_assignments_in_source(src) == []
 
     def test_unrelated_capitalised_name_ignored(self) -> None:
-        """**Validates: Requirements 4.1, 4.2**
+        """Unrelated capitalized names are ignored.
 
         The scanner matches the *exact* name only.
         """
@@ -1188,13 +1170,11 @@ class TestCapabilitiesAssignmentScanner:
 
 
 # ---------------------------------------------------------------------------
-# Property 2 (activity start_workflow ban) — workflow-decision logic
+# Activity start_workflow ban — workflow-decision logic
 # must not appear in activity modules.
 # ---------------------------------------------------------------------------
 #
-# **Validates: Requirements 1.5, 4.5**
-#
-# Property 2 (design §Correctness Properties, fourth clause):
+# Correctness rule:
 # ``workers/*/activities/`` altındaki dosyalar ``client.start_workflow``
 # veya eşdeğer çağrı içermez (workflow karar mantığı yalnız workflow
 # modüllerinde).
@@ -1207,9 +1187,8 @@ class TestCapabilitiesAssignmentScanner:
 # rather than a workflow-side decision.
 #
 # The scanner used here lives in ``_path_whitelist`` and is also
-# consumed by ``test_path_coverage.py`` (Property 2 aggregate). Hosting
-# the activity-only assertion in this module too gives ``Requirement
-# 1.5`` a home alongside its sibling ``Requirement 1.4`` static
+# consumed by ``test_path_coverage.py``. Hosting the activity-only
+# assertion in this module keeps it next to the replay-safety static
 # invariants.
 
 from _path_whitelist import (  # noqa: E402
@@ -1219,9 +1198,7 @@ from _path_whitelist import (  # noqa: E402
 
 
 def test_activities_have_no_start_workflow_calls() -> None:
-    """**Validates: Requirements 1.5, 4.5**
-
-    Statik AST taraması: ``workers/*/activities/`` altındaki hiçbir
+    """Statik AST taraması: ``workers/*/activities/`` altındaki hiçbir
     ``.py`` dosyası ``client.start_workflow`` /
     ``client.execute_workflow`` / ``client.start_child_workflow``
     çağrısı içermez.
@@ -1236,7 +1213,7 @@ def test_activities_have_no_start_workflow_calls() -> None:
 
     findings = _pw_scan_activities_start_workflow()
     assert not findings, (
-        "Requirement 1.5 violation — workflow-start call inside "
+        "Workflow-start violation — call inside "
         "activity module. Workflow-decision logic must live in "
         "workers/*/workflows/, not activities/.\n"
         + _pw_format_findings(findings)
@@ -1244,10 +1221,8 @@ def test_activities_have_no_start_workflow_calls() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Property 2 (workflows spec) — temporal-shared module-level replay safety
+# Temporal-shared module-level replay safety
 # ---------------------------------------------------------------------------
-#
-# **Validates: Requirements 1.4**
 #
 # Modules under :data:`SHARED_REPLAY_SAFE_DIRS` are imported by Temporal
 # workflow code (either directly or through the
@@ -1316,9 +1291,7 @@ def _walk_module_for_banned_calls(tree: ast.Module) -> list[tuple[ast.AST, str, 
 
 
 def test_shared_replay_safe_dirs_exist() -> None:
-    """**Validates: Requirements 1.4**
-
-    Every directory in :data:`SHARED_REPLAY_SAFE_DIRS` must be present
+    """Every directory in :data:`SHARED_REPLAY_SAFE_DIRS` must be present
     on disk; otherwise the module-level scan below would silently
     degrade to a no-op.
     """
@@ -1326,15 +1299,13 @@ def test_shared_replay_safe_dirs_exist() -> None:
     for directory in SHARED_REPLAY_SAFE_DIRS:
         assert directory.is_dir(), (
             f"shared replay-safe directory missing: "
-            f"{directory.relative_to(_PLATFORM_ROOT)} — Property 2 cannot "
+            f"{directory.relative_to(_PLATFORM_ROOT)} — replay-safe shared module scanning cannot "
             "be enforced if the directory is absent."
         )
 
 
 def test_shared_replay_safe_files_collected() -> None:
-    """**Validates: Requirements 1.4**
-
-    The module-level scan must find at least one ``.py`` file under
+    """The module-level scan must find at least one ``.py`` file under
     :data:`SHARED_REPLAY_SAFE_DIRS`; otherwise the parametrised test
     below is empty and the property is vacuous.
     """
@@ -1354,9 +1325,7 @@ def test_shared_replay_safe_files_collected() -> None:
     ],
 )
 def test_shared_replay_safe_module_has_no_banned_calls(path: Path) -> None:
-    """**Validates: Requirements 1.4**
-
-    Every module under :data:`SHARED_REPLAY_SAFE_DIRS` is imported by
+    """Every module under :data:`SHARED_REPLAY_SAFE_DIRS` is imported by
     workflow code and must therefore be free of non-deterministic /
     I/O call sites at *any* scope (module top-level, helper functions,
     classes). The Temporal sandbox escape hatch
@@ -1381,7 +1350,7 @@ def test_shared_replay_safe_module_has_no_banned_calls(path: Path) -> None:
             )
 
     assert not violations, (
-        "Property 2 (workflows spec) violation — replay-safe shared "
+        "Replay-safe shared module violation — "
         "module must not call non-deterministic or I/O symbols at any "
         "scope. Use deterministic helpers (caller passes "
         "``workflow.now()``-derived timestamps), and keep I/O inside "
@@ -1391,12 +1360,10 @@ def test_shared_replay_safe_module_has_no_banned_calls(path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Property 2 (workflows spec) — workflow.execute_activity start_to_close_timeout
+# workflow.execute_activity start_to_close_timeout
 # ---------------------------------------------------------------------------
 #
-# **Validates: Requirements 1.6**
-#
-# Requirement 1.6: an activity that takes longer than its
+# An activity that takes longer than its
 # ``start_to_close_timeout`` is restarted by the Temporal cluster.
 # Without an explicit ``start_to_close_timeout`` the activity attempt
 # would be unbounded — the operator loses the back-pressure signal that
@@ -1419,7 +1386,7 @@ def test_shared_replay_safe_module_has_no_banned_calls(path: Path) -> None:
 # (The child-workflow variants — ``execute_child_workflow`` /
 # ``start_child_workflow`` — accept ``execution_timeout`` /
 # ``run_timeout`` instead and are out of scope for the activity-timeout
-# clause of Requirement 1.6.)
+# timeout clause.)
 
 #: Set of dotted names that must always be invoked with a
 #: ``start_to_close_timeout`` keyword argument.
@@ -1473,9 +1440,7 @@ def _iter_activity_launch_calls_in_class(
     ids=[str(p.relative_to(_PLATFORM_ROOT)).replace("\\", "/") for p in WORKFLOW_FILES],
 )
 def test_activity_launches_pass_start_to_close_timeout(path: Path) -> None:
-    """**Validates: Requirements 1.6**
-
-    Every ``workflow.execute_activity`` (and its sibling launch
+    """Every ``workflow.execute_activity`` (and its sibling launch
     methods) call inside a ``@workflow.defn`` class MUST pass the
     ``start_to_close_timeout`` keyword. Implicit defaults are not
     acceptable — the workflows spec design document calls out an
@@ -1496,11 +1461,11 @@ def test_activity_launches_pass_start_to_close_timeout(path: Path) -> None:
                 violations.append(
                     f"{rel}:{call.lineno} — {dotted}(...) inside "
                     f"@workflow.defn class {cls.name!r} is missing the "
-                    "start_to_close_timeout keyword (Requirement 1.6)"
+                    "start_to_close_timeout keyword"
                 )
 
     assert not violations, (
-        "Requirement 1.6 violation — activity launch is missing "
+        "Activity timeout violation — activity launch is missing "
         "start_to_close_timeout. Pass an explicit timedelta so the "
         "Temporal cluster can detect a stuck activity and re-dispatch "
         "it (workflow body should compute the timeout from input or a "
@@ -1586,20 +1551,20 @@ class TestActivityLaunchTimeoutScanner:
     """Self-tests for the ``start_to_close_timeout`` scanner."""
 
     def test_explicit_timeout_is_accepted(self) -> None:
-        """**Validates: Requirements 1.6**"""
+        """Explicit timeout is accepted."""
         assert _collect_activity_launch_violations_in_source(
             _GOOD_ACTIVITY_LAUNCH_SRC
         ) == []
 
     def test_missing_timeout_is_rejected(self) -> None:
-        """**Validates: Requirements 1.6**"""
+        """Missing timeout is rejected."""
         violations = _collect_activity_launch_violations_in_source(
             _BAD_ACTIVITY_LAUNCH_NO_TIMEOUT_SRC
         )
         assert violations == ["workflow.execute_activity"], violations
 
     def test_kwargs_splat_does_not_satisfy_static_check(self) -> None:
-        """**Validates: Requirements 1.6**
+        """``**opts`` does not satisfy the static check.
 
         ``**opts`` defeats the static guarantee — the scanner cannot
         prove the dict carries ``start_to_close_timeout`` and so must
@@ -1611,17 +1576,17 @@ class TestActivityLaunchTimeoutScanner:
         assert violations == ["workflow.execute_activity"], violations
 
     def test_local_activity_also_requires_timeout(self) -> None:
-        """**Validates: Requirements 1.6**"""
+        """Local activity launches also require a timeout."""
         violations = _collect_activity_launch_violations_in_source(
             _BAD_LOCAL_ACTIVITY_NO_TIMEOUT_SRC
         )
         assert violations == ["workflow.execute_local_activity"], violations
 
     def test_non_workflow_class_is_ignored(self) -> None:
-        """**Validates: Requirements 1.6**
+        """Non-workflow classes are ignored.
 
         A bare ``execute_activity`` call outside a ``@workflow.defn``
-        class is not Property 2's concern — only workflow bodies are.
+        class is outside this scan — only workflow bodies are.
         """
         src = """
 from temporalio import workflow

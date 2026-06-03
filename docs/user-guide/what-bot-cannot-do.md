@@ -25,13 +25,11 @@ Bot başka bir PR'ı approve veya decline edemez. Kendi açtığı PR'ı bile.
 
 ### 4. Banned Tool Listesi
 
-Aşağıdaki tool'lar `atlassian_unified` MCP tarafından LLM'e **hiç gösterilmez**:
+Aşağıdaki tool'lar Atlassian MCP gateway tarafından LLM'e **hiç gösterilmez**:
 
 - `bitbucket_merge_pr`, `bitbucket_approve_pr`, `bitbucket_decline_pr`
 - `confluence_delete_page`
 - (admin tarafından eklenmiş diğer banned tool'lar)
-
-[Detay: §1 Kural 9, §16.6.70](../../MIMARI.md).
 
 ## Out-of-Scope Kararı (Bot "Yapamam" Der)
 
@@ -59,8 +57,6 @@ Bot bu durumlarda kendisi *"out_of_scope"* der ve task'ı geri çevirir:
 
 Task'ı **To Do** durumuna çeker, assignee bot olarak kalır — başka biri devralabilir.
 Description'ı düzeltip yeniden bot'a atayabilirsin.
-
-[Detay: §16.6.74](../../MIMARI.md).
 
 ## Capability Sınırları
 
@@ -90,8 +86,6 @@ isterse:
 > 2. **Epic + subtask kullan** — bir Epic aç, repo başına bir subtask ekle, Epic'i bot'a
 >    ata. Bot subtask'ları sırayla işler.
 
-[Detay: §16.7.19](../../MIMARI.md).
-
 ## Çok Büyük Task'lar (`needs_breakdown`)
 
 Bot bir task'ı tek seferde yapamayacak kadar büyük görürse alt-task önerisi yapar:
@@ -107,8 +101,6 @@ Bot bir task'ı tek seferde yapamayacak kadar büyük görürse alt-task öneris
 > - Integration: e2e test (~10 dk)
 >
 > Onaylıyorsanız `evet` yazın — Epic + 3 subtask oluşturayım.
-
-[Detay: §16.7.8](../../MIMARI.md).
 
 ## Süre / Maliyet Limitleri
 
@@ -137,7 +129,7 @@ kontrolündedir.
 
 İstisna: `pr_draft_strategy=open_after_test_pass` config'i açıksa bot CI testi geçtikten
 sonra PR'ı **draft'tan açığa** çekebilir — bu da deploy değil, sadece "review için
-hazır" sinyali ([detay: §16.7.18](../../MIMARI.md)).
+hazır" sinyali.
 
 ## "Bot Bunu Hızlandırsın"
 
@@ -163,4 +155,3 @@ Bot her iterasyon başında tahmini maliyet paylaşır. Limit aşılmadan onayı
 
 - Bot ne yapabilir → [`task-creation.md`](task-creation.md)
 - "Yapamam" dedi, ne yapayım? → Description'ı düzelt, yeniden ata.
-- Detaylı sınırlar → [`MIMARI.md §16.6.74` ve `§16.6.70`](../../MIMARI.md)

@@ -3,7 +3,6 @@
 Tests sign/verify with known values, TTL expiry behavior,
 and invalid signature handling.
 
-Validates: Requirements 10.2, 10.4, 10.5
 """
 
 from __future__ import annotations
@@ -29,7 +28,7 @@ from components.cookie_manager import (  # noqa: E402
 
 
 class TestSignCookie:
-    """Tests for sign_cookie function — Requirement 10.2."""
+    """Tests for sign_cookie function."""
 
     def test_sign_produces_dot_separated_format(self):
         """Signed cookie has format: <base64url(value)>.<base64url(hmac)>."""
@@ -89,7 +88,7 @@ class TestSignCookie:
 
 
 class TestVerifyCookie:
-    """Tests for verify_cookie function — Requirements 10.2, 10.5."""
+    """Tests for verify_cookie function."""
 
     def test_verify_valid_cookie(self):
         """verify_cookie returns original value for valid signed cookie."""
@@ -157,14 +156,14 @@ class TestVerifyCookie:
 
 
 class TestCookieConstants:
-    """Tests for cookie configuration constants — Requirement 10.4."""
+    """Tests for cookie configuration constants."""
 
     def test_cookie_name(self):
         """Cookie name should be 'dept_selection'."""
         assert COOKIE_NAME == "dept_selection"
 
     def test_cookie_ttl_is_30_days(self):
-        """Cookie TTL should be 30 days — Requirement 10.4."""
+        """Cookie TTL should be 30 days."""
         assert COOKIE_TTL_DAYS == 30
 
 

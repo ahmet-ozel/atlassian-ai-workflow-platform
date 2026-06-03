@@ -1,8 +1,6 @@
-"""Integration test 7.9 — ``probe_atlassian.py`` script end-to-end.
+"""Integration coverage for ``probe_atlassian.py`` script end-to-end.
 
-**Validates: Requirements 9.7**
 
-Spec: ``.kiro/specs/platform-mimari-uyumluluk`` (task 7.9).
 
 Scenario coverage
 -----------------
@@ -12,22 +10,22 @@ The script under test
 ``platform/services/automation-service/src/scripts/probe_atlassian.py``)
 is the ``connectivity_probe_command`` referenced from
 ``platform/config/services.manifest.json`` for the ``automation-service``
-entry. ``LifecycleService.start`` invokes it as Step 9.5 (uyumluluk
-design §"R9 — Connectivity Probe", Q10).
+entry. ``LifecycleService.start`` invokes it during startup
+connectivity checks.
 
-Per Requirement 9.7 the script MUST:
+Per the script MUST:
 
 * exit ``0`` when every ``(dept, service)`` row in
-  ``automation.department_bots`` resolves to a Vault secret whose
-  ``GET <base>/<service-specific-myself>`` returns 2xx;
+ ``automation.department_bots`` resolves to a Vault secret whose
+ ``GET <base>/<service-specific-myself>`` returns 2xx;
 * exit ``1`` when **any** probe fails, and write one
-  ``dept=<dept_id> service=<service> reason=<short reason>`` line per
-  failing probe to stderr (no plain tokens, no full URLs).
+ ``dept=<dept_id> service=<service> reason=<short reason>`` line per
+ failing probe to stderr (no plain tokens, no full URLs).
 
 The test exercises both branches against a real
 :class:`vault_client.LocalDevBackend` (an encrypted-file Vault that
-plays the role of the design's "Vault testcontainer" for hermetic
-runs — the file lives under :func:`tmp_path` and is teared down by
+provides a hermetic encrypted-file Vault for the run — the file lives
+under :func:`tmp_path` and is teared down by
 pytest) and a real :class:`httpx.MockTransport` (the in-tree
 equivalent of ``pytest-httpx`` — same wire-level mock semantics
 without the extra dependency the workspace's ``tests/requirements.txt``
@@ -45,12 +43,12 @@ What the test deliberately does NOT cover
 -----------------------------------------
 
 * The Vault factory's ``hashicorp`` backend selection — covered by
-  :mod:`platform.libs.vault_client.tests.test_basic`.
+ :mod:`platform.libs.vault_client.tests.test_basic`.
 * The manifest schema for ``connectivity_probe_command`` — covered by
-  :mod:`platform.tests.ci.test_manifest_schema`.
-* ``LifecycleService.start`` Step 9.5 wiring (subprocess invocation,
-  state cache update, audit emission) — covered by
-  :mod:`platform.services.admin-dashboard-api.tests.property.test_connectivity_probe`.
+ :mod:`platform.tests.ci.test_manifest_schema`.
+* ``LifecycleService.start`` connectivity-probe wiring (subprocess invocation,
+ state cache update, audit emission) — covered by
+ :mod:`platform.services.admin-dashboard-api.tests.property.test_connectivity_probe`.
 """
 
 from __future__ import annotations
@@ -118,10 +116,10 @@ _PROBE_PATHS = {
 class _Row:
     """Tiny stand-in for an :class:`asyncpg.Record` row.
 
-    The script only accesses ``row["department_id"]``,
-    ``row["service"]``, and ``row["credential_ref"]``, so a frozen
-    dataclass with ``__getitem__`` covers the surface area exactly.
-    """
+ The script only accesses ``row["department_id"]``,
+ ``row["service"]``, and ``row["credential_ref"]``, so a frozen
+ dataclass with ``__getitem__`` covers the surface area exactly.
+ """
 
     department_id: str
     service: str
@@ -134,11 +132,11 @@ class _Row:
 class _FakeConnection:
     """Minimal ``asyncpg.Connection`` stand-in.
 
-    Only the methods the script actually invokes are implemented:
-    ``fetch`` (returns the pre-canned rows) and ``close``. Any other
-    attribute access raises so a regression that adds an unexpected
-    DB call surfaces loudly rather than silently no-op'ing.
-    """
+ Only the methods the script actually invokes are implemented:
+ ``fetch`` (returns the pre-canned rows) and ``close``. Any other
+ attribute access raises so a regression that adds an unexpected
+ DB call surfaces loudly rather than silently no-op'ing.
+ """
 
     def __init__(self, rows: tuple[_Row, ...]) -> None:
         self._rows = rows
@@ -174,22 +172,22 @@ def _make_transport(
 ) -> httpx.MockTransport:
     """Build a :class:`httpx.MockTransport` that mimics Atlassian.
 
-    Parameters
-    ----------
-    failures:
-        Optional mapping of ``(host, path)`` → HTTP status code. Any
-        ``(host, path)`` listed here returns the configured non-2xx
-        status; the rest return 200 with an Atlassian-shaped body.
-    transport_errors:
-        Optional set of ``(host, path)`` tuples. Any incoming request
-        whose ``(host, path)`` is in this set raises
-        :class:`httpx.ConnectError`, which the script must surface as
-        ``transport_error:ConnectError`` (the structural label used
-        by ``probe_atlassian._probe_one``).
-    record:
-        Optional list to which every served request is appended for
-        post-test assertions.
-    """
+ Parameters
+ ----------
+ failures:
+ Optional mapping of ``(host, path)`` → HTTP status code. Any
+ ``(host, path)`` listed here returns the configured non-2xx
+ status; the rest return 200 with an Atlassian-shaped body.
+ transport_errors:
+ Optional set of ``(host, path)`` tuples. Any incoming request
+ whose ``(host, path)`` is in this set raises
+ :class:`httpx.ConnectError`, which the script must surface as
+ ``transport_error:ConnectError`` (the structural label used
+ by ``probe_atlassian._probe_one``).
+ record:
+ Optional list to which every served request is appended for
+ post-test assertions.
+ """
 
     failures = failures or {}
 
@@ -248,9 +246,9 @@ def _vault_env(tmp_path: Path) -> dict[str, str]:
 def _seed_vault(env: Mapping[str, str], secrets: Mapping[str, Mapping[str, str]]) -> None:
     """Plant *secrets* into the local-dev Vault under their full paths.
 
-    *secrets* maps a full ``vault:atlassian/<dept>/<service>``
-    reference to its ``{url, username, personal_token}`` payload.
-    """
+ *secrets* maps a full ``vault:atlassian/<dept>/<service>``
+ reference to its ``{url, username, personal_token}`` payload.
+ """
 
     from vault_client import VaultPath, make_client
 
@@ -262,13 +260,13 @@ def _seed_vault(env: Mapping[str, str], secrets: Mapping[str, Mapping[str, str]]
 def _import_probe_module(monkeypatch: pytest.MonkeyPatch) -> Any:
     """Import the script under test fresh so monkeypatched globals stick.
 
-    The script lives at ``services/automation-service/src/scripts/
-    probe_atlassian.py`` and is normally addressed as
-    ``src.scripts.probe_atlassian`` (the dotted name baked into
-    ``connectivity_probe_command``). We re-import it inside the test
-    so each test gets a clean copy whose ``asyncpg`` and ``httpx``
-    references can be redirected via :func:`monkeypatch.setattr`.
-    """
+ The script lives at ``services/automation-service/src/scripts/
+ probe_atlassian.py`` and is normally addressed as
+ ``src.scripts.probe_atlassian`` (the dotted name baked into
+ ``connectivity_probe_command``). We re-import it inside the test
+ so each test gets a clean copy whose ``asyncpg`` and ``httpx``
+ references can be redirected via :func:`monkeypatch.setattr`.
+ """
 
     # Drop any previously-loaded copy so monkeypatched module-level
     # references don't leak between tests.
@@ -288,13 +286,13 @@ def _patch_collaborators(
 ) -> None:
     """Redirect the script's ``asyncpg`` and ``httpx.AsyncClient`` deps.
 
-    * ``asyncpg.connect`` returns a :class:`_FakeConnection` carrying
-      the supplied *rows*. Calls are appended to ``connect_calls`` so
-      tests can assert the DSN was honoured.
-    * ``httpx.AsyncClient`` is wrapped so every instance picks up the
-      supplied :class:`httpx.MockTransport`. This avoids any
-      real-network egress.
-    """
+ * ``asyncpg.connect`` returns a :class:`_FakeConnection` carrying
+ the supplied *rows*. Calls are appended to ``connect_calls`` so
+ tests can assert the DSN was honoured.
+ * ``httpx.AsyncClient`` is wrapped so every instance picks up the
+ supplied :class:`httpx.MockTransport`. This avoids any
+ real-network egress.
+ """
 
     async def _fake_connect(*args: Any, **kwargs: Any) -> _FakeConnection:
         # ``asyncpg.connect(dsn=...)`` is the only call the script
@@ -324,13 +322,13 @@ def test_all_credentials_succeed_returns_exit_zero_and_no_stderr(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Validates Requirement 9.7 — happy path.
+    """Validates happy path.
 
-    Every dept/service pair has a valid Vault secret and the mock
-    Atlassian transport returns 200 for every probe. The script MUST
-    exit ``0`` and write **nothing** to stderr (Requirement 9.7's
-    second sentence: "tüm probe'lar başarılı → exit_code=0").
-    """
+ Every dept/service pair has a valid Vault secret and the mock
+ Atlassian transport returns 200 for every probe. The script MUST
+ exit ``0`` and write **nothing** to stderr 's
+ second sentence: "tüm probe'lar başarılı → exit_code=0").
+ """
 
     env = _vault_env(tmp_path)
     env["POSTGRES_DSN"] = "postgresql://probe:probe@localhost:5432/probe"
@@ -377,11 +375,11 @@ def test_all_credentials_succeed_returns_exit_zero_and_no_stderr(
 
     captured = capsys.readouterr()
     assert exit_code == 0, (
-        f"all-success scenario must exit 0 (R9.7); got {exit_code} "
+        f"all-success scenario must exit 0 ; got {exit_code} "
         f"with stderr={captured.err!r}"
     )
     assert captured.err == "", (
-        f"all-success scenario must produce empty stderr (R9.7); "
+        f"all-success scenario must produce empty stderr ; "
         f"got {captured.err!r}"
     )
 
@@ -396,7 +394,7 @@ def test_all_credentials_succeed_returns_exit_zero_and_no_stderr(
     )
     assert served_paths == expected_urls, (
         f"script must hit the canonical 'who am I?' endpoint per service "
-        f"(R9.7); got {served_paths!r} expected {expected_urls!r}"
+        f"; got {served_paths!r} expected {expected_urls!r}"
     )
     # Every request must carry HTTP Basic auth — never anonymous.
     assert all(call.auth_header and call.auth_header.startswith("Basic ")
@@ -416,13 +414,13 @@ def test_any_credential_failure_returns_exit_one_with_dept_service_reason_lines(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Validates Requirement 9.7 — failure path & stderr format.
+    """Validates failure path & stderr format.
 
-    Two of the three probes succeed and a third fails (HTTP 401).
-    The script MUST exit ``1`` and write exactly one stderr line for
-    the failing probe in the contractual
-    ``dept=<dept> service=<service> reason=<reason>`` format.
-    """
+ Two of the three probes succeed and a third fails (HTTP 401).
+ The script MUST exit ``1`` and write exactly one stderr line for
+ the failing probe in the contractual
+ ``dept=<dept> service=<service> reason=<reason>`` format.
+ """
 
     env = _vault_env(tmp_path)
     env["POSTGRES_DSN"] = "postgresql://probe:probe@localhost:5432/probe"
@@ -474,7 +472,7 @@ def test_any_credential_failure_returns_exit_one_with_dept_service_reason_lines(
 
     captured = capsys.readouterr()
     assert exit_code == 1, (
-        f"any-failure scenario must exit 1 (R9.7); got {exit_code} "
+        f"any-failure scenario must exit 1 ; got {exit_code} "
         f"with stderr={captured.err!r}"
     )
 
@@ -486,7 +484,7 @@ def test_any_credential_failure_returns_exit_one_with_dept_service_reason_lines(
         f"{stderr_lines!r}"
     )
     line = stderr_lines[0]
-    # Format contract per task 7.9 / R9.7:
+    # Format contract per the implementation / :
     # ``dept={...} service={...} reason={...}``
     assert line == "dept=payments service=bitbucket reason=http_401", (
         f"stderr line must follow the 'dept=… service=… reason=…' "
@@ -504,14 +502,14 @@ def test_multiple_failures_emit_one_stderr_line_per_failed_probe(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Validates Requirement 9.7 — multi-failure aggregation.
+    """Validates multi-failure aggregation.
 
-    Two distinct failure modes hit two different (dept, service)
-    pairs in the same run. The script MUST exit ``1`` and emit one
-    stderr line per failure, each in the contractual format. Reasons
-    must reflect the actual failure mode (HTTP status vs transport
-    error class).
-    """
+ Two distinct failure modes hit two different (dept, service)
+ pairs in the same run. The script MUST exit ``1`` and emit one
+ stderr line per failure, each in the contractual format. Reasons
+ must reflect the actual failure mode (HTTP status vs transport
+ error class).
+ """
 
     env = _vault_env(tmp_path)
     env["POSTGRES_DSN"] = "postgresql://probe:probe@localhost:5432/probe"
@@ -581,7 +579,7 @@ def test_multiple_failures_emit_one_stderr_line_per_failed_probe(
         ]
     ), (
         f"multi-failure scenario must emit one structured stderr line "
-        f"per failure (R9.7); got {lines!r}"
+        f"per failure ; got {lines!r}"
     )
 
 
@@ -590,15 +588,15 @@ def test_vault_missing_credential_is_reported_with_vault_missing_reason(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Validates Requirement 9.7 — Vault read miss surfaces structurally.
+    """Validates Vault read miss surfaces structurally.
 
-    A row in ``department_bots`` references a Vault path that has not
-    been written. The script MUST treat this as a probe failure
-    (exit 1) with the structural reason ``vault_missing`` rather than
-    crashing or leaking the path/token; this matches the failure-
-    handling contract spelled out in :mod:`probe_atlassian`'s
-    docstring ("vault_missing", "incomplete_secret", ...).
-    """
+ A row in ``department_bots`` references a Vault path that has not
+ been written. The script MUST treat this as a probe failure
+ (exit 1) with the structural reason ``vault_missing`` rather than
+ crashing or leaking the path/token; this matches the failure-
+ handling contract spelled out in :mod:`probe_atlassian`'s
+ docstring ("vault_missing", "incomplete_secret", ...).
+ """
 
     env = _vault_env(tmp_path)
     env["POSTGRES_DSN"] = "postgresql://probe:probe@localhost:5432/probe"
@@ -655,7 +653,7 @@ def test_vault_missing_credential_is_reported_with_vault_missing_reason(
         "dept=ghost-dept service=jira reason=vault_missing"
     ], (
         f"vault miss must produce a single 'reason=vault_missing' "
-        f"stderr line in dept/service/reason format (R9.7); got {lines!r}"
+        f"stderr line in dept/service/reason format ; got {lines!r}"
     )
 
 
@@ -664,13 +662,13 @@ def test_no_registered_bots_returns_exit_zero(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Validates Requirement 9.7 — empty registry is not a failure.
+    """Validates empty registry is not a failure.
 
-    A brand-new install with zero ``department_bots`` rows must not
-    fail the connectivity probe (would block ``LifecycleService.start``
-    Step 9.5 unnecessarily). The script must exit ``0`` and produce
-    no stderr output.
-    """
+ A brand-new install with zero ``department_bots`` rows must not
+ fail the connectivity probe (would block ``LifecycleService.start``
+ unnecessarily). The script must exit ``0`` and produce
+ no stderr output.
+ """
 
     env = _vault_env(tmp_path)
     env["POSTGRES_DSN"] = "postgresql://probe:probe@localhost:5432/probe"

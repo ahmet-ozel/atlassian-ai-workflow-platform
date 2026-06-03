@@ -1,6 +1,4 @@
-"""Unit tests for the ``iteration_manager`` activity (task 11.1).
-
-Validates Requirements: 12.1, 12.2, 12.3, 12.4, 12.5, 12.6, 12.7, 12.8.
+"""Unit tests for the ``iteration_manager`` activity.
 
 Strategy
 --------
@@ -167,7 +165,7 @@ def _make_input(
 
 
 class TestIsIterateCommand:
-    """``[iterate]`` keyword detection (R12.1)."""
+    """``[iterate]`` keyword detection."""
 
     @pytest.mark.parametrize(
         "body",
@@ -198,7 +196,7 @@ class TestIsIterateCommand:
 
 
 class TestExtractExtraInstructions:
-    """Extra instruction extraction (R12.8)."""
+    """Extra instruction extraction."""
 
     def test_no_command(self) -> None:
         assert extract_extra_instructions("just a comment") is None
@@ -235,7 +233,7 @@ class TestExtractExtraInstructions:
 
 
 class TestIsAuthorizedForIterate:
-    """Authorization predicate (R12.6)."""
+    """Authorization predicate."""
 
     def test_in_approvers(self) -> None:
         assert is_authorized_for_iterate(
@@ -287,7 +285,7 @@ class TestIsAuthorizedForIterate:
 
 
 class TestBuildIterationWorkspacePath:
-    """Workspace path builder (R12.2)."""
+    """Workspace path builder."""
 
     def test_canonical_output(self) -> None:
         assert (
@@ -413,7 +411,7 @@ class TestPrepareIterationHappyPath:
         assert result.previous_pr_id == 199
         assert result.extra_instructions == "tighten error path"
         assert result.workspace_path.endswith("/PAY-4211/iter-3")
-        # Workspace paths are unique across iterations (Property 12).
+        # Workspace paths are unique across iterations.
         assert (
             result.workspace_path != store.rows[0].workspace_path
         )
@@ -423,7 +421,7 @@ class TestPrepareIterationHappyPath:
         assert store.rows[1].previous_pr_id == 199
 
     def test_reporter_can_iterate_without_being_approver(self) -> None:
-        # R12.6: reporter authorization path.
+        # Reporter authorization path.
         store = _InMemoryStore()
         set_iteration_store(store)
 
@@ -504,7 +502,7 @@ class TestPrepareIterationDenialPaths:
         assert result.workspace_path == ""
         assert result.previous_branch is None
         assert result.previous_pr_id is None
-        # No persistence for an unauthorized request (R12.6).
+        # No persistence for an unauthorized request.
         assert store.rows == []
 
     def test_empty_author_denied(self) -> None:

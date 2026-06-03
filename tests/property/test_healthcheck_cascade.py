@@ -1,23 +1,22 @@
-"""Property test 11 — Healthcheck cascade aggregator deterministik.
+"""invariant 11 — Healthcheck cascade aggregator deterministik.
 
-**Validates: Requirements 4.9, 4.10**
+
 
 For every Hypothesis-generated set of ``(per_service_status,
-depends_on_dag)`` inputs, :class:`HealthcheckAggregator.aggregate`
+depends_on_dag)`` inputs,:class:`HealthcheckAggregator.aggregate`
 satisfies:
 
 (a) Output is the strict superset of the input keys (no service
-    silently disappears).
+ silently disappears).
 (b) A service whose ``depends_on_services`` includes any unhealthy
-    or unknown service is **never** reported as ``healthy`` —
-    minimum it can be is ``degraded``.
+ or unknown service is **never** reported as ``healthy`` —
+ minimum it can be is ``degraded``.
 (c) A service that is itself ``unhealthy`` keeps the ``unhealthy``
-    label even when its deps are healthy (deeper failure wins).
+ label even when its deps are healthy (deeper failure wins).
 (d) The function is deterministic: same input ⇒ same output.
 
 The aggregator under test lives at
-``platform/services/admin-dashboard-api/src/routers/healthcheck.py``
-(task 11.5). When that module is unavailable (eg. before task 11.5
+``platform/services/admin-dashboard-api/src/routers/healthcheck.py``. When that module is unavailable (eg. before 
 ships) the test skips with a precise reason.
 """
 
@@ -56,7 +55,7 @@ pytestmark = pytest.mark.skipif(
     HealthcheckAggregator is None,
     reason=(
         "src.routers.healthcheck not yet importable "
-        f"(task 11.5 is still [-]); error: {_IMPORT_ERROR!r}"
+        f"(implementation milestone is still [-]); error: {_IMPORT_ERROR!r}"
     ),
 )
 

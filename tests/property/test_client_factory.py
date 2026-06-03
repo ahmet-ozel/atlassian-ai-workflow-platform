@@ -1,25 +1,25 @@
-"""Property tests for ``http_shared.make_mcp_client`` header injection
-and ``LLMProviderFactory.from_env()`` dispatch correctness.
+"""invariant for ``http_shared.make_mcp_client`` header injection
+and ``LLMProviderFactory.from_env`` dispatch correctness.
 
-Validates: Requirements 13.1, 13.3
-Property 10: ``make_mcp_client`` always injects ``X-Client-Source``.
+
+invariant: ``make_mcp_client`` always injects ``X-Client-Source``.
 
 The factory in ``libs/http-shared`` is the single point that creates
 ``httpx.AsyncClient`` instances for outgoing MCP / Firecrawl calls. Two
 invariants must hold for every constructed client:
 
 1. ``client.headers["X-Client-Source"]`` equals the ``client_source``
-   string passed to the factory, regardless of which Component identity
-   is supplied.
+ string passed to the factory, regardless of which Component identity
+ is supplied.
 2. Any caller-supplied ``X-Client-Source`` header (in any letter
-   casing) is overridden by the factory's value, so callers cannot
-   accidentally spoof another Component's identity.
+ casing) is overridden by the factory's value, so callers cannot
+ accidentally spoof another Component's identity.
 
-**Validates: Requirements 1.1**
-Property 2: Provider Factory Dispatch Correctness.
+
+invariant: Provider Factory Dispatch Correctness.
 
 For any valid ``LLM_PROVIDER`` value from the set
-``{mock, vllm, openai, anthropic}``, ``LLMProviderFactory.from_env()``
+``{mock, vllm, openai, anthropic}``, ``LLMProviderFactory.from_env``
 SHALL return an instance of the corresponding provider class, and the
 instance SHALL satisfy the ``LLMProvider`` protocol.
 """
@@ -61,11 +61,11 @@ def _close(client: httpx.AsyncClient) -> None:
 )
 @given(client_source=_CLIENT_SOURCE_TEXT)
 def test_make_mcp_client_injects_x_client_source(client_source: str) -> None:
-    """Property 10a — header value equals the supplied ``client_source``.
+    """invariant — header value equals the supplied ``client_source``.
 
-    For every ``client_source`` string the factory accepts, the resulting
-    client must echo it back via ``client.headers["X-Client-Source"]``.
-    """
+ For every ``client_source`` string the factory accepts, the resulting
+ client must echo it back via ``client.headers["X-Client-Source"]``.
+ """
 
     client = make_mcp_client(client_source)
     try:
@@ -98,12 +98,12 @@ def test_make_mcp_client_injects_x_client_source(client_source: str) -> None:
 def test_caller_supplied_x_client_source_is_overridden(
     client_source: str, spoofed: str, spoof_key: str
 ) -> None:
-    """Property 10b — factory header wins over caller-supplied header.
+    """invariant — factory header wins over caller-supplied header.
 
-    Even when callers pass ``headers={"X-Client-Source": "..."}`` (or any
-    case variant of the same name), the factory's value must win on the
-    case-insensitive collision.
-    """
+ Even when callers pass ``headers={"X-Client-Source": "..."}`` (or any
+ case variant of the same name), the factory's value must win on the
+ case-insensitive collision.
+ """
 
     client = make_mcp_client(client_source, headers={spoof_key: spoofed})
     try:
@@ -136,11 +136,11 @@ def test_caller_supplied_x_client_source_is_overridden(
 def test_unrelated_caller_headers_are_preserved(
     client_source: str, other_key: str, other_value: str
 ) -> None:
-    """Property 10c — non-colliding caller headers survive intact.
+    """invariant — non-colliding caller headers survive intact.
 
-    The factory must merge unrelated caller-supplied headers without
-    touching them; only the ``X-Client-Source`` slot is reserved.
-    """
+ The factory must merge unrelated caller-supplied headers without
+ touching them; only the ``X-Client-Source`` slot is reserved.
+ """
 
     client = make_mcp_client(
         client_source, headers={other_key: other_value, "X-Client-Source": "spoofed"}
@@ -206,7 +206,6 @@ def test_caller_supplied_headers_can_be_iterable_of_pairs() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Feature: platform-quick-fixes, Property 2: Provider Factory Dispatch Correctness
 # ---------------------------------------------------------------------------
 
 from llm_orchestrator import LLMProviderFactory
@@ -229,13 +228,13 @@ _VALID_PROVIDERS = st.sampled_from(sorted(_EXPECTED_PROVIDER_CLASS.keys()))
 
 
 def _make_env_for_provider(provider_key: str) -> dict[str, str]:
-    """Build a minimal env dict that satisfies the provider's requirements.
+    """Build a minimal env dict that satisfies the provider's the operational rule.
 
-    Each provider needs specific env vars to instantiate without error:
-    - vllm: VLLM_BASE_URL (valid URL)
-    - openai: OPENAI_API_KEY (non-empty)
-    - anthropic: ANTHROPIC_API_KEY (non-empty)
-    """
+ Each provider needs specific env vars to instantiate without error:
+ - vllm: VLLM_BASE_URL (valid URL)
+ - openai: OPENAI_API_KEY (non-empty)
+ - anthropic: ANTHROPIC_API_KEY (non-empty)
+ """
     env: dict[str, str] = {"LLM_PROVIDER": provider_key}
     if provider_key == "vllm":
         env["VLLM_BASE_URL"] = "http://localhost:8000/v1"
@@ -254,13 +253,13 @@ def _make_env_for_provider(provider_key: str) -> dict[str, str]:
 )
 @given(provider_key=_VALID_PROVIDERS)
 def test_provider_factory_dispatch_returns_correct_class(provider_key: str) -> None:
-    """Property 2a — factory returns the correct provider class for each valid key.
+    """invariant — factory returns the correct provider class for each valid key.
 
-    **Validates: Requirements 1.1**
 
-    For every valid LLM_PROVIDER value, LLMProviderFactory.from_env() must
-    return an instance of the corresponding provider class.
-    """
+
+ For every valid LLM_PROVIDER value, LLMProviderFactory.from_env must
+ return an instance of the corresponding provider class.
+ """
     env = _make_env_for_provider(provider_key)
     provider = LLMProviderFactory.from_env(env)
 
@@ -278,17 +277,17 @@ def test_provider_factory_dispatch_returns_correct_class(provider_key: str) -> N
 )
 @given(provider_key=_VALID_PROVIDERS)
 def test_provider_factory_dispatch_satisfies_protocol(provider_key: str) -> None:
-    """Property 2b — factory-produced instance satisfies the LLMProvider protocol.
+    """invariant — factory-produced instance satisfies the LLMProvider protocol.
 
-    **Validates: Requirements 1.1**
 
-    The LLMProvider protocol requires:
-    - A ``name`` attribute (str)
-    - A ``complete(prompt: str) -> str`` method
 
-    Every instance returned by the factory must satisfy this runtime-checkable
-    protocol regardless of which provider key is selected.
-    """
+ The LLMProvider protocol requires:
+ - A ``name`` attribute (str)
+ - A ``complete(prompt: str) -> str`` method
+
+ Every instance returned by the factory must satisfy this runtime-checkable
+ protocol regardless of which provider key is selected.
+ """
     env = _make_env_for_provider(provider_key)
     provider = LLMProviderFactory.from_env(env)
 
@@ -320,14 +319,14 @@ def test_provider_factory_dispatch_satisfies_protocol(provider_key: str) -> None
 def test_provider_factory_dispatch_case_insensitive(
     provider_key: str, case_variant: str
 ) -> None:
-    """Property 2c — factory dispatch is case-insensitive and whitespace-tolerant.
+    """invariant — factory dispatch is case-insensitive and whitespace-tolerant.
 
-    **Validates: Requirements 1.1**
 
-    The factory normalizes the LLM_PROVIDER value (strip + lower) before
-    dispatch, so case variants and leading/trailing whitespace must still
-    resolve to the correct provider class.
-    """
+
+ The factory normalizes the LLM_PROVIDER value (strip + lower) before
+ dispatch, so case variants and leading/trailing whitespace must still
+ resolve to the correct provider class.
+ """
     # Apply case variant
     if case_variant == "lower":
         raw_key = provider_key.lower()
@@ -339,7 +338,7 @@ def test_provider_factory_dispatch_case_insensitive(
             for i, c in enumerate(provider_key)
         )
     else:  # padded
-        raw_key = f"  {provider_key}  "
+        raw_key = f" {provider_key} "
 
     env = _make_env_for_provider(provider_key)
     env["LLM_PROVIDER"] = raw_key
@@ -362,14 +361,14 @@ def test_provider_factory_dispatch_case_insensitive(
 def test_provider_factory_known_providers_includes_all_valid(
     provider_key: str,
 ) -> None:
-    """Property 2d — known_providers() always contains all valid provider keys.
+    """invariant — known_providers always contains all valid provider keys.
 
-    **Validates: Requirements 1.1**
 
-    The factory's known_providers() set must include every valid provider key
-    that from_env() can dispatch to.
-    """
+
+ The factory's known_providers set must include every valid provider key
+ that from_env can dispatch to.
+ """
     known = LLMProviderFactory.known_providers()
     assert provider_key in known, (
-        f"Provider key {provider_key!r} not in known_providers(): {known}"
+        f"Provider key {provider_key!r} not in known_providers: {known}"
     )

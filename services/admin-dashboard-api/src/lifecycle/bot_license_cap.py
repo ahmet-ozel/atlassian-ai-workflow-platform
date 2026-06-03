@@ -1,6 +1,5 @@
-"""``BotLicenseHardCap`` (`platform-mimari-ops` task 11.9).
+"""``BotLicenseHardCap`` (`operations surface` bot license cap wiring).
 
-**Validates: Requirements 4.6 / Q20**
 
 Concurrency-bounded queue that gates bot-license-paid actions so
 the platform never exceeds the licensed concurrent-bot count. The
@@ -10,7 +9,7 @@ class is small on purpose — it only provides:
   free, then yields. Cancellable via task cancellation.
 * :meth:`stats` — current ``(in_use, capacity, queued)``.
 
-Property 19 (``test_bot_license_hard_cap.py``) pins:
+invariant 19 (``test_bot_license_hard_cap.py``) pins:
 (a) capacity bound, (b) FIFO fairness, (c) idempotent release on
 context manager exit, (d) deterministic stats snapshot.
 """
@@ -43,7 +42,7 @@ class BotLicenseHardCap:
     The implementation is a bounded :class:`asyncio.Semaphore` plus a
     small monotonic counter for the queued-acquirer count. Python's
     semaphore is FIFO-fair by virtue of its ``waiters`` deque, which
-    matches the property-test fairness invariant.
+    matches the invariant-test fairness invariant.
 
     Args:
         capacity: Maximum number of concurrent bot-license-paid

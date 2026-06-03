@@ -4,9 +4,9 @@ Implements the three :class:`~typing.Protocol`-typed surfaces declared
 in :mod:`notification.adapters` against real transports:
 
 * :class:`AiohttpSlackAdapter` — POST to the resolved Slack webhook
-  with a 1 msg/sec/channel token bucket back-pressure (R5.1, R6.4).
+  with a 1 msg/sec/channel token bucket back-pressure.
 * :class:`AiosmtplibEmailAdapter` — STARTTLS SMTP send using SMTP
-  credentials resolved from Vault (R5.1).
+  credentials resolved from Vault.
 * :class:`AsyncpgNotificationLogStore` — backs ``shared.notification_log``
   via ``asyncpg.Pool`` with ``ON CONFLICT (dedup_key) DO NOTHING``
   semantics returning ``True`` / ``False``.
@@ -17,7 +17,7 @@ their dependency clients (``aiohttp.ClientSession``, ``asyncpg.Pool``,
 SMTP credentials dict) at construction time so the lifespan owns the
 client lifecycle and the adapter stays a thin shim.
 
-Sibling task 8.2's :class:`NotificationService` consumes the
+:class:`NotificationService` consumes the
 Protocol-typed surfaces declared in :mod:`notification.adapters`,
 not the concrete classes here, so unit tests can stay protocol-only.
 

@@ -1,34 +1,34 @@
-"""Unit tests for ``AgentRunnerWorkflow`` ``confluence_doc_*`` flows (task 8.4).
+"""Unit tests for ``AgentRunnerWorkflow`` ``confluence_doc_*`` flows.
 
-Covers the five behaviour requirements pinned by task 8.4 / R8.1-R8.7:
+Covers the main Confluence behaviors:
 
     1. ``confluence_doc_create`` happy path — verifies the activity
        sequence (``set_assignee_to_bot`` → ``jira_build_issue_link``
        → ``llm_generate_doc`` → ``confluence_create_page`` →
        ``jira_add_comment`` carrying the page link) and that the
        provenance footer is appended to the page body before the
-       create call (R8.1, R8.4, R8.6).
+       create call.
     2. ``confluence_doc_update`` overwrite-protection skip — when
        :func:`should_skip_overwrite` fires (a non-bot user edited the
        page in the last 5 minutes) the update activity is **not**
        called, the ``confluence_overwrite_protected`` audit row is
        emitted, and a needs_info-style Jira comment is posted
-       (R8.7).
+       for recent human edits.
     3. ``confluence_doc_update`` section-dedup — when a section's
        content_hash is already present in the workflow's
        ``_confluence_section_hashes`` set the per-section update
        activity is skipped for that section and the
-       ``confluence_section_dedup_skip`` audit row is emitted (R8.2).
+       ``confluence_section_dedup_skip`` audit row is emitted.
     4. ``confluence_doc_update`` ``_AI_PROBE_*`` skip — a probe-titled
        page short-circuits the update path before the dedup loop
-       runs; no ``confluence_update_page`` is invoked (R8.3).
+       runs; no ``confluence_update_page`` is invoked.
     5. Provenance footer present in BOTH create and update bodies —
        the footer text from
        :func:`temporal_shared.confluence.compute_provenance_footer`
        must appear verbatim in the body passed to
        ``confluence_create_page`` and ``confluence_update_page`` so
        the bot's authorship is auditable on the rendered page
-       (R8.6).
+       on the update call.
 
 The tests drive the body methods directly
 (``_handle_confluence_doc_create`` / ``_handle_confluence_doc_update``)
@@ -36,9 +36,8 @@ without spinning up a Temporal worker. ``temporalio.workflow``
 primitives (``execute_activity``, ``info``, ``now``) are stubbed with
 :func:`unittest.mock.patch` so the workflow body is exercised as plain
 Python — the mirroring approach already used by
-``test_agent_runner_code_change.py`` (task 7.5).
+``test_agent_runner_code_change.py``.
 
-Validates Requirements: 8.1, 8.2, 8.3, 8.4, 8.6, 8.7.
 """
 
 from __future__ import annotations
@@ -260,7 +259,7 @@ def _activity_calls_for(activity_mock: AsyncMock, name: str) -> list[Any]:
 
 
 class TestConfluenceDocCreate:
-    """Happy path through the create body (R8.1, R8.4, R8.6)."""
+    """Happy path through the create body."""
 
     def test_happy_path_invokes_full_activity_sequence(
         self, make_wf, patched_workflow_now
@@ -341,7 +340,7 @@ class TestConfluenceDocCreate:
         self, make_wf, patched_workflow_now
     ) -> None:
         """The body passed to ``confluence_create_page`` MUST embed the
-        provenance footer (R8.6) so the rendered page surfaces the
+        provenance footer so the rendered page surfaces the
         bot's authorship to readers."""
 
         wf = make_wf()
@@ -438,7 +437,7 @@ class TestConfluenceDocCreate:
 
 
 class TestConfluenceDocUpdateOverwriteProtection:
-    """Recent human edit blocks the update path (R8.7)."""
+    """Recent human edit blocks the update path."""
 
     def test_recent_human_edit_skips_update_with_audit(
         self, make_wf, patched_workflow_now
@@ -566,7 +565,7 @@ class TestConfluenceDocUpdateOverwriteProtection:
 
 
 class TestConfluenceDocUpdateSectionDedup:
-    """Identical content_hash skips the per-section write (R8.2)."""
+    """Identical content_hash skips the per-section write."""
 
     def test_second_run_with_same_hash_skips_update(
         self, make_wf, patched_workflow_now
@@ -697,7 +696,7 @@ class TestConfluenceDocUpdateSectionDedup:
 
 
 class TestConfluenceDocUpdateProbeSkip:
-    """Probe-titled pages must NOT be overwritten (R8.3, foundation R5)."""
+    """Probe-titled pages must NOT be overwritten."""
 
     def test_probe_title_short_circuits_update(
         self, make_wf, patched_workflow_now
@@ -764,7 +763,7 @@ class TestConfluenceDocUpdateProbeSkip:
 
 class TestProvenanceFooterInUpdateBody:
     """The provenance footer must be appended to every section body
-    written via ``confluence_update_page`` (R8.6)."""
+    written via ``confluence_update_page``."""
 
     def test_update_section_body_contains_footer(
         self, make_wf, patched_workflow_now

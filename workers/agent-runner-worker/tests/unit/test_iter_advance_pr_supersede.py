@@ -1,4 +1,4 @@
-"""Unit tests for ``iter_advance_pr_supersede`` activity (task 7.6).
+"""Unit tests for ``iter_advance_pr_supersede`` activity.
 
 Validates the contract documented on
 :func:`agent_runner.activities.iter_advance.iter_advance_pr_supersede`:
@@ -21,7 +21,6 @@ The HTTP layer is mocked at the ``httpx.AsyncClient.post`` boundary
 so the activity body runs end-to-end with realistic response codes
 and bodies.
 
-Validates: Requirement 10.1.
 """
 
 from __future__ import annotations

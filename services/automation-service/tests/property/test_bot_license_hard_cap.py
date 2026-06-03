@@ -1,9 +1,5 @@
 """Property test: Bot license cap monotonicity + enforcement.
 
-# Feature: platform-mimari-uyumluluk
-# Property 17: Bot License Cap Monotonicity + Enforcement (Q20)
-# Validates: Requirements 16.3, 16.4, 16.5, 16.7
-
 For any license cap ``(max_concurrent, max_daily, max_monthly_token_usd)``
 and usage state ``(curr_concurrent, curr_daily, curr_monthly_usd)`` pairs,
 ``enforce_license_cap(dept_id)`` behaviour satisfies:
@@ -258,15 +254,12 @@ _CAP_USD = st.decimals(
 )
 
 # ---------------------------------------------------------------------------
-# Property 17a — Allow when all usage < cap
+# Allow when all usage < cap
 # ---------------------------------------------------------------------------
 
 
 class TestAllowWhenUnderCap:
-    """**Property 17a: enforce_license_cap is a no-op when all usage < cap.**
-
-    **Validates: Requirements 16.3, 16.4**
-    """
+    """``enforce_license_cap`` is a no-op when all usage is below cap."""
 
     @_PROFILE
     @given(
@@ -315,15 +308,12 @@ class TestAllowWhenUnderCap:
         )
 
 # ---------------------------------------------------------------------------
-# Property 17b — Reject when any usage >= cap
+# Reject when any usage >= cap
 # ---------------------------------------------------------------------------
 
 
 class TestRejectWhenAtOrOverCap:
-    """**Property 17b: enforce_license_cap raises when any usage >= cap.**
-
-    **Validates: Requirements 16.3, 16.4, 16.5**
-    """
+    """``enforce_license_cap`` raises when any usage is at or above cap."""
 
     @_PROFILE
     @given(
@@ -438,14 +428,12 @@ class TestRejectWhenAtOrOverCap:
         assert audit.events[0].payload["limit_type"] == "monthly_token"
 
 # ---------------------------------------------------------------------------
-# Property 17c — Deterministic check order: concurrent → daily → monthly_token
+# Deterministic check order: concurrent → daily → monthly_token
 # ---------------------------------------------------------------------------
 
 
 class TestDeterministicCheckOrder:
-    """**Property 17c: limit_type check order is concurrent → daily → monthly_token.**
-
-    **Validates: Requirements 16.5, 16.7**
+    """``limit_type`` check order is concurrent → daily → monthly_token.
 
     When multiple limits are simultaneously exceeded, the *first* one in
     the canonical order is reported.
@@ -558,14 +546,12 @@ class TestDeterministicCheckOrder:
         )
 
 # ---------------------------------------------------------------------------
-# Property 17d — Monotonicity invariant
+# Monotonicity invariant
 # ---------------------------------------------------------------------------
 
 
 class TestMonotonicity:
-    """**Property 17d: Monotonicity — allowed → rejected transition is one-way.**
-
-    **Validates: Requirements 16.3, 16.7**
+    """Monotonicity: the allowed → rejected transition is one-way.
 
     For a fixed cap, if usage N is rejected, then usage N+1 must also be
     rejected (for the same dimension). The decision never flips back from
@@ -682,15 +668,12 @@ class TestMonotonicity:
         )
 
 # ---------------------------------------------------------------------------
-# Property 17e — Audit payload correctness
+# Audit payload correctness
 # ---------------------------------------------------------------------------
 
 
 class TestAuditPayload:
-    """**Property 17e: Audit event payload is correct on rejection.**
-
-    **Validates: Requirements 16.5**
-    """
+    """Audit event payload is correct on rejection."""
 
     @_PROFILE
     @given(
@@ -779,15 +762,12 @@ class TestAuditPayload:
         assert audit.events[0].payload["limit_type"] == "concurrent"
 
 # ---------------------------------------------------------------------------
-# Property 17f — Default cap sentinel
+# Default cap sentinel
 # ---------------------------------------------------------------------------
 
 
 class TestDefaultCapSentinel:
-    """**Property 17f: DEFAULT_LICENSE_CAP values match design defaults.**
-
-    **Validates: Requirements 16.3**
-    """
+    """``DEFAULT_LICENSE_CAP`` values match design defaults."""
 
     def test_default_cap_values(self) -> None:
         """DEFAULT_LICENSE_CAP matches the design-specified defaults."""

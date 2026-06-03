@@ -1,52 +1,42 @@
 """``ChatHandler.stream`` — SSE pipeline for ``POST /api/chat/stream``.
 
-This module is task **4.4** of ``platform-mimari-ops``. It wires the
-deterministic chat tool-call loop described by Requirements 1.1, 1.2,
-1.3, 1.4, 1.6, 1.7, 1.8, 1.9, 1.10 and design.md
-§"ChatHandler (`src/chat/handler.py`)".
+This module wires the deterministic chat tool-call loop.
 
 The handler is the **single funnel** every chat request flows
 through. It executes a fixed six-step pipeline:
 
 1. **PII mask** — :func:`pii_shared.mask` is invoked on the
-   user-provided text *before* any other processing. Requirement 1.5.
+   user-provided text *before* any other processing.
 2. **Sliding window** — the history + masked message is trimmed to
    the last ``CHAT_SLIDING_WINDOW_N`` (default 20) entries with a
-   summary system prefix. Requirement 1.7.
+   summary system prefix.
 3. **System prompt render** — ``prompt_loader.render("assistant_chat",
    vars=...)`` injects the dept-scoped template variables into the
-   git-tracked system prompt. Requirements 1.4, 2.7.
+   git-tracked system prompt.
 4. **Tool filter** — ``mcp_client.filter_tools`` strips the foundation
    banned-tool list (``bitbucket_merge_pr``,
    ``confluence_delete_page``); ``capability_gate`` then narrows the
-   catalogue to the dept's capability set. Requirements 1.2, 1.8.
+   catalogue to the dept's capability set.
 5. **LLM tool-call loop** — ``llm.stream_with_tool_loop(...)`` yields
    SSE events. The handler intercepts each ``tool_call`` event:
    * If :func:`is_write_intent` returns ``True`` it emits a
      ``redirect_to_task_creator`` event and **stops** without calling
-     ``tool_dispatch.invoke`` (Requirement 1.3).
+      ``tool_dispatch.invoke``.
    * Otherwise the call is dispatched and a ``tool_result`` event is
      yielded (the orchestrator continues the loop until ``done`` /
      ``rate_limit_exhausted`` / ``token_cap_exceeded``).
 6. **Audit** — a ``chat_message`` row is written with the prompt's
-   git short hash, token usage and cost. Requirement 1.8.
+   git short hash, token usage and cost.
 
 The collaborators (sliding-window compressor, LLM orchestrator, tool
 dispatch, audit logger, prompt loader, summariser) are typed against
 small :class:`~typing.Protocol` interfaces so the handler can be
 exercised without standing up vLLM, Postgres or Vault. Concrete
-wiring lives in sibling tasks 4.1 (``SlidingWindow.compress``) and
-4.3 (``LlmOrchestrator.stream_with_tool_loop``); the property tests
-4.8/4.9/4.10/4.11 can already validate the pipeline against fakes
+the pipeline is validated against fakes
 because every collaborator is reachable through these protocols.
 
-Design alignment notes
-----------------------
-
 * The PII mask call **must** be the first thing the handler does to
-  the user-provided text. Property 2's AST scan
-  (``platform/tests/property/test_pii_filter.py``) walks
-  ``src/chat/handler.py`` and confirms that ``pii_filter.mask`` is
+  the user-provided text. Tests confirm that ``pii_filter.mask`` is
   invoked *before* any reference to ``llm.stream_with_tool_loop``.
   The implementation below keeps the two calls in the same function
   body so the AST tooling can read the source-order relationship
@@ -55,9 +45,7 @@ Design alignment notes
   inside ``stream``; the LLM orchestrator owns the tool dispatch
   callback and the handler only feeds it through. The intercept for
   write actions is therefore a pre-dispatch gate the orchestrator
-  consults, *not* a post-dispatch rollback. This matches design.md
-  §"WriteActionIntercept" which states the predicate runs before the
-  write tool is executed.
+  consults, *not* a post-dispatch rollback.
 """
 
 from __future__ import annotations
@@ -105,12 +93,12 @@ _LOG = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# Tunables (Requirement 1.7)
+# Tunables
 # ---------------------------------------------------------------------------
 
 
 #: Default number of chat messages kept in the LLM context window.
-#: Requirement 1.7 pins the **default** at 20; deployments may lower
+#: The default is 20; deployments may lower
 #: it via the ``CHAT_SLIDING_WINDOW_N`` env var (read by
 #: ``src.config.Settings`` in a future task) and pass the value into
 #: the :class:`ChatHandler` constructor.
@@ -123,18 +111,17 @@ DEFAULT_SLIDING_WINDOW_N: int = 20
 
 
 #: Type alias for the summariser callable consumed by sliding-window
-#: compression (design §"SlidingWindow"). Returns the summary text
-#: that replaces the dropped older messages.
+#: compression. Returns the summary text that replaces the dropped
+#: older messages.
 Summariser = Callable[[Sequence[Message]], str]
 
 
 @runtime_checkable
 class SlidingWindowCompressor(Protocol):
-    """Pure compressor matching :func:`compress` in design §"SlidingWindow".
+    """Pure compressor matching :func:`compress`.
 
-    Task 4.1 lands the concrete implementation under
-    ``src/chat/sliding_window.py``; until then any callable with this
-    shape works (the property tests inject lambdas).
+    The concrete implementation lives under ``src/chat/sliding_window.py``;
+    any callable with this shape works for tests that inject lambdas.
     """
 
     def __call__(
@@ -149,11 +136,10 @@ class SlidingWindowCompressor(Protocol):
 
 @runtime_checkable
 class CapabilityGateLike(Protocol):
-    """Foundation capability gate (Spec 1, ``mcp_client.tool_filter``).
+    """Foundation capability gate.
 
-    Narrows a tool catalogue to the dept's capability subset. Task 4.4
-    only requires the function shape; the concrete gate lives in the
-    foundation lib and is wired in via ``ChatHandlerDeps``.
+    Narrows a tool catalogue to the dept's capability subset. The concrete
+    gate lives in the foundation lib and is wired in via ``ChatHandlerDeps``.
     """
 
     def __call__(
@@ -181,11 +167,11 @@ class ToolDispatchLike(Protocol):
 
 @runtime_checkable
 class LlmOrchestratorLike(Protocol):
-    """Mirror of :class:`llm_orchestrator.LlmOrchestrator` (task 4.3).
+    """Mirror of :class:`llm_orchestrator.LlmOrchestrator`.
 
     The handler depends only on the ``stream_with_tool_loop`` async
     generator surface; the concrete retry / fallback / token-cap
-    logic lives behind this protocol so task 4.4's pipeline test
+    logic lives behind this protocol so pipeline tests
     suite can stand in a fake orchestrator that emits a scripted
     sequence of SSE events.
     """
@@ -212,7 +198,7 @@ class DeptContext:
     """Snapshot of dept-scoped data needed to render the system prompt.
 
     The handler does not pull this from a config store on every call
-    — task 3.1's FastAPI dependency builds it once per request from
+    — FastAPI dependency wiring builds it once per request from
     the OIDC ``AuthContext`` plus the ``departments.json`` lookup,
     and hands the frozen value to :meth:`ChatHandler.stream`.
     """
@@ -269,23 +255,23 @@ class _StreamCounters:
 class ChatHandlerDeps:
     """Bundle of collaborator references the handler needs at construction.
 
-    Production wiring (``src/main.py`` startup, task 3.1) builds this
-    once and reuses it across requests. Property tests build a fake
+    Production wiring (``src/main.py`` startup) builds this once and
+    reuses it across requests. Tests build a fake
     bundle inline.
 
     Attributes:
         prompt_loader: :class:`prompts.PromptLoader` instance whose
             ``poll_loop`` is launched at service boot.
-        compress: :func:`sliding_window.compress` (task 4.1).
+        compress: :func:`sliding_window.compress`.
         summariser: Summariser callable invoked by ``compress`` for
             dropped older messages.
         capability_gate: Foundation capability gate.
-        llm: :class:`LlmOrchestratorLike` (task 4.3).
+        llm: :class:`LlmOrchestratorLike`.
         tool_dispatch: :class:`ToolDispatchLike` consumed by the
             orchestrator's ``on_tool_call`` callback.
-        audit: :class:`audit_logger.AuditLogger` (Spec 1).
+        audit: :class:`audit_logger.AuditLogger`.
         token_cap: Activity-level token cap forwarded to the
-            orchestrator (Requirement 1.6).
+            orchestrator.
         sliding_window_n: Number of recent messages kept by the
             compressor; defaults to :data:`DEFAULT_SLIDING_WINDOW_N`.
         prompt_name: Name of the system prompt loaded for every chat
@@ -305,7 +291,7 @@ class ChatHandlerDeps:
     # The MCP catalogue accessor — typed as a callable so the handler
     # is decoupled from the concrete client. ``list_tools()`` returns
     # the full tool descriptors before banned-tool / capability-gate
-    # filtering. Task 3.1 wires the foundation ``mcp_client`` here.
+    # filtering. The foundation ``mcp_client`` is wired here.
     list_tools: Callable[
         [],
         Iterable[Any] | Awaitable[Iterable[Any]],
@@ -313,12 +299,12 @@ class ChatHandlerDeps:
     # Timeout in seconds for the LLM request. When the LLM call
     # exceeds this duration the handler aborts, writes an
     # ``assistant_llm_timeout`` audit event, and emits an SSE error
-    # event (Requirement 1.7).
+    # event.
     timeout_s: int = 60
     # Maximum number of output tokens allowed from the LLM response.
     # When the cumulative token output exceeds this threshold the
     # handler closes the stream cleanly and emits a final ``done``
-    # event with ``truncated: true`` (Requirement 1.8).
+    # event with ``truncated: true``.
     max_tokens_output: int = 4096
 
 
@@ -351,33 +337,22 @@ class _ActorLike(Protocol):
 class ChatHandler:
     """SSE chat endpoint handler.
 
-    Validates:
-        * R1.1 (HTTP/SSE chat endpoint, tool-call loop, SSE chunks).
-        * R1.2 (banned tool list applied via foundation
-          ``mcp_client.filter_tools``).
-        * R1.3 (write-action intent intercept ⇒
-          ``redirect_to_task_creator``).
-        * R1.4 (system prompt injection — ``assistant_chat.md``).
-        * R1.5 (PII mask — delegated to :func:`pii_shared.mask`).
-        * R1.6 (activity-level token cap — delegated to LLM
-          orchestrator).
-        * R1.7 (sliding window).
-        * R1.8 (audit ``chat_message`` event).
-        * R1.9 (LLM 429 retry — delegated to LLM orchestrator).
-        * R1.10 (vLLM downtime fallback banner — delegated to LLM
-          orchestrator).
+    Handles the HTTP/SSE chat endpoint, banned-tool filtering,
+    write-action redirects, system prompt injection, PII masking,
+    token-cap handling, sliding-window compression, audit emission,
+    LLM retry handling, and fallback banners.
     """
 
     def __init__(self, deps: ChatHandlerDeps) -> None:
         if deps.token_cap <= 0:
             raise ValueError(
                 "ChatHandlerDeps.token_cap must be a positive integer "
-                "(Requirement 1.6: activity-level token cap)."
+                "(activity-level token cap)."
             )
         if deps.sliding_window_n <= 0:
             raise ValueError(
                 "ChatHandlerDeps.sliding_window_n must be positive "
-                "(Requirement 1.7)."
+                "(stream timeout)."
             )
         self._deps = deps
 
@@ -418,8 +393,7 @@ class ChatHandler:
 
         # ------------------------------------------------------------------
         # 1. PII mask — MUST be the first thing the handler does to
-        #    user-provided text (Requirement 1.5; Property 2 AST scan
-        #    confirms this call precedes any LLM invocation).
+        #    user-provided text.
         # ------------------------------------------------------------------
         masked_text, pii_matches = pii_mask(request.user_message)
         counters.pii_matches = len(pii_matches)
@@ -435,7 +409,7 @@ class ChatHandler:
 
         # ------------------------------------------------------------------
         # 2. Sliding window — append the masked user message to the
-        #    history, then trim to ``sliding_window_n`` (Requirement 1.7).
+        #    history, then trim to ``sliding_window_n``.
         # ------------------------------------------------------------------
         history_with_user: tuple[Message, ...] = (
             *request.history,
@@ -449,7 +423,7 @@ class ChatHandler:
 
         # ------------------------------------------------------------------
         # 3. System prompt render — load (cache hit after boot) +
-        #    inject dept template variables (Requirements 1.4, 2.7).
+        #    inject dept template variables.
         # ------------------------------------------------------------------
         prompt_vars = PromptVars(
             department_id=dept.dept_id,
@@ -464,11 +438,10 @@ class ChatHandler:
         prompt_version = deps.prompt_loader.version(deps.prompt_name)
 
         # ------------------------------------------------------------------
-        # 4. Tool filter — banned-tool list (Spec 1 parity, R1.2)
+        # 4. Tool filter — banned-tool list
         #    THEN dept capability gate. Banned-tool filtering is the
         #    single source of truth in ``mcp_client.filter_tools``;
-        #    no literal ``BANNED_TOOLS`` membership is hard-coded
-        #    here (Property 3 AST scan).
+        #    no literal ``BANNED_TOOLS`` membership is hard-coded here.
         # ------------------------------------------------------------------
         raw_catalogue = deps.list_tools()
         if inspect.isawaitable(raw_catalogue):
@@ -483,17 +456,17 @@ class ChatHandler:
         # ------------------------------------------------------------------
         # 5. LLM tool-call loop — the orchestrator owns retry,
         #    fallback, token cap. The handler intercepts ``tool_call``
-        #    events for the write-action gate (Requirement 1.3) and
+        #    events for the write-action gate and
         #    forwards everything else verbatim.
         #
-        #    Timeout (Requirement 1.7): The entire streaming loop is
+        #    Timeout: The entire streaming loop is
         #    guarded by ``asyncio.timeout`` using
         #    ``deps.timeout_s``. If the LLM call exceeds the
         #    configured timeout, the handler aborts, writes an
         #    ``assistant_llm_timeout`` audit event, and emits an SSE
         #    error event.
         #
-        #    Truncation (Requirement 1.8): The handler tracks
+        #    Truncation: The handler tracks
         #    cumulative output tokens. When the count exceeds
         #    ``deps.max_tokens_output``, the stream is closed cleanly
         #    and a final ``done`` event with ``truncated: true`` is
@@ -541,7 +514,7 @@ class ChatHandler:
                     #     running tally for the audit row.
                     _accumulate_tokens(event, counters)
 
-                    # 5b-ii. Truncation check (Requirement 1.8): if
+                    # 5b-ii. Truncation check: if
                     #     cumulative output tokens exceed the configured
                     #     max, close the stream cleanly with a ``done``
                     #     event carrying ``truncated: true``.
@@ -581,9 +554,9 @@ class ChatHandler:
                         #     ``done`` and the payload carries
                         #     ``intent == "write_action_requested"``, emit an
                         #     additional ``intent`` SSE event before closing.
-                        #     This fulfils Requirement 4.1: the assistant-service
-                        #     publishes the intent + prefill payload so the
-                        #     Streamlit chat page can redirect to Task Creator.
+                        #     Emit the intent event so the assistant-service
+                        #     publishes the intent + prefill payload for the
+                        #     Streamlit chat page redirect.
                         if event.type == "done":
                             intent_event = _extract_intent_event(event)
                             if intent_event is not None:
@@ -592,7 +565,7 @@ class ChatHandler:
                         break
 
         except (asyncio.TimeoutError, TimeoutError):
-            # Timeout handling (Requirement 1.7): LLM call exceeded
+            # Timeout handling: LLM call exceeded
             # ``deps.timeout_s`` seconds. Abort, write audit event,
             # and emit SSE error.
             _LOG.warning(
@@ -617,8 +590,7 @@ class ChatHandler:
             return
 
         # ------------------------------------------------------------------
-        # 6. Audit ``chat_message`` (Requirement 1.8). The mandatory
-        #    payload fields per design.md §"ChatHandler" are
+        # 6. Audit ``chat_message``. The mandatory payload fields are
         #    ``prompt_version``, ``token_in``, ``token_out``,
         #    ``cost_usd``; we add ``pii_matches_count`` and
         #    ``tool_calls`` for ops visibility.
@@ -695,7 +667,7 @@ class ChatHandler:
         counters: _StreamCounters,
         prompt_version: str,
     ) -> None:
-        """Persist the ``assistant_llm_timeout`` audit event (Requirement 1.7).
+        """Persist the ``assistant_llm_timeout`` audit event.
 
         Written when the LLM call exceeds ``deps.timeout_s`` seconds.
         Separate from :meth:`_write_audit` because the action and
@@ -769,7 +741,7 @@ def _is_write_call(event: SseEvent) -> bool:
     LLM-supplied ``intent`` field in the SSE payload. We re-package
     them into the predicate :func:`is_write_intent` exposes —
     delegating the decision keeps the rule in one place
-    (``src/chat/write_action.py``) and makes Property 13 easy to
+    (``src/chat/write_action.py``) and keeps the redirect event easy to
     parameterise.
     """
 
@@ -789,7 +761,7 @@ def _is_write_call(event: SseEvent) -> bool:
 def _redirect_payload(event: SseEvent) -> Mapping[str, Any]:
     """Build the payload for ``redirect_to_task_creator``.
 
-    Carries enough context for the Streamlit UI (task 9.1) to
+    Carries enough context for the Streamlit UI to
     pre-populate the Task Creator form with the user's message and
     the would-be tool. The ``intent`` field surfaces the LLM's
     classification so the UI can show a different copy for
@@ -818,7 +790,7 @@ def _extract_intent_event(done_event: SseEvent) -> SseEvent | None:
     When the LLM's structured response includes
     ``intent == "write_action_requested"``, this helper builds the
     ``event: intent`` SSE event that the Streamlit chat page uses to
-    redirect the user to Task Creator (Requirement 4.1).
+    redirect the user to Task Creator.
 
     The payload carries:
         * ``intent`` — always ``"write_action_requested"``.
@@ -838,8 +810,7 @@ def _extract_intent_event(done_event: SseEvent) -> SseEvent | None:
     if intent != "write_action_requested":
         return None
 
-    # Build the intent event payload with the fields specified in
-    # design.md §"R4 — Chat → Task Creator Intent Wiring".
+    # Build the intent event payload for Chat → Task Creator wiring.
     intent_payload: dict[str, Any] = {
         "intent": "write_action_requested",
         "suggested_workflow_type": payload.get("suggested_workflow_type", ""),

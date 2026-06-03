@@ -1,32 +1,32 @@
-"""Property test for HTTP ``/healthz`` and ``/readyz`` contract.
+"""invariant for HTTP ``/healthz`` and ``/readyz`` contract.
 
-Validates: Requirements 12.1, 12.2, 12.3
-Property 9: HTTP service ``/healthz`` and ``/readyz`` contract.
+
+invariant: HTTP service ``/healthz`` and ``/readyz`` contract.
 
 Also validates that the ``HealthState`` accepted state set includes
-``"running_unmonitored"`` (R12 / Q14) — the state emitted by
+``"running_unmonitored"`` ( / Q14) — the state emitted by
 ``_probe_assume_running`` when a Compose container has no
 ``healthcheck`` block or when ``docker inspect`` fails.
 
 For every HTTP service in ``COMPONENT_MANIFEST`` (the four FastAPI
 services under ``services/``), this test asserts the design-level
 liveness and readiness contract from
-``.kiro/specs/multi-service-scaffold/design.md`` §3.1:
+`//design.md`` §3.1:
 
 * ``GET /healthz``
-    - Always returns ``200``.
-    - Body is exactly ``{"status": "ok"}``.
+ - Always returns ``200``.
+ - Body is exactly ``{"status": "ok"}``.
 
 * ``GET /readyz``
-    - Returns ``200`` when ``Settings.dependencies_reachable()`` is
-      ``True``.
-    - Returns ``503`` with a JSON body of shape
-      ``{"status": <str>}`` (single key, ≤ 64 bytes serialized) when
-      ``Settings.dependencies_reachable()`` is ``False``.
+ - Returns ``200`` when ``Settings.dependencies_reachable`` is
+ ``True``.
+ - Returns ``503`` with a JSON body of shape
+ ``{"status": <str>}`` (single key, ≤ 64 bytes serialized) when
+ ``Settings.dependencies_reachable`` is ``False``.
 
 The dependency probe is parameterized via ``monkeypatch`` over the
 service's ``settings`` instance; the truthiness of the probe is
-explored with Hypothesis ``@given(probe_ready=st.booleans())`` so the
+explored with Hypothesis ``@given(probe_ready=st.booleans)`` so the
 true/false branches are both exercised on every parametrized service.
 
 Implementation notes
@@ -37,7 +37,7 @@ Each HTTP service ships its FastAPI application under
 package. To allow all four services to coexist inside ``sys.modules``,
 each service's ``src`` package is loaded under a unique alias via
 ``importlib.util.spec_from_file_location``; the relative
-``from .config import Settings`` import inside ``main.py`` is satisfied
+``from.config import Settings`` import inside ``main.py`` is satisfied
 by pre-registering the ``config`` submodule under the same alias.
 
 We drive the apps with ``fastapi.testclient.TestClient`` (which wraps
@@ -78,13 +78,13 @@ from conftest import HTTP_SERVICES, WORKSPACE_ROOT, ComponentSpec  # noqa: E402
 def _load_service_module(component: ComponentSpec) -> ModuleType:
     """Import a service's ``src.main`` module under a unique alias.
 
-    Every HTTP service ships an identically named ``src`` package, so
-    they cannot coexist in ``sys.modules`` under the literal ``src``
-    name. We register each under ``_msf_<safe_name>`` so all four
-    services can be loaded simultaneously and the relative
-    ``from .config import Settings`` import in ``main.py`` resolves via
-    the pre-registered ``<alias>.config`` entry.
-    """
+ Every HTTP service ships an identically named ``src`` package, so
+ they cannot coexist in ``sys.modules`` under the literal ``src``
+ name. We register each under ``_msf_<safe_name>`` so all four
+ services can be loaded simultaneously and the relative
+ ``from.config import Settings`` import in ``main.py`` resolves via
+ the pre-registered ``<alias>.config`` entry.
+ """
 
     safe_name = component.name.replace("-", "_")
     pkg_alias = f"_msf_{safe_name}"
@@ -110,8 +110,8 @@ def _load_service_module(component: ComponentSpec) -> ModuleType:
     sys.modules[pkg_alias] = pkg_module
     pkg_spec.loader.exec_module(pkg_module)
 
-    # 2) ``config`` submodule, so ``from .config import Settings``
-    #    inside ``main.py`` resolves via ``sys.modules``.
+    # 2) ``config`` submodule, so ``from.config import Settings``
+    # inside ``main.py`` resolves via ``sys.modules``.
     config_spec = importlib.util.spec_from_file_location(
         config_alias, str(src_dir / "config.py")
     )
@@ -143,7 +143,7 @@ _SERVICE_MODULES: dict[str, ModuleType] = {
 
 
 # ---------------------------------------------------------------------------
-# Property test — Property 9
+# invariant — invariant
 # ---------------------------------------------------------------------------
 
 
@@ -161,16 +161,16 @@ def test_health_and_ready_contract(
     probe_ready: bool,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Property 9 — health + readiness contract holds for every HTTP service.
+    """invariant — health + readiness contract holds for every HTTP service.
 
-    Validates: Requirements 12.1, 12.2, 12.3.
 
-    For every ``probe_ready ∈ {True, False}``:
 
-    * ``GET /healthz`` returns 200 and ``{"status": "ok"}``.
-    * ``GET /readyz`` returns 200 when ``probe_ready`` is True; otherwise
-      503 with a JSON body containing ``"status"`` key.
-    """
+ For every ``probe_ready ∈ {True, False}``:
+
+ * ``GET /healthz`` returns 200 and ``{"status": "ok"}``.
+ * ``GET /readyz`` returns 200 when ``probe_ready`` is True; otherwise
+ 503 with a JSON body containing ``"status"`` key.
+ """
 
     main_module = _SERVICE_MODULES[component.name]
     settings_obj = main_module.settings
@@ -287,7 +287,7 @@ def _patch_readiness_module(
 
 
 # ---------------------------------------------------------------------------
-# Accepted HealthState set — running_unmonitored (R12 / Q14)
+# Accepted HealthState set — running_unmonitored ( / Q14)
 # ---------------------------------------------------------------------------
 
 # The admin-dashboard-api service root is two levels up from the
@@ -300,19 +300,19 @@ if str(_ADMIN_API_ROOT) not in sys.path:
 def test_health_state_accepted_set_includes_running_unmonitored() -> None:
     """``running_unmonitored`` is a member of the HealthState accepted set.
 
-    Validates: Requirements 12.1, 12.4 (R12 / Q14).
 
-    The ``HealthState`` Literal in ``src.lifecycle.health_probe`` must
-    include ``"running_unmonitored"`` as a valid state. This state is
-    emitted by ``_probe_assume_running`` when:
 
-    * The Compose container has no ``healthcheck`` block (empty or
-      ``"<no value>"`` docker inspect output).
-    * ``docker inspect`` fails (timeout, missing binary, non-zero exit).
+ The ``HealthState`` Literal in ``src.lifecycle.health_probe`` must
+ include ``"running_unmonitored"`` as a valid state. This state is
+ emitted by ``_probe_assume_running`` when:
 
-    The ``"unknown"`` literal is retained for backwards compatibility
-    with persisted snapshots but is **not** emitted by the current probe.
-    """
+ * The Compose container has no ``healthcheck`` block (empty or
+ ``"<no value>"`` docker inspect output).
+ * ``docker inspect`` fails (timeout, missing binary, non-zero exit).
+
+ The ``"unknown"`` literal is retained for backwards compatibility
+ with persisted snapshots but is **not** emitted by the current probe.
+ """
     from src.lifecycle.health_probe import HealthState  # type: ignore[import]
 
     # HealthState is a Literal; extract its args via typing.get_args.
@@ -322,7 +322,7 @@ def test_health_state_accepted_set_includes_running_unmonitored() -> None:
 
     assert "running_unmonitored" in accepted_states, (
         "HealthState accepted set must include 'running_unmonitored' "
-        "(R12 / Q14 — Compose containers without healthcheck blocks "
+        "(the operational rule / Q14 — Compose containers without healthcheck blocks "
         "must be classified as running_unmonitored, not unknown)"
     )
 

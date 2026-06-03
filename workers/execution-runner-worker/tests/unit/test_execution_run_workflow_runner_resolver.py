@@ -1,5 +1,5 @@
 """Unit tests for the runner_resolver integration in
-:class:`ExecutionRunWorkflow` (Requirements 4.4, 4.5, 4.8).
+:class:`ExecutionRunWorkflow`.
 
 The canonical :class:`ExecutionRunWorkflow` invokes the ``resolve_runner``
 activity at workflow start when:
@@ -225,7 +225,7 @@ def _field(value: Any, name: str) -> Any:
 
 @pytest.mark.asyncio
 async def test_resolver_skipped_when_runner_id_explicit() -> None:
-    """**Validates: Backward compatibility — explicit runner_id**
+    """Explicit runner_id skips runner resolution.
 
     When the caller provides a non-None ``runner_id``, the workflow
     skips the ``resolve_runner`` activity and uses the input value
@@ -271,7 +271,7 @@ async def test_resolver_skipped_when_runner_id_explicit() -> None:
 
 @pytest.mark.asyncio
 async def test_resolver_skipped_when_dept_id_empty() -> None:
-    """**Validates: Backward compatibility — no department context**
+    """Missing department context skips runner resolution.
 
     When ``department_id`` is empty, the workflow cannot resolve a
     runner and skips the activity call.
@@ -310,7 +310,7 @@ async def test_resolver_skipped_when_dept_id_empty() -> None:
 
 @pytest.mark.asyncio
 async def test_resolver_called_when_dept_id_set_and_runner_id_none() -> None:
-    """**Validates: Requirements 4.4, 4.5 — runner resolution from DB**
+    """Runner resolution from DB.
 
     When ``department_id`` is non-empty and ``runner_id`` is None, the
     workflow calls ``resolve_runner`` to select the least-busy runner
@@ -370,7 +370,7 @@ async def test_resolver_called_when_dept_id_set_and_runner_id_none() -> None:
 
 @pytest.mark.asyncio
 async def test_resolved_runner_context_flows_to_docker_chain() -> None:
-    """**Validates: selected runner credentials drive Docker execution**
+    """Selected runner credentials drive Docker execution.
 
     A Jira task that requires Docker should use the runner selected by
     ``resolve_runner`` for the SSH healthcheck, Docker daemon probe,
@@ -452,7 +452,7 @@ async def test_resolved_runner_context_flows_to_docker_chain() -> None:
 
 @pytest.mark.asyncio
 async def test_resolver_application_error_propagates() -> None:
-    """**Validates: Requirements 4.6, 4.7 — no active runner failure**
+    """No active runner failure.
 
     When ``resolve_runner`` raises an ApplicationError (no active
     runner assigned to the department), the workflow propagates the
@@ -506,7 +506,7 @@ async def test_resolver_application_error_propagates() -> None:
 
 @pytest.mark.asyncio
 async def test_resolver_infrastructure_error_falls_back() -> None:
-    """**Validates: Backward compatibility — graceful degradation**
+    """Infrastructure errors fall back to the input runner_id.
 
     When ``resolve_runner`` raises a non-ApplicationError (e.g.
     infrastructure failure like DB connection timeout), the workflow
@@ -554,7 +554,7 @@ async def test_resolver_infrastructure_error_falls_back() -> None:
 
 @pytest.mark.asyncio
 async def test_resolved_vault_path_follows_dual_slot_pattern() -> None:
-    """**Validates: Requirement 4.8 — SSH key dual-slot rotation**
+    """SSH key dual-slot rotation.
 
     The resolved runner's vault_path follows the dual-slot rotation
     pattern ``vault:ssh/runners/{runner_id}/active``. The workflow

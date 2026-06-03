@@ -1,18 +1,18 @@
 "use client";
 
 /**
- * Departments panel — `platform-mimari-ops` task 12.3 (R4.4 / Q1).
+ * Departments panel.
  *
  * Lists every department with its bot credential reference plus
  * inline buttons for the CRUD wizard (create / edit / decommission).
  *
- * Row click navigation — uyumluluk task 4.2 (R1 / Q1):
+ * Row click navigation:
  * Clicking anywhere on a row (outside the Actions cell) routes to
  * ``/departments/{id}`` where the credential modal opens. The
  * Actions cell stops propagation so the existing Edit /
  * Decommission anchors keep their original semantics.
  *
- * Wizard mode — platform-real-usage-gaps task 5.2 (R5.4, R5.5):
+ * Wizard mode:
  * When ``?wizard=1`` query param is present, the "Yeni Departman Ekle"
  * modal opens automatically on mount. Closing the modal shows a
  * confirmation dialog warning that at least one department is required

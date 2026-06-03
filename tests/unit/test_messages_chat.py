@@ -1,8 +1,5 @@
 """Unit tests for ``messages.chat`` chat protocol dataclasses.
 
-Validates: Requirement 1.1 — task 4.6 of
-``.kiro/specs/platform-mimari-ops/tasks.md``.
-
 The tests cover:
 
 1. The three dataclasses (:class:`Message`, :class:`ChatRequest`,

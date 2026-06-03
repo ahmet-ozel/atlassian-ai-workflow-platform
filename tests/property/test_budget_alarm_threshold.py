@@ -1,32 +1,28 @@
-"""Property test 14 — Budget Alarm Threshold.
-
-Spec: ``platform-real-usage-gaps`` — Property 14.
-
-**Validates: Requirements 13.4, 13.7**
+"""Budget alarm threshold behavior.
 
 Background
 ----------
 
 The ``BudgetCapPolicy._check_alarm_thresholds`` method in
 ``automation_service.budget.policy`` implements the budget alarm
-threshold logic (Requirement 13.4):
+threshold logic:
 
 * When a workflow is allowed (no scope exceeded), the policy checks
-  configured alarm thresholds from
-  ``automation.budget_alarm_thresholds``.
+ configured alarm thresholds from
+ ``automation.budget_alarm_thresholds``.
 * If the current usage percentage meets or exceeds ``threshold_pct``
-  and the alarm has not already been sent in the current period,
-  a notification is dispatched and ``last_alarmed_at`` is updated.
+ and the alarm has not already been sent in the current period,
+ a notification is dispatched and ``last_alarmed_at`` is updated.
 * If the alarm was already sent in the same period (weekly=7 days,
-  monthly=30 days), it is NOT re-sent (deduplication).
+ monthly=30 days), it is NOT re-sent (deduplication).
 * In a new period (last_alarmed_at is older than the period window),
-  the alarm resets and can fire again.
+ the alarm resets and can fire again.
 
 Strategy
 --------
 
 We use Hypothesis to generate random budget configurations, usage
-levels, and threshold settings, then verify four invariants:
+levels, and threshold settings, then verify four behaviors:
 
 (a) Below threshold → no alarm dispatched.
 (b) At or above threshold → alarm dispatched exactly once.
@@ -241,16 +237,14 @@ _cap_strategy = st.decimals(
 
 
 # ---------------------------------------------------------------------------
-# Property 14a: Below threshold → no alarm dispatched
+# Behavior: Below threshold → no alarm dispatched
 # ---------------------------------------------------------------------------
 
 
 class TestBelowThresholdNoAlarm:
-    """**Validates: Requirement 13.4**
-
-    When the current usage percentage is strictly below the configured
-    threshold_pct, no alarm notification is dispatched.
-    """
+    """When the current usage percentage is strictly below the configured
+ threshold_pct, no alarm notification is dispatched.
+ """
 
     @settings(
         max_examples=50,
@@ -274,7 +268,7 @@ class TestBelowThresholdNoAlarm:
         channel: str,
         cap: Decimal,
     ) -> None:
-        """R13.4: No alarm when usage is below threshold_pct."""
+        """: No alarm when usage is below threshold_pct."""
         # Compute a usage value strictly below the threshold
         # usage_pct < threshold_pct → usage < cap * threshold_pct / 100
         max_usage = (cap * Decimal(str(threshold_pct)) / Decimal("100")) - Decimal("0.01")
@@ -339,17 +333,15 @@ class TestBelowThresholdNoAlarm:
 
 
 # ---------------------------------------------------------------------------
-# Property 14b: At or above threshold → alarm dispatched once
+# Behavior: At or above threshold → alarm dispatched once
 # ---------------------------------------------------------------------------
 
 
 class TestAboveThresholdAlarmFires:
-    """**Validates: Requirement 13.4**
-
-    When the current usage percentage meets or exceeds threshold_pct
-    and no alarm has been sent in the current period, exactly one
-    alarm notification is dispatched.
-    """
+    """When the current usage percentage meets or exceeds threshold_pct
+ and no alarm has been sent in the current period, exactly one
+ alarm notification is dispatched.
+ """
 
     @settings(
         max_examples=50,
@@ -373,7 +365,7 @@ class TestAboveThresholdAlarmFires:
         channel: str,
         cap: Decimal,
     ) -> None:
-        """R13.4: Alarm fires when usage >= threshold_pct of cap."""
+        """: Alarm fires when usage >= threshold_pct of cap."""
         # Compute a usage value at or above the threshold but below the cap
         # (so the policy allows the workflow but triggers the alarm)
         threshold_usage = (cap * Decimal(str(threshold_pct)) / Decimal("100"))
@@ -450,17 +442,15 @@ class TestAboveThresholdAlarmFires:
 
 
 # ---------------------------------------------------------------------------
-# Property 14c: Same period, already alarmed → no re-dispatch
+# Behavior: Same period, already alarmed → no re-dispatch
 # ---------------------------------------------------------------------------
 
 
 class TestSamePeriodNoReDispatch:
-    """**Validates: Requirement 13.7**
-
-    When the alarm was already sent in the current period (i.e.,
-    last_alarmed_at is within the period window), the alarm is NOT
-    re-dispatched even if the threshold is still breached.
-    """
+    """When the alarm was already sent in the current period (i.e.,
+ last_alarmed_at is within the period window), the alarm is NOT
+ re-dispatched even if the threshold is still breached.
+ """
 
     @settings(
         max_examples=50,
@@ -486,7 +476,7 @@ class TestSamePeriodNoReDispatch:
         cap: Decimal,
         days_ago: int,
     ) -> None:
-        """R13.7: No re-dispatch when already alarmed in same period."""
+        """: No re-dispatch when already alarmed in same period."""
         now = datetime(2024, 6, 15, 12, 0, 0, tzinfo=timezone.utc)
 
         # last_alarmed_at is within the current period window
@@ -554,17 +544,15 @@ class TestSamePeriodNoReDispatch:
 
 
 # ---------------------------------------------------------------------------
-# Property 14d: New period (last_alarmed_at outside window) → alarm resets
+# Behavior: New period (last_alarmed_at outside window) → alarm resets
 # ---------------------------------------------------------------------------
 
 
 class TestNewPeriodAlarmResets:
-    """**Validates: Requirements 13.4, 13.7**
-
-    When the last alarm was sent in a previous period (last_alarmed_at
-    is older than the period window), the alarm resets and fires again
-    if the threshold is still breached.
-    """
+    """When the last alarm was sent in a previous period (last_alarmed_at
+ is older than the period window), the alarm resets and fires again
+ if the threshold is still breached.
+ """
 
     @settings(
         max_examples=50,
@@ -588,7 +576,7 @@ class TestNewPeriodAlarmResets:
         channel: str,
         cap: Decimal,
     ) -> None:
-        """R13.4, R13.7: Alarm fires again in a new period."""
+        """,: Alarm fires again in a new period."""
         now = datetime(2024, 6, 15, 12, 0, 0, tzinfo=timezone.utc)
 
         # last_alarmed_at is OUTSIDE the current period window
@@ -675,12 +663,10 @@ class TestNewPeriodAlarmResets:
 
 
 class TestConsecutiveEnforceDeduplication:
-    """**Validates: Requirements 13.4, 13.7**
-
-    Two consecutive enforce calls with the same threshold breached
-    should only dispatch the alarm on the first call. The second call
-    sees the updated last_alarmed_at and skips.
-    """
+    """Two consecutive enforce calls with the same threshold breached
+ should only dispatch the alarm on the first call. The second call
+ sees the updated last_alarmed_at and skips.
+ """
 
     @settings(
         max_examples=30,
@@ -702,7 +688,7 @@ class TestConsecutiveEnforceDeduplication:
         channel: str,
         cap: Decimal,
     ) -> None:
-        """R13.4, R13.7: Second call in same period does not re-alarm."""
+        """,: Second call in same period does not re-alarm."""
         now = datetime(2024, 6, 15, 12, 0, 0, tzinfo=timezone.utc)
 
         # Usage above threshold but below cap (dept scope for simplicity)

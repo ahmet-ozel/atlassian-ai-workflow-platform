@@ -6,7 +6,5 @@ SSH / Docker / Vault / MinIO activities. The worker subscribes to the
 identified by the ``TEMPORAL_HOST`` environment variable
 (default ``temporal:7233``).
 
-This is a scaffold; concrete workflow and activity implementations are
-filled in by subsequent tasks. See the package README for the
-"Standalone build & run" instructions.
+See the package README for the "Standalone build & run" instructions.
 """

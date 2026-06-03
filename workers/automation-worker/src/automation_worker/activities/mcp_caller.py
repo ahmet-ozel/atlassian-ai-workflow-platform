@@ -1,33 +1,27 @@
-"""HTTP-backed :class:`MCPCallerProtocol` implementation for the
+"""HTTP-backed:class:`MCPCallerProtocol` implementation for the
 ``automation-worker``.
 
-The :mod:`output_actions` activity dispatches every action (Jira
+The:mod:`output_actions` activity dispatches every action (Jira
 comment, Jira attachment, Bitbucket PR, Confluence page, Jira
-transition) through the protocol declared in
-:mod:`automation_worker.activities.output_actions`. Tests inject an
-in-memory fake; production wires :class:`HttpMCPCaller` here so each
+transition) through the protocol declared in:mod:`automation_worker.activities.output_actions`. Tests inject an
+in-memory fake; production wires:class:`HttpMCPCaller` here so each
 outgoing MCP request carries:
 
-* ``X-Client-Source: automation-worker`` (platform-gap-fill task 8.2 /
-  Requirement 9.3) — set by :func:`http_shared.make_mcp_client` so the
-  observability layer can break MCP traffic down by origin Component.
+* ``X-Client-Source: automation-worker`` — set by:func:`http_shared.make_mcp_client` so the
+ observability layer can break MCP traffic down by origin Component.
 * ``X-Trace-Id`` — injected per-request by the trace-id event hook
-  attached to every client returned by ``make_mcp_client`` (task 7.2 /
-  R8.4); the value reflects the trace_id installed on the activity's
-  context by the workflow input plumbing.
+ attached to every client returned by ``make_mcp_client``; the value reflects the trace_id installed on the activity's
+ context by the workflow input plumbing.
 * The three Atlassian credential headers (``-Url``, ``-Username``,
-  ``-Personal-Token``) for the requested *service* — injected for the
-  duration of the JSON-RPC call by
-  :func:`http_shared.with_atlassian_creds` and then restored.
+ ``-Personal-Token``) for the requested *service* — injected for the
+ duration of the JSON-RPC call by:func:`http_shared.with_atlassian_creds` and then restored.
 
 The caller is intentionally thin: it is the integration glue between
-the :mod:`output_actions` Protocol and the MCP server's JSON-RPC
-endpoint.  All retry / timeout policy lives on the activity side
-(``ACTION_TIMEOUT_SECONDS`` is enforced per call); the caller just
+the:mod:`output_actions` Protocol and the MCP server's JSON-RPC
+endpoint. All retry / timeout policy lives on the activity side
+(``ACTION_TIMEOUT_SECONDS`` is enforced call); the caller just
 honours the timeout it is given.
 
-Validates Requirements: 9.3, 9.4 (platform-gap-fill spec)
-Design reference: design.md §"MCP Client Source Etiketi"
 """
 
 from __future__ import annotations
@@ -55,7 +49,7 @@ __all__ = (
 
 _LOG = logging.getLogger(__name__)
 
-#: Default MCP base URL (matches every other worker / service).  The
+#: Default MCP base URL (matches every other worker / service). The
 #: ``MCP_BASE_URL`` env var overrides it in production deployments.
 _DEFAULT_MCP_BASE_URL: str = "http://atlassian-mcp:8090"
 
@@ -64,13 +58,13 @@ _MCP_PATH: str = "/mcp"
 _MCP_ACCEPT: str = "application/json, text/event-stream"
 
 #: ``X-Client-Source`` value advertised by this worker. Pinned here so
-#: future refactors of :mod:`output_actions` cannot accidentally drop
+#: future refactors of:mod:`output_actions` cannot accidentally drop
 #: the identifier.
 CLIENT_SOURCE: str = "automation-worker"
 
 #: Map MCP tool names → Atlassian service for credential injection.
 #: Tools not in this table fall through to ``"jira"`` because every
-#: action the :mod:`output_actions` activity dispatches today is
+#: action the:mod:`output_actions` activity dispatches today is
 #: routed through Jira credentials except for the explicit
 #: Bitbucket / Confluence calls listed below.
 _TOOL_SERVICE_MAP: dict[str, str] = {
@@ -95,11 +89,10 @@ _TOOL_NAME_ALIASES: dict[str, str] = {
 
 class MCPHttpError(RuntimeError):
     """Raised when the MCP server returns a non-2xx response or a
-    JSON-RPC ``error`` envelope."""
+ JSON-RPC ``error`` envelope."""
 
     def __init__(self, tool_name: str, status_code: int, detail: str) -> None:
-        # O5 fix (GEREKSINIM_ANALIZI.md): the Confluence smoke test
-        # surfaced ``"The calling user does not have permission to view
+        # Confluence can surface ``"The calling user does not have permission to view
         # the content"`` as an opaque MCP failure (E2E vs VPS report
         # divergence). Detect permission-shaped errors here and tag
         # the exception with a structured ``is_permission_denied`` flag
@@ -127,9 +120,9 @@ class MCPHttpError(RuntimeError):
     @staticmethod
     def _detect_permission_denied(status_code: int, detail: str) -> bool:
         """Return ``True`` when the MCP error looks like an Atlassian
-        permission denial. Covers Confluence's
-        ``"calling user does not have permission"`` blob and HTTP 401/403
-        statuses generically."""
+ permission denial. Covers Confluence's
+ ``"calling user does not have permission"`` blob and HTTP 401/403
+ statuses generically."""
         if status_code in (401, 403):
             return True
         if not detail:
@@ -146,11 +139,9 @@ class MCPHttpError(RuntimeError):
 def infer_service_from_tool(tool_name: str) -> str:
     """Return the Atlassian service whose credentials *tool_name* needs.
 
-    Defaults to ``"jira"`` when the tool is unknown — every action the
-    :mod:`output_actions` activity emits today is either explicitly in
-    :data:`_TOOL_SERVICE_MAP` or routed through Jira (e.g. transitions
-    and comments).
-    """
+ Defaults to ``"jira"`` when the tool is unknown — every action the:mod:`output_actions` activity emits today is either explicitly in:data:`_TOOL_SERVICE_MAP` or routed through Jira (e.g. transitions
+ and comments).
+ """
 
     return _TOOL_SERVICE_MAP.get(tool_name, "jira")
 
@@ -178,9 +169,9 @@ def _build_jsonrpc_request(tool_name: str, arguments: dict[str, Any]) -> dict[st
 def _parse_jsonrpc_result(payload: dict[str, Any], tool_name: str) -> dict[str, Any]:
     """Extract the ``result`` body from a JSON-RPC 2.0 envelope.
 
-    Raises :class:`MCPHttpError` if the envelope carries an ``error``
-    object or no ``result``.
-    """
+ Raises:class:`MCPHttpError` if the envelope carries an ``error``
+ object or no ``result``.
+ """
 
     if "error" in payload:
         error = payload["error"] or {}
@@ -281,31 +272,31 @@ def _decode_jsonrpc_payload(
 
 
 class HttpMCPCaller:
-    """Production :class:`MCPCallerProtocol` implementation.
+    """Production:class:`MCPCallerProtocol` implementation.
 
-    The caller owns a single :class:`httpx.AsyncClient` (with
-    ``X-Client-Source`` and ``X-Trace-Id`` injection wired up by the
-    factory) and uses :func:`with_atlassian_creds` to inject
-    department-specific Atlassian credentials *only* for the duration
-    of a single ``call_tool`` invocation.
+ The caller owns a single:class:`httpx.AsyncClient` (with
+ ``X-Client-Source`` and ``X-Trace-Id`` injection wired up by the
+ factory) and uses:func:`with_atlassian_creds` to inject
+ department-specific Atlassian credentials *only* for the duration
+ of a single ``call_tool`` invocation.
 
-    Parameters
-    ----------
-    credential_resolver:
-        A duck-typed credential resolver with an async
-        ``get(dept_id, service, scope=...)`` method (mirrors the shape
-        used by ``agent-runner-worker``).
-    base_url:
-        MCP base URL (e.g. ``http://atlassian-mcp:8090``). When ``None``
-        the value of the ``MCP_BASE_URL`` env var is used; falling back
-        to :data:`_DEFAULT_MCP_BASE_URL` when that is also unset.
-    client_factory:
-        Optional override for the ``httpx.AsyncClient`` factory used to
-        build the underlying client. Tests inject a custom factory to
-        feed in an :class:`httpx.MockTransport`; production code leaves
-        this as ``None`` so :func:`http_shared.make_mcp_client` is used
-        and the ``X-Client-Source`` invariant cannot be sidestepped.
-    """
+ Parameters
+ ----------
+ credential_resolver:
+ A duck-typed credential resolver with an async
+ ``get(dept_id, service, scope=...)`` method (mirrors the shape
+ used by ``agent-runner-worker``).
+ base_url:
+ MCP base URL (e.g. ``http://atlassian-mcp:8090``). When ``None``
+ the value of the ``MCP_BASE_URL`` env var is used; falling back
+ to:data:`_DEFAULT_MCP_BASE_URL` when that is also unset.
+ client_factory:
+ Optional override for the ``httpx.AsyncClient`` factory used to
+ build the underlying client. Tests inject a custom factory to
+ feed in an:class:`httpx.MockTransport`; production code leaves
+ this as ``None`` so:func:`http_shared.make_mcp_client` is used
+ and the ``X-Client-Source`` invariant cannot be sidestepped.
+ """
 
     def __init__(
         self,
@@ -324,12 +315,12 @@ class HttpMCPCaller:
     def _default_client_factory(
         *, base_url: str, timeout: float
     ) -> httpx.AsyncClient:
-        """Build the client via :func:`http_shared.make_mcp_client`.
+        """Build the client via:func:`http_shared.make_mcp_client`.
 
-        Pinning ``client_source=CLIENT_SOURCE`` at this single call
-        site is what guarantees every outgoing MCP request from this
-        worker carries ``X-Client-Source: automation-worker`` (R9.3).
-        """
+ Pinning ``client_source=CLIENT_SOURCE`` at this single call
+ site is what guarantees every outgoing MCP request from this
+ worker carries ``X-Client-Source: automation-worker``.
+ """
 
         return make_mcp_client(
             client_source=CLIENT_SOURCE,
@@ -348,30 +339,30 @@ class HttpMCPCaller:
     ) -> dict[str, Any]:
         """Invoke an MCP tool and return its parsed JSON-RPC result.
 
-        Parameters
-        ----------
-        tool_name:
-            The MCP tool to invoke (e.g. ``"jira_add_comment"``).
-        params:
-            Tool-specific arguments passed verbatim under
-            ``params.arguments`` of the JSON-RPC envelope.
-        dept_id:
-            Department whose Atlassian credentials should be injected.
-        timeout:
-            Request timeout in seconds; honoured by the underlying
-            ``httpx.AsyncClient``.
+ Parameters
+ ----------
+ tool_name:
+ The MCP tool to invoke (e.g. ``"jira_add_comment"``).
+ params:
+ Tool-specific arguments passed verbatim under
+ ``params.arguments`` of the JSON-RPC envelope.
+ dept_id:
+ Department whose Atlassian credentials should be injected.
+ timeout:
+ Request timeout in seconds; honoured by the underlying
+ ``httpx.AsyncClient``.
 
-        Returns
-        -------
-        dict
-            The ``result`` body of the JSON-RPC response.
+ Returns
+ -------
+ dict
+ The ``result`` body of the JSON-RPC response.
 
-        Raises
-        ------
-        MCPHttpError
-            On HTTP non-2xx, JSON-RPC ``error`` envelope, or empty
-            ``result`` envelope.
-        """
+ Raises
+ ------
+ MCPHttpError
+ On HTTP non-2xx, JSON-RPC ``error`` envelope, or empty
+ ``result`` envelope.
+ """
 
         if tool_name == "upload_artifact_to_jira":
             return await upload_minio_artifact_to_jira(
@@ -422,10 +413,10 @@ def build_default_mcp_caller(
 ) -> HttpMCPCaller:
     """Convenience factory used by ``main.py`` at worker boot.
 
-    Keeps the boot script ignorant of the constructor signature so a
-    future change (e.g. carrying retry policy) only touches this
-    helper.
-    """
+ Keeps the boot script ignorant of the constructor signature so a
+ future change (e.g. carrying retry policy) only touches this
+ helper.
+ """
 
     return HttpMCPCaller(
         credential_resolver=credential_resolver,

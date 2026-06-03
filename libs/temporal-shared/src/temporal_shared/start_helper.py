@@ -11,10 +11,9 @@ webhook adapters, admin endpoints) can implement the contract:
   ``execution_id`` (which equals the caller-supplied ``workflow_id``).
 
 This helper is the single source of truth for the idempotency rule
-documented in design.md §"WorkflowAlreadyStarted" (R1.6, MIMARI §1
-Kural 6).  It does **not** perform any signal-with-start or other
-re-trigger logic — that decision belongs in the caller (see
-``automation-service`` webhook handlers in task 5.2).
+for duplicate workflow starts.  It does **not** perform any
+signal-with-start or other re-trigger logic — that decision belongs in
+the caller.
 
 Notes
 -----

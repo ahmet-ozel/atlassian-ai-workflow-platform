@@ -1,6 +1,4 @@
-"""Surface 4 bug-condition exploration test: LlmOrchestrator constructor signature.
-
-**Validates: Requirements 1.4, 2.4**
+"""LlmOrchestrator constructor signature compatibility checks.
 
 =============================================================================
 LEGACY → CURRENT KWARG MAPPING (recorded from LlmOrchestrator.__init__)
@@ -20,7 +18,7 @@ Current kwargs:
   - fallback  (optional, default=None)
   - sleep     (optional, default=asyncio.sleep)
 
-Legacy kwargs (as referenced in design § "Surface 4"):
+Legacy kwargs retained here as regression inputs:
   - primary=   → still valid (same name, no change here)
   - fallbacks= → LEGACY (plural); current name is `fallback` (singular)
   - provider=  → LEGACY (alternative name that may have been used)
@@ -38,9 +36,8 @@ Actual failure observed on unfixed code:
 The test was written when OpenAIProvider/AnthropicProvider/VLLMProvider were
 stubs that raised NotImplementedError on instantiation. The production code
 has since been updated to real implementations, but the test still expects
-the stub behavior. This is the "signature drift" described in design § Surface 4:
-the test's expected behavior (NotImplementedError) no longer matches the
-current production contract.
+the stub behavior. The test's expected behavior (NotImplementedError) no
+longer matches the current production contract.
 
 For LlmOrchestrator itself, legacy kwargs that raise TypeError:
   - LlmOrchestrator(fallbacks=[...])  → TypeError: __init__() got an
@@ -52,7 +49,7 @@ For LlmOrchestrator itself, legacy kwargs that raise TypeError:
 DUAL-FORM TEST STRUCTURE
 =============================================================================
 
-This test encodes isBugCondition_4(X) from design § "Surface 4":
+This test captures both sides of the constructor compatibility check:
   1. Property half (Hypothesis): current-signature construction succeeds
      → PASSES on unfixed code (production LlmOrchestrator is fine)
   2. Deterministic half: legacy-kwarg construction raises TypeError
@@ -119,9 +116,7 @@ _CURRENT_PARAMS = list(inspect.signature(LlmOrchestrator.__init__).parameters.ke
 def test_surface4_llm_orchestrator_current_signature(include_fallback: bool) -> None:
     """Property: LlmOrchestrator constructs without TypeError using current signature.
 
-    **Validates: Requirements 1.4, 2.4**
-
-    This is the CURRENT-SIGNATURE HALF of the dual-form Surface 4 test.
+    This is the current-signature half of the dual-form constructor test.
     For any valid argument bundle drawn from the current constructor
     signature, LlmOrchestrator must construct without raising TypeError.
 
@@ -129,8 +124,7 @@ def test_surface4_llm_orchestrator_current_signature(include_fallback: bool) -> 
     The integration anchor (test_llm_orchestrator.py) FAILS separately.
 
     Also includes a deterministic sub-test asserting that LEGACY kwargs
-    (e.g. `fallbacks=`, `provider=`) raise TypeError, encoding the
-    isBugCondition_4(X) from design § "Surface 4".
+    (e.g. `fallbacks=`, `provider=`) raise TypeError.
     """
     # Verify the current signature has the expected parameters
     assert "primary" in _CURRENT_PARAMS, (
@@ -166,7 +160,7 @@ def test_surface4_llm_orchestrator_current_signature(include_fallback: bool) -> 
 
     # -----------------------------------------------------------------------
     # Deterministic sub-test: LEGACY kwargs MUST raise TypeError
-    # This encodes isBugCondition_4(X): legacy-kwarg construction raises TypeError
+    # Legacy-kwarg construction raises TypeError.
     # -----------------------------------------------------------------------
 
     # Legacy kwarg: `fallbacks=` (plural) — was the old name before rename to `fallback`

@@ -1,25 +1,23 @@
-"""Property test: Needs-info timeout enforcement.
+"""Invariant test: Needs-info timeout enforcement.
 
-Feature: platform-gap-fill, Property 6.
+Feature:,.
 
-*For any* :class:`AutomationWorkflow` that parks in
+*For any*:class:`AutomationWorkflow` that parks in
 ``_handle_needs_info_loop`` waiting for an ``info_received`` signal,
 if no signal arrives within ``_NEEDS_INFO_TIMEOUT`` (7 days, bumped
-from 24 hours by platform-real-usage-gaps R1.1), the workflow SHALL
+from 24 hours by), the workflow SHALL
 terminate with ``decision="failed"``,
 ``failure_reason="needs_info_timeout"``, and the Jira issue SHALL be
 transitioned to ``stale``.
 
-**Validates: Requirements 4.5**
-
-Strategy
+**Strategy
 --------
 The needs_info loop is exercised through a deterministic fake Temporal
 ``workflow`` module that mirrors the primitives the workflow body
 consumes: ``workflow.execute_activity`` (string-named activities),
 ``workflow.wait_condition``, ``workflow.logger``, and
-``workflow.info()``.  The fake ``wait_condition`` deterministically
-raises :class:`TimeoutError` to emulate the 24h Temporal timer firing
+``workflow.info``. The fake ``wait_condition`` deterministically
+raises:class:`TimeoutError` to emulate the 24h Temporal timer firing
 without any signal arriving — Hypothesis explores the input space
 (initial workflow_type, dept id, issue key, question count) while the
 post-conditions are pinned to the spec contract:
@@ -27,20 +25,20 @@ post-conditions are pinned to the spec contract:
 * The workflow output decision is ``"failed"``.
 * The failure_reason is exactly ``"needs_info_timeout"``.
 * The Jira issue is transitioned to ``"stale"`` via
-  ``jira_transition_issue``.
+ ``jira_transition_issue``.
 * The audit record uses ``action="automation_failed"``.
 * The ``stop`` envelope's missing_capabilities is empty (the timeout is
-  not a capability-gate failure).
+ not a capability-gate failure).
 
 The full async loop is exercised via Temporal history replay or
 Temporal's time-skipping test environment in the integration suite
 (:mod:`platform.tests.integration.test_temporal_timeout` for the
 sibling agent-runner workflow, and the property
 ``test_workflow_determinism_replay`` covers AutomationWorkflow in
-its 7-day cousin).  This property test focuses on the deterministic
+its 7-day cousin). This Invariant test focuses on the deterministic
 constants/behaviour surface (timeout duration, max iterations, stop
-envelope shape) per the task note, keeping it fast enough for
-Hypothesis to explore many examples per second.
+envelope shape) the task note, keeping it fast enough for
+Hypothesis to explore many examples second.
 """
 
 from __future__ import annotations
@@ -56,7 +54,7 @@ from typing import Any
 from hypothesis import HealthCheck, given, settings, strategies as st
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — match the convention used by sibling property tests.
+# sys.path bootstrap — match the convention used by sibling Invariant tests.
 # ---------------------------------------------------------------------------
 
 _WORKER_ROOT: Path = Path(__file__).resolve().parents[2]
@@ -82,7 +80,7 @@ from temporal_shared.messages import (  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Deterministic fakes — mirror the Temporal workflow primitives the
-# needs_info loop consumes.  Only the methods actually called in the
+# needs_info loop consumes. Only the methods actually called in the
 # loop body are implemented; anything else trips a clear AssertionError
 # so the test surface stays auditable.
 # ---------------------------------------------------------------------------
@@ -100,7 +98,7 @@ class _ActivityCall:
 
 @dataclass
 class _FakeWorkflowInfo:
-    """Subset of :class:`temporalio.workflow.Info` the workflow reads."""
+    """Subset of:class:`temporalio.workflow.Info` the workflow reads."""
 
     workflow_id: str = "automation-jira-test"
 
@@ -109,31 +107,30 @@ class _FakeWorkflowInfo:
 class _FakeWorkflow:
     """Drop-in fake for ``temporalio.workflow`` for the needs_info path.
 
-    Implements the four primitives the needs_info loop calls:
+ Implements the four primitives the needs_info loop calls:
 
-    * ``execute_activity(name, *args, ...)`` — records the call and
-      returns ``None`` for fire-and-forget activities (jira comment,
-      transition, audit_write).  ``llm_analyze_task`` would also be
-      routed here but the timeout branch never reaches it — the
-      ``wait_condition`` raises :class:`TimeoutError` first.
-    * ``wait_condition(predicate, *, timeout=...)`` — captures the
-      requested timeout and unconditionally raises
-      :class:`TimeoutError`.  This is the deterministic emulation of
-      "24h elapsed without an ``info_received`` signal".
-    * ``logger`` — a plain stdlib logger so
-      ``workflow.logger.warning(...)`` calls in the workflow body do
-      not blow up.
-    * ``info()`` — returns a :class:`_FakeWorkflowInfo` with a stable
-      ``workflow_id``; the loop only reads ``workflow_id`` indirectly
-      via the higher-level ``run()`` body, so the value is supplied
-      for completeness rather than correctness.
+ * ``execute_activity(name, *args,...)`` — records the call and
+ returns ``None`` for fire-and-forget activities (jira comment,
+ transition, audit_write). ``llm_analyze_task`` would also be
+ routed here but the timeout branch never reaches it — the
+ ``wait_condition`` raises:class:`TimeoutError` first.
+ * ``wait_condition(predicate, *, timeout=...)`` — captures the
+ requested timeout and unconditionally raises:class:`TimeoutError`. This is the deterministic emulation of
+ "24h elapsed without an ``info_received`` signal".
+ * ``logger`` — a plain stdlib logger so
+ ``workflow.logger.warning(...)`` calls in the workflow body do
+ not blow up.
+ * ``info`` — returns a:class:`_FakeWorkflowInfo` with a stable
+ ``workflow_id``; the loop only reads ``workflow_id`` indirectly
+ via the higher-level ``run`` body, so the value is supplied
+ for completeness rather than correctness.
 
-    The ``unsafe`` namespace is also stubbed because the workflow
-    module's top-level imports execute through
-    ``workflow.unsafe.imports_passed_through()``; that block runs at
-    import time (before this fake replaces the module) so we only
-    need the runtime symbols here.
-    """
+ The ``unsafe`` namespace is also stubbed because the workflow
+ module's top-level imports execute through
+ ``workflow.unsafe.imports_passed_through``; that block runs at
+ import time (before this fake replaces the module) so we only
+ need the runtime symbols here.
+ """
 
     calls: list[_ActivityCall] = field(default_factory=list)
     last_wait_timeout: timedelta | None = None
@@ -154,7 +151,7 @@ class _FakeWorkflow:
         # — the ``args`` keyword is the canonical Temporal SDK pattern.
         # Capture it as the first positional argument list so test
         # assertions can index into it the same way the workflow's
-        # activity implementations would.  Fall back to whatever
+        # activity implementations would. Fall back to whatever
         # positional args the caller passed for resilience to legacy
         # call sites.
         if args is not None:
@@ -196,7 +193,7 @@ def _names_of(calls: list[_ActivityCall]) -> list[str]:
 
 def _audit_payload_of(calls: list[_ActivityCall], action: str) -> dict[str, Any] | None:
     """Return the payload dict of the first ``audit_write`` call whose
-    ``action`` matches; ``None`` if no such call was recorded."""
+ ``action`` matches; ``None`` if no such call was recorded."""
 
     for call in calls:
         if call.name != "audit_write":
@@ -215,7 +212,7 @@ def _audit_payload_of(calls: list[_ActivityCall], action: str) -> dict[str, Any]
 
 
 # ``WORKFLOW_TYPE_CAPABILITIES`` keys are valid workflow types the LLM
-# may have selected before parking on needs_info.  Restricted to a
+# may have selected before parking on needs_info. Restricted to a
 # couple of representative entries so the test does not rely on
 # implementation-specific routing decisions; the timeout branch is
 # orthogonal to workflow_type.
@@ -257,15 +254,14 @@ _questions = st.lists(
 
 
 # ---------------------------------------------------------------------------
-# Property test
+# Invariant test
 # ---------------------------------------------------------------------------
 
 
 class TestNeedsInfoTimeoutProperty:
-    """**Property 6** — 24h needs_info timeout enforcement.
+    """**** — 24h needs_info timeout enforcement.
 
-    **Validates: Requirements 4.5**
-    """
+ **"""
 
     @given(
         workflow_type=st.sampled_from(_WORKFLOW_TYPES),
@@ -290,11 +286,10 @@ class TestNeedsInfoTimeoutProperty:
         questions: list[str],
     ) -> None:
         """For all valid inputs that enter needs_info: a 24h timer fire
-        produces ``decision="failed"`` + ``reason="needs_info_timeout"``
-        + a ``stale`` Jira transition.
+ produces ``decision="failed"`` + ``reason="needs_info_timeout"``
+ + a ``stale`` Jira transition.
 
-        **Validates: Requirements 4.5**
-        """
+ **"""
 
         wf = AutomationWorkflow()
         analysis = LlmAnalysisResult(
@@ -332,7 +327,7 @@ class TestNeedsInfoTimeoutProperty:
         assert result.failure_reason == "needs_info_timeout"
         assert result.workflow_type == workflow_type
         # The stop envelope's missing_capabilities is empty — the
-        # timeout is unrelated to capability gating (R6.4).
+        # timeout is unrelated to capability gating.
         assert result.missing_capabilities == ()
         # The summary mentions the iteration that hit the timeout so
         # operators can correlate the audit event with the workflow
@@ -342,16 +337,16 @@ class TestNeedsInfoTimeoutProperty:
         assert "stale" in result.summary
 
         # ----- Wait timeout matches the 7-day spec contract ----------------
-        # platform-real-usage-gaps R1.1 — the wait_condition was
+        # — the wait_condition was
         # invoked with exactly 7 days, not 24 hours / seconds / weeks.
         assert fake.last_wait_timeout == _NEEDS_INFO_TIMEOUT
         assert fake.last_wait_timeout == timedelta(days=7)
 
         # ----- Jira side effects --------------------------------------------
         # The first iteration posts the question + transitions to
-        # ``needs_info`` (R4.1); when the 24h timer fires the loop
+        # ``needs_info``; when the 24h timer fires the loop
         # transitions the issue to ``stale`` and posts the timeout
-        # comment via ``_stop_with_audit`` (R4.5).
+        # comment via ``_stop_with_audit``.
         names = _names_of(fake.calls)
         assert "jira_transition_issue" in names
         assert "jira_add_comment" in names
@@ -371,7 +366,7 @@ class TestNeedsInfoTimeoutProperty:
 
         # The Jira comment surface includes the timeout comment;
         # _format_needs_info_timeout_comment locks the canonical
-        # Turkish wording (platform-real-usage-gaps R1.3 — "7 gün").
+        # Turkish wording (— "7 gün").
         comment_bodies = [
             call.args[1]
             for call in fake.calls
@@ -385,7 +380,7 @@ class TestNeedsInfoTimeoutProperty:
         # ----- Audit record -------------------------------------------------
         # The stop helper writes ``automation_failed`` after the timer
         # fires; the parking events are written under
-        # ``automation_needs_info_parked`` per iteration.
+        # ``automation_needs_info_parked`` iteration.
         failed_payload = _audit_payload_of(fake.calls, "automation_failed")
         assert failed_payload is not None, (
             "automation_failed audit event never written; "
@@ -407,18 +402,17 @@ class TestNeedsInfoTimeoutProperty:
 
 
 class TestNeedsInfoTimeoutConstants:
-    """Lock the timeout / cap constants the property test relies on.
+    """Lock the timeout / cap constants the Invariant test relies on.
 
-    These are deterministic example tests that complement the
-    Hypothesis-driven property — if either constant drifts the
-    property's contract changes meaningfully and operators must be
-    notified.
+ These are deterministic example tests that complement the
+ Hypothesis-driven property — if either constant drifts the
+ property's contract changes meaningfully and operators must be
+ notified.
 
-    **Validates: Requirements 4.5**
-    """
+ **"""
 
     def test_timeout_is_exactly_seven_days(self) -> None:
-        # platform-real-usage-gaps R1.1 — exactly 7 days (was 24h
+        # — exactly 7 days (was 24h
         # before the parity bump).
         assert _NEEDS_INFO_TIMEOUT == timedelta(days=7)
         # And not, e.g. 7 hours / 7 weeks / 168 minutes.

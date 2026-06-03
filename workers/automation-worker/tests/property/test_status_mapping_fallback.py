@@ -1,10 +1,8 @@
-"""Property test: Status mapping resolution with fallback.
+"""Status mapping resolution with fallback.
 
-Feature: platform-completion, Property 36: For any logical status, the resolver SHALL
-first check department status_mapping (case-insensitive); if not found, it SHALL
-apply the fallback transformation (replace underscores with spaces, title-case).
-
-Validates: Requirements 19.1, 19.2
+For any logical status, the resolver first checks department status_mapping
+case-insensitively. If no mapping is found, it applies the fallback
+transformation by replacing underscores with spaces and title-casing the result.
 """
 from __future__ import annotations
 import asyncio

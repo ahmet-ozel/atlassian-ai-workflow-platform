@@ -288,11 +288,11 @@ else {
     Write-Host "[LEAK CHECK] R6.3: Checking remote VPS git status..." -ForegroundColor Cyan
 
     try {
-        # Check if /opt/yeni_atlassian is a git repo on VPS
+        # Check if /opt/atlassian-ai-workflow-platform is a git repo on VPS
         # rsync with --exclude='.git' means it typically won't be
         $remoteGitCheck = $null
         try {
-            $remoteGitCheck = Invoke-VpsSsh -Command "if [ -d /opt/yeni_atlassian/.git ]; then echo IS_GIT_REPO; else echo NOT_GIT_REPO; fi"
+            $remoteGitCheck = Invoke-VpsSsh -Command "if [ -d /opt/atlassian-ai-workflow-platform/.git ]; then echo IS_GIT_REPO; else echo NOT_GIT_REPO; fi"
         }
         catch {
             $remoteGitCheck = "SSH_FAILED"
@@ -308,16 +308,16 @@ else {
 
         if ($remoteGitCheckStr -eq "NOT_GIT_REPO") {
             # Expected case: rsync --exclude='.git' means no .git directory on VPS
-            $evidence += "Remote /opt/yeni_atlassian is NOT a git repository."
+            $evidence += "Remote /opt/atlassian-ai-workflow-platform is NOT a git repository."
             $evidence += "This is expected when rsync --exclude='.git' was used for transfer (R3.3)."
             $evidence += "Without .git directory, git status cannot track files - leak via git is not possible."
             $evidence += "RESULT: SKIP - not a git repo (rsync --exclude='.git' transfer)"
-            Write-Host "[LEAK CHECK] R6.3: SKIP - /opt/yeni_atlassian is not a git repo (expected with rsync)" -ForegroundColor Yellow
+            Write-Host "[LEAK CHECK] R6.3: SKIP - /opt/atlassian-ai-workflow-platform is not a git repo (expected with rsync)" -ForegroundColor Yellow
         }
         elseif ($remoteGitCheckStr -eq "IS_GIT_REPO") {
             # Repo exists on VPS - run the same leak check
             try {
-                $remoteStatusRaw = Invoke-VpsSsh -Command "cd /opt/yeni_atlassian && git status --porcelain"
+                $remoteStatusRaw = Invoke-VpsSsh -Command "cd /opt/atlassian-ai-workflow-platform && git status --porcelain"
                 $remoteLines = @()
                 if ($remoteStatusRaw) {
                     $remoteLines = @($remoteStatusRaw | ForEach-Object { $_.ToString() })

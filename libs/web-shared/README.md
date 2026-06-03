@@ -4,8 +4,8 @@ Shared TypeScript helpers used by the web UIs in this monorepo
 (`ui/admin-dashboard` today, more later). Currently exports deeplink
 builders such as `workflowDeeplink(workflowId)`.
 
-This package is part of the multi-service scaffold defined in
-`MIMARI.md` §2 and is intentionally a thin stub at this stage.
+This package is part of the platform UI shared layer and is intentionally
+a thin stub at this stage.
 
 ## Standalone build & run
 
@@ -46,7 +46,7 @@ libs/web-shared/
 └── README.md
 ```
 
-## Public API (current scaffold)
+## Public API (current package)
 
 | Export | Signature | Notes |
 | --- | --- | --- |

@@ -1,15 +1,13 @@
 """Sensitive_Env_Key matcher — Python half of the TS↔Python ikiz modül.
 
 This module is the **single source of truth** for which environment
-variable keys count as a Sensitive_Env_Key on the Python side of the
-admin-dashboard control plane. The TypeScript twin lives at
-``libs/web-shared/src/sensitive.ts`` and uses the **identical** regex
-strings in the **identical** order so that Property C4 (TS↔Python
-parity) holds character-for-character (see
-``.kiro/specs/admin-dashboard-control-plane/tasks.md`` task 7.8 and
-design §3.11).
+variable keys count as a Sensitive_Env_Key on the Python side of the admin
+dashboard control plane. The TypeScript twin lives at
+``libs/web-shared/src/sensitive.ts`` and uses the **identical** regex strings
+in the **identical** order so that invariant C4 (TS↔Python parity) holds
+character-for-character.
 
-Definition (MIMARI v3.x — Sensitive_Env_Key):
+Definition:
 
     Adı `*_TOKEN`, `*_KEY`, `*_SECRET`, `*_PASSWORD`, `*_DSN`,
     `*_CREDENTIAL`, `*_PRIVATE_*` örüntülerinden birine uyan ortam
@@ -23,8 +21,7 @@ glob notation ``*_TOKEN``.
 
 The module is intentionally **pure** (no I/O, no globals beyond the
 compiled patterns) and safe to import from synchronous request
-handlers, FastAPI dependencies, and property tests alike (Requirements
-5.3, 7.7, 11.3).
+handlers, FastAPI dependencies, and invariant tests alike.
 """
 
 from __future__ import annotations
@@ -32,14 +29,14 @@ from __future__ import annotations
 import re
 
 #: Compiled regex patterns identifying a Sensitive_Env_Key, in the exact
-#: order documented in design §3.11 / tasks.md 3.2. The pattern strings
-#: must remain **character-by-character identical** to the JavaScript
-#: literals in ``libs/web-shared/src/sensitive.ts`` so Property C4
+#: order shared with the TypeScript twin. The pattern strings must remain
+#: **character-by-character identical** to the JavaScript
+#: literals in ``libs/web-shared/src/sensitive.ts`` so invariant C4
 #: (TS↔Python parity) can compare both sides on the same input set.
 #:
 #: We use :func:`re.search` semantics (no leading ``^``) so the suffix
 #: anchors ``$`` line up with the JavaScript ``RegExp.test`` behaviour
-#: on inputs without embedded newlines (the property test strategy
+#: on inputs without embedded newlines (the invariant test strategy
 #: constrains keys to ``[A-Z][A-Z0-9_]{3,40}`` which excludes them by
 #: construction).
 SENSITIVE_ENV_KEY_PATTERNS: tuple[re.Pattern[str], ...] = (

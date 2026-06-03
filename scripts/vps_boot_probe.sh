@@ -2,7 +2,7 @@
 # =============================================================================
 # platform/scripts/vps_boot_probe.sh — Boot bundle start & health verification
 # =============================================================================
-# Runs on VPS_Host. Implements Requirement 7 (R7.1–R7.6):
+# Runs on VPS_Host. Boot probe checks:
 #
 #   1. Run `make boot` to start the four boot-bundle services       (R7.1)
 #   2. Poll docker compose ps every 5s (max 180s) until all four
@@ -21,7 +21,7 @@
 # =============================================================================
 set -euo pipefail
 
-PLATFORM_DIR="/opt/yeni_atlassian/platform"
+PLATFORM_DIR="/opt/atlassian-ai-workflow-platform"
 COMPOSE_FILE="$PLATFORM_DIR/infra/docker-compose.yml"
 COMPOSE_DEV="$PLATFORM_DIR/infra/docker-compose.dev.yml"
 EVIDENCE_FILE="/tmp/07-boot.txt"

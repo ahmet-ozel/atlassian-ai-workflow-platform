@@ -1,14 +1,14 @@
 # =============================================================================
-# infra/docker-compose.yml — Multi-Service Scaffold base stack
+# infra/docker-compose.yml — base platform stack
 # =============================================================================
 # Compose v2 convention: no top-level `version:` key.
 #
-# Default Boot_Bundle (platform-gap-fill Requirement 7.1, Property 20):
+# Default Boot_Bundle:
 # bringing up the stack with no `--profile` flag starts ONLY the four
 # bootstrap services — admin-dashboard-ui, admin-dashboard-api,
 # postgres, and vault. Every other service is profile-gated and is
 # activated on demand by the dashboard's Setup Wizard (Compose_Manager,
-# Requirements 7.2-7.6) using the `compose_profile` value declared in
+# using the `compose_profile` value declared in
 # `config/services.manifest.json`.
 #
 # Bring up the bootstrap-only stack:
@@ -26,7 +26,7 @@
 # Notes
 # -----
 # - `vllm` is NOT packaged here; consumers reach it via VLLM_BASE_URL
-#   (Requirement 8.10). Run vLLM separately on the host or use OpenAI
+#   Run vLLM separately on the host or use OpenAI
 #   as the default cloud provider.
 # - All credentials below are dev-only placeholders. Runtime values come
 #   from `.env` files or `${VAR}` defaults.
@@ -42,7 +42,7 @@ x-default-logging: &default-logging
     max-file: "3"
 
 # Compose-level healthcheck shape applied to every HTTP service
-# (Requirement 12.5, Property 4.4: interval ∈ [5s, 30s], retries ≤ 3).
+# (interval ∈ [5s, 30s], retries ≤ 3).
 x-http-healthcheck: &http-healthcheck
   interval: 10s
   timeout: 3s
@@ -51,7 +51,7 @@ x-http-healthcheck: &http-healthcheck
 
 services:
   # ───────────────────────────────────────────────────────────────────────────
-  # Edge Layer — TLS Reverse Proxy (Requirement 3.1, 3.4, 3.6)
+  # Edge Layer — TLS Reverse Proxy
   # ───────────────────────────────────────────────────────────────────────────
 
   traefik:
@@ -98,30 +98,29 @@ services:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-ai}
-      # ⚠ DEV-ONLY weak password (Requirement 11.5).
+      # ⚠ DEV-ONLY weak password.
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ai_dev_only}
       POSTGRES_DB: ${POSTGRES_DB:-ai}
     ports:
       - "${POSTGRES_HOST_PORT:-35432}:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
-      # Init scripts (Requirement 6.1, 6.2, 6.6) — read-only mount so
+      # Init scripts — read-only mount so
       # postgres only runs them on first boot of an empty data volume.
       - ./postgres:/docker-entrypoint-initdb.d:ro
     networks:
       - internal
     # Postgres init scripts (mounted above) configure RLS-enabled tables
-    # for the foundation spec (Requirement 2.10): `ENABLE ROW LEVEL
+    # with `ENABLE ROW LEVEL
     # SECURITY` and `dept_isolation` policies on `departments`,
-    # `audit_events`, `probe_artifacts` (design §"Postgres şeması").
+    # `audit_events`, `probe_artifacts`.
     # Boot_Bundle: postgres carries no `profiles:` so the default
-    # `docker compose up -d` includes it (admin-dashboard-control-plane
-    # Requirement 2.4).
+    # `docker compose up -d` includes it by default.
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ai} -d ${POSTGRES_DB:-ai}"]
-      # Foundation Requirement 2.5 / Property 1 (f): healthcheck shape
+      # Healthcheck shape
       # MUST satisfy interval ∈ [5s, 30s], retries ≤ 3,
-      # timeout < interval. retries was 5 prior to task 10.1.
+      # timeout < interval.
       interval: 5s
       timeout: 3s
       retries: 3
@@ -139,7 +138,7 @@ services:
       - "${REDIS_HOST_PORT:-36379}:6379"
     networks:
       - internal
-    # O3 fix (GEREKSINIM_ANALIZI.md): redis is listed under both its
+    # Redis is listed under both its
     # own profile AND ``assistant-service`` so that starting the
     # assistant profile auto-starts redis (assistant-service has
     # ``depends_on: redis: condition: service_healthy``). Without this,
@@ -164,7 +163,7 @@ services:
     cap_add:
       - IPC_LOCK
     environment:
-      # ⚠ DEV-ONLY root token (Requirement 11.5, 18.5).
+      # ⚠ DEV-ONLY root token.
       VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_TOKEN:-dev-token-not-for-prod}
       VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
     ports:
@@ -192,7 +191,7 @@ services:
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio}
-      # ⚠ DEV-ONLY (Requirement 11.5).
+      # ⚠ DEV-ONLY.
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-miniosecret_dev_only}
     ports:
       - "${MINIO_HOST_PORT:-39000}:9000"
@@ -244,9 +243,9 @@ services:
     profiles: ["temporal", "automation-service", "task-intake-service", "agent-runner-worker", "execution-runner-worker", "automation-worker", "workers"]
     healthcheck:
       test: ["CMD-SHELL", "tctl --address temporal:7233 cluster health | grep -q SERVING"]
-      # Foundation Requirement 2.5 / Property 1 (f): healthcheck shape
+      # Healthcheck shape
       # MUST satisfy interval ∈ [5s, 30s], retries ≤ 3,
-      # timeout < interval. retries was 5 prior to task 10.1.
+      # timeout < interval.
       interval: 15s
       timeout: 5s
       retries: 3
@@ -300,7 +299,7 @@ services:
       - default
     profiles: ["atlassian-mcp", "streamlit-ui", "assistant-service", "task-intake-service", "agent-runner-worker", "workers"]
     healthcheck:
-      # O2 fix (GEREKSINIM_ANALIZI.md): probe the actual ``/healthz``
+      # Probe the actual ``/healthz``
       # endpoint instead of a bare TCP socket connect. The previous TCP
       # check flipped ``healthy`` as soon as the port was listening even
       # if the FastMCP server returned 500 from ``/healthz``. The image
@@ -316,7 +315,7 @@ services:
 
   # ─── firecrawl (egress-allowlisted scrape/search wrapper) ───
   # Built from `services/firecrawl/` rather than the upstream Mendable image
-  # so the FIRECRAWL_EGRESS_ALLOWLIST contract (Requirement 10.3, MIMARI Y3)
+  # so the FIRECRAWL_EGRESS_ALLOWLIST contract
   # is enforced before any external HTTP fetch leaves the container.
   firecrawl:
     build:
@@ -583,13 +582,13 @@ services:
       VLLM_BASE_URL: ${VLLM_BASE_URL:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-    # platform-gap-fill Requirement 7.1: admin-dashboard-api is part of
+    # admin-dashboard-api is part of
     # the default Boot_Bundle (admin-dashboard-ui + admin-dashboard-api
     # + postgres + vault) and MUST come up without any `--profile`
     # flag. Its `depends_on` therefore lists only Boot_Bundle peers
     # (postgres, vault); the Temporal/MCP/Automation tier is started
-    # lazily via the Compose_Manager (Setup Wizard, Requirements 7.2-
-    # 7.6) once the operator opts in. The api connects to Temporal at
+    # lazily via the Compose_Manager (Setup Wizard) once the operator
+    # opts in. The api connects to Temporal at
     # call time when workflow-control endpoints are invoked — a missing
     # Temporal cluster surfaces as an HTTP 5xx on those endpoints
     # rather than blocking platform boot.
@@ -602,7 +601,7 @@ services:
       - "${ADMIN_DASHBOARD_API_HOST_PORT:-38082}:8082"
     volumes:
       # DEV-ONLY: admin-dashboard-api restarts other containers
-      # (MIMARI §17). Removed in production.
+      # Removed in production.
       - /var/run/docker.sock:/var/run/docker.sock:ro
       # DEV-ONLY: the in-container Docker CLI needs the compose file
       # and the relative paths used by infra/docker-compose.yml.
@@ -618,7 +617,7 @@ services:
       # Prompt catalog/editor surface reads platform/prompts inside the API
       # container because WORKSPACE_ROOT is /app in Compose.
       - ../prompts:/app/platform/prompts
-      # K1 fix (GEREKSINIM_ANALIZI.md Faz A): mount the unified SQL
+      # Mount the unified SQL
       # migration tree so the lifespan migration runner can apply
       # un-applied files on every boot. Without this mount the
       # ``infrastructure.ssh_runners``, ``llm_providers``, ``test_runs``
@@ -631,10 +630,10 @@ services:
       - "traefik.http.routers.admin-api.tls.certresolver=letsencrypt"
       - "traefik.http.routers.admin-api.middlewares=security-headers@file"
       - "traefik.http.services.admin-api.loadbalancer.server.port=8082"
-    # platform-gap-fill Requirement 7.1 / Property 20: NO `profiles:`
+    # NO `profiles:`
     # directive — Compose includes services without `profiles:` in the
     # default profile-less `docker compose up -d` invocation. This
-    # supersedes the foundation spec's Requirement 2.1 inclusion of
+    # supersedes the previous inclusion of
     # admin-dashboard-api in the profile-gated set.
     networks:
       - internal
@@ -674,7 +673,7 @@ services:
       - "traefik.http.routers.admin-ui.middlewares=security-headers@file"
       - "traefik.http.routers.admin-ui.priority=1"
       - "traefik.http.services.admin-ui.loadbalancer.server.port=3000"
-    # platform-gap-fill Requirement 7.1 / Property 20: NO `profiles:`
+    # NO `profiles:`
     # directive — admin-dashboard-ui is part of the default Boot_Bundle
     # together with admin-dashboard-api, postgres and vault. Operators
     # bring up the platform with a bare `docker compose up -d` and use
@@ -694,12 +693,12 @@ services:
   # End-user UI (foundation 10-entry topology, kind=ui)
   # ───────────────────────────────────────────────────────────────────────────
 
-  # streamlit-ui (foundation manifest entry — Requirement 1.1, 2.1).
+  # streamlit-ui (foundation manifest entry).
   # The compose service is intentionally named `streamlit-ui` (matches
   # `services.manifest.json` `compose_service_name`); the build context
-  # remains `ui/streamlit-app/` per the existing scaffold path. UI
-  # components carry `health_endpoint=null` in the manifest (Requirement
-  # 1.10) so we omit a custom Compose healthcheck and rely on the
+  # remains `ui/streamlit-app/` per the existing project path. UI
+  # components carry `health_endpoint=null` in the manifest, so we omit
+  # a custom Compose healthcheck and rely on the
   # Dockerfile's built-in `/_stcore/health` HEALTHCHECK directive.
   streamlit-ui:
     build:
@@ -741,13 +740,13 @@ services:
       - "traefik.http.routers.streamlit.tls.certresolver=letsencrypt"
       - "traefik.http.routers.streamlit.middlewares=security-headers@file"
       - "traefik.http.services.streamlit.loadbalancer.server.port=8501"
-    # Foundation Requirement 2.1 / Property 1 (c): the `profiles:`
+    # The `profiles:`
     # list MUST contain the service's `compose_service_name`.
     profiles: ["streamlit-ui"]
     restart: unless-stopped
     logging: *default-logging
 
-  # Profile-gated optional intake service (Requirement 16.2, 16.3).
+  # Profile-gated optional intake service.
   task-intake-service:
     build: ../services/task-intake-service
     env_file:
@@ -782,7 +781,7 @@ services:
     logging: *default-logging
 
   # ───────────────────────────────────────────────────────────────────────────
-  # Temporal workers (no published HTTP ports — Property 4.2)
+  # Temporal workers (no published HTTP ports)
   # ───────────────────────────────────────────────────────────────────────────
 
   agent-runner-worker:
@@ -835,7 +834,7 @@ services:
       opencode-sidecar:
         condition: service_healthy
     volumes:
-      # Shared workspace with opencode-sidecar (MIMARI §17).
+      # Shared workspace with opencode-sidecar.
       - agent_workspace:/tmp/workspace
     networks:
       - internal
@@ -910,10 +909,10 @@ services:
     logging: *default-logging
 
   # automation-worker hosts the ``automation-tq`` task queue
-  # (workflows-spec Requirement 1.1, 1.2). It registers
+  # It registers
   # ``AutomationWorkflow`` (gateway), ``BotBranchRetention`` (daily cron
-  # for orphan ai/* branches), and ``AuditPruneWorkflow`` (Spec 3 task
-  # 13 — daily audit_events archive + delete with mandatory admin Slack
+  # for orphan ai/* branches), and ``AuditPruneWorkflow`` (daily
+  # audit_events archive + delete with mandatory admin Slack
   # alarm on failure). Like the other workers it publishes no TCP port
   # and uses a Python one-shot Temporal client connect as its
   # HEALTHCHECK (defined in the Dockerfile).
@@ -976,7 +975,7 @@ services:
     logging: *default-logging
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Top-level named volumes (Property 4.5)
+# Top-level named volumes
 # ─────────────────────────────────────────────────────────────────────────────
 volumes:
   pg_data:
@@ -984,7 +983,7 @@ volumes:
   agent_workspace:
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Networks (Requirement 3.6 — Network Isolation)
+# Networks — Network Isolation
 # ─────────────────────────────────────────────────────────────────────────────
 # `internal` network: backend services communicate here but have no direct
 # external access. Only Traefik bridges the public-facing `default` network

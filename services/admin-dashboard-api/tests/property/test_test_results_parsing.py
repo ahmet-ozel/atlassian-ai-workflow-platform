@@ -1,11 +1,6 @@
-"""Property test: Test result structured parsing.
-
-Feature: platform-completion, Property 38: For any valid JSON test output, each
+"""Test result structured parsing.
 test case SHALL be parsed into a structured record containing test name,
-pass/fail status, duration in milliseconds, and error message (max 500 chars).
-
-Validates: Requirements 7.2
-"""
+pass/fail status, duration in milliseconds, and error message (max 500 chars)."""
 from __future__ import annotations
 import json
 import sys

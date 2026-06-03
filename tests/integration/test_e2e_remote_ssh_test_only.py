@@ -1,17 +1,14 @@
 """End-to-end integration test for the ``remote_ssh_test_only`` flow.
 
-**Validates: Requirements 6.2** (spec ``platform-mimari-workflows``
-task 15.10).
-
 Scenario
 --------
 
 The :class:`ExecutionRunWorkflow` body in the
 ``execution-runner-worker`` is the canonical SSH test-runner workflow
-behind the ``remote_ssh_test_only`` workflow type.  The MIMARI
-workflow-type catalogue (R6.2) maps ``remote_ssh_test_only`` to the
+behind the ``remote_ssh_test_only`` workflow type. The workflow-type
+catalogue maps ``remote_ssh_test_only`` to the
 ``execution`` capability — a Jira task that asks the bot to run a
-smoke command on a remote host without modifying source.  At dispatch
+smoke command on a remote host without modifying source. At dispatch
 time the parent :class:`AutomationWorkflow` builds an
 :class:`ExecutionRunWorkflowInput` with ``workflow_type``
 ``"remote_ssh_test_only"`` and starts ``ExecutionRunWorkflow`` as a
@@ -20,19 +17,19 @@ child on the ``execution-runner-tq`` task queue.
 The :class:`ExecutionRunWorkflow` body is a thin orchestrator: it
 pre-processes the (caller-supplied) command, then delegates to the
 ``ssh_run_test`` activity which performs the credential fetch, SSH
-session, MinIO upload, and 30 s heartbeating in one place.  The
-workflow's job — and the contract pinned by R6.2 — is to map the
+session, MinIO upload, and 30 s heartbeating in one place. The
+workflow's job is to map the
 activity result onto a structured
 :class:`ExecutionRunWorkflowOutput` with one of three terminal
 statuses:
 
-* ``"passed"``  — exit code 0.
-* ``"failed"``  — non-zero exit, runner unreachable, or other
-  non-timeout error.
+* ``"passed"`` — exit code 0.
+* ``"failed"`` — non-zero exit, runner unreachable, or other
+ non-timeout error.
 * ``"timeout"`` — SSH command exceeded the per-attempt budget.
 
 This file exercises all three terminal statuses end-to-end against a
-real Temporal time-skipping ``WorkflowEnvironment``.  The
+real Temporal time-skipping ``WorkflowEnvironment``. The
 ``ssh_run_test`` activity is mocked with a recording stub that
 returns the result dict the production activity would emit in each
 scenario (see
@@ -42,33 +39,33 @@ for the dict shape) — no paramiko, no MinIO, no Vault.
 Three test cases:
 
 * ``test_execution_run_workflow_passed`` — activity returns
-  ``status="passed"`` / ``exit_code=0``; workflow result MUST be
-  ``status="passed"``.
+ ``status="passed"`` / ``exit_code=0``; workflow result MUST be
+ ``status="passed"``.
 * ``test_execution_run_workflow_failed`` — activity returns
-  ``status="failed"`` / ``exit_code=1``; workflow result MUST be
-  ``status="failed"``.
+ ``status="failed"`` / ``exit_code=1``; workflow result MUST be
+ ``status="failed"``.
 * ``test_execution_run_workflow_timeout`` — activity returns
-  ``status="timeout"`` / ``failure_reason="timeout"``; workflow
-  result MUST be ``status="timeout"``.
+ ``status="timeout"`` / ``failure_reason="timeout"``; workflow
+ result MUST be ``status="timeout"``.
 
 Each test additionally pins:
 
 * ``ssh_run_test`` invoked exactly once with the command, runner
-  id, environment, MinIO prefix, workdir, and parent workflow id
-  derived from the input dataclass (R6.2 — every dispatch carries
-  the same envelope so the runner can resolve the right
-  credentials).
+ id, environment, MinIO prefix, workdir, and parent workflow id
+ derived from the input dataclass ( — every dispatch carries
+ the same envelope so the runner can resolve the right
+ credentials).
 * ``workflow_type="remote_ssh_test_only"`` is propagated unchanged
-  into the workflow body — the safety net inside
-  :class:`ExecutionRunWorkflow.run` only fires for ``"noop_test"``
-  (R6.8 / task 10.4), so a ``remote_ssh_test_only`` dispatch keeps
-  the caller-supplied command verbatim.
+ into the workflow body — the safety net inside
+ :class:`ExecutionRunWorkflow.run` only fires for ``"noop_test"``,
+ so a ``remote_ssh_test_only`` dispatch keeps
+ the caller-supplied command verbatim.
 * ``runner_id`` and ``failure_reason`` round-trip from the
-  activity result onto the output dataclass unchanged so audit
-  consumers can discriminate timeout-vs-non-zero-exit failures.
+ activity result onto the output dataclass unchanged so audit
+ consumers can discriminate timeout-vs-non-zero-exit failures.
 
 Hosts without the embedded ``temporal-test-server`` skip cleanly
-via the same module-level gate the existing spec-extension tests
+via the same module-level gate the existing integration tests
 in ``test_temporal_signal.py`` / ``test_e2e_code_change_with_test.py``
 use — see :func:`_temporal_test_env_available` and
 :func:`_start_time_skipping_or_skip`.
@@ -91,10 +88,10 @@ import pytest
 def _temporal_test_env_available() -> bool:
     """Return ``True`` when the Temporal time-skipping env imports cleanly.
 
-    Any import failure is treated as "skip cleanly" so hosts without
-    the embedded ``temporal-test-server`` (sandboxed CI, missing
-    native deps) skip rather than erroring at collection time.
-    """
+ Any import failure is treated as "skip cleanly" so hosts without
+ the embedded ``temporal-test-server`` (sandboxed CI, missing
+ native deps) skip rather than erroring at collection time.
+ """
 
     try:
         from temporalio.testing import WorkflowEnvironment  # noqa: F401
@@ -113,11 +110,11 @@ pytestmark = pytest.mark.skipif(
 async def _start_time_skipping_or_skip() -> Any:
     """Start the time-skipping env, ``pytest.skip``ing on failure.
 
-    The embedded ``temporal-test-server`` may fail to start on hosts
-    where the binary is not bundled.  Surface that cleanly as a
-    skip — the integration suite stays green on machines that
-    cannot host Temporal locally.
-    """
+ The embedded ``temporal-test-server`` may fail to start on hosts
+ where the binary is not bundled. Surface that cleanly as a
+ skip — the integration suite stays green on machines that
+ cannot host Temporal locally.
+ """
 
     from temporalio.testing import WorkflowEnvironment
 
@@ -135,7 +132,7 @@ async def _start_time_skipping_or_skip() -> Any:
 # ``ssh_run_test`` takes a positional argument tuple — runner id,
 # command, env, artifact prefix, workdir, parent workflow id — which
 # the ``ExecutionRunWorkflow`` body forwards verbatim from the
-# input dataclass (R1.1 / R6.2).  The recorder captures the tuple
+# input dataclass. The recorder captures the tuple
 # per invocation so each test can assert on the exact payload the
 # runner side would receive.
 # ---------------------------------------------------------------------------
@@ -155,29 +152,29 @@ class _ActivityCallLog:
 
 def _make_remote_ssh_input(*, parent_workflow_id: str) -> Any:
     """Build a :class:`ExecutionRunWorkflowInput` for the
-    ``remote_ssh_test_only`` flow.
+ ``remote_ssh_test_only`` flow.
 
-    The values mirror what the production
-    :class:`AutomationWorkflow` would synthesise for a Jira task
-    asking the bot to run a smoke command — a runner id sourced
-    from the dept's ``ssh_runners`` list, an explicit
-    ``workflow_type="remote_ssh_test_only"``, and a non-empty
-    command (the ``noop_test`` safety net does NOT apply to this
-    type, so an empty command would surface as a runner-side
-    error).
+ The values mirror what the production
+ :class:`AutomationWorkflow` would synthesise for a Jira task
+ asking the bot to run a smoke command — a runner id sourced
+ from the dept's ``ssh_runners`` list, an explicit
+ ``workflow_type="remote_ssh_test_only"``, and a non-empty
+ command (the ``noop_test`` safety net does NOT apply to this
+ type, so an empty command would surface as a runner-side
+ error).
 
-    The ``start_to_close_timeout`` and ``heartbeat_timeout`` fields
-    are intentionally left ``None`` so the workflow falls back to
-    its built-in defaults (``DEFAULT_START_TO_CLOSE`` /
-    ``DEFAULT_HEARTBEAT``).  Temporal's default JSON converter does
-    not serialise :class:`datetime.timedelta` across the workflow
-    boundary; production callers (notably
-    :class:`AutomationWorkflow`) pass ``None`` here for the same
-    reason and the canonical
-    :class:`ExecutionRunWorkflow` tests
-    (``test_execution_run_workflow_canonical.py``) follow the same
-    pattern.
-    """
+ The ``start_to_close_timeout`` and ``heartbeat_timeout`` fields
+ are intentionally left ``None`` so the workflow falls back to
+ its built-in defaults (``DEFAULT_START_TO_CLOSE`` /
+ ``DEFAULT_HEARTBEAT``). Temporal's default JSON converter does
+ not serialise :class:`datetime.timedelta` across the workflow
+ boundary; production callers (notably
+ :class:`AutomationWorkflow`) pass ``None`` here for the same
+ reason and the canonical
+ :class:`ExecutionRunWorkflow` tests
+ (``test_execution_run_workflow_canonical.py``) follow the same
+ pattern.
+ """
 
     from temporal_shared.messages import ExecutionRunWorkflowInput
 
@@ -209,12 +206,12 @@ async def _run_workflow_with_ssh_result(
     scenario: str,
 ) -> tuple[Any, _ActivityCallLog]:
     """Drive :class:`ExecutionRunWorkflow` once with a stubbed
-    ``ssh_run_test`` that returns ``ssh_result``.
+ ``ssh_run_test`` that returns ``ssh_result``.
 
-    Returns the workflow output and the activity call log so the
-    caller can pin both the structured result and the activity
-    payload in a single arrange/act/assert block.
-    """
+ Returns the workflow output and the activity call log so the
+ caller can pin both the structured result and the activity
+ payload in a single arrange/act/assert block.
+ """
 
     from tests.integration._worker_path import isolate_worker
 
@@ -280,29 +277,26 @@ async def _run_workflow_with_ssh_result(
 @pytest.mark.asyncio
 @pytest.mark.integration
 async def test_execution_run_workflow_passed() -> None:
-    """**Validates: Requirements 6.2**
+    """Drive :class:`ExecutionRunWorkflow` with the
+ ``remote_ssh_test_only`` envelope through the happy path:
 
-    Drive :class:`ExecutionRunWorkflow` with the
-    ``remote_ssh_test_only`` envelope through the happy path:
+ 1. ``ssh_run_test`` is invoked exactly once with the command,
+ runner id, environment, MinIO prefix, workdir, and parent
+ workflow id derived from the input dataclass.
+ 2. The mocked activity returns a successful result dict
+ (``status="passed"`` / ``exit_code=0``).
+ 3. The workflow maps the dict onto
+ :class:`ExecutionRunWorkflowOutput` and emits
+ ``status="passed"`` / ``exit_code=0`` /
+ ``failure_reason=None``.
 
-    1. ``ssh_run_test`` is invoked exactly once with the command,
-       runner id, environment, MinIO prefix, workdir, and parent
-       workflow id derived from the input dataclass.
-    2. The mocked activity returns a successful result dict
-       (``status="passed"`` / ``exit_code=0``).
-    3. The workflow maps the dict onto
-       :class:`ExecutionRunWorkflowOutput` and emits
-       ``status="passed"`` / ``exit_code=0`` /
-       ``failure_reason=None`` (R6.2 — terminal status
-       discrimination).
-
-    The caller's command is NOT rewritten — the ``noop_test``
-    safety net inside :class:`ExecutionRunWorkflow.run` only fires
-    when ``workflow_type == "noop_test"`` (R6.8 / task 10.4), so
-    every other dispatch keeps the command verbatim.  Pinning the
-    command round-trip here protects against a regression that
-    accidentally widens the safety net to other workflow types.
-    """
+ The caller's command is NOT rewritten — the ``noop_test``
+ safety net inside :class:`ExecutionRunWorkflow.run` only fires
+ when ``workflow_type == "noop_test"``, so
+ every other dispatch keeps the command verbatim. Pinning the
+ command round-trip here protects against a regression that
+ accidentally widens the safety net to other workflow types.
+ """
 
     from temporal_shared.messages import ExecutionRunWorkflowOutput
 
@@ -349,7 +343,7 @@ async def test_execution_run_workflow_passed() -> None:
     assert workdir_called == "/srv/runner/workspace/PAY-9001"
     assert parent_called.startswith("agent-passed-")
 
-    # ----- Workflow output (R6.2 — terminal status discrimination) --
+    # ----- Workflow output ------------------------------------------
 
     assert isinstance(result, ExecutionRunWorkflowOutput), (
         f"workflow must return ExecutionRunWorkflowOutput; got "
@@ -380,26 +374,24 @@ async def test_execution_run_workflow_passed() -> None:
 @pytest.mark.asyncio
 @pytest.mark.integration
 async def test_execution_run_workflow_failed() -> None:
-    """**Validates: Requirements 6.2**
+    """A ``remote_ssh_test_only`` dispatch whose smoke command exits
+ non-zero MUST surface as
+ ``ExecutionRunWorkflowOutput(status="failed", ...)``. The
+ failure category (``"non_zero_exit"``) flows through unchanged
+ so the audit consumer can discriminate between exit-code
+ failures and runner-unreachable / artifact-upload failures.
 
-    A ``remote_ssh_test_only`` dispatch whose smoke command exits
-    non-zero MUST surface as
-    ``ExecutionRunWorkflowOutput(status="failed", ...)``.  The
-    failure category (``"non_zero_exit"``) flows through unchanged
-    so the audit consumer can discriminate between exit-code
-    failures and runner-unreachable / artifact-upload failures.
+ Trace
+ -----
 
-    Trace
-    -----
-
-    * ``ssh_run_test`` returns
-      ``{"status": "failed", "exit_code": 1, ...,
-        "failure_reason": "non_zero_exit"}``.
-    * The workflow body maps the dict onto
-      :class:`ExecutionRunWorkflowOutput` verbatim.
-    * The output ``status`` is ``"failed"`` (NOT ``"timeout"`` —
-      the timeout path requires a distinct activity result).
-    """
+ * ``ssh_run_test`` returns
+ ``{"status": "failed", "exit_code": 1, ...,
+ "failure_reason": "non_zero_exit"}``.
+ * The workflow body maps the dict onto
+ :class:`ExecutionRunWorkflowOutput` verbatim.
+ * The output ``status`` is ``"failed"`` (NOT ``"timeout"`` —
+ the timeout path requires a distinct activity result).
+ """
 
     from temporal_shared.messages import ExecutionRunWorkflowOutput
 
@@ -452,32 +444,30 @@ async def test_execution_run_workflow_failed() -> None:
 @pytest.mark.asyncio
 @pytest.mark.integration
 async def test_execution_run_workflow_timeout() -> None:
-    """**Validates: Requirements 6.2**
+    """When the SSH command exceeds the per-attempt budget the
+ ``ssh_run_test`` activity returns
+ ``{"status": "timeout", "exit_code": None, ...,
+ "failure_reason": "timeout"}`` — see
+ ``platform/workers/execution-runner-worker/src/activities/ssh.py``
+ for the production return shape. The workflow MUST surface
+ this as ``ExecutionRunWorkflowOutput(status="timeout", ...)``
+ so the parent :class:`AutomationWorkflow` can discriminate
+ "tests timed out" from "tests failed" when posting the Jira
+ summary.
 
-    When the SSH command exceeds the per-attempt budget the
-    ``ssh_run_test`` activity returns
-    ``{"status": "timeout", "exit_code": None, ...,
-      "failure_reason": "timeout"}`` — see
-    ``platform/workers/execution-runner-worker/src/activities/ssh.py``
-    for the production return shape.  The workflow MUST surface
-    this as ``ExecutionRunWorkflowOutput(status="timeout", ...)``
-    so the parent :class:`AutomationWorkflow` can discriminate
-    "tests timed out" from "tests failed" when posting the Jira
-    summary.
+ The activity-side timeout signal is preferred over a Temporal
+ ``ActivityTimeoutError`` because:
 
-    The activity-side timeout signal is preferred over a Temporal
-    ``ActivityTimeoutError`` because:
-
-    * The production ``ssh_run_test`` body catches the paramiko
-      timeout itself and emits a structured result dict — letting
-      Temporal's activity timeout fire would mean an open-ended
-      retry attempt instead of a stable terminal status.
-    * The R1.6 retry policy bounds ``ssh_run_test`` to 3 attempts
-      with non-idempotent semantics; a Temporal-level timeout
-      would still race the retry policy.  The activity-emitted
-      timeout is the single-shot terminal signal the workflow
-      body maps to ``status="timeout"``.
-    """
+ * The production ``ssh_run_test`` body catches the paramiko
+ timeout itself and emits a structured result dict — letting
+ Temporal's activity timeout fire would mean an open-ended
+ retry attempt instead of a stable terminal status.
+ * The retry policy bounds ``ssh_run_test`` to 3 attempts
+ with non-idempotent semantics; a Temporal-level timeout
+ would still race the retry policy. The activity-emitted
+ timeout is the single-shot terminal signal the workflow
+ body maps to ``status="timeout"``.
+ """
 
     from temporal_shared.messages import ExecutionRunWorkflowOutput
 
@@ -510,7 +500,7 @@ async def test_execution_run_workflow_timeout() -> None:
         f"status='timeout'; got {result!r}"
     )
     # Timeout runs do not carry a process exit code — the SSH
-    # session was killed before the command finished.  The activity
+    # session was killed before the command finished. The activity
     # surfaces this as ``exit_code=None`` so the workflow output
     # mirrors the absence faithfully.
     assert result.exit_code is None, (
@@ -522,7 +512,7 @@ async def test_execution_run_workflow_timeout() -> None:
         f"got {result!r}"
     )
     # No artifacts on a timeout — the activity body bails before
-    # uploading stdout/stderr.  The workflow output preserves the
+    # uploading stdout/stderr. The workflow output preserves the
     # null URIs so the audit consumer does not synthesise broken
     # MinIO links.
     assert result.stdout_uri is None

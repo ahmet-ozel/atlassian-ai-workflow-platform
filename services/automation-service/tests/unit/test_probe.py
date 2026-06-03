@@ -1,18 +1,17 @@
-"""Unit tests for ``automation_service.probe`` (task 6.1).
+"""Unit tests for ``automation_service.probe``.
 
-Covers the acceptance criteria from
-``.kiro/specs/platform-mimari-foundation/requirements.md``:
+Covers the probe acceptance criteria:
 
-* **R5.1** — read probe runs for each surface (Jira ``/myself``,
+* Read probe runs for each surface (Jira ``/myself``,
   Bitbucket ``/2.0/user``, Confluence current user). Failure aborts
   before the write probe.
-* **R5.2** — write probe round-trips a sentinel artifact for each
+* Write probe round-trips a sentinel artifact for each
   surface (Confluence draft create+delete, Bitbucket branch
   create+delete, Jira self-comment).
-* **R5.5** — every probe call first searches the target system for
+* Every probe call first searches the target system for
   ``_AI_PROBE_*`` artifacts and deletes them so repeated calls leave
   no extra residue (idempotency).
-* **R5.10** — probe artifacts never carry plain-text credentials.
+* Probe artifacts never carry plain-text credentials.
 
 The Atlassian client is replaced by an in-memory fake satisfying the
 :class:`AtlassianProbeClient` protocol so the tests stay hermetic.
@@ -53,7 +52,7 @@ from automation_service.probe import (  # noqa: E402
 
 
 class TestSentinelFormat:
-    """Probe artifact title format — R5.5 / Invariant 10."""
+    """Probe artifact title format."""
 
     def test_make_probe_title_uses_canonical_format(self) -> None:
         title = make_probe_title(now_unix_ts=1_700_000_000)
@@ -296,7 +295,7 @@ def _runner(client: _FakeAtlassianClient, ts: int = 1_700_000_000) -> ProbeRunne
 
 
 class TestJiraProbe:
-    """R5.1 + R5.2 + R5.5 — Jira read & write probe round-trip."""
+    """Jira read and write probe round-trip."""
 
     @pytest.mark.asyncio
     async def test_happy_path_returns_ok_state(self) -> None:
@@ -311,7 +310,7 @@ class TestJiraProbe:
         assert result.auto_fetched_account_id == "jira-bot-001"
         assert result.artifact is None
 
-        # Read probe must run before the write probe (R5.1).
+        # Read probe must run before the write probe.
         method_calls = [name for name, _ in client.calls]
         assert method_calls.index("jira_myself") < method_calls.index(
             "jira_create_self_comment"
@@ -334,7 +333,7 @@ class TestJiraProbe:
 
     @pytest.mark.asyncio
     async def test_idempotent_cleanup_removes_stale_comments(self) -> None:
-        """R5.5 — pre-existing ``_AI_PROBE_*`` comments are deleted first."""
+        """Pre-existing ``_AI_PROBE_*`` comments are deleted first."""
         # Seed two stale probe comments + one unrelated comment.
         stale = [
             {
@@ -372,7 +371,7 @@ class TestJiraProbe:
 
     @pytest.mark.asyncio
     async def test_repeated_runs_leave_no_extra_residue(self) -> None:
-        """R5.5 — running the probe twice in a row is idempotent."""
+        """Running the probe twice in a row is idempotent."""
         client = _FakeAtlassianClient()
         runner = _runner(client)
 
@@ -389,7 +388,7 @@ class TestJiraProbe:
 
     @pytest.mark.asyncio
     async def test_read_failure_skips_write_probe(self) -> None:
-        """R5.1 — read probe failure aborts before any write activity."""
+        """Read probe failure aborts before any write activity."""
         client = _FakeAtlassianClient(fail_read="jira")
         runner = _runner(client)
 
@@ -399,7 +398,7 @@ class TestJiraProbe:
         assert result.read_ok is False
         assert result.write_ok is False
         # Sanitised error: only the exception class name, never the
-        # raw exception message (R5.10).
+        # raw exception message.
         assert result.error_message is not None
         assert "auth failed" not in result.error_message
         assert "RuntimeError" in result.error_message
@@ -413,7 +412,7 @@ class TestJiraProbe:
 
     @pytest.mark.asyncio
     async def test_delete_failure_yields_partial_orphan(self) -> None:
-        """R5.3 — write delete failure returns ``partial_orphan`` + artifact."""
+        """Write delete failure returns ``partial_orphan`` + artifact."""
         client = _FakeAtlassianClient(fail_write_delete="jira")
         runner = _runner(client, ts=1_711_111_111)
 
@@ -436,7 +435,7 @@ class TestJiraProbe:
 
 
 class TestBitbucketProbe:
-    """R5.1 + R5.2 + R5.5 — Bitbucket read & write probe round-trip."""
+    """Bitbucket read and write probe round-trip."""
 
     @pytest.mark.asyncio
     async def test_happy_path_round_trips_branch(self) -> None:
@@ -478,7 +477,7 @@ class TestBitbucketProbe:
 
     @pytest.mark.asyncio
     async def test_idempotent_cleanup_deletes_stale_branches(self) -> None:
-        """R5.5 — orphan ``_AI_PROBE_*`` branches are deleted up-front."""
+        """Orphan ``_AI_PROBE_*`` branches are deleted up-front."""
         client = _FakeAtlassianClient(
             bitbucket_probe_branches=[
                 "_AI_PROBE_1600000000_DELETE_ME",
@@ -550,7 +549,7 @@ class TestBitbucketProbe:
 
 
 class TestConfluenceProbe:
-    """R5.1 + R5.2 + R5.3 + R5.5 — Confluence draft round-trip."""
+    """Confluence draft round-trip."""
 
     @pytest.mark.asyncio
     async def test_happy_path_creates_and_deletes_draft(self) -> None:
@@ -595,7 +594,7 @@ class TestConfluenceProbe:
 
     @pytest.mark.asyncio
     async def test_partial_orphan_when_delete_fails(self) -> None:
-        """R5.3 — Confluence delete failure produces ``partial_orphan``."""
+        """Confluence delete failure produces ``partial_orphan``."""
         client = _FakeAtlassianClient(fail_write_delete="confluence")
         ts = 1_733_333_333
         runner = _runner(client, ts=ts)
@@ -646,7 +645,7 @@ class TestConfluenceProbe:
 
 
 class TestCredentialHygiene:
-    """R5.10 — plain-text credentials never appear in artifacts or logs."""
+    """Plain-text credentials never appear in artifacts or logs."""
 
     @pytest.mark.asyncio
     async def test_artifact_body_does_not_contain_token(self) -> None:

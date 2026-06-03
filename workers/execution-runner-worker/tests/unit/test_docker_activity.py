@@ -12,7 +12,6 @@ activities including:
 - Environment variable injection into docker run command
 - docker_daemon_healthcheck returns bool
 
-Requirements: 1.1, 1.2, 1.3, 1.5, 1.6, 1.7, 1.8, 1.9
 """
 
 from __future__ import annotations
@@ -208,7 +207,6 @@ class TestDockerCleanupInput:
 class TestShouldPerformCleanup:
     """Tests for the cleanup policy decision logic.
 
-    Requirements: 1.6, 1.7
     """
 
     def test_always_policy_task_succeeded(self) -> None:
@@ -238,7 +236,6 @@ class TestShouldPerformCleanup:
 class TestBuildDockerRunCommand:
     """Tests for docker run command construction.
 
-    Requirements: 1.3, 1.9
     """
 
     def test_resource_limits_in_command(self) -> None:
@@ -264,7 +261,7 @@ class TestBuildDockerRunCommand:
         assert ":rw" in cmd
 
     def test_environment_variables_injected(self) -> None:
-        """All env vars must appear as --env parameters (Requirement 1.9)."""
+        """All env vars must appear as --env parameters."""
         inp = DockerRunInput(
             image="python:3.12",
             command="pytest",
@@ -329,7 +326,6 @@ class TestBuildDockerRunCommand:
 class TestDockerBuildImage:
     """Tests for docker_build_image activity.
 
-    Requirements: 1.1, 1.2
     """
 
     @pytest.mark.asyncio
@@ -503,7 +499,6 @@ class TestDockerBuildImage:
 class TestDockerStopContainer:
     """Tests for docker_stop_container activity.
 
-    Requirements: 1.5
     """
 
     @pytest.mark.asyncio
@@ -583,7 +578,6 @@ class TestDockerStopContainer:
 class TestDockerCleanupContainer:
     """Tests for docker_cleanup_container activity.
 
-    Requirements: 1.6, 1.7
     """
 
     @pytest.mark.asyncio
@@ -778,7 +772,6 @@ class TestDockerCleanupContainer:
 class TestDockerDaemonHealthcheck:
     """Tests for docker_daemon_healthcheck activity.
 
-    Requirements: 1.8
     """
 
     @pytest.mark.asyncio

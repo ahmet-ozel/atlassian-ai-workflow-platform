@@ -1,6 +1,6 @@
-"""``DepartmentsRouter`` — capability matrix + department detail (Feature 5),
+"""``DepartmentsRouter`` — capability matrix + department detail,
 repo-mapping self-service CRUD (Feature 9), and runtime department CRUD
-(platform-gap-fill task 17.1).
+for department administration.
 
 Provides:
 
@@ -23,11 +23,11 @@ based on its configured credentials. For each denied workflow type, the
 response includes which capabilities are missing and a next-action hint
 (e.g. "Bu dept'e Confluence credential'ı ekleyin.").
 
-Repo-mapping CRUD (Feature 9) allows ``dept_admin`` users to manage
+Repo-mapping CRUD allows ``dept_admin`` users to manage
 their own department's repository mappings. RBAC is enforced so that
 a dept_admin can only modify mappings for departments they administer.
 
-Runtime CRUD (Requirements 17.1–17.7) lets a platform admin add, update,
+Runtime CRUD lets a platform admin add, update,
 or decommission departments without restarting the platform. The handlers:
 
 1. Validate the resulting document against ``departments.schema.json`` so a
@@ -40,7 +40,7 @@ or decommission departments without restarting the platform. The handlers:
 4. Emit one audit event (``dept_created`` / ``dept_updated`` /
    ``dept_decommissioned``) with the actor's OIDC ``sub``.
 5. Signal hot-reload to dependent services so the new config becomes
-   active within 10 seconds (Requirement 17.4).
+   active within 10 seconds.
 """
 
 from __future__ import annotations
@@ -97,7 +97,7 @@ def _load_departments() -> list[dict[str, Any]]:
 def _derive_capabilities(dept: dict[str, Any]) -> frozenset[str]:
     """Derive the capability set from a department's bot credentials.
 
-    Capability derivation rules (MIMARI §2.5.3):
+    Capability derivation rules:
     - jira credential_ref non-empty → jira_read, jira_write
     - bitbucket credential_ref non-empty → bitbucket_read, bitbucket_write
     - confluence credential_ref non-empty → confluence_read, confluence_write
@@ -599,7 +599,7 @@ async def remove_repo_mapping(
 
 
 # ===========================================================================
-# Runtime Department CRUD (platform-gap-fill task 17.1, Requirements 17.1–17.7)
+# Runtime Department CRUD
 # ===========================================================================
 #
 # Separate router with prefix ``/api/v1/departments`` mounted alongside the
@@ -624,7 +624,7 @@ _DEPARTMENTS_LOCK_PATH = (
 )
 
 #: Audit action labels — kept as constants so a typo never silently
-#: produces a malformed audit row (Requirement 17.7).
+#: produces a malformed audit row.
 _ACTION_DEPT_CREATED = "dept_created"
 _ACTION_DEPT_UPDATED = "dept_updated"
 _ACTION_DEPT_DECOMMISSIONED = "dept_decommissioned"
@@ -632,9 +632,9 @@ _ACTION_DEPT_DECOMMISSIONED = "dept_decommissioned"
 #: Bot services whose ``(service, account_id)`` tuple must stay unique
 #: across departments. Mirrors the routing key used by the webhook
 #: dispatcher (``shared.department_bot_identity``) so a bot account
-#: can never resolve to two departments at once (Requirement 17.6 +
-#: Requirement 18.1). The list is intentionally narrow: only services
-#: that the dispatcher actually keys on need conflict detection here.
+#: can never resolve to two departments at once. The list is intentionally
+#: narrow: only services that the dispatcher actually keys on need conflict
+#: detection here.
 _BOT_IDENTITY_SERVICES: tuple[str, ...] = ("jira", "bitbucket", "confluence")
 
 
@@ -821,7 +821,7 @@ def _acquire_file_lock(timeout: float = 10.0) -> _FileLockContext:
 
     Production callers wrap **every** read/modify/write cycle in this
     context so concurrent admin writers can't corrupt the JSON file
-    (Requirement 17.4 — atomic, lossless updates).
+    during atomic, lossless updates.
     """
 
     return _FileLockContext(_DEPARTMENTS_LOCK_PATH, timeout=timeout)
@@ -1042,7 +1042,7 @@ async def _signal_hot_reload(
 
     The admin-dashboard-api itself is the BFF — automation-service and
     the workers consume ``departments.json`` and need to refresh their
-    in-memory caches within 10 seconds (Requirement 17.4). Two paths
+    in-memory caches within 10 seconds. Two paths
     are supported, in order of preference:
 
     1. **Publisher** — ``app.state.departments_reload_publisher`` is a
@@ -1173,15 +1173,13 @@ async def create_department(
 ) -> dict[str, Any]:
     """Add a new department to ``departments.json``.
 
-    **Validates: Requirements 17.1, 17.4, 17.5, 17.6, 17.7**
-
     Steps:
 
     1. Acquire the file lock (cross-platform, see
        :func:`_acquire_file_lock`).
     2. Read the current document.
     3. Reject with HTTP 409 if a department with the same ``id``
-       already exists (Requirement 17.6).
+       already exists.
     4. Append the new department and re-validate the full document
        against ``departments.schema.json``.
     5. Atomically write the file (temp + ``os.replace``).
@@ -1217,11 +1215,11 @@ async def create_department(
                 },
             )
 
-        # Bot ``(service, account_id)`` uniqueness — Requirement 17.6
-        # (and 18.1). A bot account can only resolve to one department
-        # because the webhook dispatcher routes on ``account_id`` alone;
-        # accepting a duplicate here would produce an ambiguous routing
-        # decision the next time the bot acts.
+        # Bot ``(service, account_id)`` uniqueness. A bot account can
+        # only resolve to one department because the webhook dispatcher
+        # routes on ``account_id`` alone; accepting a duplicate here
+        # would produce an ambiguous routing decision the next time the
+        # bot acts.
         identity_conflicts = _find_account_id_conflicts(payload, existing)
         if identity_conflicts:
             await _emit_dept_audit(
@@ -1280,8 +1278,6 @@ async def update_department(
 ) -> dict[str, Any]:
     """Apply a partial update to ``dept_id``.
 
-    **Validates: Requirements 17.2, 17.4, 17.5, 17.7**
-
     The patch body is merged onto the existing department object
     (top-level field replacement; nested objects are replaced
     wholesale, not deep-merged — operators who want a deep merge
@@ -1336,9 +1332,9 @@ async def update_department(
         # The id stays put even if Pydantic let it through above.
         merged["id"] = dept_id
 
-        # Bot identity uniqueness — Requirement 17.6 / 18.1. We compare
-        # the merged dept against every *other* dept (skip self) so an
-        # unchanged ``account_id`` never trips the check on every PATCH.
+        # Bot identity uniqueness. We compare the merged dept against
+        # every *other* dept (skip self) so an unchanged ``account_id``
+        # never trips the check on every PATCH.
         identity_conflicts = _find_account_id_conflicts(
             merged, departments, skip_dept_id=dept_id
         )
@@ -1397,8 +1393,6 @@ async def decommission_department(
     actor: AuthClaims = Depends(require_admin),
 ) -> dict[str, Any]:
     """Soft-delete: set ``mode=disabled``.
-
-    **Validates: Requirements 17.3, 17.4, 17.5, 17.7**
 
     The dept row stays in ``departments.json`` so historic audit /
     workflow rows that reference it stay resolvable. Only the

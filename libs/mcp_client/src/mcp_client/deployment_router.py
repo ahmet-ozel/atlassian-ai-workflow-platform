@@ -1,4 +1,4 @@
-"""Bitbucket deployment router — MIMARI §16.15 T9 (Requirement 7.8).
+"""Bitbucket deployment router.
 
 Bitbucket Cloud and Bitbucket Data Center expose distinct MCP tools
 for the same logical operation (eg. opening a pull request). Each
@@ -13,17 +13,13 @@ Keeping the mapping in one place means:
 - The ``AgentRunnerWorkflow`` ``code_change_*`` flows can pick the
   right tool deterministically without scattering ``if deployment ==
   "cloud"`` branches across activities.
-- The property test
-  (``platform/tests/property/test_code_change_formatters.py`` —
-  task 7.7) can exhaustively verify the mapping in a single place.
+- Tests can exhaustively verify the mapping in a single place.
 - A future deployment variant (``"datacenter-12"``, etc.) is added
   here and only here; the foundation ``BotEntry`` schema and this
   router stay in lock-step.
 
 The deployment value is sourced from the foundation
-``departments.json.bot.bitbucket.deployment`` field — see
-``.kiro/specs/platform-mimari-foundation/design.md`` ``BotEntry``
-TypeScript shape (``deployment?: "cloud" | "server" | null``).
+``departments.json.bot.bitbucket.deployment`` field.
 """
 
 from __future__ import annotations
@@ -32,7 +28,7 @@ from types import MappingProxyType
 from typing import Final, Literal, Mapping
 
 # ---------------------------------------------------------------------------
-# Tool name constants (Requirement 7.8, MIMARI §16.15 T9)
+# Tool name constants
 # ---------------------------------------------------------------------------
 
 #: MCP tool name for opening a pull request against Bitbucket Cloud.
@@ -63,8 +59,8 @@ _PR_CREATE_TOOL_BY_DEPLOYMENT: Final[Mapping[str, str]] = MappingProxyType(
 def select_pr_create_tool(deployment: Literal["cloud", "server"]) -> str:
     """Return the MCP tool name to use when opening a Bitbucket PR.
 
-    Per R7.8 / MIMARI §16.15 T9: the workflow layer must abstract
-    Bitbucket Cloud vs Data Center behind a single capability. This
+    The workflow layer must abstract Bitbucket Cloud vs Data Center
+    behind a single capability. This
     function is the deterministic, replay-safe pure mapping the
     workflow uses to pick the right tool.
 

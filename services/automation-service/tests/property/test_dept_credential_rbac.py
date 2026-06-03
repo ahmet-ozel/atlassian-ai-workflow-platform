@@ -1,8 +1,5 @@
 """Property test: Dept credential RBAC forward determinism.
 
-**Property 2: Dept Credential RBAC Forward**
-**Validates: Requirements 1.7**
-
 For any combination of ``(role, viewer_dept_ids, target_dept_id,
 action)`` the RBAC decision matrix is **deterministic** across the two
 boundaries that guard the dept-credential CRUD + probe surface:
@@ -20,8 +17,7 @@ boundaries that guard the dept-credential CRUD + probe surface:
    against the proxy-stamped ``X-Actor-*`` headers and writes its own
    ``rbac_denied`` audit row before returning HTTP 403.
 
-The decision matrix this test pins (uyumluluk R1.7 / design.md
-"Components and Interfaces — R1 RBAC"):
+The decision matrix this test pins:
 
   * ``admin``  → forwarded for **every** dept_id (no membership check).
   * ``system`` → forwarded for **every** dept_id (router only — the
@@ -35,14 +31,13 @@ The decision matrix this test pins (uyumluluk R1.7 / design.md
     with 403 if reached directly.
 
 Every denial path emits exactly one ``rbac_denied`` audit event so the
-denial trail is symmetrical with the success trail (R1.7 + design
-§"Audit").
+denial trail is symmetrical with the success trail.
 
 The test deliberately avoids real Postgres / Vault / Temporal — every
 collaborator is a hand-built fake.  The orchestrator
 :class:`DeptCredentialService` is replaced by a recording double so we
-can assert that **no mutating call leaks past a denial** (the spec
-contract is "denied at the proxy boundary OR router defence-in-depth";
+can assert that **no mutating call leaks past a denial** (the contract
+is "denied at the proxy boundary OR router defence-in-depth";
 either branch must cleanly stop before any side-effect).
 """
 
@@ -619,8 +614,7 @@ class TestProxyBoundaryRbacDeterminism:
         # Upstream must never be contacted on a denial.
         assert captured == []
         # Exactly one ``rbac_denied`` audit row carrying the actor +
-        # target dept (Requirement 1.7 / 7.7 — every denial is
-        # auditable).
+        # target dept; every denial is auditable.
         denials = [e for e in sink.events if e.action == "rbac_denied"]
         assert len(denials) == 1
         denial = denials[0]
@@ -697,7 +691,7 @@ class TestProxyBoundaryRbacDeterminism:
 
 
 # ---------------------------------------------------------------------------
-# Property B — Router defence-in-depth RBAC determinism
+# Router defence-in-depth RBAC determinism
 # ---------------------------------------------------------------------------
 
 

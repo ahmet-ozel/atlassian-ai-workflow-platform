@@ -1,47 +1,44 @@
-"""Property tests for the comment-burst debounce window — task 4.4.
+"""invariant for the comment-burst debounce window —.
 
-**Validates: Requirements 4.7**
 
-Property statement (design.md §"Property 3", requirement 4.7)
+
+Invariant statement (design.md §"invariant",
 -------------------------------------------------------------
 
-The :class:`automation_service.burst_window.BurstWindow` coordinator
+The:class:`automation_service.burst_window.BurstWindow` coordinator
 collapses consecutive webhook deliveries that target the same Jira
 ``issue_key`` within a 3-second wall-clock window into a single
 dispatched signal. Specifically:
 
 * Two events with the **same** ``issue_key`` arriving within
-  ``BURST_WINDOW_SECONDS`` (3.0s) → the first dispatches
-  (``coalesce_emit``); subsequent deliveries inside the window drop
-  (``coalesce_dropped``) and are recorded in ``coalesced_with``.
-  The latest event's payload is preserved.
+ ``BURST_WINDOW_SECONDS`` (3.0s) → the first dispatches
+ (``coalesce_emit``); subsequent deliveries inside the window drop
+ (``coalesce_dropped``) and are recorded in ``coalesced_with``.
+ The latest event's payload is preserved.
 * Two events with the same ``issue_key`` arriving **at or after** the
-  window threshold (≥3.0s apart) → both dispatch independently
-  (``coalesce_emit`` each), because the first event's window has
-  closed before the second arrives.
+ window threshold (≥3.0s apart) → both dispatch independently
+ (``coalesce_emit`` each), because the first event's window has
+ closed before the second arrives.
 * Events with **different** ``issue_key`` values never coalesce —
-  they live in independent windows.
-* The ``coalesced_with`` list returned by
-  :meth:`BurstWindow.flush_window` contains exactly the dropped
-  delivery_ids (the anchor delivery's id is **not** included because
-  it was dispatched, not dropped).
+ they live in independent windows.
+* The ``coalesced_with`` list returned by:meth:`BurstWindow.flush_window` contains exactly the dropped
+ delivery_ids (the anchor delivery's id is **not** included because
+ it was dispatched, not dropped).
 
 Wired-chain invariant
 ---------------------
 
-When the burst-debounce stage is wired into
-:class:`automation_service.webhook_filters.WebhookFilterChain` (task
-4.4 wiring), a ``coalesce_dropped`` decision surfaces as
+When the burst-debounce stage is wired into:class:`automation_service.webhook_filters.WebhookFilterChain` (implementation milestone wiring), a ``coalesce_dropped`` decision surfaces as
 ``FilterDecision(action="drop", reason="burst_coalesced",
 coalesced_with=...)`` per the design's decision table.
 
 NOT replay-safe
 ---------------
 
-The :class:`BurstWindow` is intentionally non-replay-safe — it uses
-wall-clock timing (``time.monotonic()`` semantics, injected by the
+The:class:`BurstWindow` is intentionally non-replay-safe — it uses
+wall-clock timing (``time.monotonic`` semantics, injected by the
 caller as ``now``) and lives in the webhook handler scope rather than
-inside any Temporal workflow. The property tests therefore inject
+inside any Temporal workflow. The invariant therefore inject
 ``now`` explicitly so they are deterministic without needing
 ``time.sleep``.
 """
@@ -61,7 +58,7 @@ from hypothesis import strategies as st
 # Module loading — avoid the heavy ``automation_service`` package __init__
 #
 # ``automation_service/__init__.py`` imports ``app.py`` which in turn
-# imports ``src.config`` from the legacy ``multi-service-scaffold``
+# imports ``src.config`` from the legacy ````
 # skeleton. Pulling that chain into a property-test process is both
 # slow (FastAPI + Vault clients) and fragile (the legacy ``src.*``
 # import chain only resolves under the Docker entrypoint). We bypass
@@ -83,12 +80,12 @@ _AUTOMATION_PKG_DIR = (
 def _load_module(name: str, file_path: Path) -> Any:
     """Load *file_path* as a top-level module under *name*.
 
-    ``importlib.util.spec_from_file_location`` registers the module
-    under a synthetic name so the system import cache cannot pull in
-    the real ``automation_service.<name>`` (which would re-trigger
-    the package init). The returned object exposes the module's
-    public API exactly as a regular import would.
-    """
+ ``importlib.util.spec_from_file_location`` registers the module
+ under a synthetic name so the system import cache cannot pull in
+ the real ``automation_service.<name>`` (which would re-trigger
+ the package init). The returned object exposes the module's
+ public API exactly as a regular import would.
+ """
 
     spec = _importlib_util.spec_from_file_location(name, file_path)
     assert spec is not None and spec.loader is not None, (
@@ -96,7 +93,7 @@ def _load_module(name: str, file_path: Path) -> Any:
     )
     module = _importlib_util.module_from_spec(spec)
     # Register before exec so cross-module imports inside the file
-    # (``from automation_service.webhook_filters import ...`` inside
+    # (``from automation_service.webhook_filters import...`` inside
     # ``burst_window.py``, if any) resolve to our synthetic module.
     sys.modules[name] = module
     spec.loader.exec_module(module)
@@ -260,7 +257,7 @@ class TestSameKeyWithinWindow:
         # delivery is the anchor (it was dispatched immediately) and
         # therefore not in the dropped list.
         assert coalesced_with == [second_delivery]
-        # Shallow-equal because :meth:`register` shallow-copies the
+        # Shallow-equal because:meth:`register` shallow-copies the
         # payload dict but does not deep-copy values.
         assert latest_payload == second_payload
 
@@ -447,11 +444,11 @@ class TestDifferentKeysIndependent:
 class TestCoalescedListExactness:
     """``coalesced_with`` carries every dropped delivery_id, in order.
 
-    This invariant covers the design mandate "coalesced_with listesi
-    delivery_id'leri içerir" and the implicit "the anchor delivery
-    is not in the dropped list" — the anchor was dispatched, not
-    dropped.
-    """
+ This invariant covers the design mandate "coalesced_with listesi
+ delivery_id'leri içerir" and the implicit "the anchor delivery
+ is not in the dropped list" — the anchor was dispatched, not
+ dropped.
+ """
 
     @settings(
         max_examples=200,
@@ -536,7 +533,7 @@ class TestCoalescedListExactness:
 
 # ---------------------------------------------------------------------------
 # Test 5: chain wiring — coalesce_dropped surfaces as
-# FilterDecision(action="drop", reason="burst_coalesced", ...)
+# FilterDecision(action="drop", reason="burst_coalesced",...)
 # ---------------------------------------------------------------------------
 
 
@@ -545,26 +542,26 @@ def _make_chain_with_burst(
 ) -> WebhookFilterChain:
     """Build a chain whose burst stage is wired to *burst*.
 
-    All other stages are configured to be effectively no-ops so the
-    burst stage is the deciding factor:
+ All other stages are configured to be effectively no-ops so the
+ burst stage is the deciding factor:
 
-    * ``verify_hmac`` always returns True (chain doesn't call it
-      because task 4.2 isn't wired into evaluate yet).
-    * ``resolve_dept`` returns a fixed dept id.
-    * ``bot_account_ids`` returns an empty set (no loop guard).
-    * ``is_processed`` returns False (no replay dedup).
-    * ``mention_set_for`` returns ``frozenset()`` (no mention drops);
-      paired with ``iter_count_for`` returning 1 so the first-iter
-      exception applies for the reporter regardless.
-    * ``iter_count_for`` returns 1 so :meth:`_stage_mention_filter`
-      lets comment events through unchanged.
-    * ``reporter_for`` returns a sentinel that does not match any
-      actor we use in tests.
+ * ``verify_hmac`` always returns True (chain doesn't call it
+ because isn't wired into evaluate yet).
+ * ``resolve_dept`` returns a fixed dept id.
+ * ``bot_account_ids`` returns an empty set (no loop guard).
+ * ``is_processed`` returns False (no replay dedup).
+ * ``mention_set_for`` returns ``frozenset`` (no mention drops);
+ paired with ``iter_count_for`` returning 1 so the first-iter
+ exception applies for the reporter regardless.
+ * ``iter_count_for`` returns 1 so:meth:`_stage_mention_filter`
+ lets comment events through unchanged.
+ * ``reporter_for`` returns a sentinel that does not match any
+ actor we use in tests.
 
-    The ``now_provider`` is a list whose first entry is consumed by
-    each ``burst_register`` call — tests pop from the head so each
-    invocation can set its own wall-clock value deterministically.
-    """
+ The ``now_provider`` is a list whose first entry is consumed by
+ each ``burst_register`` call — tests pop from the head so each
+ invocation can set its own wall-clock value deterministically.
+ """
 
     def _burst_register(event: WebhookEvent) -> BurstRegisterResult | None:
         if event.issue_key is None:
@@ -770,11 +767,11 @@ class TestBoundaryBehaviour:
     def test_event_exactly_at_window_threshold_opens_fresh_window(self) -> None:
         """At ``BURST_WINDOW_SECONDS`` exactly, the new event emits.
 
-        The implementation uses a strict ``<`` comparison
-        (``now - window_start < window_seconds``), so an event whose
-        gap equals the threshold falls outside the window. This
-        test pins that boundary.
-        """
+ The implementation uses a strict ``<`` comparison
+ (``now - window_start < window_seconds``), so an event whose
+ gap equals the threshold falls outside the window. This
+ test pins that boundary.
+ """
 
         window = BurstWindow()
 

@@ -1,7 +1,5 @@
 """Unit tests for the SSH dual-slot key fallback logic.
 
-Spec: ``platform-real-usage-gaps`` Requirement 8.7 — task 8.3.
-
 Tests the :class:`SSHDualSlotConnector` in
 :mod:`src.runners.remote_ssh` which implements the active → previous
 slot fallback during SSH key rotation windows.

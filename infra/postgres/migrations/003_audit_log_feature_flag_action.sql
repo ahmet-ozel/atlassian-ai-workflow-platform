@@ -1,10 +1,10 @@
 -- 003_audit_log_feature_flag_action.sql
--- Spec: platform-mimari-uyumluluk — Task 6.1 (R10 / Q12 — feature-flag start gate)
+-- Feature-flag start gate audit action.
 --
 -- Widens the ``shared.audit_log.action`` CHECK constraint to include
 -- ``service_start_blocked_feature_flag`` so the lifecycle handler can
 -- record a Step 1.5 block when a manifest ``feature_flag_dependency``
--- is disabled (Requirement 10.1 / 10.2).
+-- is disabled.
 --
 -- The original constraint was defined by ``50_shared.sql`` as::
 --

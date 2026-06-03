@@ -2,9 +2,6 @@
 
 Tests the least-busy runner selection algorithm, error handling when
 no active runners are available, and audit event writing.
-
-Spec: platform-quick-fixes — Task 7.3
-Requirements: 4.5, 4.6, 4.7, 4.16
 """
 
 from __future__ import annotations

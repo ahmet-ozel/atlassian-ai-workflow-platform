@@ -4,11 +4,10 @@ The worker connects to the Temporal cluster pointed at by the
 ``TEMPORAL_HOST`` environment variable (default ``temporal:7233``) and
 registers a ``Worker`` on the ``agent-runner`` task queue.
 
-Workflow and activity registrations are intentionally empty in this
-scaffold task; subsequent tasks will populate them. If the connection
-to Temporal cannot be established the process exits with a non-zero
-status code so that the orchestrating Compose stack / supervisor can
-restart it (Requirement 3.7).
+Workflow and activity registrations are intentionally empty here. If
+the connection to Temporal cannot be established the process exits
+with a non-zero status code so that the orchestrating Compose stack /
+supervisor can restart it.
 """
 
 from __future__ import annotations
@@ -34,13 +33,10 @@ async def main() -> None:
         format="%(asctime)s %(levelname)s %(name)s %(message)s",
     )
 
-    # Y4 fix (GEREKSINIM_ANALIZI.md): worker entry points were missing
-    # the redaction filter installation that the HTTP services already
-    # had — TEST_REPORT critical #2/#3 found token/password leaks in
-    # worker logs (which handle SSH credentials, Jira tokens, etc.).
-    # Install it immediately after basicConfig so every later
-    # ``logger.info`` / structlog record passes through the regex
-    # scrubber before reaching stdout.
+    # Worker logs can include SSH credentials, Jira tokens, and other
+    # sensitive values. Install the redaction filter immediately after
+    # basicConfig so every later ``logger.info`` / structlog record
+    # passes through the regex scrubber before reaching stdout.
     from http_shared import install_redaction_filter  # noqa: PLC0415
 
     install_redaction_filter(

@@ -1,11 +1,8 @@
-"""Property test 9 — Workspace per-task isolation (Q15/Q16 ops extension).
+"""Property-based test for workspace per-task isolation.
 
-**Validates: Requirements 4.2, 8.6, 8.7**
-
-The foundation owns the core "per-task workspace is namespaced and
-purgeable" property under task 11 of ``platform-mimari-foundation``.
-This file extends that invariant to the ops-scope purge profiles
-introduced by ``ServicesLifecycleRouter`` (task 11.1):
+The core invariant is that each task workspace is namespaced and
+purgeable. This file exercises the purge profiles introduced by
+``ServicesLifecycleRouter``:
 
 * ``profile == "workspace"`` — workspace dir purged, vault path
   retained.

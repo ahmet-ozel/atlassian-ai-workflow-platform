@@ -1,8 +1,6 @@
-"""Integration test 13.4 — Capability-denied webhook end-to-end.
+"""Capability-denied webhook end-to-end integration test.
 
-**Validates: Requirements 4.4, 4.5**
 
-Spec: ``.kiro/specs/platform-mimari-foundation`` (task 13.4).
 
 Scenario
 --------
@@ -15,21 +13,19 @@ gate denies the request because the dept's derived capability set is
 empty while the webhook-layer workflow type ``noop_test`` requires
 ``{"jira_read"}`` (see ``temporal_shared.WORKFLOW_TYPE_CAPABILITIES``).
 
-The test asserts the four invariants spelled out by Requirements 4.4
-and 4.5 plus task 13.4's explicit checklist:
+The test asserts the key invariants for this denied path:
 
 1. **Workflow start is blocked** — the injected workflow client's
-   ``start_workflow`` is never invoked.
+ ``start_workflow`` is never invoked.
 2. **HTTP response shape** — HTTP 202 with body
-   ``{"status": "accepted", "decision": "denied",
-     "missing": [...], "issue_key": ...}``.
+ ``{"status": "accepted", "decision": "denied",
+ "missing": [...], "issue_key": ...}``.
 3. **Jira bot comment** — a comment is posted on the issue whose body
-   names the missing capability and is in Turkish (mirrors the
-   design's user-facing localisation contract).
+ names the missing capability and is in Turkish for operators.
 4. **Audit event** — exactly one event with
-   ``action="capability_denied"``, ``result="denied"``, the resolved
-   ``dept_id`` and a ``payload`` carrying the sorted ``missing``
-   capability list.
+ ``action="capability_denied"``, ``result="denied"``, the resolved
+ ``dept_id`` and a ``payload`` carrying the sorted ``missing``
+ capability list.
 
 Implementation notes
 --------------------
@@ -99,11 +95,11 @@ from vault_client import VaultPath  # noqa: E402
 class _StubBotSection:
     """Empty bot section — no Jira / Bitbucket / Confluence credential.
 
-    The capability resolver derives the empty frozenset for any dept
-    whose ``bot.<svc>`` slots are all ``None`` (Requirement 4.3). That
-    is exactly the precondition we need to make the capability gate
-    deny ``noop_test`` (which requires ``jira_read``).
-    """
+ The capability resolver derives the empty frozenset for any dept
+ whose ``bot.<svc>`` slots are all ``None``. That
+ is exactly the precondition we need to make the capability gate
+ deny ``noop_test`` (which requires ``jira_read``).
+ """
 
     jira: object | None = None
     bitbucket: object | None = None
@@ -114,10 +110,10 @@ class _StubBotSection:
 class _StubDept:
     """Minimal :class:`SupportsDepartment` stand-in with an ``id``.
 
-    The webhook handler reads ``getattr(dept, "id", None)`` to obtain
-    the dept_id used downstream (HMAC lookup, audit). Every other
-    attribute is structural and forwarded to ``derive_capabilities``.
-    """
+ The webhook handler reads ``getattr(dept, "id", None)`` to obtain
+ the dept_id used downstream (HMAC lookup, audit). Every other
+ attribute is structural and forwarded to ``derive_capabilities``.
+ """
 
     id: str
     web_search_enabled: bool = False
@@ -148,12 +144,12 @@ class _StubDeptResolver:
 class _StubVault:
     """In-memory ``VaultClient`` stand-in for a single webhook secret.
 
-    Stores exactly one ``(VaultPath, payload)`` pair under
-    ``vault:webhooks/jira/<dept_id>`` so HMAC verification succeeds
-    when the request is signed with the matching secret. All other
-    operations raise so accidental writes / rotations surface as
-    test-double calls.
-    """
+ Stores exactly one ``(VaultPath, payload)`` pair under
+ ``vault:webhooks/jira/<dept_id>`` so HMAC verification succeeds
+ when the request is signed with the matching secret. All other
+ operations raise so accidental writes / rotations surface as
+ test-double calls.
+ """
 
     backend: str = "stub"
 
@@ -209,12 +205,12 @@ class _RecordingAuditLogger:
 class _SpyWorkflowClient:
     """``SupportsStartWorkflow`` stand-in that records every start call.
 
-    The capability-denied path MUST short-circuit before reaching the
-    workflow client (R4.4). ``calls`` therefore stays empty for the
-    test's happy path; if a regression sneaks in and the workflow
-    starts despite the gate denying, ``calls`` non-emptiness flags it
-    immediately.
-    """
+ The capability-denied path MUST short-circuit before reaching the
+ workflow client. ``calls`` therefore stays empty for the
+ test's happy path; if a regression sneaks in and the workflow
+ starts despite the gate denying, ``calls`` non-emptiness flags it
+ immediately.
+ """
 
     calls: list[dict[str, Any]] = field(default_factory=list)
 
@@ -257,10 +253,10 @@ _WEBHOOK_SECRET = b"test-only-webhook-secret-do-not-deploy"
 def _build_signed_jira_payload() -> tuple[bytes, str]:
     """Return ``(raw_body, signature_header)`` for a well-formed payload.
 
-    The payload's ``project.key`` resolves to ``payments`` via the
-    stub resolver, and the actor is a real human (not a registered
-    bot) so neither the dept_id-resolution nor the loop guard fires.
-    """
+ The payload's ``project.key`` resolves to ``payments`` via the
+ stub resolver, and the actor is a real human (not a registered
+ bot) so neither the dept_id-resolution nor the loop guard fires.
+ """
     payload = {
         "webhookEvent": "jira:issue_created",
         "issue": {
@@ -284,13 +280,13 @@ def _build_app() -> tuple[
 ]:
     """Wire a FastAPI app whose dept has no Atlassian credentials.
 
-    The dept resolves successfully (so HMAC verify can run), HMAC
-    verification succeeds (matching the test's signed payload), and
-    the loop guard passes (the actor is a human, not a bot). The
-    capability gate then rejects ``noop_test`` because
-    ``derive_capabilities`` returns an empty frozenset for a dept
-    without any bot credentials.
-    """
+ The dept resolves successfully (so HMAC verify can run), HMAC
+ verification succeeds (matching the test's signed payload), and
+ the loop guard passes (the actor is a human, not a bot). The
+ capability gate then rejects ``noop_test`` because
+ ``derive_capabilities`` returns an empty frozenset for a dept
+ without any bot credentials.
+ """
     audit = _RecordingAuditLogger()
     commenter = _RecordingJiraCommenter()
     workflow_client = _SpyWorkflowClient()
@@ -321,18 +317,18 @@ def _build_app() -> tuple[
 
 @pytest.mark.integration
 def test_webhook_capability_denied_blocks_workflow_and_audits() -> None:
-    """**Validates: Requirements 4.4, 4.5**
+    """Jira webhook with insufficient capability is denied cleanly.
 
-    Yetersiz capability ile gelen Jira webhook isteği için:
+ Yetersiz capability ile gelen Jira webhook isteği için:
 
-    * Workflow start çağrısı yapılmaz (R4.4).
-    * HTTP 202 döner ve body ``decision: "denied"`` içerir (R4.5).
-    * Jira'ya Türkçe bot yorumu yazılır ve eksik capability'leri
-      isimlendirir (R4.5).
-    * Audit'e tek bir ``capability_denied`` (``result="denied"``)
-      kaydı yazılır ve ``payload.missing`` eksik capability listesini
-      içerir (R4.5).
-    """
+ * Workflow start çağrısı yapılmaz.
+ * HTTP 202 döner ve body ``decision: "denied"`` içerir.
+ * Jira'ya Türkçe bot yorumu yazılır ve eksik capability'leri
+ isimlendirir.
+ * Audit'e tek bir ``capability_denied`` (``result="denied"``)
+ kaydı yazılır ve ``payload.missing`` eksik capability listesini
+ içerir.
+ """
 
     body, signature = _build_signed_jira_payload()
     client, audit, commenter, workflow_client = _build_app()
@@ -382,7 +378,7 @@ def test_webhook_capability_denied_blocks_workflow_and_audits() -> None:
     comment_dept, comment_issue, comment_body = commenter.comments[0]
     assert comment_dept == _DEPT_ID
     assert comment_issue == _ISSUE_KEY
-    # Turkish phrasing per the design contract — the comment must
+    # Turkish denial phrasing; the comment must
     # mention the missing capability so the operator knows what to
     # provision next.
     assert "jira_read" in comment_body, (

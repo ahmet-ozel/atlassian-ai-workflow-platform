@@ -1,8 +1,7 @@
 """Compose Bootstrap Manager — profile-level Docker Compose orchestration.
 
-Implements platform-gap-fill task 5.2 / Requirements 7.2 – 7.6: the
-admin-dashboard-api drives the Setup Wizard by activating Compose
-*profiles* (one per Managed_Service group) on demand. This module is
+The admin-dashboard-api drives the Setup Wizard by activating Compose
+*profiles* for managed service groups on demand. This module is
 the **profile-level** counterpart to :class:`ComposeRunner` (which is
 service-level): callers ask for a profile, ComposeManager runs::
 
@@ -12,8 +11,7 @@ service-level): callers ask for a profile, ComposeManager runs::
 and then polls the per-service ``health_endpoint`` (when supplied) to
 confirm the start actually came up. State is persisted to the existing
 ``automation.setup_wizard_state`` row family (migration 006) so a
-platform restart can replay the operator's last activation set
-(Requirement 7.6).
+platform restart can replay the operator's last activation set after a restart.
 
 Why a separate module?
 ----------------------
@@ -22,11 +20,12 @@ Why a separate module?
   :class:`LifecycleService` state machine. The Setup Wizard needs a
   *lighter* entry point that operates on Compose profiles directly
   and persists to a different table — overloading ``ComposeRunner``
-  would blur the separation of concerns documented in design §8.
+  would blur the separation of concerns between profile-level and
+  service-level orchestration.
 * The subprocess-invocation patterns are deliberately mirrored
   (allow-listed env, ``shell=False``, argv lists) so audit/security
-  reviews can confirm both modules satisfy Requirement 8.3 with the
-  same scrubbing rules. We do NOT depend on ``ComposeRunner``'s
+  reviews can confirm both modules use the same scrubbing rules. We do NOT
+  depend on ``ComposeRunner``'s
   helpers here because the argv shape differs (``--profile`` is at
   the project level, not the service level).
 
@@ -81,7 +80,7 @@ import httpx
 #: operator's shell history, …) stays on the API host. Mirrors the
 #: scrubbing contract enforced by
 #: :class:`~src.lifecycle.compose_runner.ComposeRunner._scrubbed_environ`
-#: so both modules satisfy Requirement 8.3 with identical semantics.
+#: so both modules apply identical subprocess environment semantics.
 _ALLOWED_HOST_ENV_KEYS: Final[frozenset[str]] = frozenset(
     {"PATH", "HOME", "DOCKER_HOST"}
 )
@@ -173,7 +172,7 @@ class RunningService:
 
     Compose's JSON schema for ``ps`` exposes more fields than we
     surface here; we keep only the columns the Admin_Dashboard UI
-    actually consumes (Requirement 7.4 / 12.4 — service name,
+    actually consumes: service name,
     lifecycle state, optional health rollup, image identifier). The
     ``raw`` field preserves the unparsed dict so callers that need a
     less-stable column (``Publishers``, ``Mounts``, …) can still
@@ -231,7 +230,7 @@ class InvalidProfileError(ValueError):
 
 
 class StartedProfileStore(Protocol):
-    """Persistence interface for the auto-start manifest (Requirement 7.6).
+    """Persistence interface for the auto-start manifest.
 
     Implementations MUST be safe to call concurrently from multiple
     coroutines (the Setup Wizard issues ``start_service`` /
@@ -277,7 +276,7 @@ class AsyncpgStartedProfileStore:
                          upsert.
 
     The ``ON CONFLICT`` clause makes ``record_started`` idempotent
-    (Property 20 surface — restarting an already-running profile
+    (restarting an already-running profile
     should not orphan a stale row).
     """
 
@@ -384,7 +383,7 @@ def _scrubbed_env() -> dict[str, str]:
     Only the keys in :data:`_ALLOWED_HOST_ENV_KEYS` are forwarded from
     :data:`os.environ`. This mirrors
     :func:`ComposeRunner._scrubbed_environ` so both modules give the
-    same security surface to a security review of Requirement 8.3.
+    same security surface during subprocess review.
     """
 
     env: dict[str, str] = {}
@@ -416,7 +415,7 @@ class ComposeManager:
         startup in ``main.lifespan``, close on shutdown).
     store:
         Optional :class:`StartedProfileStore` for persistence
-        (Requirement 7.6). When ``None``, ``start_service`` /
+        for auto-start after restart. When ``None``, ``start_service`` /
         ``stop_service`` skip the persistence write — useful in unit
         tests that don't exercise the auto-restart path.
     health_base_url_template:
@@ -499,7 +498,7 @@ class ComposeManager:
             docker compose -f {compose_file} --profile {profile} up -d
 
         On success, persists the activation in
-        :class:`StartedProfileStore` (Requirement 7.6). On non-zero
+        :class:`StartedProfileStore`. On non-zero
         exit, raises :class:`ComposeManagerError` and does **not**
         write the persistence row — the operator can retry without
         having to reconcile a stale "running" record.
@@ -640,8 +639,8 @@ class ComposeManager:
     ) -> bool:
         """Poll ``GET http://{service}{endpoint}`` until 200 or timeout.
 
-        Implements Requirement 7.4: after activating a profile the
-        Setup Wizard verifies each service comes up by polling its
+        After activating a profile, the Setup Wizard verifies each service
+        comes up by polling its
         ``health_endpoint`` (typically ``/healthz``) on the Compose
         internal network. Returns ``True`` when the endpoint returns
         ``200`` within ``timeout`` seconds, ``False`` otherwise.
@@ -770,7 +769,7 @@ class ComposeManager:
         return _parse_compose_ps_output(stdout)
 
     # ------------------------------------------------------------------
-    # auto_start_persisted (Requirement 7.6)
+    # auto_start_persisted
     # ------------------------------------------------------------------
 
     async def auto_start_persisted(self) -> list[str]:
@@ -778,7 +777,7 @@ class ComposeManager:
 
         Called from ``main.lifespan`` on startup so a platform restart
         re-establishes the operator's previously activated profile
-        set without manual intervention (Requirement 7.6). When the
+        set without manual intervention. When the
         manager has no :class:`StartedProfileStore` attached the
         method returns an empty list; otherwise it walks the persisted
         profiles in deterministic order and calls

@@ -1,10 +1,6 @@
-"""Property test 14 — Pending Credentials Badge Invariant.
+"""Pending credentials badge behavior.
 
-# Feature: platform-quick-fixes, Property 14: Pending Credentials Badge Invariant
 
-Spec: ``platform-quick-fixes`` — Property 14.
-
-**Validates: Requirements 3.8, 3.9**
 
 Background
 ----------
@@ -13,9 +9,9 @@ The department detail page (``app/departments/[id]/page.tsx``) renders
 a status badge based on whether the department has any bound credentials:
 
 - **Zero credentials** (all bots have ``credential_ref: null``) →
-  Yellow "Pending Credentials" badge + "Add Credential" button.
+ Yellow "Pending Credentials" badge + "Add Credential" button.
 - **At least one credential** (any bot has ``credential_ref`` not null) →
-  Green "Active" badge.
+ Green "Active" badge.
 
 Strategy
 --------
@@ -45,36 +41,36 @@ import pytest
 # ---------------------------------------------------------------------------
 # The TSX component determines credential status with:
 #
-#   const hasCredentials =
-#     state.kind === "ok" &&
-#     state.detail.bots.some((bot) => bot.credential_ref != null);
+# const hasCredentials =
+# state.kind === "ok" &&
+# state.detail.bots.some((bot) => bot.credential_ref != null);
 #
 # When hasCredentials is false → "Pending Credentials" badge + "Add Credential" button
-# When hasCredentials is true  → "Active" badge
+# When hasCredentials is true → "Active" badge
 # ---------------------------------------------------------------------------
 
 
 def has_credentials(bots: list[dict[str, Any]]) -> bool:
     """Determine if department has any bound credentials.
 
-    Mirrors the TSX logic:
-        state.detail.bots.some((bot) => bot.credential_ref != null)
+ Mirrors the TSX logic:
+ state.detail.bots.some((bot) => bot.credential_ref != null)
 
-    A bot's credential_ref is considered "bound" when it is not None.
-    """
+ A bot's credential_ref is considered "bound" when it is not None.
+ """
     return any(bot.get("credential_ref") is not None for bot in bots)
 
 
 def determine_badge_state(detail: dict[str, Any] | None) -> str:
     """Determine which badge the department detail page should render.
 
-    Returns one of:
-        - "loading" — detail is None (still fetching)
-        - "pending_credentials" — no bot has a bound credential_ref
-        - "active" — at least one bot has a non-null credential_ref
+ Returns one of:
+ - "loading" — detail is None (still fetching)
+ - "pending_credentials" — no bot has a bound credential_ref
+ - "active" — at least one bot has a non-null credential_ref
 
-    This mirrors the branching logic in the DepartmentDetailPage component.
-    """
+ This mirrors the branching logic in the DepartmentDetailPage component.
+ """
     if detail is None:
         return "loading"
 
@@ -89,8 +85,8 @@ def determine_badge_state(detail: dict[str, Any] | None) -> str:
 def should_show_add_credential_button(detail: dict[str, Any] | None) -> bool:
     """Determine if the 'Add Credential' button should be rendered.
 
-    The button is shown only when the badge state is 'pending_credentials'.
-    """
+ The button is shown only when the badge state is 'pending_credentials'.
+ """
     return determine_badge_state(detail) == "pending_credentials"
 
 
@@ -180,17 +176,15 @@ _has_credentials_detail = st.builds(
 
 
 # ---------------------------------------------------------------------------
-# Property 14: Pending Credentials Badge — Zero Credentials Case
+# Pending Credentials Badge — Zero Credentials Case
 # ---------------------------------------------------------------------------
 
 
 class TestPendingCredentialsBadge:
-    """**Validates: Requirements 3.8, 3.9**
-
-    For any department with zero bound credentials, the department detail
-    page SHALL render a "Pending Credentials" badge (yellow) instead of
-    "Active" badge, and SHALL show an "Add Credential" button.
-    """
+    """For any department with zero bound credentials, the department detail
+ page SHALL render a "Pending Credentials" badge (yellow) instead of
+ "Active" badge, and SHALL show an "Add Credential" button.
+ """
 
     @settings(
         max_examples=100,
@@ -201,7 +195,7 @@ class TestPendingCredentialsBadge:
     def test_zero_credentials_shows_pending_badge(
         self, detail: dict[str, Any]
     ) -> None:
-        """R3.8: Zero bound credentials → badge state is 'pending_credentials'."""
+        """: Zero bound credentials → badge state is 'pending_credentials'."""
         state = determine_badge_state(detail)
         assert state == "pending_credentials", (
             f"Expected 'pending_credentials' for dept with zero credentials, "
@@ -217,7 +211,7 @@ class TestPendingCredentialsBadge:
     def test_zero_credentials_shows_add_credential_button(
         self, detail: dict[str, Any]
     ) -> None:
-        """R3.9: Zero bound credentials → 'Add Credential' button is rendered."""
+        """: Zero bound credentials → 'Add Credential' button is rendered."""
         show_button = should_show_add_credential_button(detail)
         assert show_button is True, (
             "Expected 'Add Credential' button to be shown when no credentials "
@@ -233,7 +227,7 @@ class TestPendingCredentialsBadge:
     def test_zero_credentials_all_bots_have_null_credential_ref(
         self, detail: dict[str, Any]
     ) -> None:
-        """R3.8: Confirm all bots in the zero-credentials case have null credential_ref."""
+        """: Confirm all bots in the zero-credentials case have null credential_ref."""
         bots = detail.get("bots") or []
         for bot in bots:
             assert bot.get("credential_ref") is None, (
@@ -243,17 +237,15 @@ class TestPendingCredentialsBadge:
 
 
 # ---------------------------------------------------------------------------
-# Property 14: Active Badge — At Least One Credential Case
+# Active Badge — At Least One Credential Case
 # ---------------------------------------------------------------------------
 
 
 class TestActiveBadge:
-    """**Validates: Requirements 3.8, 3.9**
-
-    For any department with at least one bound credential, the department
-    detail page SHALL render an "Active" badge (green) and SHALL NOT show
-    the "Add Credential" button.
-    """
+    """For any department with at least one bound credential, the department
+ detail page SHALL render an "Active" badge (green) and SHALL NOT show
+ the "Add Credential" button.
+ """
 
     @settings(
         max_examples=100,
@@ -264,7 +256,7 @@ class TestActiveBadge:
     def test_has_credentials_shows_active_badge(
         self, detail: dict[str, Any]
     ) -> None:
-        """R3.8: At least one credential → badge state is 'active'."""
+        """: At least one credential → badge state is 'active'."""
         state = determine_badge_state(detail)
         assert state == "active", (
             f"Expected 'active' for dept with at least one credential, "
@@ -280,7 +272,7 @@ class TestActiveBadge:
     def test_has_credentials_hides_add_credential_button(
         self, detail: dict[str, Any]
     ) -> None:
-        """R3.9: At least one credential → 'Add Credential' button NOT shown."""
+        """: At least one credential → 'Add Credential' button NOT shown."""
         show_button = should_show_add_credential_button(detail)
         assert show_button is False, (
             "Expected 'Add Credential' button to be hidden when credentials "
@@ -296,7 +288,7 @@ class TestActiveBadge:
     def test_has_credentials_at_least_one_non_null_ref(
         self, detail: dict[str, Any]
     ) -> None:
-        """R3.8: Confirm at least one bot has a non-null credential_ref."""
+        """: Confirm at least one bot has a non-null credential_ref."""
         bots = detail.get("bots") or []
         has_any = any(bot.get("credential_ref") is not None for bot in bots)
         assert has_any, (
@@ -306,15 +298,15 @@ class TestActiveBadge:
 
 
 # ---------------------------------------------------------------------------
-# Property 14: Badge State Exhaustiveness and Mutual Exclusivity
+# Badge State Exhaustiveness and Mutual Exclusivity
 # ---------------------------------------------------------------------------
 
 
 class TestBadgeStateExhaustiveness:
     """Verify that the badge logic is exhaustive and mutually exclusive.
 
-    **Validates: Requirements 3.8, 3.9**
-    """
+
+ """
 
     @settings(
         max_examples=100,
@@ -398,8 +390,8 @@ class TestBadgeStateExhaustiveness:
 class TestPendingCredentialsEdgeCases:
     """Edge-case tests for the pending credentials badge logic.
 
-    **Validates: Requirements 3.8, 3.9**
-    """
+
+ """
 
     def test_empty_bots_list_shows_pending(self) -> None:
         """Department with empty bots list → pending credentials."""

@@ -7,9 +7,9 @@ HTTP routers (``src/routers``) and the lower-level building blocks in
 Currently exposes:
 
 * :mod:`services.dept_credential_service` — atomic per-service
-  credential CRUD orchestrator for an *existing* department
-  (uyumluluk R1 / Q1, task 3.1). Reuses the foundation R3.6 staging
-  pattern primitives from :mod:`automation_service.staging` and the
+  credential CRUD orchestrator for an *existing* department. Reuses
+  the staging pattern primitives from
+  :mod:`automation_service.staging` and the
   :class:`automation_service.probe.ProbeRunner` rather than
   duplicating their behaviour.
 """

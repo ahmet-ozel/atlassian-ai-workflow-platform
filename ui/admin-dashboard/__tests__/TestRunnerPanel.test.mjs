@@ -2,13 +2,12 @@
  * Unit tests for TestRunnerPanel SSE streaming logic.
  *
  * Tests the core SSE parsing, cancellation handling, and error scenarios
- * for the TestRunnerPanel component (production-hardening task 6.4).
+ * for the TestRunnerPanel component.
  *
  * Since the project uses node:test without React Testing Library / jsdom,
  * these tests validate the SSE parsing logic and simulate the fetch-based
  * streaming behavior that the component relies on.
  *
- * Requirements: 4.1, 4.2, 4.3, 4.4, 4.5
  */
 
 import { describe, it, beforeEach } from "node:test";
@@ -138,7 +137,7 @@ function simulateStreamProcessing(chunks, { abortAfterChunk = -1 } = {}) {
 }
 
 // ---------------------------------------------------------------------------
-// Tests: SSE Parsing (Requirement 4.2)
+// Tests: SSE Parsing
 // ---------------------------------------------------------------------------
 
 describe("TestRunnerPanel — SSE Parsing", () => {
@@ -227,7 +226,7 @@ describe("TestRunnerPanel — SSE Parsing", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Tests: Stream Processing — Lines appear in terminal (Requirement 4.2)
+// Tests: Stream Processing — Lines appear in terminal
 // ---------------------------------------------------------------------------
 
 describe("TestRunnerPanel — Stream Processing (lines in terminal)", () => {
@@ -275,10 +274,10 @@ describe("TestRunnerPanel — Stream Processing (lines in terminal)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Tests: Cancel button aborts the stream (Requirement 4.3)
+// Tests: Cancel button aborts the stream
 // ---------------------------------------------------------------------------
 
-describe("TestRunnerPanel — Cancellation Handling (Requirement 4.3)", () => {
+describe("TestRunnerPanel — Cancellation Handling", () => {
   it("sets status to cancelled when stream is aborted", () => {
     const chunks = [
       "data: line1\n\n",
@@ -337,10 +336,10 @@ describe("TestRunnerPanel — Cancellation Handling (Requirement 4.3)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Tests: PASSED/FAILED badge on completion (Requirement 4.4)
+// Tests: PASSED/FAILED badge on completion
 // ---------------------------------------------------------------------------
 
-describe("TestRunnerPanel — Completion Badge (Requirement 4.4)", () => {
+describe("TestRunnerPanel — Completion Badge", () => {
   it("sets status to 'passed' when exit_code is 0", () => {
     const chunks = [
       "data: All tests passed\n\n",
@@ -403,10 +402,10 @@ describe("TestRunnerPanel — Completion Badge (Requirement 4.4)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Tests: Connection lost warning (Requirement 4.5)
+// Tests: Connection lost warning
 // ---------------------------------------------------------------------------
 
-describe("TestRunnerPanel — Connection Lost (Requirement 4.5)", () => {
+describe("TestRunnerPanel — Connection Lost", () => {
   it("sets status to 'disconnected' when stream ends without done event", () => {
     // Simulate stream ending abruptly (no done event)
     const chunks = [

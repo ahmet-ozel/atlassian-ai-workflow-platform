@@ -1,4 +1,4 @@
-"""observability: shared Prometheus metric registry for platform-mimari-ops.
+"""observability: shared Prometheus metric registry.
 
 Re-exports the public API of the package so callers can simply do::
 
@@ -10,11 +10,9 @@ Re-exports the public API of the package so callers can simply do::
         set_trace_id,
     )
 
-Validates:
-* Requirement 6.6 (platform-mimari-ops) — Prometheus metric
-  registration across services and workers.
-* Requirements 8.1, 8.7 (platform-gap-fill) — UUIDv7 trace_id
-  generation and end-to-end propagation via :class:`TraceMiddleware`.
+Provides Prometheus metric registration across services and workers,
+UUIDv7 trace_id generation, and end-to-end propagation via
+:class:`TraceMiddleware`.
 """
 
 from .metrics import (

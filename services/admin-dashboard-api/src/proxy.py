@@ -1,14 +1,14 @@
 """``AdminProxy`` — Backend-For-Frontend forwarder to automation-service.
 
-This module implements task 8.2 of ``platform-mimari-foundation``. The
+This module implements admin proxy wiring of ``platform foundation``. The
 ``admin-dashboard-api`` service is a thin BFF that **owns no business
 logic of its own**: every ``/admin/*`` route is forwarded to
 ``automation-service``, which is the single source of truth for
 department CRUD, credential rotation, probe artifact cleanup, etc.
-This split is mandated by Requirement 3.5 — endpoint sahipliği
-automation-service'tedir; admin-dashboard-api yalnızca auth + proxy.
+Endpoint ownership belongs to automation-service; admin-dashboard-api handles
+auth and proxying.
 
-Decision matrix (Requirements 7.3, 7.5, 7.6, 10.6):
+Decision matrix:
 
 * **Global admin actions** — adding a new department
   (``POST /admin/departments``), the setup wizard
@@ -17,15 +17,14 @@ Decision matrix (Requirements 7.3, 7.5, 7.6, 10.6):
   cleanup (``/admin/probe-artifacts[/{id}]``), SSH runner configuration
   (``/admin/ssh-runners[/...]``) and global prompt changes
   (``/admin/prompts/global[/...]``) require ``role=admin``. ``dept_admin``
-  is rejected with HTTP 403 + ``rbac_denied`` audit
-  (Requirement 7.5).
+  is rejected with HTTP 403 + ``rbac_denied`` audit.
 
 * **Dept-scoped self-service** — credential rotation for a specific
   department (``POST /admin/departments/{id}/credentials/rotate``)
-  admits ``admin`` (always) and ``dept_admin`` whose ``dept_ids``
-  contain ``{id}`` (Requirement 7.6).
+  admits ``admin`` (always) and ``dept_admin`` whose ``dept_ids`` contain
+  ``{id}``.
 
-* **Per-service dept credential CRUD + probe** — the uyumluluk R1
+* **Per-service dept credential CRUD + probe** — the credential management
   endpoints
   (``POST|DELETE /admin/departments/{id}/credentials/{service}`` and
   ``POST /admin/departments/{id}/probe``) admit ``admin`` (always)
@@ -36,15 +35,15 @@ Decision matrix (Requirements 7.3, 7.5, 7.6, 10.6):
   ``dept_id={id}`` and ``actor_role`` of the forwarded caller:
 
   * ``dept_credential_added`` — successful first-time write
-    (uyumluluk R1.3).
+    on successful first-time write.
   * ``dept_credential_updated`` — successful overwrite of an
     existing ``(dept_id, service)`` row.
   * ``dept_credential_removed`` — successful idempotent delete
-    (R1.4).
+    on successful idempotent delete.
   * ``dept_credential_probed`` — read+write connectivity probe
-    (R1.5); one row per probed service.
+    with one row per probed service.
   * ``dept_credential_add_failed`` — staging / probe / DB / Vault
-    failure with a stable ``reason`` marker (R1.6); also written
+    failure with a stable ``reason`` marker; also written
     on remove-path failures.
 
   The proxy itself does **not** translate these actions — they are
@@ -58,7 +57,7 @@ Decision matrix (Requirements 7.3, 7.5, 7.6, 10.6):
   ``/admin/departments/{id}/...`` admit ``admin`` and dept-matching
   ``dept_admin`` by default. ``viewer`` / ``lead`` are denied at the
   proxy boundary; downstream automation-service may further refine
-  this once Spec 2 lands.
+  this for its own endpoint-specific policies.
 
 * **Unknown / unclassified ``/admin/*`` paths** default to
   ``role=admin`` (fail-closed). New endpoints must be classified
@@ -66,17 +65,15 @@ Decision matrix (Requirements 7.3, 7.5, 7.6, 10.6):
   reached by lower roles.
 
 * **Non-``/admin/*`` paths** are rejected with HTTP 404 — the proxy is
-  scoped strictly to the admin surface (Requirement 3.5: "tüm
-  ``/admin/*`` route'larını proxy üzerinden ilet").
+  scoped strictly to the admin surface.
 
 The proxy emits a single :class:`audit_logger.AuditEvent` with
 ``action="rbac_denied"``, ``result="denied"`` and the violating
 ``actor_id`` / ``actor_role`` / ``dept_id`` whenever it rejects a
-request for RBAC reasons (Requirement 7.7 — every audit row carries
-``actor_role``). The audit write is a *best-effort fire-and-forget*
-operation: a transient audit-DB outage MUST NOT mask the underlying
-HTTP 403, so failures inside the audit emit are caught and logged
-locally rather than re-raised.
+request for RBAC reasons. Every audit row carries ``actor_role``. The audit
+write is a *best-effort fire-and-forget* operation: a transient audit-DB outage
+MUST NOT mask the underlying HTTP 403, so failures inside the audit emit are
+caught and logged locally rather than re-raised.
 
 The audit logger is injected through the constructor instead of
 imported globally so unit tests can substitute an in-memory fake.
@@ -129,8 +126,8 @@ _HOP_BY_HOP_HEADERS: frozenset[str] = frozenset(
 #: ``Authorization`` is intentionally stripped at the proxy boundary —
 #: the dashboard validated the OIDC token already and downstream
 #: automation-service trusts the proxy via a separate service-mesh /
-#: mTLS / shared secret channel (out of scope for this task; see
-#: ``AUTOMATION_SERVICE_URL`` plus the future mTLS work in Spec 2).
+#: mTLS / shared secret channel configured separately via
+#: ``AUTOMATION_SERVICE_URL`` and future mTLS wiring.
 #: Forwarding the user's bearer token would let automation-service
 #: re-authenticate on the dashboard's behalf, which is **not** the
 #: trust model we want.
@@ -148,8 +145,8 @@ _AUTH_HEADERS_TO_STRIP: frozenset[str] = frozenset({"authorization", "cookie"})
 # ---------------------------------------------------------------------------
 
 #: Audit actions emitted by ``automation-service`` for the per-service
-#: department credential CRUD + probe endpoints (uyumluluk R1 / Q1,
-#: task 3.3). All five are dept-scoped (carry ``dept_id={id}``) and
+#: department credential CRUD + probe endpoints. All five are dept-scoped
+#: (carry ``dept_id={id}``) and
 #: ride through :data:`_RE_DEPT_SUB` (``dept_admin`` self-service).
 DEPT_CREDENTIAL_AUDIT_ACTIONS: frozenset[str] = frozenset(
     {
@@ -162,7 +159,7 @@ DEPT_CREDENTIAL_AUDIT_ACTIONS: frozenset[str] = frozenset(
 )
 
 #: All audit actions documented as flowing through ``AdminProxy`` for
-#: the uyumluluk spec endpoints. Extend this set when a new router on
+#: the proxied credential endpoints. Extend this set when a new router on
 #: ``automation-service`` lands; tests can import it to assert the
 #: classification matrix stays in sync with the audit emission shape.
 PROXIED_AUDIT_ACTIONS: frozenset[str] = (
@@ -197,9 +194,8 @@ _RE_DEPT_ROTATE = re.compile(
     r"^/admin/departments/(?P<dept_id>[a-z][a-z0-9_-]{0,63})/credentials/rotate/?$"
 )
 
-# ``/admin/departments/<id>/disable`` — admin only (Requirement 7.5
-# global aksiyonlar; departman devre dışı bırakma kuruluş düzeyinde
-# bir karardır).
+# ``/admin/departments/<id>/disable`` — admin only because disabling a
+# department is an organization-level lifecycle action.
 _RE_DEPT_DISABLE = re.compile(
     r"^/admin/departments/(?P<dept_id>[a-z][a-z0-9_-]{0,63})/disable/?$"
 )
@@ -274,7 +270,7 @@ def classify_admin_path(method: str, path: str) -> PathPolicy:
     # 1. Specific dept-scoped routes ----------------------------------
     match = _RE_DEPT_ROTATE.match(canonical)
     if match is not None:
-        # Self-service rotation — Requirement 7.6.
+        # Self-service rotation.
         return PathPolicy(
             required_role="dept_admin",
             dept_id=match.group("dept_id"),
@@ -343,7 +339,7 @@ class ProxyResponse:
     proxy stays usable from non-FastAPI call sites — the FastAPI
     router adapter wraps this into a ``Response`` at the HTTP edge.
     The body is opaque bytes; the dashboard must not interpret or
-    re-encode the upstream payload (Requirement 3.5: pure proxy).
+    re-encode the upstream payload.
     """
 
     status_code: int

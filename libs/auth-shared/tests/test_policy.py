@@ -1,18 +1,17 @@
 """Unit tests for :mod:`auth_shared.policy` (RBAC guard helpers).
 
-Covers the four-role decision matrix called out in tasks.md §8.1
-("`requires(role, dept_id=None)` decorator/guard helper") and the
-acceptance criteria pinned by Requirements 7.1, 7.3, 7.5, 7.6:
+Covers the four-role decision matrix for the
+``requires(role, dept_id=None)`` decorator/guard helper:
 
 * Role enumeration is exactly ``{"viewer", "lead", "admin",
-  "dept_admin"}`` (R7.1).
+  "dept_admin"}``.
 * The viewer→lead→admin precedence holds for guards that only
-  require global roles (R7.3).
+  require global roles.
 * ``required_role="admin"`` is global-only — ``dept_admin`` is
-  rejected for global actions (R7.5).
+  rejected for global actions.
 * ``dept_admin`` may perform dept-scoped operations on its own
-  dept_id but is denied for any other dept (R7.3, R7.6).
-* ``admin`` always satisfies any dept-scoped check (R7.5).
+  dept_id but is denied for any other dept.
+* ``admin`` always satisfies any dept-scoped check.
 * The decorator surface works for both sync and async callables and
   raises :class:`PermissionDenied` rather than letting the wrapped
   function execute.
@@ -62,14 +61,14 @@ def _ctx(role: str, *dept_ids: str, actor_id: str = "user-1") -> AuthContext:
 
 class TestRoleEnumeration:
     def test_role_runtime_mirror_matches_literal(self) -> None:
-        # Exactly the four roles required by R7.1 — no ``"system"``,
+        # Exactly the four RBAC roles — no ``"system"``,
         # which is an audit-only role attached to background events
         # (see audit_logger.event.AuditRole) and is not a valid
         # ``actor_role`` for an authenticated request.
         assert ROLES == {"viewer", "lead", "admin", "dept_admin"}
 
     def test_role_aliases_are_in_lock_step_with_oidc_module(self) -> None:
-        # tasks.md §8.1 names the literal ``Role``; oidc.py uses
+        # policy.py names the literal ``Role``; oidc.py uses
         # ``AuthRole`` for the same enumeration. The two must remain
         # one-and-the-same set so audit writes / RBAC decisions /
         # OIDC claim extraction agree on what a "valid role" is.
@@ -119,8 +118,8 @@ class TestCheckGlobalRoles:
     def test_admin_required_is_admin_only(
         self, actor_role: str, allowed: bool
     ) -> None:
-        # R7.5: global actions (new dept, global prompt, SSH runner
-        # config) are admin-only — dept_admin is denied.
+        # Global actions (new dept, global prompt, SSH runner config)
+        # are admin-only — dept_admin is denied.
         if allowed:
             check(_ctx(actor_role), "admin")
         else:
@@ -130,14 +129,14 @@ class TestCheckGlobalRoles:
 
 class TestCheckDeptScope:
     def test_admin_passes_dept_scoped_check_without_membership(self) -> None:
-        # admin always sees every dept (Requirement 7.5).
+        # admin always sees every dept.
         check(_ctx("admin"), "dept_admin", dept_id="payments")
 
     def test_dept_admin_passes_for_own_dept(self) -> None:
         check(_ctx("dept_admin", "payments"), "dept_admin", dept_id="payments")
 
     def test_dept_admin_is_denied_for_other_dept(self) -> None:
-        # R7.3: cross-dept access is denied with HTTP 403.
+        # Cross-dept access is denied with HTTP 403.
         with pytest.raises(PermissionDenied):
             check(
                 _ctx("dept_admin", "payments"),
@@ -175,7 +174,7 @@ class TestCheckErrors:
 
     def test_missing_actor_is_subclass_of_permission_denied(self) -> None:
         # Single ``except PermissionDenied`` clause must cover both
-        # the no-actor and wrong-role cases (Requirement 7.3, 7.9).
+        # the no-actor and wrong-role cases.
         with pytest.raises(PermissionDenied):
             check(None, "viewer")
 
@@ -274,7 +273,7 @@ class TestRequiresDecorator:
             rotate(actor=_ctx("dept_admin", "risk"))
 
     def test_decorator_dept_id_arg_is_resolved_at_call_time(self) -> None:
-        # R7.6: dept_admin rotates *its own* department's credentials
+        # dept_admin rotates *its own* department's credentials
         # — the dept comes from the path parameter, not a static arg.
         @requires("dept_admin", dept_id_arg="dept_id")
         def rotate(actor: AuthContext, dept_id: str) -> str:
@@ -305,7 +304,7 @@ class TestRequiresDecorator:
             handler()  # type: ignore[call-arg]
 
     def test_admin_bypasses_dept_id_check(self) -> None:
-        # R7.5: admin sees every dept regardless of membership.
+        # admin sees every dept regardless of membership.
         @requires("dept_admin", dept_id_arg="dept_id")
         def rotate(actor: AuthContext, dept_id: str) -> str:
             return "ok"

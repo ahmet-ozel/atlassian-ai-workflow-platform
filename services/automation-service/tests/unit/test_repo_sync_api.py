@@ -1,12 +1,9 @@
 """Unit tests for ``POST /admin/departments/{id}/repo-mappings/sync``.
 
-Validates: Requirement 10.7 (workflows spec, task 14.3 — MIMARI
-§16.16 N7 — repo mapping auto-sync admin endpoint).
-
 Exercises the FastAPI router end-to-end via :class:`TestClient` plus
 hand-rolled fakes for every collaborator (OIDC validator, Bitbucket
-scanner, departments registry, audit logger). Three properties are
-covered, mirroring the bullet list in the task description:
+scanner, departments registry, audit logger). Three endpoint behaviors
+are covered:
 
 * **Dry-run does not mutate** — POST without ``?apply=true`` runs
   the scan + diff and returns the partition JSON, but
@@ -256,7 +253,7 @@ def _post_sync(
 
 
 class TestDryRunDoesNotMutate:
-    """**Validates: Requirement 10.7** — dry-run returns diff, no writes."""
+    """Dry-run returns diff, no writes."""
 
     def test_dry_run_returns_diff_partitions(
         self,
@@ -321,7 +318,7 @@ class TestDryRunDoesNotMutate:
 
 
 class TestApplyModeMutatesAndAudits:
-    """**Validates: Requirement 10.7** — apply persists + emits audit row."""
+    """Apply persists and emits an audit row."""
 
     def test_apply_calls_update_repo_mappings_with_new_list(
         self,
@@ -392,7 +389,7 @@ class TestApplyModeMutatesAndAudits:
 
 
 class TestNonAdminForbidden:
-    """**Validates: Requirement 10.7** — admin role required."""
+    """Admin role is required."""
 
     @pytest.mark.parametrize(
         "token,expected_actor_id,expected_role",
@@ -401,8 +398,7 @@ class TestNonAdminForbidden:
             # dept_admin role is *not* the same as global admin — even
             # for the dept's own ``dept_id`` the global guard rejects
             # it because ``required_role="admin"`` only admits the
-            # ``"admin"`` role (foundation R7.5 / Property 4 /
-            # auth_shared.policy._ROLES_THAT_SATISFY).
+            # ``"admin"`` role.
             ("token-dept-admin", "dave", "dept_admin"),
         ],
     )

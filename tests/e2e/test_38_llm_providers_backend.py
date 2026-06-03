@@ -1,27 +1,19 @@
 """
-Test 38: LLM Provider Management — Backend End-to-End (R38).
+Test 38: LLM Provider Management — Backend End-to-End .
 
-Validates the FastAPI surface shipped by
-``.kiro/specs/llm-provider-management`` against the live
+Validates the LLM provider FastAPI surface against the live
 ``admin-dashboard-api`` container:
 
-* Auth gate (R11) — every endpoint requires an admin bearer.
-* CRUD round-trip (R1, R3, R4, R9) — POST → GET → PUT → DELETE
-  with credential masking on every response.
-* Test-endpoint validation (R8.4) — prompt-shaping fields are
-  rejected with the documented ``extra_fields_not_allowed`` shape.
-* Department override (R10) — PUT / GET / null-PUT.
-* Unsupported provider type (R2.6) — surfaces the
-  ``unsupported_provider_type`` body.
-* Log redaction (R13) — error messages echoed by the test endpoint
+* Auth gate — every endpoint requires an admin bearer.
+* CRUD round-trip (, , , ) — POST → GET → PUT → DELETE
+ with credential masking on every response.
+* Test-endpoint validation — prompt-shaping fields are
+ rejected with the documented ``extra_fields_not_allowed`` shape.
+* Department override — PUT / GET / null-PUT.
+* Unsupported provider type — surfaces the
+ ``unsupported_provider_type`` body.
+* Log redaction — error messages echoed by the test endpoint
   never carry an unredacted credential marker.
-
-Spec references:
-* ``.kiro/specs/llm-provider-management/requirements.md`` — R1 — R14.
-* ``.kiro/specs/llm-provider-management/design.md`` — Components,
-  Audit & redaction wiring.
-
-Requirements: R38.1, R38.2, R38.3, R38.4, R38.5, R38.6, R38.7, R38.8
 """
 
 from __future__ import annotations
@@ -51,7 +43,7 @@ DEPARTMENT_OVERRIDE_PREFIX = "/admin/departments"
 EVIDENCE_FILENAME = "38-llm-providers-backend.json"
 
 #: Credential markers that MUST never appear unredacted in any
-#: response body — mirrors the design's Sensitive_Field_Set (R13.1).
+#: response body.
 SENSITIVE_MARKERS: tuple[str, ...] = (
     "sk-ant-",
     "sk-proj-",
@@ -91,7 +83,7 @@ def _require_stack_or_skip() -> None:
     if not _dashboard_api_reachable():
         pytest.skip(
             f"admin-dashboard-api not reachable at {DASHBOARD_API_URL}; "
-            "run `make boot` first (R38 requires a live stack)."
+            "run `make boot` first ( requires a live stack)."
         )
 
 
@@ -100,11 +92,11 @@ def _assert_no_unredacted_credentials(
 ) -> None:
     """Assert the response body carries no Sensitive_Field_Set marker.
 
-    ``allow_marker`` is the prefix we deliberately sent (so the
-    "post-create echo" mask check can use the same key shape without
-    tripping its own check on the masked field — the masked variant
-    has only the last 4 chars surviving, never the prefix).
-    """
+ ``allow_marker`` is the prefix we deliberately sent (so the
+ "post-create echo" mask check can use the same key shape without
+ tripping its own check on the masked field — the masked variant
+ has only the last 4 chars surviving, never the prefix).
+ """
 
     for marker in SENSITIVE_MARKERS:
         if allow_marker is not None and marker == allow_marker:
@@ -117,12 +109,12 @@ def _assert_no_unredacted_credentials(
 def _llm_providers_endpoint_reachable() -> bool:
     """Return ``True`` iff ``GET /admin/llm-providers`` is mounted.
 
-    The endpoint may not be mounted on every deployment yet (the
-    main.py wiring soft-fails on import errors per the existing
-    pattern). When the router is absent we SKIP every R38 test rather
-    than FAIL — the missing-route case is covered by R37's wiring
-    contract.
-    """
+ The endpoint may not be mounted on every deployment yet (the
+ main.py wiring soft-fails on import errors the existing
+ pattern). When the router is absent we SKIP every test rather
+ than FAIL — the missing-route case is covered by 's wiring
+ contract.
+ """
 
     try:
         response = httpx.get(
@@ -141,23 +133,23 @@ def _require_llm_providers_mounted_or_skip() -> None:
         pytest.skip(
             "/admin/llm-providers router not mounted on the live "
             "admin-dashboard-api. Restart the container after applying "
-            "the llm-provider-management spec wiring."
+            "the LLM provider management wiring."
         )
 
 
 # ---------------------------------------------------------------------------
-# R38.1 — Auth gate (Property 11 of llm-provider-management)
+# — Auth gate (the invariant of llm-provider-management)
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.llm_providers
 class TestAuthGate:
-    """R38.1 — Every endpoint requires an admin bearer.
+    """ — Every endpoint requires an admin bearer.
 
-    Property 11 of the llm-provider-management design enumerates the
-    full endpoint set; we hit a representative subset here and assert
-    each one returns 401 when the Authorization header is missing.
-    """
+ The full endpoint set requires admin authentication; we hit a
+ representative subset here and assert each one returns 401 when
+ the Authorization header is missing.
+ """
 
     @pytest.mark.parametrize(
         "method,path",
@@ -186,17 +178,16 @@ class TestAuthGate:
 
 
 # ---------------------------------------------------------------------------
-# R38.2 — CRUD round-trip with credential masking
+# — CRUD round-trip with credential masking
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.llm_providers
 class TestProviderCrudRoundTrip:
-    """R38.2 — POST → GET → PUT → DELETE with masked credentials.
+    """ — POST → GET → PUT → DELETE with masked credentials.
 
-    Validates Requirements 1.1, 1.2, 1.3, 1.5, 1.6, 3.1, 3.3, 4.2,
-    4.3, 9.2, 9.3 of the llm-provider-management spec.
-    """
+ Validates the provider lifecycle and credential masking behavior.
+ """
 
     _payload = {
         "provider_type": "anthropic",
@@ -258,17 +249,15 @@ class TestProviderCrudRoundTrip:
 
 
 # ---------------------------------------------------------------------------
-# R38.3 — Test endpoint rejects prompt-shaping fields (Property 9)
+# — Test endpoint rejects prompt-shaping fields (the invariant)
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.llm_providers
 class TestEndpointRejectsExtraFields:
-    """R38.3 — ``POST /admin/llm-providers/test`` with prompt-shaping
-    field surfaces the documented ``extra_fields_not_allowed`` body.
-
-    Validates Requirements 8.3, 8.4 of the spec.
-    """
+    """ — ``POST /admin/llm-providers/test`` with prompt-shaping
+ field surfaces the documented ``extra_fields_not_allowed`` body.
+ """
 
     @pytest.mark.parametrize(
         "extra_field",
@@ -304,13 +293,13 @@ class TestEndpointRejectsExtraFields:
 
 
 # ---------------------------------------------------------------------------
-# R38.4 — Unsupported provider type surfaces the documented body shape
+# — Unsupported provider type surfaces the documented body shape
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.llm_providers
 class TestUnsupportedProviderType:
-    """R38.4 — Unknown ``provider_type`` → 422 with the documented body."""
+    """ — Unknown ``provider_type`` → 422 with the documented body."""
 
     def test_unsupported_provider_type_response_shape(self) -> None:
         _require_llm_providers_mounted_or_skip()
@@ -335,16 +324,16 @@ class TestUnsupportedProviderType:
 
 
 # ---------------------------------------------------------------------------
-# R38.5 — Department override CRUD (null shape + 422 on missing provider)
+# — Department override CRUD (null shape + 422 on missing provider)
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.llm_providers
 class TestDepartmentOverride:
-    """R38.5 — Per-department override get / put.
+    """ — Per-department override get / put.
 
-    Validates Requirements 10.2 — 10.5 of the spec.
-    """
+ Validates missing-provider and null-provider response behavior.
+ """
 
     def test_get_missing_dept_returns_null_provider_shape(
         self,
@@ -356,9 +345,8 @@ class TestDepartmentOverride:
             headers=_admin_headers(),
             timeout=10.0,
         )
-        # 200 with provider:null OR 404 — both are acceptable per
-        # the design (R10.2 prefers the null shape; some compose
-        # configurations may surface 404 if the dept FK exists).
+        # 200 with provider:null OR 404 are both acceptable; some
+        # compose configurations may surface 404 if the dept FK exists.
         if response.status_code == 200:
             body = response.json()
             assert body.get("provider") is None
@@ -374,28 +362,28 @@ class TestDepartmentOverride:
             headers=_admin_headers(),
             timeout=10.0,
         )
-        # 422 (provider_not_found) is the spec contract; 4xx (FK
-        # rejection at the database level) is acceptable too because
+        # 422 (provider_not_found) is expected; 4xx (FK rejection at
+        # the database level) is acceptable too because
         # the missing dept may surface before the provider check.
         assert response.status_code in (404, 422)
 
 
 # ---------------------------------------------------------------------------
-# R38.6 — Redaction integration (error message echo)
+# — Redaction integration (error message echo)
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.llm_providers
 class TestRedactionIntegration:
-    """R38.6 — Live redaction filter scrubs credential markers.
+    """ — Live redaction filter scrubs credential markers.
 
-    The unsaved-test endpoint dispatches to an upstream that does NOT
-    exist on the e2e network (api.openai.com is unreachable from the
-    Compose stack by default), so the result envelope carries an
-    error message whose body is the upstream connection failure. The
-    backend has already projected that message through
-    :func:`http_shared.redaction.redact_text` before returning it.
-    """
+ The unsaved-test endpoint dispatches to an upstream that does NOT
+ exist on the e2e network (api.openai.com is unreachable from the
+ Compose stack by default), so the result envelope carries an
+ error message whose body is the upstream connection failure. The
+ backend has already projected that message through
+ :func:`http_shared.redaction.redact_text` before returning it.
+ """
 
     def test_unsaved_test_redacts_credential_markers(self) -> None:
         _require_llm_providers_mounted_or_skip()
@@ -422,7 +410,7 @@ class TestRedactionIntegration:
 
 
 # ---------------------------------------------------------------------------
-# R38.7 — POST / GET round-trip evidence
+# — POST / GET round-trip evidence
 # ---------------------------------------------------------------------------
 
 
@@ -435,7 +423,7 @@ class TestRoundTripEvidence:
     ) -> None:
         if not _dashboard_api_reachable():
             evidence_collector.emit_json(
-                requirement_id="R38",
+                requirement_id="",
                 filename=EVIDENCE_FILENAME,
                 data={
                     "stack_reachable": False,
@@ -446,7 +434,7 @@ class TestRoundTripEvidence:
             pytest.skip("stack offline")
         if not _llm_providers_endpoint_reachable():
             evidence_collector.emit_json(
-                requirement_id="R38",
+                requirement_id="",
                 filename=EVIDENCE_FILENAME,
                 data={
                     "stack_reachable": True,
@@ -502,20 +490,20 @@ class TestRoundTripEvidence:
                 )
 
         evidence_collector.emit_json(
-            requirement_id="R38",
+            requirement_id="",
             filename=EVIDENCE_FILENAME,
             data={
                 "stack_reachable": True,
                 "router_mounted": True,
                 "round_trip": round_trip,
                 "requirements_validated": [
-                    "R38.1 — Auth gate (401 without bearer)",
-                    "R38.2 — CRUD round-trip with masked credentials",
-                    "R38.3 — Test endpoint rejects prompt-shaping fields",
-                    "R38.4 — Unsupported provider type → 422 with body",
-                    "R38.5 — Department override get/put surfaces",
-                    "R38.6 — Live redaction scrubs credential markers",
-                    "R38.7 — End-to-end round-trip evidence emitted",
+                    "Auth gate (401 without bearer)",
+                    "CRUD round-trip with masked credentials",
+                    "Test endpoint rejects prompt-shaping fields",
+                    "Unsupported provider type → 422 with body",
+                    "Department override get/put surfaces",
+                    "Live redaction scrubs credential markers",
+                    "End-to-end round-trip evidence emitted",
                 ],
             },
         )

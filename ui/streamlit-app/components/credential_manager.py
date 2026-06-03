@@ -1,6 +1,4 @@
-"""Streamlit per-session credential lifecycle manager (`platform-gap-fill` task 12.1).
-
-**Validates: Requirements 13.1, 13.2, 13.3, 13.4, 13.5, 13.6.**
+"""Streamlit per-session credential lifecycle manager.
 
 This component is a strict in-memory credential store: every value
 the user types lives **only** inside ``st.session_state`` for the
@@ -12,33 +10,33 @@ optionally PIN-encrypts a Z7 persistent path).
 
 Lifecycle contract
 ------------------
-* **R13.1** — The store lives at
+* The store lives at
   ``st.session_state["_credential_manager_state"]``. Tokens never
   leave this dict; not via logging (we mask email + emit no token
   bytes), not via cookies (we never write one), not via the disk
   (no ``open()`` calls anywhere in this module).
-* **R13.2** — Every interaction (store / get / validate / render)
+* Every interaction (store / get / validate / render)
   touches ``last_activity``. When 60 minutes pass with no touch,
   the next call to :meth:`CredentialManager.is_expired` returns
   ``True`` and :meth:`CredentialManager.clear_all` wipes the dict.
-* **R13.3** — The warning text rendered by
+* The warning text rendered by
   :func:`render_credential_warning` is the verbatim Turkish copy
-  the requirements doc mandates: *"Bu bilgiler yalnızca bu tarayıcı
+  shown to users: *"Bu bilgiler yalnızca bu tarayıcı
   sekmesinde, bu oturum süresince saklanır. Sekme kapatıldığında
   veya 60 dakika işlem yapılmadığında otomatik silinir."*
-* **R13.4** — :meth:`CredentialManager.validate` issues a single
+* :meth:`CredentialManager.validate` issues a single
   authenticated request through an injectable validator (default:
   HTTP GET to ``${MCP_BASE_URL}/healthz`` with the
   ``Authorization: Basic <base64(email:token)>`` header attached so
   the upstream auth chain is exercised end-to-end). Failures keep
   the credential stored but mark ``is_valid=False`` so the UI can
   surface the problem inline.
-* **R13.5** — :meth:`CredentialManager.get_auth_header` returns the
+* :meth:`CredentialManager.get_auth_header` returns the
   ``Authorization: Basic ...`` value callers should attach to MCP
   requests. The plain token never appears in the returned mapping
   beyond the base64-encoded auth value, and the manager exposes no
   helper that echoes raw tokens back into the page.
-* **R13.6** — :func:`render_logout_button` clears the entire
+* :func:`render_logout_button` clears the entire
   manager state and returns ``True`` when the user pressed it; the
   caller redirects (typically ``st.switch_page("pages/0_credentials.py")``).
 
@@ -83,8 +81,8 @@ _LOG = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 
-#: Verbatim warning copy mandated by Requirement 13.3. The string
-#: is a module-level constant so the property test (task 12.2) can
+#: Verbatim warning copy shown to users. The string
+#: is a module-level constant so tests can
 #: assert exact equality against it.
 CREDENTIAL_WARNING_TEXT: Final[str] = (
     "Bu bilgiler yalnızca bu tarayıcı sekmesinde, bu oturum süresince "
@@ -108,7 +106,7 @@ _RESTORE_CACHE: Final[dict[str, dict[str, Any]]] = {}
 def _restore_cache() -> dict[str, dict[str, Any]]:
     return _RESTORE_CACHE
 
-#: Inactivity threshold in seconds (Requirement 13.2 — 60 minutes).
+#: Inactivity threshold in seconds: 60 minutes.
 _SESSION_TIMEOUT_SECONDS: Final[int] = 60 * 60
 
 #: Atlassian services this manager understands. The Atlassian Cloud
@@ -135,7 +133,7 @@ _DEPLOYMENTS: Final[dict[str, str]] = {
 
 #: Header name expected by the Streamlit page slot that owns the
 #: credential entry UI. Used by :func:`render_logout_button` to
-#: drive the post-logout redirect (R13.6).
+#: drive the post-logout redirect.
 _CREDENTIAL_PAGE_PATH: Final[str] = "pages/0_credentials.py"
 
 
@@ -212,7 +210,7 @@ class StoredCredential:
 #: short human-readable string is the failure path. The default
 #: validator (:func:`_default_validator`) routes through the MCP
 #: ``/healthz`` endpoint with an ``Authorization: Basic`` header so
-#: the upstream auth chain is exercised end-to-end (R13.4).
+#: the upstream auth chain is exercised end-to-end.
 CredentialValidator = Callable[[str, str, str], tuple[bool, str | None]]
 
 
@@ -229,12 +227,13 @@ def _bitbucket_cloud_api_base(url: str) -> str:
 
 
 def _bitbucket_cloud_headers(email: str, api_token: str) -> dict[str, str]:
+    # Bitbucket Cloud always authenticates with an Atlassian API token (ATATT...)
+    # plus the account email via Basic auth, exactly like Jira/Confluence Cloud.
+    # Workspace access tokens (ATCTT...) and app passwords are not used: Bitbucket
+    # Cloud rejects a Bearer/Personal-Token header and returns 401.
     headers = {"Accept": "application/json"}
-    if api_token.strip().startswith("ATCTT"):
-        headers["Authorization"] = f"Bearer {api_token.strip()}"
-    else:
-        raw = f"{email}:{api_token}".encode("utf-8")
-        headers["Authorization"] = f"Basic {base64.b64encode(raw).decode('ascii')}"
+    raw = f"{email}:{api_token}".encode("utf-8")
+    headers["Authorization"] = f"Basic {base64.b64encode(raw).decode('ascii')}"
     return headers
 
 
@@ -310,7 +309,7 @@ def _default_validator(
     tests can swap it for a stub. It uses the MCP base URL from the
     Streamlit ``Settings`` reader and attaches the
     ``Authorization: Basic`` header MCP's auth chain consumes
-    (``services/atlassian_unified/.../main.py``).
+    (``services/atlassian_mcp_bitbucket/.../main.py``).
 
     The chosen probe endpoint is ``/healthz``: it is the cheapest
     surface that still flows through the ``X-Client-Source`` /
@@ -629,7 +628,7 @@ class CredentialManager:
         The check is read-only — it does **not** touch
         ``last_activity``. Callers that want to act on expiry should
         explicitly invoke :meth:`clear_all` after an ``is_expired()``
-        positive (Requirement 13.2). When no credentials have ever
+        positive. When no credentials have ever
         been stored the function returns ``False`` so a freshly-
         opened page does not immediately render an "expired" banner.
         """
@@ -761,7 +760,7 @@ class CredentialManager:
         )
         bucket["credentials"][service] = cred
         bucket["last_activity"] = self.now()
-        # R13.1 — never log the token. Only the masked email + service
+        # Never log the token. Only the masked email + service
         # land in the structured log.
         _LOG.info(
             "credential_stored",
@@ -810,7 +809,7 @@ class CredentialManager:
         ``last_validated_at``; failures keep the credential stored
         so the user can retry without retyping. The HTTP request
         itself is delegated to :attr:`validator` — the default
-        impl talks to MCP ``/healthz`` (R13.4).
+        impl talks to MCP ``/healthz``.
         """
         cred = self.get(service)
         if cred is None:
@@ -840,7 +839,7 @@ class CredentialManager:
         ``Basic <base64(email:token)>`` header on the fly so the
         plain token never lives outside :class:`StoredCredential`.
         Returns ``None`` when no credential is stored or the session
-        has expired (Requirement 13.5).
+        has expired.
         """
         cred = self.get(service)
         if cred is None:
@@ -910,7 +909,7 @@ def _get_manager(*, validator: CredentialValidator | None = None) -> CredentialM
 
 
 def render_credential_warning() -> None:
-    """Render the verbatim Requirement 13.3 warning text.
+    """Render the verbatim credential warning text.
 
     Kept as a standalone function so pages that bundle the
     credential entry form alongside other UI (chat, task creator)
@@ -928,7 +927,7 @@ def render_logout_button(*, key: str = "credential_manager_logout") -> bool:
     The button clears every credential entry first; the redirect
     only fires when the clear succeeds, so a transient
     Streamlit reroute can't leave the manager in a half-cleared
-    state (Requirement 13.6).
+    state.
     """
     manager = _get_manager()
     if st.button("🚪 Oturumu Kapat", key=key, type="secondary"):
@@ -936,7 +935,7 @@ def render_logout_button(*, key: str = "credential_manager_logout") -> bool:
         _clear_restore_cookie()
         st.success("Oturum kapatıldı; tüm credential'lar bellekten silindi.")
         # Try the modern ``switch_page`` API first — it lands the user
-        # on the canonical credential page (R13.6). Streamlit ≥1.30
+        # on the canonical credential page. Streamlit ≥1.30
         # ships it; older runtimes fall back to ``st.rerun`` which at
         # least re-renders the page in its post-logout state.
         switch_page = getattr(st, "switch_page", None)
@@ -1140,11 +1139,11 @@ def render_credential_manager(
 
     The panel layout is:
 
-    1. Warning banner (Requirement 13.3 verbatim).
+    1. Warning banner.
     2. Per-service entry form (Jira / Confluence / Bitbucket).
     3. Status snapshot — masked email + validation state +
        remaining session window.
-    4. Logout button (Requirement 13.6).
+    4. Logout button.
 
     A page that just wants to render one piece (e.g. only the
     warning, or only the logout button) can call the standalone
@@ -1156,7 +1155,7 @@ def render_credential_manager(
 
     # Enforce timeout on every render — a tab idle for over an hour
     # surfaces an "session expired" banner instead of leaking the old
-    # credentials into a fresh request (Requirement 13.2).
+    # credentials into a fresh request.
     if manager.enforce_timeout():
         st.warning(
             "Oturum süresi (60 dakika) doldu; tüm credential'lar silindi. "

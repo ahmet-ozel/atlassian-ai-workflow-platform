@@ -1,6 +1,4 @@
-"""Unit tests for the ``repo_resolver`` activity (task 12.1).
-
-Validates Requirements: 9.1, 9.2, 9.3, 9.4, 9.5
+"""Unit tests for the ``repo_resolver`` activity.
 
 Strategy
 --------
@@ -175,7 +173,7 @@ def _make_input(
 
 
 # ---------------------------------------------------------------------------
-# Tests: Structured field priority (Requirement 9.2)
+# Tests: Structured field priority
 # ---------------------------------------------------------------------------
 
 
@@ -186,7 +184,7 @@ class TestStructuredFieldPriority:
         self,
         fake_llm_parser: _FakeLLMParser,
     ) -> None:
-        """Requirement 9.2: structured field dolu → description parsing atla."""
+        """Non-empty structured field skips description parsing."""
         inp = _make_input(structured_field_value="org/backend-api")
         result = asyncio.run(resolve_repo_field(inp))
 
@@ -268,7 +266,7 @@ class TestStructuredFieldPriority:
 
 
 # ---------------------------------------------------------------------------
-# Tests: Repo validation against allowed list (Requirements 9.1, 9.4)
+# Tests: Repo validation against allowed list
 # ---------------------------------------------------------------------------
 
 
@@ -279,7 +277,7 @@ class TestRepoValidation:
         self,
         fake_jira_commenter: _FakeJiraCommenter,
     ) -> None:
-        """Requirement 9.4: repo not in mappings → reject + comment."""
+        """Repo not in mappings → reject + comment."""
         inp = _make_input(structured_field_value="org/unknown-repo")
         result = asyncio.run(resolve_repo_field(inp))
 
@@ -302,7 +300,7 @@ class TestRepoValidation:
         fake_llm_parser: _FakeLLMParser,
         fake_jira_commenter: _FakeJiraCommenter,
     ) -> None:
-        """Requirement 9.4: LLM-parsed repo not in mappings → reject."""
+        """LLM-parsed repo not in mappings → reject."""
         fake_llm_parser.response = {
             "repo_url": "org/secret-repo",
             "confidence": 0.95,
@@ -334,7 +332,7 @@ class TestRepoValidation:
 
 
 # ---------------------------------------------------------------------------
-# Tests: LLM parsing and confidence (Requirement 9.3)
+# Tests: LLM parsing and confidence
 # ---------------------------------------------------------------------------
 
 
@@ -359,7 +357,7 @@ class TestLLMParsing:
         self,
         fake_llm_parser: _FakeLLMParser,
     ) -> None:
-        """Requirement 9.3: confidence >= 0.8 → accept."""
+        """Confidence >= 0.8 → accept."""
         fake_llm_parser.response = {
             "repo_url": "org/backend-api",
             "confidence": 0.9,
@@ -378,7 +376,7 @@ class TestLLMParsing:
         fake_jira_commenter: _FakeJiraCommenter,
         fake_jira_transitioner: _FakeJiraTransitioner,
     ) -> None:
-        """Requirement 9.3: confidence < 0.8 → ask user via comment."""
+        """Confidence < 0.8 → ask user via comment."""
         fake_llm_parser.response = {
             "repo_url": "org/backend-api",
             "confidence": 0.6,
@@ -401,7 +399,7 @@ class TestLLMParsing:
     ) -> None:
         """Confidence exactly at threshold (0.8) is below threshold → ask user.
 
-        The requirement says < 0.8 triggers asking. Exactly 0.8 should
+        Values below 0.8 trigger asking. Exactly 0.8 should
         be accepted (>= 0.8 is the acceptance condition).
         """
         fake_llm_parser.response = {
@@ -451,7 +449,7 @@ class TestLLMParsing:
 
 
 # ---------------------------------------------------------------------------
-# Tests: Needs info transition (Requirement 9.5)
+# Tests: Needs info transition
 # ---------------------------------------------------------------------------
 
 
@@ -463,7 +461,7 @@ class TestNeedsInfoTransition:
         fake_llm_parser: _FakeLLMParser,
         fake_jira_transitioner: _FakeJiraTransitioner,
     ) -> None:
-        """Requirement 9.5: confidence < 0.8 → transition to needs_info."""
+        """Confidence < 0.8 → transition to needs_info."""
         fake_llm_parser.response = {
             "repo_url": "org/backend-api",
             "confidence": 0.5,

@@ -3,8 +3,6 @@
 Tests build timeout, Dockerfile not found, Docker daemon unavailable,
 and verifies resource limit parameters are correctly passed via the
 :func:`build_docker_run_command` pure helper.
-
-Validates Requirements: 1.2, 1.8
 """
 from __future__ import annotations
 
@@ -33,16 +31,12 @@ from src.activities.docker import (  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
-# Resource limits & env injection (Requirement 1.9 — verified via 1.8 path)
+# Resource limits & env injection
 # ---------------------------------------------------------------------------
 
 
 class TestBuildDockerRunCommand:
-    """Verify resource limits, mounts, and env vars are passed correctly.
-
-    Validates Requirements: 1.2 (resource limits respected at command
-    construction time), 1.8 (env injection survives daemon faults).
-    """
+    """Verify resource limits, mounts, and env vars are passed correctly."""
 
     def test_cpu_limit_in_command(self) -> None:
         inp = DockerRunInput(
@@ -108,7 +102,7 @@ class TestBuildDockerRunCommand:
 
 
 # ---------------------------------------------------------------------------
-# Build error scenarios (Requirement 1.2)
+# Build error scenarios
 # ---------------------------------------------------------------------------
 
 
@@ -124,7 +118,6 @@ async def test_build_dockerfile_not_found_returns_error() -> None:
     """When ``docker build`` fails because the Dockerfile is missing,
     the activity returns ``success=False`` with an explanatory error.
 
-    Validates Requirement: 1.2
     """
     inp = DockerBuildInput(
         dockerfile_path="/missing/Dockerfile",
@@ -160,7 +153,6 @@ async def test_build_timeout_surfaces_as_error() -> None:
     """When the SSH build command raises a timeout, the activity reports
     a failure rather than crashing.
 
-    Validates Requirement: 1.2
     """
     inp = DockerBuildInput(
         dockerfile_path="/app/Dockerfile",
@@ -192,7 +184,6 @@ async def test_build_credential_fetch_failure_returns_error() -> None:
     """When SSH credentials cannot be fetched, the activity returns a
     structured failure result instead of raising.
 
-    Validates Requirement: 1.2
     """
     inp = DockerBuildInput(
         dockerfile_path="/app/Dockerfile",
@@ -213,7 +204,7 @@ async def test_build_credential_fetch_failure_returns_error() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Docker daemon healthcheck (Requirement 1.8)
+# Docker daemon healthcheck
 # ---------------------------------------------------------------------------
 
 
@@ -221,7 +212,6 @@ async def test_build_credential_fetch_failure_returns_error() -> None:
 async def test_daemon_healthcheck_returns_false_on_credential_failure() -> None:
     """If credentials fetch fails, the daemon healthcheck reports unhealthy.
 
-    Validates Requirement: 1.8
     """
     with patch(
         "src.activities.docker._get_ssh_credentials",
@@ -235,7 +225,6 @@ async def test_daemon_healthcheck_returns_false_on_credential_failure() -> None:
 async def test_daemon_healthcheck_returns_false_on_ssh_error() -> None:
     """If ``docker info`` raises an SSH RuntimeError, daemon is unhealthy.
 
-    Validates Requirement: 1.8
     """
     with patch(
         "src.activities.docker._get_ssh_credentials",
@@ -252,7 +241,6 @@ async def test_daemon_healthcheck_returns_false_on_ssh_error() -> None:
 async def test_daemon_healthcheck_returns_false_on_nonzero_exit() -> None:
     """If ``docker info`` exits non-zero, daemon is unhealthy.
 
-    Validates Requirement: 1.8
     """
     with patch(
         "src.activities.docker._get_ssh_credentials",
@@ -269,7 +257,6 @@ async def test_daemon_healthcheck_returns_false_on_nonzero_exit() -> None:
 async def test_daemon_healthcheck_returns_true_on_success() -> None:
     """When ``docker info`` succeeds, the daemon is reported healthy.
 
-    Validates Requirement: 1.8
     """
     with patch(
         "src.activities.docker._get_ssh_credentials",

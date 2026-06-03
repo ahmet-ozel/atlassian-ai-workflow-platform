@@ -1,12 +1,12 @@
-"""Unit tests for the ``precommit_scanner`` activity (task 7.4, R7.10).
+"""Unit tests for the ``precommit_scanner`` activity.
 
 Covers the pure :func:`scan_diff` core and the audit-emission layer
 of :func:`precommit_scanner` against the four documented secret
 patterns (AWS access key, Atlassian API token, Bearer header,
 hard-coded password).
 
-Property 16 (``test_precommit_scanner.py`` under ``platform/tests/property/``)
-owns the hypothesis-driven determinism / clean-diff invariants. This
+The property tests own the hypothesis-driven determinism / clean-diff
+invariants. This
 unit test exists to pin specific examples for fast regression
 detection and to verify the audit side-effect layer.
 """
@@ -129,7 +129,7 @@ class TestScanDiffSecrets:
         )
         result = scan_diff(diff)
         assert result.decision == "block"
-        # Sorted alphabetically — Property 16 invariant.
+        # Sorted alphabetically for deterministic comparisons.
         assert result.matched_patterns == (
             "aws_access_key",
             "bearer_token",
@@ -188,7 +188,7 @@ class TestSecretPatternsTable:
     """Static guarantees about the exported ``SECRET_PATTERNS`` mapping."""
 
     def test_table_contains_required_p0_patterns(self) -> None:
-        # Requirement 7.10 enumerates AWS, Atlassian, Bearer, password.
+        # The scanner covers AWS, Atlassian, Bearer, and password patterns.
         required = {
             "aws_access_key",
             "atlassian_api_token",

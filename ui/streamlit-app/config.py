@@ -13,7 +13,7 @@ injector and surfaces the URLs every page reaches out to:
 * ``MCP_BASE_URL`` — base URL of the read-only Atlassian MCP server
   used by the Explorer page.
 * ``CLIENT_SOURCE`` — value advertised in outgoing
-  ``X-Client-Source`` headers (foundation Requirement 4 parity).
+  ``X-Client-Source`` headers.
 
 The ``dependencies_reachable`` method is a stub used by ``/healthz``;
 real probes belong in the boot script.

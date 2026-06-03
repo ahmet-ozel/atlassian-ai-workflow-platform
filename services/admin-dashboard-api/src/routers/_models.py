@@ -7,16 +7,16 @@ deliberately Pydantic-free — it ships frozen dataclasses
 :class:`~src.lifecycle.service.StartResponse`, ...) — and this module
 adapts those into Pydantic models for FastAPI's serialiser.
 
-Design references
------------------
-* design §3.3 — endpoint matrix and JSON shapes.
-* Requirement 5.5 — start request body shape ``{env_overrides: {...}}``.
-* Requirement 6.1 — list summary row shape.
-* Requirement 6.2 — service detail + ``form_schema`` rows.
-* Requirement 6.4 / 6.5 — stop request/response (with ``noop``).
-* Requirement 7.1 / 7.2 / 7.4 — logs + health response shapes.
-* Requirement 8.4 — test response shape.
-* Requirement 6.7 / 11.8 — ``correlation_id`` echoed in 502 envelopes.
+Model coverage
+--------------
+* endpoint matrix and JSON shapes.
+* start request body shape ``{env_overrides: {...}}``.
+* list summary row shape.
+* service detail + ``form_schema`` rows.
+* stop request/response (with ``noop``).
+* logs + health response shapes.
+* test response shape.
+* ``correlation_id`` echoed in 502 envelopes.
 """
 
 from __future__ import annotations
@@ -76,7 +76,7 @@ ServiceKind = Literal["http_service", "worker", "ui", "infra", "sidecar"]
 
 
 class ServiceSummary(BaseModel):
-    """Row shape returned by ``GET /admin/services`` (Requirement 6.1)."""
+    """Row shape returned by ``GET /admin/services`` (behavior 6.1)."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -88,7 +88,7 @@ class ServiceSummary(BaseModel):
 
 
 class FormSchemaField(BaseModel):
-    """One row of the ``form_schema`` array (Requirement 5.1, 6.2)."""
+    """One row of the ``form_schema`` array (behavior 5.1, 6.2)."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -105,7 +105,7 @@ class FormSchema(BaseModel):
 
 
 class ServiceDetail(BaseModel):
-    """Body shape of ``GET /admin/services/{name}`` (Requirement 6.2).
+    """Body shape of ``GET /admin/services/{name}`` (behavior 6.2).
 
     The model embeds the manifest entry verbatim plus the *current*
     cached :class:`HealthSnapshotModel` and the form schema rendered
@@ -113,7 +113,7 @@ class ServiceDetail(BaseModel):
 
     Connectivity probe fields (``credentials_status``,
     ``credentials_probe_at``, ``credentials_probe_detail``) reflect
-    the most recent Step 9.5 / manual probe outcome (Requirement 9.5);
+    the most recent Step 9.5 / manual probe outcome (behavior 9.5);
     they remain ``None`` when the manifest entry has no
     ``connectivity_probe_command`` (no probe configured) so the UI can
     skip rendering the credentials banner for such services.
@@ -141,7 +141,7 @@ class ServiceDetail(BaseModel):
 
 
 class StartRequest(BaseModel):
-    """``POST /admin/services/{name}/start`` body (Requirement 5.5).
+    """``POST /admin/services/{name}/start`` body (behavior 5.5).
 
     The map is intentionally typed as ``dict[str, str]`` even though
     Pydantic would happily accept arbitrary JSON: every Env_Override
@@ -165,15 +165,15 @@ class StartResponse(BaseModel):
 
 
 class StopRequest(BaseModel):
-    """``POST /admin/services/{name}/stop`` body (Requirement 6.4).
+    """``POST /admin/services/{name}/stop`` body (behavior 6.4).
 
-    The optional ``purge_vault`` flag (platform-mimari-uyumluluk R14 /
+    The optional ``purge_vault`` flag (platform operations rule 14 /
     Q16) instructs the orchestrator to delete every Vault override under
     ``secret/services/{name}/`` after the Compose ``stop`` step
     completes. The router's ``stop_service`` endpoint refuses the flag
     when ``settings.deployment_profile == "production"`` (returns 403
     + ``purge_vault_forbidden_in_production``); the actual purge
-    behaviour for non-production profiles is wired in task 15.2.
+    behaviour for non-production profiles is wired in the lifecycle layer.
     Defaults to ``False`` for backward compatibility with callers that
     only know about ``remove_volumes``.
     """
@@ -194,16 +194,16 @@ class StopResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Test execution response (Requirement 8.4)
+# Test execution response (behavior 8.4)
 # ---------------------------------------------------------------------------
 
 
 class TestSummaryModel(BaseModel):
-    """Parsed pytest summary line (subset of Requirement 8.4).
+    """Parsed pytest summary line (subset of behavior 8.4).
 
     The orchestrator's ``TestSummary`` carries ``passed``, ``failed``,
     ``duration_seconds``. The ``errors`` field mentioned in
-    Requirement 8.4 is not yet parsed by ``LifecycleService`` (the
+    behavior 8.4 is not yet parsed by ``LifecycleService`` (the
     canonical pytest summary regex captures only passed/failed) so
     it is omitted here rather than fabricated.
     """
@@ -228,7 +228,7 @@ class TestResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Logs (Requirement 7.1, 7.2)
+# Logs (behavior 7.1, 7.2)
 # ---------------------------------------------------------------------------
 
 
@@ -243,14 +243,14 @@ class LogsResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Start plan (platform-mimari-uyumluluk Requirement 5.6 / Q11)
+# Start plan (platform operations behavior 5.6 / Q11)
 # ---------------------------------------------------------------------------
 
 
 class StartPlanResponse(BaseModel):
     """``GET /admin/services/{name}/start-plan`` 200 body.
 
-    Implements platform-mimari-uyumluluk Requirement 5.6 (Q11 —
+    Implements platform operations behavior 5.6 (Q11 —
     dependency chain orchestration preview). The UI fetches this
     payload before the operator presses *Start* so it can render a
     confirmation modal listing every transitive dependency that will
@@ -269,7 +269,7 @@ class StartPlanResponse(BaseModel):
       list in the same order the chain will execute.
     * ``already_running`` — manifest-resident services in the
       transitive closure that are currently in ``state="running"`` and
-      will therefore be skipped (Requirement 5.3 idempotent skip).
+      will therefore be skipped (behavior 5.3 idempotent skip).
 
     External dependencies (Boot_Bundle infra such as ``postgres``,
     ``vault``, ``temporal``) that appear in
@@ -286,14 +286,14 @@ class StartPlanResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Connectivity probe (platform-mimari-uyumluluk Requirement 9.6 / Q10)
+# Connectivity probe (platform operations behavior 9.6 / Q10)
 # ---------------------------------------------------------------------------
 
 
 class ProbeResponse(BaseModel):
     """``POST /admin/services/{name}/probe`` 200 body.
 
-    Implements platform-mimari-uyumluluk Requirement 9.6 (Q10 — manual
+    Implements platform operations behavior 9.6 (Q10 — manual
     connectivity probe re-run). The response reflects the *current*
     state of the ``credentials_status`` field in the in-memory state
     cache after the probe has completed.
@@ -318,7 +318,7 @@ class ProbeResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Error envelope (Requirement 6.7, 11.8)
+# Error envelope (behavior 6.7, 11.8)
 # ---------------------------------------------------------------------------
 
 
@@ -328,7 +328,7 @@ class ErrorEnvelope(BaseModel):
     Returned as the body of ``HTTP 502`` responses raised by
     Vault / Audit / Compose failures. The ``correlation_id`` lets
     the operator pivot between the response, the audit log row, and
-    the structured server logs (Requirement 6.7, 11.8).
+    the structured server logs (behavior 6.7, 11.8).
     """
 
     detail: str

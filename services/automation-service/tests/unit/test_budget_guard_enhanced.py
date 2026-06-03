@@ -1,6 +1,4 @@
-"""Unit tests for the enhanced Budget Guard (Task 10.1).
-
-Validates: Requirements 10.1, 10.2, 10.3, 10.4, 10.5, 10.6
+"""Unit tests for the enhanced Budget Guard.
 
 Tests cover:
 * :func:`check_budget` — pre-workflow check with 90% threshold warnings

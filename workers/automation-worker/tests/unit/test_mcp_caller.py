@@ -1,11 +1,9 @@
 """Unit tests for the production HTTP-backed :class:`HttpMCPCaller`.
 
-Validates: Requirements 9.3, 9.4 (platform-gap-fill spec)
-
 Properties verified:
 
 * Every outgoing MCP request carries ``X-Client-Source: automation-worker``
-  (R9.3).
+  header.
 * The caller routes the request through the JSON-RPC ``tools/call``
   envelope and returns the parsed ``result`` body to the activity layer.
 * JSON-RPC ``error`` envelopes and HTTP non-2xx responses are surfaced
@@ -104,7 +102,7 @@ def _make_caller(
 
 
 # ---------------------------------------------------------------------------
-# Tool → service mapping (R9.3 — credential injection routing)
+# Tool → service mapping for credential injection routing
 # ---------------------------------------------------------------------------
 
 
@@ -138,14 +136,14 @@ class TestInferServiceFromTool:
 
 
 # ---------------------------------------------------------------------------
-# Header propagation — Requirement 9.3
+# Header propagation
 # ---------------------------------------------------------------------------
 
 
 class TestClientSourceHeader:
     @pytest.mark.anyio
     async def test_outgoing_request_carries_x_client_source_header(self) -> None:
-        """R9.3 — every MCP call from automation-worker carries
+        """Every MCP call from automation-worker carries
         ``X-Client-Source: automation-worker``."""
 
         captured: list[httpx.Request] = []

@@ -35,9 +35,9 @@ setup() {
   cp "${SCRIPT_UNDER_TEST}" "${TEST_SCRIPT}"
 
   # Patch configuration paths in the test script
-  sed -i "s|PLATFORM_DIR=\"/opt/yeni_atlassian/platform\"|PLATFORM_DIR=\"${TEST_PLATFORM_DIR}\"|g" "${TEST_SCRIPT}"
+  sed -i "s|PLATFORM_DIR=\"/opt/atlassian-ai-workflow-platform\"|PLATFORM_DIR=\"${TEST_PLATFORM_DIR}\"|g" "${TEST_SCRIPT}"
   sed -i "s|COMPOSE_FILE=\"\$PLATFORM_DIR/infra/docker-compose.yml\"|COMPOSE_FILE=\"${TEST_PLATFORM_DIR}/infra/docker-compose.yml\"|g" "${TEST_SCRIPT}"
-  sed -i "s|MCP_ENV_FILE=\"\$PLATFORM_DIR/services/atlassian_unified/.env\"|MCP_ENV_FILE=\"${TEST_PLATFORM_DIR}/services/atlassian_unified/.env\"|g" "${TEST_SCRIPT}"
+  sed -i "s|MCP_ENV_FILE=\"\$PLATFORM_DIR/services/atlassian_mcp_bitbucket/.env\"|MCP_ENV_FILE=\"${TEST_PLATFORM_DIR}/services/atlassian_mcp_bitbucket/.env\"|g" "${TEST_SCRIPT}"
   sed -i "s|EVIDENCE_FILE=\"/tmp/05-token-selection.json\"|EVIDENCE_FILE=\"${TEST_EVIDENCE_DIR}/05-token-selection.json\"|g" "${TEST_SCRIPT}"
 
   # Reduce health wait time for faster tests
@@ -48,11 +48,11 @@ setup() {
 
   # Create required directory structure
   mkdir -p "${TEST_PLATFORM_DIR}/infra"
-  mkdir -p "${TEST_PLATFORM_DIR}/services/atlassian_unified"
+  mkdir -p "${TEST_PLATFORM_DIR}/services/atlassian_mcp_bitbucket"
   mkdir -p "${TEST_PLATFORM_DIR}/scripts"
 
   # Create initial MCP env file with Token_B (Basic Auth)
-  cat > "${TEST_PLATFORM_DIR}/services/atlassian_unified/.env" <<EOF
+  cat > "${TEST_PLATFORM_DIR}/services/atlassian_mcp_bitbucket/.env" <<EOF
 JIRA_URL=https://example.atlassian.net
 CONFLUENCE_URL=https://example.atlassian.net/wiki
 JIRA_USERNAME=user@example.com

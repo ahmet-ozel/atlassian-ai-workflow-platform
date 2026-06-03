@@ -1,19 +1,15 @@
 """``post_cost_prediction_comment`` — best-effort Jira yorum yazma.
 
-Materialises task **7.4** of
-``.kiro/specs/platform-mimari-ops/tasks.md`` and the cost prediction
-sequence in ``design.md`` §"Sequence: Cost prediction + budget cap
-enforcement" (the ``Auto->>Jira: post comment "🤖 Tahmini maliyet:
-$X (CI %80)"`` step that follows :class:`BudgetCapPolicy.enforce`
-returning ``allow``).
+Posts the cost prediction comment after :class:`BudgetCapPolicy.enforce`
+returns ``allow``.
 
 Why this lives in ``automation-service`` (and not in the worker)
 ----------------------------------------------------------------
 
 The cost prediction is computed at **workflow start** time by the
-``automation-service`` HTTP handler (Spec 1 R3 + Spec 2 R2). The
-prediction is the side product of the ``CostPredictor`` call (task
-7.2) sitting in front of :class:`BudgetCapPolicy`. The user-visible
+``automation-service`` HTTP handler. The prediction is the side product
+of the ``CostPredictor`` call sitting in front of
+:class:`BudgetCapPolicy`. The user-visible
 artefact that explains the prediction lives on the originating Jira
 issue, so the most economical place to post the comment is
 **before** the workflow signal-with-start: a workflow that fails to
@@ -22,29 +18,26 @@ starts successfully does not need to drag the prediction value
 through Temporal payloads just so an activity inside the workflow
 can post it.
 
-Best-effort semantics (Spec 2 ``output_actions`` partition)
------------------------------------------------------------
+Best-effort semantics
+---------------------
 
 The user-facing contract treats this comment as the
-``best_effort`` partition of the ``output_actions`` framework
-(Spec 2 R12 / R14): if the MCP call, the credential resolution, or
+``best_effort`` partition of output handling: if the MCP call, the credential resolution, or
 the JSON-RPC parse fails, the workflow start MUST still succeed.
 The failure is recorded as a single ``cost_prediction_comment_failed``
 audit event (severity-ish via the ``result="error"`` field) so the
 ``/costs`` panel and Loki search can surface "comment was skipped"
-to operators. The Spec 2 ``OutputAction`` lib (task 12 of the
-workflows spec) is not yet built; this module therefore implements
-the best-effort wrapping inline rather than partitioning a one-element
-list of actions through it. The shape it returns (:class:`CostCommentOutcome`)
+to operators. This module implements the best-effort wrapping inline
+rather than partitioning a one-element list of actions through a
+shared output layer. The shape it returns (:class:`CostCommentOutcome`)
 is deliberately compatible with the eventual partition / apply API
 so a later refactor can splice it in without changing call sites.
 
 MCP wiring
 ----------
 
-R1.2 (``MIMARI §1 Kural 1``) mandates that every outbound Atlassian
-HTTP call goes through the ``atlassian_unified`` MCP service. This
-module honours that rule by routing through the same
+Every outbound Atlassian HTTP call goes through the
+``atlassian_unified`` MCP service. This module routes through the same
 ``http_shared.make_mcp_client`` + ``http_shared.with_atlassian_creds``
 plumbing that the ``agent-runner-worker`` activities use for
 ``jira_add_comment``. The outbound call invokes the ``jira_add_comment``
@@ -53,17 +46,16 @@ MCP tool over JSON-RPC ``tools/call`` — identical surface to
 two callers stay observationally indistinguishable from the MCP's
 perspective (cred header layout, body shape, error mapping).
 
-The ``mcp_client.atlassian_client.AtlassianClient`` skeleton in the
-foundation spec is intentionally not used here: that class is a
-banned-tool / PR-draft enforcement chokepoint and its
+The ``mcp_client.atlassian_client.AtlassianClient`` skeleton is
+intentionally not used here: that class is a banned-tool / PR-draft
+enforcement chokepoint and its
 ``open_pull_request`` method still raises :class:`NotImplementedError`
-in the foundation iteration. The ``available_tools`` filter is
+in the current implementation. The ``available_tools`` filter is
 irrelevant for a single hard-coded ``jira_add_comment`` call. When
-the foundation client gains a real HTTP transport in a later spec,
-this module can swap its inline JSON-RPC for a call into that
+the shared client gains a real HTTP transport, this module can swap
+its inline JSON-RPC for a call into that
 client without changing its public surface.
 
-Validates: Requirements 5.6, 5.7
 """
 
 from __future__ import annotations
@@ -114,7 +106,7 @@ _CLIENT_SOURCE: Final[str] = "automation-service"
 _DEFAULT_TIMEOUT_SECONDS: Final[float] = 15.0
 
 #: Body line listing the prediction with its 80% confidence interval.
-#: Per task 7.4 the prefix is "🤖 Tahmini maliyet" and the source label
+#: The prefix is "🤖 Tahmini maliyet" and the source label
 #: is rendered verbatim — ``dept`` or ``global_fallback`` — so admins
 #: can grep for it in Jira.
 _BODY_HEADER_TEMPLATE: Final[str] = (
@@ -123,7 +115,7 @@ _BODY_HEADER_TEMPLATE: Final[str] = (
 )
 
 #: Extra disclosure note appended for the ``global_fallback`` source
-#: (Requirement 5.7 — cold-start transparency).
+#: for cold-start transparency.
 _GLOBAL_FALLBACK_NOTE: Final[str] = (
     "Bu departmanın geçmiş verisi henüz az; tahmin global ortalamadan üretildi."
 )
@@ -144,7 +136,7 @@ _USD_QUANT: Final[Decimal] = Decimal("0.01")
 class CostPredictionLike(Protocol):
     """Structural type matching :class:`cost_tracking.CostPrediction`.
 
-    The cost-tracking lib (task 7.2) ships a frozen dataclass with
+    The cost-tracking lib ships a frozen dataclass with
     these four attributes. Declaring the dependency as a Protocol
     keeps this module compilable and testable without an import-time
     coupling on a sibling library that may still be evolving. The
@@ -152,8 +144,8 @@ class CostPredictionLike(Protocol):
     structural subtyping; tests inject a tiny ``@dataclass(frozen=True)``
     that does the same.
 
-    Attributes mirror the design ``CostPrediction`` data model
-    exactly (Decimals so monetary precision is preserved end-to-end).
+    Attributes mirror the ``CostPrediction`` data model exactly
+    (Decimals so monetary precision is preserved end-to-end).
     """
 
     @property
@@ -182,9 +174,9 @@ class JiraCommentPoster(Protocol):
 
     Defaults to the inline MCP path; tests rarely need to swap this
     out because the :class:`McpClientFactory` already covers the
-    happy and sad paths. Exposed so the future Spec 2
-    ``output_actions.apply`` framework can reuse the body composer
-    without re-running MCP transport.
+    happy and sad paths. Exposed so a future ``output_actions.apply``
+    integration can reuse the body composer without re-running MCP
+    transport.
     """
 
     async def post(
@@ -211,7 +203,7 @@ DeptCostPanelLinker = Callable[[str], str | None]
 
 
 #: Discriminator labels for :class:`CostCommentOutcome`. Mirrors
-#: the eventual Spec 2 ``ApplyResult`` outcomes (``ok``, ``failed``,
+#: the eventual ``ApplyResult`` outcomes (``ok``, ``failed``,
 #: ``skipped``) so a future refactor can lift this module's
 #: outcome shape into the partition framework with no rename.
 CostCommentStatus = Literal["posted", "skipped", "failed"]
@@ -227,7 +219,7 @@ class CostCommentOutcome:
     response field). The dataclass is intentionally minimal — it
     carries enough to describe **what happened** without leaking the
     Jira body or the MCP response, both of which would expand the
-    audit trail beyond R6.1's mandate.
+    audit trail beyond the required operational fields.
 
     Attributes:
         status: ``"posted"`` on a clean ``2xx`` from the MCP,
@@ -284,7 +276,7 @@ def _compose_body(
     1. Header line — always present; contains the predicted value,
        the 80% CI bounds, and the source label.
     2. Global-fallback disclosure — appended only when
-       ``prediction.source == "global_fallback"`` (R5.7).
+       ``prediction.source == "global_fallback"``.
     3. Cost panel deep-link — appended only when ``cost_panel_url``
        is a non-empty string. Allows the comment author to point at
        the live dashboard without forcing a stable URL on every dept
@@ -397,8 +389,8 @@ async def post_cost_prediction_comment(
 
     Called by the workflow start handler **after**
     :meth:`BudgetCapPolicy.enforce` has returned an ``allow`` decision
-    (see ``design.md`` §"Sequence: Cost prediction + budget cap
-    enforcement"). The function never raises on MCP / credential /
+    for the cost prediction and budget cap enforcement sequence. The
+    function never raises on MCP / credential /
     transport failure; on any error it records a single
     ``cost_prediction_comment_failed`` audit event (when an
     :class:`AuditLogger` was provided) and returns a
@@ -413,7 +405,7 @@ async def post_cost_prediction_comment(
             a programming error rather than a recoverable runtime
             condition.
         prediction: The cost prediction value object produced by the
-            ``CostPredictor`` call (task 7.2). Any object satisfying
+            ``CostPredictor`` call. Any object satisfying
             :class:`CostPredictionLike` is accepted. ``None`` is
             tolerated and returns an outcome with status
             ``"skipped"`` so callers that have a feature-flagged

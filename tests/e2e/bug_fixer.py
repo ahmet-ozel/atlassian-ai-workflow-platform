@@ -62,7 +62,7 @@ class BugFixer:
     Parameters
     ----------
     platform_root : Path
-        Path to the platform/ directory (e.g., /path/to/yeni_atlassian/platform).
+        Path to the platform/ directory (e.g., /path/to/atlassian-ai-workflow-platform/platform).
     """
 
     def __init__(self, platform_root: Path):
@@ -304,7 +304,7 @@ class BugFixer:
         # Search for hardcoded space keys in common locations
         search_paths = [
             self.platform_root / "tests",
-            self.platform_root / "services" / "atlassian_unified",
+            self.platform_root / "services" / "atlassian_mcp_bitbucket",
         ]
 
         for search_path in search_paths:

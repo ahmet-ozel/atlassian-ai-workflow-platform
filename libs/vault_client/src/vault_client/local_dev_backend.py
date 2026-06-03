@@ -2,10 +2,8 @@
 
 Implements :class:`vault_client.client.VaultClient` against a single
 file on disk whose payload is encrypted end-to-end with libsodium's
-authenticated XSalsa20-Poly1305 :class:`nacl.secret.SecretBox`. This
-mirrors the design note "local-dev backend'i yalnızca **şifrelenmiş**
-dosya tabanlı (sodium-libsecret) bir kuyruk kullanır; plain-text kabul
-etmez" (R6.6).
+authenticated XSalsa20-Poly1305 :class:`nacl.secret.SecretBox`.
+Plain-text writes are rejected.
 
 Threat model
 ------------
@@ -46,7 +44,7 @@ import nacl.utils
 from .client import Backend, RotationResult, SshKey, VaultClient
 from .path import VaultPath
 
-# Webhook secret overlap window (R6.8); duplicated here so the local-dev
+# Webhook secret overlap window; duplicated here so the local-dev
 # backend can be exercised independently of the Hashicorp backend.
 _WEBHOOK_ROTATION_OVERLAP = timedelta(hours=1)
 
@@ -74,7 +72,7 @@ KEY_SIZE: int = nacl.secret.SecretBox.KEY_SIZE
 def _decode_key(raw: str) -> bytes:
     """Decode a hex- or base64-encoded 32-byte key.
 
-    Order: try hex first (most common in existing scaffolds), then
+    Order: try hex first (common in existing projects), then
     standard base64, then URL-safe base64. The first decoder that
     yields exactly :data:`KEY_SIZE` bytes wins.
     """
@@ -146,7 +144,7 @@ class LocalDevBackend(VaultClient):
             raise ValueError(
                 "VAULT_LOCAL_KEY is unset or contains a known weak "
                 "placeholder; refusing to start the local-dev Vault "
-                "backend (R6.6: plain-text rejected)."
+                "backend (plain-text rejected)."
             )
         key = _decode_key(raw)
         store_path = Path(env.get("VAULT_LOCAL_STORE", default_store))
@@ -244,7 +242,7 @@ class LocalDevBackend(VaultClient):
             # Otherwise: idempotent no-op (matches Hashicorp KV-v2).
 
     # ------------------------------------------------------------------
-    # Rotation helpers (R6.7, R6.8)
+    # Rotation helpers
     # ------------------------------------------------------------------
 
     def rotate_ssh_key(
@@ -272,7 +270,7 @@ class LocalDevBackend(VaultClient):
         )
 
     def clear_previous_ssh_slot(self, runner_id: str) -> None:
-        """Idempotent removal of the ``previous`` SSH slot (R6.7).
+        """Idempotent removal of the ``previous`` SSH slot.
 
         Called once the freshly rotated key has been validated against
         the remote runner host. ``delete`` is already idempotent for

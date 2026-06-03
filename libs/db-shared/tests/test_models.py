@@ -1,4 +1,4 @@
-"""Tests for platform-completion SQLAlchemy models and enums.
+"""Tests for automation SQLAlchemy models and enums.
 
 Validates that models are correctly defined, enums have the expected
 values, and the table schema mappings match the migration SQL.

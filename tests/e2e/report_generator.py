@@ -4,8 +4,6 @@ E2E Report Generator — produces E2E_REPORT.md at workspace root.
 Generates a comprehensive markdown report summarizing all E2E test results,
 including executive summary, bug fixes, requirements verdict table,
 error path results, property test results, evidence index, and timing.
-
-Requirements: R30.1, R30.2, R30.3, R30.4, R30.5, R30.6
 """
 
 import json
@@ -56,71 +54,65 @@ class BugFixResult:
 
 
 # ---------------------------------------------------------------------------
-# Requirements catalog (R1-R36)
+# Requirements catalog (-)
 # ---------------------------------------------------------------------------
 
 REQUIREMENTS_CATALOG = {
-    "R1": "Docker Desktop Preflight",
-    "R2": "Boot Bundle Startup",
-    "R3": "Dashboard Access & Wizard",
-    "R4": "Wizard Steps 1-3 (Infra)",
-    "R5": "Wizard Step 4 (MCP Credentials)",
-    "R6": "Wizard Steps 5-6 (Workers/Services)",
-    "R7": "Wizard Step 7 (Department)",
-    "R8": "Full Stack Healthcheck",
-    "R9": "Jira CRUD Smoke",
-    "R10": "Confluence CRUD Smoke",
-    "R11": "Bitbucket Lifecycle Smoke",
-    "R12": "OpenAI LLM Call",
-    "R13": "SSH Connection Test",
-    "R14": "Full AI Task Workflow",
-    "R15": "Webhook Delivery",
-    "R16": "Invalid Credential Error Paths",
-    "R17": "Unreachable SSH Host",
-    "R18": "Rate-Limited API Response",
-    "R19": "Malformed Payload Validation",
-    "R20": "httpx Import Fix",
-    "R21": "Log Redaction Isolation Fix",
-    "R22": "Confluence Space Fix",
-    "R23": "pytest Collection Fix",
-    "R24": "make down Profile Fix",
-    "R25": "Volume Prefix Fix",
-    "R26": "Credential Masking Fuzzing",
-    "R27": "MCP Payload Fuzzing",
-    "R28": "Compose Config Invariants",
-    "R29": "Evidence Collection",
-    "R30": "Report Generation",
-    "R31": "Graceful Teardown",
-    "R32": "Docker Build Context Fix",
-    "R33": "Concurrent Task Submission",
-    "R34": "Service Crash/Restart",
-    "R35": "DB Connection Reconnect",
-    "R36": "Token Expiry/Re-auth",
+    "": "Docker Desktop Preflight",
+    "": "Boot Bundle Startup",
+    "": "Dashboard Access & Wizard",
+    "": "Wizard Steps 1-3 (Infra)",
+    "": "Wizard Step 4 (MCP Credentials)",
+    "": "Wizard Steps 5-6 (Workers/Services)",
+    "": "Wizard Step 7 (Department)",
+    "": "Full Stack Healthcheck",
+    "": "Jira CRUD Smoke",
+    "": "Confluence CRUD Smoke",
+    "": "Bitbucket Lifecycle Smoke",
+    "": "OpenAI LLM Call",
+    "": "SSH Connection Test",
+    "": "Full AI Task Workflow",
+    "": "Webhook Delivery",
+    "": "Invalid Credential Error Paths",
+    "": "Unreachable SSH Host",
+    "": "Rate-Limited API Response",
+    "": "Malformed Payload Validation",
+    "": "httpx Import Fix",
+    "": "Log Redaction Isolation Fix",
+    "": "Confluence Space Fix",
+    "": "pytest Collection Fix",
+    "": "make down Profile Fix",
+    "": "Volume Prefix Fix",
+    "": "Credential Masking Fuzzing",
+    "": "MCP Payload Fuzzing",
+    "": "Compose Config Invariants",
+    "": "Evidence Collection",
+    "": "Report Generation",
+    "": "Graceful Teardown",
+    "": "Docker Build Context Fix",
+    "": "Concurrent Task Submission",
+    "": "Service Crash/Restart",
+    "": "DB Connection Reconnect",
+    "": "Token Expiry/Re-auth",
     # ------------------------------------------------------------------
-    # Post-spec extensions — added after the original R1-R36 catalog
-    # so the verdict table covers the two specs the wizard suite
-    # predated:
-    #
-    #   * ``automation-service-wiring`` — Req 1.1 — 7.3 of
-    #     ``.kiro/specs/automation-service-wiring/requirements.md``
-    #   * ``llm-provider-management`` — Req 1 — 14 of
-    #     ``.kiro/specs/llm-provider-management/requirements.md``
+    # Coverage added after the original catalog so the verdict table
+    # includes automation wiring and LLM provider management checks.
     # ------------------------------------------------------------------
-    "R37": (
+    "": (
         "Automation-Service Lifespan Wiring "
         "(all 9 app.state.* slots populated; no Router_Not_Wired_Error; "
         "healthz/readyz post-startup; admin/departments round-trip)"
     ),
-    "R38": (
+    "": (
         "LLM Provider Management — Backend "
         "(CRUD + saved/unsaved test + dept override + audit + redaction)"
     ),
-    "R39": (
+    "": (
         "LLM Provider Management — Admin Dashboard UI "
         "(/admin/llm-providers page renders, table + modal + "
         "delete-conflict toast)"
     ),
-    "R40": (
+    "": (
         "Streamlit Task Creator — End-to-End "
         "(streamlit /task_creator reachable; form + create_task chain "
         "intact; page hydrates; no credential leak)"
@@ -135,24 +127,24 @@ REQUIREMENTS_CATALOG = {
 class ReportGenerator:
     """Generates E2E_REPORT.md from collected test results and evidence.
 
-    Sections produced:
-    1. Executive Summary (🔴 ISSUES FOUND or 🟢 ALL CLEAR)
-    2. Pre-existing Bugs Fixed
-    3. Requirements Verdict Table
-    4. Error Path Results
-    5. Property Test Results
-    6. Evidence Index
-    7. Timing & Cost
-    """
+ Sections produced:
+ 1. Executive Summary (🔴 ISSUES FOUND or 🟢 ALL CLEAR)
+ 2. Pre-existing Bugs Fixed
+ 3. Requirements Verdict Table
+ 4. Error Path Results
+ 5. Property Test Results
+ 6. Evidence Index
+ 7. Timing & Cost
+ """
 
     def __init__(self, workspace_root: Path):
         """
-        Initialize the report generator.
+ Initialize the report generator.
 
-        Args:
-            workspace_root: Path to the workspace root directory.
-                           Report will be written to workspace_root/E2E_REPORT.md.
-        """
+ Args:
+ workspace_root: Path to the workspace root directory.
+ Report will be written to workspace_root/E2E_REPORT.md.
+ """
         self.workspace_root = workspace_root
         self.evidence_dir = workspace_root / "e2e-evidence"
         self.report_path = workspace_root / "E2E_REPORT.md"
@@ -188,12 +180,12 @@ class ReportGenerator:
     def generate(self) -> Path:
         """Generate the E2E_REPORT.md file.
 
-        Reads evidence files from e2e-evidence/ to populate verdicts
-        for any requirements not explicitly set via set_requirement_verdict().
+ Reads evidence files from e2e-evidence/ to populate verdicts
+ for any requirements not explicitly set via set_requirement_verdict.
 
-        Returns:
-            Path to the generated E2E_REPORT.md file.
-        """
+ Returns:
+ Path to the generated E2E_REPORT.md file.
+ """
         self._auto_populate_verdicts()
 
         sections = [
@@ -296,7 +288,7 @@ class ReportGenerator:
         return "\n".join(lines)
 
     def _generate_verdict_table(self) -> str:
-        """Generate requirements verdict table with one row per R1-R36."""
+        """Generate requirements verdict table with one row per -."""
         lines = [
             "## Requirements Verdict Table",
             "",
@@ -336,7 +328,7 @@ class ReportGenerator:
 
         error_tests = [
             r for r in self._test_results
-            if any(rid.startswith("R1") and int(rid[1:].split(".")[0]) in range(16, 20)
+            if any(rid.startswith("") and int(rid[1:].split(".")[0]) in range(16, 20)
                    for rid in r.requirement_ids)
             or "error" in r.module.lower()
             or "bad_creds" in r.module.lower()
@@ -482,7 +474,7 @@ class ReportGenerator:
         # Populate from test results
         for result in self._test_results:
             for req_id in result.requirement_ids:
-                # Extract base requirement (e.g., "R9" from "R9.1")
+                # Extract base requirement (e.g., "" from "")
                 base_req = req_id.split(".")[0]
                 if base_req not in self._requirement_verdicts:
                     verdict = "PASS" if result.status == "passed" else (

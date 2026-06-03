@@ -1,7 +1,7 @@
-"""Bulk department import service (R11 — platform-real-usage-gaps).
+"""Bulk department import service.
 
 Orchestrates the import of multiple departments from a single JSON
-file upload.  Reuses the foundation R3.6 staging pattern:
+file upload.  Reuses the staging pattern:
 
     For each department in the uploaded file:
     1. Write credentials to staging Vault path.
@@ -12,7 +12,6 @@ file upload.  Reuses the foundation R3.6 staging pattern:
 The ``dry_run=True`` mode validates the schema and simulates probes
 without writing any state (Vault or DB).
 
-Validates: Requirements 11.2, 11.3, 11.4.
 """
 
 from __future__ import annotations

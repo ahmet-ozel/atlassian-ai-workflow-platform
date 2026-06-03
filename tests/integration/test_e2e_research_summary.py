@@ -1,17 +1,16 @@
 """End-to-end integration test for the ``research_summary_jira`` flow.
 
-**Validates: Requirements 6.5, 11.1**
 
 This test exercises the parent → child workflow boundary using
-``WorkflowEnvironment.start_time_skipping()`` and Temporal's deterministic
+``WorkflowEnvironment.start_time_skipping`` and Temporal's deterministic
 test server. The flow under test:
 
-    AutomationWorkflow (jira_get_issue → llm_analyze_task[research_summary_jira])
-        → execute_child_workflow("AgentRunnerWorkflow", ...)
-        → AgentRunnerWorkflow (research branch)
-            → llm_research (with optional firecrawl web search)
-            → jira_add_comment (research summary on the issue)
-        → completion comment + Done transition
+ AutomationWorkflow (jira_get_issue → llm_analyze_task[research_summary_jira])
+ → execute_child_workflow("AgentRunnerWorkflow", ...)
+ → AgentRunnerWorkflow (research branch)
+ → llm_research (with optional firecrawl web search)
+ → jira_add_comment (research summary on the issue)
+ → completion comment + Done transition
 
 Test scope decision (option (a) — minimal AgentRunnerWorkflow stub)
 -------------------------------------------------------------------
@@ -22,7 +21,7 @@ a *test-local* class under the same Temporal name
 (``"AgentRunnerWorkflow"``); the stub lives in ``_e2e_workflow_stubs.py``
 and implements only the ``research_summary_jira`` branch.
 
-When the production workflow body lands (spec task 10.1), the test will
+When the production workflow body lands (spec the implementation), the test will
 transparently switch over — both register under the same name and the
 activity-call contract is identical.
 
@@ -83,11 +82,11 @@ class _ActivityCallLog:
 async def test_research_summary_jira_e2e_flow() -> None:
     """End-to-end: research_summary_jira branch posts an LLM summary on Jira.
 
-    Drives parent + child workflow against the time-skipping test server
-    with mocked activities. Verifies the LLM research result is delivered
-    as a Jira comment on the source issue and the workflow completes
-    cleanly.
-    """
+ Drives parent + child workflow against the time-skipping test server
+ with mocked activities. Verifies the LLM research result is delivered
+ as a Jira comment on the source issue and the workflow completes
+ cleanly.
+ """
 
     log = _ActivityCallLog()
 

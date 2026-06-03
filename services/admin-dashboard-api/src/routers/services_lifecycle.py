@@ -1,4 +1,4 @@
-"""REST router backing ``/admin/services`` (task 6.2, design §3.3).
+"""REST router backing ``/admin/services``.
 
 This module is the HTTP boundary for every Lifecycle_Action exposed by
 the admin-dashboard-api. The router is intentionally *thin*: it adapts
@@ -8,30 +8,30 @@ canonical HTTP status codes, and wires the streaming-logs / SSE-test
 paths through :class:`fastapi.responses.StreamingResponse`.
 
 Endpoints (8 total, every one is gated on
-``Depends(require_admin)`` per Requirement 10.1):
+``Depends(require_admin)``):
 
-* ``GET    /admin/services``                — Requirement 6.1.
-* ``GET    /admin/services/{name}``         — Requirement 6.2.
-* ``POST   /admin/services/{name}/start``   — Requirement 5.5, 6.3.
-* ``POST   /admin/services/{name}/stop``    — Requirement 6.4, 6.5.
-* ``POST   /admin/services/{name}/restart`` — Requirement 6.6.
-* ``POST   /admin/services/{name}/test``    — Requirement 8.1/8.2/8.4/8.5/8.6.
-* ``GET    /admin/services/{name}/logs``    — Requirement 7.1/7.2/7.3/7.7.
-* ``GET    /admin/services/{name}/health``  — Requirement 7.4/7.5/7.6.
+* ``GET    /admin/services``                — list services.
+* ``GET    /admin/services/{name}``         — service detail.
+* ``POST   /admin/services/{name}/start``   — start a service.
+* ``POST   /admin/services/{name}/stop``    — stop a service.
+* ``POST   /admin/services/{name}/restart`` — restart a service.
+* ``POST   /admin/services/{name}/test``    — run the manifest test command.
+* ``GET    /admin/services/{name}/logs``    — tail service logs.
+* ``GET    /admin/services/{name}/health``  — return fresh health.
 
-Error mapping (design §3.3):
+HTTP error mapping:
 
 * :class:`UnknownServiceError`        → ``404 Not Found``.
 * :class:`FormSchemaMismatchError`    → ``422 Unprocessable Entity``.
 * :class:`TestPreconditionError`      → ``409 Conflict``.
-* :class:`FeatureFlagDisabledError`   → ``409 Conflict`` (R10 / Q12).
+* :class:`FeatureFlagDisabledError`   → ``409 Conflict``.
 * :class:`VaultWriteError`            → ``502 Bad Gateway`` + ``correlation_id``.
 * :class:`AuditUnreachableError`      → ``502 Bad Gateway`` + ``correlation_id``.
 * :class:`ComposeFailureError`        → ``502 Bad Gateway`` + ``correlation_id``.
 
 The 502 envelopes carry a ``correlation_id`` UUID so the operator can
 pivot between the HTTP response, the audit log row, and the
-structured server logs (Requirement 6.7, 11.8).
+structured server logs.
 """
 
 from __future__ import annotations
@@ -94,7 +94,7 @@ router = APIRouter(
 def get_lifecycle_service(request: Request) -> LifecycleService:
     """Resolve the per-process :class:`LifecycleService` singleton.
 
-    The application startup hook (task 6.3, ``src/main.py``) is
+    The application startup hook (``src/main.py``) is
     responsible for constructing the service and binding it to
     ``app.state.lifecycle``. We pull it from there at request time so
     unit tests can override the dependency via
@@ -147,7 +147,7 @@ def _gateway_failure_response(
     detail: str,
     correlation_id: UUID,
 ) -> JSONResponse:
-    """Build the ``502 Bad Gateway`` envelope (Requirement 6.7, 11.8).
+    """Build the ``502 Bad Gateway`` envelope.
 
     Implemented as a plain :class:`JSONResponse` rather than an
     :class:`HTTPException` so we can guarantee the ``correlation_id``
@@ -178,7 +178,7 @@ def _detail_from_entry(
 
     We deliberately surface the *cached* snapshot rather than firing a
     fresh probe — the dedicated ``GET /admin/services/{name}/health``
-    endpoint exists for that purpose (Requirement 7.4).
+    endpoint exists for that purpose.
     """
 
     entry = svc.get_manifest_entry(name)
@@ -206,7 +206,7 @@ def _detail_from_entry(
         last_started_at=slot.last_started_at,
         last_health_snapshot=snapshot_model,
         form_schema=FormSchema(fields=schema_rows),
-        # Connectivity probe fields (R9.5 / Q10) — surfaced so the UI's
+        # Connectivity probe fields surfaced so the UI's
         # service detail page can render the credentials banner without
         # an extra round-trip. ``None`` when no probe is configured.
         credentials_status=slot.credentials_status,
@@ -261,7 +261,7 @@ async def list_services(
     ),
     svc: LifecycleService = Depends(get_lifecycle_service),
 ) -> list[ServiceSummary]:
-    """Return one row per Managed_Service (Requirement 6.1)."""
+    """Return one row per Managed_Service."""
 
     manifest = getattr(svc, "manifest", ())
     if manifest and refresh:
@@ -289,7 +289,7 @@ async def get_service_detail(
     name: str,
     svc: LifecycleService = Depends(get_lifecycle_service),
 ) -> ServiceDetail:
-    """Return the full detail body for one Managed_Service (Requirement 6.2)."""
+    """Return the full detail body for one Managed_Service."""
 
     try:
         return _detail_from_entry(svc, name)
@@ -301,14 +301,14 @@ async def get_service_detail(
 
 
 # ---------------------------------------------------------------------------
-# GET /admin/services/{name}/start-plan  (R5.6 / Q11 — preview)
+# GET /admin/services/{name}/start-plan
 # ---------------------------------------------------------------------------
 
 
 @router.get(
     "/{name}/start-plan",
     response_model=StartPlanResponse,
-    summary="Preview the dependency-chain plan for start(name) (R5.6 / Q11)",
+    summary="Preview the dependency-chain plan for start(name)",
 )
 async def get_service_start_plan(
     name: str,
@@ -316,8 +316,7 @@ async def get_service_start_plan(
 ) -> StartPlanResponse:
     """Return the topologically-sorted dependency-chain plan.
 
-    Implements platform-mimari-uyumluluk Requirement 5.6 (Q11). The
-    admin-dashboard-ui calls this endpoint when the operator clicks
+    The admin-dashboard-ui calls this endpoint when the operator clicks
     *Start* on a service so it can render a confirmation modal of the
     form "Aşağıdaki servisler de başlatılacak: {will_start}".
 
@@ -326,12 +325,12 @@ async def get_service_start_plan(
     * Reads the manifest entry for ``name`` (404 on miss).
     * Walks ``depends_on_services`` depth-first in post-order so
       dependencies precede dependents in ``will_start`` (mirrors the
-      actual Step 1.6 descent — Requirement 5.4).
+      actual dependency descent).
     * Filters out external Boot_Bundle deps (e.g. ``postgres`` /
       ``vault``) that are not manifest-resident — the lifecycle
       service cannot start them so they have no place in the plan.
     * Partitions visited services into ``already_running`` (current
-      ``state="running"`` — idempotent skip per Requirement 5.3) and
+      ``state="running"`` — idempotent skip) and
       ``will_start``.
     * Read-only: writes no audit rows, performs no I/O outside the
       in-process state cache. Safe to poll from the UI.
@@ -369,17 +368,17 @@ async def start_service(
     actor: AuthClaims = Depends(require_admin),
     svc: LifecycleService = Depends(get_lifecycle_service),
 ):
-    """Bring a service up — Requirement 5.5, 6.3.
+    """Bring a service up.
 
-    Error mapping mirrors design §3.3:
+    Error mapping:
 
     * ``UnknownServiceError``              → 404
     * ``FormSchemaMismatchError``          → 422
     * ``VaultWriteError``                  → 502 + ``correlation_id``
     * ``AuditUnreachableError``            → 502 + ``correlation_id``
     * ``ComposeFailureError``              → 502 + ``correlation_id``
-    * ``MaxDependencyDepthExceededError``  → 502 + ``correlation_id`` (R5.2 / Q11)
-    * ``DependencyStartFailedError``       → 502 + ``correlation_id`` (R5.5 / Q11)
+    * ``MaxDependencyDepthExceededError``  → 502 + ``correlation_id``
+    * ``DependencyStartFailedError``       → 502 + ``correlation_id``
     """
 
     try:
@@ -399,12 +398,11 @@ async def start_service(
             detail=str(exc),
         ) from exc
     except FeatureFlagDisabledError as exc:
-        # platform-mimari-uyumluluk R10 / Q12 — feature-flag start gate.
+        # Feature-flag start gate.
         # The orchestrator's Step 1.5 raised because at least one flag
         # in the manifest's ``feature_flag_dependency`` is disabled.
         # We surface 409 with a structured envelope so the UI can
         # render a targeted "open Feature Flags page → toggle X" modal
-        # (Requirement 10.3).
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail={
@@ -420,8 +418,7 @@ async def start_service(
         MaxDependencyDepthExceededError,
         DependencyStartFailedError,
     ) as exc:
-        # platform-mimari-uyumluluk R5.2 / R5.5 (Q11): dependency-chain
-        # failures (depth exceeded or a dep failed to start) surface as
+        # Dependency-chain failures (depth exceeded or a dep failed to start) surface as
         # 502 alongside the canonical Vault / Audit / Compose failures.
         return _gateway_failure_response(
             detail=str(exc),
@@ -439,7 +436,7 @@ async def start_service(
 @router.post(
     "/{name}/stop",
     response_model=StopResponse,
-    summary="Stop a Managed_Service (idempotent — Requirement 6.5)",
+    summary="Stop a Managed_Service (idempotent)",
 )
 async def stop_service(
     name: str,
@@ -448,14 +445,14 @@ async def stop_service(
     svc: LifecycleService = Depends(get_lifecycle_service),
     settings: Settings = Depends(get_settings_dependency),
 ):
-    """Bring a service down (Requirement 6.4, 6.5).
+    """Bring a service down.
 
     The body is optional — a missing body is equivalent to
     ``{"remove_volumes": false, "purge_vault": false}``. The
     orchestrator handles the idempotent path internally and returns
     ``noop=True`` when the service was already stopped.
 
-    platform-mimari-uyumluluk Requirement 14.2 (Q16) — the optional
+    The optional
     ``purge_vault`` flag instructs the orchestrator to delete every
     Vault override under ``secret/services/{name}/`` after the Compose
     ``stop`` step completes (the actual purge wiring lands in task
@@ -470,7 +467,7 @@ async def stop_service(
     remove_volumes = bool(body.remove_volumes) if body is not None else False
     purge_vault = bool(body.purge_vault) if body is not None else False
 
-    # platform-mimari-uyumluluk R14.2 (Q16) — production guard.
+    # Production guard.
     # We refuse the destructive flag *before* invoking Compose so a
     # single rogue request cannot tear down Vault overrides on a live
     # cluster. The check is case-insensitive because operators
@@ -495,7 +492,7 @@ async def stop_service(
         # Best-effort audit. The audit DB outage path is intentionally
         # non-fatal — the canonical 403 still fires. The
         # ``write_with_retry`` queue persists the row when Postgres is
-        # back online (Requirement 11.7 deferred-queue semantics).
+    # back online.
         try:
             await svc.record_purge_vault_blocked(name=name, actor=actor)
         except AuditUnreachableError:
@@ -546,14 +543,14 @@ async def stop_service(
     "/{name}/restart",
     status_code=status.HTTP_202_ACCEPTED,
     response_model=StartResponse,
-    summary="Restart a Managed_Service (Requirement 6.6)",
+    summary="Restart a Managed_Service",
 )
 async def restart_service(
     name: str,
     actor: AuthClaims = Depends(require_admin),
     svc: LifecycleService = Depends(get_lifecycle_service),
 ):
-    """Stop then start with overrides re-read from Vault (Requirement 6.6).
+    """Stop then start with overrides re-read from Vault.
 
     Re-application of the form-schema check inside ``LifecycleService``
     means a stale Vault state can still surface a 422 here; we treat
@@ -592,8 +589,8 @@ async def restart_service(
         MaxDependencyDepthExceededError,
         DependencyStartFailedError,
     ) as exc:
-        # platform-mimari-uyumluluk R5.2 / R5.5 (Q11): dependency-chain
-        # failures surface as 502 alongside the canonical failures.
+        # Dependency-chain failures surface as 502 alongside the
+        # canonical failures.
         return _gateway_failure_response(
             detail=str(exc),
             correlation_id=uuid4(),
@@ -610,7 +607,7 @@ async def restart_service(
 @router.post(
     "/{name}/test",
     response_model=None,
-    summary="Run the manifest test_command (Requirement 8.1/8.2/8.4/8.5/8.6)",
+    summary="Run the manifest test_command",
 )
 async def run_service_tests(
     name: str,
@@ -626,9 +623,9 @@ async def run_service_tests(
     ``data:`` event per stdout line, terminated by a ``done`` event
     carrying ``exit_code``.
 
-    Requirement 8.6: a 409 is raised when the service is not running
+    A 409 is raised when the service is not running
     (``TestPreconditionError("service must be running before tests")``).
-    Requirement 8.2: a 409 is raised when the manifest entry has no
+    A 409 is raised when the manifest entry has no
     ``test_command`` (``TestPreconditionError("service has no
     test_command in manifest")``).
     """
@@ -868,7 +865,7 @@ async def run_all_smoke_tests(
 @router.get(
     "/{name}/logs",
     response_model=None,
-    summary="Tail Compose logs with redaction (Requirement 7.1/7.2/7.3/7.7)",
+    summary="Tail Compose logs with redaction",
 )
 async def get_service_logs(
     name: str,
@@ -878,12 +875,12 @@ async def get_service_logs(
 ):
     """Return tailed Compose logs (JSON) or a live SSE stream.
 
-    Requirement 7.7 — Sensitive_Env_Key tokens are replaced with
+    Sensitive_Env_Key tokens are replaced with
     ``<redacted>`` before any line leaves the response. The
     redaction pattern is built from the service's ``.env.example``
     LHS keys via :meth:`LifecycleService.build_log_redaction_pattern`
     so streaming and non-streaming paths share the exact same key
-    set (Property C5).
+    set.
     """
 
     if not follow:
@@ -940,7 +937,7 @@ async def _sse_log_stream(
     The redaction pattern is supplied by
     :meth:`LifecycleService.build_log_redaction_pattern` and comes
     from the service's ``.env.example`` LHS Sensitive_Env_Keys
-    (Requirement 7.7). When ``pattern is None`` (no sensitive keys)
+    . When ``pattern is None`` (no sensitive keys)
     the line is forwarded unchanged.
     """
 
@@ -954,14 +951,14 @@ async def _sse_log_stream(
 
 
 # ---------------------------------------------------------------------------
-# POST /admin/services/{name}/probe  (R9.6 / Q10 — manual re-run)
+# POST /admin/services/{name}/probe
 # ---------------------------------------------------------------------------
 
 
 @router.post(
     "/{name}/probe",
     response_model=ProbeResponse,
-    summary="Manually re-run the connectivity probe (R9.6 / Q10)",
+    summary="Manually re-run the connectivity probe",
 )
 async def probe_service_connectivity(
     name: str,
@@ -970,8 +967,7 @@ async def probe_service_connectivity(
 ) -> ProbeResponse:
     """Trigger a manual re-run of the manifest ``connectivity_probe_command``.
 
-    Implements platform-mimari-uyumluluk Requirement 9.6 (Q10 — manual
-    connectivity probe re-run). The endpoint calls the same
+    The endpoint calls the same
     :meth:`LifecycleService._run_connectivity_probe` helper that the
     automatic Step 9.5 post-start probe uses, so the same audit events
     (``service_connectivity_probe_passed`` /
@@ -979,7 +975,7 @@ async def probe_service_connectivity(
 
     The UI's service detail page calls this endpoint when the operator
     clicks the ``[Re-probe]`` button next to a ``credentials_status =
-    "failed"`` banner (Requirement 9.5).
+    "failed"`` banner.
 
     Error mapping:
 
@@ -1023,7 +1019,7 @@ async def probe_service_connectivity(
 @router.get(
     "/{name}/health",
     response_model=HealthSnapshotModel,
-    summary="Fresh Health_Snapshot (Requirement 7.4/7.5/7.6)",
+    summary="Fresh Health_Snapshot",
 )
 async def get_service_health(
     name: str,
@@ -1032,8 +1028,8 @@ async def get_service_health(
     """Return a fresh :class:`HealthSnapshot` for ``{name}``.
 
     The orchestrator's :meth:`health_of` honours the cache TTL and
-    increments the consecutive-unhealthy streak counter (Requirement
-    12.5) on every probe. The router only adapts the result; it does
+    increments the consecutive-unhealthy streak counter on every probe.
+    The router only adapts the result; it does
     not poll or alert.
     """
 

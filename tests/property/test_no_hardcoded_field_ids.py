@@ -1,13 +1,13 @@
-"""Static AST property test: no hard-coded Jira ``customfield_*`` ids.
+"""Static AST invariant: no hard-coded Jira ``customfield_*`` ids.
 
-**Validates: Requirements 3.7**
 
-Static counterpart of design.md Property 19 (d): the platform code
-base MUST NOT embed Jira custom-field id literals (``customfield_10001``,
-``customfield_10049``, ...) anywhere in the in-scope source tree.
+
+Static AST check: the platform code base MUST NOT embed Jira
+custom-field id literals (``customfield_10001``,
+``customfield_10049``,...) anywhere in the in-scope source tree.
 Field ids vary across Jira tenants, so any literal embedded in code
 becomes a deployment-blocker the moment a new tenant is onboarded.
-The :class:`automation_service.jira_field_resolver.JiraFieldResolver`
+The:class:`automation_service.jira_field_resolver.JiraFieldResolver`
 is the single sanctioned mechanism for translating field display
 names to ids at runtime; this test enforces that nobody short-circuits
 it with a literal.
@@ -22,10 +22,9 @@ to the platform workspace root:
 * ``platform/workers/``
 * ``platform/libs/``
 
-Files outside these roots (notably the vendored
-``platform/services/atlassian_unified/`` MCP — Property 14 of the
-foundation spec treats it as immutable input) are NOT in scope and
-legitimately reference field-id literals in their docstrings,
+Files outside these roots (notably the
+``platform/services/atlassian_mcp_bitbucket/`` MCP gateway) are NOT in
+scope and legitimately reference field-id literals in their docstrings,
 fixtures, and test data.
 
 Whitelist
@@ -34,18 +33,18 @@ Whitelist
 Two classes of in-scope files are exempted:
 
 1. **Test subtrees** — anything under a ``tests/`` directory inside
-   the scope. Tests legitimately *assert against* field ids (e.g.
-   property tests that pin a fixture's expected output) and we want
-   that to keep working without registering every test file
-   one-by-one. The convention "production code never references
-   field ids; tests assert against them after a resolve" is what
-   the rule enforces.
+ the scope. Tests legitimately *assert against* field ids (e.g.
+ invariant that pin a fixture's expected output) and we want
+ that to keep working without registering every test file
+ one-by-one. The convention "production code never references
+ field ids; tests assert against them after a resolve" is what
+ the rule enforces.
 2. **The resolver module itself** — ``jira_field_resolver.py``
-   mentions ``customfield_*`` only inside docstrings and example
-   strings (never as a runtime constant). Allow-listing the file is
-   simpler than threading "string is in a docstring" through the AST
-   walker, and the file is small enough that human review can
-   confirm it never *uses* a hard-coded literal.
+ mentions ``customfield_*`` only inside docstrings and example
+ strings (never as a runtime constant). Allow-listing the file is
+ simpler than threading "string is in a docstring" through the AST
+ walker, and the file is small enough that human review can
+ confirm it never *uses* a hard-coded literal.
 
 Failure shape
 -------------
@@ -58,22 +57,22 @@ stable across runs (which simplifies diffing CI failures).
 Implementation notes
 --------------------
 
-* The walker descends through every ``.py`` file with :mod:`ast`,
-  so f-strings (``f"customfield_{n}"``) are NOT flagged — those
-  cannot match the ``^customfield_\\d+$`` regex once Python parses
-  them into a ``JoinedStr`` whose ``Constant`` parts are
-  ``"customfield_"`` (no digit suffix). This is intentional: a
-  prefix-only f-string is harmless because it cannot resolve to a
-  real id without a literal int already present elsewhere.
+* The walker descends through every ``.py`` file with:mod:`ast`,
+ so f-strings (``f"customfield_{n}"``) are NOT flagged — those
+ cannot match the ``^customfield_\\d+$`` regex once Python parses
+ them into a ``JoinedStr`` whose ``Constant`` parts are
+ ``"customfield_"`` (no digit suffix). This is intentional: a
+ prefix-only f-string is harmless because it cannot resolve to a
+ real id without a literal int already present elsewhere.
 * The regex anchors with ``^`` and ``$`` so partial matches like
-  ``"customfield_10020 is great"`` are NOT flagged either. The rule
-  is specifically about *literal field ids*, not general mentions
-  of the prefix.
+ ``"customfield_10020 is great"`` are NOT flagged either. The rule
+ is specifically about *literal field ids*, not general mentions
+ of the prefix.
 * Standard tooling caches and vendored trees
-  (``__pycache__``, ``.venv``, ``.pytest_cache``, ``.hypothesis``,
-  ``.mypy_cache``, ``.ruff_cache``, ``node_modules``, ``dist``,
-  ``build``, ``.git``) are pruned at the walk level so the test
-  stays fast even on a populated repo.
+ (``__pycache__``, ``.venv``, ``.pytest_cache``, ``.hypothesis``,
+ ``.mypy_cache``, ``.ruff_cache``, ``node_modules``, ``dist``,
+ ``build``, ``.git``) are pruned at the walk level so the test
+ stays fast even on a populated repo.
 """
 
 from __future__ import annotations
@@ -107,8 +106,8 @@ SCOPE_ROOTS: tuple[str, ...] = (
 )
 
 #: Directory names pruned at every level of the walk. Mirrors the
-#: convention in :mod:`tests.property._path_whitelist` so this
-#: scanner stays consistent with sibling property tests.
+#: convention in:mod:`tests.property._path_whitelist` so this
+#: scanner stays consistent with sibling invariant.
 _PRUNED_DIRS: frozenset[str] = frozenset(
     {
         "__pycache__",
@@ -132,15 +131,15 @@ _PRUNED_DIRS: frozenset[str] = frozenset(
 #:
 #: ``/tests/`` — test code legitimately asserts against field ids.
 #: ``jira_field_resolver.py`` — the resolver module mentions the
-#:   prefix only in docstrings and the literal would not be a
-#:   hard-coded id even if it appeared. Allow-listing avoids any
-#:   docstring-extraction subtlety.
+#: prefix only in docstrings and the literal would not be a
+#: hard-coded id even if it appeared. Allow-listing avoids any
+#: docstring-extraction subtlety.
 _WHITELIST_FRAGMENTS: tuple[str, ...] = (
     "/tests/",
     "jira_field_resolver.py",
 )
 
-#: The regex Property 19 (d) flags. Anchored at both ends so the
+#: The regex flags exact Jira field-id literals. Anchored at both ends so the
 #: literal must be *exactly* ``customfield_<digits>`` — generic
 #: mentions in surrounding prose do not match.
 _FIELD_ID_RE: re.Pattern[str] = re.compile(r"^customfield_\d+$")
@@ -158,7 +157,7 @@ def _normalise(path: Path) -> str:
 
 
 def _iter_in_scope_files() -> Iterator[Path]:
-    """Yield every ``.py`` file under :data:`SCOPE_ROOTS`, pruned."""
+    """Yield every ``.py`` file under:data:`SCOPE_ROOTS`, pruned."""
 
     for scope in SCOPE_ROOTS:
         scope_path = _PLATFORM_ROOT / scope
@@ -191,11 +190,11 @@ def _is_whitelisted(rel_posix: str) -> bool:
 def _scan_module(tree: ast.AST) -> Iterator[tuple[int, str]]:
     """Yield ``(lineno, literal)`` pairs for every offending Constant.
 
-    Walks every :class:`ast.Constant` whose value is a ``str`` and
-    matches :data:`_FIELD_ID_RE`. The match is exact-string (anchored)
-    so f-string prefix fragments and partial mentions are excluded
-    by construction.
-    """
+ Walks every:class:`ast.Constant` whose value is a ``str`` and
+ matches:data:`_FIELD_ID_RE`. The match is exact-string (anchored)
+ so f-string prefix fragments and partial mentions are excluded
+ by construction.
+ """
 
     for node in ast.walk(tree):
         if isinstance(node, ast.Constant) and isinstance(node.value, str):
@@ -209,13 +208,13 @@ def _scan_module(tree: ast.AST) -> Iterator[tuple[int, str]]:
 
 
 def test_scope_roots_exist() -> None:
-    """Every directory in :data:`SCOPE_ROOTS` must exist.
+    """Every directory in:data:`SCOPE_ROOTS` must exist.
 
-    A missing root would silently skip the corresponding scan branch
-    and let the property degrade to a no-op. Surfacing the absence
-    as a hard failure keeps the test honest if the workspace layout
-    ever changes.
-    """
+ A missing root would silently skip the corresponding scan branch
+ and let the property degrade to a no-op. Surfacing the absence
+ as a hard failure keeps the test honest if the workspace layout
+ ever changes.
+ """
 
     missing: list[str] = []
     for scope in SCOPE_ROOTS:
@@ -223,35 +222,35 @@ def test_scope_roots_exist() -> None:
             missing.append(scope)
     assert not missing, (
         "expected scope roots are missing under the platform workspace; "
-        "Property 19 (d) cannot be enforced without them.\n  - "
-        + "\n  - ".join(missing)
+        "the field-id literal scan cannot run without them.\n - "
+        + "\n - ".join(missing)
     )
 
 
 def test_at_least_one_python_file_in_scope() -> None:
     """Sanity check: the walker must find at least one ``.py`` file.
 
-    Without this, an accidentally empty workspace would let the
-    property pass vacuously.
-    """
+ Without this, an accidentally empty workspace would let the
+ property pass vacuously.
+ """
 
     files = list(_iter_in_scope_files())
     assert files, (
-        "no .py files discovered under scope roots; "
+        "no.py files discovered under scope roots; "
         f"checked: {[str(_PLATFORM_ROOT / s) for s in SCOPE_ROOTS]}"
     )
 
 
 def test_no_hardcoded_field_id_literals() -> None:
-    """**Validates: Requirements 3.7**
+    """Scan in-scope Python files for hard-coded Jira field ids.
 
-    AST-walks every in-scope ``.py`` file and asserts that no string
-    literal matches ``^customfield_\\d+$``. Whitelisted files (test
-    subtrees + the resolver module itself) are skipped at the path
-    level. Failure reports the full list of
-    ``(file, line, literal)`` triples so a contributor can fix the
-    offending lines without further digging.
-    """
+ AST-walks every in-scope ``.py`` file and asserts that no string
+ literal matches ``^customfield_\\d+$``. Whitelisted files (test
+ subtrees + the resolver module itself) are skipped at the path
+ level. Failure reports the full list of
+ ``(file, line, literal)`` triples so a contributor can fix the
+ offending lines without further digging.
+ """
 
     offences: list[tuple[str, int, str]] = []
 
@@ -280,11 +279,11 @@ def test_no_hardcoded_field_id_literals() -> None:
     offences.sort()
 
     assert not offences, (
-        "Property 19 (d) violation — Jira custom-field ids must NOT be "
+        "Jira custom-field ids must NOT be "
         "hard-coded in the in-scope source tree. Use "
         "automation_service.jira_field_resolver.JiraFieldResolver to "
-        "translate field display names at runtime.\n  - "
-        + "\n  - ".join(
+        "translate field display names at runtime.\n - "
+        + "\n - ".join(
             f"{path}:{lineno} — {literal!r}"
             for path, lineno, literal in offences
         )
@@ -299,10 +298,10 @@ def test_no_hardcoded_field_id_literals() -> None:
 class TestScannerSelfChecks:
     """Lock in the regex / AST scanner against synthetic snippets.
 
-    The production-tree test above is only as strong as the scanner
-    that powers it. These self-checks make sure the regex and the
-    AST walk catch the right shapes (and reject the wrong ones).
-    """
+ The production-tree test above is only as strong as the scanner
+ that powers it. These self-checks make sure the regex and the
+ AST walk catch the right shapes (and reject the wrong ones).
+ """
 
     def test_exact_field_literal_detected(self) -> None:
         src = '_FIELD = "customfield_10020"\n'
@@ -337,7 +336,7 @@ class TestScannerSelfChecks:
 
     def test_uppercase_not_flagged(self) -> None:
         """The Jira convention is lowercase ``customfield_``; the
-        upper-case variant is not a real id and must not match."""
+ upper-case variant is not a real id and must not match."""
 
         src = '_X = "CustomField_10020"\n'
         tree = ast.parse(src)

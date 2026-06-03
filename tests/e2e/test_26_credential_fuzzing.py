@@ -1,8 +1,7 @@
 """
-Test 26: Hypothesis credential masking property test (R26).
+Test 26: Hypothesis credential masking property test .
 
-**Property 1: Credential masking completeness**
-**Validates: Requirements R26.1, R26.2**
+**the invariant: Credential masking completeness**
 
 Uses Hypothesis to generate random strings matching credential patterns
 and asserts that the log redaction function always masks them completely.
@@ -13,8 +12,6 @@ Patterns tested:
 - sk-proj-* (OpenAI API Key)
 - Bearer * (OAuth Bearer tokens)
 - Basic * (HTTP Basic Auth headers)
-
-Requirements: R26.1, R26.2, R26.3, R26.4, R26.5
 """
 
 import sys
@@ -97,14 +94,13 @@ basic_strategy = st.builds(
 # ---------------------------------------------------------------------------
 
 class TestCredentialMaskingProperty:
-    """Property 1: Credential masking completeness.
+    """the invariant: Credential masking completeness.
 
-    **Validates: Requirements R26.1, R26.2**
 
-    FOR ALL generated credential strings matching known patterns,
-    the redact_text function SHALL mask the credential value and
-    SHALL NOT return the original value in the output.
-    """
+ FOR ALL generated credential strings matching known patterns,
+ the redact_text function SHALL mask the credential value and
+ SHALL NOT return the original value in the output.
+ """
 
     @settings(
         max_examples=EXAMPLES_PER_PATTERN,
@@ -115,8 +111,7 @@ class TestCredentialMaskingProperty:
     def test_atatt3x_pattern_always_redacted(self, credential: str):
         """ATATT3x* tokens are always redacted when in api_token= context.
 
-        **Validates: Requirements R26.1, R26.2**
-        """
+ """
         # Wrap in api_token= context (the redaction pattern matches KEY=value)
         log_line = f"api_token={credential}"
         redacted = redact_text(log_line)
@@ -144,8 +139,7 @@ class TestCredentialMaskingProperty:
     def test_atctt3x_pattern_always_redacted(self, credential: str):
         """ATCTT3x* tokens are always redacted when in api_token= context.
 
-        **Validates: Requirements R26.1, R26.2**
-        """
+ """
         log_line = f"api_token={credential}"
         redacted = redact_text(log_line)
 
@@ -170,8 +164,7 @@ class TestCredentialMaskingProperty:
     def test_sk_proj_pattern_always_redacted(self, credential: str):
         """sk-proj-* tokens are always redacted when in api_token= context.
 
-        **Validates: Requirements R26.1, R26.2**
-        """
+ """
         log_line = f"api_token={credential}"
         redacted = redact_text(log_line)
 
@@ -196,8 +189,7 @@ class TestCredentialMaskingProperty:
     def test_bearer_pattern_always_redacted(self, credential: str):
         """Bearer * tokens are always redacted.
 
-        **Validates: Requirements R26.1, R26.2**
-        """
+ """
         redacted = redact_text(credential)
 
         # Extract the token part (after "Bearer ")
@@ -224,8 +216,7 @@ class TestCredentialMaskingProperty:
     def test_basic_pattern_always_redacted(self, credential: str):
         """Basic * auth headers are always redacted.
 
-        **Validates: Requirements R26.1, R26.2**
-        """
+ """
         # Wrap in Authorization header context
         log_line = f"Authorization: {credential}"
         redacted = redact_text(log_line)
@@ -247,17 +238,16 @@ class TestCredentialMaskingProperty:
 
 
 class TestCredentialFuzzingEvidence:
-    """R26.5: Emit structured evidence for credential fuzzing tests."""
+    """: Emit structured evidence for credential fuzzing tests."""
 
     def test_emit_evidence(self, evidence_collector):
         """Collect credential fuzzing results and emit evidence JSON.
 
-        **Validates: Requirements R26.3, R26.4, R26.5**
-        """
+ """
         evidence_data: dict[str, Any] = {
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            "property": "Property 1: Credential masking completeness",
-            "validates": "Requirements R26.1, R26.2",
+            "property": "the invariant: Credential masking completeness",
+            "validates": "",
             "patterns_tested": [
                 "ATATT3x*",
                 "ATCTT3x*",
@@ -308,7 +298,7 @@ class TestCredentialFuzzingEvidence:
 
         # Emit evidence
         evidence_path = evidence_collector.emit_json(
-            requirement_id="R26.1,R26.2,R26.3,R26.4,R26.5",
+            requirement_id=",,,,",
             filename=EVIDENCE_FILENAME,
             data=evidence_data,
         )

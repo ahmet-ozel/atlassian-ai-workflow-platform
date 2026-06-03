@@ -1,6 +1,4 @@
-"""Property 5: Iteration cap & needs_info loop cap (state machine).
-
-**Validates: Requirements 5.1, 5.6, 5.7, 5.8**
+"""State-machine tests for iteration and needs_info loop caps.
 
 This module exercises :class:`AgentRunnerWorkflow`'s signal handlers
 under a Hypothesis :class:`~hypothesis.stateful.RuleBasedStateMachine`
@@ -317,7 +315,7 @@ class IterationCapStateMachine(RuleBasedStateMachine):
 
     @invariant()
     def iter_count_never_exceeds_max(self) -> None:
-        """R5.1 — the iteration cap holds across every signal sequence."""
+        """The iteration cap holds across every signal sequence."""
 
         assert self._wf._iteration_state.iter_count <= MAX_ITER, (
             f"iter_count={self._wf._iteration_state.iter_count} "
@@ -326,12 +324,12 @@ class IterationCapStateMachine(RuleBasedStateMachine):
 
     @invariant()
     def out_of_scope_implies_a_cap_reached(self) -> None:
-        """R5.1 + R5.6 — out_of_scope only fires from a real cap.
+        """out_of_scope only fires from a real cap.
 
         ``out_of_scope`` is the workflow's terminal "give up" state;
         it must only be reachable via one of two pre-conditions:
-        the iteration cap (R5.1) or the consecutive ``needs_info``
-        streak (R5.6). Any third path would mean the workflow is
+        the iteration cap or the consecutive ``needs_info`` streak.
+        Any third path would mean the workflow is
         terminating without an authorised cause.
         """
 
@@ -351,7 +349,7 @@ class IterationCapStateMachine(RuleBasedStateMachine):
 
     @invariant()
     def iter_warning_latch_matches_history(self) -> None:
-        """R5.7 — the iter==3 banner latches iff iter ever reached 3.
+        """The iter==3 banner latches iff iter ever reached 3.
 
         We drain ``_iter_warning_pending`` into ``_iter_warning_at_three``
         on every rule (mirroring what the body does in production), so
@@ -368,7 +366,7 @@ class IterationCapStateMachine(RuleBasedStateMachine):
 
     @invariant()
     def needs_info_streak_never_exceeds_max(self) -> None:
-        """R5.6 — the needs_info streak never advances past its cap.
+        """The needs_info streak never advances past its cap.
 
         Signal handlers refuse to apply a ``[needs_info]`` once the
         streak has already triggered ``out_of_scope``, so the field

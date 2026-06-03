@@ -1,8 +1,6 @@
 """``BudgetCapPolicy`` — dept / user weekly + monthly USD cap enforcement.
 
-Materialises task **7.3** of
-``.kiro/specs/platform-mimari-ops/tasks.md`` and the ``BudgetCapPolicy``
-section of ``design.md`` (~ line 1002).
+Implements the ``BudgetCapPolicy`` cap enforcement flow.
 
 The policy is the single source of truth for the **HTTP 429** decision
 that the workflow start endpoint owes to the user when a department
@@ -41,7 +39,6 @@ mutates ``shared.cost_tracking``, never starts a transaction, and
 treats the audit write as the only side-effect (mirrored by Postgres
 RLS via the connection's ``with_dept_session`` context).
 
-Validates: Requirement 5.5
 """
 
 from __future__ import annotations
@@ -83,16 +80,14 @@ _LOG = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 
-#: One of the four budget scopes the policy can deny on. Matches the
-#: ``Literal`` declared in ``design.md`` Data Models §"BudgetDecision".
+#: One of the four budget scopes the policy can deny on.
 DenyScope = Literal["dept_weekly", "user_weekly", "dept_monthly", "user_monthly"]
 
 
 #: Order in which scopes are checked. The list mirrors
 #: ``departments.README.md`` ("dept_weekly → user_weekly →
-#: dept_monthly → user_monthly") and ``design.md`` §BudgetCapPolicy
-#: pseudocode. Exposed as a module constant so tests can assert on
-#: the exact ordering instead of duplicating the literal.
+#: dept_monthly → user_monthly"). Exposed as a module constant so tests
+#: can assert on the exact ordering instead of duplicating the literal.
 SCOPE_ORDER: Final[tuple[DenyScope, ...]] = (
     "dept_weekly",
     "user_weekly",
@@ -153,8 +148,7 @@ class BudgetUsage:
 class BudgetDecision:
     """Outcome of a :meth:`BudgetCapPolicy.enforce` call.
 
-    Mirrors the dataclass declared in ``design.md`` Data Models. The
-    pair ``(allowed, deny_scope)`` is overspecified by design — both
+    The pair ``(allowed, deny_scope)`` is intentionally explicit: both
     consumers of the type (the HTTP handler and the audit writer)
     benefit from being able to pattern-match on either field without
     the other.
@@ -205,7 +199,7 @@ class BudgetDecision:
 
 
 # ---------------------------------------------------------------------------
-# Alarm threshold dataclass + store protocol (R13 — budget alarm thresholds)
+# Alarm threshold dataclass + store protocol
 # ---------------------------------------------------------------------------
 
 
@@ -312,7 +306,7 @@ class NotificationDispatcher(Protocol):
 
 
 # ---------------------------------------------------------------------------
-# Enhanced dataclasses (Task 10.1 — Budget Guard Enhancement)
+# Enhanced dataclasses for budget guard checks
 # ---------------------------------------------------------------------------
 
 
@@ -327,8 +321,6 @@ class BudgetCheckResult:
     2. Post a Jira warning comment when ``warning_scopes`` is non-empty
        but ``allowed is True``.
     3. Expose ``current_usage`` to the Admin Dashboard (max 60s delay).
-
-    Validates: Requirements 10.1, 10.2, 10.3, 10.5
 
     Attributes:
         allowed: Whether the workflow may proceed.
@@ -409,8 +401,8 @@ class UsageQueryRunner(Protocol):
 #: Department-scoped weekly / monthly aggregate. ``$1`` is the dept id;
 #: ``$2`` is an interval (``'7 days'`` or ``'30 days'``). Filtering on
 #: ``cost_tag = 'production'`` is the **mandatory** invariant from
-#: Requirement 5.5 — sandbox / probe rows must not eat into a real
-#: budget. The ``COALESCE`` makes the empty-window case return zero
+#: sandbox / probe rows must not eat into a real budget. The
+#: ``COALESCE`` makes the empty-window case return zero
 #: without forcing the caller to special-case ``NULL``.
 _SQL_USAGE_DEPT: Final[str] = """
     SELECT COALESCE(SUM(cost_usd), 0)::numeric
@@ -464,7 +456,7 @@ class BudgetCapPolicy:
             ``automation.budget_alarm_thresholds``. When provided
             (together with ``notification_dispatcher``), the policy
             checks thresholds on every ``enforce`` call and dispatches
-            alarm notifications when breached (R13.4).
+            alarm notifications when breached.
         notification_dispatcher: Optional :class:`NotificationDispatcher`
             for sending budget alarm notifications. Required alongside
             ``alarm_threshold_store`` for threshold alarm functionality.
@@ -547,9 +539,8 @@ class BudgetCapPolicy:
         usage = await self._usage(dept_id=dept_id, user_id=user_id)
 
         # Scope ordering is part of the public contract (mirrored in
-        # the README and tested by Property 7). Each branch is the
-        # mirror of the equivalent block in ``design.md`` §BudgetCapPolicy
-        # pseudocode. We use ``>=`` (not ``>``) so a usage that exactly
+        # the README. Each branch mirrors the equivalent policy block.
+        # We use ``>=`` (not ``>``) so a usage that exactly
         # matches the limit also denies — this matches the README's
         # "cap reached" wording and prevents off-by-one boundary slips.
         if usage.dept_weekly_usd >= caps.weekly_usd_dept:
@@ -593,7 +584,7 @@ class BudgetCapPolicy:
             return BudgetDecision.deny("user_monthly")
 
         # ------------------------------------------------------------------
-        # Threshold alarm check (R13.4)
+        # Threshold alarm check
         #
         # When the workflow is allowed (no scope exceeded), check whether
         # any configured alarm threshold has been breached. If so, and
@@ -624,7 +615,7 @@ class BudgetCapPolicy:
 
         Each branch issues a single ``SUM(cost_usd)`` against
         ``shared.cost_tracking`` filtered by ``cost_tag='production'``
-        (Requirement 5.5: sandbox / probe rows are excluded). The
+        (sandbox / probe rows are excluded). The
         user-scope branches are skipped when ``user_id is None`` and
         return ``Decimal("0")`` so the caller's monotone comparison
         ``usage >= cap`` cannot trip on an unattributed workflow.
@@ -681,8 +672,6 @@ class BudgetCapPolicy:
         If the percentage meets or exceeds ``threshold_pct`` and the alarm
         has not already been sent in the current period, dispatches a
         notification and updates ``last_alarmed_at``.
-
-        Validates: Requirement 13.4
 
         This method is best-effort: notification failures are logged but
         do not affect the allow/deny decision (which has already been made
@@ -877,7 +866,7 @@ class BudgetCapPolicy:
         """Write the mandatory ``budget_exceeded`` audit event.
 
         The event matches the schema referenced by
-        ``test_audit_log_integrity_ops.py`` (task 6.5):
+        ``test_audit_log_integrity_ops.py``:
 
         * ``action="budget_exceeded"``
         * ``actor_role="system"`` — the policy enforces caps as a
@@ -1051,8 +1040,6 @@ def configuration_error_response(*, dept_id: str) -> dict[str, Any]:
     :class:`BudgetCapsProvider`. The workflow start handler maps this
     to an appropriate HTTP error response (e.g. 422 or 400).
 
-    Validates: Requirement 10.6
-
     Args:
         dept_id: The department identifier that was not found.
 
@@ -1085,8 +1072,8 @@ async def check_budget(
 ) -> BudgetCheckResult:
     """Pre-workflow budget check with 90% threshold warnings.
 
-    This is the enhanced entry point (Task 10.1) that wraps
-    :meth:`BudgetCapPolicy.enforce` with additional logic:
+    This entry point wraps :meth:`BudgetCapPolicy.enforce` with
+    additional logic:
 
     1. **Undefined dept_id**: If the dept is not in the caps provider,
        returns a denied result with a configuration error scope.
@@ -1100,8 +1087,6 @@ async def check_budget(
        warning comment is posted to Jira identifying which scope(s)
        reached 90%.
     4. **Below 90%**: Workflow proceeds with no warnings.
-
-    Validates: Requirements 10.1, 10.2, 10.3, 10.6
 
     Args:
         dept_id: Department identifier.
@@ -1120,7 +1105,7 @@ async def check_budget(
     if not isinstance(dept_id, str) or not dept_id:
         raise ValueError("dept_id must be a non-empty string")
 
-    # --- Undefined dept_id check (Requirement 10.6) ---
+    # --- Undefined dept_id check ---
     try:
         caps = policy._caps_provider.get(dept_id)
     except KeyError:
@@ -1245,7 +1230,7 @@ async def pre_llm_budget_guard(
 ) -> bool:
     """Recheck budget immediately before an LLM call.
 
-    This is the inline guard (Task 10.1, Requirement 10.4) that runs
+    This is the inline guard that runs
     inside a workflow just before issuing an LLM request. It rechecks
     the current spending from the ``cost_tracking`` table and blocks
     the call if any limit is exceeded.
@@ -1254,8 +1239,6 @@ async def pre_llm_budget_guard(
     - Does NOT post Jira comments (the workflow is already running).
     - Does NOT write audit records (the workflow stop handler does).
     - Returns a simple boolean for fast inline decision-making.
-
-    Validates: Requirement 10.4
 
     Args:
         dept_id: Department identifier.
@@ -1346,8 +1329,6 @@ async def get_budget_usage_snapshot(
     Exposes current usage and cap information with max 60s delay
     (the delay is bounded by the caller's cache/poll interval, not
     by this function which always queries live data).
-
-    Validates: Requirement 10.5
 
     Args:
         dept_id: Department identifier.

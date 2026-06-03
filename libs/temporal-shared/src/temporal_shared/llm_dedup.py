@@ -1,17 +1,16 @@
 """Pure LLM hash-dedup helpers — finding dedup + diff-summary cache.
 
 This module is the **single source of truth** for the two
-hash-dedup helpers spelled out in ``platform-mimari-workflows``
-design.md §"PR review G13 ve Orphan Branches V7 cache mantığı tek
-mekanizmadan beslenir" and tasks.md §6.2:
+hash-dedup helpers used by PR review finding suppression and
+diff-summary caching:
 
 * :func:`dedup_findings` — set-difference filter that suppresses
   PR-review findings whose ``hash`` was already posted in a prior
-  iteration (R7.6, MIMARI §16.14 G13).
+  iteration.
 * :func:`compute_diff_summary` — pure cache-aware wrapper around an
   LLM-summarisation callback so a follow-up ``[fix]`` against an
   unchanged diff hash is served from the cache without a second
-  LLM round-trip (R10.6, MIMARI §16.14.7 V7).
+  LLM round-trip.
 
 Both helpers are **pure**:
 
@@ -20,8 +19,6 @@ Both helpers are **pure**:
   cache so the caller decides whether to swap.
 * No clock or randomness — replay-deterministic from inside a
   Temporal workflow body.
-
-Validates: Requirements 7.6, 10.6.
 """
 
 from __future__ import annotations
@@ -35,7 +32,7 @@ __all__ = [
 
 
 # ---------------------------------------------------------------------------
-# Finding dedup — set difference with order preservation (R7.6).
+# Finding dedup — set difference with order preservation.
 # ---------------------------------------------------------------------------
 
 
@@ -48,8 +45,7 @@ def dedup_findings(
     Pure set-difference filter, mirrored from the placeholder in
     :func:`agent_runner.workflows.agent_runner_workflow._dedup_findings`.
 
-    Contract (Property 15 in
-    ``platform/tests/property/test_llm_dedup.py``):
+    Contract:
 
     * **Subset / identity** — every entry in the output is the same
       *object* as one of the inputs (no copy, no fabrication).
@@ -105,8 +101,8 @@ def compute_diff_summary(
 ) -> tuple[str, dict[str, str]]:
     """Return ``(summary, new_cache)`` for the supplied diff hash.
 
-    Pure helper consumed by the ``code_change_commit_only`` flow
-    (R10.6, MIMARI §16.14.7 V7).  The contract:
+    Pure helper consumed by the ``code_change_commit_only`` flow.
+    The contract:
 
     * **Cache hit** — ``diff_hash`` already in ``cache`` → return
       the cached summary verbatim and a *copy* of the input cache.

@@ -1,8 +1,6 @@
-"""Property test 4 — Chat intent wiring (Streamlit → Task Creator).
+"""Chat intent wiring between Streamlit and Task Creator.
 
-Spec: ``platform-real-usage-gaps`` — Property 4.
 
-**Validates: Requirements 4.2, 4.4, 4.7**
 
 Background
 ----------
@@ -26,14 +24,14 @@ We use Hypothesis to generate random SSE event sequences that fall
 into two categories:
 
 * **Write-intent streams** — contain at least one ``intent`` event
-  with ``payload.intent == "write_action_requested"`` and a valid
-  ``prefill`` dict.
+ with ``payload.intent == "write_action_requested"`` and a valid
+ ``prefill`` dict.
 * **Read-intent streams** — contain only ``token`` and ``done``
-  events; no ``intent`` event with ``write_action_requested``.
+ events; no ``intent`` event with ``write_action_requested``.
 
 For each generated stream we simulate the chat page's event-processing
 loop (extracted from ``pages/1_chat.py``) against a fake session state
-dict and assert the invariant.
+dict and assert the expected behavior.
 
 The test does NOT import Streamlit itself (which requires a running
 server context). Instead it extracts the **pure logic** of the event
@@ -82,11 +80,11 @@ from messages import SseEvent  # noqa: E402
 class FakeAssistantClient:
     """A list-backed fake that yields pre-scripted SSE events.
 
-    Mirrors the interface of the real assistant-service client injected
-    on ``st.session_state["_assistant_client"]`` in production. The
-    ``stream`` method returns an iterable of dicts matching the event
-    shape consumed by ``pages/1_chat.py``'s event loop.
-    """
+ Mirrors the interface of the real assistant-service client injected
+ on ``st.session_state["_assistant_client"]`` in production. The
+ ``stream`` method returns an iterable of dicts matching the event
+ shape consumed by ``pages/1_chat.py``'s event loop.
+ """
 
     events: Sequence[dict[str, Any]] = field(default_factory=list)
 
@@ -111,16 +109,16 @@ def process_chat_events(
 ) -> dict[str, Any]:
     """Simulate the event-processing loop from ``pages/1_chat.py``.
 
-    This function mirrors the branching logic of the production chat
-    page's ``for event in _stream_assistant(user_message)`` loop. It
-    returns a dict representing the resulting session state mutations.
+ This function mirrors the branching logic of the production chat
+ page's ``for event in _stream_assistant(user_message)`` loop. It
+ returns a dict representing the resulting session state mutations.
 
-    The key invariant under test:
-    - If an ``intent`` event with ``write_action_requested`` is seen,
-      ``session_state["_pending_task_creator_redirect"]`` is set to
-      the event payload.
-    - Otherwise the key is absent from the returned state.
-    """
+ The key behavior under test:
+ - If an ``intent`` event with ``write_action_requested`` is seen,
+ ``session_state["_pending_task_creator_redirect"]`` is set to
+ the event payload.
+ - Otherwise the key is absent from the returned state.
+ """
 
     session_state: dict[str, Any] = {}
     redirect_payload: dict[str, Any] | None = None
@@ -168,16 +166,15 @@ def task_creator_read_prefill(
 ) -> tuple[dict[str, str], bool]:
     """Simulate the Task Creator page's mount-time prefill read.
 
-    Returns a tuple of (prefill_fields, was_prefilled) where
-    ``prefill_fields`` is the dict of form field values extracted from
-    the redirect payload, and ``was_prefilled`` indicates whether the
-    key was present (and thus consumed/deleted from session state).
+ Returns a tuple of (prefill_fields, was_prefilled) where
+ ``prefill_fields`` is the dict of form field values extracted from
+ the redirect payload, and ``was_prefilled`` indicates whether the
+ key was present (and thus consumed/deleted from session state).
 
-    Mirrors the logic in ``pages/2_task_creator.py`` lines that do:
-        redirect_payload = st.session_state.pop(
-            "_pending_task_creator_redirect", None
-        ) or {}
-    """
+ Mirrors the logic in ``pages/2_task_creator.py`` lines that do:
+ redirect_payload = st.session_state.pop(
+ "_pending_task_creator_redirect", None) or {}
+ """
 
     redirect_payload: dict[str, Any] = (
         session_state.pop("_pending_task_creator_redirect", None) or {}
@@ -193,7 +190,7 @@ def task_creator_read_prefill(
 # Hypothesis strategies
 # ---------------------------------------------------------------------------
 
-#: Strategy for a valid ``prefill`` dict as defined by R4.1 schema.
+#: Strategy for a valid ``prefill`` dict as defined by schema.
 _prefill_strategy = st.fixed_dictionaries(
     {
         "title": st.text(min_size=1, max_size=80),
@@ -288,18 +285,16 @@ _non_write_intent_stream = st.builds(
 
 
 # ---------------------------------------------------------------------------
-# Property 4: Chat Intent Wiring
+# Behavior: Chat Intent Wiring
 # ---------------------------------------------------------------------------
 
 
 class TestChatIntentWiringWriteIntent:
-    """**Validates: Requirements 4.2, 4.4, 4.7**
-
-    When the assistant-service SSE stream contains an ``intent`` event
-    with ``payload.intent == "write_action_requested"``, the chat page
-    MUST set ``session_state["_pending_task_creator_redirect"]`` to the
-    event payload.
-    """
+    """When the assistant-service SSE stream contains an ``intent`` event
+ with ``payload.intent == "write_action_requested"``, the chat page
+ MUST set ``session_state["_pending_task_creator_redirect"]`` to the
+ event payload.
+ """
 
     @settings(
         max_examples=200,
@@ -310,9 +305,9 @@ class TestChatIntentWiringWriteIntent:
     def test_write_intent_sets_redirect_key(
         self, stream: list[dict[str, Any]]
     ) -> None:
-        """R4.2: SSE ``intent`` event with ``write_action_requested``
-        causes ``_pending_task_creator_redirect`` to be set in session
-        state."""
+        """: SSE ``intent`` event with ``write_action_requested``
+ causes ``_pending_task_creator_redirect`` to be set in session
+ state."""
 
         session_state = process_chat_events(stream)
 
@@ -330,8 +325,8 @@ class TestChatIntentWiringWriteIntent:
     def test_redirect_payload_contains_intent_field(
         self, stream: list[dict[str, Any]]
     ) -> None:
-        """R4.2: The stored payload carries the ``intent`` field set to
-        ``write_action_requested``."""
+        """: The stored payload carries the ``intent`` field set to
+ ``write_action_requested``."""
 
         session_state = process_chat_events(stream)
         payload = session_state["_pending_task_creator_redirect"]
@@ -347,9 +342,9 @@ class TestChatIntentWiringWriteIntent:
     def test_redirect_payload_contains_prefill(
         self, stream: list[dict[str, Any]]
     ) -> None:
-        """R4.4: The stored payload carries a ``prefill`` dict with
-        ``title``, ``description``, ``repo``, ``branch`` keys so the
-        Task Creator can prefill its form."""
+        """: The stored payload carries a ``prefill`` dict with
+ ``title``, ``description``, ``repo``, ``branch`` keys so the
+ Task Creator can prefill its form."""
 
         session_state = process_chat_events(stream)
         payload = session_state["_pending_task_creator_redirect"]
@@ -370,9 +365,9 @@ class TestChatIntentWiringWriteIntent:
     def test_task_creator_consumes_and_deletes_key(
         self, stream: list[dict[str, Any]]
     ) -> None:
-        """R4.4: Task Creator page reads the redirect payload and
-        removes the key from session state (pop semantics) so it
-        doesn't persist across page navigations."""
+        """: Task Creator page reads the redirect payload and
+ removes the key from session state (pop semantics) so it
+ doesn't persist across page navigations."""
 
         session_state = process_chat_events(stream)
         assert "_pending_task_creator_redirect" in session_state
@@ -390,8 +385,8 @@ class TestChatIntentWiringWriteIntent:
     def test_task_creator_extracts_prefill_fields(
         self, stream: list[dict[str, Any]]
     ) -> None:
-        """R4.4: Task Creator extracts prefill fields from the payload
-        and they are non-empty strings (generated by the LLM)."""
+        """: Task Creator extracts prefill fields from the payload
+ and they are non-empty strings (generated by the LLM)."""
 
         session_state = process_chat_events(stream)
         prefill, was_prefilled = task_creator_read_prefill(session_state)
@@ -404,12 +399,10 @@ class TestChatIntentWiringWriteIntent:
 
 
 class TestChatIntentWiringReadIntent:
-    """**Validates: Requirements 4.2, 4.4, 4.7**
-
-    When the assistant-service SSE stream does NOT contain a
-    ``write_action_requested`` intent event, the chat page MUST NOT
-    set ``session_state["_pending_task_creator_redirect"]``.
-    """
+    """When the assistant-service SSE stream does NOT contain a
+ ``write_action_requested`` intent event, the chat page MUST NOT
+ set ``session_state["_pending_task_creator_redirect"]``.
+ """
 
     @settings(
         max_examples=200,
@@ -420,8 +413,8 @@ class TestChatIntentWiringReadIntent:
     def test_read_only_stream_does_not_set_redirect_key(
         self, stream: list[dict[str, Any]]
     ) -> None:
-        """R4.7: A stream with only token + done events (pure read
-        interaction) does NOT set the redirect key."""
+        """: A stream with only token + done events (pure read
+ interaction) does NOT set the redirect key."""
 
         session_state = process_chat_events(stream)
 
@@ -439,9 +432,9 @@ class TestChatIntentWiringReadIntent:
     def test_non_write_intent_does_not_set_redirect_key(
         self, stream: list[dict[str, Any]]
     ) -> None:
-        """R4.7: A stream with an ``intent`` event whose ``intent``
-        field is NOT ``write_action_requested`` (e.g. ``read_action``)
-        does NOT set the redirect key."""
+        """: A stream with an ``intent`` event whose ``intent``
+ field is NOT ``write_action_requested`` (e.g. ``read_action``)
+ does NOT set the redirect key."""
 
         session_state = process_chat_events(stream)
 
@@ -459,8 +452,8 @@ class TestChatIntentWiringReadIntent:
     def test_task_creator_reports_no_prefill_for_read_stream(
         self, stream: list[dict[str, Any]]
     ) -> None:
-        """R4.7: When no redirect payload exists, Task Creator's
-        prefill read returns empty and ``was_prefilled=False``."""
+        """: When no redirect payload exists, Task Creator's
+ prefill read returns empty and ``was_prefilled=False``."""
 
         session_state = process_chat_events(stream)
         prefill, was_prefilled = task_creator_read_prefill(session_state)
@@ -472,19 +465,19 @@ class TestChatIntentWiringReadIntent:
 class TestChatIntentWiringEdgeCases:
     """Edge-case properties for the intent wiring contract.
 
-    **Validates: Requirements 4.2, 4.4, 4.7**
-    """
+
+ """
 
     def test_empty_stream_does_not_set_redirect(self) -> None:
         """An empty event stream (assistant-service unreachable)
-        produces no redirect."""
+ produces no redirect."""
 
         session_state = process_chat_events([])
         assert "_pending_task_creator_redirect" not in session_state
 
     def test_error_before_intent_does_not_set_redirect(self) -> None:
         """If an error event terminates the stream before any intent
-        event, no redirect is set."""
+ event, no redirect is set."""
 
         stream = [
             {"type": "token", "payload": {"text": "processing..."}},
@@ -503,7 +496,7 @@ class TestChatIntentWiringEdgeCases:
 
     def test_intent_event_with_none_payload_does_not_crash(self) -> None:
         """An intent event with ``None`` payload is handled gracefully
-        (no redirect, no crash)."""
+ (no redirect, no crash)."""
 
         stream = [
             {"type": "intent", "payload": None},
@@ -514,7 +507,7 @@ class TestChatIntentWiringEdgeCases:
 
     def test_multiple_write_intents_last_one_wins(self) -> None:
         """If multiple write-intent events appear (unlikely but
-        possible), the last one's payload is stored."""
+ possible), the last one's payload is stored."""
 
         stream = [
             {
@@ -557,10 +550,10 @@ class TestChatIntentWiringEdgeCases:
         read_stream: list[dict[str, Any]],
     ) -> None:
         """Simulates a user sending a write-intent message, navigating
-        to Task Creator (which pops the key), then sending a read-only
-        message. The second message must NOT re-set the redirect key.
+ to Task Creator (which pops the key), then sending a read-only
+ message. The second message must NOT re-set the redirect key.
 
-        This validates the full lifecycle: set → pop → absent."""
+ This validates the full lifecycle: set → pop → absent."""
 
         # First message: write intent → key set.
         session_state = process_chat_events(write_stream)

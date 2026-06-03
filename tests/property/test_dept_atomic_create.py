@@ -1,40 +1,40 @@
-"""Property tests for atomic department-create rollback (task 5.9, Property 6).
+"""invariant for atomic department-create rollback, invariant).
 
-**Validates: Requirements 3.4, 3.6, 5.10, 9.3**
 
-Property 6 — atomic department creation rolls back cleanly under arbitrary
+
+invariant — atomic department creation rolls back cleanly under arbitrary
 DB failures. The companion module ``test_credential_inject.py`` covers the
 plain-text leak invariants on the *success* path (response body, log
 records, DB parameters, on-disk Vault store, heap scrub). This module
 covers the *failure* path:
 
 * **6f — staging keys deleted on DB INSERT failure**: when any
-  ``connection.execute`` call raises a generic ``Exception`` (RDBMS
-  outage, connection reset, constraint violation that isn't a duplicate
-  key, etc.) the orchestrator must:
-    1. delete every staging key it wrote in Vault, AND
-    2. emit a ``dept_create_failed`` audit row carrying the offending
-       request's ``actor_role`` (Requirement 3.6, 7.7), AND
-    3. NOT promote any staging path to the final ``vault:atlassian/<dept>/<service>``
-       location (no half-committed Vault state — Requirement 3.6).
+ ``connection.execute`` call raises a generic ``Exception`` (RDBMS
+ outage, connection reset, constraint violation that isn't a duplicate
+ key, etc.) the orchestrator must:
+ 1. delete every staging key it wrote in Vault, AND
+ 2. emit a ``dept_create_failed`` audit row carrying the offending
+ request's ``actor_role``, AND
+ 3. NOT promote any staging path to the final ``vault:atlassian/<dept>/<service>``
+ location (no half-committed Vault state —.
 
 * **6g — duplicate id surfaces as ``DepartmentAlreadyExistsError``**: when
-  the dept INSERT raises a unique-violation, the orchestrator emits
-  ``dept_duplicate_id`` audit (Requirement 3.9) and the staging keys are
-  still deleted.
+ the dept INSERT raises a unique-violation, the orchestrator emits
+ ``dept_duplicate_id`` audit and the staging keys are
+ still deleted.
 
 * **6h — failure during Vault staging→final promotion rolls Vault forward
-  back**: when the final-path write itself fails mid-promotion, any
-  already-promoted final paths are deleted before the surrounding
-  transaction rolls back (Requirement 3.6 — no partially promoted
-  Vault tree on the failure path).
+ back**: when the final-path write itself fails mid-promotion, any
+ already-promoted final paths are deleted before the surrounding
+ transaction rolls back — no partially promoted
+ Vault tree on the failure path).
 
 The tests use Hypothesis to vary three inputs:
 
-  * the plain-text token bytes (``_p6_plain_token_text``),
-  * the index of the ``execute`` call that should fail
-    (``failure_call_index``), and
-  * (for 6h) the index of the bot whose Vault promotion should fail.
+ * the plain-text token bytes (``_p6_plain_token_text``),
+ * the index of the ``execute`` call that should fail
+ (``failure_call_index``), and
+ * (for 6h) the index of the bot whose Vault promotion should fail.
 
 A small in-memory ``_FakeVaultBackend`` replaces the real Vault client so
 the test suite can introspect every read/write/delete operation. The
@@ -79,7 +79,7 @@ from audit_logger import AuditEvent  # noqa: E402
 
 # ``automation_service.admin.__init__`` eagerly imports the FastAPI
 # router from ``automation_service.admin.router``. The real router
-# module now ships with task 5.3, so no stub is needed — the import
+# module now ships with, so no stub is needed — the import
 # below resolves to the production router.
 from automation_service.admin.dept_create import (  # noqa: E402
     DepartmentAlreadyExistsError,
@@ -126,13 +126,12 @@ def _run_async(coro: Any) -> Any:
 class _FakeVaultBackend:
     """Tiny in-memory ``VaultClient``-shaped backend.
 
-    Records every read/write/delete so the test can assert which
-    paths exist after the orchestrator returns. We do **not** use
-    :class:`LocalDevBackend` here — the secrecy invariants (encrypted
-    on disk) are covered by Property 6d in the sibling module; this
-    module focuses on *path lifecycle* (staging deleted, no final
-    promotion on failure).
-    """
+ Records every read/write/delete so the test can assert which
+ paths exist after the orchestrator returns. We do **not** use:class:`LocalDevBackend` here — the secrecy invariants (encrypted
+ on disk) are covered by invariant in the sibling module; this
+ module focuses on *path lifecycle* (staging deleted, no final
+ promotion on failure).
+ """
 
     backend: str = "in-memory"
     store: dict[str, dict[str, str]] = field(default_factory=dict)
@@ -174,15 +173,15 @@ class _FakeVaultBackend:
 class _FailingConnection:
     """asyncpg-shaped connection that raises on the *N*-th execute call.
 
-    The orchestrator opens a transaction by issuing ``BEGIN``,
-    setting two ``SET LOCAL`` GUCs, then running its
-    INSERT statements. We let every call through except the one at
-    ``failure_index`` (0-indexed against the full sequence beginning
-    with ``BEGIN``) where we raise the supplied exception.
+ The orchestrator opens a transaction by issuing ``BEGIN``,
+ setting two ``SET LOCAL`` GUCs, then running its
+ INSERT statements. We let every call through except the one at
+ ``failure_index`` (0-indexed against the full sequence beginning
+ with ``BEGIN``) where we raise the supplied exception.
 
-    Successful ``ROLLBACK`` is allowed regardless of ``failure_index``
-    so the transaction unwinds cleanly.
-    """
+ Successful ``ROLLBACK`` is allowed regardless of ``failure_index``
+ so the transaction unwinds cleanly.
+ """
 
     def __init__(
         self,
@@ -213,10 +212,9 @@ class _FailingConnection:
 class _FakeProbeClient:
     """Probe client that always returns ``state=ok`` with auto-fetched ids.
 
-    Method signatures preserve the keyword-argument names the
-    :class:`ProbeRunner` uses internally so the fake matches the
-    protocol contract exactly.
-    """
+ Method signatures preserve the keyword-argument names the:class:`ProbeRunner` uses internally so the fake matches the
+ protocol contract exactly.
+ """
 
     async def jira_myself(self, cred: Any) -> dict[str, Any]:
         return {"accountId": "auto-jira", "displayName": "Probe Bot"}
@@ -297,13 +295,13 @@ _p6_token_text = st.text(
 
 
 # The orchestrator issues this sequence of execute calls per bot:
-#   0.  BEGIN
-#   1.  SELECT set_config('app.current_dept_id', $1, true)
-#   2.  SELECT set_config('app.current_role',    $1, true)
-#   3.  INSERT INTO automation.departments ...
-#   4.  INSERT INTO automation.department_bots ...
-#   5.  INSERT INTO automation.department_project_keys ...
-#   6.  COMMIT  (allowed through unconditionally)
+# 0. BEGIN
+# 1. SELECT set_config('app.current_dept_id', $1, true)
+# 2. SELECT set_config('app.current_role', $1, true)
+# 3. INSERT INTO automation.departments...
+# 4. INSERT INTO automation.department_bots...
+# 5. INSERT INTO automation.department_project_keys...
+# 6. COMMIT (allowed through unconditionally)
 #
 # We inject the failure at index 3 (departments INSERT — realistic
 # constraint violation surface), index 4 (department_bots INSERT),
@@ -381,7 +379,7 @@ def _final_paths(vault: _FakeVaultBackend) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
-# Property 6f — staging keys deleted on arbitrary DB INSERT failure
+# invariant — staging keys deleted on arbitrary DB INSERT failure
 # ---------------------------------------------------------------------------
 
 
@@ -395,21 +393,21 @@ def test_p6f_staging_keys_deleted_on_db_insert_failure(
     plain_token: str,
     failure_index: int,
 ) -> None:
-    """Property 6f — DB failure during INSERT triggers full staging cleanup.
+    """invariant — DB failure during INSERT triggers full staging cleanup.
 
-    **Validates: Requirements 3.4, 3.6, 9.3**
 
-    For every randomly chosen failure point inside the DB transaction
-    (between staging-write and COMMIT), the orchestrator must:
 
-    1. Re-raise the underlying exception (not silently swallow it).
-    2. Delete every staging key it wrote so the Vault tree is clean.
-    3. NOT have promoted any staging path to a final
-       ``vault:atlassian/<dept>/<svc>`` location.
-    4. Emit exactly one ``dept_create_failed`` audit row carrying the
-       caller's ``actor_role`` (Requirement 7.7).
-    5. Not leak the plain-text token into the audit payload.
-    """
+ For every randomly chosen failure point inside the DB transaction
+ (between staging-write and COMMIT), the orchestrator must:
+
+ 1. Re-raise the underlying exception (not silently swallow it).
+ 2. Delete every staging key it wrote so the Vault tree is clean.
+ 3. NOT have promoted any staging path to a final
+ ``vault:atlassian/<dept>/<svc>`` location.
+ 4. Emit exactly one ``dept_create_failed`` audit row carrying the
+ caller's ``actor_role``.
+ 5. Not leak the plain-text token into the audit payload.
+ """
 
     vault = _FakeVaultBackend()
     failure_exc = RuntimeError("simulated DB outage")
@@ -438,32 +436,32 @@ def test_p6f_staging_keys_deleted_on_db_insert_failure(
 
     # 1. The orchestrator must surface the underlying error.
     assert raised is not None, (
-        "Property 6f violated: orchestrator swallowed an injected DB "
-        "failure (Requirement 3.6 expects re-raise + rollback)."
+        "invariant violated: orchestrator swallowed an injected DB "
+        "failure (the operational rule expects re-raise + rollback)."
     )
 
     # 2. Every staging path written must have been deleted.
     remaining_staging = _staging_paths(vault)
     assert remaining_staging == [], (
-        f"Property 6f violated: staging keys still present after rollback "
-        f"({remaining_staging!r}); Requirement 3.6 requires staging "
+        f"invariant violated: staging keys still present after rollback "
+        f"({remaining_staging!r}); the operational rule requires staging "
         f"cleanup on every failure path."
     )
 
     # 3. No staging path may have been promoted to a final path.
     remaining_finals = _final_paths(vault)
     assert remaining_finals == [], (
-        f"Property 6f violated: final Vault paths exist after a failed "
+        f"invariant violated: final Vault paths exist after a failed "
         f"create ({remaining_finals!r}); the DB row was rolled back so "
-        f"no final credential_ref may persist (Requirement 3.6)."
+        f"no final credential_ref may persist (the operational rule)."
     )
 
     # Even though the store ended up empty, we should still have *seen*
     # at least one staging delete (the rollback). The orchestrator
     # iterates over every staging path in ``_best_effort_delete_staging``.
     assert vault.delete_calls, (
-        "Property 6f violated: orchestrator did not invoke any vault.delete "
-        "during rollback — Requirement 3.6 requires explicit cleanup."
+        "invariant violated: orchestrator did not invoke any vault.delete "
+        "during rollback — the operational rule requires explicit cleanup."
     )
     for deleted_path in vault.delete_calls:
         assert "_staging" in deleted_path or deleted_path.startswith(
@@ -473,17 +471,17 @@ def test_p6f_staging_keys_deleted_on_db_insert_failure(
         )
 
     # 4. Exactly one ``dept_create_failed`` audit row carrying the
-    #    actor_role.
+    # actor_role.
     failed_events = [e for e in audit.events if e.action == "dept_create_failed"]
     assert len(failed_events) == 1, (
-        f"Property 6f violated: expected exactly one dept_create_failed "
+        f"invariant violated: expected exactly one dept_create_failed "
         f"audit event; got {len(failed_events)} (events="
         f"{[e.action for e in audit.events]!r})."
     )
     failed = failed_events[0]
     assert failed.actor_role == "admin", (
         f"audit event must carry actor_role='admin'; got "
-        f"{failed.actor_role!r} (Requirement 7.7)."
+        f"{failed.actor_role!r} (the operational rule)."
     )
     assert failed.result == "error"
     assert failed.dept_id == request.dept_id
@@ -492,8 +490,8 @@ def test_p6f_staging_keys_deleted_on_db_insert_failure(
     for event in audit.events:
         payload_repr = repr(event.payload or {})
         assert plain_token not in payload_repr, (
-            f"Property 6f violated: token leaked into audit event "
-            f"{event.action!r} payload (Requirement 3.4)."
+            f"invariant violated: token leaked into audit event "
+            f"{event.action!r} payload (the operational rule)."
         )
         # Also scan the resource / action strings (defence-in-depth).
         assert plain_token not in event.resource
@@ -501,7 +499,7 @@ def test_p6f_staging_keys_deleted_on_db_insert_failure(
 
 
 # ---------------------------------------------------------------------------
-# Property 6g — duplicate id raises DepartmentAlreadyExistsError + cleanup
+# invariant — duplicate id raises DepartmentAlreadyExistsError + cleanup
 # ---------------------------------------------------------------------------
 
 
@@ -514,19 +512,19 @@ def test_p6f_staging_keys_deleted_on_db_insert_failure(
 def test_p6g_duplicate_id_emits_audit_and_clears_staging(
     plain_token: str,
 ) -> None:
-    """Property 6g — duplicate id surfaces ``DepartmentAlreadyExistsError``.
+    """invariant — duplicate id surfaces ``DepartmentAlreadyExistsError``.
 
-    **Validates: Requirements 3.6, 3.9, 7.7**
 
-    When the dept INSERT fails with an asyncpg-style unique-violation
-    error, the orchestrator must:
 
-    1. Raise :class:`DepartmentAlreadyExistsError` (router → HTTP 409).
-    2. Delete every staging key in Vault.
-    3. Not promote any staging path to a final path.
-    4. Emit exactly one ``dept_duplicate_id`` audit row with
-       ``actor_role`` and ``result="denied"``.
-    """
+ When the dept INSERT fails with an asyncpg-style unique-violation
+ error, the orchestrator must:
+
+ 1. Raise:class:`DepartmentAlreadyExistsError` (router → HTTP 409).
+ 2. Delete every staging key in Vault.
+ 3. Not promote any staging path to a final path.
+ 4. Emit exactly one ``dept_duplicate_id`` audit row with
+ ``actor_role`` and ``result="denied"``.
+ """
 
     vault = _FakeVaultBackend()
     # Mirror the substring pattern the orchestrator's
@@ -558,20 +556,20 @@ def test_p6g_duplicate_id_emits_audit_and_clears_staging(
         raised = exc
 
     assert raised is not None, (
-        "Property 6g violated: duplicate id was not surfaced as "
-        "DepartmentAlreadyExistsError (Requirement 3.9)."
+        "invariant violated: duplicate id was not surfaced as "
+        "DepartmentAlreadyExistsError (the operational rule)."
     )
     assert isinstance(raised, DepartmentAlreadyExistsError)
     assert raised.dept_id == request.dept_id
 
     # Staging cleanup invariant.
     assert _staging_paths(vault) == [], (
-        "Property 6g violated: staging keys remain after duplicate-id "
-        "rollback (Requirement 3.6)."
+        "invariant violated: staging keys remain after duplicate-id "
+        "rollback (the operational rule)."
     )
     assert _final_paths(vault) == [], (
-        "Property 6g violated: final paths exist despite duplicate-id "
-        "failure (Requirement 3.6)."
+        "invariant violated: final paths exist despite duplicate-id "
+        "failure (the operational rule)."
     )
 
     # Audit invariants.
@@ -580,7 +578,7 @@ def test_p6g_duplicate_id_emits_audit_and_clears_staging(
     ]
     assert len(duplicate_events) == 1, (
         f"expected exactly one dept_duplicate_id audit row; got "
-        f"{[e.action for e in audit.events]!r} (Requirement 3.9)."
+        f"{[e.action for e in audit.events]!r} (the operational rule)."
     )
     dup = duplicate_events[0]
     assert dup.actor_role == "admin"
@@ -589,7 +587,7 @@ def test_p6g_duplicate_id_emits_audit_and_clears_staging(
 
 
 # ---------------------------------------------------------------------------
-# Property 6h — failure during Vault staging→final promotion rolls back
+# invariant — failure during Vault staging→final promotion rolls back
 # ---------------------------------------------------------------------------
 
 
@@ -602,24 +600,24 @@ def test_p6g_duplicate_id_emits_audit_and_clears_staging(
 def test_p6h_promotion_failure_rolls_back_vault_and_db(
     plain_token: str,
 ) -> None:
-    """Property 6h — Vault promotion failure cleans up partial state.
+    """invariant — Vault promotion failure cleans up partial state.
 
-    **Validates: Requirements 3.6, 9.3**
 
-    When the staging → final ``write`` fails (eg. transient Vault
-    HTTP 5xx during the move), the orchestrator must:
 
-    1. Re-raise the underlying exception.
-    2. Delete the staging key (rollback).
-    3. NOT leave a final path behind (we never wrote the final path
-       successfully because the write itself failed).
-    4. Emit ``dept_create_failed`` with ``actor_role`` carried.
+ When the staging → final ``write`` fails (eg. transient Vault
+ HTTP 5xx during the move), the orchestrator must:
 
-    The DB transaction itself is rolled back by ``with_dept_session``
-    on exception, so even though the INSERT statements completed
-    inside the fake connection, the property of "no half-committed
-    state" is preserved end-to-end.
-    """
+ 1. Re-raise the underlying exception.
+ 2. Delete the staging key (rollback).
+ 3. NOT leave a final path behind (we never wrote the final path
+ successfully because the write itself failed).
+ 4. Emit ``dept_create_failed`` with ``actor_role`` carried.
+
+ The DB transaction itself is rolled back by ``with_dept_session``
+ on exception, so even though the INSERT statements completed
+ inside the fake connection, the property of "no half-committed
+ state" is preserved end-to-end.
+ """
 
     vault = _FakeVaultBackend(
         write_failure_paths=frozenset({"vault:atlassian/acme/jira"}),
@@ -650,8 +648,8 @@ def test_p6h_promotion_failure_rolls_back_vault_and_db(
         raised = exc
 
     assert raised is not None, (
-        "Property 6h violated: Vault promotion failure was not surfaced "
-        "by the orchestrator (Requirement 3.6)."
+        "invariant violated: Vault promotion failure was not surfaced "
+        "by the orchestrator (the operational rule)."
     )
 
     # The staging path may or may not still be present depending on
@@ -662,29 +660,29 @@ def test_p6h_promotion_failure_rolls_back_vault_and_db(
     # ``except`` in ``run``.
     finals = _final_paths(vault)
     assert finals == [], (
-        f"Property 6h violated: a final Vault path was committed "
-        f"despite the promotion failure ({finals!r}); Requirement 3.6 "
+        f"invariant violated: a final Vault path was committed "
+        f"despite the promotion failure ({finals!r}); the operational rule "
         f"forbids any half-committed Vault state."
     )
 
     # Staging keys must be cleaned up by the outer rollback.
     assert _staging_paths(vault) == [], (
-        f"Property 6h violated: staging keys remain after promotion "
-        f"failure ({_staging_paths(vault)!r}); Requirement 3.6 requires "
+        f"invariant violated: staging keys remain after promotion "
+        f"failure ({_staging_paths(vault)!r}); the operational rule requires "
         f"staging cleanup on every failure path."
     )
 
     # Audit invariants.
     failed_events = [e for e in audit.events if e.action == "dept_create_failed"]
     assert len(failed_events) == 1, (
-        f"Property 6h violated: expected exactly one dept_create_failed "
+        f"invariant violated: expected exactly one dept_create_failed "
         f"audit row; got {[e.action for e in audit.events]!r}."
     )
     assert failed_events[0].actor_role == "admin"
     assert failed_events[0].result == "error"
     assert failed_events[0].dept_id == request.dept_id
 
-    # Plain-text leak parity (Requirement 3.4).
+    # Plain-text leak parity.
     for event in audit.events:
         assert plain_token not in repr(event.payload or {})
         assert plain_token not in event.resource

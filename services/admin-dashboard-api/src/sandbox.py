@@ -1,13 +1,8 @@
-"""``PromptSandbox`` — isolated LLM invocation for prompt drafts (task 6.2).
+"""``PromptSandbox`` — isolated LLM invocation for prompt drafts.
 
-This module is task **6.2** of the ``platform-mimari-ops`` plan.
-It implements the design described in ``design.md`` §`PromptSandbox`
-and satisfies Requirement **2.4**:
-
-    THE Prompt_Sandbox SHALL bir prompt draft'ı için izole bir LLM
-    çağrısı yapar; sample input + draft prompt → LLM response döner;
-    bu çağrı production workflow'larını etkilemez ve cost hesabı
-    ``sandbox`` tag'i ile ayrılır.
+The sandbox performs one isolated LLM call for a prompt draft: sample
+input plus draft prompt produces an LLM response, does not affect
+production workflows, and records cost with the ``sandbox`` tag.
 
 The sandbox is the **single isolation point** between the prompt
 editor (admin-dashboard ``/prompts``) and the live LLM. Three
@@ -21,9 +16,9 @@ invariants matter:
    open a Bitbucket PR or post a Confluence page.
 2. **Cost tagged ``"sandbox"``.** Every LLM round-trip in the
    sandbox is recorded with ``cost_tag="sandbox"`` against
-   ``shared.cost_tracking``. ``BudgetCapPolicy`` (task 7.3) filters
+   ``shared.cost_tracking``. ``BudgetCapPolicy`` filters
    on ``cost_tag = 'production'`` so sandbox usage never eats into a
-   department's weekly / monthly cap (Requirement 5.5).
+   department's weekly / monthly cap.
 3. **Deterministic ``SandboxResult``.** The return value is a frozen
    dataclass carrying ``response_text``, ``token_in``, ``token_out``,
    ``cost_usd`` and ``invoked_at``. Callers (the
@@ -113,18 +108,15 @@ class LlmInvocationResult:
 class SandboxResult:
     """Frozen result returned by :meth:`PromptSandbox.run`.
 
-    Mirrors the design pseudocode in ``design.md`` §`PromptSandbox`
-    and the request bullet on task 6.2 (
-    "``SandboxResult`` frozen dataclass döner (``response_text``,
-    ``token_in``, ``token_out``, ``cost_usd``, ``invoked_at``)").
+    Carries ``response_text``, ``token_in``, ``token_out``,
+    ``cost_usd`` and ``invoked_at``.
 
     The callers that consume this shape:
 
     * The ``POST /admin/prompts/{path}/sandbox-test`` HTTP handler in
       :mod:`src.routers.prompts_git`, which serialises it to JSON
       for the admin UI.
-    * The PR description renderer (``_render_pr_description`` in
-      task 6.3) which embeds the last N sandbox results as a Markdown
+    * The PR description renderer, which embeds the last N sandbox results as a Markdown
       table.
     """
 
@@ -152,16 +144,15 @@ class LlmInvokerLike(Protocol):
 
     The sandbox does **not** stream — it issues one request, waits
     for the full response, records its cost and returns. This keeps
-    the collaborator surface tiny: tasks 4.3
-    (``LlmOrchestrator.stream_with_tool_loop``) and 6.2 (this
-    sandbox) are deliberately separate code paths because their
+    the collaborator surface tiny: ``LlmOrchestrator.stream_with_tool_loop``
+    and this sandbox are deliberately separate code paths because their
     failure modes differ — the streaming chat loop has retry +
     fallback + token cap, while the sandbox never retries (a sandbox
     test that fails should surface the error to the developer
     immediately).
 
     Production wiring will adapt
-    :class:`assistant_service.llm.LlmOrchestrator` (task 4.3) into
+    :class:`assistant_service.llm.LlmOrchestrator` into
     an :class:`LlmInvokerLike` by collapsing its async-generator
     surface into a single coroutine; the ``cost_tag`` keyword is
     forwarded to the provider so the cost record carries the
@@ -194,7 +185,7 @@ class CostEntryLike:
     Mirrors the columns of ``shared.cost_tracking``
     (``platform/infra/postgres/20_ops.sql``). Held here as a
     package-local dataclass so the sandbox does not have to import
-    from a not-yet-existing ``libs/cost-tracking`` (task 7.1) — the
+    from a cost-tracking package — the
     real ``cost_tracking.CostEntry`` will share the same field names
     so the swap is mechanical.
 
@@ -202,7 +193,7 @@ class CostEntryLike:
         activity_id: Globally unique identifier for the LLM round
             trip; the ``UNIQUE`` constraint on
             ``shared.cost_tracking.activity_id`` makes the insert
-            idempotent (Property 6).
+            idempotent.
         dept_id: Department the prompt belongs to. Sandbox calls do
             not reduce a dept's budget, but the row is still tagged
             with the originating dept so the costs panel can
@@ -235,7 +226,7 @@ class CostEntryLike:
 
 @runtime_checkable
 class CostTrackerLike(Protocol):
-    """``CostTracker.record`` write surface (task 7.1 placeholder).
+    """``CostTracker.record`` write surface.
 
     The sandbox is the first caller of this protocol; the production
     implementation (``libs/cost-tracking/src/cost_tracking/tracker.py``)
@@ -250,15 +241,15 @@ class CostTrackerLike(Protocol):
 
 
 # ---------------------------------------------------------------------------
-# Defaults — used by tests and by the scaffold standalone mode
+# Defaults — used by tests and standalone mode
 # ---------------------------------------------------------------------------
 
 
 class NullCostTracker:
     """No-op cost tracker.
 
-    Returned by the lifespan hook in :mod:`src.main` while task 7.1
-    (``libs/cost-tracking``) is in flight, and used by the unit tests
+    Returned by the lifespan hook in :mod:`src.main` when the
+    cost-tracking backend is unavailable, and used by the unit tests
     that focus on sandbox behaviour rather than the cost write path.
     The class still satisfies :class:`CostTrackerLike` so the
     sandbox does not need a separate code path for "no tracker
@@ -379,11 +370,6 @@ class ProviderLlmInvoker:
 
 class PromptSandbox:
     """Isolated LLM call for prompt drafts.
-
-    Validates:
-        * **R2.4** — sandbox does not trigger production workflows;
-          the LLM is called with ``cost_tag="sandbox"`` so cost
-          tracking does not deduct from dept budget.
 
     Args:
         llm: Single-shot LLM invoker (any object satisfying

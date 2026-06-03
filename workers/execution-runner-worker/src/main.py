@@ -4,17 +4,15 @@ The worker connects to the Temporal cluster pointed at by the
 ``TEMPORAL_HOST`` environment variable (default ``temporal:7233``) and
 registers a ``Worker`` on the ``execution-runner`` task queue.
 
-Workflow and activity registrations are intentionally empty in this
-scaffold task; subsequent tasks will populate them. If the connection
-to Temporal cannot be established the process exits with a non-zero
-status code so that the orchestrating Compose stack / supervisor can
-restart it (Requirement 3.7).
+If the connection to Temporal cannot be established the process exits with a
+non-zero status code so that the orchestrating Compose stack / supervisor can
+restart it.
 
-Boot-time seed (platform-quick-fixes task 7.2):
+Boot-time seed:
 When ``SSH_HOST`` env is set, the worker seeds a ``runner_id='default'``
 row into ``infrastructure.ssh_runners`` and assigns all existing
 departments to it. This provides backward compatibility for deployments
-migrating from the single-runner model to the multi-runner pool (R4.3).
+migrating from the single-runner model to the multi-runner pool.
 """
 
 from __future__ import annotations
@@ -42,8 +40,8 @@ async def main() -> None:
         format="%(asctime)s %(levelname)s %(name)s %(message)s",
     )
 
-    # Y4 fix (GEREKSINIM_ANALIZI.md): install the redaction filter
-    # immediately after basicConfig. The execution-runner-worker
+    # Install the redaction filter immediately after basicConfig. The
+    # execution-runner-worker
     # handles SSH credentials and Vault tokens — leaks here have the
     # widest blast radius. Idempotent: re-installing on the same root
     # is a no-op (Python ``addFilter`` deduplicates).
@@ -88,8 +86,8 @@ async def main() -> None:
         ssh_run_test,
         vault_fetch_ssh_credentials,
     )
-    # platform-completion task 26.3 — new docker/credential/disk-quota
-    # activities. The four already-exported docker activities plus
+    # Docker, credential, and disk-quota activities. The four
+    # already-exported docker activities plus
     # check_disk_quota come through ``src.activities`` above; the
     # remaining docker activities (build_image, collect_logs,
     # daemon_healthcheck) and the credential injector pair are
@@ -109,8 +107,7 @@ async def main() -> None:
         ExecutionRunWorkflow,
         LegacyExecutionRunWorkflow,
     )
-    # platform-completion task 26.3 — periodic SSH healthcheck cron
-    # workflow (Requirements 14.1–14.5).
+    # Periodic SSH healthcheck cron workflow.
     from src.workflows.ssh_healthcheck_cron import SSHHealthcheckCronWorkflow
 
     worker = Worker(
@@ -119,7 +116,7 @@ async def main() -> None:
         workflows=[
             ExecutionRunWorkflow,
             LegacyExecutionRunWorkflow,
-            # platform-completion task 26.3
+            # Periodic SSH healthcheck cron workflow.
             SSHHealthcheckCronWorkflow,
         ],
         activities=[
@@ -134,9 +131,9 @@ async def main() -> None:
             docker_run_container,
             docker_stop_container,
             docker_cleanup_container,
-            # platform-completion task 26.3 — new activities. The
+            # Docker, credential, and disk-quota activities. The
             # docker_run/stop/cleanup trio above is preserved verbatim
-            # from the foundation scaffold; the additions below cover
+            # from the existing worker; the additions below cover
             # build, log collection, daemon healthcheck, the git
             # credential injector pair, and disk-quota enforcement.
             docker_build_image,
@@ -158,11 +155,11 @@ async def main() -> None:
         ],
     )
 
-    # ---- Boot-time seed: default runner from SSH_HOST (task 7.2) ----
+    # ---- Boot-time seed: default runner from SSH_HOST ----
     # When SSH_HOST env is set, seed a 'default' runner into the
     # infrastructure.ssh_runners table and assign all existing departments
     # to it. This provides backward compatibility for deployments migrating
-    # from the single-runner model to the multi-runner pool (R4.3, R4.17).
+    # from the single-runner model to the multi-runner pool.
     try:
         import asyncpg  # type: ignore[import-not-found]
 

@@ -1,7 +1,7 @@
 -- 010_prompt_versions.sql
--- Spec: platform-gap-fill — Task 14.3 (Prompt Versioning Schema)
+-- Prompt versioning schema migration.
 --
--- Adds the table required by the prompt versioning feature (R14.x):
+-- Adds the table used by the prompt versioning feature:
 --   1. shared.prompt_versions — Audit trail for prompt file changes
 --
 -- Each row represents one committed change to a prompt file in
@@ -11,14 +11,13 @@
 -- and the URL of the Bitbucket draft PR that carries the commit.
 --
 -- The table is append-only and serves as the source for the
--- `prompt_updated` audit event (R14.4). The (prompt_name, created_at DESC)
+-- `prompt_updated` audit event. The (prompt_name, created_at DESC)
 -- index supports the most common lookup pattern: "give me the version
 -- history for prompt X, newest first".
 --
 -- Idempotent — uses IF NOT EXISTS guards so re-running on an already-migrated
 -- database is a no-op.
 --
--- Requirements: 14.4
 
 -- =============================================================================
 -- 1. prompt_versions — Prompt change audit trail

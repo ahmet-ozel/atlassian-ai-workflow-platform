@@ -1,4 +1,4 @@
-"""PR draft enforcement — MIMARI §1 Rule 10 (Requirement 1.9).
+"""PR draft enforcement.
 
 When an LLM (or any other caller) hands us a pull request creation
 payload whose ``draft`` field is ``False`` or absent, this module
@@ -13,9 +13,7 @@ every outgoing payload through :func:`enforce_pr_draft` before
 handing it off to a transport.
 
 The enforcement is unconditional — we never trust the caller's intent
-on this field. R1.9 is phrased as "regardless of input"; the property
-test (``tests/property/test_pr_draft_enforcement.py`` — task 2.8)
-verifies the universal property for arbitrary inputs.
+on this field. Tests verify the universal property for arbitrary inputs.
 """
 
 from __future__ import annotations
@@ -36,8 +34,7 @@ if TYPE_CHECKING:
 # ---------------------------------------------------------------------------
 
 #: Audit ``action`` value emitted whenever the function had to flip a
-#: ``False`` (or missing) ``draft`` field. Mirrors the design.md §
-#: ``libs/mcp_client`` table.
+#: ``False`` (or missing) ``draft`` field.
 PR_DRAFT_AUDIT_ACTION: Final[str] = "pr_draft_enforced"
 
 
@@ -58,8 +55,8 @@ async def enforce_pr_draft(
 ) -> dict[str, Any]:
     """Return a copy of ``payload`` with ``draft`` forced to ``True``.
 
-    Per R1.9 / MIMARI §1 Kural 10: every outgoing PR payload must have
-    ``draft=True``. The function is unconditional — if the caller's
+    Every outgoing PR payload must have ``draft=True``. The function is
+    unconditional — if the caller's
     payload says ``draft=False`` (or omits the field) we overwrite it
     and emit a ``pr_draft_enforced`` audit event so the override is
     traceable.

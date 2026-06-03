@@ -2,9 +2,9 @@
  * StateBadge — Lifecycle state pill rendered next to a service row /
  * the service detail header.
  *
- * Implements platform-mimari-uyumluluk task 7.6 (R12 / Q14): renders the
- * full :class:`ServiceState` literal (six values) with a colour matching
- * design §3.10 plus the ``running_unmonitored`` extension.
+ * Renders the
+ * full :class:`ServiceState` literal (six values) with the expected
+ * colour mapping plus the ``running_unmonitored`` extension.
  *
  * Colour scheme
  * -------------
@@ -13,7 +13,7 @@
  * - ``running``              → green (#16a34a)
  * - ``unhealthy``            → yellow (#facc15)
  * - ``failed``               → red (#dc2626)
- * - ``running_unmonitored``  → grey (#cbd5e1) + tooltip (Requirement 12.3)
+ * - ``running_unmonitored``  → grey (#cbd5e1) + tooltip
  *
  * The component is a *pure* presentational widget. Polling, refresh,
  * error handling and modal state remain in the parent page so that the
@@ -42,7 +42,7 @@ const STATE_BADGE_STYLE: Record<ServiceState, CSSProperties> = {
 /**
  * Tooltip surfaced via the native ``title`` attribute. Only the
  * ``running_unmonitored`` state currently sets a non-empty tooltip
- * (Requirement 12.3 — design §3.x: "Compose healthcheck tanımlı değil
+ * ("Compose healthcheck tanımlı değil
  * — monitorlanmıyor").
  */
 const STATE_TOOLTIP: Partial<Record<ServiceState, string>> = {

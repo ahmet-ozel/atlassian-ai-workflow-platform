@@ -1,7 +1,4 @@
-"""Property tests for the LLM task-analysis JSON parser.
-
-**Property 14: LLM task-analysis JSON parser zorunlu alanlar**
-**Validates: Requirements 6.7**
+"""Tests for the LLM task-analysis JSON parser.
 
 For any LLM JSON response, the parser
 (``platform/workers/agent-runner-worker/src/prompts/parser.py``,
@@ -16,8 +13,7 @@ For any LLM JSON response, the parser
 
 3. **Required-field enforcement** — when any of the workflow-type-specific
    required fields is missing, the parser raises
-   :class:`TaskAnalysisError`.  The required-field list per spec
-   ``platform-mimari-workflows`` task 10.1 is:
+   :class:`TaskAnalysisError`. The required-field list is:
 
    * ``code_change_with_test`` / ``code_change_commit_only`` / ``pr_review`` /
      ``remote_ssh_test_only``: ``{workflow_type, confidence, output_actions,
@@ -34,14 +30,11 @@ For any LLM JSON response, the parser
    :class:`TaskAnalysis`.
 
 5. **Draft coercion** — any ``bitbucket_pr`` action has its ``draft``
-   field coerced to ``True`` (MIMARI §1 Kural 10).
+   field coerced to ``True``.
 
 The :class:`TaskAnalysisError` symbol is the project-local equivalent of
-the ``TaskAnalysisParseError`` named in spec text; the spec helper
-:func:`parse_task_analysis` lives at
-``platform/workers/agent-runner-worker/src/prompts/parser.py`` until the
-``temporal_shared.task_analysis`` module from task 10.1 lands, at which
-point the import path may move.
+``TaskAnalysisParseError``. :func:`parse_task_analysis` lives at
+``platform/workers/agent-runner-worker/src/prompts/parser.py``.
 """
 
 from __future__ import annotations
@@ -87,23 +80,20 @@ from src.prompts.parser import (  # noqa: E402
 from temporal_shared.capabilities import WORKFLOW_TYPE_CAPABILITIES  # noqa: E402
 
 # ``TaskAnalysisParseError`` is the spec-name; the implementation file
-# uses ``TaskAnalysisError``.  Alias for forward-compatibility with task
-# 10.1 (``temporal_shared.task_analysis.TaskAnalysisParseError``).
+# uses ``TaskAnalysisError``. Alias for forward-compatibility with
+# ``temporal_shared.task_analysis.TaskAnalysisParseError``.
 TaskAnalysisParseError = TaskAnalysisError
 
 
 # ---------------------------------------------------------------------------
-# Required-field map (mirrors spec ``platform-mimari-workflows`` task 10.1)
+# Required-field map
 # ---------------------------------------------------------------------------
 
 #: Per-workflow-type required-field map.  ``confidence`` and
 #: ``output_actions`` are required for every workflow type; the entries
 #: below list the *additional* type-specific fields.
 #:
-#: The capability mapping in the foundation spec uses ``research_basic`` /
-#: ``research_with_web`` (rather than the workflow spec's
-#: ``research_publish_confluence`` / ``research_summary_jira`` aliases);
-#: this table follows the foundation key set so the assertion against
+#: This table follows the capability key set so the assertion against
 #: :data:`WORKFLOW_TYPE_CAPABILITIES` stays in sync.
 _TYPE_SPECIFIC_REQUIRED: Mapping[str, frozenset[str]] = {
     "code_change_with_test":   frozenset({"target_repo", "target_branch"}),
@@ -208,7 +198,7 @@ def valid_task_analysis_dict(draw: st.DrawFn) -> dict:
     The dict carries the *core* required fields plus the
     workflow-type-specific extras drawn from
     :data:`_TYPE_SPECIFIC_REQUIRED`, so it is a positive example for the
-    Requirement 6.7 contract.
+    required-field contract.
     """
     confidence = draw(valid_confidences)
     workflow_type = draw(valid_workflow_types)
@@ -225,7 +215,7 @@ def valid_task_analysis_dict(draw: st.DrawFn) -> dict:
     else:
         result["needs_info_question"] = None
 
-    # Type-specific extras (Requirement 6.7 field list).
+    # Type-specific extras.
     extras = _TYPE_SPECIFIC_REQUIRED[workflow_type]
     if "target_repo" in extras:
         result["target_repo"] = draw(valid_identifier_text)
@@ -234,8 +224,8 @@ def valid_task_analysis_dict(draw: st.DrawFn) -> dict:
     if "target_lang" in extras:
         result["target_lang"] = draw(st.sampled_from(["tr", "en"]))
     if "children" in extras:
-        # children for multi_step — minimal schema (task 10.3 owns the
-        # full structure); we only need the field to be present.
+        # children for multi_step — minimal schema; we only need the
+        # field to be present.
         result["children"] = [
             {"workflow_type": draw(st.sampled_from(
                 [k for k in WORKFLOW_TYPE_CAPABILITIES if k != "multi_step"]
@@ -247,15 +237,12 @@ def valid_task_analysis_dict(draw: st.DrawFn) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Property 14.A — successful parse implies workflow_type ∈ keys
+# Successful parse implies workflow_type ∈ keys
 # ---------------------------------------------------------------------------
 
 
 class TestSuccessfulParseInWhitelist:
-    """**Validates: Requirements 6.7**
-
-    Any successful parse yields ``workflow_type ∈ WORKFLOW_TYPE_CAPABILITIES``.
-    """
+    """Any successful parse yields ``workflow_type ∈ WORKFLOW_TYPE_CAPABILITIES``."""
 
     @settings(max_examples=100, deadline=None,
               suppress_health_check=[HealthCheck.too_slow])
@@ -280,15 +267,12 @@ class TestSuccessfulParseInWhitelist:
 
 
 # ---------------------------------------------------------------------------
-# Property 14.B — workflow_type ∉ keys raises TaskAnalysisParseError
+# workflow_type ∉ keys raises TaskAnalysisParseError
 # ---------------------------------------------------------------------------
 
 
 class TestWorkflowTypeWhitelistRejected:
-    """**Validates: Requirements 6.7**
-
-    Any ``workflow_type`` not in the capability mapping is rejected.
-    """
+    """Any ``workflow_type`` not in the capability mapping is rejected."""
 
     @settings(max_examples=100, deadline=None,
               suppress_health_check=[HealthCheck.too_slow, HealthCheck.filter_too_much])
@@ -323,14 +307,12 @@ class TestWorkflowTypeWhitelistRejected:
 
 
 # ---------------------------------------------------------------------------
-# Property 14.C — required-field enforcement (universal fields)
+# Required-field enforcement (universal fields)
 # ---------------------------------------------------------------------------
 
 
 class TestRequiredFieldsAlwaysEnforced:
-    """**Validates: Requirements 6.7**
-
-    The universal required-field set
+    """The universal required-field set
     ``{workflow_type, confidence, output_actions}`` is enforced for every
     workflow type — removing any one of them raises
     :class:`TaskAnalysisParseError`.
@@ -367,7 +349,7 @@ class TestRequiredFieldsAlwaysEnforced:
 
 
 # ---------------------------------------------------------------------------
-# Property 14.D — type-specific required fields
+# Type-specific required fields
 # ---------------------------------------------------------------------------
 
 
@@ -377,9 +359,7 @@ def _workflow_types_with_extras() -> list[str]:
 
 
 class TestTypeSpecificRequiredFields:
-    """**Validates: Requirements 6.7**
-
-    Each workflow_type defines its own additional required-field set; if
+    """Each workflow_type defines its own additional required-field set; if
     any one of those fields is missing the parser must raise
     :class:`TaskAnalysisParseError`.
 
@@ -442,14 +422,12 @@ class TestTypeSpecificRequiredFields:
 
 
 # ---------------------------------------------------------------------------
-# Property 14.E — round-trip stability for valid inputs
+# Round-trip stability for valid inputs
 # ---------------------------------------------------------------------------
 
 
 class TestRoundTrip:
-    """**Validates: Requirements 6.7**
-
-    Successful parses round-trip through :func:`format_task_analysis`
+    """Successful parses round-trip through :func:`format_task_analysis`
     without information loss.
     """
 
@@ -472,14 +450,12 @@ class TestRoundTrip:
 
 
 # ---------------------------------------------------------------------------
-# Property 14.F — bitbucket_pr draft coercion (MIMARI §1 Kural 10)
+# bitbucket_pr draft coercion
 # ---------------------------------------------------------------------------
 
 
 class TestDraftCoercion:
-    """**Validates: Requirements 6.7** (cross-references MIMARI §1 K10)
-
-    A ``bitbucket_pr`` action's ``draft`` field is always ``True`` after
+    """A ``bitbucket_pr`` action's ``draft`` field is always ``True`` after
     parsing, regardless of input value.
     """
 

@@ -1,11 +1,10 @@
-"""CI gate — Jira issue template (`platform-mimari-ops` task 15.7).
+"""CI gate — Jira issue template (ops work).
 
-**Validates: Requirement 9.4**
 
 The standard Jira issue template ships under
 ``platform/docs/jira-templates/`` (or, when the dedicated directory
 is absent, ``platform/prompts/task_creation_assistant.md`` is
-the canonical fallback per ``platform-real-usage-gaps`` R3). The gate
+the canonical fallback per ``real-usage gap work`` ). The gate
 asserts at least one of the two ships and references the mandatory
 fields the ``task-creator`` flow expects.
 """
@@ -23,7 +22,7 @@ def _candidate_templates() -> list[Path]:
     template_dir = _DOCS_DIR / "jira-templates"
     if template_dir.is_dir():
         candidates.extend(p for p in template_dir.glob("*.md") if p.is_file())
-    # Canonical prompt location (platform-real-usage-gaps R3)
+    # Canonical prompt location (real-usage gap work )
     canonical = _PLATFORM_ROOT / "prompts" / "task_creation_assistant.md"
     if canonical.is_file():
         candidates.append(canonical)
@@ -33,7 +32,7 @@ def _candidate_templates() -> list[Path]:
 def test_at_least_one_jira_template_ships() -> None:
     candidates = _candidate_templates()
     assert candidates, (
-        "No Jira issue template found. Task 15.4 ships either "
+        "No Jira issue template found. the implementation ships either "
         "platform/docs/jira-templates/*.md or "
         "platform/prompts/task_creation_assistant.md."
     )

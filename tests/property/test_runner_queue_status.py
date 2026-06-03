@@ -1,8 +1,4 @@
-"""Property test: Runner Queue Status endpoint logic.
-
-Spec: ``platform-real-usage-gaps`` — Property 16.
-
-**Validates: Requirements 15.2, 15.3, 15.5**
+"""Property-based tests for Runner Queue Status endpoint logic.
 
 Background
 ----------
@@ -270,10 +266,7 @@ def workspace_fixtures(draw: st.DrawFn) -> list[WorkspaceRow]:
 
 
 class TestRunnerQueueStatusActiveCount:
-    """**Validates: Requirements 15.2, 15.3, 15.5**
-
-    (a) active_count correctly counts status='running' rows.
-    """
+    """active_count correctly counts status='running' rows."""
 
     @given(workspaces=workspace_fixtures())
     @settings(max_examples=50)
@@ -289,10 +282,7 @@ class TestRunnerQueueStatusActiveCount:
 
 
 class TestRunnerQueueStatusQueuedCount:
-    """**Validates: Requirements 15.2, 15.3, 15.5**
-
-    (b) queued_count correctly counts status='queued' rows.
-    """
+    """queued_count correctly counts status='queued' rows."""
 
     @given(workspaces=workspace_fixtures())
     @settings(max_examples=50)
@@ -308,10 +298,7 @@ class TestRunnerQueueStatusQueuedCount:
 
 
 class TestRunnerQueueStatusAvgWait:
-    """**Validates: Requirements 15.2, 15.3, 15.5**
-
-    (c) avg_wait_seconds is computed from the last 10 completed workspaces.
-    """
+    """avg_wait_seconds is computed from the last 10 completed workspaces."""
 
     @given(workspaces=workspace_fixtures())
     @settings(max_examples=50)
@@ -387,10 +374,7 @@ class TestRunnerQueueStatusAvgWait:
 
 
 class TestRunnerQueueStatusMaxConcurrent:
-    """**Validates: Requirements 15.2, 15.3, 15.5**
-
-    (d) max_concurrent_global matches the RUNNER_MAX_CONCURRENT env.
-    """
+    """max_concurrent_global matches the RUNNER_MAX_CONCURRENT env."""
 
     def test_max_concurrent_matches_env_default(self) -> None:
         """max_concurrent_global defaults to 5 (RUNNER_MAX_CONCURRENT)."""
@@ -409,10 +393,7 @@ class TestRunnerQueueStatusMaxConcurrent:
 
 
 class TestRunnerQueueStatusByDept:
-    """**Validates: Requirements 15.2, 15.3, 15.5**
-
-    (e) by_dept breakdown is correct per department.
-    """
+    """by_dept breakdown is correct per department."""
 
     @given(workspaces=workspace_fixtures())
     @settings(max_examples=50)
@@ -491,10 +472,7 @@ class TestRunnerQueueStatusByDept:
 
 
 class TestRunnerQueueStatusResponseShape:
-    """**Validates: Requirements 15.2, 15.3, 15.5**
-
-    The response shape matches the R15.1 schema.
-    """
+    """The response shape matches the queue-status schema."""
 
     def test_response_has_all_required_fields(self) -> None:
         """Response contains all required top-level fields."""

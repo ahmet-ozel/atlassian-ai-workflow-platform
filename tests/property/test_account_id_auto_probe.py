@@ -1,8 +1,4 @@
-"""Property test 6 — Account ID Auto-Probe (Startup + Post-Create).
-
-Spec: ``platform-real-usage-gaps`` — Property 6.
-
-**Validates: Requirements 6.1, 6.2, 6.3, 6.7**
+"""Account ID Auto-Probe behavior for startup and post-create flows.
 
 Background
 ----------
@@ -12,18 +8,18 @@ When the ``automation-service`` starts up, it queries
 account_id = ''``. For each such row it issues an Atlassian read probe
 (``/myself`` for Jira/Confluence, ``/user`` for Bitbucket) and upserts
 the resolved ``account_id`` into ``automation.department_bot_identity``.
-Failures are audited but **never block** service startup (R6.1 best-effort).
+Failures are audited but **never block** service startup ( best-effort).
 
 After a credential is added via
 ``POST /admin/departments/{id}/credentials/{service}``, an inline bot
 identity probe runs. On success the response carries
 ``account_id_probe_status: "ok"`` and the resolved ``account_id``.
 On failure the response is still 200 but with
-``account_id_probe_status: "failed"`` (R6.2).
+``account_id_probe_status: "failed"``.
 
 The wizard endpoint (``POST /admin/departments/wizard``) runs the
 identity probe atomically — if any probe fails, the department's mode
-is downgraded to ``"disabled"`` (R6.3).
+is downgraded to ``"disabled"``.
 
 Strategy
 --------
@@ -61,7 +57,7 @@ import pytest
 # ---------------------------------------------------------------------------
 #
 # The ``automation-service`` source tree co-exists with the
-# multi-service-scaffold legacy ``src/main.py`` + ``src/config.py``
+# legacy ``src/main.py`` + ``src/config.py``
 # layer; importing the ``automation_service`` package eagerly executes
 # ``automation_service/__init__.py`` which in turn loads
 # ``automation_service.app`` whose top-of-module imports reach for
@@ -131,9 +127,9 @@ class FakeFailingReader:
 class FakeBotIdentityProber:
     """Prober that returns deterministic results based on a mapping.
 
-    The mapping is keyed by ``(dept_id, service)`` and values are
-    either a string (resolved account_id) or ``None`` (probe failure).
-    """
+ The mapping is keyed by ``(dept_id, service)`` and values are
+ either a string (resolved account_id) or ``None`` (probe failure).
+ """
 
     def __init__(
         self,
@@ -261,17 +257,15 @@ def _dept_bot_missing_rows(draw: st.DrawFn) -> list[DeptBotMissingRow]:
 
 
 # ---------------------------------------------------------------------------
-# Property 6: Account ID Auto-Probe — Startup
+# Account ID Auto-Probe — Startup
 # ---------------------------------------------------------------------------
 
 
 class TestAutoProbeStartupFillsMissingIds:
-    """**Validates: Requirements 6.1, 6.7**
-
-    At startup, the auto-probe hook queries department_bots for rows
-    with NULL/empty account_id and fills them via Atlassian API probe.
-    Successful probes result in DB upserts and audit events.
-    """
+    """At startup, the auto-probe hook queries department_bots for rows
+ with NULL/empty account_id and fills them via Atlassian API probe.
+ Successful probes result in DB upserts and audit events.
+ """
 
     @settings(
         max_examples=100,
@@ -282,8 +276,8 @@ class TestAutoProbeStartupFillsMissingIds:
     def test_all_successful_probes_fill_account_ids(
         self, rows: list[DeptBotMissingRow]
     ) -> None:
-        """R6.1: When all probes succeed, every missing account_id is
-        filled via upsert to department_bot_identity."""
+        """When all probes succeed, every missing account_id is
+ filled via upsert to department_bot_identity."""
 
         # Clear the module-level cache before each test
         _probe_cache.clear()
@@ -336,8 +330,8 @@ class TestAutoProbeStartupFillsMissingIds:
     def test_probe_results_are_cached(
         self, rows: list[DeptBotMissingRow]
     ) -> None:
-        """R6.4: Probe results are cached for 5 minutes; re-running
-        the startup hook does not re-probe the same (dept_id, service)."""
+        """Probe results are cached for 5 minutes; re-running
+ the startup hook does not re-probe the same (dept_id, service)."""
 
         _probe_cache.clear()
 
@@ -380,12 +374,10 @@ class TestAutoProbeStartupFillsMissingIds:
 
 
 class TestAutoProbeStartupNeverBlocks:
-    """**Validates: Requirements 6.1, 6.7**
-
-    Probe failures (network errors, auth failures, DB write errors)
-    MUST NOT block service startup. The function always returns
-    gracefully with failure results.
-    """
+    """Probe failures (network errors, auth failures, DB write errors)
+ MUST NOT block service startup. The function always returns
+ gracefully with failure results.
+ """
 
     @settings(
         max_examples=100,
@@ -396,8 +388,8 @@ class TestAutoProbeStartupNeverBlocks:
     def test_probe_failures_do_not_raise(
         self, rows: list[DeptBotMissingRow]
     ) -> None:
-        """R6.1: When probes fail (return None), the function does not
-        raise — it returns failure results and audits them."""
+        """When probes fail (return None), the function does not
+ raise — it returns failure results and audits them."""
 
         _probe_cache.clear()
 
@@ -445,8 +437,8 @@ class TestAutoProbeStartupNeverBlocks:
     def test_probe_exceptions_do_not_raise(
         self, rows: list[DeptBotMissingRow]
     ) -> None:
-        """R6.1: When probes throw exceptions, the function catches
-        them and treats them as failures without blocking startup."""
+        """When probes throw exceptions, the function catches
+ them and treats them as failures without blocking startup."""
 
         _probe_cache.clear()
 
@@ -473,8 +465,8 @@ class TestAutoProbeStartupNeverBlocks:
         assert all(not r.success for r in results)
 
     def test_reader_failure_does_not_raise(self) -> None:
-        """R6.1: When the DB reader itself fails, the function returns
-        an empty list without raising."""
+        """When the DB reader itself fails, the function returns
+ an empty list without raising."""
 
         _probe_cache.clear()
 
@@ -503,8 +495,8 @@ class TestAutoProbeStartupNeverBlocks:
     def test_db_write_failure_does_not_block(
         self, rows: list[DeptBotMissingRow]
     ) -> None:
-        """R6.1: When the DB writer fails (upsert error), the probe
-        result is marked as failure but startup is not blocked."""
+        """When the DB writer fails (upsert error), the probe
+ result is marked as failure but startup is not blocked."""
 
         _probe_cache.clear()
 
@@ -537,12 +529,10 @@ class TestAutoProbeStartupNeverBlocks:
 
 
 class TestAutoProbeStartupMixedResults:
-    """**Validates: Requirements 6.1, 6.7**
-
-    When some probes succeed and some fail, the successful ones are
-    committed and the failures are audited — partial success is the
-    expected behavior.
-    """
+    """When some probes succeed and some fail, the successful ones are
+ committed and the failures are audited — partial success is the
+ expected behavior.
+ """
 
     @settings(
         max_examples=100,
@@ -553,8 +543,8 @@ class TestAutoProbeStartupMixedResults:
     def test_partial_success_commits_successful_probes(
         self, rows: list[DeptBotMissingRow]
     ) -> None:
-        """R6.1, R6.7: In a mixed scenario, successful probes are
-        committed while failures are audited. Neither blocks the other."""
+        """In a mixed scenario, successful probes are
+ committed while failures are audited. Neither blocks the other."""
 
         _probe_cache.clear()
         assume(len(rows) >= 2)
@@ -610,23 +600,21 @@ class TestAutoProbeStartupMixedResults:
 
 
 # ---------------------------------------------------------------------------
-# Property 6: Account ID Auto-Probe — Post-Create Endpoint
+# Account ID Auto-Probe — Post-Create Endpoint
 # ---------------------------------------------------------------------------
 
 
 class TestPostCreateInlineProbe:
-    """**Validates: Requirements 6.2, 6.7**
-
-    The ``POST /admin/departments/{id}/credentials/{service}`` endpoint
-    runs an inline bot identity probe after credential write succeeds.
-    The response carries ``account_id_probe_status`` and the resolved
-    ``account_id`` on success.
-    """
+    """The ``POST /admin/departments/{id}/credentials/{service}`` endpoint
+ runs an inline bot identity probe after credential write succeeds.
+ The response carries ``account_id_probe_status`` and the resolved
+ ``account_id`` on success.
+ """
 
     def test_add_credential_result_has_probe_status_field(self) -> None:
-        """R6.2: The AddCredentialResult dataclass carries
-        ``account_id_probe_status`` and ``account_id_probe_error``
-        fields for the inline probe outcome."""
+        """The AddCredentialResult dataclass carries
+ ``account_id_probe_status`` and ``account_id_probe_error``
+ fields for the inline probe outcome."""
 
         # Import the result dataclass
         sys.path.insert(
@@ -658,9 +646,9 @@ class TestPostCreateInlineProbe:
         assert result.account_id_probe_error is None
 
     def test_add_credential_result_probe_failed_still_200(self) -> None:
-        """R6.2: When the inline probe fails, the result still carries
-        the credential info (200 response) but with
-        ``account_id_probe_status: "failed"``."""
+        """When the inline probe fails, the result still carries
+ the credential info (200 response) but with
+ ``account_id_probe_status: "failed"``."""
 
         sys.path.insert(
             0,
@@ -704,8 +692,8 @@ class TestPostCreateInlineProbe:
     def test_successful_probe_populates_account_id(
         self, dept_id: str, service: str, account_id: str
     ) -> None:
-        """R6.2: When the inline probe succeeds, the result's
-        ``account_id`` field is populated with the resolved value."""
+        """When the inline probe succeeds, the result's
+ ``account_id`` field is populated with the resolved value."""
 
         from datetime import datetime, timezone
 
@@ -737,17 +725,15 @@ class TestPostCreateInlineProbe:
 
 
 # ---------------------------------------------------------------------------
-# Property 6: Account ID Auto-Probe — Probe Failures Don't Break Dept Commit
+# Account ID Auto-Probe — Probe Failures Don't Break Dept Commit
 # ---------------------------------------------------------------------------
 
 
 class TestProbeFailureDoesNotBreakDeptCommit:
-    """**Validates: Requirements 6.3, 6.7**
-
-    Probe failures during the wizard flow result in the department
-    being committed with ``mode="disabled"`` rather than failing the
-    entire operation. The credential write is preserved.
-    """
+    """Probe failures during the wizard flow result in the department
+ being committed with ``mode="disabled"`` rather than failing the
+ entire operation. The credential write is preserved.
+ """
 
     @settings(
         max_examples=100,
@@ -758,9 +744,9 @@ class TestProbeFailureDoesNotBreakDeptCommit:
     def test_startup_probe_failure_preserves_service_startup(
         self, rows: list[DeptBotMissingRow]
     ) -> None:
-        """R6.7: The auto_probe_missing_account_ids function ALWAYS
-        returns (never raises), regardless of how many probes fail.
-        This guarantees service startup is never blocked."""
+        """The auto_probe_missing_account_ids function ALWAYS
+ returns (never raises), regardless of how many probes fail.
+ This guarantees service startup is never blocked."""
 
         _probe_cache.clear()
 
@@ -800,8 +786,8 @@ class TestProbeFailureDoesNotBreakDeptCommit:
         assert len(results) == len(rows)
 
     def test_empty_department_list_returns_empty(self) -> None:
-        """R6.1: When no departments have missing account_ids, the
-        function returns an empty list without error."""
+        """When no departments have missing account_ids, the
+ function returns an empty list without error."""
 
         _probe_cache.clear()
 
@@ -825,15 +811,13 @@ class TestProbeFailureDoesNotBreakDeptCommit:
 
 
 class TestAutoProbeIdempotency:
-    """**Validates: Requirements 6.1, 6.7**
-
-    The auto-probe is idempotent: running it multiple times with the
-    same input produces the same outcome. The cache prevents redundant
-    API calls within the TTL window.
-    """
+    """The auto-probe is idempotent: running it multiple times with the
+ same input produces the same outcome. The cache prevents redundant
+ API calls within the TTL window.
+ """
 
     def test_cache_ttl_is_five_minutes(self) -> None:
-        """R6.4: The probe cache TTL is exactly 5 minutes (300 seconds)."""
+        """The probe cache TTL is exactly 5 minutes (300 seconds)."""
         assert _PROBE_CACHE_TTL_SECONDS == 300
 
     @settings(
@@ -845,9 +829,9 @@ class TestAutoProbeIdempotency:
     def test_idempotent_upsert_on_repeated_success(
         self, rows: list[DeptBotMissingRow]
     ) -> None:
-        """R6.7: Running the probe twice (with cache cleared between
-        runs) produces the same upserts — the writer receives the same
-        account_ids both times."""
+        """Running the probe twice (with cache cleared between
+ runs) produces the same upserts — the writer receives the same
+ account_ids both times."""
 
         _probe_cache.clear()
 
@@ -894,21 +878,19 @@ class TestAutoProbeIdempotency:
 
 
 class TestConfigDepartmentsJsonNotModified:
-    """**Validates: Requirement 6.6 (foundation R7.2 idempotent invariant)**
-
-    The auto-probe function writes ONLY to the
-    ``automation.department_bot_identity`` Postgres table via the
-    AccountIdWriter protocol. ``config/departments.json`` is NEVER
-    modified — this is verified by the fact that the function's only
-    write path is through the AccountIdWriter protocol, which targets
-    the DB exclusively.
-    """
+    """The auto-probe function writes ONLY to the
+ ``automation.department_bot_identity`` Postgres table via the
+ AccountIdWriter protocol. ``config/departments.json`` is NEVER
+ modified — this is verified by the fact that the function's only
+ write path is through the AccountIdWriter protocol, which targets
+ the DB exclusively.
+ """
 
     def test_auto_probe_only_writes_via_writer_protocol(self) -> None:
-        """R6.6: The auto_probe_missing_account_ids function's only
-        write dependency is the AccountIdWriter protocol. It has no
-        file I/O capability — config/departments.json cannot be
-        modified by this code path."""
+        """The auto_probe_missing_account_ids function's only
+ write dependency is the AccountIdWriter protocol. It has no
+ file I/O capability — config/departments.json cannot be
+ modified by this code path."""
 
         import ast
         import inspect
@@ -926,11 +908,11 @@ class TestConfigDepartmentsJsonNotModified:
             if isinstance(node, ast.Call):
                 # Check for open(...) calls
                 if isinstance(node.func, ast.Name) and node.func.id == "open":
-                    found_file_io.append("open()")
+                    found_file_io.append("open")
                 # Check for json.dump(...) calls
                 if isinstance(node.func, ast.Attribute):
                     if node.func.attr in ("dump", "write_text"):
-                        found_file_io.append(f"{node.func.attr}()")
+                        found_file_io.append(f"{node.func.attr}")
 
         assert not found_file_io, (
             f"auto_probe_missing_account_ids contains file I/O calls: "
@@ -946,8 +928,8 @@ class TestConfigDepartmentsJsonNotModified:
     def test_writer_is_only_persistence_path(
         self, rows: list[DeptBotMissingRow]
     ) -> None:
-        """R6.6: All successful probe results go through the writer
-        protocol — no other persistence mechanism is used."""
+        """All successful probe results go through the writer
+ protocol — no other persistence mechanism is used."""
 
         _probe_cache.clear()
 

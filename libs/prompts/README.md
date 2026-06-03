@@ -1,7 +1,7 @@
 # prompts
 
 Hybrid file + DB prompt loader shared across the HTTP services and
-Temporal workers. The scaffold ships only the `PromptLoader.load`
+Temporal workers. The package ships only the `PromptLoader.load`
 placeholder; the real implementation will look up the latest version
 of a prompt in the `shared.prompts` Postgres table and fall back to
 the on-disk template under `prompts/<name>.md`.

@@ -1,4 +1,4 @@
-"""Research output formatters (task 9.2 — Spec 2 §9 R9.4 / R9.5).
+"""Research output formatters.
 
 Pure-Python renderers consumed by the ``research_*`` workflow types
 (``research_publish_confluence`` and ``research_summary_jira``).  The
@@ -20,8 +20,6 @@ A *source* is an opaque mapping carrying at least these keys:
 The mapping form is preserved (rather than upgraded to a
 ``dataclass``) so callers can pass through the firecrawl response
 payload without an intermediate transform.
-
-Validates Requirements: 9.4, 9.5.
 """
 
 from __future__ import annotations
@@ -31,7 +29,7 @@ from typing import Any
 
 
 # ---------------------------------------------------------------------------
-# Confluence body renderer (R9.4)
+# Confluence body renderer
 # ---------------------------------------------------------------------------
 
 
@@ -78,8 +76,6 @@ def format_research_publish_confluence_body(
     Sources without a usable ``url`` are skipped so the rendered list
     never carries a dangling reference. The ``erişim tarihi`` clause
     is omitted for sources that don't supply ``accessed_at``.
-
-    Validates Requirement 9.4.
     """
 
     body = (content or "").rstrip()
@@ -102,7 +98,7 @@ def format_research_publish_confluence_body(
 
 
 # ---------------------------------------------------------------------------
-# Jira comment renderer (R9.5)
+# Jira comment renderer
 # ---------------------------------------------------------------------------
 
 
@@ -141,8 +137,6 @@ def format_research_summary_jira_comment(
     The renderer never raises on degenerate input — empty summary
     plus empty sources yields ``("🤖 Araştırma sonucu boş döndü.", None)``
     so the bot's Jira comment is always intelligible.
-
-    Validates Requirement 9.5.
     """
 
     summary_text = (summary or "").strip()

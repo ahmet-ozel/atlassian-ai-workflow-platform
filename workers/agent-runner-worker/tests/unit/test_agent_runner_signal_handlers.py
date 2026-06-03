@@ -1,7 +1,6 @@
 """Unit tests for ``AgentRunnerWorkflow`` signal handlers and helpers.
 
-Validates the wiring delivered by ``platform-mimari-workflows`` task
-6.3:
+Validates the signal-handler wiring:
 
     1. ``comment_added`` keyword routing — ``[fix]`` /  ``[explain]`` /
        ``[needs_info]`` markers dispatch to the matching internal
@@ -27,7 +26,6 @@ methods that mutate workflow state but do not themselves ``await``
 activities, so they remain testable outside a Temporal worker once
 ``workflow.now`` is monkey-patched into a deterministic clock.
 
-Validates Requirements: 5.2, 5.3, 5.4, 5.5, 5.7.
 """
 
 from __future__ import annotations
@@ -182,9 +180,7 @@ def make_wf():
 
 class TestCommentAddedKeywordRouting:
     """``comment_added`` routes ``[fix]`` / ``[explain]`` / ``[needs_info]``
-    markers to the matching internal handler (R5.7, R6.3).
-
-    Validates Requirements: 5.3, 5.4, 5.5, 5.7.
+    markers to the matching internal handler.
     """
 
     def test_plain_comment_advances_iter(
@@ -264,7 +260,7 @@ class TestCommentAddedKeywordRouting:
         )
 
         # ``[needs_info]`` increments the streak but never advances the
-        # iter counter (R5.6).
+        # iter counter.
         assert wf._iteration_state.iter_count == before
         assert wf._iteration_state.needs_info_streak == 1
         assert wf._out_of_scope is False
@@ -310,7 +306,7 @@ class TestCommentAddedKeywordRouting:
 
 class TestFixDebounceAndDedup:
     """``[fix]`` keyword: 60s debounce + cached-test re-test protection
-    (R5.3, R5.4, T1, T6).
+    behavior.
     """
 
     def test_consecutive_fix_within_window_is_debounced(
@@ -389,7 +385,7 @@ class TestFixDebounceAndDedup:
 
 
 class TestExplainCacheHit:
-    """``[explain]`` keyword: 5-minute LRU cache (R5.5, Z10).
+    """``[explain]`` keyword: 5-minute LRU cache.
     """
 
     def test_cache_hit_skips_iter_and_queues_audit(
@@ -474,7 +470,7 @@ class TestExplainCacheHit:
 
 
 class TestNeedsInfoStreak:
-    """``[needs_info]`` cap (R5.6, S12)."""
+    """``[needs_info]`` cap."""
 
     def test_streak_terminates_after_max(
         self, make_wf, patched_workflow_now
@@ -521,7 +517,7 @@ class TestNeedsInfoStreak:
 
 
 class TestIterWarningBanner:
-    """iter==3 banner edge fires exactly once (R5.7)."""
+    """iter==3 banner edge fires exactly once."""
 
     def test_banner_armed_on_first_crossing(
         self, make_wf, patched_workflow_now
@@ -566,7 +562,7 @@ class TestIterWarningBanner:
 
 
 class TestMaybePostIterWarningBanner:
-    """The body-side banner posting helper is idempotent (R5.7)."""
+    """The body-side banner posting helper is idempotent."""
 
     def test_posts_banner_once_then_flag_blocks_subsequent(
         self,
@@ -625,7 +621,7 @@ class TestMaybePostIterWarningBanner:
 
 class TestTokenCapExceededError:
     """:class:`TokenCapExceededError` is non-retryable with the stable
-    type discriminator (R5.2, T13).
+    type discriminator.
     """
 
     def test_is_application_error_subclass(self) -> None:
@@ -654,14 +650,14 @@ class TestTokenCapExceededError:
         assert err.cap == 8000
 
     def test_llm_retry_policy_fail_fast(self) -> None:
-        """LLM activities use ``maximum_attempts=1`` (R5.2 fail-fast)."""
+        """LLM activities use ``maximum_attempts=1`` for fail-fast behavior."""
 
         assert LLM_RETRY_POLICY.maximum_attempts == 1
 
 
 class TestExecuteLlmActivityTokenCap:
-    """:meth:`AgentRunnerWorkflow._execute_llm_activity` enforces T13
-    pre-flight (R5.2)."""
+    """:meth:`AgentRunnerWorkflow._execute_llm_activity` enforces token-cap
+    pre-flight."""
 
     def test_over_cap_raises_without_calling_activity(
         self,

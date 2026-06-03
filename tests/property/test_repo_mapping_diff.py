@@ -1,11 +1,8 @@
-"""Property tests for ``compute_repo_mapping_diff`` (R10.7 / N7).
-
-**Validates: Requirements 10.7**
+"""Property-based tests for ``compute_repo_mapping_diff``.
 
 This file owns the property-based test surface for the pure
 set-algebra helper :func:`temporal_shared.repo_sync.compute_repo_mapping_diff`
-(workflows spec, task 14.3 — MIMARI §16.16 N7 — repo mapping
-auto-sync). The helper is the engine behind the dry-run + apply
+for repo mapping auto-sync. The helper is the engine behind the dry-run + apply
 modes of the ``POST /admin/departments/{id}/repo-mappings/sync``
 admin endpoint; its correctness is the precondition for the
 endpoint's "diff is the source of truth" contract.
@@ -42,17 +39,14 @@ at the specific algebraic axiom that broke.
 Together these properties exhaustively pin the helper's contract:
 any function that satisfies them is observationally equivalent to
 the textbook three-set partition. Hypothesis runs each property
-with ``max_examples=200`` per design.md §"Property → Test
-eşlemesi"; the suite is fast (~ms / example) because the helper is
+with ``max_examples=200``; the suite is fast (~ms / example) because the helper is
 pure Python set arithmetic.
 
 Source of truth
 ---------------
 
 * :mod:`temporal_shared.repo_sync` — module under test.
-* ``platform-mimari-workflows/requirements.md`` — Requirement 10.7.
-* ``platform-mimari-workflows/design.md`` — §"Components and
-  Interfaces — repo_mapping_sync API".
+* The admin repo-mapping sync endpoint uses this helper as its diff engine.
 """
 
 from __future__ import annotations
@@ -141,7 +135,7 @@ def _slug_set(mappings: tuple[RepoMapping, ...]) -> frozenset[str]:
 
 
 # ---------------------------------------------------------------------------
-# Property 1 — disjointness
+# Disjointness
 # ---------------------------------------------------------------------------
 
 
@@ -155,9 +149,7 @@ def test_partitions_are_pairwise_disjoint(
     scanned: frozenset[str],
     current: tuple[RepoMapping, ...],
 ) -> None:
-    """**Validates: Requirements 10.7**
-
-    For every input the three partitions ``added``, ``removed``, and
+    """For every input the three partitions ``added``, ``removed``, and
     ``unchanged`` are pairwise disjoint. Any overlap would mean a
     slug is reported as both "to add" and "already there" (or
     similar contradiction), corrupting the admin's decision input.
@@ -180,7 +172,7 @@ def test_partitions_are_pairwise_disjoint(
 
 
 # ---------------------------------------------------------------------------
-# Property 2a — reconstruction of ``scanned_repos``
+# Reconstruction of ``scanned_repos``
 # ---------------------------------------------------------------------------
 
 
@@ -194,9 +186,9 @@ def test_added_union_unchanged_equals_scanned(
     scanned: frozenset[str],
     current: tuple[RepoMapping, ...],
 ) -> None:
-    """**Validates: Requirements 10.7**
+    """``added ∪ unchanged == scanned_repos``.
 
-    ``added ∪ unchanged == scanned_repos``. Equivalently: every slug
+    Equivalently: every slug
     the Bitbucket scan reported lands in exactly one of the two
     partitions; nothing gets dropped on the floor.
     """
@@ -210,7 +202,7 @@ def test_added_union_unchanged_equals_scanned(
 
 
 # ---------------------------------------------------------------------------
-# Property 2b — reconstruction of ``current_mappings`` slug set
+# Reconstruction of ``current_mappings`` slug set
 # ---------------------------------------------------------------------------
 
 
@@ -224,9 +216,7 @@ def test_removed_union_unchanged_equals_current_slugs(
     scanned: frozenset[str],
     current: tuple[RepoMapping, ...],
 ) -> None:
-    """**Validates: Requirements 10.7**
-
-    ``removed ∪ unchanged == {m.slug for m in current_mappings}``.
+    """``removed ∪ unchanged == {m.slug for m in current_mappings}``.
     Every slug present in the dept's current ``departments.json``
     array lands in exactly one of the two partitions; nothing is
     silently dropped from the operator's view.
@@ -243,7 +233,7 @@ def test_removed_union_unchanged_equals_current_slugs(
 
 
 # ---------------------------------------------------------------------------
-# Property 3 — idempotence on equal inputs
+# Idempotence on equal inputs
 # ---------------------------------------------------------------------------
 
 
@@ -256,9 +246,7 @@ def test_removed_union_unchanged_equals_current_slugs(
 def test_idempotent_when_scanned_equals_current(
     current: tuple[RepoMapping, ...],
 ) -> None:
-    """**Validates: Requirements 10.7**
-
-    When the Bitbucket scan returns exactly the dept's current slug
+    """When the Bitbucket scan returns exactly the dept's current slug
     set, the diff is a no-op: ``added`` and ``removed`` are both
     empty and ``unchanged`` equals the shared set. This is the
     precondition for the apply-mode contract "running sync twice in
@@ -287,7 +275,7 @@ def test_idempotent_when_scanned_equals_current(
 
 
 # ---------------------------------------------------------------------------
-# Property 4 — determinism (replay safety)
+# Determinism (replay safety)
 # ---------------------------------------------------------------------------
 
 
@@ -301,9 +289,7 @@ def test_deterministic_two_invocations(
     scanned: frozenset[str],
     current: tuple[RepoMapping, ...],
 ) -> None:
-    """**Validates: Requirements 10.7**
-
-    Two invocations with identical inputs return equal
+    """Two invocations with identical inputs return equal
     :class:`RepoMappingDiff` instances. Equivalent to "the helper is
     pure" — no clock, no random, no global state. Replay-safety for
     any future caller that wants to schedule the auto-sync as a
@@ -318,7 +304,7 @@ def test_deterministic_two_invocations(
 
 
 # ---------------------------------------------------------------------------
-# Property 5 — empty edge cases
+# Empty edge cases
 # ---------------------------------------------------------------------------
 
 
@@ -331,9 +317,7 @@ def test_deterministic_two_invocations(
 def test_empty_current_mappings_means_everything_is_added(
     scanned: frozenset[str],
 ) -> None:
-    """**Validates: Requirements 10.7**
-
-    First-time sync (no current mappings, full scan): every scanned
+    """First-time sync (no current mappings, full scan): every scanned
     slug is ``added``; ``removed`` and ``unchanged`` are empty.
     """
 
@@ -352,9 +336,7 @@ def test_empty_current_mappings_means_everything_is_added(
 def test_empty_scan_means_everything_is_removed(
     current: tuple[RepoMapping, ...],
 ) -> None:
-    """**Validates: Requirements 10.7**
-
-    Bitbucket workspace empty (or unreachable for the moment): every
+    """Bitbucket workspace empty (or unreachable for the moment): every
     current slug is ``removed``; ``added`` and ``unchanged`` are
     empty. (The endpoint's apply mode would prune all mappings —
     operator review of the dry-run output is what stops a
@@ -368,9 +350,7 @@ def test_empty_scan_means_everything_is_removed(
 
 
 def test_both_empty_yields_all_empty_partitions() -> None:
-    """**Validates: Requirements 10.7**
-
-    Boundary: empty scan and empty current mappings produce three
+    """Boundary: empty scan and empty current mappings produce three
     empty partitions. Pinned as a non-Hypothesis test so the
     counterexample shrinker cannot waste cycles re-deriving this
     case.
@@ -385,7 +365,7 @@ def test_both_empty_yields_all_empty_partitions() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Property 6 — duplicate slugs in current_mappings collapse to one
+# Duplicate slugs in current_mappings collapse to one
 # ---------------------------------------------------------------------------
 
 
@@ -401,9 +381,7 @@ def test_duplicate_current_mappings_collapse(
     name2: str,
     scanned: frozenset[str],
 ) -> None:
-    """**Validates: Requirements 10.7**
-
-    When ``current_mappings`` contains two entries with the same
+    """When ``current_mappings`` contains two entries with the same
     slug (different names), the helper folds them into a single
     slug in the underlying set so the diff partitions never
     double-count. This matches the wider system contract where

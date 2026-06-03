@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * MCP traffic page — `gereksinim.txt` G9 / Requirement 9.5 (E1 iyileştirme).
+ * MCP traffic page.
  *
  * Surfaces the `GET /api/v1/mcp/traffic` snapshot from the atlassian-mcp
  * Prometheus exposition: per-client_source / per-tool / per-status

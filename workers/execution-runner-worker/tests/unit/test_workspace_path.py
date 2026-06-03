@@ -1,9 +1,7 @@
 """Unit tests for :mod:`src.runners.workspace_path`.
 
-Spec: ``platform-mimari-uyumluluk`` task 13.1 — ``build_workspace_path``
-helper. The exhaustive Hypothesis-based property test that exercises the
-full input space lives in
-``platform/tests/property/test_runner_workspace_path.py`` (task 13.5);
+The exhaustive Hypothesis-based property test that exercises the full input
+space lives in ``platform/tests/property/test_runner_workspace_path.py``;
 this file documents the helper's example-level contract so a developer can
 ``pytest tests/unit -k workspace_path`` and get fast feedback while editing.
 """
@@ -65,7 +63,7 @@ class TestBuildWorkspacePathHappy:
 
 
 # ---------------------------------------------------------------------------
-# issue_key validation (R11.3 / R11.6 — path-traversal safety)
+# issue_key validation for path-traversal safety
 # ---------------------------------------------------------------------------
 
 

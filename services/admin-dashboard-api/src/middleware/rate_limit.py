@@ -14,7 +14,6 @@ When a limit is exceeded the middleware returns HTTP 429 with:
 * ``Retry-After`` header (seconds until the window resets)
 * JSON body: ``{"error": "rate_limit_exceeded", "retry_after_seconds": N}``
 
-**Validates: Requirements 8.1, 8.2, 8.3, 8.4, 8.5**
 """
 
 from __future__ import annotations
@@ -182,7 +181,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         """Apply rate limiting before forwarding the request."""
         path = request.url.path
 
-        # Exempt health-check paths (Requirement 8.3)
+        # Exempt health-check paths (behavior 8.3)
         if path in EXEMPT_PATHS:
             return await call_next(request)
 

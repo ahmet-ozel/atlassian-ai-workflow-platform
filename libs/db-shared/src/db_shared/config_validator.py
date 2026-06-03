@@ -7,7 +7,7 @@ go beyond what JSON Schema can express.
 The primary entry point is :func:`validate_departments_config` which:
 
 1. Validates the JSON document against the JSON Schema (Draft 2020-12).
-2. Runs semantic checks on the new platform-completion fields:
+2. Runs semantic checks on the platform-specific fields:
    - ``approval_required_paths`` regex patterns are compilable.
    - ``approvers`` list is non-empty when ``approval_required_paths`` is non-empty.
    - ``docker_defaults.default_timeout_seconds`` <= ``docker_defaults.max_timeout_seconds``.

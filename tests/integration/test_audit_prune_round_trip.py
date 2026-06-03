@@ -1,4 +1,4 @@
-"""Integration smoke — audit prune round-trip (`platform-mimari-ops` task 16.3).
+"""Integration smoke — audit prune round-trip (ops work).
 
 Inserts a synthetic old audit row, runs the AuditPruneWorkflow on
 demand and verifies the row was archived to MinIO + deleted from
@@ -24,10 +24,10 @@ def test_audit_prune_archives_then_deletes(request: pytest.FixtureRequest) -> No
         pytest.skip("requires --run-docker")
 
     # The full implementation would:
-    #   1. Insert an audit_events row with created_at = now() - 100 days.
-    #   2. Call client.execute_workflow(AuditPruneWorkflow.run, ...).
-    #   3. Assert MinIO archive object exists at audit-archive/{Y}/{M}/{D}/.
-    #   4. Assert the Postgres row is gone.
+    # 1. Insert an audit_events row with created_at = now - 100 days.
+    # 2. Call client.execute_workflow(AuditPruneWorkflow.run, ...).
+    # 3. Assert MinIO archive object exists at audit-archive/{Y}/{M}/{D}/.
+    # 4. Assert the Postgres row is gone.
     pytest.skip(
         "audit-prune integration smoke is wired but requires a "
         "configured stack; populate INTEGRATION_AUDIT_PRUNE_FIXTURE "

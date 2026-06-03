@@ -1,20 +1,17 @@
 """Unit tests for the Python ``Sensitive_Env_Key`` matcher.
 
 Exercises ``services/admin-dashboard-api/src/lifecycle/sensitive.py``
-(task 3.2 in ``.kiro/specs/admin-dashboard-control-plane/tasks.md``).
-The test set is intentionally example-based — Property C4 (TS↔Python
-parity, task 7.8) and Property C5 (log redaction, task 7.9) are the
-property-level checks; the cases below pin the *Python-side* contract:
+directly. The test set is intentionally example-based; the parity and
+log-redaction suites provide broader property-level checks, while the
+cases below pin the *Python-side* contract:
 
 * The expected suffix and infix patterns are present, in the documented
-  order (design §3.11), with their source strings character-for-character
+  order, with their source strings character-for-character
   identical to the TypeScript twin in
   ``libs/web-shared/src/sensitive.ts``.
 * :func:`is_sensitive_env_key` returns ``True`` for representative
   Sensitive_Env_Key examples and ``False`` for clearly non-sensitive
-  keys (Requirements 5.3, 7.7, 11.3).
-
-Validates: Requirements 5.3, 7.7, 11.3.
+  keys.
 """
 
 from __future__ import annotations
@@ -83,10 +80,10 @@ is_sensitive_env_key = sensitive.is_sensitive_env_key
 # ---------------------------------------------------------------------------
 
 
-#: Source strings expected on both sides of the TS↔Python ikiz modül,
-#: in the order dictated by design §3.11 / tasks.md 3.2. Any change here
+#: Source strings expected on both sides of the TS↔Python twin module,
+#: in the documented order. Any change here
 #: must be applied to ``libs/web-shared/src/sensitive.ts`` in lock-step,
-#: otherwise Property C4 will fail.
+#: otherwise the parity suite will fail.
 EXPECTED_PATTERN_SOURCES: tuple[str, ...] = (
     r"_TOKEN$",
     r"_KEY$",
@@ -108,10 +105,10 @@ def test_sensitive_env_key_patterns_is_a_tuple_of_compiled_patterns() -> None:
 
 
 def test_sensitive_env_key_patterns_have_documented_sources_in_order() -> None:
-    """Source strings match the design glossary character-by-character.
+    """Source strings match the shared glossary character-by-character.
 
     The TypeScript twin uses the same literals in the same order; if
-    this test fails, update both files together so Property C4 keeps
+    this test fails, update both files together so parity keeps
     passing.
     """
 

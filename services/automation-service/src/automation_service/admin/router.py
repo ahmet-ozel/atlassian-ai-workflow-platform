@@ -1,17 +1,17 @@
 """FastAPI router for ``/admin/*`` endpoints.
 
-Owns the HTTP surface for tasks 5.3 — 5.6:
+Owns the HTTP surface for department administration:
 
-* ``POST /admin/departments`` (5.3) — atomic department create with
+* ``POST /admin/departments`` — atomic department create with
   Vault staging + DB transaction (orchestrated by
   :class:`automation_service.admin.dept_create.DepartmentCreateOrchestrator`).
-* ``POST /admin/departments/wizard`` (5.4) — multi-step setup wizard
+* ``POST /admin/departments/wizard`` — multi-step setup wizard
   (Jira → Bitbucket → Confluence) as a thin state-machine over the
   same orchestrator.
 * ``POST /admin/departments/{id}/credentials/rotate`` and
-  ``/disable`` (5.5) — credential rotation and department disable.
+  ``/disable`` — credential rotation and department disable.
 * ``GET`` / ``DELETE /admin/probe-artifacts`` and
-  ``/admin/probe-artifacts/{id}`` (5.6) — partial-orphan listing and
+  ``/admin/probe-artifacts/{id}`` — partial-orphan listing and
   manual cleanup.
 
 The router is the **thin shim** layer: every endpoint validates the
@@ -45,12 +45,12 @@ isolation by injecting a stub ``AdminEndpointDeps``.
 Authentication / authorization
 ------------------------------
 
-Per Requirement 3.5 the ``automation-service`` admin endpoints sit
+The ``automation-service`` admin endpoints sit
 **behind** ``admin-dashboard-api`` which performs the OIDC
 authentication and the RBAC pre-check. The router still emits an
 ``AuthContext`` from the ``X-Actor-*`` proxy headers so the audit
-``actor_id`` / ``actor_role`` columns can be populated correctly
-(Requirement 7.7). Direct (un-proxied) requests fall back to the
+``actor_id`` / ``actor_role`` columns can be populated correctly.
+Direct (un-proxied) requests fall back to the
 ``"system"`` actor when the headers are absent — production deploys
 mark ``admin-dashboard-api`` as the only ingress, so this fallback
 is only used by integration tests that bypass the proxy.
@@ -262,7 +262,7 @@ async def create_department(
     request: Request,
     deps: AdminEndpointDeps = Depends(_deps),
 ) -> JSONResponse:
-    """``POST /admin/departments`` — atomic create (R3.4, R3.6, R3.9).
+    """``POST /admin/departments`` — atomic create.
 
     Delegates to :class:`DepartmentCreateOrchestrator`. Translates
     the orchestrator's exception ladder into HTTP status codes:
@@ -315,7 +315,7 @@ async def create_department(
 
 
 # ---------------------------------------------------------------------------
-# 5.4 — POST /admin/departments/wizard
+# POST /admin/departments/wizard
 # ---------------------------------------------------------------------------
 
 
@@ -324,7 +324,7 @@ async def create_department_wizard(
     request: Request,
     deps: AdminEndpointDeps = Depends(_deps),
 ) -> JSONResponse:
-    """Multi-step setup wizard — Jira → Bitbucket → Confluence (R3.10, R5.9, R6.3).
+    """Multi-step setup wizard — Jira → Bitbucket → Confluence.
 
     The wizard is a *thin* state machine on top of
     :class:`DepartmentCreateOrchestrator`: each step's credential is
@@ -334,11 +334,11 @@ async def create_department_wizard(
     every supplied step probe passes does the orchestrator commit
     the department atomically with ``mode="active"``.
 
-    **R6.3 — Atomic identity probe:** After the orchestrator commits
+    **Atomic identity probe:** After the orchestrator commits
     the department, an inline bot identity probe
     (:func:`probe_bot_identity`) is run for each service. If any
     identity probe fails, the department's mode is downgraded to
-    ``"disabled"`` (departments.README.md R5.9 behaviour). The
+    ``"disabled"``. The
     credential write + identity probe are treated as an atomic unit
     from the caller's perspective.
 
@@ -373,7 +373,7 @@ async def create_department_wizard(
     # The wizard's per-step probe and the final atomic commit share
     # the exact same orchestrator path — the orchestrator already
     # runs read+write probes and rolls back on the first failure
-    # (R3.6). The wizard's own state machine therefore reduces to a
+    # and rolls back on the first failure. The wizard's own state machine therefore reduces to a
     # **caller-side** ordering hint: the body declares the intended
     # step order; the orchestrator runs the probes in the same
     # order via per-bot iteration. On the first probe failure the
@@ -413,7 +413,7 @@ async def create_department_wizard(
         )
 
     # ------------------------------------------------------------------
-    # R6.3 — Atomic inline bot identity probe
+    # Atomic inline bot identity probe
     #
     # After the orchestrator commits the department (credential write
     # + connectivity probe passed), run probe_bot_identity for each
@@ -532,7 +532,7 @@ async def create_department_wizard(
                     )
                 )
 
-    # R6.3 / R5.9 — If any identity probe failed, downgrade the
+    # If any identity probe failed, downgrade the
     # department to mode="disabled". The credential write is already
     # committed (Vault + DB), but the department cannot be used for
     # automation until the identity probe succeeds (re-probe via
@@ -581,7 +581,7 @@ async def create_department_wizard(
 
 
 # ---------------------------------------------------------------------------
-# 5.5 — credential rotate / dept disable
+# Credential rotate / dept disable
 # ---------------------------------------------------------------------------
 
 
@@ -591,7 +591,7 @@ async def rotate_credentials(
     request: Request,
     deps: AdminEndpointDeps = Depends(_deps),
 ) -> JSONResponse:
-    """Rotate the bot credential for ``(dept_id, service)`` (R7.6).
+    """Rotate the bot credential for ``(dept_id, service)``.
 
     Body shape:
 
@@ -605,9 +605,9 @@ async def rotate_credentials(
 
     The endpoint writes the new credential to
     ``vault:atlassian/<dept_id>/<service>`` (Vault KV-v2 versioning
-    is the canonical "old + new accepted for 1h overlap" mechanism;
-    R6.8). An audit row with ``actor_role`` carried from the proxy
-    headers is written on every call (R7.7).
+    is the canonical "old + new accepted for 1h overlap" mechanism).
+    An audit row with ``actor_role`` carried from the proxy headers
+    is written on every call.
 
     Allowed roles: ``admin`` (for any dept), ``dept_admin`` (only
     for their own dept — enforced by ``admin-dashboard-api`` on the
@@ -670,7 +670,7 @@ async def rotate_credentials(
                 detail=f"vault write failed: {type(exc).__name__}",
             )
     finally:
-        # R6.10 / R3.4 — wipe plain-text after Vault has the value.
+        # Wipe plain-text after Vault has the value.
         for i in range(len(token_buf)):
             token_buf[i] = 0
         del token_buf
@@ -701,7 +701,7 @@ async def disable_department(
     request: Request,
     deps: AdminEndpointDeps = Depends(_deps),
 ) -> JSONResponse:
-    """Set ``mode=disabled`` and signal Temporal to drain (R10.10).
+    """Set ``mode=disabled`` and signal Temporal to drain.
 
     On success the row is updated, the Temporal client (if wired) is
     sent a ``dept_disabled`` signal so any in-flight workflows can
@@ -775,7 +775,7 @@ async def disable_department(
 
 
 # ---------------------------------------------------------------------------
-# 5.6 — probe artifacts (partial-orphan listing + cleanup)
+# Probe artifacts (partial-orphan listing + cleanup)
 # ---------------------------------------------------------------------------
 
 
@@ -784,7 +784,7 @@ async def list_probe_artifacts(
     request: Request,
     deps: AdminEndpointDeps = Depends(_deps),
 ) -> JSONResponse:
-    """List ``probe_artifacts`` rows with ``state='partial_orphan'`` (R5.4)."""
+    """List ``probe_artifacts`` rows with ``state='partial_orphan'``."""
 
     actor = _extract_actor(request)
     if actor.actor_role not in ("admin", "system", "dept_admin"):

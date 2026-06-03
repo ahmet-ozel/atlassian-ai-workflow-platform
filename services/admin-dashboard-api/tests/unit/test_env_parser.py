@@ -1,14 +1,9 @@
 """Unit tests for ``src.lifecycle.env_parser.parse_env_example``.
 
-Validates the pure parse contract from design §4.7 and Requirements
-5.1, 5.2, 5.4 — assignment recognition, comment-buffer accumulation,
+The tests cover assignment recognition, comment-buffer accumulation,
 blank-line reset, quote handling, ordering, and ``is_sensitive``
-derivation.
-
-The tests are colocated under ``tests/unit/`` (per task 3.1's
-co-location convention) and exercise the parser as a black box; no
-fixtures, no I/O.
-"""
+derivation. They exercise the parser as a black box with no fixtures or
+I/O."""
 
 from __future__ import annotations
 
@@ -31,7 +26,7 @@ from src.lifecycle.env_parser import EnvField, parse_env_example  # noqa: E402
 
 
 def test_empty_input_returns_empty_list() -> None:
-    """An empty string produces no fields (Requirement 5.2)."""
+    """An empty string produces no fields."""
 
     assert parse_env_example("") == []
 
@@ -43,7 +38,7 @@ def test_whitespace_only_input_returns_empty_list() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Assignment recognition (Requirement 5.1, design §4.7 rule 1)
+# Assignment recognition
 # ---------------------------------------------------------------------------
 
 
@@ -66,7 +61,7 @@ def test_assignment_without_trailing_newline() -> None:
 
 
 def test_multiple_assignments_preserve_file_order() -> None:
-    """Field order matches first appearance in the source text (Requirement 5.4)."""
+    """Field order matches first appearance in the source text."""
 
     text = "ALPHA=1\nBRAVO=2\nCHARLIE=3\n"
     fields = parse_env_example(text)
@@ -74,7 +69,7 @@ def test_multiple_assignments_preserve_file_order() -> None:
 
 
 def test_lowercase_keys_are_skipped_silently() -> None:
-    """Design §4.7 limits assignments to ``^[A-Z][A-Z0-9_]*=.*$``."""
+    """Assignments must match ``^[A-Z][A-Z0-9_]*=.*$``."""
 
     # ``port=8082`` does not satisfy the uppercase-leading rule; the
     # parser drops it without raising.
@@ -105,7 +100,7 @@ def test_value_with_equals_sign_is_preserved_verbatim() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Quote handling (design §4.7 quote handling rule)
+# Quote handling
 # ---------------------------------------------------------------------------
 
 
@@ -139,7 +134,7 @@ def test_inner_quotes_inside_quoted_value_are_preserved() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Comment buffer (design §4.7 rules 2 + 3)
+# Comment buffer
 # ---------------------------------------------------------------------------
 
 
@@ -157,7 +152,7 @@ def test_consecutive_comments_are_joined_with_newlines() -> None:
 
 
 def test_blank_line_resets_comment_buffer() -> None:
-    """Per design §4.7: a blank line discards any pending comment."""
+    """A blank line discards any pending comment."""
 
     text = "# orphan comment\n\nKEY=value\n"
     fields = parse_env_example(text)
@@ -204,7 +199,7 @@ def test_double_hash_comment_keeps_inner_hash() -> None:
 
 
 def test_section_header_style_comment() -> None:
-    """The scaffold uses ``# === ... ===`` headers; preserve them faithfully."""
+    """The project uses ``# === ... ===`` headers; preserve them faithfully."""
 
     text = "# ============================\n# admin-dashboard-api\n# ============================\nPORT=8082\n"
     fields = parse_env_example(text)
@@ -212,7 +207,7 @@ def test_section_header_style_comment() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Sensitivity derivation (Requirement 5.6 / Property C4 surface)
+# Sensitivity derivation
 # ---------------------------------------------------------------------------
 
 
@@ -240,7 +235,7 @@ def test_sensitive_keys_are_flagged() -> None:
 
 
 def test_non_sensitive_keys_are_not_flagged() -> None:
-    """Common scaffold keys without sensitive suffixes stay non-sensitive."""
+    """Common project keys without sensitive suffixes stay non-sensitive."""
 
     text = (
         "PORT=8082\n"
@@ -309,8 +304,7 @@ MESSAGE="hello world"
 
 
 def test_lhs_set_matches_assignment_lines_only() -> None:
-    """Property P4 surface — the LHS key set returned by the parser
-    equals the set of assignment-shaped lines in the source text."""
+    """The parser returns the LHS key set from valid assignment lines."""
 
     text = """\
 # orphan

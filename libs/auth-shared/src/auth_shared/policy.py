@@ -1,26 +1,22 @@
 """RBAC policy helpers for the admin control plane.
 
-This module is the second half of the ``auth-shared`` task 8.1
-deliverable (the first being the OIDC validator and ``AuthContext``
-extraction in :mod:`auth_shared.oidc`). It implements the four-role
-RBAC matrix called out in Requirement 7.1 and the
-``requires(role, dept_id=None)`` guard helper called out in tasks.md
-§8.1, together with the cross-cutting policy decisions baked into
-``design.md``:
+This module implements the four-role RBAC matrix and the
+``requires(role, dept_id=None)`` guard helper, together with the
+cross-cutting policy decisions baked into those rules:
 
 * **Four roles** — ``viewer``, ``lead``, ``admin``, ``dept_admin`` and
-  no others (Requirement 7.1).
+  no others.
 * **Hierarchy among the global roles** — ``viewer < lead < admin``;
   any guarded operation that admits ``viewer`` must also admit
-  ``lead`` and ``admin`` (Requirement 7.3).
+  ``lead`` and ``admin``.
 * **Dept-scoping** — ``dept_admin`` is an orthogonal dept-scoped role
   that can perform admin-like actions **only within its own
-  department**; cross-dept access is denied (Requirement 7.3).
+  department**; cross-dept access is denied.
 * **Global-only operations** — adding a new department, changing the
   global prompt, configuring SSH runners are admin-only; ``dept_admin``
-  is rejected with HTTP 403 + ``rbac_denied`` audit (Requirement 7.5).
+  is rejected with HTTP 403 + ``rbac_denied`` audit.
 * **Self-service rotation** — ``dept_admin`` may rotate its **own**
-  department's credentials (Requirement 7.6); the call site passes the
+  department's credentials; the call site passes the
   target ``dept_id`` to :func:`requires` and the guard does the
   matching.
 
@@ -40,7 +36,7 @@ The module is intentionally pure: no FastAPI / Starlette / framework
 imports, no audit-writing side effects. The caller logs the
 ``rbac_denied`` event after catching :class:`PermissionDenied` so
 :func:`requires` stays usable from non-HTTP contexts (the future
-Streamlit per-user flow in task 12.4 reuses the same primitives).
+Streamlit per-user flow reuses the same primitives).
 """
 
 from __future__ import annotations
@@ -62,13 +58,12 @@ from .oidc import AuthContext
 # Role enumeration
 # ---------------------------------------------------------------------------
 
-#: The four RBAC roles enumerated in Requirement 7.1.
+#: The four RBAC roles.
 #:
 #: ``Role`` deliberately mirrors :data:`auth_shared.oidc.AuthRole` —
 #: callers may use either alias. The duplicated definition is the
-#: spec-faithful spelling: ``tasks.md §8.1`` calls out
-#: ``Role = Literal["viewer", "lead", "admin", "dept_admin"]`` by
-#: name. The ``test_role_aliases`` unit test asserts the two aliases
+#: explicit spelling: ``Role = Literal["viewer", "lead", "admin",
+#: "dept_admin"]``. The ``test_role_aliases`` unit test asserts the two aliases
 #: stay in lock-step.
 Role = Literal["viewer", "lead", "admin", "dept_admin"]
 
@@ -79,16 +74,16 @@ ROLES: Final[frozenset[str]] = frozenset({"viewer", "lead", "admin", "dept_admin
 # Linear precedence among the *global* roles. ``dept_admin`` is
 # intentionally **absent** from this mapping: it is not a point on the
 # viewer→lead→admin ladder but an orthogonal dept-scoped role that
-# can perform admin-like operations within its own dept (Requirement
-# 7.3). The :func:`_rank` helper handles ``dept_admin`` separately.
+# can perform admin-like operations within its own dept. The
+# :func:`_rank` helper handles ``dept_admin`` separately.
 _GLOBAL_ROLE_RANK: Final[dict[str, int]] = {
     "viewer": 1,
     "lead": 2,
     "admin": 3,
 }
 
-# Roles that may satisfy a guard requiring ``"admin"`` privileges. The
-# spec is explicit (Requirement 7.5): only the ``admin`` role passes
+# Roles that may satisfy a guard requiring ``"admin"`` privileges. Only
+# the ``admin`` role passes
 # global admin checks. ``dept_admin`` is **not** in this set. When a
 # call site instead asks for ``"dept_admin"`` privileges with a
 # matching ``dept_id``, that case is handled directly in :func:`check`
@@ -147,8 +142,7 @@ class MissingActorError(PermissionDenied):
     A subclass of :class:`PermissionDenied` so ``except
     PermissionDenied`` catches both the "no actor" and "wrong role"
     cases — the FastAPI handler in admin-dashboard-api converts both
-    into HTTP 403 with an ``rbac_denied`` audit event (Requirement
-    7.3, 7.9).
+    into HTTP 403 with an ``rbac_denied`` audit event.
     """
 
     def __init__(self, required_role: str, dept_id: str | None) -> None:
@@ -176,7 +170,7 @@ def check(
     platform. Every other helper in this module — including the
     :func:`requires` decorator — eventually delegates here.
 
-    Decision matrix (Requirements 7.1, 7.3, 7.5, 7.6):
+    Decision matrix:
 
     * ``required_role="admin"`` — only the ``admin`` role passes;
       ``dept_admin`` and below are denied. ``dept_id`` is ignored
@@ -312,15 +306,14 @@ def requires(
            async def rotate(actor: AuthContext, dept_id: str) -> None: ...
 
     Args:
-        role: The minimum role required (Requirement 7.1).
+        role: The minimum role required.
         dept_id: When set, the actor's ``dept_ids`` must contain this
             value (or the actor must be ``admin``). Mutually
             exclusive with a non-``None`` ``dept_id_arg`` — a
             :class:`ValueError` is raised at decoration time if both
             are supplied.
         actor_arg: Keyword-argument name carrying the
-            :class:`AuthContext`. Defaults to ``"actor"`` to match the
-            ``AdminProxy`` design pseudocode in design.md.
+            :class:`AuthContext`. Defaults to ``"actor"``.
         dept_id_arg: When set, the dept_id is taken from this keyword
             argument of the wrapped call instead of the static
             ``dept_id`` parameter.

@@ -1,52 +1,47 @@
 """Task Analyzer activity for the automation-worker.
 
 Implements the ``analyze_task`` Temporal activity that decides which
-workflow_type a Jira issue should run as.  The activity follows a
+workflow_type a Jira issue should run as. The activity follows a
 two-stage strategy:
 
 1. **YAML front-matter (deterministic)** — if the issue description
-   starts with a ``---\nai-bot:\n...\n---`` block, the parsed values
-   are accepted directly and the LLM call is skipped entirely.  This
-   is the fast/cheap path used by power users and the
-   ``task_creation_assistant`` chat flow.
+ starts with a ``---\nai-bot:\n...\n---`` block, the parsed values
+ are accepted directly and the LLM call is skipped entirely. This
+ is the fast/cheap path used by power users and the
+ ``task_creation_assistant`` chat flow.
 
 2. **LLM analysis (fallback)** — when no YAML block is present (or it
-   is missing required fields), the activity renders the
-   ``task_analysis.md`` prompt with the issue + department context and
-   calls the configured LLM provider.  The response is parsed as JSON
-   and validated.
+ is missing required fields), the activity renders the
+ ``task_analysis.md`` prompt with the issue + department context and
+ calls the configured LLM provider. The response is parsed as JSON
+ and validated.
 
 After either branch produces a candidate result the activity applies
 post-processing:
 
-* ``workflow_type`` must be in :data:`VALID_WORKFLOW_TYPES`; otherwise
-  the task is rejected and a Jira comment is posted (Requirement 5.7,
-  5.8).
+* ``workflow_type`` must be in:data:`VALID_WORKFLOW_TYPES`; otherwise
+ the task is rejected and a Jira comment is posted.
 * ``confidence < 0.7`` triggers the *needs_info* flow — the activity
-  posts a comment listing ``missing_fields`` and signals the workflow
-  to wait for user input (Requirement 5.5).
+ posts a comment listing ``missing_fields`` and signals the workflow
+ to wait for user input.
 * If ``workflow_type`` requires web search but the department's
-  ``web_search_enabled`` flag is ``false``, the type is downgraded
-  from ``research_with_web``/``research_publish_confluence`` to
-  ``research_basic`` (Requirement 5.10).
+ ``web_search_enabled`` flag is ``false``, the type is downgraded
+ from ``research_with_web``/``research_publish_confluence`` to
+ ``research_basic``.
 * When the YAML front-matter contains invalid field values
-  (``parse_errors`` non-empty), each offending field is silently
-  dropped to ``None`` by the parser and a single advisory Jira
-  comment is posted listing every parse error so the reporter can
-  fix the override block (Requirement 11.8 / Property 19).
-  Department defaults take over for the dropped fields — see
-  :func:`_result_from_frontmatter` for the override-on-top-of-dept
-  logic for ``cleanup``, ``timeout_seconds``, and ``web_search``
-  (Requirements 11.2, 11.3, 11.4 — task 10.1).
+ (``parse_errors`` non-empty), each offending field is silently
+ dropped to ``None`` by the parser and a single advisory Jira
+ comment is posted listing every parse error so the reporter can
+ fix the override block (/).
+ Department defaults take over for the dropped fields — see:func:`_result_from_frontmatter` for the override-on-top-of-dept
+ logic for ``cleanup``, ``timeout_seconds``, and ``web_search``
+ (—).
 
 The prompt file is loaded with a **hot-reload** mechanism: every call
-checks the file's ``mtime`` and re-reads it when changed (Requirement
-5.9, 20.6).  This allows admins to edit the prompt at runtime without
+checks the file's ``mtime`` and re-reads it when changed. This allows admins to edit the prompt at runtime without
 restarting the worker.
 
 Design reference: ``design.md`` §2 (Task Analyzer)
-Validates Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 5.9,
-                        5.10, 11.1-11.8, 20.6
 """
 
 from __future__ import annotations
@@ -61,7 +56,7 @@ from typing import Any, Literal, Protocol, runtime_checkable
 
 from temporalio import activity
 
-# Description parser is implemented in task 2.2 (parallel).  We import
+# Description parser is implemented in (parallel). We import
 # lazily inside ``analyze_task`` so this module can still be loaded
 # (and unit-tested for its non-YAML branches) before
 # ``description_parser.py`` lands on disk.
@@ -92,7 +87,7 @@ _logger = logging.getLogger(__name__)
 # Constants
 # ---------------------------------------------------------------------------
 
-#: Closed set of supported workflow_type values.  Matches Requirement 5.7
+#: Closed set of supported workflow_type values. Matches 
 #: and the ``WORKFLOW_TYPE_CAPABILITIES`` source of truth in
 #: ``temporal_shared.capabilities`` (with the ``research_summary_jira``
 #: alias used by the chat assistant).
@@ -120,9 +115,9 @@ WORKFLOW_TYPE_ALIASES: dict[str, str] = {
     "test": "remote_ssh_test_only",
 }
 
-#: Workflow types that require the ``web_search`` capability.  When the
+#: Workflow types that require the ``web_search`` capability. When the
 #: department disables web search these are downgraded to
-#: ``research_basic`` (Requirement 5.10).
+#: ``research_basic``.
 WEB_SEARCH_WORKFLOW_TYPES: frozenset[str] = frozenset({
     "research_with_web",
     "research_publish_confluence",
@@ -164,36 +159,35 @@ def _canonical_workflow_type(value: str | None) -> str | None:
     return WORKFLOW_TYPE_ALIASES.get(value, value)
 
 #: Confidence threshold below which the task transitions to
-#: ``needs_info`` (Requirement 5.5).
+#: ``needs_info``.
 CONFIDENCE_THRESHOLD: float = 0.7
 
-#: Default location of the task analysis prompt file (Requirement 5.9,
-#: 20.1).  Resolved relative to the platform repo root so the worker
+#: Default location of the task analysis prompt file (,
+#: 20.1). Resolved relative to the platform repo root so the worker
 #: can load it without copying the file into its image.
 #:
 #: ``__file__`` lives at
 #: ``platform/workers/automation-worker/src/automation_worker/activities/task_analyzer.py``
-#: so ``parents[5]`` points at the ``platform/`` directory.  The
+#: so ``parents[5]`` points at the ``platform/`` directory. The
 #: canonical prompt lives in the ``agent-runner-worker`` (not at the
 #: platform root) — both workers share the same task-analysis prompt
-#: and the agent-runner-worker is its owner.  This default may be
-#: overridden via :func:`set_prompt_path` (used in tests and to point
+#: and the agent-runner-worker is its owner. This default may be
+#: overridden via:func:`set_prompt_path` (used in tests and to point
 #: at a Vault-mounted volume in production).
 def _resolve_default_prompt_path() -> Path:
     """Resolve the default task-analysis prompt path safely.
 
-    Dev tree layout puts the file under
-    ``platform/workers/automation-worker/src/automation_worker/activities/``
-    (5 parents to ``platform/``), but the production container ships
-    the source under ``/app/src/...`` (only 4 parents available).
-    Trying ``parents[5]`` in that layout raises ``IndexError`` at
-    import time, taking the whole worker down.
+ Dev tree layout puts the file under
+ ``platform/workers/automation-worker/src/automation_worker/activities/``
+ (5 parents to ``platform/``), but the production container ships
+ the source under ``/app/src/...`` (only 4 parents available).
+ Trying ``parents[5]`` in that layout raises ``IndexError`` at
+ import time, taking the whole worker down.
 
-    We probe a small set of plausible roots and pick the first that
-    actually contains the prompt file. Falls back to the dev-tree
-    expectation if nothing matches; callers can still override via
-    :func:`set_prompt_path`.
-    """
+ We probe a small set of plausible roots and pick the first that
+ actually contains the prompt file. Falls back to the dev-tree
+ expectation if nothing matches; callers can still override via:func:`set_prompt_path`.
+ """
 
     here = Path(__file__).resolve()
     candidates = []
@@ -248,29 +242,29 @@ class TaskAnalysisError(ValueError):
 class TaskAnalysisInput:
     """Input for the ``analyze_task`` activity.
 
-    Attributes:
-        issue_key: The Jira issue key (e.g. ``"PAY-4211"``).
-        title: Issue summary / title.
-        description: Full description text (may contain a YAML
-            front-matter block at the top).
-        labels: Jira labels attached to the issue.
-        custom_fields: Mapping of custom-field names to raw values
-            (e.g. ``{"AI Bot Repo": "org/foo", "AI Bot Branch": "develop"}``).
-        dept_id: Department identifier — used for credential resolution
-            when posting comments.
-        dept_config: Department configuration block.  Only fields the
-            analyzer cares about are read: ``web_search_enabled``,
-            ``available_repos``, ``available_spaces``,
-            ``available_capabilities``, ``default_language``,
-            ``docker_defaults``.  A plain dict is used so the input
-            stays serialisable through the Temporal payload converter.
-        trace_id: Trace identifier propagated for log correlation.
-        issue_meta: Optional Jira issue metadata dict carrying fields
-            like ``issuetype`` (``{"name": "Epic"}``) and ``subtasks``
-            (list of subtask dicts).  Used by the Epic auto-detect
-            branch (Requirement 12.1, 12.2) to bypass the LLM when
-            the issue is an Epic.
-    """
+ Attributes:
+ issue_key: The Jira issue key (e.g. ``"PAY-4211"``).
+ title: Issue summary / title.
+ description: Full description text (may contain a YAML
+ front-matter block at the top).
+ labels: Jira labels attached to the issue.
+ custom_fields: Mapping of custom-field names to raw values
+ (e.g. ``{"AI Bot Repo": "org/foo", "AI Bot Branch": "develop"}``).
+ dept_id: Department identifier — used for credential resolution
+ when posting comments.
+ dept_config: Department configuration block. Only fields the
+ analyzer cares about are read: ``web_search_enabled``,
+ ``available_repos``, ``available_spaces``,
+ ``available_capabilities``, ``default_language``,
+ ``docker_defaults``. A plain dict is used so the input
+ stays serialisable through the Temporal payload converter.
+ trace_id: Trace identifier propagated for log correlation.
+ issue_meta: Optional Jira issue metadata dict carrying fields
+ like ``issuetype`` (``{"name": "Epic"}``) and ``subtasks``
+ (list of subtask dicts). Used by the Epic auto-detect
+ branch to bypass the LLM when
+ the issue is an Epic.
+ """
 
     issue_key: str
     title: str
@@ -287,36 +281,36 @@ class TaskAnalysisInput:
 class TaskAnalysisResult:
     """Result of the ``analyze_task`` activity.
 
-    Attributes:
-        accepted: ``True`` if the task can proceed to execution; ``False``
-            when the analyzer rejected the task (invalid workflow_type)
-            or downgraded to ``needs_info``.
-        workflow_type: The resolved workflow_type, or ``None`` when the
-            task was rejected outright.
-        needs_ssh: Whether the workflow requires SSH access.
-        needs_docker: Whether the workflow requires Docker access.
-        repo: Target repository (Bitbucket slug or URL), or ``None``.
-        branch: Target branch, or ``None``.
-        cleanup_policy: One of ``"on_success"``, ``"always"``, ``"never"``.
-        timeout_seconds: Per-task timeout override, or ``None`` to use
-            the department default.
-        web_search: Whether web search is enabled for this task.
-        output_actions: List of output action dicts (passed through to
-            the output_actions activity).
-        confidence: Confidence score in the analysis result (0.0 to 1.0).
-        missing_fields: Fields the analyzer could not determine — only
-            populated when ``status == "needs_info"``.
-        reasoning: Free-text explanation of the decision (LLM only).
-        source: Where the result came from — ``"yaml_frontmatter"``
-            when the YAML block was used, ``"llm_analysis"`` when the
-            LLM produced the answer.
-        status: ``"ready"`` (proceed), ``"needs_info"`` (wait for user),
-            or ``"rejected"`` (terminal failure — invalid workflow_type).
-        error: Error message when ``status == "rejected"``.
-        downgraded: ``True`` when ``workflow_type`` was downgraded to
-            ``research_basic`` because the department disabled web
-            search (Requirement 5.10).
-    """
+ Attributes:
+ accepted: ``True`` if the task can proceed to execution; ``False``
+ when the analyzer rejected the task (invalid workflow_type)
+ or downgraded to ``needs_info``.
+ workflow_type: The resolved workflow_type, or ``None`` when the
+ task was rejected outright.
+ needs_ssh: Whether the workflow requires SSH access.
+ needs_docker: Whether the workflow requires Docker access.
+ repo: Target repository (Bitbucket slug or URL), or ``None``.
+ branch: Target branch, or ``None``.
+ cleanup_policy: One of ``"on_success"``, ``"always"``, ``"never"``.
+ timeout_seconds: Per-task timeout override, or ``None`` to use
+ the department default.
+ web_search: Whether web search is enabled for this task.
+ output_actions: List of output action dicts (passed through to
+ the output_actions activity).
+ confidence: Confidence score in the analysis result (0.0 to 1.0).
+ missing_fields: Fields the analyzer could not determine — only
+ populated when ``status == "needs_info"``.
+ reasoning: Free-text explanation of the decision (LLM only).
+ source: Where the result came from — ``"yaml_frontmatter"``
+ when the YAML block was used, ``"llm_analysis"`` when the
+ LLM produced the answer.
+ status: ``"ready"`` (proceed), ``"needs_info"`` (wait for user),
+ or ``"rejected"`` (terminal failure — invalid workflow_type).
+ error: Error message when ``status == "rejected"``.
+ downgraded: ``True`` when ``workflow_type`` was downgraded to
+ ``research_basic`` because the department disabled web
+ search.
+ """
 
     accepted: bool
     workflow_type: str | None
@@ -347,25 +341,25 @@ class TaskAnalysisResult:
 class LLMCallerProtocol(Protocol):
     """Protocol for the LLM provider used by the task analyzer.
 
-    Production wires this to an ``LLMProvider`` from
-    ``llm_orchestrator``.  Tests inject a fake that returns a scripted
-    JSON string so ``analyze_task`` can be exercised without a live
-    LLM.
-    """
+ Production wires this to an ``LLMProvider`` from
+ ``llm_orchestrator``. Tests inject a fake that returns a scripted
+ JSON string so ``analyze_task`` can be exercised without a live
+ LLM.
+ """
 
     async def complete(self, prompt: str, *, dept_id: str) -> str:
         """Call the LLM with the rendered prompt and return raw text.
 
-        Args:
-            prompt: The fully rendered system+user prompt.
-            dept_id: Department identifier used to resolve the
-                department-specific provider override (``primary``,
-                ``fallback``).
+ Args:
+ prompt: The fully rendered system+user prompt.
+ dept_id: Department identifier used to resolve the
+ department-specific provider override (``primary``,
+ ``fallback``).
 
-        Returns:
-            Raw LLM response text — the analyzer is responsible for
-            JSON extraction.
-        """
+ Returns:
+ Raw LLM response text — the analyzer is responsible for
+ JSON extraction.
+ """
         ...
 
 
@@ -373,8 +367,8 @@ class LLMCallerProtocol(Protocol):
 class JiraCommenterProtocol(Protocol):
     """Protocol for posting comments to Jira.
 
-    Reused from ``repo_resolver`` — same shape, different consumer.
-    """
+ Reused from ``repo_resolver`` — same shape, different consumer.
+ """
 
     async def add_comment(
         self,
@@ -394,9 +388,9 @@ _prompt_path: Path = DEFAULT_PROMPT_PATH
 def set_llm_caller(caller: LLMCallerProtocol) -> None:
     """Register the LLM caller used by the activity.
 
-    Called once at worker boot.  Tests call this with an in-memory
-    fake before invoking the activity directly.
-    """
+ Called once at worker boot. Tests call this with an in-memory
+ fake before invoking the activity directly.
+ """
     global _llm_caller  # noqa: PLW0603
     _llm_caller = caller
 
@@ -406,7 +400,7 @@ def get_llm_caller() -> LLMCallerProtocol:
     if _llm_caller is None:
         raise RuntimeError(
             "task_analyzer activity: LLM caller not initialised; "
-            "call set_llm_caller() during worker startup."
+            "call set_llm_caller during worker startup."
         )
     return _llm_caller
 
@@ -422,7 +416,7 @@ def get_jira_commenter() -> JiraCommenterProtocol:
     if _jira_commenter is None:
         raise RuntimeError(
             "task_analyzer activity: Jira commenter not initialised; "
-            "call set_jira_commenter() during worker startup."
+            "call set_jira_commenter during worker startup."
         )
     return _jira_commenter
 
@@ -430,10 +424,9 @@ def get_jira_commenter() -> JiraCommenterProtocol:
 def set_prompt_path(path: Path | str) -> None:
     """Override the prompt file location.
 
-    Useful in tests — production wires
-    :data:`DEFAULT_PROMPT_PATH` automatically.  Resetting the path
-    invalidates the in-memory prompt cache.
-    """
+ Useful in tests — production wires:data:`DEFAULT_PROMPT_PATH` automatically. Resetting the path
+ invalidates the in-memory prompt cache.
+ """
     global _prompt_path  # noqa: PLW0603
     _prompt_path = Path(path)
     _prompt_cache.invalidate()
@@ -445,20 +438,20 @@ def get_prompt_path() -> Path:
 
 
 # ---------------------------------------------------------------------------
-# Hot-reload prompt cache (Requirement 5.9, 20.6)
+# Hot-reload prompt cache 
 # ---------------------------------------------------------------------------
 
 
 class PromptCache:
     """Thread-safe cache that reloads the prompt file when ``mtime`` changes.
 
-    The cache is intentionally minimal — Temporal activities run on a
-    pool of asyncio workers which can race, so we guard the cache
-    fields with a lock.  The reload check is a single ``stat`` call
-    per ``analyze_task`` invocation which is cheap (~microseconds)
-    and avoids stale prompt content after ``echo > task_analysis.md``
-    on the host (Requirement 20.6).
-    """
+ The cache is intentionally minimal — Temporal activities run on a
+ pool of asyncio workers which can race, so we guard the cache
+ fields with a lock. The reload check is a single ``stat`` call
+ per ``analyze_task`` invocation which is cheap (~microseconds)
+ and avoids stale prompt content after ``echo > task_analysis.md``
+ on the host.
+ """
 
     def __init__(self) -> None:
         self._lock = threading.Lock()
@@ -469,10 +462,10 @@ class PromptCache:
     def load(self, path: Path) -> str:
         """Return the prompt body, reloading if the file changed.
 
-        Raises ``FileNotFoundError`` if the prompt is missing.  Any
-        ``OSError`` is propagated so the caller (``analyze_task``)
-        can fall back / surface a meaningful error.
-        """
+ Raises ``FileNotFoundError`` if the prompt is missing. Any
+ ``OSError`` is propagated so the caller (``analyze_task``)
+ can fall back / surface a meaningful error.
+ """
         with self._lock:
             try:
                 stat = path.stat()
@@ -561,18 +554,18 @@ def _parse_json_response(raw: str) -> dict[str, Any]:
 def _render_prompt(template: str, input: TaskAnalysisInput) -> str:
     """Render the task_analysis.md prompt with the input context.
 
-    The prompt template is plain markdown — we deliberately use simple
-    string substitution rather than Jinja2 to keep the activity
-    sandbox-clean (Temporal forbids many third-party imports inside
-    activities running on the workflow side, and even on the activity
-    side the smallest possible dependency surface is preferred).
+ The prompt template is plain markdown — we deliberately use simple
+ string substitution rather than Jinja2 to keep the activity
+ sandbox-clean (Temporal forbids many third-party imports inside
+ activities running on the workflow side, and even on the activity
+ side the smallest possible dependency surface is preferred).
 
-    The prompt is not Jinja-rendered: the LLM is given the *raw*
-    template followed by a JSON-encoded ``CONTEXT`` block so we never
-    accidentally execute template directives that the prompt author
-    intended to be example code.  This matches the "tool calling +
-    structured output" pattern used by Anthropic / OpenAI guidelines.
-    """
+ The prompt is not Jinja-rendered: the LLM is given the *raw*
+ template followed by a JSON-encoded ``CONTEXT`` block so we never
+ accidentally execute template directives that the prompt author
+ intended to be example code. This matches the "tool calling +
+ structured output" pattern used by Anthropic / OpenAI guidelines.
+ """
     context = {
         "issue_key": input.issue_key,
         "title": input.title,
@@ -590,10 +583,10 @@ def _render_prompt(template: str, input: TaskAnalysisInput) -> str:
 def _safe_dept_config_for_prompt(dept_config: dict[str, Any]) -> dict[str, Any]:
     """Strip secret-shaped fields before sending the dept config to the LLM.
 
-    The activity is invoked with the full department config which may
-    contain credential references (e.g. ``bot.jira.api_token``).  We
-    only pass the fields the LLM actually needs to make a decision.
-    """
+ The activity is invoked with the full department config which may
+ contain credential references (e.g. ``bot.jira.api_token``). We
+ only pass the fields the LLM actually needs to make a decision.
+ """
     allowed_keys = (
         "available_repos",
         "available_spaces",
@@ -616,15 +609,15 @@ def _safe_dept_config_for_prompt(dept_config: dict[str, Any]) -> dict[str, Any]:
 def _try_parse_frontmatter(description: str) -> Any | None:
     """Attempt to parse the YAML front-matter block.
 
-    Returns the ``ParsedFrontMatter`` dataclass (from task 2.2) or
-    ``None`` when:
-    * the description has no YAML block, or
-    * the parser is not yet importable (module developed in parallel).
+ Returns the ``ParsedFrontMatter`` dataclass (from) or
+ ``None`` when:
+ * the description has no YAML block, or
+ * the parser is not yet importable (module developed in parallel).
 
-    The activity must remain functional even before ``description_parser``
-    lands so we degrade gracefully — when the import fails the LLM
-    branch handles every task.
-    """
+ The activity must remain functional even before ``description_parser``
+ lands so we degrade gracefully — when the import fails the LLM
+ branch handles every task.
+ """
     try:
         from automation_worker.activities.description_parser import (  # type: ignore[import-not-found]
             parse_description_frontmatter,
@@ -653,10 +646,10 @@ def _try_parse_frontmatter(description: str) -> Any | None:
 def _frontmatter_has_workflow_type(parsed: Any) -> bool:
     """Whether the parsed front-matter carries enough info to skip the LLM.
 
-    The minimum required field is ``workflow_type``.  Other fields can
-    be ``None`` because they will be filled in by department defaults
-    later in the workflow.
-    """
+ The minimum required field is ``workflow_type``. Other fields can
+ be ``None`` because they will be filled in by department defaults
+ later in the workflow.
+ """
     return parsed is not None and getattr(parsed, "workflow_type", None) is not None
 
 
@@ -679,10 +672,10 @@ def _result_from_frontmatter(
 ) -> TaskAnalysisResult:
     """Build a ``TaskAnalysisResult`` from a parsed YAML front-matter.
 
-    YAML provides a *deterministic* path with implicit ``confidence==1.0``
-    (Requirement 5.3, 5.4 + Property 7).  Missing optional fields are
-    filled in from ``dept_defaults``.
-    """
+ YAML provides a *deterministic* path with implicit ``confidence==1.0``
+ (+). Missing optional fields are
+ filled in from ``dept_defaults``.
+ """
     wf_type = getattr(parsed, "workflow_type", None) or ""
 
     # Normalise needs_ssh / needs_docker — derive from workflow_type
@@ -699,16 +692,16 @@ def _result_from_frontmatter(
     if needs_docker is None:
         needs_docker = False
 
-    # R11.2 — invalid / missing ``cleanup`` falls back to the dept
+    # — invalid / missing ``cleanup`` falls back to the dept
     # default (the parser already dropped invalid values to ``None``;
     # any remaining ``None`` here means "user did not specify").
     cleanup = getattr(parsed, "cleanup", None) or dept_defaults.cleanup_policy
 
-    # R11.3 — same contract for ``timeout_seconds``: out-of-range or
+    # — same contract for ``timeout_seconds``: out-of-range or
     # otherwise-invalid values arrive as ``None`` and we backfill from
     # the dept docker_defaults so the workflow always has a finite
     # budget. This mirrors the LLM branch's behaviour in
-    # ``_result_from_llm`` (task 10.1 — Per-task description override).
+    # ``_result_from_llm`` (— Per-task description override).
     timeout = getattr(parsed, "timeout_seconds", None)
     if timeout is None:
         timeout = dept_defaults.default_timeout_seconds
@@ -782,11 +775,11 @@ def _result_from_llm(
 ) -> TaskAnalysisResult:
     """Convert the LLM's JSON dict into a ``TaskAnalysisResult``.
 
-    All fields are accessed defensively because the LLM is allowed to
-    omit values — defaults are filled in from the department config.
-    Validation (workflow_type set membership, confidence threshold,
-    web_search downgrade) happens in the caller.
-    """
+ All fields are accessed defensively because the LLM is allowed to
+ omit values — defaults are filled in from the department config.
+ Validation (workflow_type set membership, confidence threshold,
+ web_search downgrade) happens in the caller.
+ """
 
     def _bool(v: Any, default: bool) -> bool:
         if isinstance(v, bool):
@@ -907,7 +900,7 @@ def _apply_web_search_downgrade(
     dept_defaults: _DeptDefaults,
 ) -> TaskAnalysisResult:
     """Downgrade ``research_with_web``/``research_publish_confluence`` when
-    the department disables web search (Requirement 5.10)."""
+ the department disables web search."""
     if dept_defaults.web_search_enabled:
         return result
     if result.workflow_type not in WEB_SEARCH_WORKFLOW_TYPES:
@@ -932,7 +925,7 @@ def _apply_web_search_downgrade(
 
 
 def _replace(result: TaskAnalysisResult, **changes: Any) -> TaskAnalysisResult:
-    """Helper around :func:`dataclasses.replace` for frozen results."""
+    """Helper around:func:`dataclasses.replace` for frozen results."""
     from dataclasses import replace as _dc_replace
 
     return _dc_replace(result, **changes)
@@ -990,7 +983,7 @@ def _build_missing_execution_command_comment(
         "```yaml\n"
         "ai-bot:\n"
         f"  workflow_type: {workflow_type}\n"
-        "  test_command: \"pytest -q\"\n"
+        " test_command: \"pytest -q\"\n"
         "```\n"
         "Bu yoruma cevap geldikten sonra webhook workflow'u tekrar "
         "tetikleyecek."
@@ -1012,18 +1005,18 @@ def _build_frontmatter_warning_comment(
 ) -> str:
     """Build the Jira warning comment for invalid YAML override fields.
 
-    Implements Requirement 11.8 (Property 19 sister contract): when
-    the YAML front-matter contains one or more invalid field values
-    the offending fields are silently dropped to ``None`` and we
-    surface a single advisory comment so the reporter can spot the
-    typo.  The comment lists every entry in ``parse_errors`` verbatim
-    — the parser already prefixes each line with the field name (eg.
-    ``cleanup: 'yes' is not valid (allowed: ['always', 'never',
-    'on_success'])``) so the comment body is human-readable as-is.
+ Implements (sister contract): when
+ the YAML front-matter contains one or more invalid field values
+ the offending fields are silently dropped to ``None`` and we
+ surface a single advisory comment so the reporter can spot the
+ typo. The comment lists every entry in ``parse_errors`` verbatim
+ — the parser already prefixes each line with the field name (eg.
+ ``cleanup: 'yes' is not valid (allowed: ['always', 'never',
+ 'on_success'])``) so the comment body is human-readable as-is.
 
-    The dept defaults take over for the dropped fields, so the
-    comment also reminds the reporter that defaults will be used.
-    """
+ The dept defaults take over for the dropped fields, so the
+ comment also reminds the reporter that defaults will be used.
+ """
     bullets = "\n".join(f"• {err}" for err in parse_errors)
     return (
         f"⚠️ Görev (`{issue_key}`) açıklamasındaki YAML override "
@@ -1037,10 +1030,10 @@ def _build_frontmatter_warning_comment(
 def _build_epic_needs_subtasks_comment(issue_key: str) -> str:
     """Build the Jira comment when an Epic has no subtasks.
 
-    Implements Requirement 12.2 — when the issue is an Epic but has
-    no subtasks, the analyzer posts a needs_info comment asking the
-    reporter to add subtasks or confirm they want the Epic split.
-    """
+ Implements — when the issue is an Epic but has
+ no subtasks, the analyzer posts a needs_info comment asking the
+ reporter to add subtasks or confirm they want the Epic split.
+ """
     return (
         f"🤖 Bu Epic (`{issue_key}`) için subtask eklemediniz — "
         "ayrı task'lara bölmek mi istersiniz?\n\n"
@@ -1050,17 +1043,17 @@ def _build_epic_needs_subtasks_comment(issue_key: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Epic auto-detect (Requirement 12.1, 12.2)
+# Epic auto-detect 
 # ---------------------------------------------------------------------------
 
 
 def _is_epic_issue(input: TaskAnalysisInput) -> bool:
     """Check whether the issue is an Epic based on ``issue_meta``.
 
-    Returns ``True`` when ``issue_meta["issuetype"]["name"]`` (case-
-    insensitive) equals ``"epic"``.  Gracefully returns ``False`` when
-    the metadata is missing or malformed.
-    """
+ Returns ``True`` when ``issue_meta["issuetype"]["name"]`` (case-
+ insensitive) equals ``"epic"``. Gracefully returns ``False`` when
+ the metadata is missing or malformed.
+ """
     issue_meta = input.issue_meta
     if not issue_meta:
         return False
@@ -1076,8 +1069,8 @@ def _is_epic_issue(input: TaskAnalysisInput) -> bool:
 def _get_epic_subtasks(input: TaskAnalysisInput) -> list[dict[str, Any]]:
     """Extract the subtask list from ``issue_meta``.
 
-    Returns an empty list when the field is missing or not a list.
-    """
+ Returns an empty list when the field is missing or not a list.
+ """
     issue_meta = input.issue_meta
     if not issue_meta:
         return []
@@ -1090,15 +1083,15 @@ def _get_epic_subtasks(input: TaskAnalysisInput) -> list[dict[str, Any]]:
 def _result_for_epic_multi_step(input: TaskAnalysisInput) -> TaskAnalysisResult:
     """Build a deterministic ``multi_step`` result for an Epic with subtasks.
 
-    Implements Requirement 12.1 — Epic + non-empty subtask list →
-    ``workflow_type="multi_step"``, ``confidence=1.0``,
-    ``source="epic_auto_detect"``, ``accepted=True``.
+ Implements — Epic + non-empty subtask list →
+ ``workflow_type="multi_step"``, ``confidence=1.0``,
+ ``source="epic_auto_detect"``, ``accepted=True``.
 
-    The subtask count is stored in ``output_actions`` as a metadata
-    entry (``{"_meta": "epic_auto_detect", "subtask_count": N}``) so
-    the workflow can include it in the ``epic_auto_detected_multi_step``
-    audit payload (Requirement 12.6).
-    """
+ The subtask count is stored in ``output_actions`` as a metadata
+ entry (``{"_meta": "epic_auto_detect", "subtask_count": N}``) so
+ the workflow can include it in the ``epic_auto_detected_multi_step``
+ audit payload.
+ """
     subtask_count = len(_get_epic_subtasks(input))
     return TaskAnalysisResult(
         accepted=True,
@@ -1127,10 +1120,10 @@ def _result_for_epic_multi_step(input: TaskAnalysisInput) -> TaskAnalysisResult:
 def _result_for_epic_needs_subtasks() -> TaskAnalysisResult:
     """Build a ``needs_info`` result for an Epic with no subtasks.
 
-    Implements Requirement 12.2 — Epic + empty subtask list →
-    ``status="needs_info"``, ``missing_fields=["subtasks"]``,
-    ``source="epic_auto_detect"``.
-    """
+ Implements — Epic + empty subtask list →
+ ``status="needs_info"``, ``missing_fields=["subtasks"]``,
+ ``source="epic_auto_detect"``.
+ """
     return TaskAnalysisResult(
         accepted=False,
         workflow_type="multi_step",
@@ -1162,36 +1155,31 @@ def _result_for_epic_needs_subtasks() -> TaskAnalysisResult:
 async def analyze_task(input: TaskAnalysisInput) -> TaskAnalysisResult:
     """Analyse a Jira task and decide which workflow_type to run.
 
-    Priority logic:
+ Priority logic:
 
-    1. **YAML front-matter** — if the description starts with a valid
-       ``ai-bot:`` block, use those values directly (Requirement 5.3).
-    1b. **Epic auto-detect** — if no YAML front-matter specifies a
-       workflow_type and the issue is an Epic (``issuetype.name ==
-       "Epic"``), deterministically assign ``multi_step`` when
-       subtasks exist, or ``needs_info`` when they don't
-       (Requirements 12.1, 12.2).
-    2. **LLM analysis** — render ``task_analysis.md``, call the LLM,
-       parse JSON (Requirements 5.1, 5.2, 5.4).
-    3. **Validate** — the resolved ``workflow_type`` must be in
-       :data:`VALID_WORKFLOW_TYPES`.  Otherwise the task is rejected
-       and a Jira comment is posted (Requirements 5.7, 5.8).
-    4. **Web-search downgrade** — when the dept disables web_search,
-       ``research_with_web`` / ``research_publish_confluence`` are
-       downgraded to ``research_basic`` (Requirement 5.10).
-    5. **Confidence gate** — if ``confidence < 0.7`` the activity
-       transitions the task to ``needs_info`` and posts a comment
-       listing ``missing_fields`` (Requirements 5.5, 5.6).
-
-    Validates: Requirements 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8,
-               5.9, 5.10, 12.1, 12.2, 12.5, 20.6.
-    """
-    # platform-gap-fill task 7.2 / Requirement 8.3 — bind the inbound
+ 1. **YAML front-matter** — if the description starts with a valid
+ ``ai-bot:`` block, use those values directly.
+ 1b. **Epic auto-detect** — if no YAML front-matter specifies a
+ workflow_type and the issue is an Epic (``issuetype.name ==
+ "Epic"``), deterministically assign ``multi_step`` when
+ subtasks exist, or ``needs_info`` when they don't.
+ 2. **LLM analysis** — render ``task_analysis.md``, call the LLM,
+ parse JSON.
+ 3. **Validate** — the resolved ``workflow_type`` must be in:data:`VALID_WORKFLOW_TYPES`. Otherwise the task is rejected
+ and a Jira comment is posted.
+ 4. **Web-search downgrade** — when the dept disables web_search,
+ ``research_with_web`` / ``research_publish_confluence`` are
+ downgraded to ``research_basic``.
+ 5. **Confidence gate** — if ``confidence < 0.7`` the activity
+ transitions the task to ``needs_info`` and posts a comment
+ listing ``missing_fields``..
+ """
+    # / — bind the inbound
     # ``trace_id`` onto the activity's contextvars context so every log
     # record emitted while the activity runs (including those from
     # nested helpers and the MCP-client request hook in
     # ``http_shared.client``) carries the same trace_id as the
-    # originating webhook.  The import is local so the activity module
+    # originating webhook. The import is local so the activity module
     # stays importable even when ``observability`` is unavailable in
     # focused unit-test environments.
     if input.trace_id:
@@ -1212,15 +1200,15 @@ async def analyze_task(input: TaskAnalysisInput) -> TaskAnalysisResult:
     dept_defaults = _extract_dept_defaults(input.dept_config)
 
     # ------------------------------------------------------------------
-    # Step 1: YAML front-matter (Requirement 5.3)
+    # Step 1: YAML front-matter 
     # ------------------------------------------------------------------
     parsed_fm = _try_parse_frontmatter(input.description)
 
-    # R11.8 — surface a single advisory comment when the YAML block
-    # contained one or more invalid values.  The parser drops each
+    # — surface a single advisory comment when the YAML block
+    # contained one or more invalid values. The parser drops each
     # offending field to ``None`` (see description_parser.py) and
     # records a per-field error in ``parse_errors``; we forward the
-    # list to Jira so the reporter can fix the override block.  The
+    # list to Jira so the reporter can fix the override block. The
     # comment is posted regardless of whether the YAML branch is
     # taken or we fall through to the LLM, because either way the
     # user supplied invalid override values.
@@ -1241,11 +1229,11 @@ async def analyze_task(input: TaskAnalysisInput) -> TaskAnalysisResult:
         )
 
     # ------------------------------------------------------------------
-    # Priority invariant (Requirement 12.5):
-    #   1. Front-matter with workflow_type  → use it (highest priority)
-    #   2. Epic auto-detect (no front-matter workflow_type + issuetype=Epic)
-    #      → deterministic multi_step
-    #   3. LLM analysis (fallback for everything else)
+    # Priority invariant:
+    # 1. Front-matter with workflow_type → use it (highest priority)
+    # 2. Epic auto-detect (no front-matter workflow_type + issuetype=Epic)
+    # → deterministic multi_step
+    # 3. LLM analysis (fallback for everything else)
     # The elif chain below guarantees that Epic auto-detect NEVER
     # overrides an explicit front-matter workflow_type.
     # ------------------------------------------------------------------
@@ -1263,7 +1251,7 @@ async def analyze_task(input: TaskAnalysisInput) -> TaskAnalysisResult:
         )
     elif _is_epic_issue(input):
         # ------------------------------------------------------------------
-        # Step 1b: Epic auto-detect (Requirements 12.1, 12.2)
+        # Step 1b: Epic auto-detect 
         # ------------------------------------------------------------------
         # When the issue is an Epic and no YAML front-matter specifies
         # a workflow_type, we bypass the LLM entirely and deterministically
@@ -1296,12 +1284,12 @@ async def analyze_task(input: TaskAnalysisInput) -> TaskAnalysisResult:
         return result
     else:
         # ------------------------------------------------------------------
-        # Step 2: LLM analysis (Requirements 5.1, 5.2, 5.4)
+        # Step 2: LLM analysis 
         # ------------------------------------------------------------------
         result = await _run_llm_analysis(input, dept_defaults)
 
     # ------------------------------------------------------------------
-    # Step 3: Validate workflow_type (Requirements 5.7, 5.8)
+    # Step 3: Validate workflow_type 
     # ------------------------------------------------------------------
     if (
         result.workflow_type is None
@@ -1326,7 +1314,7 @@ async def analyze_task(input: TaskAnalysisInput) -> TaskAnalysisResult:
         )
 
     # ------------------------------------------------------------------
-    # Step 4: Web-search downgrade (Requirement 5.10)
+    # Step 4: Web-search downgrade 
     # ------------------------------------------------------------------
     original_wf = result.workflow_type
     result = _apply_web_search_downgrade(result, dept_defaults)
@@ -1361,7 +1349,7 @@ async def analyze_task(input: TaskAnalysisInput) -> TaskAnalysisResult:
         )
 
     # ------------------------------------------------------------------
-    # Step 5: Confidence gate (Requirements 5.5, 5.6)
+    # Step 5: Confidence gate 
     # ------------------------------------------------------------------
     if result.confidence < CONFIDENCE_THRESHOLD:
         activity.logger.info(
@@ -1404,11 +1392,11 @@ async def _run_llm_analysis(
 ) -> TaskAnalysisResult:
     """Render the prompt, call the LLM, parse the response.
 
-    Failures are converted into a low-confidence result so the caller
-    sees a normal ``needs_info`` flow rather than an unhandled
-    exception (Requirement 5.5 — the "needs_info" path is the
-    catch-all when the analyzer cannot be confident).
-    """
+ Failures are converted into a low-confidence result so the caller
+ sees a normal ``needs_info`` flow rather than an unhandled
+ exception (— the "needs_info" path is the
+ catch-all when the analyzer cannot be confident).
+ """
     try:
         template = _prompt_cache.load(get_prompt_path())
     except FileNotFoundError as exc:
@@ -1513,7 +1501,7 @@ async def _safe_post_comment(issue_key: str, body: str, dept_id: str) -> None:
         commenter = get_jira_commenter()
     except RuntimeError:
         # Commenter not wired (e.g. running in a unit test that
-        # only exercises pure logic).  Skip silently.
+        # only exercises pure logic). Skip silently.
         _logger.debug(
             "task_analyzer: Jira commenter not wired — skipping "
             "comment for %s",

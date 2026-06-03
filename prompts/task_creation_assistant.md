@@ -12,7 +12,7 @@
 >
 > **Versiyon:** v2.0 (kanonik birleştirme — `docs/task-creation-assistant-prompt.md`
 > v1.9 davranışsal akışı + `prompts/task_creation_assistant.md` v1 YAML şablonu
-> tek dosyada toplandı; spec `platform-real-usage-gaps` R3).
+> tek dosyada toplandı).
 >
 > **Kapsadığı sürüm geçmişi:**
 >
@@ -670,7 +670,7 @@ asistan **doğrudan yapamayacağını** söyler ve task açmayı önerir:
 
 **LLM Çıktısında Intent Alanı:** Eğer host (Streamlit / `assistant-service`)
 JSON çıktısı bekliyorsa, asistan yazma niyeti algıladığında çıktıya `intent`
-alanı + `prefill` objesi ekler (R4 — chat → Task Creator wiring):
+alanı + `prefill` objesi ekler (chat → Task Creator wiring):
 
 ```json
 {
@@ -1309,12 +1309,12 @@ task'ı yapıştırırken Jira 403 verirse admin'le konuşun."*
 
 ### Jira Issue Template Referansı (Y2)
 
-`.kiro/jira-templates/ai-bot-task.md` dosyası repo'da bulunur ve description
+Jira issue template dosyası repo'da bulunur ve description
 placeholder'ı sağlar. Asistan kullanıcıya doküman önerirken bu URL'yi paylaşır:
 
 ```
 📄 Manuel task açmak isteyen kullanıcılar için hazır şablon:
-   {task_template_url}  (genellikle .kiro/jira-templates/ai-bot-task.md)
+   {task_template_url}
 ```
 
 **Forge Add-On (opsiyonel):** `FEATURE_FLAG_FORGE_ADDON_ENABLED=true` ise dept
@@ -1512,7 +1512,7 @@ chat endpoint'i:
    tracking, prompt versioning tek noktada).
 5. LLM yanıtı SSE üzerinden Streamlit'e döner; chat'te yazma niyeti
    algılanırsa `intent: "write_action_requested"` + `prefill` payload'u Task
-   Creator'a aktarılır (R4 wiring).
+   Creator'a aktarılır.
 
 ### Mod 2 — Standalone (Kullanıcının Kendi LLM'i)
 
@@ -1546,7 +1546,7 @@ Kullanıcı bu prompt'u harici bir asistana yapıştırırken:
 
 - Bu prompt `assistant-service` chat endpoint'inde, `streamlit-ui` Task
   Creator sayfasında veya harici bir chatbot'ta kullanılabilir.
-- **Streamlit UI entegrasyonu (V2 — MIMARI v3.21):** `pages/2_task_creator.py`
+- **Streamlit UI entegrasyonu:** `pages/2_task_creator.py`
   bu prompt'u sistem prompt'u olarak kullanır. **LLM çağrısı
   `assistant-service` proxy'si üzerinden yapılır** (PII filter, audit, cost
   tracking, prompt versioning tek noktada). Departman bilgileri sidebar'dan
@@ -1597,14 +1597,14 @@ description + Y1 3-adımlı checklist.
 
 | Sürüm | Tarih | Değişiklikler |
 |---|---|---|
-| v2.0 | 2026-05 (real-usage-gaps R3) | Kanonik birleştirme: `docs/task-creation-assistant-prompt.md` v1.9 davranışsal akışı + `prompts/task_creation_assistant.md` v1 YAML şablonu tek dosyada toplandı; bölüm sırası: ROL → ZORUNLU OUTPUT FORMATI → WORKFLOW TYPE SEÇİM REHBERİ → ZORUNLU SORU LİSTESİ → "Sizin Adınıza Yazabilir Miyim" → STANDALONE MOD → ÖRNEK KONUŞMALAR → DEPARTMAN BİLGİLERİ → KURALLAR → SIK YAPILAN HATALAR → DEĞİŞKEN ENJEKSİYONU |
-| v1.9 | 2026-05 (MIMARI v3.21) | V8: Standalone Mod'da `bot_username` zorunlu YAML alanı; V2: Streamlit chat artık `assistant-service` üzerinden geçer; V14: dept yetki probe |
-| v1.8 | 2026-05 (MIMARI v3.20) | X1 (firecrawl allowlist domain kısıtı uyarısı), X2 (multi-repo açık yasak — kural 7) |
-| v1.7 | 2026-05 (MIMARI v3.19) | E6 (bot tetiklenmedi troubleshooting tablosu), E7 (execution capability yokken alternatif akışı) |
-| v1.6 | 2026-05 (MIMARI v3.19) | W-serisi: workspace path otomatik üretim notu, keyword rehberi, commit-only PO döngüsü, 7 gün timeout + 3 loop cap kullanıcı bilgilendirmesi, firecrawl allowlist uyarısı |
-| v1.5 | MIMARI v3.18 | Z2 Standalone Mod + Z11 issue template eğitim cümlesi |
-| v1.4 | 2026-05 (MIMARI v3.17) | Y1 (assignee checklist), Y5 (chat yazma yetkisi yok), Y8 (structured choice), Y10 (smart-defaults mode), Y2 (Jira issue template referansı) |
-| v1.3 | MIMARI v3.16 | Dept context injection, prompt versioning, multi-output desteği |
-| v1.2 | MIMARI v3.13 | Script execution örnekleri (Örnek 6, 7) |
-| v1.1 | MIMARI v3.10 | İlk etkileşim davranışı, capability eksikliğinde alternatif |
+| v2.0 | 2026-05 | Kanonik birleştirme: `docs/task-creation-assistant-prompt.md` v1.9 davranışsal akışı + `prompts/task_creation_assistant.md` v1 YAML şablonu tek dosyada toplandı; bölüm sırası: ROL → ZORUNLU OUTPUT FORMATI → WORKFLOW TYPE SEÇİM REHBERİ → ZORUNLU SORU LİSTESİ → "Sizin Adınıza Yazabilir Miyim" → STANDALONE MOD → ÖRNEK KONUŞMALAR → DEPARTMAN BİLGİLERİ → KURALLAR → SIK YAPILAN HATALAR → DEĞİŞKEN ENJEKSİYONU |
+| v1.9 | 2026-05 | V8: Standalone Mod'da `bot_username` zorunlu YAML alanı; V2: Streamlit chat artık `assistant-service` üzerinden geçer; V14: dept yetki probe |
+| v1.8 | 2026-05 | X1 (firecrawl allowlist domain kısıtı uyarısı), X2 (multi-repo açık yasak — kural 7) |
+| v1.7 | 2026-05 | E6 (bot tetiklenmedi troubleshooting tablosu), E7 (execution capability yokken alternatif akışı) |
+| v1.6 | 2026-05 | W-serisi: workspace path otomatik üretim notu, keyword rehberi, commit-only PO döngüsü, 7 gün timeout + 3 loop cap kullanıcı bilgilendirmesi, firecrawl allowlist uyarısı |
+| v1.5 | 2026-05 | Z2 Standalone Mod + Z11 issue template eğitim cümlesi |
+| v1.4 | 2026-05 | Y1 (assignee checklist), Y5 (chat yazma yetkisi yok), Y8 (structured choice), Y10 (smart-defaults mode), Y2 (Jira issue template referansı) |
+| v1.3 | 2026-05 | Dept context injection, prompt versioning, multi-output desteği |
+| v1.2 | 2026-05 | Script execution örnekleri (Örnek 6, 7) |
+| v1.1 | 2026-05 | İlk etkileşim davranışı, capability eksikliğinde alternatif |
 | v1.0 | İlk sürüm | Temel akış + 5 örnek + 4 şablon |

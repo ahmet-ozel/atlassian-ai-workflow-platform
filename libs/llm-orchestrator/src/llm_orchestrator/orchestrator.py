@@ -1,9 +1,8 @@
 """``LlmOrchestrator`` — tool-call loop with retry + provider fallback.
 
-Implements task **4.3** of ``platform-mimari-ops``. Verifies
-Requirements 1.6 (activity-level token cap, fail-fast), 1.9 (429
-exponential backoff, max 3 retries) and 1.10 (vLLM 60s downtime →
-OpenAI fallback with UI banner).
+Implements the tool-call loop with activity-level token cap fail-fast,
+429 exponential backoff with three retries, and vLLM downtime fallback
+to OpenAI with a UI banner.
 
 The orchestrator is consumed by :class:`assistant_service.chat.ChatHandler`
 through the :class:`LlmOrchestratorLike` Protocol declared in
@@ -25,9 +24,9 @@ The terminal SSE events the generator may emit are:
 
 * ``done`` — the LLM finished without hitting any limit.
 * ``token_cap_exceeded`` — cumulative tokens exceeded ``token_cap``;
-  Property 16 asserts no further events fire after this.
+  no further events fire after this.
 * ``rate_limit_exhausted`` — three consecutive ``RateLimitError``\\s
-  from the active provider; Property 15 (a) asserts the 4th attempt
+  from the active provider; the 4th attempt
   is **never** made.
 * ``fallback_provider_active`` — a non-terminal banner event emitted
   before the orchestrator switches from the primary (vLLM) to the
@@ -36,7 +35,7 @@ The terminal SSE events the generator may emit are:
 * ``error`` — any other unhandled provider exception. The payload
   carries ``{"reason": "<exception class>"}``.
 
-Property tests under
+Tests under
 ``platform/tests/property/test_token_cap_fail_fast.py`` and
 ``platform/tests/property/test_llm_rate_limit_fallback.py`` exercise
 this module against a fake provider whose stream emits a scripted
@@ -75,14 +74,12 @@ _LOG = logging.getLogger(__name__)
 
 
 #: Maximum number of consecutive 429s before the orchestrator gives
-#: up. Pinned by Requirement 1.9: "429 exponential backoff retry max
-#: 3, then user message". Property 15 (a) asserts the 4th attempt is
-#: never made.
+#: up. The 4th attempt is never made.
 _MAX_429_ATTEMPTS = 3
 
 
 #: vLLM downtime threshold beyond which the orchestrator falls back
-#: to OpenAI (Requirement 1.10). The duration is in seconds.
+#: to OpenAI. The duration is in seconds.
 _PRIMARY_DOWNTIME_FALLBACK_S = 60
 
 
@@ -180,11 +177,9 @@ class LlmProviderStream(Protocol):
 class LlmOrchestrator:
     """Tool-call loop with retry + fallback.
 
-    Validates:
-        * R1.6 (activity-level token cap, fail-fast).
-        * R1.9 (429 exponential backoff, max 3, then ``rate_limit_exhausted``).
-        * R1.10 (vLLM 60s downtime → OpenAI fallback +
-          ``fallback_provider_active`` banner).
+    Enforces activity-level token caps, 429 exponential backoff with a
+    ``rate_limit_exhausted`` terminal event, and vLLM downtime fallback
+    with a ``fallback_provider_active`` banner.
 
     Args:
         primary: Primary provider (production: vLLM).
@@ -216,7 +211,7 @@ class LlmOrchestrator:
         """
 
         if token_cap <= 0:
-            raise ValueError("token_cap must be > 0 (Requirement 1.6)")
+            raise ValueError("token_cap must be > 0")
 
         provider: LlmProviderStream = self.primary
         on_fallback = False
@@ -256,7 +251,7 @@ class LlmOrchestrator:
                 ):
                     used_tokens += int(chunk.token_count or 0)
 
-                    # ---- Property 16: token cap fail-fast ----------
+                    # ---- Token cap fail-fast -----------------------
                     if used_tokens > token_cap:
                         yield SseEvent(
                             type="token_cap_exceeded",
@@ -356,7 +351,7 @@ class LlmOrchestrator:
                 if _is_rate_limit(exc):
                     attempts_429 += 1
                     if attempts_429 >= _MAX_429_ATTEMPTS:
-                        # Property 15 (a): the 4th attempt is NEVER made.
+                        # The 4th attempt is NEVER made.
                         yield SseEvent(
                             type="rate_limit_exhausted",
                             payload={"attempts": attempts_429},
@@ -367,7 +362,7 @@ class LlmOrchestrator:
                     continue
 
                 if _is_provider_unavailable(exc):
-                    # Property 15 / R1.10: switch to fallback when
+                    # Switch to fallback when
                     # primary has been down ≥60s. Otherwise the
                     # exception **propagates** — the oracle in
                     # ``test_llm_retry_fallback.py`` returns ``None``
@@ -393,8 +388,8 @@ class LlmOrchestrator:
                         # NB: do NOT reset ``attempts_429`` here. The
                         # oracle in ``test_llm_retry_fallback.py`` (the
                         # ``_expected_terminal_event`` helper) carries
-                        # the counter across the switch — Property 15's
-                        # invariant is "three consecutive 429s anywhere
+                        # the counter across the switch — the invariant
+                        # is "three consecutive 429s anywhere
                         # in the run terminate", regardless of which
                         # provider produced them.
                         continue

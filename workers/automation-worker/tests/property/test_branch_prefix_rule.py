@@ -1,9 +1,8 @@
-"""Property test: Branch pattern prefix rule application.
+"""Invariant test: Branch pattern prefix rule application.
 
-Feature: platform-completion, Property 33: For any branch creation with a "prefix"
+Feature:,: For any branch creation with a "prefix"
 type rule in department configuration, the issue key SHALL be prepended.
 
-Validates: Requirements 17.4
 """
 from __future__ import annotations
 import asyncio

@@ -5,7 +5,7 @@ concatenation and regex validation.  None of them call ``datetime``,
 ``random``, ``uuid``, or any I/O.  This guarantees Temporal workflow
 determinism when these helpers are invoked inside workflow code.
 
-Workflow ID schema (design.md §Workflow ID ve Idempotency Şeması):
+Workflow ID schema:
 
 | Workflow              | ID Template                                      |
 |-----------------------|--------------------------------------------------|
@@ -18,8 +18,7 @@ Branch naming: ``ai/{issue_key}/iter-{N}``
 Artifact keys: ``artifacts/{issue_key}/iter-{N}/{filename}``
                 ``executions/{workflow_id}/{name}``
 
-In addition to the foundation helpers above, the
-``platform-mimari-workflows`` spec (task 1.2, Requirement 2.1) defines a
+In addition to the foundation helpers above, this module defines a
 **round-trippable** ``WorkflowIdRef`` dataclass and three companion
 helpers:
 
@@ -33,7 +32,7 @@ The format regexes are pinned by design:
 * ``^automation-bb-[a-z0-9-]+-pr-\\d+$``
 
 The round-trip invariant ``parse_workflow_id(format(x)) == x`` holds for
-every valid input pair (Property 1).
+every valid input pair.
 """
 
 from __future__ import annotations
@@ -220,10 +219,10 @@ def execution_artifact_key(workflow_id: str, name: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Round-trippable workflow_id (platform-mimari-workflows task 1.2, R2.1)
+# Round-trippable workflow_id
 # ---------------------------------------------------------------------------
 #
-# These pinned regexes come straight from design.md (Property 1):
+# These pinned regexes define the workflow id format:
 #
 #   Jira:      ^automation-jira-[A-Z][A-Z0-9_]{1,9}-\d+$
 #   Bitbucket: ^automation-bb-[a-z0-9-]+-pr-\d+$
@@ -298,7 +297,7 @@ def jira_workflow_id(project_key: str, issue_num: int) -> str:
 
     Format: ``automation-jira-{PROJECT_KEY}-{ISSUE_NUM}``
 
-    Constraints (design.md Property 1):
+    Constraints:
 
     * ``project_key`` must match ``^[A-Z][A-Z0-9_]{1,9}$`` (2..10 chars,
       first uppercase letter, remainder uppercase / digit / underscore).
@@ -325,7 +324,7 @@ def bitbucket_pr_workflow_id(repo_slug: str, pr_id: int) -> str:
 
     Format: ``automation-bb-{REPO_SLUG}-pr-{PR_ID}``
 
-    Constraints (design.md Property 1):
+    Constraints:
 
     * ``repo_slug`` must be a non-empty lowercase alphanumeric string,
       possibly containing dashes — but no leading/trailing dash and no

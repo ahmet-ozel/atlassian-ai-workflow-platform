@@ -1,4 +1,4 @@
-"""Unit tests for :mod:`vault_client` (task 2.2 acceptance set).
+"""Unit tests for :mod:`vault_client`.
 
 Scope
 -----
@@ -6,7 +6,7 @@ Scope
 * :class:`VaultPath` — accepts the canonical pattern, rejects
   malformed strings (plain-text tokens, URLs, empty / non-str input).
 * :func:`make_client` — selects the right backend from
-  ``VAULT_BACKEND`` and rejects unknown / missing values (R6.6).
+  ``VAULT_BACKEND`` and rejects unknown / missing values.
 * :class:`LocalDevBackend` — round-trip ``read(write(p, v)) == v``
   through the libsodium-encrypted file backend, plus delete idempotency
   and SSH dual-slot rotation invariants.
@@ -14,8 +14,8 @@ Scope
 The Hashicorp backend's HTTP wire shape is exercised via
 :class:`httpx.MockTransport` so the test suite stays self-contained.
 The cross-backend equivalence property test
-(``test_vault_backends.py`` — task 2.7) lives elsewhere; these tests
-only cover the per-backend contract surface introduced by task 2.2.
+Backend parity tests live elsewhere; these tests cover the
+per-backend contract surface.
 """
 
 from __future__ import annotations
@@ -174,7 +174,7 @@ def test_make_client_local_dev_rejects_short_key() -> None:
 
 
 # ---------------------------------------------------------------------------
-# LocalDevBackend round-trip (R6.6)
+# LocalDevBackend round-trip
 # ---------------------------------------------------------------------------
 
 
@@ -226,7 +226,7 @@ def test_local_dev_rejects_nonstring_payload(tmp_path: Path) -> None:
 
 
 def test_local_dev_disk_does_not_contain_plaintext(tmp_path: Path) -> None:
-    """The encrypted file SHALL NOT contain plain-text values (R6.6)."""
+    """The encrypted file must not contain plain-text values."""
     store = tmp_path / "vault.json"
     backend = LocalDevBackend(store_path=store, key=nacl.utils.random(KEY_SIZE))
     secret_marker = "PLAINTEXT_TOKEN_MUST_NOT_LEAK_42"
@@ -367,7 +367,7 @@ def test_hashicorp_delete_is_idempotent_on_404() -> None:
 
 
 # ---------------------------------------------------------------------------
-# clear_previous_ssh_slot (R6.7 — post-validation cleanup)
+# clear_previous_ssh_slot — post-validation cleanup
 # ---------------------------------------------------------------------------
 
 
@@ -417,7 +417,7 @@ def test_hashicorp_clear_previous_ssh_slot_calls_delete() -> None:
 
 
 # ---------------------------------------------------------------------------
-# verify_webhook_hmac (R6.8 — 1h overlap window)
+# verify_webhook_hmac — 1h overlap window
 # ---------------------------------------------------------------------------
 
 
@@ -460,7 +460,7 @@ def test_verify_webhook_hmac_active_secret_only(tmp_path: Path) -> None:
 
 
 def test_verify_webhook_hmac_within_overlap_accepts_both(tmp_path: Path) -> None:
-    """Within 1h of rotation, both old and new secrets are accepted (R6.8)."""
+    """Within 1h of rotation, both old and new secrets are accepted."""
     from datetime import datetime, timedelta, timezone as _tz
 
     backend = _local_backend(tmp_path)
@@ -480,7 +480,7 @@ def test_verify_webhook_hmac_within_overlap_accepts_both(tmp_path: Path) -> None
 
 
 def test_verify_webhook_hmac_after_overlap_rejects_old(tmp_path: Path) -> None:
-    """Past the overlap deadline, only the new secret is accepted (R6.8)."""
+    """Past the overlap deadline, only the new secret is accepted."""
     from datetime import timedelta
 
     backend = _local_backend(tmp_path)

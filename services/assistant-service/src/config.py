@@ -1,9 +1,7 @@
 """Application configuration for assistant-service.
 
 Pydantic v2 Settings reading environment variables. The
-``dependencies_reachable`` method is a stub used by ``/readyz``; real
-dependency probes (Postgres, Redis, MCP, Temporal) will be wired in a
-later task.
+``dependencies_reachable`` method is used by ``/readyz``.
 """
 
 from __future__ import annotations
@@ -104,7 +102,7 @@ class Settings(BaseSettings):
     def dependencies_reachable(self) -> bool:
         """Stub readiness probe.
 
-        Returns ``True`` so ``/readyz`` answers ``200`` during scaffold runs.
-        A future task replaces this with real Postgres/Redis/MCP checks.
+        Returns ``True`` so ``/readyz`` answers ``200`` when no external
+        dependency checks are configured.
         """
         return True

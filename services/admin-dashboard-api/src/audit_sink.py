@@ -3,24 +3,24 @@
 This module provides the audit-write surface consumed by
 :class:`src.proxy.AdminProxy`. The proxy emits a single
 :class:`audit_logger.AuditEvent` with ``action="rbac_denied"`` whenever
-it rejects a request for RBAC reasons (Requirement 7.5 / 7.7).
+it rejects a request for RBAC reasons (behavior 7.5 / 7.7).
 
 The audit_logger library (``platform/libs/audit_logger``) exposes a
 :class:`audit_logger.AuditLogger` write surface that delegates to a
 duck-typed sink with a single ``insert_audit(event)`` async method.
 The asyncpg-backed implementation that targets the ``audit_events``
-table lives in task group 4 of ``platform-mimari-foundation`` (R7.7
+table lives in task group 4 of ``platform foundation`` (rule 7.7
 ``CHECK (actor_role IS NOT NULL)``) and is not yet wired into this
 service. Until that lands we ship a **logging adapter** here:
 
 * :class:`LoggingAuditSink` formats every event as a structured log
   line on the ``admin_dashboard_api.audit`` logger. The redaction
-  filter from task 9.1 still applies to that logger, so any free-text
+  filter from capability router wiring still applies to that logger, so any free-text
   ``payload`` field that accidentally embeds a credential pattern is
   scrubbed before it reaches stdout.
 
 * The class implements the same ``write(event)`` shape that the proxy
-  expects (see :class:`src.proxy._AuditSink`). When task 4.x lands we
+  expects (see :class:`src.proxy._AuditSink`). When audit writer wiring lands we
   swap the constructor argument in :func:`src.main.lifespan` for the
   asyncpg-backed writer without touching the proxy.
 
@@ -45,7 +45,7 @@ class LoggingAuditSink:
     """In-process audit sink that writes events as structured log lines.
 
     Used as a stand-in for the asyncpg-backed
-    ``audit_events`` writer until task 4.x lands. The sink's public
+    ``audit_events`` writer until audit writer wiring lands. The sink's public
     ``write(event)`` method matches the
     :class:`src.proxy._AuditSink` protocol so the proxy can be wired
     against it without changes.
@@ -53,7 +53,7 @@ class LoggingAuditSink:
     The class is intentionally tiny — it holds no state and never
     raises. A failure to format the event is logged at ``WARNING``
     instead of being propagated, because audit-write failures must
-    not mask the underlying HTTP 403 (Requirement 7.5; see
+    not mask the underlying HTTP 403 (behavior 7.5; see
     :meth:`src.proxy.AdminProxy._emit_rbac_denied`).
     """
 
@@ -115,9 +115,9 @@ class AsyncpgAuditSink:
     (``automation_service.audit_writer.AsyncpgAuditEventsWriter``):
     one ``INSERT`` per :meth:`write` call, JSON-encoded ``payload``,
     swallowing every database error so the audit pipeline never masks
-    the request outcome (R12.7).
+    the request outcome (rule 12.7).
 
-    Used by the ``llm-provider-management`` spec — task 7.1 wires this
+    Used by the ``llm-provider-management`` spec — provider audit wiring wires this
     sink onto ``app.state.audit_logger`` in :mod:`src.main` so the
     :class:`llm_providers.service.ProviderService` constructed per
     request lands its events in the same Postgres table as the rest of
@@ -152,7 +152,7 @@ class AsyncpgAuditSink:
 
         Failures are logged at WARNING and swallowed — the service
         layer's outer ``try/except`` then surfaces the HTTP response
-        regardless (R12.7).
+        regardless (rule 12.7).
         """
 
         payload_json: str | None

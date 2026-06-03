@@ -1,12 +1,11 @@
 # Environment Variable Reference (Master Table)
 
-> **Spec:** `platform-mimari-foundation` — Requirement 8 (env-reference master tablosu).
 > **Status:** Single source of truth for all Compose-stack environment variables.
 > **Parity invariants:** `tests/property/test_env_coverage.py`, `tests/property/test_sensitive_key_parity.py`.
 
 ## Overview
 
-Bu döküman, `platform/` Compose stack'indeki tüm servis, worker, sidecar ve UI bileşenlerinin tükettiği çevre değişkenlerinin **tek doğruluk kaynağı**dır. `MIMARI.md` §16.14 Y12 master tablosu ile aynı sütun şemasını kullanır:
+Bu döküman, `platform/` Compose stack'indeki tüm servis, worker, sidecar ve UI bileşenlerinin tükettiği çevre değişkenlerinin **tek doğruluk kaynağı**dır ve aşağıdaki sütun şemasını kullanır:
 
 | Sütun | Anlam |
 |---|---|
@@ -15,7 +14,7 @@ Bu döküman, `platform/` Compose stack'indeki tüm servis, worker, sidecar ve U
 | `required` | `true` ise servis o değişken olmadan başlatılamaz; `false` ise default değer ile devam eder. |
 | `default` | Değişken set edilmediğinde uygulanacak değer. `—` set zorunluluğunu işaret eder; `_dev_only` placeholder dev ortamı içindir. |
 | `description` | Değişkenin tek-cümlelik amacı. |
-| `vault_path` | Secret tipindeki değişkenler için production'da değerin çözüldüğü Vault KV path'i (`vault:<...>`). Plain-text değerler ile dolu olamaz (Requirement 8.5, 8.8). |
+| `vault_path` | Secret tipindeki değişkenler için production'da değerin çözüldüğü Vault KV path'i (`vault:<...>`). Plain-text değerler ile dolu olamaz. |
 | `feature_flag` | `true` ise değişken bir özellik anahtarıdır (default-off; opt-in açıldığında davranışı değiştirir). |
 
 ### Kategoriler (12)
@@ -33,7 +32,7 @@ Bu döküman, `platform/` Compose stack'indeki tüm servis, worker, sidecar ve U
 11. [Feature flags](#11-feature-flags)
 12. [Observability / Log](#12-observability--log)
 
-> Toplam tanımlı değişken sayısı: **≥ 60** (Requirement 8.2).
+> Toplam tanımlı değişken sayısı: **≥ 60**.
 
 ---
 
@@ -76,12 +75,12 @@ Bu döküman, `platform/` Compose stack'indeki tüm servis, worker, sidecar ve U
 
 | name | service(s) | required | default | description | vault_path | feature_flag |
 |---|---|---|---|---|---|---|
-| `MCP_BASE_URL` | `automation-service`, `assistant-service`, `agent-runner-worker`, `streamlit-ui`, `task-intake-service` | true | `http://atlassian-mcp:8090` | `atlassian_unified` MCP HTTP endpoint'i; tüm Jira/Bitbucket/Confluence çağrıları yalnızca bu URL üzerinden gider. | — | false |
+| `MCP_BASE_URL` | `automation-service`, `assistant-service`, `agent-runner-worker`, `streamlit-ui`, `task-intake-service` | true | `http://atlassian-mcp:8090` | `atlassian_mcp_bitbucket` MCP HTTP endpoint'i; tüm Jira/Bitbucket/Confluence çağrıları yalnızca bu URL üzerinden gider. | — | false |
 | `MCP_REQUEST_TIMEOUT_S` | `automation-service`, `assistant-service`, `agent-runner-worker` | false | `30` | MCP HTTP isteklerinin saniye cinsinden zaman aşımı. | — | false |
 | `MCP_BANNED_TOOLS` | `automation-service`, `assistant-service`, `agent-runner-worker` | false | `bitbucket_merge_pr,confluence_delete_page` | Tool katalog filtresinin LLM'e sunmadığı sabit araç listesi; override edilse bile yerleşik liste kalır. | — | false |
 | `FIRECRAWL_BASE_URL` | `agent-runner-worker`, `task-intake-service` | true | `http://firecrawl:3002` | Self-hosted Firecrawl HTTP endpoint'i; web search/scrape çağrıları bu URL'den geçer. | — | false |
 | `FIRECRAWL_ENABLED` | `automation-service`, `agent-runner-worker` | false | `false` | Global firecrawl etkinleştirme bayrağı; `web_search` capability türetimi bu değere bağlıdır. | — | false |
-| `FIRECRAWL_EGRESS_ALLOWLIST` | `firecrawl` | false | (boş) | Firecrawl'ın dış host'lara izin verdiği virgülle ayrılmış liste; listede olmayan host'lar HTTP 403 ile reddedilir (Requirement 10.3). | — | false |
+| `FIRECRAWL_EGRESS_ALLOWLIST` | `firecrawl` | false | (boş) | Firecrawl'ın dış host'lara izin verdiği virgülle ayrılmış liste; listede olmayan host'lar HTTP 403 ile reddedilir. | — | false |
 | `FIRECRAWL_API_KEY` | `firecrawl`, `agent-runner-worker`, `task-intake-service` | false | (boş) | Firecrawl auth header'ı için paylaşılan secret; production'da Vault'tan resolve edilir. | `vault:infrastructure/firecrawl/api_key` | false |
 | `OPENCODE_ENDPOINT` | `agent-runner-worker`, `assistant-service` | false | `http://opencode-sidecar:4096` | Opencode sidecar'ın Compose-internal HTTP endpoint'i; host ağına yayınlanmaz. | — | false |
 
@@ -91,9 +90,9 @@ Bu döküman, `platform/` Compose stack'indeki tüm servis, worker, sidecar ve U
 |---|---|---|---|---|---|---|
 | `LLM_PROVIDER` | `assistant-service`, `agent-runner-worker`, `automation-service`, `admin-dashboard-api` | true | `openai` | Aktif LLM sağlayıcısı: `vllm` / `openai` / `anthropic`. | — | false |
 | `LLM_MODEL_NAME` | `assistant-service`, `agent-runner-worker`, `automation-service`, `admin-dashboard-api` | false | `gpt-4o-mini` | Çağrılarda kullanılan model adı; provider tarafında karşılığı olmalıdır. | — | false |
-| `VLLM_BASE_URL` | `assistant-service`, `agent-runner-worker`, `automation-service`, `admin-dashboard-api` | false | `http://host.docker.internal:8000/v1` | Compose dışı vLLM endpoint'i; Compose stack vLLM paketlemez (Requirement 2.6). | — | false |
-| `OPENAI_API_KEY` | `assistant-service`, `agent-runner-worker`, `automation-service`, `admin-dashboard-api` | false | (boş) | OpenAI fallback API anahtarı; production'da plain-text yerine Vault path'inden çözülür (Requirement 6.9, 8.5). | `vault:infrastructure/openai/api_key` | false |
-| `ANTHROPIC_API_KEY` | `assistant-service`, `agent-runner-worker`, `automation-service`, `admin-dashboard-api` | false | (boş) | Anthropic fallback API anahtarı; production'da plain-text yerine Vault path'inden çözülür (Requirement 6.9, 8.5). | `vault:infrastructure/anthropic/api_key` | false |
+| `VLLM_BASE_URL` | `assistant-service`, `agent-runner-worker`, `automation-service`, `admin-dashboard-api` | false | `http://host.docker.internal:8000/v1` | Compose dışı vLLM endpoint'i; Compose stack vLLM paketlemez. | — | false |
+| `OPENAI_API_KEY` | `assistant-service`, `agent-runner-worker`, `automation-service`, `admin-dashboard-api` | false | (boş) | OpenAI fallback API anahtarı; production'da plain-text yerine Vault path'inden çözülür. | `vault:infrastructure/openai/api_key` | false |
+| `ANTHROPIC_API_KEY` | `assistant-service`, `agent-runner-worker`, `automation-service`, `admin-dashboard-api` | false | (boş) | Anthropic fallback API anahtarı; production'da plain-text yerine Vault path'inden çözülür. | `vault:infrastructure/anthropic/api_key` | false |
 | `LLM_REQUEST_TIMEOUT_S` | `assistant-service`, `agent-runner-worker` | false | `60` | LLM HTTP çağrılarının saniye cinsinden zaman aşımı. | — | false |
 | `LLM_MAX_TOKENS_OUTPUT` | `assistant-service`, `agent-runner-worker` | false | `2048` | LLM yanıtının maksimum token sayısı. | — | false |
 | `LLM_TEMPERATURE` | `assistant-service`, `agent-runner-worker` | false | `0.2` | LLM örnekleme sıcaklığı. | — | false |
@@ -104,7 +103,7 @@ Bu döküman, `platform/` Compose stack'indeki tüm servis, worker, sidecar ve U
 |---|---|---|---|---|---|---|
 | `MINIO_ENDPOINT` | `agent-runner-worker`, `execution-runner-worker`, `automation-service`, `admin-dashboard-api` | true | `minio:9000` | MinIO S3-uyumlu API endpoint'i; artifact upload/download için kullanılır. | — | false |
 | `MINIO_ROOT_USER` | `minio` (init), `agent-runner-worker`, `execution-runner-worker` | true | `minio` | MinIO root erişim anahtarı kullanıcı adı. | — | false |
-| `MINIO_ROOT_PASSWORD` | `minio` (init), `agent-runner-worker`, `execution-runner-worker` | true | `miniosecret_dev_only` | MinIO root parolası; production'da Vault'tan resolve edilir, plain-text disk'e düşmez (Requirement 8.5). | `vault:minio/access_keys` | false |
+| `MINIO_ROOT_PASSWORD` | `minio` (init), `agent-runner-worker`, `execution-runner-worker` | true | `miniosecret_dev_only` | MinIO root parolası; production'da Vault'tan resolve edilir, plain-text disk'e düşmez. | `vault:minio/access_keys` | false |
 | `MINIO_DEFAULT_BUCKET` | `agent-runner-worker`, `execution-runner-worker`, `automation-service` | false | `platform-artifacts` | Servislerin artifact yazarken kullandığı varsayılan bucket adı. | — | false |
 | `MINIO_USE_TLS` | `agent-runner-worker`, `execution-runner-worker`, `automation-service` | false | `false` | MinIO bağlantısı HTTPS olarak kurulup kurulmayacağını belirler. | — | false |
 
@@ -140,8 +139,8 @@ Bu döküman, `platform/` Compose stack'indeki tüm servis, worker, sidecar ve U
 | `WEBHOOK_HMAC_HEADER_JIRA` | `automation-service` | false | `X-Hub-Signature-256` | Jira webhook isteklerinde HMAC imzasının okunduğu header adı. | — | false |
 | `WEBHOOK_HMAC_HEADER_BITBUCKET` | `automation-service` | false | `X-Hub-Signature` | Bitbucket webhook isteklerinde HMAC imzasının okunduğu header adı. | — | false |
 | `WEBHOOK_HMAC_HEADER_CONFLUENCE` | `automation-service` | false | `X-Atlassian-Webhook-Identifier` | Confluence webhook isteklerinde imza/identifier'ın okunduğu header adı. | — | false |
-| `WEBHOOK_SECRET_VAULT_PREFIX` | `automation-service` | false | `vault:webhooks` | Departman bazlı webhook secret'ının çözüldüğü Vault path öneki; tam path `vault:webhooks/<provider>/<dept_id>` (Requirement 6.4). | — | false |
-| `WEBHOOK_ROTATION_OVERLAP_S` | `automation-service` | false | `3600` | Webhook secret rotation sırasında eski secret'ın kabul edilmeye devam ettiği saniye penceresi (default 1 saat — Requirement 6.8). | — | false |
+| `WEBHOOK_SECRET_VAULT_PREFIX` | `automation-service` | false | `vault:webhooks` | Departman bazlı webhook secret'ının çözüldüğü Vault path öneki; tam path `vault:webhooks/<provider>/<dept_id>`. | — | false |
+| `WEBHOOK_ROTATION_OVERLAP_S` | `automation-service` | false | `3600` | Webhook secret rotation sırasında eski secret'ın kabul edilmeye devam ettiği saniye penceresi (default 1 saat). | — | false |
 | `WEBHOOK_REPLAY_WINDOW_S` | `automation-service` | false | `300` | Webhook timestamp'inin replay-attack koruması için kabul edilen sapma penceresi. | — | false |
 | `WEBHOOK_BODY_MAX_BYTES` | `automation-service` | false | `1048576` | Webhook isteklerinde kabul edilen maksimum payload boyutu (byte). | — | false |
 
@@ -149,20 +148,20 @@ Bu döküman, `platform/` Compose stack'indeki tüm servis, worker, sidecar ve U
 
 | name | service(s) | required | default | description | vault_path | feature_flag |
 |---|---|---|---|---|---|---|
-| `SSH_HOST` | `execution-runner-worker` | false | (boş) | Tek SSH runner host adresi (single-runner kanonik kontrat — G1). `execution` capability'si bu env veya deprecated `SSH_HOST_1` alias'ı set olduğunda türetilir (Requirement 4.3). Tüm departmanlar bu tek host'u `RUNNER_BASE_PATH` altında paylaşır. | — | false |
+| `SSH_HOST` | `execution-runner-worker` | false | (boş) | Tek SSH runner host adresi. `execution` capability'si bu env veya deprecated `SSH_HOST_1` alias'ı set olduğunda türetilir. Tüm departmanlar bu tek host'u `RUNNER_BASE_PATH` altında paylaşır. | — | false |
 | `SSH_HOST_1` | `execution-runner-worker` | false | (boş) | DEPRECATED — `SSH_HOST` kanonik değişkenin geriye uyumluluk alias'ı. Yeni deployment'larda kullanılmaz; mevcut deployment'larda `SSH_HOST` boşsa fallback olarak okunur. | — | false |
 | `SSH_HOST_2` | `execution-runner-worker` | false | (boş) | DEPRECATED — multi-runner legacy slot. Single-runner kanonik kontrat altında runtime tarafından **yok sayılır**; gelecekteki bir release'de kaldırılacaktır. | — | false |
 | `SSH_HOST_3` | `execution-runner-worker` | false | (boş) | DEPRECATED — multi-runner legacy slot. Single-runner kanonik kontrat altında runtime tarafından **yok sayılır**; gelecekteki bir release'de kaldırılacaktır. | — | false |
 | `SSH_USER_DEFAULT` | `execution-runner-worker` | false | `runner` | SSH bağlantılarında kullanılan varsayılan kullanıcı adı. | — | false |
 | `SSH_PORT_DEFAULT` | `execution-runner-worker` | false | `22` | SSH bağlantılarında kullanılan varsayılan TCP portu. | — | false |
-| `SSH_KEY_VAULT_PREFIX` | `execution-runner-worker` | false | `vault:ssh/runners` | SSH key dual-slot rotation için kullanılan Vault path öneki; aktif slot `<prefix>/<runner_id>/active`, önceki slot `<prefix>/<runner_id>/previous` (Requirement 6.7). | — | false |
+| `SSH_KEY_VAULT_PREFIX` | `execution-runner-worker` | false | `vault:ssh/runners` | SSH key dual-slot rotation için kullanılan Vault path öneki; aktif slot `<prefix>/<runner_id>/active`, önceki slot `<prefix>/<runner_id>/previous`. | — | false |
 | `SSH_CONNECT_TIMEOUT_S` | `execution-runner-worker` | false | `15` | SSH bağlantısının saniye cinsinden kurulum zaman aşımı. | — | false |
 | `SSH_COMMAND_TIMEOUT_S` | `execution-runner-worker` | false | `1800` | Tek bir SSH komutunun saniye cinsinden çalışma zaman aşımı (default 30 dakika). | — | false |
 | `SSH_KNOWN_HOSTS_PATH` | `execution-runner-worker` | false | `/etc/ssh/ssh_known_hosts` | Doğrulanmış host anahtarlarının okunduğu dosya yolu; eşleşmeyen host fingerprint'i bağlantıyı reddeder. | — | false |
-| `RUNNER_BASE_PATH` | `execution-runner-worker` | false | `/var/ai-runner` | Workspace kök klasörü; task workspace'leri `{RUNNER_BASE_PATH}/{ISSUE_KEY}/iter-{N}/` formatında oluşturulur (`runners/workspace_path.build_workspace_path`). `task-creation-assistant-prompt.md` v1.9 path kuralı ile birebir eşleşir (`platform-mimari-uyumluluk` Requirement 11.1 / Q13). Single-runner kanonik kontrat (G1): bu path tek SSH host'ta tüm departmanlarca paylaşılır. | — | false |
-| `SSH_BASE_PATH` | `execution-runner-worker` | false | `/var/ai-runner` | (deprecated alias for `RUNNER_BASE_PATH`) — eski deployment'lar için `pydantic-settings` `AliasChoices("RUNNER_BASE_PATH", "SSH_BASE_PATH")` üzerinden fallback olarak okunur; yeni kurulumlarda yalnızca `RUNNER_BASE_PATH` set edilmelidir (`platform-mimari-uyumluluk` Requirement 11.4). | — | false |
-| `RUNNER_DISK_WARN_PCT` | `execution-runner-worker`, `automation-worker` | false | `80` | Workspace disk kullanım uyarı eşiği (yüzde). Bu yüzdeye ulaşıldığında `WorkspaceCleanupSchedulerWorkflow` admin-dashboard'a sarı banner gönderir; eviction tetiklenmez (G2). | — | false |
-| `RUNNER_DISK_EVICT_PCT` | `execution-runner-worker`, `automation-worker` | false | `90` | Workspace disk auto-prune eviction eşiği (yüzde). Bu yüzdeye ulaşıldığında `WorkspaceCleanupSchedulerWorkflow` (Temporal cron, hourly) en eski `iter-N` klasörlerini (mtime'a göre) kullanım eşiğin altına düşene kadar tek tek siler ve `workspace_auto_pruned` audit yazar (G2). | — | false |
+| `RUNNER_BASE_PATH` | `execution-runner-worker` | false | `/var/ai-runner` | Workspace kök klasörü; task workspace'leri `{RUNNER_BASE_PATH}/{ISSUE_KEY}/iter-{N}/` formatında oluşturulur (`runners/workspace_path.build_workspace_path`). Bu path tek SSH host'ta tüm departmanlarca paylaşılır. | — | false |
+| `SSH_BASE_PATH` | `execution-runner-worker` | false | `/var/ai-runner` | (deprecated alias for `RUNNER_BASE_PATH`) — eski deployment'lar için `pydantic-settings` `AliasChoices("RUNNER_BASE_PATH", "SSH_BASE_PATH")` üzerinden fallback olarak okunur; yeni kurulumlarda yalnızca `RUNNER_BASE_PATH` set edilmelidir. | — | false |
+| `RUNNER_DISK_WARN_PCT` | `execution-runner-worker`, `automation-worker` | false | `80` | Workspace disk kullanım uyarı eşiği (yüzde). Bu yüzdeye ulaşıldığında `WorkspaceCleanupSchedulerWorkflow` admin-dashboard'a sarı banner gönderir; eviction tetiklenmez. | — | false |
+| `RUNNER_DISK_EVICT_PCT` | `execution-runner-worker`, `automation-worker` | false | `90` | Workspace disk auto-prune eviction eşiği (yüzde). Bu yüzdeye ulaşıldığında `WorkspaceCleanupSchedulerWorkflow` (Temporal cron, hourly) en eski `iter-N` klasörlerini (mtime'a göre) kullanım eşiğin altına düşene kadar tek tek siler ve `workspace_auto_pruned` audit yazar. | — | false |
 
 ## 11. Feature flags
 
@@ -171,10 +170,10 @@ Bu döküman, `platform/` Compose stack'indeki tüm servis, worker, sidecar ve U
 | `FEATURE_FLAG_AI_ENABLED` | `automation-service`, `assistant-service`, `agent-runner-worker` | false | `true` | Açıldığında AI/LLM içeren workflow'ların başlatılmasına izin verilir; `false` olduğunda LLM çağrıları kısa devre yapar. | — | true |
 | `FEATURE_FLAG_EXECUTION_ENABLED` | `automation-service`, `execution-runner-worker` | false | `true` | Açıldığında SSH/Docker tabanlı execution workflow'ları çalıştırılır; `false` olduğunda `execution` capability'si türetilse bile workflow başlatılmaz. | — | true |
 | `FEATURE_FLAG_TASK_INTAKE_ENABLED` | `task-intake-service`, `automation-service` | false | `false` | Açıldığında `task-intake-service` Compose profile'ı etkin olur ve görev alımı boru hattı çalışır; varsayılan kapalıdır. | — | true |
-| `SSH_RUNNER_DEPT_PINNING_ENABLED` | `automation-service`, `execution-runner-worker` | false | `false` | DEPRECATED — single-runner kanonik kontrat altında no-op (G1). Per-dept SSH host pinning kaldırıldı; tüm departmanlar tek host'u paylaşır. Default `false` korunur ve env-coverage parity için okunmaya devam eder; runtime tarafından **yok sayılır**. Gelecekteki bir release'de kaldırılacak. | — | true |
-| `SSH_DEPT_QUOTA_ENABLED` | `automation-service`, `execution-runner-worker` | false | `false` | DEPRECATED — single-runner kanonik kontrat altında no-op (G1). Per-dept disk quota kaldırıldı; disk yönetimi global `RUNNER_DISK_WARN_PCT` / `RUNNER_DISK_EVICT_PCT` eşikleri üzerinden `WorkspaceCleanupSchedulerWorkflow` (G2) tarafından yapılır. Default `false` korunur ve env-coverage parity için okunmaya devam eder; runtime tarafından **yok sayılır**. Gelecekteki bir release'de kaldırılacak. | — | true |
-| `FEATURE_FLAG_FIRECRAWL_ENABLED` | `automation-service`, `agent-runner-worker` | false | `false` | Açıldığında `web_search` capability türetimi ve Firecrawl çağrıları aktiftir; varsayılan kapalıdır (Requirement 4.3 ile uyumlu). | — | true |
-| `FEATURE_FLAG_PR_AUTO_MERGE_ENABLED` | `automation-service`, `agent-runner-worker` | false | `false` | Açıldığında PR auto-merge denemeleri etkinleşir; MIMARI §1 K8 nedeniyle production'da `false` kalmalıdır. | — | true |
+| `SSH_RUNNER_DEPT_PINNING_ENABLED` | `automation-service`, `execution-runner-worker` | false | `false` | DEPRECATED — single-runner kanonik kontrat altında no-op. Per-dept SSH host pinning kaldırıldı; tüm departmanlar tek host'u paylaşır. Default `false` korunur ve env-coverage parity için okunmaya devam eder; runtime tarafından **yok sayılır**. Gelecekteki bir release'de kaldırılacak. | — | true |
+| `SSH_DEPT_QUOTA_ENABLED` | `automation-service`, `execution-runner-worker` | false | `false` | DEPRECATED — single-runner kanonik kontrat altında no-op. Per-dept disk quota kaldırıldı; disk yönetimi global `RUNNER_DISK_WARN_PCT` / `RUNNER_DISK_EVICT_PCT` eşikleri üzerinden `WorkspaceCleanupSchedulerWorkflow` tarafından yapılır. Default `false` korunur ve env-coverage parity için okunmaya devam eder; runtime tarafından **yok sayılır**. Gelecekteki bir release'de kaldırılacak. | — | true |
+| `FEATURE_FLAG_FIRECRAWL_ENABLED` | `automation-service`, `agent-runner-worker` | false | `false` | Açıldığında `web_search` capability türetimi ve Firecrawl çağrıları aktiftir; varsayılan kapalıdır. | — | true |
+| `FEATURE_FLAG_PR_AUTO_MERGE_ENABLED` | `automation-service`, `agent-runner-worker` | false | `false` | Açıldığında PR auto-merge denemeleri etkinleşir; production'da `false` kalmalıdır. | — | true |
 | `FEATURE_FLAG_AUDIT_PRUNE_ENABLED` | `automation-service`, `admin-dashboard-api` | false | `false` | Açıldığında AuditPruneWorkflow düzenli çalışır ve eski audit kayıtlarını arşivler; varsayılan kapalıdır. | — | true |
 
 ## 12. Observability / Log
@@ -183,7 +182,7 @@ Bu döküman, `platform/` Compose stack'indeki tüm servis, worker, sidecar ve U
 |---|---|---|---|---|---|---|
 | `LOG_LEVEL` | `*` (tüm servis/worker/UI) | true | `INFO` | Yapılandırılmış log seviyesi: `DEBUG` / `INFO` / `WARNING` / `ERROR`. | — | false |
 | `LOG_FORMAT` | `*` (tüm servis/worker/UI) | false | `json` | Log çıktı formatı: `json` (prod) veya `console` (dev). | — | false |
-| `LOG_REDACTION_ENABLED` | `*` (tüm servis/worker/UI) | false | `true` | Açıldığında `Authorization`, `Bearer`, `api_token=`, `password=`, `secret=` desenleri `***REDACTED***` ile değiştirilir (Requirement 6.10). | — | false |
+| `LOG_REDACTION_ENABLED` | `*` (tüm servis/worker/UI) | false | `true` | Açıldığında `Authorization`, `Bearer`, `api_token=`, `password=`, `secret=` desenleri `***REDACTED***` ile değiştirilir. | — | false |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | `automation-service`, `assistant-service`, `admin-dashboard-api`, `agent-runner-worker`, `execution-runner-worker` | false | (boş) | OpenTelemetry collector OTLP endpoint'i; boş bırakılırsa trace/metric export edilmez. | — | false |
 | `OTEL_SERVICE_NAME` | `automation-service`, `assistant-service`, `admin-dashboard-api`, `agent-runner-worker`, `execution-runner-worker` | false | (compose service adı) | OpenTelemetry tracing'de servisin tanımlayıcı adı. | — | false |
 | `OTEL_RESOURCE_ATTRIBUTES` | `automation-service`, `assistant-service`, `admin-dashboard-api`, `agent-runner-worker`, `execution-runner-worker` | false | (boş) | OpenTelemetry resource attribute listesi (`key=value,key=value`). | — | false |
@@ -198,11 +197,11 @@ Bu döküman, `platform/` Compose stack'indeki tüm servis, worker, sidecar ve U
 
 ## Parity & Validation Rules
 
-1. **`.env.example` superset (Requirement 8.3)** — `platform/.env.example` `name` listesi, bu döküman'daki `required=true` satırlarının **superset**'idir; eksik bir zorunlu değişken `tests/property/test_env_coverage.py` testinde başarısızlığa yol açar.
-2. **Per-service parity (Requirement 8.4)** — `services/<name>/.env.example` ve `workers/<name>/.env.example` dosyalarında listelenen her değişken bu döküman'da da tanımlıdır. Tanımsız bir değişken `tests/property/test_env_coverage.py`'da testi başarısız sayar.
-3. **Vault path parity (Requirement 8.5, 8.8)** — `vault_path` sütunu dolu olan değişkenlerin `.env.example` dosyalarındaki değeri `boş` veya `_dev_only` ekli placeholder olmalıdır; production değer commit edilirse `tests/property/test_sensitive_key_parity.py` testi başarısız sayar.
-4. **Feature flag default-off invariant (Requirement 8.6)** — `feature_flag=true` işaretli her değişken `default=false` ile başlar ve opt-in açılması gerekir. `SSH_RUNNER_DEPT_PINNING_ENABLED` (V1) ve `SSH_DEPT_QUOTA_ENABLED` (V9) bu kuralın tarihi referans örnekleridir; her ikisi de single-runner kanonik kontrat (G1) altında **deprecated no-op** durumdadır ve gelecekteki bir release'de kaldırılacaktır.
-5. **Log redaction invariant (Requirement 6.10)** — Tüm servisler `RedactionFilter` middleware'ı ile `Authorization: Basic <...>`, `Bearer <...>`, `api_token=<...>`, `password=<...>`, `secret=<...>` desenlerini `***REDACTED***` ile değiştirir.
+1. **`.env.example` superset** — `platform/.env.example` `name` listesi, bu döküman'daki `required=true` satırlarının **superset**'idir; eksik bir zorunlu değişken `tests/property/test_env_coverage.py` testinde başarısızlığa yol açar.
+2. **Per-service parity** — `services/<name>/.env.example` ve `workers/<name>/.env.example` dosyalarında listelenen her değişken bu döküman'da da tanımlıdır. Tanımsız bir değişken `tests/property/test_env_coverage.py`'da testi başarısız sayar.
+3. **Vault path parity** — `vault_path` sütunu dolu olan değişkenlerin `.env.example` dosyalarındaki değeri `boş` veya `_dev_only` ekli placeholder olmalıdır; production değer commit edilirse `tests/property/test_sensitive_key_parity.py` testi başarısız sayar.
+4. **Feature flag default-off invariant** — `feature_flag=true` işaretli her değişken `default=false` ile başlar ve opt-in açılması gerekir. `SSH_RUNNER_DEPT_PINNING_ENABLED` ve `SSH_DEPT_QUOTA_ENABLED` bu kuralın tarihi referans örnekleridir; her ikisi de single-runner kanonik kontrat altında **deprecated no-op** durumdadır ve gelecekteki bir release'de kaldırılacaktır.
+5. **Log redaction invariant** — Tüm servisler `RedactionFilter` middleware'ı ile `Authorization: Basic <...>`, `Bearer <...>`, `api_token=<...>`, `password=<...>`, `secret=<...>` desenlerini `***REDACTED***` ile değiştirir.
 
 ## Change Process
 

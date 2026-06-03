@@ -1,10 +1,7 @@
 """Unit tests for platform/scripts/vps_open_issue_logger.py.
 
-Validates:
-- R16.1: Valid entries are accepted and monotonic id increments correctly.
-- R16.2: Invalid severity, category, recommended_action, summary > 160 chars,
-  and requirement_id regex violations each raise ValueError.
-- R16.3: severity=critical prints correct prefix to stdout.
+Valid entries are accepted, monotonic ids increment correctly, invalid inputs
+raise ValueError, and critical severity prints the expected stdout prefix.
 """
 
 from __future__ import annotations
@@ -54,12 +51,12 @@ def _valid_kwargs() -> dict:
 
 
 # ---------------------------------------------------------------------------
-# R16.1: Valid entry acceptance and monotonic id
+# Valid entry acceptance and monotonic id
 # ---------------------------------------------------------------------------
 
 
 class TestValidEntryAndMonotonicId:
-    """Validates: Requirements R16.1"""
+    """Tests valid entry acceptance and monotonic id behavior."""
 
     def test_first_entry_returns_id_1(self):
         issue_id = log_open_issue(**_valid_kwargs())
@@ -127,12 +124,12 @@ class TestValidEntryAndMonotonicId:
 
 
 # ---------------------------------------------------------------------------
-# R16.2: Validation — each invalid input raises ValueError
+# Validation for each invalid input
 # ---------------------------------------------------------------------------
 
 
 class TestValidationErrors:
-    """Validates: Requirements R16.2"""
+    """Tests validation errors for invalid open issue fields."""
 
     def test_invalid_severity_raises(self):
         kwargs = _valid_kwargs()
@@ -175,12 +172,12 @@ class TestValidationErrors:
 
 
 # ---------------------------------------------------------------------------
-# R16.3: Critical severity stdout prefix
+# Critical severity stdout prefix
 # ---------------------------------------------------------------------------
 
 
 class TestCriticalSeverityStdout:
-    """Validates: Requirements R16.1, R16.2 (R16.3 behavior)"""
+    """Tests stdout behavior for critical severity entries."""
 
     def test_critical_severity_prints_prefix(self, capsys):
         kwargs = _valid_kwargs()

@@ -1,32 +1,32 @@
 # automation-service
 
-FastAPI HTTP service skeleton for the multi-service scaffold. Listens on
+FastAPI HTTP service skeleton for the platform. Listens on
 port `8080` and exposes the standard liveness/readiness contract from
-the [design](../../.kiro/specs/multi-service-scaffold/design.md) §3.1:
+the expected HTTP service contract:
 
 - `GET /healthz` → `200` with body `{"status": "ok"}`.
 - `GET /readyz` → `200` with `{"status": "ready"}` when
   `Settings.dependencies_reachable()` returns `True`; `503` with
   `{"status": "not_ready"}` otherwise. The 503 body is ≤ 64 bytes and
-  parseable as JSON whose only top-level key is `status` (Property 9).
+  parseable as JSON whose only top-level key is `status`.
 
 Real automation business logic (Atlassian webhooks, Temporal workflow
 start, decision engine) lives behind the placeholder modules
 `src/webhooks/`, `src/temporal_client.py`, `src/decision/` and will be
-implemented by later specs.
+implemented by later
 
 ## Standalone build & run
 
 The service runs in **Standalone Mode** without the rest of the Compose
-stack (Requirement 15). Build the image and run it directly from this
+stack. Build the image and run it directly from this
 directory:
 
 ```bash
 # from services/automation-service/
-docker build -t automation-service:scaffold .
+docker build -t automation-service:local .
 
 cp .env.example .env
-docker run --rm --env-file .env -p 8080:8080 automation-service:scaffold
+docker run --rm --env-file .env -p 8080:8080 automation-service:local
 ```
 
 Once the container is up:
@@ -68,5 +68,5 @@ services/automation-service/
 ├── migrations/              # placeholder — Alembic / SQL migrations
 ├── tests/{unit,integration,e2e}/
 ├── pyproject.toml
-└── .env.example             # added in task 7.1
+└── .env.example             # local environment template
 ```

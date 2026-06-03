@@ -1,11 +1,9 @@
-"""Property test: Confluence page create vs update decision.
+"""Invariant test: Confluence page create vs update decision.
 
-Feature: platform-completion, Property 7: For any confluence_page action,
+Feature:,: For any confluence_page action,
 if page_id is present in the action params then the existing page SHALL
 be updated; if page_id is absent then a new page SHALL be created in
 the specified space.
-
-Validates: Requirements 3.5
 
 Strategy
 --------
@@ -24,10 +22,10 @@ from hypothesis import strategies as st
 def _decide_action(params: dict) -> str:
     """Pure helper that mirrors the executor's decision logic.
 
-    Mirrors :func:`automation_worker.activities.output_actions._handle_confluence_page`
-    (which selects ``confluence_update_page`` if ``params.get("page_id")``
-    is truthy, else ``confluence_create_page``).
-    """
+ Mirrors:func:`automation_worker.activities.output_actions._handle_confluence_page`
+ (which selects ``confluence_update_page`` if ``params.get("page_id")``
+ is truthy, else ``confluence_create_page``).
+ """
     page_id = params.get("page_id")
     if page_id:
         return "update"

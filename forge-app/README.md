@@ -4,7 +4,7 @@ Atlassian Forge skeleton that ships the **`AI Bot Task`** Jira issue type with
 mandatory custom fields so end-users cannot create AI bot tasks with missing
 metadata.
 
-> **Status:** skeleton (Requirement 6 of `platform-mimari-uyumluluk`). The
+> **Status:** skeleton. The
 > handler is a placeholder and the add-on is opt-in behind
 > `FEATURE_FLAG_FORGE_ADDON_ENABLED` (default `false`). When the flag is
 > off, the platform falls back to the plain Markdown template rendered by

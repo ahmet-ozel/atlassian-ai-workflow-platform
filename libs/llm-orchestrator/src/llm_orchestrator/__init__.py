@@ -1,4 +1,4 @@
-"""llm-orchestrator: provider-agnostic LLM factory for the multi-service scaffold.
+"""llm-orchestrator: provider-agnostic LLM factory for the platform.
 
 Re-exports the public API so callers can simply do::
 
@@ -6,11 +6,10 @@ Re-exports the public API so callers can simply do::
     from llm_orchestrator import LlmOrchestrator, RateLimitError, ProviderUnavailable
     from llm_orchestrator import FallbackLLMProviderFactory, LLMProviderConfig
 
-The provider factory covers the production LLM contract (Spec 1).
+The provider factory covers the production LLM contract.
 The :class:`LlmOrchestrator` plus its retry / fallback policy
-implements task 4.3 of ``platform-mimari-ops``.
-The :class:`FallbackLLMProviderFactory` implements task 21.1 of
-``platform-completion`` (LLM Fallback Auto-Switch).
+implements the tool-call loop. The :class:`FallbackLLMProviderFactory`
+implements LLM fallback auto-switching.
 """
 
 from .fallback import (

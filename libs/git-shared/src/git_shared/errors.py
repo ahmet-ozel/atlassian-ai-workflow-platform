@@ -37,7 +37,7 @@ class MergeConflictError(GitRepoError):
     """Raised when a PR can be opened but ``main`` and the draft conflict.
 
     The router captures this exception, writes a ``prompt_pr_conflict``
-    audit event (Requirement 2.2) and surfaces ``409 Conflict`` to the
+    audit event and surfaces ``409 Conflict`` to the
     caller.
     """
 

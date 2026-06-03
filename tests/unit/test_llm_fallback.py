@@ -3,7 +3,6 @@
 Tests the FallbackLLMProviderFactory class from
 platform/libs/llm-orchestrator/src/llm_orchestrator/fallback.py
 
-Validates: Requirements 15.1, 15.2, 15.3, 15.4, 15.5.
 """
 
 from __future__ import annotations
@@ -128,7 +127,7 @@ class TestPrimarySuccess:
 
 
 # ---------------------------------------------------------------------------
-# Tests: Primary Timeout → Fallback (Requirement 15.1)
+# Tests: Primary Timeout → Fallback
 # ---------------------------------------------------------------------------
 
 
@@ -137,7 +136,7 @@ class TestPrimaryTimeout:
 
     @pytest.mark.asyncio
     async def test_timeout_switches_to_fallback(self):
-        """Requirement 15.1: Primary timeout → switch to fallback."""
+        """Primary timeout switches to fallback."""
 
         async def slow_complete(prompt: str, **kwargs: Any) -> str:
             await asyncio.sleep(100)  # Will be cancelled by wait_for
@@ -159,7 +158,7 @@ class TestPrimaryTimeout:
 
     @pytest.mark.asyncio
     async def test_timeout_preserves_original_request(self):
-        """Requirement 15.1: Original request data preserved on fallback."""
+        """Original request data is preserved on fallback."""
 
         async def slow_complete(prompt: str, **kwargs: Any) -> str:
             await asyncio.sleep(100)
@@ -180,7 +179,7 @@ class TestPrimaryTimeout:
 
     @pytest.mark.asyncio
     async def test_timeout_logs_fallback_event(self):
-        """Requirement 15.3: Fallback event logged on timeout switch."""
+        """Fallback event is logged on timeout switch."""
 
         async def slow_complete(prompt: str, **kwargs: Any) -> str:
             await asyncio.sleep(100)
@@ -202,7 +201,7 @@ class TestPrimaryTimeout:
 
 
 # ---------------------------------------------------------------------------
-# Tests: Primary 5xx → Retry → Fallback (Requirement 15.2)
+# Tests: Primary 5xx → Retry → Fallback
 # ---------------------------------------------------------------------------
 
 
@@ -211,7 +210,7 @@ class TestPrimary5xxRetry:
 
     @pytest.mark.asyncio
     async def test_5xx_retries_3_times_then_fallback(self):
-        """Requirement 15.2: 3 retries with 2s interval, then fallback."""
+        """3 retries with 2s interval, then fallback."""
         primary = FakeLLMProvider([
             LLMServerError("error", 500),
             LLMServerError("error", 502),
@@ -247,7 +246,7 @@ class TestPrimary5xxRetry:
 
     @pytest.mark.asyncio
     async def test_5xx_logs_event_after_exhausted_retries(self):
-        """Requirement 15.3: Log event after all retries exhausted."""
+        """Log event after all retries exhausted."""
         primary = FakeLLMProvider([
             LLMServerError("err", 500),
             LLMServerError("err", 500),
@@ -265,7 +264,7 @@ class TestPrimary5xxRetry:
 
 
 # ---------------------------------------------------------------------------
-# Tests: Fallback Also Fails (Requirement 15.4)
+# Tests: Fallback Also Fails
 # ---------------------------------------------------------------------------
 
 
@@ -274,7 +273,7 @@ class TestFallbackAlsoFails:
 
     @pytest.mark.asyncio
     async def test_fallback_timeout_raises_unavailable(self):
-        """Requirement 15.4: Fallback timeout → llm_unavailable."""
+        """Fallback timeout raises llm_unavailable."""
 
         async def slow_primary(prompt: str, **kwargs: Any) -> str:
             await asyncio.sleep(100)
@@ -301,7 +300,7 @@ class TestFallbackAlsoFails:
 
     @pytest.mark.asyncio
     async def test_fallback_5xx_raises_unavailable(self):
-        """Requirement 15.4: Fallback 5xx → llm_unavailable."""
+        """Fallback 5xx raises llm_unavailable."""
         primary = FakeLLMProvider([
             LLMServerError("err", 500),
             LLMServerError("err", 500),
@@ -319,7 +318,7 @@ class TestFallbackAlsoFails:
 
 
 # ---------------------------------------------------------------------------
-# Tests: Notification Callback (Requirement 15.3)
+# Tests: Notification Callback
 # ---------------------------------------------------------------------------
 
 
@@ -328,7 +327,7 @@ class TestNotificationCallback:
 
     @pytest.mark.asyncio
     async def test_notification_called_on_switch(self):
-        """Requirement 15.3: Notification sent on fallback switch."""
+        """Notification is sent on fallback switch."""
         callback = AsyncMock()
         primary = FakeLLMProvider([
             LLMServerError("err", 500),
@@ -370,7 +369,7 @@ class TestNotificationCallback:
 
 
 # ---------------------------------------------------------------------------
-# Tests: Health Probe (Requirement 15.5)
+# Tests: Health Probe
 # ---------------------------------------------------------------------------
 
 
@@ -379,7 +378,7 @@ class TestHealthProbe:
 
     @pytest.mark.asyncio
     async def test_health_probe_restores_primary(self):
-        """Requirement 15.5: Successful health probe → route back to primary."""
+        """Successful health probe routes back to primary."""
         primary = FakeLLMProvider([
             LLMServerError("err", 500),
             LLMServerError("err", 500),

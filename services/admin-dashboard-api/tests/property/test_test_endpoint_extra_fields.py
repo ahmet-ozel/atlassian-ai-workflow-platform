@@ -1,15 +1,10 @@
-"""Property 9 — Test endpoint refuses prompt-shaping fields.
-
-# Feature: llm-provider-management, Property 9: Test endpoint refuses prompt-shaping fields
-
-Validates Requirements 8.3, 8.4: any non-empty subset of
+"""— Test endpoint refuses prompt-shaping fields.
 ``{prompt, messages, content, max_tokens, max_output_tokens,
 temperature, top_p, system}`` mixed into a saved or unsaved test
 body MUST be rejected with HTTP 422 ``extra_fields_not_allowed`` and
 the offending field names exactly equal to the subset chosen. No
 upstream HTTP request is captured by the ``httpx.MockTransport``
-because validation happens before the connection tester runs.
-"""
+because validation happens before the connection tester runs."""
 
 from __future__ import annotations
 

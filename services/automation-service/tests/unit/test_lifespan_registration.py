@@ -1,10 +1,9 @@
-"""Task 5.1 — ``test_lifespan_registration`` (automation-service-wiring).
+"""Tests for lifespan registration.
 
 Pins the contract that :func:`automation_service.app.create_app` returns a
 :class:`fastapi.FastAPI` whose ``router.lifespan_context`` resolves to the
-production :func:`automation_service.app.lifespan` callable. Validates
-Requirements 1.1, 1.2 and 1.3 of the ``automation-service-wiring`` spec —
-the lifespan handler must be defined, must be registered via the
+production :func:`automation_service.app.lifespan` callable. The lifespan
+handler must be defined, must be registered via the
 ``lifespan=`` keyword on the ``FastAPI(...)`` constructor and must be
 reachable through the application's router.
 """
@@ -38,9 +37,9 @@ def _walk_closure_for_lifespan(fn: object, target_qualname: str) -> bool:
     :func:`fastapi.routing._merge_lifespan_context`, which stashes the
     nested handlers inside the wrapper's closure cells.  We walk those
     cells recursively to locate the production ``lifespan`` symbol —
-    that proves Requirement 1.2 (``lifespan=lifespan`` was passed to
-    ``FastAPI(...)``) even when FastAPI's include_router calls layer
-    additional ``_merge_lifespan_context`` shells on top.
+    that proves ``lifespan=lifespan`` was passed to ``FastAPI(...)``
+    even when FastAPI's include_router calls layer additional
+    ``_merge_lifespan_context`` shells on top.
     """
 
     seen: set[int] = set()
@@ -73,8 +72,8 @@ def _walk_closure_for_lifespan(fn: object, target_qualname: str) -> bool:
 def test_lifespan_registered() -> None:
     """The production lifespan is attached to the ``FastAPI`` app.
 
-    Validates Requirements 1.1 + 1.2 + 1.3: the ``lifespan`` keyword
-    argument on the ``FastAPI(...)`` constructor surfaces the production
+    The ``lifespan`` keyword argument on the ``FastAPI(...)``
+    constructor surfaces the production
     callable through ``router.lifespan_context``, and the wrapped
     handler chain contains the module's :func:`lifespan` symbol
     (FastAPI's :func:`include_router` calls stack
@@ -84,13 +83,13 @@ def test_lifespan_registered() -> None:
 
     app = create_app()
 
-    # Requirement 1.3 — the application's router carries a lifespan
-    # context (Starlette wraps the ``@asynccontextmanager`` factory in
+    # The application's router carries a lifespan context (Starlette
+    # wraps the ``@asynccontextmanager`` factory in
     # a ``_AsyncLiftContextManager`` and stores it here).
     assert app.router.lifespan_context is not None
 
-    # Requirement 1.2 — the production ``lifespan`` callable must be
-    # reachable through the wrapper chain. The merge-lifespan wrapping
+    # The production ``lifespan`` callable must be reachable through
+    # the wrapper chain. The merge-lifespan wrapping
     # makes a direct identity check brittle (FastAPI re-wraps on every
     # ``include_router``), so we walk the closure cells until we find
     # a node whose ``__qualname__`` matches the production symbol's.

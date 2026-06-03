@@ -3,12 +3,6 @@
 Provides HMAC-SHA256 signed cookies so that department selection
 survives browser sessions without risk of tampering.
 
-Validates Requirements:
-    * 10.1 — Cookie dependency for department persistence.
-    * 10.2 — Signed cookie write on department selection.
-    * 10.4 — 30-day TTL for department cookie.
-    * 10.5 — Invalid signature → cookie deleted, user redirected.
-
 The module exposes four public functions:
 
 - ``sign_cookie(value, secret)`` — HMAC-SHA256 signs a value.
@@ -45,7 +39,7 @@ __all__ = [
 #: Cookie name used for department selection persistence.
 COOKIE_NAME: Final[str] = "dept_selection"
 
-#: Cookie time-to-live in days (Requirement 10.4).
+#: Cookie time-to-live in days.
 COOKIE_TTL_DAYS: Final[int] = 30
 
 #: Environment variable for the cookie signing secret.

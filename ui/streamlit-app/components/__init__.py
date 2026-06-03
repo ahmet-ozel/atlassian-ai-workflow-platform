@@ -1,22 +1,18 @@
-"""Streamlit shared components for the platform-mimari-ops UI.
+"""Streamlit shared components for the UI.
 
 Public surface (re-exported here so pages can ``from components import ...``):
 
-* :func:`render_dept_switcher` — mandatory dept dropdown in the sidebar
-  (R3.11, R3.12, R7.1, R7.2, R7.3 / Property 12).
+* :func:`render_dept_switcher` — mandatory dept dropdown in the sidebar.
 * :func:`render_credential_form` — per-user Atlassian credential form
-  with ``clear_on_submit=True`` and opt-in PIN-encrypted persistence
-  (R3.4, R8.4).
-* :func:`render_cost_widget` — end-user cost / quota sidebar widget
-  (R5.8, N4 backlog).
+  with ``clear_on_submit=True`` and opt-in PIN-encrypted persistence.
+* :func:`render_cost_widget` — end-user cost / quota sidebar widget.
 * :class:`CredentialManager` / :func:`render_credential_manager` —
   in-memory-only Atlassian credential lifecycle manager with 60-minute
-  inactivity timeout, MCP validation, and explicit logout
-  (platform-gap-fill task 12.1, R13.1–R13.6).
+  inactivity timeout, MCP validation, and explicit logout.
 * :func:`render_bot_assignee_card` — bot assignee info card for the
-  Task Creator page (R7.1–R7.4).
+  Task Creator page.
 * :func:`render_bot_identity_card` — bot identity card with probe
-  status, badge colors, and graceful degradation (R8.2–R8.9).
+  status, badge colors, and graceful degradation.
 """
 
 from .bot_assignee_card import render_bot_assignee_card

@@ -169,7 +169,7 @@ class TestWriteAndCommit:
         assert commit.branch == "draft/edit-1"
         assert len(commit.short_sha) == 7
         # The committed content is reachable on the draft branch but
-        # NOT on main — i.e. main is untouched (Requirement 2.2).
+        # NOT on main — i.e. main is untouched.
         assert gr.read_file(
             "prompts/seed.md",
             branch="draft/edit-1",

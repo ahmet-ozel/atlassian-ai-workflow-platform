@@ -1,7 +1,4 @@
-"""Property test for host-port uniqueness across published Components.
-
-Validates: Requirements 2.1, 2.2, 2.3, 4.1, 4.7, 17.3
-Property 3: Host-port uniqueness across published Components.
+"""Property-based test for host-port uniqueness across published Components.
 
 For any two distinct Components ``c1, c2`` in
 :data:`COMPONENT_MANIFEST` whose ``host_port`` is not ``None``, the
@@ -85,19 +82,17 @@ from conftest import (  # noqa: E402
 def test_host_port_pairwise_uniqueness(
     c1: ComponentSpec, c2: ComponentSpec
 ) -> None:
-    """Property 3 (pair-wise) — colliding host ports imply same Component.
-
-    Validates: Requirements 2.1, 2.2, 2.3, 4.1, 4.7, 17.3.
+    """Pair-wise colliding host ports imply the same Component.
 
     For any pair ``(c1, c2)`` drawn from ``COMPONENT_MANIFEST`` with
     both ``host_port`` populated, ``c1.host_port == c2.host_port``
     SHALL imply ``c1.name == c2.name``. Pairs where either side has
     ``host_port is None`` (Temporal workers) are vacuously satisfied
-    and skipped, mirroring the design's "published Components" scope.
+    and skipped because only published Components are in scope.
     """
 
     if c1.host_port is None or c2.host_port is None:
-        # Temporal workers expose no host port — out of Property 3 scope.
+        # Temporal workers expose no host port — out of this check's scope.
         return
 
     if c1.host_port == c2.host_port:
@@ -133,9 +128,7 @@ def _collect_universe() -> list[tuple[str, int]]:
 
 
 def test_component_plus_infra_ports_are_globally_unique() -> None:
-    """Property 3 (universe) — all host ports distinct across the stack.
-
-    Validates: Requirements 2.1, 2.2, 2.3, 4.1, 4.7, 17.3.
+    """All host ports are distinct across the stack.
 
     Build the full ``(owner, port)`` list from ``COMPONENT_MANIFEST``
     plus ``INFRA_PUBLISHED_PORTS`` and assert:
@@ -184,7 +177,7 @@ def test_component_plus_infra_ports_are_globally_unique() -> None:
 #   - "H:C/proto"
 #   - "127.0.0.1:H:C"
 #   - {published: H, target: C}
-# Property 4.x covers full Compose structure; here we only need the
+# Full Compose structure is covered elsewhere; here we only need the
 # published (host) side, so a small parser keyed on the textual form
 # plus the long-form mapping suffices.
 _PORT_RE = re.compile(
@@ -225,9 +218,7 @@ def _published_host_port(entry: object) -> int | None:
 
 
 def test_compose_published_ports_match_universe() -> None:
-    """Property 3 (Compose cross-check) — compose ports ⊆ manifest+infra.
-
-    Validates: Requirements 2.1, 2.2, 2.3, 4.1, 4.7, 17.3.
+    """Compose ports are covered by manifest and infrastructure ports.
 
     Parse ``infra/docker-compose.yml`` and assert:
 
@@ -241,15 +232,15 @@ def test_compose_published_ports_match_universe() -> None:
        manifest publishes, the host port declared in compose matches
        the manifest. (Components like ``streamlit-app`` whose Compose
        service is intentionally omitted from the base stack are
-       excluded from this check, mirroring the design's
+       excluded from this check, matching the
        ``EXPECTED_COMPOSE_SERVICES`` set.)
     4. Every infra-published port in ``INFRA_PUBLISHED_PORTS`` is
        actually published by its Compose service with the expected
        host port.
 
     The compose service ``admin-dashboard-ui`` corresponds to the
-    Component ``admin-dashboard`` (design §"Compose Bağımlılık DAG'ı"),
-    so the owner-mapping uses the manifest's port even though the
+    Component ``admin-dashboard``, so the owner-mapping uses the manifest's
+    port even though the
     service name differs.
     """
 
@@ -289,7 +280,7 @@ def test_compose_published_ports_match_universe() -> None:
     # Build the expected (host_port → owner_set) map from manifest +
     # infra. ``admin-dashboard`` Component is published as Compose
     # service ``admin-dashboard-ui``; ``streamlit-app`` is published as
-    # ``streamlit-ui`` per foundation task 10.1.
+    # ``streamlit-ui`` is included in the manifest aliases.
     component_to_compose = {
         "admin-dashboard": "admin-dashboard-ui",
         "streamlit-app": "streamlit-ui",
@@ -343,10 +334,10 @@ def test_compose_published_ports_match_universe() -> None:
 
 
 # ===========================================================================
-# Property 1 (platform-mimari-foundation): Servis topolojisi ve compose-manifest
+# Service topology and compose-manifest checks
 # shape tutarlılığı — port uniqueness across the 10-entry topology.
 #
-# **Validates: Requirements 1.1, 1.10, 2.1, 2.3, 2.5, 2.7, 2.9, 9.4, 9.9**
+# Compose services and manifest aliases are cross-checked below.
 #
 # This block extends the existing pair-wise / universe / Compose
 # uniqueness checks with two foundation-specific invariants:
@@ -357,7 +348,7 @@ def test_compose_published_ports_match_universe() -> None:
 #    cannot quietly reuse a port already taken by an existing one.
 #
 # 2. Every foundation service of ``kind=sidecar`` MUST publish
-#    **zero** host ports (mirrors Property 1 (e) in
+#    **zero** host ports (mirrors the sidecar assertion in
 #    ``test_compose_structure.py``; reproduced here so the port-
 #    centric file is self-contained).
 # ===========================================================================
@@ -398,14 +389,12 @@ _FOUNDATION_MANIFEST_ENTRIES_PORT: tuple[dict[str, object], ...] = (
 
 
 # ---------------------------------------------------------------------------
-# Property 1 — All published Compose host ports are globally unique
+# All published Compose host ports are globally unique
 # ---------------------------------------------------------------------------
 
 
 def test_foundation_compose_host_ports_globally_unique() -> None:
-    """Property 1 — every host port in Compose appears at most once.
-
-    Validates: Requirements 2.7, 9.9.
+    """Every host port in Compose appears at most once.
 
     Re-reads ``infra/docker-compose.yml`` and asserts that the
     multiset of ``(service, host_port)`` pairs has no duplicate
@@ -440,14 +429,14 @@ def test_foundation_compose_host_ports_globally_unique() -> None:
     counts = Counter(hp for _svc, hp in pairs)
     duplicates = {p: n for p, n in counts.items() if n > 1}
     assert not duplicates, (
-        "Compose host-port collision detected (Requirement 2.7, "
-        f"Property 1): {duplicates}; full pairs = "
+        "Compose host-port collision detected: "
+        f"{duplicates}; full pairs = "
         f"{sorted(pairs, key=lambda t: t[1])}"
     )
 
 
 # ---------------------------------------------------------------------------
-# Property 1 — Sidecar entries publish zero host ports
+# Sidecar entries publish zero host ports
 # ---------------------------------------------------------------------------
 
 
@@ -466,7 +455,7 @@ _FOUNDATION_SIDECAR_PORT_NAMES: tuple[str, ...] = _foundation_sidecar_compose_na
 
 @pytest.mark.skipif(
     not _FOUNDATION_SIDECAR_PORT_NAMES,
-    reason="manifest declares no sidecar entries; Property 1 vacuous",
+    reason="manifest declares no sidecar entries; sidecar port check vacuous",
 )
 @pytest.mark.parametrize(
     "sidecar_name",
@@ -474,12 +463,10 @@ _FOUNDATION_SIDECAR_PORT_NAMES: tuple[str, ...] = _foundation_sidecar_compose_na
     ids=list(_FOUNDATION_SIDECAR_PORT_NAMES),
 )
 def test_foundation_sidecar_publishes_no_host_ports(sidecar_name: str) -> None:
-    """Property 1 — sidecar Compose services publish no host ports.
-
-    Validates: Requirements 2.9, 9.9.
+    """Sidecar Compose services publish no host ports.
 
     Mirrors the assertion in ``test_compose_structure.py``'s
-    Property 1 (e), reproduced here because the port-uniqueness
+    The sidecar assertion is reproduced here because the port-uniqueness
     invariant is logically port-centric: a sidecar that suddenly
     started publishing ports would also be a port-allocation bug.
     """
@@ -494,7 +481,7 @@ def test_foundation_sidecar_publishes_no_host_ports(sidecar_name: str) -> None:
     service = services.get(sidecar_name)
     assert service is not None, (
         f"sidecar {sidecar_name!r}: missing from docker-compose.yml "
-        f"(Requirement 2.9, Property 1)"
+        f"(sidecar services must not publish host ports)"
     )
 
     ports = service.get("ports")
@@ -513,5 +500,5 @@ def test_foundation_sidecar_publishes_no_host_ports(sidecar_name: str) -> None:
     assert not nonempty and not ports, (
         f"sidecar {sidecar_name!r}: MUST NOT declare 'ports:' — "
         f"sidecars use Compose-internal ``expose:`` only "
-        f"(Requirement 2.9, Property 1); got ports={ports!r}"
+        f"(sidecar services must not publish host ports); got ports={ports!r}"
     )

@@ -1,9 +1,4 @@
-"""Property test 4 — Structured-choice ``needs_info`` family (Y8 + Z3).
-
-**Validates: Requirements 6.5, 6.6**
-
-Property statement (design.md §"Property 4", tasks.md §10.6)
-------------------------------------------------------------
+"""Structured-choice ``needs_info`` family (Y8 + Z3).
 
 For any hypothesis-generated tuple
 ``(confidence, candidates, requires_execution, dept_capabilities)``
@@ -23,7 +18,7 @@ the three sub-properties spelled out in the design document:
     - includes the canonical user instruction
       ``"yorum olarak [A] veya [B] yazın"`` (or its longer
       ``[A]/[B]/[C]`` extension) so the user sees a deterministic
-      reply contract.  (R6.5)
+      reply contract.
 
 (b) **Resolve parse round-trip (Y8).**
 
@@ -36,7 +31,7 @@ the three sub-properties spelled out in the design document:
     - ``resolve_choice("garbled with no marker", candidates)`` returns
       the documented sentinel ``"unresolved"``.
     - A bracketed letter beyond the candidate range (``[X]`` for a
-      2-candidate list) returns ``"unresolved"``.  (R6.5)
+      2-candidate list) returns ``"unresolved"``.
 
 (c) **Execution-fallback choice (Z3).** When the LLM analysis carries
     ``requires_execution=True`` AND the dept's capability set does
@@ -46,7 +41,7 @@ the three sub-properties spelled out in the design document:
     the user is asked whether to (A) commit only and let the PO take
     over, or (B) escalate to the admin to enable an SSH runner.
     Resolving ``[A]`` selects ``code_change_commit_only`` and
-    resolving ``[B]`` selects ``out_of_scope``.  (R6.6)
+    resolving ``[B]`` selects ``out_of_scope``.
 
 Not in scope
 ------------
@@ -54,10 +49,9 @@ Not in scope
 * The ``AutomationWorkflow`` body that emits the needs_info Jira
   comment and re-routes after the user reply — owned by the
   ``llm_analyze_task`` → capability-gate → choice helper wiring in
-  :mod:`automation_worker.workflows.automation_workflow` (task 10.1
-  parser + task 10.2 helper).  Exercised by the worker's own unit
+  :mod:`automation_worker.workflows.automation_workflow`. Exercised by the worker's own unit
   tests, not by this property test.
-* The capability gate itself (foundation Property 7,
+* The capability gate itself
   :mod:`temporal_shared.capabilities`) — the Z3 path here only asks:
   *given* ``"execution" ∉ dept_capabilities``, does the helper produce
   the right A/B menu?  The gate's own decision tree is its own oracle.
@@ -67,25 +61,22 @@ Not in scope
 Skip semantics
 --------------
 
-The structured-choice helpers ship in task 10.2 of the
-``platform-mimari-workflows`` spec.  At the time of writing
-(task 10.6 — the property test you are reading) task 10.2 is still
-``[-]`` (not landed), so the production module
-:mod:`temporal_shared.structured_choice` does not yet exist.  Mirroring
+If the production module
+:mod:`temporal_shared.structured_choice` does not yet exist, this module
+captures the
 the pattern used by sibling property tests
 (``test_explain_keyword.py``, ``test_precommit_scanner.py``,
 ``test_token_cap_fail_fast.py``), this module captures the
 ``ImportError`` and surfaces a precise, actionable
 :func:`pytest.skip(allow_module_level=True)` so collection stays
-clean and the skip reason names the missing symbol.  Once task 10.2
-ships, the import succeeds, the skip drops out, and the full
+clean and the skip reason names the missing symbol.  Once the module
+is available, the import succeeds, the skip drops out, and the full
 hypothesis suite below runs automatically.
 
 Hypothesis configuration
 ------------------------
 
-* ``max_examples=100`` — design.md §"Property 4" sample budget;
-  matches the rest of this property suite (``test_fix_keyword.py``,
+* ``max_examples=100`` — matches the rest of this property suite (``test_fix_keyword.py``,
   ``test_explain_keyword.py``, ``test_precommit_scanner.py``).
 * ``deadline=None`` — the helper is a pure regex/format sweep so it
   runs comfortably under the default deadline, but pytest's deadline
@@ -107,7 +98,7 @@ from hypothesis import strategies as st
 # ---------------------------------------------------------------------------
 # ``sys.path`` bootstrap — ``platform/pytest.ini`` already injects
 # ``libs/temporal-shared/src`` onto ``pythonpath``, so the import below
-# resolves once task 10.2 lands.  We re-affirm the path for the case
+# resolves in integrated runs. We re-affirm the path for the case
 # where this module is imported via a non-pytest entrypoint (mirrors
 # ``test_fix_keyword.py``).
 # ---------------------------------------------------------------------------
@@ -131,11 +122,9 @@ try:
     )
 except ImportError as exc:  # pragma: no cover - defensive guard
     pytest.skip(
-        "temporal_shared.structured_choice is not yet implemented "
-        "(task 10.2 of platform-mimari-workflows is still ``[-]``); "
-        f"import failed with: {exc!r}. Property 4 (Y8 + Z3) is fully "
-        "specified by design.md §'Property 4' and will run "
-        "automatically once the module lands.",
+        "temporal_shared.structured_choice is not yet implemented; "
+        f"import failed with: {exc!r}. Structured-choice coverage "
+        "will run automatically once the module is available.",
         allow_module_level=True,
     )
 
@@ -146,8 +135,8 @@ except ImportError as exc:  # pragma: no cover - defensive guard
 
 #: The five most likely workflow types a structured-choice prompt
 #: would surface.  Drawn from :data:`temporal_shared.capabilities.
-#: WORKFLOW_TYPE_CAPABILITIES` and aligned with R6.5 (multi-repo
-#: ambiguity → ``code_change_*``) and R6.6 (execution fallback →
+#: WORKFLOW_TYPE_CAPABILITIES` and aligned with multi-repo ambiguity
+#: routing to ``code_change_*`` and execution fallback routing to
 #: ``code_change_commit_only`` / ``out_of_scope``).
 _WORKFLOW_TYPES: tuple[str, ...] = (
     "code_change_with_test",
@@ -158,12 +147,12 @@ _WORKFLOW_TYPES: tuple[str, ...] = (
 )
 
 #: Confidence values that *can* trigger the needs_info structured
-#: choice.  ``"high"`` is excluded by R6.5: the workflow does NOT
+#: choice.  ``"high"`` is excluded: the workflow does NOT
 #: emit a structured-choice prompt when the LLM is confident.
 _LOW_CONFIDENCE: tuple[str, ...] = ("low", "medium")
 
 #: Up to 5 letter slots (A-E) — the helper contract documented in
-#: design.md §"Property 4" promises ``[A]/[B]/[C]/...`` markers.
+#: the helper contract promises ``[A]/[B]/[C]/...`` markers.
 _LETTERS: tuple[str, ...] = ("A", "B", "C", "D", "E")
 
 #: Sentinel returned by ``resolve_choice`` for unparseable comments.
@@ -179,8 +168,7 @@ def _candidate(label: str, workflow_type: str, rationale: str) -> Mapping[str, s
     dicts with ``label`` (the human-readable repo / option name),
     ``workflow_type`` (the routing target after resolution) and
     ``rationale`` (the LLM's justification surfaced in the Jira
-    comment).  Spec source: design.md §"Property 4" and tasks.md
-    §10.2.
+    comment).
     """
 
     return {
@@ -353,7 +341,6 @@ def test_p_a_format_choice_list_label_and_marker_parity(
     The reply-instruction substring ``yorum olarak`` is also asserted
     so the user-facing reply contract stays stable.
 
-    R6.5 (Y8 — structured choice).
     """
 
     assert confidence != "high"  # strategy invariant
@@ -393,8 +380,7 @@ def test_p_a_format_choice_list_label_and_marker_parity(
         )
 
     # Reply-contract phrasing — ``yorum olarak`` is the stable
-    # Turkish substring documented in design.md §"Property 4" and
-    # tasks.md §10.2.
+    # Stable Turkish substring in the user-facing reply instruction.
     assert "yorum olarak" in formatted, (
         "format_choice_list must include the canonical reply "
         f"instruction (`yorum olarak ...`); got {formatted!r}"
@@ -429,7 +415,6 @@ def test_p_b_resolve_choice_parses_bracketed_letter(
     ``"<prose>[A|B|C]<prose>"`` resolves to the same candidate
     payload regardless of surrounding whitespace and prose.
 
-    R6.5 (Y8 — `[A]` / `[B]` parse).
     """
 
     n = len(candidates)
@@ -447,7 +432,7 @@ def test_p_b_resolve_choice_parses_bracketed_letter(
     expected_workflow_type = candidates[index]["workflow_type"]
 
     # The helper's exact return shape is documented as
-    # ``str | "unresolved"`` (tasks.md §10.2).  The string MUST
+    # ``str | "unresolved"``. The string MUST
     # match either the candidate label or the candidate's
     # workflow_type — we accept both, tracking the choice so the
     # test fails loudly if neither applies.
@@ -470,7 +455,6 @@ def test_p_b_resolve_choice_no_marker_returns_unresolved(
 ) -> None:
     """Comments without a bracketed marker → ``unresolved``.
 
-    R6.5 — ``resolve_choice("garbled with no marker") == "unresolved"``.
     """
 
     # Defensive: the strategy should never emit a bracketed letter,
@@ -500,7 +484,6 @@ def test_p_b_resolve_choice_out_of_range_letter_unresolved(
     For a 2-candidate list ``[A]`` and ``[B]`` resolve, but ``[C]``,
     ``[D]``, ``[X]``, ``[Z]`` MUST return the unresolved sentinel.
 
-    R6.5 — invalid letter input → ``unresolved``.
     """
 
     n = len(candidates)
@@ -522,7 +505,6 @@ def test_p_b_resolve_choice_out_of_range_letter_unresolved(
 
 
 #: The two Z3-fallback candidates: A) commit-only, B) out-of-scope.
-#: Spec source: requirements.md R6.6 + design.md §"Property 4" (Z3).
 #: Constructed once at import time so the property test asserts on a
 #: single, deterministic fixture rather than re-deriving it every
 #: example.
@@ -549,7 +531,7 @@ _Z3_FALLBACK_CANDIDATES: Sequence[Mapping[str, str]] = (
 def test_p_c_z3_fallback_format_lists_commit_only_and_out_of_scope() -> None:
     """``format_choice_list`` for the Z3 fallback exposes both options.
 
-    R6.6 — when ``requires_execution=True`` and the dept lacks the
+    When ``requires_execution=True`` and the dept lacks the
     ``execution`` capability, the helper offers a 2-element menu
     keyed on ``code_change_commit_only`` (A) and ``out_of_scope`` (B).
     """
@@ -583,7 +565,7 @@ def test_p_c_z3_fallback_format_lists_commit_only_and_out_of_scope() -> None:
 def test_p_c_z3_fallback_resolve_a_selects_commit_only() -> None:
     """``[A]`` reply on the Z3 fallback resolves to commit_only.
 
-    R6.6 — the user picks "(A) sadece commit edip PO'ya bırakayım mı?".
+    The user picks "(A) sadece commit edip PO'ya bırakayım mı?".
     """
 
     resolved = resolve_choice("[A]", _Z3_FALLBACK_CANDIDATES)
@@ -598,7 +580,7 @@ def test_p_c_z3_fallback_resolve_a_selects_commit_only() -> None:
 def test_p_c_z3_fallback_resolve_b_selects_out_of_scope() -> None:
     """``[B]`` reply on the Z3 fallback resolves to out_of_scope.
 
-    R6.6 — the user picks "(B) admin'den SSH runner açılmasını
+    The user picks "(B) admin'den SSH runner açılmasını
     isteyelim mi?".
     """
 
@@ -633,7 +615,6 @@ def test_p_c_z3_fallback_offered_iff_execution_required_and_missing(
     formatting/resolving primitives — the workflow body is the place
     that decides whether to call them at all.
 
-    R6.6 (Z3 — test-isteği fallback).
     """
 
     def _should_offer_z3(req: bool, cap: bool) -> bool:

@@ -5,29 +5,28 @@ modified files match department-configured ``approval_required_paths``
 regex patterns. The workflow waits for an authorized user to signal
 ``[approve]`` or ``[reject]`` via Jira comment, with a 4-hour timeout.
 
-Responsibilities (design.md §8 "Approval Gate" and Requirements
-11.1–11.8):
+Responsibilities (design.md §8 "Approval Gate" and –11.8):
 
 1. Match commit file paths against ``approval_required_paths`` regex
-   patterns from department configuration.
+ patterns from department configuration.
 2. If any file matches: block commit, post Jira comment with matched
-   paths and approval instructions.
+ paths and approval instructions.
 3. Wait for ``[approve]`` or ``[reject]`` signal from authorized user
-   (case-insensitive).
+ (case-insensitive).
 4. Authorized ``[approve]``: continue workflow, allow commit.
 5. Authorized ``[reject]``: cancel workflow, discard changes.
 6. Unauthorized user signal: ignore, remain in waiting state.
 7. 4-hour timeout: auto-cancel, post Jira comment.
 8. Empty/undefined ``approval_required_paths``: skip approval check,
-   continue directly.
+ continue directly.
 9. Log all events to audit log (event type, matched paths, approver).
 
 Determinism contract: The workflow body uses only Temporal-deterministic
-primitives — ``workflow.now()``, ``workflow.execute_activity``,
+primitives — ``workflow.now``, ``workflow.execute_activity``,
 signal handlers, and ``workflow.wait_condition``. No ``random`` /
 ``uuid.uuid4`` / ``os.environ`` / direct I/O.
 
-Validates Requirements: **11.1** (regex path matching + block),
+(regex path matching + block),
 **11.2** (Jira comment with matched paths), **11.3** ([approve] signal),
 **11.4** ([reject] signal), **11.5** (4-hour timeout), **11.6**
 (unauthorized user ignored), **11.7** (empty paths → skip), **11.8**
@@ -49,7 +48,7 @@ from temporalio.common import RetryPolicy
 # Constants
 # ---------------------------------------------------------------------------
 
-#: Timeout for the approval gate — 4 hours (Requirement 11.5).
+#: Timeout for the approval gate — 4 hours.
 APPROVAL_TIMEOUT: Final[timedelta] = timedelta(hours=4)
 
 #: Activity name for posting Jira comments.
@@ -79,16 +78,16 @@ _DEFAULT_RETRY: Final[RetryPolicy] = RetryPolicy(
 class ApprovalGateInput:
     """Input for the ApprovalGateWorkflow.
 
-    Attributes:
-        issue_key: The Jira issue key for context and comments.
-        dept_id: Department identifier for configuration lookup.
-        workflow_id: Parent workflow identifier for tracing.
-        commit_files: List of file paths being committed.
-        approval_required_paths: Regex patterns from department config
-            that require approval when matched.
-        approvers: List of authorized Jira account IDs who can
-            approve or reject.
-    """
+ Attributes:
+ issue_key: The Jira issue key for context and comments.
+ dept_id: Department identifier for configuration lookup.
+ workflow_id: Parent workflow identifier for tracing.
+ commit_files: List of file paths being committed.
+ approval_required_paths: Regex patterns from department config
+ that require approval when matched.
+ approvers: List of authorized Jira account IDs who can
+ approve or reject.
+ """
 
     issue_key: str
     dept_id: str
@@ -102,13 +101,13 @@ class ApprovalGateInput:
 class ApprovalGateResult:
     """Result of the ApprovalGateWorkflow.
 
-    Attributes:
-        approved: Whether the commit was approved.
-        timed_out: Whether the workflow timed out waiting for approval.
-        approver_id: Jira account ID of the user who approved/rejected
-            (None if timed out or skipped).
-        matched_paths: List of file paths that matched approval patterns.
-    """
+ Attributes:
+ approved: Whether the commit was approved.
+ timed_out: Whether the workflow timed out waiting for approval.
+ approver_id: Jira account ID of the user who approved/rejected
+ (None if timed out or skipped).
+ matched_paths: List of file paths that matched approval patterns.
+ """
 
     approved: bool
     timed_out: bool
@@ -127,14 +126,12 @@ def match_approval_paths(
 ) -> list[str]:
     """Match commit files against approval-required regex patterns.
 
-    Returns the list of commit file paths that match at least one
-    pattern. Uses ``re.search`` so patterns can match anywhere in
-    the file path.
+ Returns the list of commit file paths that match at least one
+ pattern. Uses ``re.search`` so patterns can match anywhere in
+ the file path.
 
-    This is a pure function — no side effects, deterministic output.
-
-    Validates Requirement 11.1.
-    """
+ This is a pure function — no side effects, deterministic output..
+ """
 
     if not approval_required_paths or not commit_files:
         return []
@@ -152,16 +149,14 @@ def match_approval_paths(
         for compiled in compiled_patterns:
             if compiled.search(file_path):
                 matched.append(file_path)
-                break  # One match is enough per file
+                break  # One match is enough file
 
     return matched
 
 
 def is_authorized_approver(user_id: str, approvers: list[str]) -> bool:
-    """Check if a user is in the authorized approvers list.
-
-    Validates Requirement 11.6.
-    """
+    """Check if a user is in the authorized approvers list..
+ """
 
     return user_id in approvers
 
@@ -169,9 +164,9 @@ def is_authorized_approver(user_id: str, approvers: list[str]) -> bool:
 def parse_approval_decision(decision: str) -> str | None:
     """Parse a decision string for [approve] or [reject] markers.
 
-    Returns "approve", "reject", or None if neither marker is found.
-    Case-insensitive matching (Requirements 11.3, 11.4).
-    """
+ Returns "approve", "reject", or None if neither marker is found.
+ Case-insensitive matching.
+ """
 
     lower = decision.lower()
     if "[approve]" in lower:
@@ -189,9 +184,8 @@ def parse_approval_decision(decision: str) -> str | None:
 def _format_approval_request_comment(matched_paths: list[str]) -> str:
     """Format the Jira comment requesting approval.
 
-    Includes matched file paths and approval/rejection instructions.
-    Validates Requirement 11.2.
-    """
+ Includes matched file paths and approval/rejection instructions..
+ """
 
     paths_list = "\n".join(f"  • `{p}`" for p in matched_paths)
     return (
@@ -207,10 +201,8 @@ def _format_approval_request_comment(matched_paths: list[str]) -> str:
 
 
 def _format_timeout_comment() -> str:
-    """Format the Jira comment for approval timeout.
-
-    Validates Requirement 11.5.
-    """
+    """Format the Jira comment for approval timeout..
+ """
 
     return (
         "⏱️ **Onay Zaman Aşımı**\n\n"
@@ -221,10 +213,8 @@ def _format_timeout_comment() -> str:
 
 
 def _format_rejection_comment(approver_id: str) -> str:
-    """Format the Jira comment for rejection.
-
-    Validates Requirement 11.4.
-    """
+    """Format the Jira comment for rejection..
+ """
 
     return (
         f"❌ **Değişiklik Reddedildi**\n\n"
@@ -252,13 +242,10 @@ def _format_approval_comment(approver_id: str) -> str:
 class ApprovalGateWorkflow:
     """Signal-based approval gate workflow.
 
-    Waits for [approve] or [reject] signal from an authorized Jira
-    user. Blocks commit operations when files match department
-    approval_required_paths patterns. Times out after 4 hours.
-
-    Validates Requirements: 11.1, 11.2, 11.3, 11.4, 11.5, 11.6,
-    11.7, 11.8.
-    """
+ Waits for [approve] or [reject] signal from an authorized Jira
+ user. Blocks commit operations when files match department
+ approval_required_paths patterns. Times out after 4 hours..
+ """
 
     def __init__(self) -> None:
         """Initialize workflow state."""
@@ -270,15 +257,15 @@ class ApprovalGateWorkflow:
     async def approval_received(self, user_id: str, decision: str) -> None:
         """Signal handler for approval/rejection comments.
 
-        Called when a Jira comment containing [approve] or [reject]
-        is detected. Only processes signals from authorized users;
-        unauthorized signals are ignored (Requirement 11.6).
+ Called when a Jira comment containing [approve] or [reject]
+ is detected. Only processes signals from authorized users;
+ unauthorized signals are ignored.
 
-        Args:
-            user_id: Jira account ID of the comment author.
-            decision: The raw comment text containing [approve] or
-                [reject] markers.
-        """
+ Args:
+ user_id: Jira account ID of the comment author.
+ decision: The raw comment text containing [approve] or
+ [reject] markers.
+ """
 
         # Parse the decision from the comment text
         parsed = parse_approval_decision(decision)
@@ -287,9 +274,9 @@ class ApprovalGateWorkflow:
             return
 
         # Check authorization — only process from authorized approvers
-        # The approvers list is set during run() and accessed here.
-        # Since signals can arrive before run() sets _approvers,
-        # we store the signal data and let the wait_condition in run()
+        # The approvers list is set during run and accessed here.
+        # Since signals can arrive before run sets _approvers,
+        # we store the signal data and let the wait_condition in run
         # handle the authorization check.
         self._decision = parsed
         self._decision_user_id = user_id
@@ -298,17 +285,16 @@ class ApprovalGateWorkflow:
     async def run(self, inp: ApprovalGateInput) -> ApprovalGateResult:
         """Execute the approval gate workflow.
 
-        1. If approval_required_paths is empty/undefined, skip check
-           (Requirement 11.7).
-        2. Match commit files against patterns (Requirement 11.1).
-        3. If no matches, skip check and continue.
-        4. Post Jira comment with matched paths (Requirement 11.2).
-        5. Log "requested" event to audit (Requirement 11.8).
-        6. Wait for signal or timeout (Requirements 11.3–11.6).
-        7. Process result and log event (Requirement 11.8).
-        """
+ 1. If approval_required_paths is empty/undefined, skip check.
+ 2. Match commit files against patterns.
+ 3. If no matches, skip check and continue.
+ 4. Post Jira comment with matched paths.
+ 5. Log "requested" event to audit.
+ 6. Wait for signal or timeout (–11.6).
+ 7. Process result and log event.
+ """
 
-        # Requirement 11.7: Skip if approval_required_paths is empty
+        #: Skip if approval_required_paths is empty
         if not inp.approval_required_paths:
             workflow.logger.info(
                 "ApprovalGateWorkflow: No approval_required_paths "
@@ -322,7 +308,7 @@ class ApprovalGateWorkflow:
                 matched_paths=[],
             )
 
-        # Requirement 11.1: Match commit files against patterns
+        #: Match commit files against patterns
         matched_paths = match_approval_paths(
             inp.commit_files, inp.approval_required_paths
         )
@@ -341,14 +327,14 @@ class ApprovalGateWorkflow:
                 matched_paths=[],
             )
 
-        # Requirement 11.2: Post Jira comment with matched paths
+        #: Post Jira comment with matched paths
         await self._post_jira_comment(
             inp.issue_key,
             inp.dept_id,
             _format_approval_request_comment(matched_paths),
         )
 
-        # Requirement 11.8: Log "requested" event to audit
+        #: Log "requested" event to audit
         await self._write_audit_log(
             workflow_id=inp.workflow_id,
             issue_key=inp.issue_key,
@@ -357,7 +343,7 @@ class ApprovalGateWorkflow:
             approver_id=None,
         )
 
-        # Requirement 11.3, 11.4, 11.5, 11.6: Wait for signal or timeout
+        #: Wait for signal or timeout
         #
         # We use workflow.wait_condition with a timeout. The condition
         # checks that a decision has been made by an AUTHORIZED user.
@@ -369,7 +355,7 @@ class ApprovalGateWorkflow:
 
             if self._decision is None:
                 return False
-            # Requirement 11.6: Only authorized users can decide
+            #: Only authorized users can decide
             if not is_authorized_approver(
                 self._decision_user_id or "", inp.approvers
             ):
@@ -385,7 +371,7 @@ class ApprovalGateWorkflow:
                 return False
             return True
 
-        # Wait with 4-hour timeout (Requirement 11.5)
+        # Wait with 4-hour timeout 
         timed_out = False
         try:
             await workflow.wait_condition(
@@ -395,7 +381,7 @@ class ApprovalGateWorkflow:
         except TimeoutError:
             timed_out = True
 
-        # Handle timeout (Requirement 11.5)
+        # Handle timeout 
         if timed_out:
             workflow.logger.warning(
                 "ApprovalGateWorkflow: Timed out waiting for approval "
@@ -410,7 +396,7 @@ class ApprovalGateWorkflow:
                 _format_timeout_comment(),
             )
 
-            # Requirement 11.8: Log "timeout" event
+            #: Log "timeout" event
             await self._write_audit_log(
                 workflow_id=inp.workflow_id,
                 issue_key=inp.issue_key,
@@ -431,7 +417,7 @@ class ApprovalGateWorkflow:
         decision = self._decision
 
         if decision == "approve":
-            # Requirement 11.3: Approved — continue workflow
+            #: Approved — continue workflow
             workflow.logger.info(
                 "ApprovalGateWorkflow: Approved by %s for %s.",
                 approver_id,
@@ -444,7 +430,7 @@ class ApprovalGateWorkflow:
                 _format_approval_comment(approver_id),
             )
 
-            # Requirement 11.8: Log "approved" event
+            #: Log "approved" event
             await self._write_audit_log(
                 workflow_id=inp.workflow_id,
                 issue_key=inp.issue_key,
@@ -461,7 +447,7 @@ class ApprovalGateWorkflow:
             )
 
         else:
-            # Requirement 11.4: Rejected — cancel workflow
+            #: Rejected — cancel workflow
             workflow.logger.info(
                 "ApprovalGateWorkflow: Rejected by %s for %s.",
                 approver_id,
@@ -474,7 +460,7 @@ class ApprovalGateWorkflow:
                 _format_rejection_comment(approver_id),
             )
 
-            # Requirement 11.8: Log "rejected" event
+            #: Log "rejected" event
             await self._write_audit_log(
                 workflow_id=inp.workflow_id,
                 issue_key=inp.issue_key,
@@ -522,10 +508,8 @@ class ApprovalGateWorkflow:
         matched_paths: list[str],
         approver_id: str | None,
     ) -> None:
-        """Write an audit log entry for approval events.
-
-        Requirement 11.8: Log event type, matched paths, and approver.
-        """
+        """Write an audit log entry for approval events.: Log event type, matched paths, and approver.
+ """
 
         try:
             await workflow.execute_activity(

@@ -1,110 +1,103 @@
-"""Property test 17 — ``multi_step`` graceful skip aggregator.
+"""``multi_step`` graceful skip aggregator.
 
-**Validates: Requirements 6.3**
 
-Property statement (design.md §"Property 17", tasks.md §10.7)
+
+Invariant statement
 ------------------------------------------------------------
 
 The ``multi_step`` workflow type orchestrates *N* child workflows on
-behalf of a single Jira issue.  The pure helpers under test
-(:func:`temporal_shared.multi_step.multi_step_dispatch` and
-:func:`temporal_shared.multi_step.aggregated_output`) implement the
-*graceful skip* contract from Requirement 6.3 and design.md §"Workflow
-Type Routing":
+behalf of a single Jira issue. The pure helpers under test
+(:func:`temporal_shared.multi_step.multi_step_dispatch` and:func:`temporal_shared.multi_step.aggregated_output`) implement the
+*graceful skip* contract used by workflow type routing:
 
 * Each child whose required capabilities are satisfied gets a
-  ``"start"`` :class:`ChildPlan` with reason ``"dispatched"``.
+ ``"start"``:class:`ChildPlan` with reason ``"dispatched"``.
 * Each child whose ``workflow_type`` is unknown, or which would nest a
-  ``multi_step`` inside a ``multi_step``, or whose dept is missing one
-  or more capabilities, gets a ``"skip"`` plan with the appropriate
-  audit reason and (for the missing-capability case) the exact
-  missing-capability set.
+ ``multi_step`` inside a ``multi_step``, or whose dept is missing one
+ or more capabilities, gets a ``"skip"`` plan with the appropriate
+ audit reason and (for the missing-capability case) the exact
+ missing-capability set.
 * No child is ever silently dropped: ``len(plans) == len(children)``
-  for every input — the *total-length* invariant.
+ for every input — the *total-length* invariant.
 * The aggregator over runtime outcomes carries the parallel invariant
-  ``started + skipped == total == len(child_outcomes)``.
+ ``started + skipped == total == len(child_outcomes)``.
 * Both helpers are pure (no I/O, no ``datetime`` / ``random`` /
-  ``uuid``) and therefore deterministic — repeating a call with the
-  same inputs returns equal output.
+ ``uuid``) and therefore deterministic — repeating a call with the
+ same inputs returns equal output.
 
 For any hypothesis-generated tuple
 ``(children, dept_capabilities)`` the dispatcher SHALL satisfy:
 
-(P1) **Total length / no child dropped (graceful skip).**
-     ``len(multi_step_dispatch(children, caps)) == len(children)``.
-     Every input child appears in the plan list exactly once and in
-     the original position — graceful skip means a missing capability
-     turns a child into a skip plan but never removes it from the
-     summary.
+**Total length / no child dropped (graceful skip).**
+ ``len(multi_step_dispatch(children, caps)) == len(children)``.
+ Every input child appears in the plan list exactly once and in
+ the original position — graceful skip means a missing capability
+ turns a child into a skip plan but never removes it from the
+ summary.
 
-(P2) **Order preserved.**
-     For every index ``i``, ``plans[i].child_spec is children[i].child_spec``.
-     The dispatcher echoes the proposal's :class:`ChildWorkflowSpec`
-     unchanged so the parent has the full audit context for both the
-     dispatch path and the skip path.
+**Order preserved.**
+ For every index ``i``, ``plans[i].child_spec is children[i].child_spec``.
+ The dispatcher echoes the proposal's:class:`ChildWorkflowSpec`
+ unchanged so the parent has the full audit context for both the
+ dispatch path and the skip path.
 
-(P3) **Discriminator is total.**
-     Every ``ChildPlan.action`` belongs to ``{"start", "skip"}`` and
-     every ``ChildPlan.reason`` belongs to the four-element vocabulary
-     ``{REASON_DISPATCHED, REASON_OUT_OF_SCOPE,
-     REASON_UNKNOWN_WORKFLOW_TYPE, REASON_NESTED_MULTI_STEP}``.
+**Discriminator is total.**
+ Every ``ChildPlan.action`` belongs to ``{"start", "skip"}`` and
+ every ``ChildPlan.reason`` belongs to the four-element vocabulary
+ ``{REASON_DISPATCHED, REASON_OUT_OF_SCOPE,
+ REASON_UNKNOWN_WORKFLOW_TYPE, REASON_NESTED_MULTI_STEP}``.
 
-(P4) **Skip reason classification.**
-     For every plan with ``action == "skip"`` the reason is one of:
+**Skip reason classification.**
+ For every plan with ``action == "skip"`` the reason is one of:
 
-       * ``"nested_multi_step_forbidden"`` iff
-         ``child.workflow_type == "multi_step"``;
-       * ``"unknown_workflow_type"`` iff ``workflow_type`` is not a key
-         of :data:`WORKFLOW_TYPE_CAPABILITIES` (and is not the
-         ``"multi_step"`` meta-type);
-       * ``"out_of_scope"`` iff ``workflow_type`` *is* a known key but
-         ``required_capabilities(workflow_type) - dept_capabilities``
-         is non-empty.
+ * ``"nested_multi_step_forbidden"`` iff
+ ``child.workflow_type == "multi_step"``;
+ * ``"unknown_workflow_type"`` iff ``workflow_type`` is not a key
+ of:data:`WORKFLOW_TYPE_CAPABILITIES` (and is not the
+ ``"multi_step"`` meta-type);
+ * ``"out_of_scope"`` iff ``workflow_type`` *is* a known key but
+ ``required_capabilities(workflow_type) - dept_capabilities``
+ is non-empty.
 
-(P5) **Missing-capability fidelity.**
-     ``plan.missing_capabilities ==
-     required_capabilities(workflow_type) - dept_capabilities`` for
-     every ``out_of_scope`` skip plan, and ``frozenset()`` for every
-     other plan (start, unknown, nested).
+**Missing-capability fidelity.**
+ ``plan.missing_capabilities ==
+ required_capabilities(workflow_type) - dept_capabilities`` for
+ every ``out_of_scope`` skip plan, and ``frozenset`` for every
+ other plan (start, unknown, nested).
 
-(P6) **Determinism / idempotence of dispatch.**
-     ``multi_step_dispatch(children, caps) ==
-     multi_step_dispatch(children, caps)`` for every legal input —
-     the helper is pure.  Equivalently: applying ``dispatch`` twice to
-     the same arguments yields equal plan lists; the *aggregator step*
-     is therefore also idempotent in the engineering sense (running
-     the pipeline twice with the same set yields the same result).
+**Determinism / idempotence of dispatch.**
+ ``multi_step_dispatch(children, caps) ==
+ multi_step_dispatch(children, caps)`` for every legal input —
+ the helper is pure. Equivalently: applying ``dispatch`` twice to
+ the same arguments yields equal plan lists; the *aggregator step*
+ is therefore also idempotent in the engineering sense (running
+ the pipeline twice with the same set yields the same result).
 
 For any hypothesis-generated outcome list ``outcomes`` the aggregator
 SHALL satisfy:
 
-(P7) **Empty input → empty aggregate.**
-     ``aggregated_output([])`` returns
-     ``AggregatedOutput(started=0, skipped=0, total=0,
-     child_outcomes=())``.
+**Empty input → empty aggregate.**
+ ``aggregated_output([])`` returns
+ ``AggregatedOutput(started=0, skipped=0, total=0,
+ child_outcomes=)``.
 
-(P8) **Counter invariant.**
-     ``started + skipped == total == len(child_outcomes)`` for every
-     legal input (no outcome is dropped, none is double-counted).
+**Counter invariant.**
+ ``started + skipped == total == len(child_outcomes)`` for every
+ legal input (no outcome is dropped, none is double-counted).
 
-(P9) **Order preserved.**
-     ``agg.child_outcomes == tuple(outcomes)`` — the aggregator never
-     reorders outcomes.
+**Order preserved.**
+ ``agg.child_outcomes == tuple(outcomes)`` — the aggregator never
+ reorders outcomes.
 
-(P10) **Aggregator idempotence.**
-      ``aggregated_output(outcomes) ==
-      aggregated_output(outcomes)`` for every legal input.  Re-running
-      the aggregator over the same outcome list produces an equal
-      aggregate — the helper is pure and the result depends only on
-      its argument.
+**Aggregator idempotence.**
+ ``aggregated_output(outcomes) ==
+ aggregated_output(outcomes)`` for every legal input. Re-running
+ the aggregator over the same outcome list produces an equal
+ aggregate — the helper is pure and the result depends only on
+ its argument.
 
 These properties together pin the contract that
-``AgentRunnerWorkflow.multi_step`` (task 10.3) and the parent
-:class:`AutomationWorkflow.multi_step` branch consume.
-
-Reference: ``platform-mimari-workflows`` design.md §"Property 17"
-(multi_step graceful skip aggregator), tasks.md §10.7,
-requirements.md §R6.3.
+``AgentRunnerWorkflow.multi_step`` and the parent:class:`AutomationWorkflow.multi_step` branch consume.
 """
 
 from __future__ import annotations
@@ -136,7 +129,7 @@ from temporal_shared.multi_step import (
 # ---------------------------------------------------------------------------
 
 #: The closed simple-vocabulary capability set understood by
-#: :func:`required_capabilities` (split caps collapsed to service names).
+#::func:`required_capabilities` (split caps collapsed to service names).
 SIMPLE_CAPABILITIES: frozenset[str] = frozenset(
     {"jira", "bitbucket", "confluence", "execution", "web_search"}
 )
@@ -213,14 +206,14 @@ dept_caps_strategy = st.sets(
 
 @st.composite
 def _child_outcome(draw: st.DrawFn) -> ChildOutcome:
-    """Generate a syntactically-legal :class:`ChildOutcome`.
+    """Generate a syntactically-legal:class:`ChildOutcome`.
 
-    ``action`` is constrained to ``{"started", "skipped"}`` (the
-    aggregator raises :class:`InvariantViolation` outside that set —
-    the unit test layer covers that path).  Reasons and capability
-    sets are sampled from the four-element audit vocabulary so the
-    invariants under test reflect the production callers' behaviour.
-    """
+ ``action`` is constrained to ``{"started", "skipped"}`` (the
+ aggregator raises:class:`InvariantViolation` outside that set —
+ the unit test layer covers that path). Reasons and capability
+ sets are sampled from the four-element audit vocabulary so the
+ invariants under test reflect the production callers' behaviour.
+ """
 
     action = draw(st.sampled_from(("started", "skipped")))
     spec = draw(spec_strategy)
@@ -270,7 +263,7 @@ outcomes_strategy = st.lists(_child_outcome(), min_size=0, max_size=8)
 
 
 # ---------------------------------------------------------------------------
-# Property suite — multi_step_dispatch
+# invariant — multi_step_dispatch
 # ---------------------------------------------------------------------------
 
 
@@ -283,11 +276,11 @@ outcomes_strategy = st.lists(_child_outcome(), min_size=0, max_size=8)
 def test_dispatch_total_length_invariant(
     children: list[ChildProposal], caps: frozenset[str]
 ) -> None:
-    """**Validates: Requirement 6.3**
+    """No child is ever dropped during graceful skip dispatch.
 
-    P1 — Graceful skip means no child is ever dropped:
-    ``len(plans) == len(children)`` for every input.
-    """
+ Graceful skip means no child is ever dropped:
+ ``len(plans) == len(children)`` for every input.
+ """
 
     plans = multi_step_dispatch(children, caps)
     assert len(plans) == len(children)
@@ -302,12 +295,12 @@ def test_dispatch_total_length_invariant(
 def test_dispatch_preserves_order_and_child_spec_identity(
     children: list[ChildProposal], caps: frozenset[str]
 ) -> None:
-    """**Validates: Requirement 6.3**
+    """Dispatch preserves order and child spec identity.
 
-    P2 — Plan at index ``i`` references the same
-    :class:`ChildWorkflowSpec` (by identity) as the input proposal at
-    the same index; no reordering, no copying.
-    """
+ Plan at index ``i`` references the same:class:`ChildWorkflowSpec`
+ (by identity) as the input proposal at the same index; no reordering,
+ no copying.
+ """
 
     plans = multi_step_dispatch(children, caps)
     for i, plan in enumerate(plans):
@@ -323,11 +316,11 @@ def test_dispatch_preserves_order_and_child_spec_identity(
 def test_dispatch_action_and_reason_are_in_closed_vocabulary(
     children: list[ChildProposal], caps: frozenset[str]
 ) -> None:
-    """**Validates: Requirement 6.3**
+    """Dispatch actions and reasons stay in the closed vocabulary.
 
-    P3 — Every ``ChildPlan.action`` is in ``{"start", "skip"}`` and
-    every ``reason`` is in the four-token closed audit vocabulary.
-    """
+ Every ``ChildPlan.action`` is in ``{"start", "skip"}`` and
+ every ``reason`` is in the four-token closed audit vocabulary.
+ """
 
     plans = multi_step_dispatch(children, caps)
     legal_actions = {"start", "skip"}
@@ -352,17 +345,17 @@ def test_dispatch_action_and_reason_are_in_closed_vocabulary(
 def test_dispatch_skip_reason_classification(
     children: list[ChildProposal], caps: frozenset[str]
 ) -> None:
-    """**Validates: Requirement 6.3**
+    """Skip reasons match the workflow routing table.
 
-    P4 — Every skip plan's ``reason`` matches the rule table:
+ Every skip plan's ``reason`` matches the rule table:
 
-      * ``"multi_step"`` workflow type → ``nested_multi_step_forbidden``
-      * unknown workflow type        → ``unknown_workflow_type``
-      * known type with missing caps → ``out_of_scope``
+ * ``"multi_step"`` workflow type → ``nested_multi_step_forbidden``
+ * unknown workflow type → ``unknown_workflow_type``
+ * known type with missing caps → ``out_of_scope``
 
-    And every ``"start"`` plan carries reason ``dispatched`` and an
-    empty ``missing_capabilities`` set.
-    """
+ And every ``"start"`` plan carries reason ``dispatched`` and an
+ empty ``missing_capabilities`` set.
+ """
 
     plans = multi_step_dispatch(children, caps)
     for child, plan in zip(children, plans, strict=True):
@@ -386,7 +379,7 @@ def test_dispatch_skip_reason_classification(
         else:
             assert plan.reason == REASON_OUT_OF_SCOPE
             expected_missing = required_capabilities(wf_type) - caps
-            # P5 — exact missing-capability fidelity for out_of_scope
+            # Exact missing-capability fidelity for out_of_scope
             # skips.
             assert plan.missing_capabilities == expected_missing
             assert plan.missing_capabilities  # non-empty by construction
@@ -401,17 +394,17 @@ def test_dispatch_skip_reason_classification(
 def test_dispatch_is_deterministic_and_idempotent(
     children: list[ChildProposal], caps: frozenset[str]
 ) -> None:
-    """**Validates: Requirement 6.3**
+    """Dispatch is deterministic and idempotent.
 
-    P6 — Running the dispatch twice with the same arguments returns
-    equal plan lists.  The aggregator-step contract is therefore
-    *idempotent* in the engineering sense (the second pass through
-    the pipeline does not change the result).
+ Running the dispatch twice with the same arguments returns
+ equal plan lists. The aggregator-step contract is therefore
+ *idempotent* in the engineering sense (the second pass through
+ the pipeline does not change the result).
 
-    Also asserts that the helper accepts both ``frozenset`` and
-    ``set`` for ``dept_capabilities`` and that the two shapes produce
-    the same plans (the helper normalises internally).
-    """
+ Also asserts that the helper accepts both ``frozenset`` and
+ ``set`` for ``dept_capabilities`` and that the two shapes produce
+ the same plans (the helper normalises internally).
+ """
 
     plans_a = multi_step_dispatch(children, caps)
     plans_b = multi_step_dispatch(children, caps)
@@ -425,18 +418,18 @@ def test_dispatch_is_deterministic_and_idempotent(
 
 
 # ---------------------------------------------------------------------------
-# Property suite — aggregated_output
+# invariant — aggregated_output
 # ---------------------------------------------------------------------------
 
 
 def test_aggregated_output_empty_input() -> None:
-    """**Validates: Requirement 6.3**
+    """Empty aggregate input produces the zero aggregate.
 
-    P7 — ``aggregated_output([])`` is the zero aggregate.
+ ``aggregated_output([])`` is the zero aggregate.
 
-    Pinned as an example-based test (no Hypothesis input) because the
-    invariant collapses to a single concrete value.
-    """
+ Pinned as an example-based test (no Hypothesis input) because the
+ invariant collapses to a single concrete value.
+ """
 
     agg = aggregated_output([])
     assert agg == AggregatedOutput(
@@ -453,13 +446,13 @@ def test_aggregated_output_empty_input() -> None:
 def test_aggregated_output_counter_invariant(
     outcomes: list[ChildOutcome],
 ) -> None:
-    """**Validates: Requirement 6.3**
+    """Aggregated counters match the outcome list length.
 
-    P8 — ``started + skipped == total == len(child_outcomes)``.
+ ``started + skipped == total == len(child_outcomes)``.
 
-    Counts every ``"started"`` and ``"skipped"`` outcome exactly
-    once and never drops a child from the summary.
-    """
+ Counts every ``"started"`` and ``"skipped"`` outcome exactly
+ once and never drops a child from the summary.
+ """
 
     agg = aggregated_output(outcomes)
 
@@ -482,12 +475,12 @@ def test_aggregated_output_counter_invariant(
 def test_aggregated_output_preserves_order(
     outcomes: list[ChildOutcome],
 ) -> None:
-    """**Validates: Requirement 6.3**
+    """Aggregator preserves outcome order.
 
-    P9 — ``agg.child_outcomes == tuple(outcomes)``.  The aggregator
-    is a counter, not a sorter — every outcome's relative position
-    in the input list is preserved in the output tuple.
-    """
+ ``agg.child_outcomes == tuple(outcomes)``. The aggregator
+ is a counter, not a sorter — every outcome's relative position
+ in the input list is preserved in the output tuple.
+ """
 
     agg = aggregated_output(outcomes)
     assert agg.child_outcomes == tuple(outcomes)
@@ -502,16 +495,16 @@ def test_aggregated_output_preserves_order(
 def test_aggregated_output_is_idempotent(
     outcomes: list[ChildOutcome],
 ) -> None:
-    """**Validates: Requirement 6.3**
+    """Aggregator is deterministic and idempotent.
 
-    P10 — ``aggregated_output(outcomes) == aggregated_output(outcomes)``
-    for every legal input.  Re-running the aggregator over the same
-    outcome list produces an equal aggregate; the helper is pure and
-    the result depends only on its argument.
+ ``aggregated_output(outcomes) == aggregated_output(outcomes)``
+ for every legal input. Re-running the aggregator over the same
+ outcome list produces an equal aggregate; the helper is pure and
+ the result depends only on its argument.
 
-    Also exercises the ``Iterable`` overload by passing a generator
-    on the second call — both shapes must produce the same aggregate.
-    """
+ Also exercises the ``Iterable`` overload by passing a generator
+ on the second call — both shapes must produce the same aggregate.
+ """
 
     agg_a = aggregated_output(outcomes)
     agg_b = aggregated_output(outcomes)

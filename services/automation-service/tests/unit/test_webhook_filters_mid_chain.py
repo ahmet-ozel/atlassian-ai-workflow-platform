@@ -1,53 +1,36 @@
-"""Unit tests for the task-4.3 mid-chain stages of :class:`WebhookFilterChain`.
+"""Unit tests for mid-chain stages of :class:`WebhookFilterChain`.
 
-This module pins the behaviour of the four filter-chain stages landed
-by ``platform-mimari-workflows`` task 4.3 of the workflows spec — the
-*mid-chain* stages that run between the task-4.2 verifier stages and
-the task-4.4 burst-debounce stage:
+This module pins the behaviour of the filter-chain stages that run
+between the verifier stages and the burst-debounce stage:
 
-* ``_stage_streamlit_bypass``        → R4.5, V12 ``[bot:hear]`` etiquette
+* ``_stage_streamlit_bypass`` handles the ``[bot:hear]`` etiquette
   tag bypass. Returns ``FilterDecision(action="pass",
   reason="streamlit_inline_reply_with_bypass")`` and short-circuits
   the rest of the chain so retries of Streamlit inline replies are
   honoured.
-* ``_stage_replay_dedup``            → R3.5/R4 idempotency anchor.
+* ``_stage_replay_dedup`` handles idempotency.
   Returns ``FilterDecision(action="drop",
   reason="duplicate_event_dropped")`` when ``is_processed(delivery_id)``
   is ``True``.
-* ``_stage_mention_filter`` (Y6 +    → R4.3 / R4.4. Drops
-  Z6 first_iter_exception merged)     ``jira:issue_commented`` events
+* ``_stage_mention_filter`` drops ``jira:issue_commented`` events
   whose actor is not in the bot-mentioned set when ``iter_count > 1``,
   and bypasses with ``mention_filter_first_iter_exception`` when
   ``iter_count == 1`` and the actor matches the issue reporter.
 
-The companion stages owned by tasks 4.2 (``verify_hmac``,
-``resolve_dept``, ``loop_guard``) are covered by the sibling file
+The companion stages (``verify_hmac``, ``resolve_dept``,
+``loop_guard``) are covered by the sibling file
 ``test_webhook_filter_stages.py``; this module deliberately does **not**
 overlap with that coverage. The composite chain-level invariants
 (precedence, determinism over random sequences) live in the property
 suite at ``platform/tests/property/test_webhook_predicates.py``.
 
-Property → test mapping
------------------------
-
 Every test class targets exactly one stage so a stage-local regression
 shrinks the failing example to that stage's logic without dragging in
 unrelated callbacks. The composite stage-ordering tests live at the
-bottom; their purpose is to pin the design's
+bottom; their purpose is to pin the
 ``streamlit_bypass → replay_dedup → mention_filter`` precedence so the
 stage-level suites above can stay focused on individual decision
 tables.
-
-==========================================  =========================  =================================
-Test class                                  Stage                      Requirements
-==========================================  =========================  =================================
-``TestStreamlitBypassStage``                streamlit_bypass           4.5 (V12)
-``TestStreamlitBypassTagDetection``         _has_streamlit_bypass_tag  4.5 (V12 helper)
-``TestReplayDedupStage``                    replay_dedup               3.5 / R4 (idempotency)
-``TestMentionFilterStage``                  mention_filter (Y6)        4.3
-``TestMentionFilterFirstIterException``     mention_filter (Z6)        4.4
-``TestMidChainStageOrdering``               composition                4.5 > 3.5 > 4.3/4.4
-==========================================  =========================  =================================
 """
 
 from __future__ import annotations
@@ -184,7 +167,7 @@ def _make_event(
 
 
 # ---------------------------------------------------------------------------
-# streamlit_bypass stage — Requirement 4.5 (V12)
+# streamlit_bypass stage
 # ---------------------------------------------------------------------------
 
 
@@ -194,7 +177,6 @@ class TestStreamlitBypassStage:
     def test_body_with_bot_hear_passes_with_bypass_reason(self) -> None:
         """``[bot:hear]`` in the body → pass with the canonical reason.
 
-        Validates: Requirement 4.5 (V12 positive path).
         """
 
         chain = _make_chain()
@@ -230,7 +212,6 @@ class TestStreamlitBypassStage:
     ) -> None:
         """The tag may live anywhere in the body and casing is ignored.
 
-        Validates: Requirement 4.5 (V12 case-insensitive, position-agnostic).
         """
 
         chain = _make_chain()
@@ -262,7 +243,6 @@ class TestStreamlitBypassStage:
         With every other callback set to no-op pass-through, the
         chain reaches the default ``filter_chain_pass`` verdict.
 
-        Validates: Requirement 4.5 (V12 negative path).
         """
 
         chain = _make_chain()
@@ -282,7 +262,6 @@ class TestStreamlitBypassStage:
         in the constant surfaces as a test diff. Mirrors the
         ``BOT_PREFIX_REGEX`` shape pin in ``test_webhook_filter_stages.py``.
 
-        Validates: Requirement 4.5 (constant exposure).
         """
 
         assert STREAMLIT_BYPASS_TAG == "[bot:hear]"
@@ -296,7 +275,6 @@ class TestStreamlitBypassStage:
         ``is_processed`` return True; the chain must still pass the
         event through with the bypass reason.
 
-        Validates: Requirement 4.5 (V12 precedence over R4 dedup).
         """
 
         chain = _make_chain(is_processed=lambda d: True)
@@ -317,7 +295,6 @@ class TestStreamlitBypassStage:
         The bypass tag is what lets the Streamlit UI proxy a comment
         on the user's behalf — it must short-circuit Y6.
 
-        Validates: Requirement 4.5 (V12 precedence over Y6).
         """
 
         chain = _make_chain(
@@ -337,11 +314,10 @@ class TestStreamlitBypassStage:
 class TestStreamlitBypassTagDetection:
     """``WebhookFilterChain._has_streamlit_bypass_tag`` is exposed for re-use.
 
-    The static helper lets the FastAPI router (task 4.5) and ad-hoc
+    The static helper lets the FastAPI router and ad-hoc
     debugging tooling check the tag without instantiating a chain.
     These tests pin its contract.
 
-    Validates: Requirement 4.5 (helper contract).
     """
 
     @pytest.mark.parametrize(
@@ -368,7 +344,7 @@ class TestStreamlitBypassTagDetection:
 
 
 # ---------------------------------------------------------------------------
-# replay_dedup stage — Requirement 3.5 / R4 (idempotency)
+# replay_dedup stage
 # ---------------------------------------------------------------------------
 
 
@@ -378,7 +354,6 @@ class TestReplayDedupStage:
     def test_already_processed_drops_with_duplicate_event_dropped(self) -> None:
         """``is_processed`` True → drop with the canonical reason.
 
-        Validates: Requirement 3.5 / R4 (replay dedup positive path).
         """
 
         chain = _make_chain(is_processed=lambda d: True)
@@ -397,7 +372,6 @@ class TestReplayDedupStage:
         With every other callback set to no-op the chain reaches
         ``filter_chain_pass``.
 
-        Validates: Requirement 3.5 / R4 (replay dedup negative path).
         """
 
         chain = _make_chain(is_processed=lambda d: False)
@@ -415,7 +389,6 @@ class TestReplayDedupStage:
         ``X-Request-UUID`` for Bitbucket); the chain MUST NOT hash,
         normalise, or mutate the value.
 
-        Validates: Requirement 3.5 (callback contract).
         """
 
         captured: list[str] = []
@@ -439,7 +412,6 @@ class TestReplayDedupStage:
         replay-dedup-stage property so both reading orientations
         catch a regression in the precedence wiring.
 
-        Validates: Requirement 4.5 + 3.5 (precedence: bypass > dedup).
         """
 
         chain = _make_chain(is_processed=lambda d: True)
@@ -460,7 +432,6 @@ class TestReplayDedupStage:
         the first stage past replay-dedup that consults it. A
         duplicate-dropped event must never reach the mention filter.
 
-        Validates: Requirement 3.5 (short-circuit semantics).
         """
 
         iter_calls = 0
@@ -483,7 +454,7 @@ class TestReplayDedupStage:
 
 
 # ---------------------------------------------------------------------------
-# mention_filter stage — Requirement 4.3 (Y6)
+# mention_filter stage
 # ---------------------------------------------------------------------------
 
 
@@ -498,7 +469,6 @@ class TestMentionFilterStage:
     def test_unauthorized_actor_at_iter_two_drops(self) -> None:
         """iter > 1 + actor ∉ mention_set → drop with Y6 reason.
 
-        Validates: Requirement 4.3 (Y6 positive path).
         """
 
         chain = _make_chain(
@@ -520,7 +490,6 @@ class TestMentionFilterStage:
     def test_mentioned_actor_at_iter_two_passes(self) -> None:
         """iter > 1 + actor ∈ mention_set → pass through.
 
-        Validates: Requirement 4.3 (Y6 negative path).
         """
 
         chain = _make_chain(
@@ -537,7 +506,6 @@ class TestMentionFilterStage:
     def test_y6_fires_for_every_iter_above_one(self, iter_count: int) -> None:
         """Y6 enforcement holds for any ``iter_count > 1``.
 
-        Validates: Requirement 4.3 (Y6 universal across iters).
         """
 
         chain = _make_chain(
@@ -558,7 +526,6 @@ class TestMentionFilterStage:
         ``None`` against any account id, so the comment is treated
         as unauthorised.
 
-        Validates: Requirement 4.3 (Y6 with missing actor).
         """
 
         chain = _make_chain(
@@ -578,7 +545,6 @@ class TestMentionFilterStage:
         flow through the mention-filter stage unchanged regardless
         of iter / mention-set state.
 
-        Validates: Requirement 4.3 (Y6 scope).
         """
 
         chain = _make_chain(
@@ -605,7 +571,6 @@ class TestMentionFilterStage:
         router validates the schema, so this is a defensive guard
         not a hot-path expectation.
 
-        Validates: Requirement 4.3 (defensive fallback).
         """
 
         chain = _make_chain(
@@ -629,7 +594,6 @@ class TestMentionFilterStage:
         integration tests rely on this argument shape to scope iter
         counts to the right Jira issue.
 
-        Validates: Requirement 4.3 (callback contract).
         """
 
         captured: list[str] = []
@@ -658,7 +622,6 @@ class TestMentionFilterStage:
         The mention set must be issue-scoped so a comment on PAY-1
         does not leak the mention set from PAY-2.
 
-        Validates: Requirement 4.3 (callback contract).
         """
 
         captured: list[str] = []
@@ -682,7 +645,7 @@ class TestMentionFilterStage:
 
 
 # ---------------------------------------------------------------------------
-# first_iter_exception (Z6) — Requirement 4.4
+# first_iter_exception
 # ---------------------------------------------------------------------------
 
 
@@ -699,7 +662,6 @@ class TestMentionFilterFirstIterException:
     def test_iter_one_reporter_passes_with_first_iter_reason(self) -> None:
         """iter == 1 + actor == reporter → bypass with the Z6 audit reason.
 
-        Validates: Requirement 4.4 (Z6 positive path).
         """
 
         chain = _make_chain(
@@ -726,7 +688,6 @@ class TestMentionFilterFirstIterException:
         but they should NOT get the ``mention_filter_first_iter_exception``
         audit reason — that label is reserved for the reporter.
 
-        Validates: Requirement 4.4 (Z6 negative path — non-reporter).
         """
 
         chain = _make_chain(
@@ -748,7 +709,6 @@ class TestMentionFilterFirstIterException:
         the reporter in its iter-1 reply). Falling out of Z6 is what
         forces the mention-set discipline going forward.
 
-        Validates: Requirement 4.4 (Z6 scope — iter == 1 only).
         """
 
         chain = _make_chain(
@@ -774,7 +734,6 @@ class TestMentionFilterFirstIterException:
         identically to ``1`` for Z6 purposes so the reporter is not
         accidentally locked out by the race.
 
-        Validates: Requirement 4.4 (Z6 covers iter ∈ {0, 1}).
         """
 
         chain = _make_chain(
@@ -796,7 +755,6 @@ class TestMentionFilterFirstIterException:
         let the event through. The chain audit-labels the verdict
         as Z6 so operators get a single, stable label per condition.
 
-        Validates: Requirement 4.4 (Z6 stable labelling).
         """
 
         chain = _make_chain(
@@ -816,7 +774,6 @@ class TestMentionFilterFirstIterException:
         Pins the callback contract; the runtime implementation reads
         the reporter id from Postgres / the Jira API on demand.
 
-        Validates: Requirement 4.4 (callback contract).
         """
 
         captured: list[str] = []
@@ -863,7 +820,6 @@ class TestMidChainStageOrdering:
         AND iter > 1 + actor ∉ mention_set (mention_filter would drop),
         the chain still passes the event through with the V12 reason.
 
-        Validates: Requirements 4.5 > 3.5 > 4.3 (transitive precedence).
         """
 
         chain = _make_chain(
@@ -889,7 +845,6 @@ class TestMidChainStageOrdering:
         prior delivery, not that the actor was unauthorised — the
         former is more actionable for diagnosing webhook retry storms.
 
-        Validates: Requirements 3.5 > 4.3 (precedence).
         """
 
         chain = _make_chain(
@@ -911,7 +866,6 @@ class TestMidChainStageOrdering:
         the count must stay zero; flipping ``is_processed`` to False
         bumps the count to exactly 1.
 
-        Validates: Requirements 3.5 > 4.3 (call-order short-circuit).
         """
 
         seen_processed: bool = True
@@ -950,7 +904,6 @@ class TestMidChainStageOrdering:
         a duplicate delivery is a wasteful workflow signal regardless
         of who authored the original.
 
-        Validates: Requirement 3.5 > Requirement 4.4 (precedence).
         """
 
         chain = _make_chain(
@@ -971,10 +924,9 @@ class TestMidChainStageOrdering:
         """A clean event reaches ``filter_chain_pass`` at the chain tail.
 
         Pins the canonical "everything's fine, dispatch this event"
-        verdict so the FastAPI router (task 4.5) can map it to
+        verdict so the FastAPI router can map it to
         HTTP 202 unambiguously.
 
-        Validates: Requirements 4.5 ∧ 3.5 ∧ 4.3 ∧ 4.4 (negation).
         """
 
         chain = _make_chain(

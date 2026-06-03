@@ -2,9 +2,6 @@
 
 Validates the :data:`WORKFLOW_TASK_QUEUES` mapping shape and the
 :func:`task_queue_for` lookup helper against
-``platform-mimari-workflows`` design.md §"temporal_shared.workflow_registry".
-
-Validates: Requirements 1.1, 1.2.
 """
 
 from __future__ import annotations
@@ -21,7 +18,7 @@ from temporal_shared.workflow_registry import (
 
 
 # ---------------------------------------------------------------------------
-# WORKFLOW_TASK_QUEUES — structural shape (Requirement 1.1, 1.2)
+# WORKFLOW_TASK_QUEUES — structural shape
 # ---------------------------------------------------------------------------
 
 
@@ -36,11 +33,9 @@ class TestMappingShape:
     }
 
     def test_has_exactly_four_entries(self) -> None:
-        """**Validates: Requirement 1.1**"""
         assert len(WORKFLOW_TASK_QUEUES) == 4
 
     def test_keys_match_design(self) -> None:
-        """**Validates: Requirement 1.1**"""
         assert set(WORKFLOW_TASK_QUEUES.keys()) == set(self.EXPECTED.keys())
 
     @pytest.mark.parametrize(
@@ -51,15 +46,13 @@ class TestMappingShape:
     def test_each_entry_matches_design(
         self, workflow_name: str, expected_queue: str
     ) -> None:
-        """**Validates: Requirements 1.1, 1.2**"""
         assert WORKFLOW_TASK_QUEUES[workflow_name] == expected_queue
 
     def test_full_mapping_equals_design_literal(self) -> None:
-        """**Validates: Requirement 1.1**"""
         assert dict(WORKFLOW_TASK_QUEUES) == self.EXPECTED
 
     def test_mapping_is_immutable_proxy(self) -> None:
-        """**Validates: Requirement 1.1**
+        """
 
         ``MappingProxyType`` rejects mutation attempts with ``TypeError``.
         """
@@ -69,7 +62,7 @@ class TestMappingShape:
             WORKFLOW_TASK_QUEUES["NewWorkflow"] = "new-tq"  # noqa: B018
 
     def test_mapping_cannot_be_deleted(self) -> None:
-        """**Validates: Requirement 1.1**
+        """
 
         Immutable proxy rejects ``del`` as well as assignment.
         """
@@ -78,7 +71,7 @@ class TestMappingShape:
             del WORKFLOW_TASK_QUEUES["AutomationWorkflow"]  # noqa: B018
 
     def test_queue_values_are_lowercase_kebab_case(self) -> None:
-        """**Validates: Requirement 1.2**
+        """
 
         Task queue names follow the design convention: lowercase
         letters, digits, and hyphens only.
@@ -93,7 +86,7 @@ class TestMappingShape:
             )
 
     def test_only_three_distinct_task_queues(self) -> None:
-        """**Validates: Requirement 1.2**
+        """
 
         Design pins exactly three Temporal task queues. ``BotBranchRetention``
         piggy-backs on ``automation-tq`` so the set of unique queue names
@@ -107,7 +100,7 @@ class TestMappingShape:
         }
 
     def test_bot_branch_retention_piggy_backs_on_automation(self) -> None:
-        """**Validates: Requirement 1.1**
+        """
 
         ``BotBranchRetention`` is a cron piggy-back on the automation
         worker — it MUST share ``automation-tq`` with
@@ -140,11 +133,10 @@ class TestTaskQueueFor:
     def test_returns_registered_queue(
         self, workflow_name: str, expected_queue: str
     ) -> None:
-        """**Validates: Requirements 1.1, 1.2**"""
         assert task_queue_for(workflow_name) == expected_queue
 
     def test_unknown_workflow_raises_key_error(self) -> None:
-        """**Validates: Requirement 1.2**
+        """
 
         Silent fall-through to a default queue would violate the
         single-queue-per-worker contract; the helper raises
@@ -154,12 +146,11 @@ class TestTaskQueueFor:
             task_queue_for("DefinitelyNotAWorkflow")
 
     def test_empty_string_raises_key_error(self) -> None:
-        """**Validates: Requirement 1.2**"""
         with pytest.raises(KeyError):
             task_queue_for("")
 
     def test_case_sensitive_lookup(self) -> None:
-        """**Validates: Requirement 1.2**
+        """
 
         Workflow names match the Temporal-registered class name, which
         is case-sensitive. Lower-case variants must fail.
@@ -170,7 +161,7 @@ class TestTaskQueueFor:
             task_queue_for("AUTOMATIONWORKFLOW")
 
     def test_pure_deterministic(self) -> None:
-        """**Validates: Requirement 1.1**
+        """
 
         Repeated calls with identical input return equal results.
         """
@@ -179,7 +170,6 @@ class TestTaskQueueFor:
         assert first == second == "automation-tq"
 
     def test_returns_str(self) -> None:
-        """**Validates: Requirement 1.1**"""
         result = task_queue_for("AgentRunnerWorkflow")
         assert isinstance(result, str)
 
@@ -193,7 +183,7 @@ class TestSupportsWorkerBootProtocol:
     """The protocol documents the worker-boot signature contract."""
 
     def test_protocol_signature_accepts_single_task_queue(self) -> None:
-        """**Validates: Requirement 1.2**
+        """
 
         A boot helper that conforms to :class:`SupportsWorkerBoot`
         accepts exactly one ``task_queue`` keyword argument. We assert
@@ -227,7 +217,7 @@ class TestSupportsWorkerBootProtocol:
         # worker in ``platform/workers/*/src/.../main.py``.
 
     def test_protocol_is_importable(self) -> None:
-        """**Validates: Requirement 1.2**
+        """
 
         The protocol is exposed as a public symbol so downstream
         modules (worker boot scripts, type stubs) can reference it.

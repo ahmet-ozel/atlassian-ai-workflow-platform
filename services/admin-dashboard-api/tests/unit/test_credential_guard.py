@@ -1,12 +1,8 @@
 """Unit tests for the Credential Guard module.
-
-Validates Requirements 1.1, 1.2, 1.3, 1.4 from the production-hardening spec:
-
-* Requirement 1.1: Production + dev-default POSTGRES_PASSWORD → blocked.
-* Requirement 1.2: Production + dev-default VAULT_TOKEN → blocked.
-* Requirement 1.3: /healthz returns 503 when credential_blocked is True.
-* Requirement 1.4: Development env + dev credentials → not blocked (warning only).
-"""
+* : Production + dev-default POSTGRES_PASSWORD → blocked.
+* : Production + dev-default VAULT_TOKEN → blocked.
+* : /healthz returns 503 when credential_blocked is True.
+* : Development env + dev credentials → not blocked (warning only)."""
 
 from __future__ import annotations
 
@@ -43,7 +39,7 @@ class TestProductionBlocked:
     """Production environment with dev-default credentials must be blocked."""
 
     def test_production_with_dev_postgres_password_is_blocked(self) -> None:
-        """Requirement 1.1: PLATFORM_ENV=production + ai_dev_only → blocked."""
+        """PLATFORM_ENV=production + ai_dev_only → blocked."""
         env_vars = {"POSTGRES_PASSWORD": "ai_dev_only"}
         result = check_credentials(platform_env="production", env_vars=env_vars)
 
@@ -51,7 +47,7 @@ class TestProductionBlocked:
         assert "Dev-only Postgres password" in result.violations
 
     def test_production_with_dev_vault_token_is_blocked(self) -> None:
-        """Requirement 1.2: PLATFORM_ENV=production + dev vault token → blocked."""
+        """PLATFORM_ENV=production + dev vault token → blocked."""
         env_vars = {"VAULT_TOKEN": "dev-token-not-for-prod"}
         result = check_credentials(platform_env="production", env_vars=env_vars)
 
@@ -88,7 +84,7 @@ class TestDevelopmentNotBlocked:
     """Non-production environments must not be blocked regardless of credentials."""
 
     def test_development_with_dev_password_is_not_blocked(self) -> None:
-        """Requirement 1.4: PLATFORM_ENV=development + dev creds → not blocked."""
+        """PLATFORM_ENV=development + dev creds → not blocked."""
         env_vars = {"POSTGRES_PASSWORD": "ai_dev_only"}
         result = check_credentials(platform_env="development", env_vars=env_vars)
 
@@ -169,7 +165,7 @@ class TestHealthzCredentialBlocked:
     def test_healthz_returns_503_when_credential_blocked(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Requirement 1.3: /healthz → 503 with insecure_credentials reason."""
+        """/healthz → 503 with insecure_credentials reason."""
         import src.main as main_module
         from src.main import app
 

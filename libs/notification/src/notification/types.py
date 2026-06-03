@@ -11,8 +11,7 @@ Two value objects are exported:
 * :class:`DeptConfigView` — the *minimum* projection of ``departments.json``
   the notification service needs. The full :mod:`config.departments` schema
   carries ~30 fields; pinning the eight we actually consume keeps the
-  notification path orthogonal to dept-schema churn (R5.1 + R5.2 + R5.3 are
-  the only requirements that read these eight values).
+  notification path orthogonal to dept-schema churn.
 
 Both dataclasses are ``frozen=True``; once a workflow completes the result
 must not mutate before the audit row + notification dispatch land. The
@@ -45,17 +44,16 @@ __all__ = [
 # Enum-like literals
 # ---------------------------------------------------------------------------
 
-#: The three terminal workflow statuses the orchestrator surfaces. Mirrors
-#: the property strategy in design §`Property 18`:
+#: The three terminal workflow statuses the orchestrator surfaces:
 #: ``workflow_result.status ∈ {"completed","failed","partial"}``.
 #:
 #: * ``"completed"`` — every activity succeeded.
 #: * ``"failed"`` — at least one critical activity failed; failure
-#:   notification is **mandatory** (R5.3).
+#:   notification is **mandatory**.
 #: * ``"partial"`` — best-effort activities failed but critical path
 #:   succeeded; treated as a *success* for notification gating (i.e. only
-#:   notifies when ``dept.notify_on_success == True``). The design ties this
-#:   to Spec 2's `output_actions critical/best_effort partition`.
+#:   notifies when ``dept.notify_on_success == True``). This matches the
+#:   critical/best-effort split used for ``output_actions``.
 WorkflowStatus = Literal["completed", "failed", "partial"]
 
 
@@ -87,8 +85,8 @@ NOTIFICATION_CHANNELS: Final[frozenset[str]] = frozenset(
 #: prune failed" alarm without colliding on ``UNIQUE``.
 #:
 #: Currently:
-#: * ``"workflow_completion"`` — terminal workflow notification (this task).
-#: * ``"audit_prune_failed"`` — admin alarm written by sibling task 8.3.
+#: * ``"workflow_completion"`` — terminal workflow notification.
+#: * ``"audit_prune_failed"`` — admin alarm.
 NotificationKind = Literal["workflow_completion", "audit_prune_failed"]
 
 
@@ -105,8 +103,7 @@ NOTIFICATION_KINDS: Final[frozenset[str]] = frozenset(
 #:   correlation. The dispatcher does **not** auto-retry; retry is the
 #:   caller's responsibility (typically a Temporal activity with a
 #:   ``RetryPolicy``).
-#: * ``"retrying"`` — reserved for sibling task 8.1's token-bucket
-#:   back-pressure path; not produced by 8.2 directly.
+#: * ``"retrying"`` — reserved for token-bucket back-pressure paths.
 NotificationStatus = Literal["sent", "failed", "retrying"]
 
 
@@ -126,8 +123,8 @@ class WorkflowResult:
 
     Args:
         status: One of :data:`WorkflowStatus`. Drives the dispatch policy:
-            ``"failed"`` ⇒ failure-mandatory branch (R5.3); ``"completed"``
-            and ``"partial"`` ⇒ success-gated branch (R5.2).
+            ``"failed"`` ⇒ failure-mandatory branch; ``"completed"``
+            and ``"partial"`` ⇒ success-gated branch.
         summary: Single-line human-readable summary (eg.
             ``"PR #123 merged"``). Surfaced verbatim into the rendered
             notification body via the ``{result_summary}`` placeholder.
@@ -181,10 +178,10 @@ class DeptConfigView:
             for ``"completed"`` and ``"partial"`` workflows; ``False`` is
             the default (dispatch becomes a no-op for non-failure outcomes).
             Mirrors ``departments.json::departments[].notify_on_success``
-            (R5.2).
+            .
         notify_channels: Channels the department subscribed to for
             **success** notifications. Failure notifications **always**
-            include Slack regardless of this set (R5.3). Stored as a
+            include Slack regardless of this set. Stored as a
             ``frozenset`` so the value is hashable and unordered.
         slack_webhook: Resolved Slack webhook URL (already de-referenced
             from the ``vault:`` ref the schema records). The dispatcher
@@ -192,7 +189,7 @@ class DeptConfigView:
             and passes the secret in. ``None`` is allowed and means the
             department has no Slack channel configured; failure
             notifications then fall back to the admin Slack channel via
-            sibling task 8.3, but :meth:`notify_workflow_completion` itself
+            the admin alarm path, but :meth:`notify_workflow_completion` itself
             simply skips the Slack channel.
         notify_email: Resolved RFC-5322 email address for the department.
             ``None`` means email is not configured.

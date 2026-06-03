@@ -1,7 +1,5 @@
 """Unit tests for the email-to-task IMAP poller.
 
-Validates: Requirement 5.10 (Slack/Email-to-task adapter B19, task 8.5).
-
 The poller's pure helpers (``parse_inbound_email``,
 ``extract_email_intent_text``, ``EmailInboundConfig``) and its
 asynchronous side-effects are exercised via an in-memory IMAP

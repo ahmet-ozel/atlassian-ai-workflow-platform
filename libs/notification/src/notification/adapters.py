@@ -3,9 +3,9 @@
 The notification service depends on three :class:`~typing.Protocol`s instead
 of concrete classes so:
 
-* Sibling task 8.1 can drop in the ``aiohttp`` Slack adapter and the
+* Concrete wiring can drop in the ``aiohttp`` Slack adapter and the
   ``aiosmtplib`` email adapter without re-touching this module.
-* Tests for task 8.2 (this PR) can inject lightweight in-memory fakes that
+* Tests can inject lightweight in-memory fakes that
   capture every dispatch call and the row that lands in
   ``shared.notification_log`` — no Postgres, no real network.
 
@@ -44,7 +44,7 @@ __all__ = [
 class SlackAdapter(Protocol):
     """Minimal Slack send surface.
 
-    Sibling task 8.1's concrete implementation uses ``aiohttp`` POST against
+    The concrete implementation uses ``aiohttp`` POST against
     the resolved webhook with a 1 msg/sec/channel token bucket. Tests for
     8.2 / 8.3 use a list-backed fake whose ``send`` / ``send_admin_channel``
     simply append the call arguments for later assertion.
@@ -57,7 +57,7 @@ class SlackAdapter(Protocol):
     * :meth:`send_admin_channel` — platform-wide admin alarms (sibling task
       8.3). The webhook is **always** the admin channel resolved by the
       adapter from ``vault:notifications/slack/admin``; callers do not pass
-      a webhook because the destination is fixed by the design (R6.4 — the
+      a webhook because the destination is fixed: the
       ``audit_prune_failed`` alarm must reach the ops admin channel
       regardless of any dept config).
     """
@@ -75,13 +75,12 @@ class SlackAdapter(Protocol):
         ...
 
     async def send_admin_channel(self, body: str, *, alert_type: str) -> None:
-        """POST ``body`` to the admin Slack channel (R6.4).
+        """POST ``body`` to the admin Slack channel.
 
         The destination webhook is **fixed** to the vault-resolved value at
         ``vault:notifications/slack/admin`` and is intentionally *not*
         configurable per call — this is the platform's mandatory ops
-        alarm channel and must not be overridden by dept config (S8 /
-        Property 10 invariant: "AuditPruneWorkflow fail'i sessizleştirilemez").
+        alarm channel and must not be overridden by dept config.
 
         Args:
             body: Rendered alarm body (typically from the
@@ -104,7 +103,7 @@ class SlackAdapter(Protocol):
 class EmailAdapter(Protocol):
     """Minimal email send surface.
 
-    Sibling task 8.1's implementation uses ``aiosmtplib`` against the SMTP
+    The concrete implementation uses ``aiosmtplib`` against the SMTP
     credential resolved from ``vault:notifications/smtp/credential``. Tests
     use a list-backed fake.
     """
@@ -195,7 +194,7 @@ class NotificationLogStore(Protocol):
     instead of raising on duplicate-key keeps the dispatch path branch-free
     — the call site simply skips the adapter send when ``False``.
 
-    Concrete implementations (sibling task 8.1) translate this contract to
+    Concrete implementations translate this contract to
     the Postgres ``INSERT INTO shared.notification_log ... ON CONFLICT
     (dedup_key) DO NOTHING RETURNING id`` idiom; the boolean is the
     ``RETURNING id IS NOT NULL`` projection.

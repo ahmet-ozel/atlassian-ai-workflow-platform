@@ -12,8 +12,7 @@ For config validation::
 
     from db_shared import validate_departments_config, ConfigValidationError
 
-The legacy :class:`TenantAwareSession` placeholder shipped by the
-multi-service-scaffold spec is also re-exported for backward
+The legacy :class:`TenantAwareSession` placeholder is also re-exported for backward
 compatibility (``libs/db-shared/README.md`` references it directly).
 """
 
@@ -64,7 +63,7 @@ from .session import (
 )
 
 __all__ = [
-    # Bot identity uniqueness (R18.4)
+    # Bot identity uniqueness
     "BOT_IDENTITY_SERVICES",
     "BotAccountIdConflict",
     "BotAccountIdConflictError",

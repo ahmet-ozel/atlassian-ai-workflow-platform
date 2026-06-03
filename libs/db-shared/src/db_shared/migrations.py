@@ -1,7 +1,7 @@
 """SQL migration runner — applies versioned ``*.sql`` files idempotently.
 
-Fixes GEREKSINIM_ANALIZI.md **K1** (and **Y5**): Postgres ``docker-entrypoint-initdb.d``
-only runs top-level ``.sql`` files at first boot and **does not recurse**
+Postgres ``docker-entrypoint-initdb.d`` only runs top-level ``.sql`` files at
+first boot and **does not recurse**
 into subdirectories. The repo has migration files under
 ``infra/postgres/migrations/`` (and previously ``config/migrations/``)
 that nothing applies on boot — so tables like ``infrastructure.ssh_runners``,

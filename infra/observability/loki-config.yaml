@@ -1,6 +1,6 @@
 # Loki configuration placeholder
-# Scaffold_Generator placeholder per Requirement 6.5 / 18.5
-# Real storage/index/retention tuning is out of scope for this spec.
+# Development placeholder configuration.
+# Real storage/index/retention tuning belongs in production configuration.
 
 auth_enabled: false
 

@@ -1,9 +1,7 @@
-"""Property test: Sequential step output passing.
+"""Sequential step output passing.
 
-Feature: platform-completion, Property 13: For any pair of consecutive steps,
-the output of step N SHALL be passed as input to step N+1.
-
-Validates: Requirements 5.4
+For any pair of consecutive steps, the output of step N is passed as input to
+step N+1.
 """
 from __future__ import annotations
 import sys

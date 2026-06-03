@@ -1,10 +1,9 @@
-"""CI gate — standalone task creation prompt (`platform-mimari-ops` task 15.8).
+"""CI gate — standalone task creation prompt (ops work).
 
-**Validates: Requirement 9.3, R3.5**
 
 The standalone task creation prompt lives at
 ``platform/prompts/task_creation_assistant.md`` (canonical source per
-``platform-real-usage-gaps`` R3). The CI gate confirms the file ships
+``real-usage gap work`` ). The CI gate confirms the file ships
 and contains the design-mandated behaviour markers so a future edit
 cannot silently strip them.
 """
@@ -23,8 +22,8 @@ _PROMPT_PATH = (
 def test_standalone_prompt_exists() -> None:
     assert _PROMPT_PATH.is_file(), (
         f"Missing standalone task creation prompt at {_PROMPT_PATH}. "
-        "Task 15.3 ships this as the user-facing prompt for the "
-        "Streamlit Task Creator page (R3.1 / Y10)."
+        "the implementation ships this as the user-facing prompt for the "
+        "Streamlit Task Creator page ."
     )
 
 

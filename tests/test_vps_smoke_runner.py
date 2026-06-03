@@ -1,10 +1,7 @@
 """Unit tests for platform/scripts/vps_smoke_runner.py chain dependency logic.
 
-Validates:
-- R10.6: When JIRA-1 fails, all dependent scenarios (JIRA-2/3/4/5) get
-  verdict=manual_pending due to chain dependency.
-- R11.5: When MCP_BANNED_TOOLS contains 'confluence_delete_page', CONF-4
-  gets verdict=n/a (intentional skip, not a failure).
+When JIRA-1 fails, dependent scenarios get verdict=manual_pending, and when
+MCP_BANNED_TOOLS contains 'confluence_delete_page', CONF-4 gets verdict=n/a.
 """
 
 from __future__ import annotations
@@ -81,12 +78,12 @@ def _make_success_response(result: dict | None = None) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# R10.6: Chain dependency — JIRA-1 fail → JIRA-2/3/4/5 manual_pending
+# Chain dependency from JIRA-1 failure to dependent manual_pending verdicts
 # ---------------------------------------------------------------------------
 
 
 class TestJiraChainDependency:
-    """Validates: Requirements R10.6"""
+    """Tests Jira chain dependency behavior."""
 
     def test_jira1_fail_cascades_manual_pending(self):
         """When JIRA-1 fails (non-2xx), JIRA-2/3/4/5 all get manual_pending."""
@@ -188,12 +185,12 @@ class TestJiraChainDependency:
 
 
 # ---------------------------------------------------------------------------
-# R11.5: MCP_BANNED_TOOLS → CONF-4 verdict=n/a
+# MCP_BANNED_TOOLS makes CONF-4 verdict n/a
 # ---------------------------------------------------------------------------
 
 
 class TestConfluenceBannedTools:
-    """Validates: Requirements R11.5"""
+    """Tests Confluence behavior when destructive tools are banned."""
 
     @patch.object(vps_smoke_runner, "get_banned_tools")
     def test_conf4_na_when_delete_page_banned(self, mock_banned):

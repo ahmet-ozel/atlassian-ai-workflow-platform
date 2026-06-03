@@ -2,7 +2,7 @@
 
 /**
  * StopConfirmationModal — Service Stop confirmation with optional advanced
- * tear-down toggles (platform-mimari-uyumluluk task 15.3, R14 / Q16).
+ * tear-down toggles.
  *
  * Rendered when the operator clicks "Stop" in the Servis Kataloğu. The
  * modal walks the operator through a single explicit confirmation step
@@ -18,7 +18,7 @@
  *        - ``Vault override'ları sil`` (``purge_vault``) — deletes
  *          ``secret/services/{name}/*`` after Compose down. Disabled in
  *          production with an explanatory tooltip so the lifecycle
- *          guard's 403 cannot accidentally fire (R14.5).
+ *          guard's 403 cannot accidentally fire.
  *   3. On confirmation, ``POST /admin/services/{name}/stop`` is invoked
  *      with the resolved body. A 403 ``purge_vault_forbidden_in_production``
  *      is surfaced inline in the modal so the operator can untick the
@@ -35,11 +35,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api-client";
 
 // ---------------------------------------------------------------------------
-// Deployment profile detection (R14.5).
+// Deployment profile detection.
 // ---------------------------------------------------------------------------
 //
 // The lifecycle stop endpoint refuses ``purge_vault=true`` when
-// ``settings.deployment_profile == "production"`` (R14.2). Surfacing the
+// ``settings.deployment_profile == "production"``. Surfacing the
 // same value to the browser via ``NEXT_PUBLIC_DEPLOYMENT_PROFILE`` lets
 // the UI disable the Vault checkbox proactively so the 403 is never
 // triggered on the happy path. When the env is unset (most local-dev

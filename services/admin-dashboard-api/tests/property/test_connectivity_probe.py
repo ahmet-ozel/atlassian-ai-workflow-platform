@@ -1,11 +1,7 @@
-"""Property test: Connectivity Probe State Mapping (Q10).
-
-**Property 10: Connectivity Probe State Mapping (Q10)**
-**Validates: Requirements 9.2, 9.3, 9.4, 9.8**
-
+"""Connectivity probe state mapping.
+Connectivity probe state mapping.
 For any manifest entry ``E`` and subprocess outcome ``O``, the
-``_run_connectivity_probe`` helper (Step 9.5) must:
-
+``_run_connectivity_probe`` helper must:
 - ``E.connectivity_probe_command is None`` → no-op; ``credentials_status``
   remains ``None``; no audit event emitted.
 - ``exit_code == 0`` → ``credentials_status = "ok"``;
@@ -15,23 +11,18 @@ For any manifest entry ``E`` and subprocess outcome ``O``, the
   ``service_connectivity_probe_failed`` audit emitted.
 - ``subprocess.TimeoutExpired`` → ``credentials_status = "failed"``;
   ``service_connectivity_probe_failed`` audit emitted.
-
-In all cases the service ``state`` remains ``"running"`` (probe failure
-does not change the lifecycle state — design §3.3 Step 9.5 note).
-
+In all cases the service ``state`` remains ``"running"``; probe failure
+does not change the lifecycle state.
 Strategy
 --------
 Hypothesis generates random combinations of:
-
 1. ``probe_command`` — ``None`` or a non-empty command string.
 2. ``exit_code`` — 0 (success) or non-zero (failure).
 3. ``stderr_text`` — arbitrary string (may be long; we verify truncation).
 4. ``failure_mode`` — ``"timeout"`` or ``"os_error"`` for subprocess
    exception paths.
-
 All four sub-properties are exercised as separate ``@given`` tests so
-Hypothesis can shrink counterexamples independently.
-"""
+Hypothesis can shrink counterexamples independently."""
 
 from __future__ import annotations
 
@@ -271,19 +262,15 @@ _STDERR_STRATEGY = st.text(
 
 
 # ---------------------------------------------------------------------------
-# Property 10a — probe_command=None → no-op; credentials_status stays None
+#  — probe_command=None → no-op; credentials_status stays None
 # ---------------------------------------------------------------------------
 
 
 def test_null_probe_command_is_noop(tmp_path: Path) -> None:
-    """Property 10a — null probe command is a no-op.
-
-    **Validates: Requirements 9.1, 9.8**
-
+    """— null probe command is a no-op.
     When ``connectivity_probe_command`` is ``None``, ``_run_connectivity_probe``
     must not emit any audit event and must leave ``credentials_status=None``
-    in the state cache.
-    """
+    in the state cache."""
     workspace = _build_workspace(tmp_path)
     svc, audit, compose = _make_service(workspace_root=workspace, probe_command=None)
 
@@ -326,7 +313,7 @@ def test_null_probe_command_is_noop(tmp_path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Property 10b — exit_code=0 → credentials_status="ok" + passed audit
+#  — exit_code=0 → credentials_status="ok" + passed audit
 # ---------------------------------------------------------------------------
 
 
@@ -340,15 +327,11 @@ def test_exit_code_zero_sets_credentials_ok(
     probe_command: str,
     tmp_path: Path,
 ) -> None:
-    """Property 10b — exit_code=0 → credentials_status='ok' + passed audit.
-
-    **Validates: Requirements 9.2, 9.4**
-
+    """— exit_code=0 → credentials_status='ok' + passed audit.
     For any non-null ``connectivity_probe_command``, when ``subprocess.run``
     returns exit_code=0, the state cache must have ``credentials_status="ok"``
     and a ``service_connectivity_probe_passed`` audit row must be emitted.
-    The service ``state`` must remain ``"running"``.
-    """
+    The service ``state`` must remain ``"running"``."""
     workspace = _build_workspace(tmp_path)
     svc, audit, compose = _make_service(
         workspace_root=workspace, probe_command=probe_command
@@ -420,7 +403,7 @@ def test_exit_code_zero_sets_credentials_ok(
 
 
 # ---------------------------------------------------------------------------
-# Property 10c — exit_code!=0 → credentials_status="failed" + failed audit
+#  — exit_code!=0 → credentials_status="failed" + failed audit
 # ---------------------------------------------------------------------------
 
 
@@ -440,17 +423,13 @@ def test_nonzero_exit_code_sets_credentials_failed(
     stderr_text: str,
     tmp_path: Path,
 ) -> None:
-    """Property 10c — exit_code!=0 → credentials_status='failed' + failed audit.
-
-    **Validates: Requirements 9.2, 9.3, 9.4**
-
+    """— exit_code!=0 → credentials_status='failed' + failed audit.
     For any non-null ``connectivity_probe_command`` and any non-zero exit code,
     the state cache must have ``credentials_status="failed"`` and a
     ``service_connectivity_probe_failed`` audit row must be emitted.
-    The service ``state`` must remain ``"running"`` (probe failure does not
-    change the lifecycle state — design §3.3 Step 9.5 note).
-    ``credentials_probe_detail`` must be the last 500 chars of stderr.
-    """
+    The service ``state`` must remain ``"running"``; probe failure does not
+    change the lifecycle state.
+    ``credentials_probe_detail`` must be the last 500 chars of stderr."""
     workspace = _build_workspace(tmp_path)
     svc, audit, compose = _make_service(
         workspace_root=workspace, probe_command=probe_command
@@ -530,7 +509,7 @@ def test_nonzero_exit_code_sets_credentials_failed(
 
 
 # ---------------------------------------------------------------------------
-# Property 10d — TimeoutExpired → credentials_status="failed" + failed audit
+#  — TimeoutExpired → credentials_status="failed" + failed audit
 # ---------------------------------------------------------------------------
 
 
@@ -544,15 +523,11 @@ def test_timeout_sets_credentials_failed(
     probe_command: str,
     tmp_path: Path,
 ) -> None:
-    """Property 10d — subprocess.TimeoutExpired → credentials_status='failed'.
-
-    **Validates: Requirements 9.2, 9.4**
-
+    """— subprocess.TimeoutExpired → credentials_status='failed'.
     When ``subprocess.run`` raises ``subprocess.TimeoutExpired`` (the 30-second
     timeout fires), the state cache must have ``credentials_status="failed"``
     and a ``service_connectivity_probe_failed`` audit row must be emitted.
-    The service ``state`` must remain ``"running"``.
-    """
+    The service ``state`` must remain ``"running"``."""
     workspace = _build_workspace(tmp_path)
     svc, audit, compose = _make_service(
         workspace_root=workspace, probe_command=probe_command
@@ -623,7 +598,7 @@ def test_timeout_sets_credentials_failed(
 
 
 # ---------------------------------------------------------------------------
-# Property 10e — stderr truncation: detail is always ≤ 500 chars
+# detail is always ≤ 500 chars
 # ---------------------------------------------------------------------------
 
 
@@ -641,13 +616,9 @@ def test_stderr_truncated_to_500_chars(
     stderr_text: str,
     tmp_path: Path,
 ) -> None:
-    """Property 10e — credentials_probe_detail is always ≤ 500 chars.
-
-    **Validates: Requirements 9.3, 9.4**
-
+    """— credentials_probe_detail is always ≤ 500 chars.
     When stderr is longer than 500 characters, ``credentials_probe_detail``
-    must be exactly ``stderr[-500:]`` — the last 500 characters.
-    """
+    must be exactly ``stderr[-500:]`` — the last 500 characters."""
     workspace = _build_workspace(tmp_path)
     svc, audit, compose = _make_service(
         workspace_root=workspace, probe_command=probe_command
@@ -682,7 +653,7 @@ def test_stderr_truncated_to_500_chars(
 
 
 # ---------------------------------------------------------------------------
-# Property 10f — determinism: same input → same outcome
+# same input → same outcome
 # ---------------------------------------------------------------------------
 
 
@@ -700,14 +671,10 @@ def test_probe_state_mapping_is_deterministic(
     exit_code: int,
     tmp_path: Path,
 ) -> None:
-    """Property 10f — probe state mapping is deterministic.
-
-    **Validates: Requirements 9.2, 9.4, 9.8**
-
+    """— probe state mapping is deterministic.
     Calling ``start`` twice with the same probe command and subprocess
     outcome must produce the same ``credentials_status`` both times.
-    This confirms the mapping is a pure function of the inputs.
-    """
+    This confirms the mapping is a pure function of the inputs."""
     workspace = _build_workspace(tmp_path)
 
     statuses: list[str | None] = []

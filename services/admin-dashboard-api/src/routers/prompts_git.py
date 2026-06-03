@@ -1,6 +1,6 @@
-"""REST router backing ``/admin/prompts`` (platform-mimari-ops task 6.1).
+"""REST router backing ``/admin/prompts``.
 
-Implements the four endpoints from Requirement 2.2:
+Implements the prompt editing endpoints:
 
 * ``GET    /admin/prompts``                   — list all tracked prompt
   files with their current main-branch short SHA.
@@ -25,7 +25,7 @@ out of scope for this task; the design.md table at the end of the
 Validations
 -----------
 * Every write path runs ``validate_template_format(body)`` from
-  ``libs/prompts`` *before* touching git (Requirement 2.9). Failures
+  ``libs/prompts`` *before* touching git. Failures
   return ``422 Unprocessable Entity`` with the validator's message,
   no audit row is written (the failure is a request-shape problem,
   not a system event).
@@ -39,7 +39,7 @@ Validations
 
 Audit
 -----
-Per the task spec, mutation endpoints emit:
+Mutation endpoints emit:
 
 * ``prompt_draft_created`` after a successful ``POST .../draft``.
 * ``prompt_pr_opened`` after a successful ``POST .../pr``.
@@ -48,9 +48,8 @@ Per the task spec, mutation endpoints emit:
 * ``prompt_pr_conflict`` when ``GitRepo.detect_merge_conflict`` flags
   a conflict at PR-open time.
 
-The actual Postgres-backed audit writer is wired in task 6.3 of this
-spec; until that lands the router emits each event through the
-process-wide :class:`LoggingAuditSink` already used by
+Until the Postgres-backed audit writer is wired, the router emits
+each event through the process-wide :class:`LoggingAuditSink` already used by
 :class:`AdminProxy`. Both the logging adapter and the eventual
 asyncpg-backed writer satisfy the same ``write(event)`` protocol so
 the swap is opt-in.
@@ -211,7 +210,7 @@ def _git_author(actor: AuthClaims) -> GitAuthor:
     deployments that need a richer commit identity swap this helper
     for a version that pulls ``email`` / ``name`` from the
     :class:`AuthContext` shape used by ``admin_proxy``. For the
-    scaffold we synthesise a stable ``noreply`` address.
+    project we synthesise a stable ``noreply`` address.
     """
 
     return GitAuthor(
@@ -234,9 +233,9 @@ def _audit_event(
 ) -> AuditEvent:
     """Build an :class:`AuditEvent` for prompt mutations.
 
-    All prompt edits are ``actor_role="admin"`` global actions
-    (Requirement 7.5). ``dept_id`` is ``None`` because prompts are
-    cross-department artefacts.
+    All prompt edits are ``actor_role="admin"`` global actions.
+    ``dept_id`` is ``None`` because prompts are cross-department
+    artefacts.
     """
 
     return AuditEvent(
@@ -299,7 +298,7 @@ def get_prompts_audit_sink(request: Request) -> _AuditSink:
     Falls back to ``app.state.admin_proxy.audit_sink`` so a single
     sink instance is shared with the existing :class:`AdminProxy`
     wiring; that keeps every audit row in one place until the
-    asyncpg-backed writer lands in task 6.3.
+    asyncpg-backed writer is available.
     """
 
     sink: _AuditSink | None = getattr(request.app.state, "prompts_audit_sink", None)
@@ -330,7 +329,7 @@ def get_clock() -> Callable[[], float]:
 
 
 def get_prompt_sandbox(request: Request) -> PromptSandbox:
-    """Return the configured :class:`PromptSandbox` singleton (task 6.2).
+    """Return the configured :class:`PromptSandbox` singleton.
 
     The sandbox is wired in :mod:`src.main`'s lifespan hook with an
     :class:`LlmInvokerLike` and a :class:`CostTrackerLike`. The
@@ -357,10 +356,9 @@ def get_prompt_sandbox(request: Request) -> PromptSandbox:
 def get_prompts_pg_pool(request: Request) -> Any | None:
     """Return the optional asyncpg pool used to record sandbox runs.
 
-    Added by ``platform-mimari-uyumluluk`` task 11.1 (Requirement
-    7.3 / 7.5 — Q4 promote chain). The pool is the same one wired
-    by :mod:`src.main`'s lifespan onto ``app.state.pg_pool`` (the
-    ``costs`` / ``feature_flags`` routers also read from it). The
+    The pool is the same one wired by :mod:`src.main`'s lifespan
+    onto ``app.state.pg_pool`` (the ``costs`` / ``feature_flags``
+    routers also read from it). The
     dependency intentionally returns ``None`` instead of raising
     503 when the pool is missing so the sandbox-test endpoint stays
     answerable in degraded boot states — the response simply
@@ -511,7 +509,7 @@ async def create_prompt_draft(
 
     1. Normalise / safe-check the path.
     2. Reject bodies larger than ``_MAX_DRAFT_BODY_BYTES``.
-    3. Run ``validate_template_format(body)`` (Requirement 2.9). On
+    3. Run ``validate_template_format(body)``. On
        failure emit ``prompt_render_failed`` and return ``422``.
     4. Verify the path already exists on main — this router is the
        edit surface; brand-new files go through a different flow.
@@ -531,7 +529,7 @@ async def create_prompt_draft(
             ),
         )
 
-    # ---- 3. Template format validation (Requirement 2.9) -------------
+    # ---- 3. Template format validation -------------------------------
     try:
         validate_template_format(body)
     except PromptTemplateError as exc:
@@ -577,8 +575,8 @@ async def create_prompt_draft(
     try:
         await asyncio.to_thread(repo.create_branch_from_main, branch_name)
     except BranchAlreadyExistsError:
-        # Append a short disambiguator and retry — the property test
-        # suite covers this branch by injecting a fixed clock.
+        # Append a short disambiguator and retry; tests cover this
+        # branch by injecting a fixed clock.
         branch_name = f"{branch_name}-1"
         try:
             await asyncio.to_thread(repo.create_branch_from_main, branch_name)
@@ -664,7 +662,7 @@ async def sandbox_test_prompt(
     audit: Annotated[_AuditSink, Depends(get_prompts_audit_sink)],
     pg_pool: Annotated[Any | None, Depends(get_prompts_pg_pool)],
 ) -> PromptSandboxResponse:
-    """Run an isolated LLM call against a draft prompt (Requirement 2.4).
+    """Run an isolated LLM call against a draft prompt.
 
     The endpoint pairs a candidate prompt body with a sample user
     input and asks :class:`PromptSandbox` to issue a single LLM
@@ -672,7 +670,7 @@ async def sandbox_test_prompt(
     touch Atlassian — no MCP catalogue is handed to the LLM — and
     the resulting cost row in ``shared.cost_tracking`` is filtered
     out of every dept budget aggregate by
-    :class:`BudgetCapPolicy` (Requirement 5.5).
+    :class:`BudgetCapPolicy`.
 
     The caller must supply *exactly one* of ``body`` (raw draft
     body, useful while the developer is still typing in the editor)
@@ -686,7 +684,7 @@ async def sandbox_test_prompt(
     2. Resolve the prompt body — either from ``payload.body`` or
        from ``payload.branch`` (which must match the
        ``draft/<actor>-<ts>`` shape and exist locally).
-    3. Validate the body's template format (Requirement 2.9). A
+    3. Validate the body's template format. A
        sandbox-test on a body with unbalanced braces would fail at
        LLM render time anyway; surfacing the validator's message
        here gives the developer a fast, deterministic feedback loop.
@@ -694,10 +692,9 @@ async def sandbox_test_prompt(
        :class:`SandboxResult`.
     5. **Persist the run** to ``automation.prompt_sandbox_runs`` so
        the follow-up ``POST /admin/prompts/{path}/promote`` endpoint
-       (task 11.2) can verify the sandbox passed before opening a
+       can verify the sandbox passed before opening a
        PR. The row id is surfaced as ``sandbox_run_id`` on the
-       response (Requirement 7.3 / 7.5 — additive). Failures here
-       are soft-fail: the response still carries the LLM output but
+       response. Failures here are soft-fail: the response still carries the LLM output but
        with ``sandbox_run_id=None`` (the user can re-run if they
        want a promotable record).
     6. Emit the ``prompt_sandbox_run_recorded`` audit row carrying
@@ -756,7 +753,7 @@ async def sandbox_test_prompt(
         assert body is not None  # noqa: S101 — defensive, see above
         resolved_body = body
 
-    # ---- 3. Template format validation (Requirement 2.9) ------------
+    # ---- 3. Template format validation ------------------------------
     # We reject malformed bodies **before** the LLM call so the
     # developer sees the validator's message instead of an opaque
     # ``KeyError`` from ``str.format`` deep inside the orchestrator.
@@ -786,7 +783,7 @@ async def sandbox_test_prompt(
     # raise out of ``sandbox.run`` and never reach this branch, so
     # we do not need a separate ``passed=False`` insert path here;
     # the promote endpoint surfaces "not passed" via the absence of
-    # any matching row, mapped to 404 by task 11.2.)
+    # any matching row, mapped to 404.)
     sandbox_passed = True
 
     # ---- 5. Persist the run to ``prompt_sandbox_runs`` --------------
@@ -1036,7 +1033,7 @@ _SELECT_SANDBOX_RUN_SQL = (
 
 
 # ---------------------------------------------------------------------------
-# Promote logic helper (extracted for property-test access)
+# Promote logic helper
 # ---------------------------------------------------------------------------
 
 
@@ -1080,11 +1077,11 @@ async def _promote_logic(
     audit: Any,
     pr_opener: Any,
 ) -> _PromoteResult:
-    """Core promote logic, extracted for testability (Property 8 / Q4).
+    """Core promote logic, extracted for testability.
 
     This function is the heart of ``POST /admin/prompts/{path}/promote``
-    (Requirement 7.1, 7.5). It is separated from the FastAPI handler so
-    property tests can call it directly without spinning up an HTTP server.
+    and is separated from the FastAPI handler so tests can call it
+    directly without spinning up an HTTP server.
 
     The ``pool`` argument must expose an async ``fetch_sandbox_run(id)``
     method. The router handler wraps the real asyncpg pool in
@@ -1220,7 +1217,7 @@ async def promote_prompt(
     audit: Annotated[_AuditSink, Depends(get_prompts_audit_sink)],
     pg_pool: Annotated[Any | None, Depends(get_prompts_pg_pool)],
 ) -> PromoteResponse:
-    """Promote a sandbox-tested draft prompt to a PR (Requirement 7.1, 7.5).
+    """Promote a sandbox-tested draft prompt to a PR.
 
     Steps:
 
@@ -1492,46 +1489,21 @@ def _build_pr_description(
 
     Steps:
 
-    1. Resolve ``MIMARI.md`` from the configured workspace root
-       (``app.state.workspace_root``). Missing / unreadable file is
-       fail-soft — :func:`extract_v15_status` returns
-       ``mimari_available=False`` and the renderer prints a soft
-       warning instead of making confident claims.
-
-    2. Look up the sandbox-history provider on ``app.state``. Task
-       6.2's :class:`PromptSandbox` does not yet track per-branch
-       history, so when no provider is wired we pass an empty tuple
+    1. Look up the sandbox-history provider on ``app.state``. When
+       no provider is wired we pass an empty tuple
        (the renderer prints "no sandbox runs were recorded").
        Production wiring can attach a callable to
        ``app.state.prompt_sandbox_history`` (signature
        ``(branch: str) -> Sequence[SandboxRunSummary]``) without
        changing this module.
 
-    3. Hand everything to :func:`render_pr_description`.
+    2. Hand everything to :func:`render_pr_description`.
     """
 
-    # ---- 1. MIMARI.md -------------------------------------------------
-    mimari_text: str | None = None
-    workspace_root = getattr(request.app.state, "workspace_root", None)
-    mimari_path: Path | None = None
-    if workspace_root is not None:
-        try:
-            mimari_path = Path(workspace_root) / "MIMARI.md"
-        except (TypeError, ValueError):  # pragma: no cover - defensive
-            mimari_path = None
-    if mimari_path is not None and mimari_path.is_file():
-        try:
-            mimari_text = mimari_path.read_text(encoding="utf-8")
-        except OSError as exc:  # pragma: no cover - filesystem race
-            logger.warning(
-                "MIMARI.md unreadable at %s: %s — V15 sync section "
-                "will print a soft warning.",
-                mimari_path,
-                exc,
-            )
-            mimari_text = None
-
-    v15_status = extract_v15_status(body=draft_body, mimari_text=mimari_text)
+    # The backlog cross-reference section is disabled (no reference
+    # document is shipped); the renderer prints a soft notice instead of
+    # making confident claims.
+    v15_status = extract_v15_status(body=draft_body, mimari_text=None)
 
     # ---- 2. Sandbox history ------------------------------------------
     sandbox_history: tuple[SandboxRunSummary, ...] = ()
@@ -1581,7 +1553,7 @@ async def _safe_audit(sink: _AuditSink, event: AuditEvent) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Sandbox-run persistence (task 11.1 — Requirement 7.3, 7.5)
+# Sandbox-run persistence
 # ---------------------------------------------------------------------------
 
 
@@ -1589,7 +1561,7 @@ async def _safe_audit(sink: _AuditSink, event: AuditEvent) -> None:
 #: an inline ``body`` instead of a draft branch. The
 #: ``prompt_sandbox_runs`` table requires the column NOT NULL (per
 #: ``infra/postgres/migrations/001_prompt_sandbox_runs.sql``); the
-#: promote endpoint (task 11.2) treats this sentinel the same as
+#: promote endpoint treats this sentinel the same as
 #: ``passed=False`` because there is no committed branch to PR.
 _INLINE_BODY_BRANCH_SENTINEL: str = "__inline_body__"
 
@@ -1640,7 +1612,7 @@ async def _record_sandbox_run(
     fails. Failures are swallowed so the sandbox-test response
     still surfaces the LLM result to the caller — the persisted
     record is only required for the follow-up promote endpoint
-    (task 11.2). When this helper returns ``None`` the promote
+    workflow. When this helper returns ``None`` the promote
     endpoint will reject the chained call with 404.
 
     Args:

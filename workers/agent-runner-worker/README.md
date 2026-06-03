@@ -8,7 +8,7 @@ The worker does **not** publish any TCP port: it only opens an outgoing
 connection to the Temporal cluster pointed at by `TEMPORAL_HOST`
 (default `temporal:7233`). If the connection cannot be established the
 process exits with a non-zero status code so that the orchestrator can
-restart it (Requirement 3.7).
+restart it.
 
 Prompt files under `prompts/` drive the LLM activities; workflow and
 activity bodies live in `src/workflows/` and `src/activities/`.
@@ -16,7 +16,7 @@ activity bodies live in `src/workflows/` and `src/activities/`.
 ## Standalone build & run
 
 The worker runs in **Standalone Mode** without the rest of the Compose
-stack (Requirement 15), provided a Temporal cluster is reachable at the
+stack, provided a Temporal cluster is reachable at the
 configured `TEMPORAL_HOST`. Build the image and run it directly from
 this directory:
 

@@ -1,10 +1,5 @@
-"""Property tests 8 & 13 — Task Creator Bot Assignee Card tri-state rendering
+"""Task Creator Bot Assignee Card tri-state rendering
 and graceful degradation.
-
-Spec: ``platform-real-usage-gaps`` — Property 8.
-Spec: ``platform-quick-fixes`` — Property 13.
-
-**Validates: Requirements 7.1, 7.3, 7.4, 7.7, 8.8**
 
 Background
 ----------
@@ -237,14 +232,12 @@ _probe_failure_bot_info = st.builds(
 
 
 # ---------------------------------------------------------------------------
-# Property 8: Task Creator Assignee Card — Green Badges (State A)
+# Task Creator Assignee Card — Green Badges (State A)
 # ---------------------------------------------------------------------------
 
 
 class TestAssigneeCardAllOk:
-    """**Validates: Requirements 7.1, 7.7**
-
-    When all bot credentials are present and probe status is "ok" for
+    """When all bot credentials are present and probe status is "ok" for
     every entry, the card renders green badges (✅) for each service.
     """
 
@@ -257,7 +250,7 @@ class TestAssigneeCardAllOk:
     def test_all_ok_produces_green_state(
         self, data: dict[str, Any]
     ) -> None:
-        """R7.1: All credentials present + probe ok → card state is 'all_ok'."""
+        """All credentials present + probe ok → card state is 'all_ok'."""
         state = determine_card_state(data)
         assert state == "all_ok", (
             f"Expected 'all_ok' state for data with all probes ok, got '{state}'"
@@ -272,7 +265,7 @@ class TestAssigneeCardAllOk:
     def test_all_ok_badges_are_green(
         self, data: dict[str, Any]
     ) -> None:
-        """R7.1: Each service badge shows ✅ when probe is ok."""
+        """Each service badge shows ✅ when probe is ok."""
         bots = data["bots"]
         badges = get_badges(bots)
 
@@ -291,7 +284,7 @@ class TestAssigneeCardAllOk:
     def test_all_ok_primary_bot_has_account_id(
         self, data: dict[str, Any]
     ) -> None:
-        """R7.1: The primary bot has a non-empty account_id."""
+        """The primary bot has a non-empty account_id."""
         bots = data["bots"]
         primary = get_primary_bot(bots)
         assert primary.get("account_id"), (
@@ -307,7 +300,7 @@ class TestAssigneeCardAllOk:
     def test_all_ok_account_id_truncation(
         self, data: dict[str, Any]
     ) -> None:
-        """R7.1: Account ID is truncated to 8 chars + ellipsis for display."""
+        """Account ID is truncated to 8 chars + ellipsis for display."""
         bots = data["bots"]
         primary = get_primary_bot(bots)
         account_id = primary["account_id"]
@@ -318,14 +311,12 @@ class TestAssigneeCardAllOk:
 
 
 # ---------------------------------------------------------------------------
-# Property 8: Task Creator Assignee Card — Red Warning (State B)
+# Task Creator Assignee Card — Red Warning (State B)
 # ---------------------------------------------------------------------------
 
 
 class TestAssigneeCardNoCredentials:
-    """**Validates: Requirements 7.3, 7.7**
-
-    When no bot credentials exist (empty bots list), the card renders
+    """When no bot credentials exist (empty bots list), the card renders
     a red warning directing the user to the Credentials page.
     """
 
@@ -338,7 +329,7 @@ class TestAssigneeCardNoCredentials:
     def test_no_credentials_produces_red_state(
         self, data: dict[str, Any]
     ) -> None:
-        """R7.3: No credentials → card state is 'no_credentials'."""
+        """No credentials → card state is 'no_credentials'."""
         state = determine_card_state(data)
         assert state == "no_credentials", (
             f"Expected 'no_credentials' state for empty bots list, got '{state}'"
@@ -353,32 +344,30 @@ class TestAssigneeCardNoCredentials:
     def test_no_credentials_bots_list_is_empty(
         self, data: dict[str, Any]
     ) -> None:
-        """R7.3: The bots list is empty, confirming no credentials."""
+        """The bots list is empty, confirming no credentials."""
         bots = data.get("bots") or []
         assert len(bots) == 0
 
     def test_no_credentials_with_none_bots_field(self) -> None:
-        """R7.3: If 'bots' field is None, treat as no credentials."""
+        """If 'bots' field is None, treat as no credentials."""
         data = {"display_name": "Test Dept", "bots": None}
         state = determine_card_state(data)
         assert state == "no_credentials"
 
     def test_no_credentials_with_missing_bots_field(self) -> None:
-        """R7.3: If 'bots' field is missing entirely, treat as no credentials."""
+        """If 'bots' field is missing entirely, treat as no credentials."""
         data = {"display_name": "Test Dept"}
         state = determine_card_state(data)
         assert state == "no_credentials"
 
 
 # ---------------------------------------------------------------------------
-# Property 8: Task Creator Assignee Card — Yellow Warning (State C)
+# Task Creator Assignee Card — Yellow Warning (State C)
 # ---------------------------------------------------------------------------
 
 
 class TestAssigneeCardProbeFailure:
-    """**Validates: Requirements 7.4, 7.7**
-
-    When at least one credential exists but its probe status indicates
+    """When at least one credential exists but its probe status indicates
     failure, the card renders a yellow warning directing the user to
     the admin-dashboard /security page for re-probe.
     """
@@ -392,7 +381,7 @@ class TestAssigneeCardProbeFailure:
     def test_probe_failure_produces_yellow_state(
         self, data: dict[str, Any]
     ) -> None:
-        """R7.4: Credential exists + probe fail → card state is 'probe_failure'."""
+        """Credential exists + probe fail → card state is 'probe_failure'."""
         state = determine_card_state(data)
         assert state == "probe_failure", (
             f"Expected 'probe_failure' state for data with failed probes, got '{state}'"
@@ -407,7 +396,7 @@ class TestAssigneeCardProbeFailure:
     def test_probe_failure_has_at_least_one_red_badge(
         self, data: dict[str, Any]
     ) -> None:
-        """R7.4: At least one service badge shows ❌ when probe failed."""
+        """At least one service badge shows ❌ when probe failed."""
         bots = data["bots"]
         badges = get_badges(bots)
 
@@ -426,14 +415,14 @@ class TestAssigneeCardProbeFailure:
     def test_probe_failure_bots_list_is_non_empty(
         self, data: dict[str, Any]
     ) -> None:
-        """R7.4: The bots list is non-empty (credentials exist)."""
+        """The bots list is non-empty (credentials exist)."""
         bots = data.get("bots") or []
         assert len(bots) > 0, (
             "Probe failure state requires at least one bot entry"
         )
 
     def test_probe_failure_with_single_failed_bot(self) -> None:
-        """R7.4: A single bot with 'failed' probe triggers yellow state."""
+        """A single bot with 'failed' probe triggers yellow state."""
         data = {
             "display_name": "Payment Team",
             "bots": [
@@ -450,7 +439,7 @@ class TestAssigneeCardProbeFailure:
         assert state == "probe_failure"
 
     def test_probe_failure_mixed_ok_and_failed(self) -> None:
-        """R7.4: Mix of ok and failed probes still triggers yellow state."""
+        """Mix of ok and failed probes still triggers yellow state."""
         data = {
             "display_name": "Payment Team",
             "bots": [
@@ -482,7 +471,6 @@ class TestAssigneeCardProbeFailure:
 class TestAssigneeCardEdgeCases:
     """Edge-case properties for the assignee card contract.
 
-    **Validates: Requirements 7.1, 7.3, 7.4, 7.7**
     """
 
     def test_unavailable_when_data_is_none(self) -> None:
@@ -579,13 +567,12 @@ class TestAssigneeCardEdgeCases:
 
 
 # ---------------------------------------------------------------------------
-# Property 12: Bot Info Card Rendering Completeness
-# Feature: platform-quick-fixes, Property 12: Bot Info Card Rendering Completeness
+# Bot Info Card Rendering Completeness
 # ---------------------------------------------------------------------------
 
 
 # ---------------------------------------------------------------------------
-# Extracted pure logic from bot_identity_card.py for Property 12 testing
+# Extracted pure logic from bot_identity_card.py for rendering tests
 # ---------------------------------------------------------------------------
 
 #: Badge mapping for probe status (mirrors bot_identity_card.py).
@@ -657,7 +644,7 @@ def simulate_render_bot_identity_card(data: dict[str, Any] | None) -> dict[str, 
 
 
 # ---------------------------------------------------------------------------
-# Hypothesis strategies for Property 12
+# Hypothesis strategies for bot info rendering
 # ---------------------------------------------------------------------------
 
 #: Strategy for a valid Jira bot entry (any probe status).
@@ -703,9 +690,7 @@ _bot_info_with_jira_strategy = st.builds(
 
 
 class TestBotInfoCardRenderingCompleteness:
-    """**Validates: Requirements 8.2, 8.7**
-
-    Property 12: Bot Info Card Rendering Completeness.
+    """Bot Info Card Rendering Completeness.
 
     For any valid bot-info API response containing at least one Jira bot,
     the Task Creator info card SHALL display display_name, bot username,
@@ -722,7 +707,7 @@ class TestBotInfoCardRenderingCompleteness:
     def test_jira_bot_returns_account_id_for_assignee_prefill(
         self, data: dict[str, Any]
     ) -> None:
-        """R8.7: Jira bot present → account_id returned for Assignee pre-fill."""
+        """Jira bot present → account_id returned for Assignee pre-fill."""
         result = simulate_render_bot_identity_card(data)
 
         # The function must return the Jira bot's account_id
@@ -742,7 +727,7 @@ class TestBotInfoCardRenderingCompleteness:
     def test_display_name_is_shown(
         self, data: dict[str, Any]
     ) -> None:
-        """R8.2: Info card displays dept display_name."""
+        """Info card displays dept display_name."""
         result = simulate_render_bot_identity_card(data)
 
         assert result["state"] == "rendered"
@@ -758,7 +743,7 @@ class TestBotInfoCardRenderingCompleteness:
     def test_username_is_shown(
         self, data: dict[str, Any]
     ) -> None:
-        """R8.2: Info card displays bot username."""
+        """Info card displays bot username."""
         result = simulate_render_bot_identity_card(data)
 
         assert result["state"] == "rendered"
@@ -776,7 +761,7 @@ class TestBotInfoCardRenderingCompleteness:
     def test_account_id_displayed_in_copyable_block(
         self, data: dict[str, Any]
     ) -> None:
-        """R8.2: Info card displays account_id in a copyable code block."""
+        """Info card displays account_id in a copyable code block."""
         result = simulate_render_bot_identity_card(data)
 
         assert result["state"] == "rendered"
@@ -795,7 +780,7 @@ class TestBotInfoCardRenderingCompleteness:
     def test_probe_badge_is_shown(
         self, data: dict[str, Any]
     ) -> None:
-        """R8.2: Info card displays probe status badge."""
+        """Info card displays probe status badge."""
         result = simulate_render_bot_identity_card(data)
 
         assert result["state"] == "rendered"
@@ -815,7 +800,7 @@ class TestBotInfoCardRenderingCompleteness:
     def test_all_four_elements_present_simultaneously(
         self, data: dict[str, Any]
     ) -> None:
-        """R8.2: All four display elements are present at the same time.
+        """All four display elements are present at the same time.
 
         display_name, username, account_id, and probe badge must ALL
         be non-None when a Jira bot exists in the response.
@@ -837,7 +822,7 @@ class TestBotInfoCardRenderingCompleteness:
     def test_assignee_prefill_matches_jira_bot_account_id(
         self, data: dict[str, Any]
     ) -> None:
-        """R8.7: Assignee field pre-fill value equals Jira bot account_id.
+        """Assignee field pre-fill value equals Jira bot account_id.
 
         The return value of render_bot_identity_card is used directly
         as the Assignee field pre-fill in pages/2_task_creator.py.
@@ -858,14 +843,13 @@ class TestBotInfoCardRenderingCompleteness:
 
 
 # ---------------------------------------------------------------------------
-# Property 8 (original): Task Creator Assignee Card — State Exhaustiveness
+# Task Creator Assignee Card — State Exhaustiveness
 # ---------------------------------------------------------------------------
 
 
 class TestAssigneeCardStateExhaustiveness:
     """Verify that the tri-state logic is exhaustive and mutually exclusive.
 
-    **Validates: Requirements 7.1, 7.3, 7.4, 7.7**
     """
 
     @settings(
@@ -922,7 +906,7 @@ class TestAssigneeCardStateExhaustiveness:
 
 
 # ---------------------------------------------------------------------------
-# Feature: platform-quick-fixes, Property 13: Bot Info Graceful Degradation
+# Bot Info Graceful Degradation
 # ---------------------------------------------------------------------------
 
 
@@ -1012,22 +996,18 @@ def _simulate_render_bot_identity_card_degradation(
 
 
 # ---------------------------------------------------------------------------
-# Property 13: Bot Info Graceful Degradation
+# Bot Info Graceful Degradation
 # ---------------------------------------------------------------------------
 
 
 class TestBotInfoGracefulDegradation:
-    """**Validates: Requirements 8.8**
-
-    Property 13: Bot Info Graceful Degradation
+    """Bot Info Graceful Degradation.
 
     For any error response from the bot-info endpoint (503, timeout,
     network error), the Streamlit page SHALL display a "Bot bilgileri
     yüklenemedi" warning with a retry option, and the Task Creator
     SHALL remain functional (assignee field empty but usable).
     """
-
-    # Feature: platform-quick-fixes, Property 13: Bot Info Graceful Degradation
 
     @settings(
         max_examples=100,
@@ -1042,7 +1022,7 @@ class TestBotInfoGracefulDegradation:
     def test_any_error_returns_none_account_id(
         self, error_type: str, status_code: int, dept_id: str
     ) -> None:
-        """R8.8: Any error → account_id is None (Task Creator functional, assignee empty)."""
+        """Any error → account_id is None (Task Creator functional, assignee empty)."""
         account_id, _, _ = _simulate_render_bot_identity_card_degradation(
             error_type, status_code
         )
@@ -1063,7 +1043,7 @@ class TestBotInfoGracefulDegradation:
     def test_any_error_shows_degradation_warning(
         self, error_type: str, status_code: int
     ) -> None:
-        """R8.8: Any error → warning message contains 'Bot bilgileri yüklenemedi'."""
+        """Any error → warning message contains 'Bot bilgileri yüklenemedi'."""
         _, warning_message, _ = _simulate_render_bot_identity_card_degradation(
             error_type, status_code
         )
@@ -1084,7 +1064,7 @@ class TestBotInfoGracefulDegradation:
     def test_any_error_provides_retry_option(
         self, error_type: str, status_code: int
     ) -> None:
-        """R8.8: Any error → retry option is available."""
+        """Any error → retry option is available."""
         _, _, has_retry = _simulate_render_bot_identity_card_degradation(
             error_type, status_code
         )
@@ -1106,7 +1086,7 @@ class TestBotInfoGracefulDegradation:
     def test_fetch_bot_info_returns_none_on_error(
         self, error_type: str, dept_id: str, api_base: str
     ) -> None:
-        """R8.8: _fetch_bot_info returns None for any error scenario.
+        """_fetch_bot_info returns None for any error scenario.
 
         This tests the actual _fetch_bot_info function with mocked httpx.get
         to verify it correctly returns None for all error types.
@@ -1153,7 +1133,7 @@ class TestBotInfoGracefulDegradation:
     def test_non_200_status_codes_return_none(
         self, status_code: int, dept_id: str, api_base: str
     ) -> None:
-        """R8.8: Any non-200 HTTP status code → _fetch_bot_info returns None."""
+        """Any non-200 HTTP status code → _fetch_bot_info returns None."""
         from components.bot_identity_card import _fetch_bot_info
 
         with patch("components.bot_identity_card.httpx.get") as mock_get:
@@ -1177,7 +1157,7 @@ class TestBotInfoGracefulDegradation:
     def test_render_returns_none_and_shows_warning_on_error(
         self, dept_id: str, api_base: str
     ) -> None:
-        """R8.8: render_bot_identity_card returns None and calls st.warning on error.
+        """render_bot_identity_card returns None and calls st.warning on error.
 
         Verifies the full render function gracefully degrades: returns None
         (so Task Creator remains functional with empty assignee) and displays
@@ -1217,7 +1197,7 @@ class TestBotInfoGracefulDegradation:
     def test_render_returns_none_on_timeout(
         self, dept_id: str, api_base: str
     ) -> None:
-        """R8.8: render_bot_identity_card returns None on timeout exception."""
+        """render_bot_identity_card returns None on timeout exception."""
         from components.bot_identity_card import render_bot_identity_card
 
         with patch("components.bot_identity_card.httpx.get") as mock_get, \
@@ -1244,7 +1224,7 @@ class TestBotInfoGracefulDegradation:
     def test_render_returns_none_on_connect_error(
         self, dept_id: str, api_base: str
     ) -> None:
-        """R8.8: render_bot_identity_card returns None on connection error."""
+        """render_bot_identity_card returns None on connection error."""
         from components.bot_identity_card import render_bot_identity_card
 
         with patch("components.bot_identity_card.httpx.get") as mock_get, \
@@ -1260,7 +1240,7 @@ class TestBotInfoGracefulDegradation:
             )
 
     def test_determine_card_state_unavailable_on_none(self) -> None:
-        """R8.8: determine_card_state returns 'unavailable' when data is None.
+        """determine_card_state returns 'unavailable' when data is None.
 
         This confirms the pure logic layer correctly identifies the
         degradation state.
@@ -1269,7 +1249,7 @@ class TestBotInfoGracefulDegradation:
         assert state == "unavailable"
 
     def test_task_creator_functional_when_bot_info_fails(self) -> None:
-        """R8.8: Task Creator remains functional when bot-info fails.
+        """Task Creator remains functional when bot-info fails.
 
         The contract is: render_bot_identity_card returns None on error,
         which means the Assignee field stays empty but the rest of the
@@ -1295,7 +1275,7 @@ class TestBotInfoGracefulDegradation:
             mock_st.error.assert_not_called()
 
     def test_retry_button_rendered_on_error(self) -> None:
-        """R8.8: A retry button is rendered when bot-info endpoint fails."""
+        """A retry button is rendered when bot-info endpoint fails."""
         from components.bot_identity_card import render_bot_identity_card
 
         with patch("components.bot_identity_card.httpx.get") as mock_get, \

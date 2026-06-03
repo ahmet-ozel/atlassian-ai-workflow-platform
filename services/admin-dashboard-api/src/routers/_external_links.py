@@ -1,9 +1,9 @@
 """External link extractor (W3 deeplink helper reuse).
 
-**Validates: Requirements 8.4 (R8 / Q9 — `external_links` field on
+**Covers 8.4 (rule 8 / Q9 — `external_links` field on
 ``GET /admin/workflows/{wf_id}``).**
 
-The W3 deep-link concept (`MIMARI` §16.12 W3) standardises how the
+The W3 deep-link concept (architecture notes §16.12 W3) standardises how the
 admin dashboard renders cross-tool URLs: every workflow detail panel
 links back to the originating Jira issue, the Bitbucket PR (if any)
 and the Confluence page (if any). The TypeScript counterpart lives

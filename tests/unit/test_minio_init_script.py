@@ -1,4 +1,4 @@
-"""Static checks for ``infra/minio/init.sh`` (platform-mimari-ops 13.4).
+"""Static checks for ``infra/minio/init.sh``.
 
 These tests do NOT execute the script — bash is not always available
 on Windows dev machines and the script needs a live MinIO endpoint
@@ -7,7 +7,7 @@ rely on:
 
 * The script exists at the path the README documents.
 * It declares the canonical bucket names ``audit-archive`` and
-  ``ai-runs`` (design §"MinIO arşiv yapısı", Requirement 6.3).
+  ``ai-runs``.
 * It uses ``set -euo pipefail`` so any un-handled error fails fast.
 * It honours the dev-mode env vars defined in
   ``infra/docker-compose.yml`` (MINIO_ROOT_USER / MINIO_ROOT_PASSWORD)
@@ -38,7 +38,7 @@ def script_text() -> str:
 
     assert _INIT_SCRIPT.is_file(), (
         f"infra/minio/init.sh missing at {_INIT_SCRIPT}; "
-        "platform-mimari-ops task 13.4 requires this file"
+        "the MinIO bootstrap script is required"
     )
     return _INIT_SCRIPT.read_text(encoding="utf-8")
 

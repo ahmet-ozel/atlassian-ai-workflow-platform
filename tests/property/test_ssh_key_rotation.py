@@ -1,8 +1,4 @@
-"""Property test 9 — SSH Key Dual-Slot Rotation Safety.
-
-Spec: ``platform-real-usage-gaps`` — Property 9.
-
-**Validates: Requirements 8.2, 8.4, 8.7, 8.8**
+"""SSH Key Dual-Slot Rotation Safety.
 
 Background
 ----------
@@ -348,12 +344,12 @@ _runner_id_strategy = st.text(
 
 
 # ---------------------------------------------------------------------------
-# Property 9a: Overlap Window — Both Slots Accepted During Rotation
+# Overlap Window — Both Slots Accepted During Rotation
 # ---------------------------------------------------------------------------
 
 
 class TestOverlapWindowBothSlotsAccepted:
-    """**Validates: Requirements 8.2, 8.7, 8.8**
+    """Both slots are accepted during the overlap window.
 
     After a rotation but before finalize, both the active and previous
     SSH keys are simultaneously valid. The connector can authenticate
@@ -369,7 +365,7 @@ class TestOverlapWindowBothSlotsAccepted:
     def test_both_slots_accepted_during_overlap(
         self, runner_id: str
     ) -> None:
-        """R8.2, R8.7: After rotation, both active and previous keys
+        """After rotation, both active and previous keys
         are accepted. The connector succeeds regardless of which key
         the target host has in authorized_keys."""
 
@@ -436,7 +432,7 @@ class TestOverlapWindowBothSlotsAccepted:
     def test_multiple_rotations_maintain_overlap(
         self, runner_id: str, num_rotations: int
     ) -> None:
-        """R8.2, R8.7: Multiple successive rotations always maintain
+        """Multiple successive rotations always maintain
         the overlap invariant — previous slot holds the immediately
         prior key."""
 
@@ -493,12 +489,12 @@ class TestOverlapWindowBothSlotsAccepted:
 
 
 # ---------------------------------------------------------------------------
-# Property 9b: Finalize Clears Previous Slot
+# Finalize Clears Previous Slot
 # ---------------------------------------------------------------------------
 
 
 class TestFinalizeClearsPreviousSlot:
-    """**Validates: Requirements 8.4, 8.8**
+    """Finalize clears the previous slot.
 
     After ``finalize`` is called, the previous SSH key slot is cleared
     (null). Only the active key remains valid.
@@ -511,7 +507,7 @@ class TestFinalizeClearsPreviousSlot:
     )
     @given(runner_id=_runner_id_strategy)
     def test_finalize_nulls_previous_slot(self, runner_id: str) -> None:
-        """R8.4: After finalize, read_previous returns None."""
+        """After finalize, read_previous returns None."""
 
         vault = FakeVaultBackend()
 
@@ -549,7 +545,7 @@ class TestFinalizeClearsPreviousSlot:
     )
     @given(runner_id=_runner_id_strategy)
     def test_finalize_is_idempotent(self, runner_id: str) -> None:
-        """R8.4: Calling finalize multiple times is safe (idempotent).
+        """Calling finalize multiple times is safe (idempotent).
         The second call is a no-op."""
 
         vault = FakeVaultBackend()
@@ -580,7 +576,7 @@ class TestFinalizeClearsPreviousSlot:
     def test_after_finalize_only_active_key_works(
         self, runner_id: str
     ) -> None:
-        """R8.4, R8.8: After finalize, only the active key can
+        """After finalize, only the active key can
         authenticate. If the active key is not in authorized_keys,
         the connector fails (no fallback available)."""
 
@@ -619,12 +615,12 @@ class TestFinalizeClearsPreviousSlot:
 
 
 # ---------------------------------------------------------------------------
-# Property 9c: Faulty New Key — Previous Slot as Rescue
+# Faulty New Key — Previous Slot as Rescue
 # ---------------------------------------------------------------------------
 
 
 class TestFaultyNewKeyPreviousRescue:
-    """**Validates: Requirements 8.7, 8.8**
+    """The previous slot rescues a faulty active key.
 
     When the newly rotated active key is faulty (not yet added to
     authorized_keys, or corrupted), the previous slot acts as a rescue
@@ -641,7 +637,7 @@ class TestFaultyNewKeyPreviousRescue:
     def test_previous_slot_rescues_when_active_rejected(
         self, runner_id: str
     ) -> None:
-        """R8.7: When the active key is rejected (Permission denied),
+        """When the active key is rejected (Permission denied),
         the connector falls back to the previous key and succeeds."""
 
         vault = FakeVaultBackend()
@@ -677,7 +673,7 @@ class TestFaultyNewKeyPreviousRescue:
     )
     @given(runner_id=_runner_id_strategy)
     def test_both_slots_fail_emits_audit(self, runner_id: str) -> None:
-        """R8.7, R8.8: When both active and previous keys are rejected,
+        """When both active and previous keys are rejected,
         the connector emits ``ssh_key_both_slots_failed`` audit and
         raises BothSlotsFailedError."""
 
@@ -719,7 +715,7 @@ class TestFaultyNewKeyPreviousRescue:
     def test_previous_slot_rescue_is_repeatable(
         self, runner_id: str, num_failed_attempts: int
     ) -> None:
-        """R8.7: The previous slot rescue works repeatedly — multiple
+        """The previous slot rescue works repeatedly — multiple
         connection attempts during the overlap window all succeed via
         the previous slot when active is faulty."""
 
@@ -756,7 +752,7 @@ class TestFaultyNewKeyPreviousRescue:
     def test_rescue_then_operator_fixes_then_active_works(
         self, runner_id: str
     ) -> None:
-        """R8.7, R8.8: Full lifecycle — previous rescues during the
+        """Full lifecycle — previous rescues during the
         gap, then operator adds new key, then active works, then
         finalize clears previous."""
 

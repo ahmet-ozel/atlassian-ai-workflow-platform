@@ -1,13 +1,13 @@
 """Unit tests for the webhook pipeline Dispatcher stage.
 
 Tests cover:
-- R1.1: Resolve assignee.accountId → dept_id from bot identity cache
-- R1.2: Not in bot identity table → DROP + audit dispatch_not_bot
-- R1.3: dept.mode == disabled → DROP + audit webhook_dept_disabled
-- R1.4: Normal assign/update → workflow start (trace_id generated)
-- R1.5: Cache refresh every 5min + instant query on cache miss
-- R1.6: Unassign event (assignee null) → DROP + audit dispatch_unassigned
-- R1.7: Comment on needs_info issue → Temporal signal info_received
+- Resolve assignee.accountId → dept_id from bot identity cache
+- Not in bot identity table → DROP + audit dispatch_not_bot
+- dept.mode == disabled → DROP + audit webhook_dept_disabled
+- Normal assign/update → workflow start (trace_id generated)
+- Cache refresh every 5min + instant query on cache miss
+- Unassign event (assignee null) → DROP + audit dispatch_unassigned
+- Comment on needs_info issue → Temporal signal info_received
 - [iterate] comment → Iteration Manager start
 """
 
@@ -191,7 +191,7 @@ def dept_rows() -> list[dict[str, Any]]:
     """Default department config rows.
 
     ``config_json`` mirrors ``departments.json``; only the ``approvers``
-    field is consumed by the dispatcher today (Requirement 12.6).
+    field is consumed by the dispatcher today.
     """
     return [
         {
@@ -237,12 +237,12 @@ def dispatcher(fake_pool, fake_temporal, fake_audit) -> WebhookDispatcher:
 
 
 # ---------------------------------------------------------------------------
-# Tests: R1.6 — Unassign event (assignee null) → DROP
+# Tests: Unassign event (assignee null) → DROP
 # ---------------------------------------------------------------------------
 
 
 class TestUnassignEvent:
-    """R1.6: Unassign event (assignee null) → DROP + audit dispatch_unassigned."""
+    """Unassign event (assignee null) → DROP + audit dispatch_unassigned."""
 
     @pytest.mark.asyncio
     async def test_null_assignee_drops(self, dispatcher: WebhookDispatcher) -> None:
@@ -271,12 +271,12 @@ class TestUnassignEvent:
 
 
 # ---------------------------------------------------------------------------
-# Tests: R1.2 — Not in bot identity table → DROP
+# Tests: Not in bot identity table → DROP
 # ---------------------------------------------------------------------------
 
 
 class TestNotBotAssignee:
-    """R1.2: Assignee not in bot identity table → DROP + audit dispatch_not_bot."""
+    """Assignee not in bot identity table → DROP + audit dispatch_not_bot."""
 
     @pytest.mark.asyncio
     async def test_unknown_assignee_drops(self, dispatcher: WebhookDispatcher) -> None:
@@ -305,12 +305,12 @@ class TestNotBotAssignee:
 
 
 # ---------------------------------------------------------------------------
-# Tests: R1.3 — Department mode disabled → DROP
+# Tests: Department mode disabled → DROP
 # ---------------------------------------------------------------------------
 
 
 class TestDeptDisabled:
-    """R1.3: dept.mode == disabled → DROP + audit webhook_dept_disabled."""
+    """dept.mode == disabled → DROP + audit webhook_dept_disabled."""
 
     @pytest.mark.asyncio
     async def test_disabled_dept_drops(self, dispatcher: WebhookDispatcher) -> None:
@@ -340,12 +340,12 @@ class TestDeptDisabled:
 
 
 # ---------------------------------------------------------------------------
-# Tests: R1.4 — Normal assign/update → workflow start
+# Tests: Normal assign/update → workflow start
 # ---------------------------------------------------------------------------
 
 
 class TestWorkflowStart:
-    """R1.4: Normal assign/update → workflow start with trace_id."""
+    """Normal assign/update → workflow start with trace_id."""
 
     @pytest.mark.asyncio
     async def test_active_dept_starts_workflow(
@@ -395,12 +395,12 @@ class TestWorkflowStart:
 
 
 # ---------------------------------------------------------------------------
-# Tests: R1.5 — Cache refresh + cache miss
+# Tests: Cache refresh + cache miss
 # ---------------------------------------------------------------------------
 
 
 class TestCacheRefresh:
-    """R1.5: Cache refresh every 5min + instant query on cache miss."""
+    """Cache refresh every 5min + instant query on cache miss."""
 
     @pytest.mark.asyncio
     async def test_cache_miss_queries_db(
@@ -446,12 +446,12 @@ class TestCacheRefresh:
 
 
 # ---------------------------------------------------------------------------
-# Tests: R1.7 — Comment on needs_info issue → signal
+# Tests: Comment on needs_info issue → signal
 # ---------------------------------------------------------------------------
 
 
 class TestNeedsInfoSignal:
-    """R1.7: Comment on needs_info issue → Temporal signal info_received."""
+    """Comment on needs_info issue → Temporal signal info_received."""
 
     @pytest.mark.asyncio
     async def test_comment_on_needs_info_signals(
@@ -503,7 +503,7 @@ class TestNeedsInfoSignal:
 
 
 class TestIterateCommand:
-    """[iterate] comment → Iteration Manager start (with R12.6 auth check)."""
+    """[iterate] comment → Iteration Manager start with auth check."""
 
     @pytest.mark.asyncio
     async def test_iterate_comment_starts_iteration(
@@ -559,7 +559,7 @@ class TestIterateCommand:
     async def test_iterate_by_reporter_starts_iteration(
         self, dispatcher: WebhookDispatcher, fake_temporal: FakeTemporalClient
     ) -> None:
-        """R12.6: issue reporter is also authorized to iterate."""
+        """Issue reporter is also authorized to iterate."""
         payload = WebhookPayload(
             event_type="comment_created",
             issue_key="PAY-703",
@@ -579,7 +579,7 @@ class TestIterateCommand:
         fake_temporal: FakeTemporalClient,
         fake_audit: FakeAuditLogger,
     ) -> None:
-        """R12.6: non-approver, non-reporter actor → drop + audit."""
+        """Non-approver, non-reporter actor → drop + audit."""
         payload = WebhookPayload(
             event_type="comment_created",
             issue_key="PAY-704",
@@ -682,7 +682,7 @@ class TestEdgeCases:
 
 
 # ---------------------------------------------------------------------------
-# Tests: _extract_approvers helper (R12.6)
+# Tests: _extract_approvers helper
 # ---------------------------------------------------------------------------
 
 
@@ -734,7 +734,7 @@ class TestExtractApprovers:
 
 
 # ---------------------------------------------------------------------------
-# Tests: R19.1, R19.2, R19.3 — Per-dept concurrency cap enforcement
+# Tests: Per-dept concurrency cap enforcement
 # ---------------------------------------------------------------------------
 
 
@@ -775,7 +775,7 @@ class _CountingTemporal(FakeTemporalClient):
 
 
 class TestConcurrencyCapEnforcement:
-    """R19.1, R19.2, R19.3: per-dept concurrency limit gate."""
+    """Per-dept concurrency limit gate."""
 
     @pytest.mark.asyncio
     async def test_no_cap_starts_workflow(
@@ -783,7 +783,7 @@ class TestConcurrencyCapEnforcement:
         bot_rows: list[dict[str, Any]],
         fake_audit: FakeAuditLogger,
     ) -> None:
-        """R19.3: ``max_concurrent_workflows`` absent → no gate, normal start."""
+        """``max_concurrent_workflows`` absent → no gate, normal start."""
         dept_rows = [
             {
                 "id": "payment",
@@ -814,7 +814,7 @@ class TestConcurrencyCapEnforcement:
         bot_rows: list[dict[str, Any]],
         fake_audit: FakeAuditLogger,
     ) -> None:
-        """R19.1: ``current < max`` → workflow starts normally."""
+        """``current < max`` → workflow starts normally."""
         dept_rows = [
             {
                 "id": "payment",
@@ -848,7 +848,7 @@ class TestConcurrencyCapEnforcement:
         bot_rows: list[dict[str, Any]],
         fake_audit: FakeAuditLogger,
     ) -> None:
-        """R19.2: ``current >= max`` → drop + audit + Jira comment."""
+        """``current >= max`` → drop + audit + Jira comment."""
         dept_rows = [
             {
                 "id": "payment",

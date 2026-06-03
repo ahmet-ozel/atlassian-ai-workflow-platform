@@ -32,7 +32,7 @@ __all__ = ["app", "create_app", "build_search_url"]
 
 logger = logging.getLogger("firecrawl.egress")
 
-#: Structured logger for client-source observability (Requirement 7.8).
+#: Structured logger for client-source observability.
 _client_source_logger = logging.getLogger("firecrawl.client_source")
 
 _CLIENT_SOURCE_HEADER = "X-Client-Source"
@@ -92,9 +92,9 @@ def build_search_url(query: str, engine: str) -> str:
 def _log_decision(decision: EgressDecision, *, endpoint: str, client_source: str = _CLIENT_SOURCE_UNKNOWN) -> None:
     """Emit a structured log record for the audit trail.
 
-    The platform property test (Property 16, task 12.9) asserts that the
-    string ``egress_denied`` appears in the log output for any disallowed
-    host, so the action token is included verbatim.
+    Tests assert that the string ``egress_denied`` appears in the log
+    output for any disallowed host, so the action token is included
+    verbatim.
     """
 
     extra = {
@@ -207,7 +207,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     """
 
     s = settings or Settings()
-    api = FastAPI(title="firecrawl-egress", version="0.0.0-scaffold")
+    api = FastAPI(title="firecrawl-egress", version="0.0.0")
 
     @api.get("/healthz")
     async def healthz() -> dict[str, str]:

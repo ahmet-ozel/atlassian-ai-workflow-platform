@@ -1,32 +1,21 @@
-"""Property tests: Dependency Chain Orchestration (Q11).
-
-**Property 5: Dependency Chain Topological Order (Q11)**
-**Validates: Requirements 5.1, 5.3, 5.4, 5.7, 5.8**
-
+"""Dependency Chain Orchestration (Q11).
+Dependency Chain Topological Order (Q11)**
 For any randomly generated acyclic dependency graph (max depth 3),
 ``start(root)`` must call ``compose.up`` in topological order
 (dependencies before dependents) and skip services already in
 ``state="running"``.
-
-**Property 6: Dependency Depth Guard (Q11)**
-**Validates: Requirements 5.2**
-
+Dependency Depth Guard (Q11)**
 For graphs with depth N > 3, ``MaxDependencyDepthExceededError`` must
 be raised and a ``dependency_chain_max_depth_exceeded`` audit row written.
-
-**Property 7: Dependency Failure Isolation (Q11)**
-**Validates: Requirements 5.5**
-
+Dependency Failure Isolation (Q11)**
 When a random dependency fails (raises ``ComposeFailureError``), already
 started sibling services remain in ``state="running"`` and a
 ``dependency_start_failed`` audit row is written.
-
 Strategy
 --------
 Hypothesis generates random acyclic dependency graphs as adjacency dicts,
 then wires a ``LifecycleService`` with fake collaborators to verify the
-invariants above.
-"""
+invariants above."""
 
 from __future__ import annotations
 
@@ -454,7 +443,7 @@ def _deep_graph_strategy() -> dict[str, list[str]]:
 
 
 # ---------------------------------------------------------------------------
-# Property 5: Dependency Chain Topological Order
+# Dependency Chain Topological Order
 # ---------------------------------------------------------------------------
 
 
@@ -468,15 +457,11 @@ def test_topological_order_compose_up_calls(
     graph: dict[str, list[str]],
     tmp_path: Path,
 ) -> None:
-    """Property 5: start(root) calls compose.up in topological order.
-
-    **Validates: Requirements 5.1, 5.3, 5.4, 5.7, 5.8**
-
+    """start(root) calls compose.up in topological order.
     For any acyclic dependency graph with max depth 3:
     - compose.up is called for every non-running service in the graph.
     - Dependencies are started before their dependents (topological order).
-    - Services already in state="running" are skipped (idempotent).
-    """
+    - Services already in state="running" are skipped (idempotent)."""
     # Build workspace with .env.example for each service
     for name in graph:
         _build_env_example(tmp_path, name, is_root=(name == "root-svc"))
@@ -549,13 +534,9 @@ def test_already_running_services_are_skipped(
     graph: dict[str, list[str]],
     tmp_path: Path,
 ) -> None:
-    """Property 5 (idempotent skip): already running services are not restarted.
-
-    **Validates: Requirements 5.3**
-
+    """already running services are not restarted.
     When some services are already in state="running", compose.up must
-    NOT be called for them.
-    """
+    NOT be called for them."""
     # Build workspace
     for name in graph:
         _build_env_example(tmp_path, name, is_root=(name == "root-svc"))
@@ -612,19 +593,15 @@ def test_already_running_services_are_skipped(
 
 
 # ---------------------------------------------------------------------------
-# Property 6: Dependency Depth Guard
+# Dependency Depth Guard
 # ---------------------------------------------------------------------------
 
 
 def test_depth_guard_raises_for_depth_4(tmp_path: Path) -> None:
-    """Property 6: depth > 3 raises MaxDependencyDepthExceededError.
-
-    **Validates: Requirements 5.2**
-
+    """depth > 3 raises MaxDependencyDepthExceededError.
     A chain of depth 4 (root -> level3 -> level2 -> level1 -> leaf)
     must raise MaxDependencyDepthExceededError and write a
-    dependency_chain_max_depth_exceeded audit row.
-    """
+    dependency_chain_max_depth_exceeded audit row."""
     graph = _deep_graph_strategy()
     for name in graph:
         _build_env_example(tmp_path, name, is_root=(name == "root-svc"))
@@ -672,14 +649,10 @@ def test_depth_guard_deterministic_for_various_depths(
     extra_depth: int,
     tmp_path: Path,
 ) -> None:
-    """Property 6: depth guard fires deterministically for any depth > 3.
-
-    **Validates: Requirements 5.2**
-
+    """depth guard fires deterministically for any depth > 3.
     For any chain of depth 3 + extra_depth (where extra_depth >= 1),
     MaxDependencyDepthExceededError (or DependencyStartFailedError wrapping it)
-    must be raised and the audit row written.
-    """
+    must be raised and the audit row written."""
     # Build a chain of depth 3 + extra_depth
     # root -> d1 -> d2 -> ... -> d(2+extra_depth) -> leaf
     depth = 3 + extra_depth
@@ -726,7 +699,7 @@ def test_depth_guard_deterministic_for_various_depths(
 
 
 # ---------------------------------------------------------------------------
-# Property 7: Dependency Failure Isolation
+# Dependency Failure Isolation
 # ---------------------------------------------------------------------------
 
 
@@ -740,16 +713,12 @@ def test_dependency_failure_isolation(
     graph: dict[str, list[str]],
     tmp_path: Path,
 ) -> None:
-    """Property 7: failing dep leaves sibling services running.
-
-    **Validates: Requirements 5.5**
-
+    """failing dep leaves sibling services running.
     When a random dependency fails (raises ComposeFailureError):
     - DependencyStartFailedError is raised (or wraps the failure).
     - Already-started sibling services remain in state="running".
     - A dependency_start_failed audit row is written.
-    - The parent service is NOT started.
-    """
+    - The parent service is NOT started."""
     # We need at least 2 deps for "sibling" semantics
     deps = graph.get("root-svc", [])
     if len(deps) < 2:
@@ -838,13 +807,9 @@ def test_dependency_failure_isolation_parametric(
     fail_index: int,
     tmp_path: Path,
 ) -> None:
-    """Property 7 (parametric): sibling isolation holds for any fail position.
-
-    **Validates: Requirements 5.5**
-
+    """sibling isolation holds for any fail position.
     For a root with n_deps dependencies, failing the dep at fail_index
-    must leave all deps started before it in state="running".
-    """
+    must leave all deps started before it in state="running"."""
     # Clamp fail_index to valid range (must be > 0 so at least one sibling starts)
     actual_fail_idx = (fail_index % (n_deps - 1)) + 1  # range [1, n_deps-1]
 
@@ -905,17 +870,17 @@ def test_dependency_failure_isolation_parametric(
 
 
 # ---------------------------------------------------------------------------
-# Property 6 (extended): Dependency Depth Guard over random DAG topologies
+# Dependency Depth Guard over random DAG topologies
 # ---------------------------------------------------------------------------
 #
-# The static / parametric tests above cover linear chains. Task 6.7 asks
+#  The static / parametric tests above cover linear chains. asks
 # specifically for *random DAG* topologies so we exercise the depth guard
 # under structures that mix branching with chain-shaped paths. The strategy
 # below generates a DAG whose longest root-to-leaf path is exactly
 # ``depth`` edges, optionally fattened with sibling branches that fork off
 # intermediate nodes (so the graph is genuinely a DAG, not a chain).
 #
-# Invariants covered (Validates: Requirements 5.2):
+#
 #
 #   * For every random DAG with longest-path-depth ``d``:
 #       - ``d <= MAX_DEPENDENCY_DEPTH``  →  start(root) succeeds.
@@ -1008,20 +973,15 @@ def test_depth_guard_allows_random_dags_within_max_depth(
     data: st.DataObject,
     tmp_path: Path,
 ) -> None:
-    """Property 6 (within bounds): random DAGs with depth ≤ MAX succeed.
-
-    **Validates: Requirements 5.2**
-
+    """random DAGs with depth ≤ MAX succeed.
     For any random DAG whose longest root-to-leaf path is at most
     :data:`MAX_DEPENDENCY_DEPTH - 1 = 2` edges, ``start(root)`` must
     complete successfully and no ``dependency_chain_max_depth_exceeded``
     audit row is written.
-
     A path of ``depth`` edges produces a deepest recursion path of length
     ``depth`` (the deepest descendant is invoked with the parent chain as
     ``_recursion_path``); the guard fires when ``len(path) >= 3``, so any
-    ``depth <= 2`` is accepted.
-    """
+    ``depth <= 2`` is accepted."""
     graph = data.draw(_dag_with_longest_path_strategy(depth=depth))
     # Sanity: our generator really produced the requested depth.
     assert _longest_path_depth(graph, "root-svc") == depth, (
@@ -1085,10 +1045,7 @@ def test_depth_guard_rejects_random_dags_exceeding_max_depth(
     data: st.DataObject,
     tmp_path: Path,
 ) -> None:
-    """Property 6 (exceeding bounds): random DAGs with depth > MAX raise.
-
-    **Validates: Requirements 5.2**
-
+    """random DAGs with depth > MAX raise.
     For any random DAG whose longest root-to-leaf path is at least
     :data:`MAX_DEPENDENCY_DEPTH = 3` edges, ``start(root)`` must raise
     :class:`MaxDependencyDepthExceededError` (or :class:`DependencyStartFailedError`
@@ -1096,8 +1053,7 @@ def test_depth_guard_rejects_random_dags_exceeding_max_depth(
     and a ``dependency_chain_max_depth_exceeded`` audit row must be
     written. The branching siblings off the spine do *not* prevent the
     guard from firing — the guard depends purely on path length, not
-    fan-out.
-    """
+    fan-out."""
     graph = data.draw(_dag_with_longest_path_strategy(depth=depth))
     assert _longest_path_depth(graph, "root-svc") == depth, (
         f"Generator bug: expected longest path = {depth}, "
@@ -1154,7 +1110,7 @@ def test_depth_guard_rejects_random_dags_exceeding_max_depth(
 
 
 # ---------------------------------------------------------------------------
-# Property 6 (cycles): cycles in the dependency graph are rejected at runtime
+# cycles in the dependency graph are rejected at runtime
 # ---------------------------------------------------------------------------
 
 
@@ -1198,23 +1154,18 @@ def test_cycles_in_dependency_graph_rejected_by_depth_guard(
     graph: dict[str, list[str]],
     tmp_path: Path,
 ) -> None:
-    """Property 6 (cycles): cyclic dependency graphs are rejected at runtime.
-
-    **Validates: Requirements 5.2**
-
+    """cyclic dependency graphs are rejected at runtime.
     For any dependency graph that contains a cycle reachable from the root,
     ``start(root)`` must terminate (no unbounded recursion) and raise
     :class:`MaxDependencyDepthExceededError` (possibly wrapped in
     :class:`DependencyStartFailedError`). A
     ``dependency_chain_max_depth_exceeded`` audit row is written so the
     operator can pinpoint the cycle.
-
     This is a defence-in-depth complement to manifest-load-time cycle
     detection (``manifest._check_no_dependency_cycles``): even if a
     pathological manifest somehow bypassed the loader's DFS check, the
     runtime guard fires deterministically once recursion reaches
-    :data:`MAX_DEPENDENCY_DEPTH`.
-    """
+    :data:`MAX_DEPENDENCY_DEPTH`."""
     for name in graph:
         _build_env_example(tmp_path, name, is_root=(name == "root-svc"))
 

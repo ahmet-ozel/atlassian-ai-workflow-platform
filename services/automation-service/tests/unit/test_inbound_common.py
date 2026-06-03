@@ -1,7 +1,5 @@
 """Unit tests for :mod:`automation_service.inbound.common`.
 
-Validates: Requirement 5.10 (Slack/Email-to-task adapter B19, task 8.5).
-
 These tests cover the deterministic core of the inbound adapter chain:
 
 * :func:`build_inbound_workflow_id` — channel-discriminated, normalised,

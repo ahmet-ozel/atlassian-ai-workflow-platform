@@ -1,5 +1,5 @@
 # Writes config/services.manifest.schema.json (JSON Schema 2020-12) for the
-# admin-dashboard-control-plane spec, task 2.1. Built as a script because the
+# admin dashboard control plane. Built as a script because the
 # fs_write tool refuses files whose literal text contains a remote JSON Schema
 # $schema URL; here we assemble that URL at runtime.
 
@@ -63,7 +63,7 @@ $json = @"
         },
         "env_example_path": {
           "type": "string",
-          "description": "Workspace-root-relative path to the .env.example file whose left-hand-side (LHS) keys drive the Start form schema. For atlassian-mcp this points into services/atlassian_unified/ which is read-only per the scaffold immutability guarantee."
+          "description": "Workspace-root-relative path to the .env.example file whose left-hand-side (LHS) keys drive the Start form schema. For atlassian-mcp this points into services/atlassian_mcp_bitbucket/."
         },
         "health_endpoint": {
           "description": "HTTP path probed by HealthProbe for http_service entries (e.g. /healthz). null for worker/infra/ui entries that do not expose an HTTP health endpoint.",

@@ -1,6 +1,4 @@
-"""Parity property test: ``repo-resolution-order.md`` ↔ prompts.
-
-Spec: ``platform-quick-fixes`` G9.
+"""Parity test for ``repo-resolution-order.md`` and prompts.
 
 The repo resolution precedence is documented in three places that must
 stay in sync:

@@ -1,12 +1,11 @@
 """Pure structured-choice helpers — Y8 multi-repo + Z3 execution fallback.
 
 This module is the **single source of truth** for the structured-choice
-helpers spelled out in ``platform-mimari-workflows`` design.md
-§"Property 4" and tasks.md §10.2.  When the LLM analysis is
-ambiguous (multi-repo), or when a dept is missing the ``execution``
-capability for a test-bearing flow, the ``AutomationWorkflow``
-emits a Jira comment listing the candidate workflow types as ``[A]``
-/ ``[B]`` / ... markers and waits for the user's reply.
+helpers used when the LLM analysis is ambiguous (multi-repo), or when
+a dept is missing the ``execution`` capability for a test-bearing flow.
+The ``AutomationWorkflow`` emits a Jira comment listing the candidate
+workflow types as ``[A]`` / ``[B]`` / ... markers and waits for the
+user's reply.
 
 Public API
 ----------
@@ -21,8 +20,6 @@ Public API
 Both functions are **pure** — no I/O, no clock, no randomness — so
 they are safe to call directly from a workflow body via
 ``workflow.unsafe.imports_passed_through()``.
-
-Validates: Requirements 6.5, 6.6.
 """
 
 from __future__ import annotations

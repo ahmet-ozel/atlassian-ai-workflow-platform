@@ -1,19 +1,17 @@
 """Property tests for cleanup decision truth table and replay TTL post-state.
 
-**Validates: Requirements 8.4, 8.5, 10.5**
-
-Property 12 (4, 5): Pure infrastructural invariants — cleanup decision and
-replay TTL post-state.
+Pure infrastructural invariants — cleanup decision and replay TTL
+post-state.
 
 This module covers two independent pure-function invariants from
-``design.md`` §"Property 12":
+the documented design:
 
-1. **Cleanup decision truth table (Property 12.4).** ``should_cleanup``
-   from ``temporal_shared.helpers`` matches the documented truth table
+1. **Cleanup decision truth table.** ``should_cleanup`` from
+   ``temporal_shared.helpers`` matches the documented truth table
    over the cartesian product of ``policy ∈ {"always", "on_success",
    "never"}`` and arbitrary integer exit codes.
 
-2. **Replay TTL post-state (Property 12.5).** ``cleanup_expired`` from
+2. **Replay TTL post-state.** ``cleanup_expired`` from
    ``decision.replay`` deletes exactly the rows whose ``expires_at < now``;
    equivalently, the post-state contains exactly
    ``{(h, ea) ∈ rows : ea >= now}``. The operation is idempotent:
@@ -222,14 +220,14 @@ class _FakePool:
 
 
 # ===========================================================================
-# Property 12.4 — Cleanup decision truth table
+# Cleanup decision truth table
 # ===========================================================================
 
 
 class TestCleanupDecisionTruthTable:
     """``should_cleanup`` matches the documented truth table.
 
-    Truth table (design.md §Property 12.4):
+    Truth table:
 
     +----------------+-----------------+-----------------+
     | policy         | exit_code == 0  | exit_code != 0  |
@@ -247,10 +245,7 @@ class TestCleanupDecisionTruthTable:
     def test_always_returns_true_for_any_exit_code(
         self, exit_code: int
     ) -> None:
-        """**Validates: Requirements 8.4, 8.5**
-
-        ``("always", any)`` → ``True``.
-        """
+        """``("always", any)`` → ``True``."""
         assert should_cleanup("always", exit_code) is True
 
     @_PROFILE
@@ -258,17 +253,11 @@ class TestCleanupDecisionTruthTable:
     def test_never_returns_false_for_any_exit_code(
         self, exit_code: int
     ) -> None:
-        """**Validates: Requirements 8.4, 8.5**
-
-        ``("never", any)`` → ``False``.
-        """
+        """``("never", any)`` → ``False``."""
         assert should_cleanup("never", exit_code) is False
 
     def test_on_success_with_zero_exit_returns_true(self) -> None:
-        """**Validates: Requirements 8.4, 8.5**
-
-        ``("on_success", 0)`` → ``True``.
-        """
+        """``("on_success", 0)`` → ``True``."""
         assert should_cleanup("on_success", 0) is True
 
     @_PROFILE
@@ -276,10 +265,7 @@ class TestCleanupDecisionTruthTable:
     def test_on_success_with_nonzero_exit_returns_false(
         self, exit_code: int
     ) -> None:
-        """**Validates: Requirements 8.4, 8.5**
-
-        ``("on_success", != 0)`` → ``False``.
-        """
+        """``("on_success", != 0)`` → ``False``."""
         assert should_cleanup("on_success", exit_code) is False
 
     @_PROFILE
@@ -287,9 +273,7 @@ class TestCleanupDecisionTruthTable:
     def test_truth_table_comprehensive(
         self, policy: str, exit_code: int
     ) -> None:
-        """**Validates: Requirements 8.4, 8.5**
-
-        Comprehensive cartesian-product check across all valid policies
+        """Comprehensive cartesian-product check across all valid policies
         and arbitrary exit codes.
         """
         result = should_cleanup(policy, exit_code)  # type: ignore[arg-type]
@@ -307,9 +291,7 @@ class TestCleanupDecisionTruthTable:
     def test_invalid_policy_raises_value_error(
         self, policy: str, exit_code: int
     ) -> None:
-        """**Validates: Requirements 8.4, 8.5**
-
-        Any non-canonical policy string must raise ``ValueError`` with
+        """Any non-canonical policy string must raise ``ValueError`` with
         the documented message prefix.
         """
         with pytest.raises(ValueError, match="Invalid cleanup policy"):
@@ -318,9 +300,7 @@ class TestCleanupDecisionTruthTable:
     @_PROFILE
     @given(policy=_CLEANUP_POLICY, exit_code=_EXIT_CODE)
     def test_deterministic(self, policy: str, exit_code: int) -> None:
-        """**Validates: Requirements 8.4, 8.5**
-
-        ``should_cleanup`` is a pure function: repeated invocations on
+        """``should_cleanup`` is a pure function: repeated invocations on
         identical inputs always return the same value.
         """
         r1 = should_cleanup(policy, exit_code)  # type: ignore[arg-type]
@@ -330,7 +310,7 @@ class TestCleanupDecisionTruthTable:
 
 
 # ===========================================================================
-# Property 12.5 — Replay TTL post-state
+# Replay TTL post-state
 # ===========================================================================
 
 
@@ -358,9 +338,7 @@ class TestReplayTTLPostState:
         rows: list[tuple[str, datetime]],
         now: datetime,
     ) -> None:
-        """**Validates: Requirement 10.5**
-
-        Hypothesis-generated ``(rows, now)`` pairs satisfy the post-state
+        """Hypothesis-generated ``(rows, now)`` pairs satisfy the post-state
         invariant: after one cleanup, the table contains exactly the
         non-expired rows.
         """
@@ -376,9 +354,7 @@ class TestReplayTTLPostState:
         rows: list[tuple[str, datetime]],
         now: datetime,
     ) -> None:
-        """**Validates: Requirement 10.5**
-
-        The integer returned by ``cleanup_expired`` equals the number
+        """The integer returned by ``cleanup_expired`` equals the number
         of rows whose ``expires_at < now`` in the pre-state.
         """
         pool = _FakePool(rows)
@@ -394,9 +370,7 @@ class TestReplayTTLPostState:
         rows: list[tuple[str, datetime]],
         now: datetime,
     ) -> None:
-        """**Validates: Requirement 10.5**
-
-        Running ``cleanup_expired`` twice with the same ``now`` yields
+        """Running ``cleanup_expired`` twice with the same ``now`` yields
         the same final state — and the second call deletes zero rows.
         """
         pool = _FakePool(rows)
@@ -418,9 +392,7 @@ class TestReplayTTLPostState:
         rows: list[tuple[str, datetime]],
         now: datetime,
     ) -> None:
-        """**Validates: Requirement 10.5**
-
-        ``cleanup_expired`` only deletes; it never inserts or mutates
+        """``cleanup_expired`` only deletes; it never inserts or mutates
         existing rows. The post-state is always a subset of the
         pre-state.
         """
@@ -437,9 +409,7 @@ class TestReplayTTLPostState:
         rows: list[tuple[str, datetime]],
         now: datetime,
     ) -> None:
-        """**Validates: Requirement 10.5**
-
-        Every row deleted has ``expires_at < now``; equivalently, every
+        """Every row deleted has ``expires_at < now``; equivalently, every
         row whose ``expires_at >= now`` survives. This is the contrapositive
         of the post-state invariant and a useful redundant check.
         """
@@ -467,9 +437,7 @@ class TestReplayTTLPostState:
         self,
         rows: list[tuple[str, datetime]],
     ) -> None:
-        """**Validates: Requirement 10.5**
-
-        When ``now`` is older than every ``expires_at``, no row is
+        """When ``now`` is older than every ``expires_at``, no row is
         expired and the table is unchanged.
         """
         # Pick a ``now`` strictly less than every generated ``expires_at``.
@@ -486,9 +454,7 @@ class TestReplayTTLPostState:
         self,
         rows: list[tuple[str, datetime]],
     ) -> None:
-        """**Validates: Requirement 10.5**
-
-        When ``now`` is newer than every ``expires_at``, every row is
+        """When ``now`` is newer than every ``expires_at``, every row is
         expired and the table is empty afterwards.
         """
         now = _DT_MAX + timedelta(days=1)

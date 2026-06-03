@@ -2,7 +2,7 @@
 # =============================================================================
 # platform/scripts/vps_shutdown_probe.sh — Graceful shutdown & volume retention
 # =============================================================================
-# Runs on VPS_Host. Implements Requirement 18 (R18.1–R18.5):
+# Runs on VPS_Host. Shutdown probe checks:
 #
 #   1. `make down` within 60 seconds, exit 0            (R18.1)
 #   2. Assert `docker compose ps -q` returns empty      (R18.2)
@@ -17,7 +17,7 @@
 # =============================================================================
 set -euo pipefail
 
-PLATFORM_DIR="/opt/yeni_atlassian/platform"
+PLATFORM_DIR="/opt/atlassian-ai-workflow-platform"
 COMPOSE_FILE="$PLATFORM_DIR/infra/docker-compose.yml"
 EVIDENCE_FILE="/tmp/18-shutdown.txt"
 DESTRUCTIVE=0

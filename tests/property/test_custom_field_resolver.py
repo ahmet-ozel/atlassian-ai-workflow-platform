@@ -1,28 +1,26 @@
-"""Property test — Jira custom field name → id resolver TTL cache.
+"""Jira custom field name → id resolver TTL cache.
 
-**Validates: Requirement 3.7**
+
 
 Hypothesis-driven complement to the resolver's unit suite
 (``services/automation-service/tests/unit/test_jira_field_resolver.py``)
 and the static AST scanner
 (``tests/property/test_no_hardcoded_field_ids.py``). Together the
-three files cover Requirement 3.7 / design Property 19 from
-``platform-mimari-workflows`` end-to-end:
+three files cover field-id lookup behavior end-to-end:
 
 * Static (this directory's ``test_no_hardcoded_field_ids.py``) —
-  *no* in-scope module hard-codes a ``customfield_<digits>`` literal.
+ *no* in-scope module hard-codes a ``customfield_<digits>`` literal.
 * Runtime contract (the unit tests) — first call fetches, subsequent
-  calls within TTL skip HTTP, calls past TTL refetch, concurrent
-  callers coalesce, unknown name raises.
-* Property (this file) — across **randomised** schedules of
-  ``resolve_field_id`` calls and time advances, the *count* of
-  HTTP fetches matches a closed-form prediction derived purely from
-  the schedule and the configured TTL.
+ calls within TTL skip HTTP, calls past TTL refetch, concurrent
+ callers coalesce, unknown name raises.
+* Schedule behavior (this file) — across **randomised** schedules of
+ ``resolve_field_id`` calls and time advances, the *count* of
+ HTTP fetches matches a closed-form prediction derived purely from
+ the schedule and the configured TTL.
 
-The headline invariant the property pins is straightforward but
+The headline behavior the property pins is straightforward but
 brittle to regressions: the resolver MUST issue exactly **one**
-``GET /rest/api/3/field`` per TTL bucket that contains at least one
-:meth:`JiraFieldResolver.resolve_field_id` call. Any departure —
+``GET /rest/api/3/field`` per TTL bucket that contains at least one:meth:`JiraFieldResolver.resolve_field_id` call. Any departure —
 caching too aggressively (skipping a fetch the schedule demands) or
 not aggressively enough (issuing more fetches than expected) — fails
 the test with a counter-example shrunk by Hypothesis to the smallest
@@ -35,47 +33,46 @@ The unit tests pin a small set of *specific* schedules: one call,
 two-call-within-TTL, three-call-across-TTL, eight-concurrent. They
 are excellent regression sentinels but cannot enumerate every
 ordering of ``resolve`` × ``advance`` events that real workloads
-produce. The property test fills that gap:
+produce. This property fills that gap:
 
 * Hypothesis builds an arbitrary schedule of up to ``MAX_EVENTS``
-  events drawn from ``{resolve, advance}``.
+ events drawn from ``{resolve, advance}``.
 * The schedule is replayed against the resolver under a manual
-  clock, so wall-clock determinism is preserved (no flakiness from
-  ``datetime.now()``).
-* A reference computation — :func:`_predicted_fetch_count` — derives
-  the expected HTTP fetch count from the schedule alone, without
-  consulting the resolver. The schedule is "binned" by TTL window:
-  every bin that contains at least one ``resolve`` event contributes
-  exactly one fetch.
+ clock, so wall-clock determinism is preserved (no flakiness from
+ ``datetime.now``).
+* A reference computation —:func:`_predicted_fetch_count` — derives
+ the expected HTTP fetch count from the schedule alone, without
+ consulting the resolver. The schedule is "binned" by TTL window:
+ every bin that contains at least one ``resolve`` event contributes
+ exactly one fetch.
 * The test asserts the resolver's ``call_count`` matches the
-  predicted value. A mismatch surfaces as a Hypothesis falsifying
-  example (printed as ``[event, event, ...]``), making the failure
-  reproducible by hand.
+ predicted value. A mismatch surfaces as a Hypothesis falsifying
+ example (printed as ``[event, event,...]``), making the failure
+ reproducible by hand.
 
 The reference computation deliberately bypasses the resolver's own
 state-machine. If the resolver mutates its cache in some new way —
 e.g. by adopting a stale-while-revalidate strategy or memoising
 unknown-field misses differently — the property forces the author
 to reckon with whether the new behaviour still satisfies the
-"one fetch per non-empty TTL bucket" contract Requirement 3.7
-prescribes. Drift that violates the spec fails loudly; intentional
-spec evolution requires updating both the resolver *and* the
-predictor here, which is exactly the audit trail we want.
+"one fetch per non-empty TTL bucket" contract. Drift that violates
+the expected behavior fails loudly; intentional behavior changes
+require updating both the resolver *and* the predictor here.
 
 Strategy bounds
 ---------------
 
 * ``MAX_EVENTS = 24`` — large enough to cross several TTL boundaries
-  in a single schedule, small enough to keep per-example cost
-  bounded. Hypothesis spends most of its budget shrinking, not
-  exploring deeper schedules.
+ in a single schedule, small enough to keep per-example cost
+ bounded. Hypothesis spends most of its budget shrinking, not
+ exploring deeper schedules.
 * ``MAX_DELTA_SECONDS = 9000`` — 2.5 hours, comfortably larger than
-  the 1 hour default TTL so a substantial fraction of randomly
-  generated schedules contains at least one cache-busting advance.
+ the 1 hour default TTL so a substantial fraction of randomly
+ generated schedules contains at least one cache-busting advance.
 * ``TTL`` choices include ``timedelta(0)`` (degenerate "never
-  cache" mode — every resolve is its own bucket) and a generous 4
-  hour upper bound so the predictor is exercised across both
-  extremes the resolver supports.
+ cache" mode — every resolve is its own bucket) and a generous 4
+ hour upper bound so the predictor is exercised across both
+ extremes the resolver supports.
 """
 
 from __future__ import annotations
@@ -95,7 +92,7 @@ from hypothesis import HealthCheck, given, settings, strategies as st
 # sys.path bootstrap
 # ---------------------------------------------------------------------------
 
-# Importing :mod:`automation_service.jira_field_resolver` triggers
+# Importing:mod:`automation_service.jira_field_resolver` triggers
 # ``automation_service.__init__`` → ``automation_service.app`` →
 # ``from src.config import Settings``. Two ``sys.path`` entries are
 # therefore required: the ``src/`` directory (so the
@@ -128,12 +125,12 @@ from automation_service.jira_field_resolver import (  # noqa: E402
 class _ManualClock:
     """A controllable monotonic UTC clock.
 
-    The resolver accepts any ``Callable[[], datetime]``. Driving time
-    by hand keeps the property test deterministic — Hypothesis
-    schedules pure ``advance`` durations, the clock applies them in
-    order, and the resolver evaluates its TTL predicate against the
-    same sequence on every replay.
-    """
+ The resolver accepts any ``Callable[[], datetime]``. Driving time
+ by hand keeps the property deterministic — Hypothesis
+ schedules pure ``advance`` durations, the clock applies them in
+ order, and the resolver evaluates its TTL predicate against the
+ same sequence on every replay.
+ """
 
     now: datetime
 
@@ -149,14 +146,14 @@ class _ManualClock:
 class _RecordingJiraClient:
     """In-memory ``JiraFieldClient`` Protocol fake.
 
-    Records the number of ``get_fields()`` invocations so the test
-    can compare against the predictor. The returned descriptors are
-    intentionally minimal — only the ``id`` and ``name`` keys the
-    resolver consumes are populated. Mirrors the unit-test fake
-    (``services/automation-service/tests/unit/test_jira_field_resolver.py``)
-    minus the concurrency gate, which is exercised by the unit
-    suite separately.
-    """
+ Records the number of ``get_fields`` invocations so the test
+ can compare against the predictor. The returned descriptors are
+ intentionally minimal — only the ``id`` and ``name`` keys the
+ resolver consumes are populated. Mirrors the unit-test fake
+ (``services/automation-service/tests/unit/test_jira_field_resolver.py``)
+ minus the concurrency gate, which is exercised by the unit
+ suite separately.
+ """
 
     def __init__(self, fields: Iterable[Mapping[str, Any]]) -> None:
         self._fields = [dict(d) for d in fields]
@@ -176,7 +173,7 @@ class _RecordingJiraClient:
 #: Two field names are enough for the property — the test only needs
 #: to verify cache behaviour, not name disambiguation. Both ids are
 #: realistic Jira shapes; neither is referenced as a literal anywhere
-#: in the resolver source (Property 19 (d) is enforced separately by
+#: in the resolver source (literal checks are enforced separately by
 #: ``test_no_hardcoded_field_ids.py``).
 _SAMPLE_FIELDS: tuple[dict[str, str], ...] = (
     {"id": "customfield_10020", "name": "Sprint"},
@@ -206,7 +203,7 @@ MAX_DELTA_SECONDS: int = 9000
 
 #: TTL strategy — sampled from ``{0, 1s, 60s, 1h, 4h}``. ``0`` is a
 #: degenerate but valid configuration (every resolve refetches);
-#: ``1h`` is the production default per design Property 19.
+#: ``1h`` is the production default.
 _ttl_strategy = st.sampled_from(
     [
         timedelta(seconds=0),
@@ -252,26 +249,26 @@ def _predicted_fetch_count(
 ) -> int:
     """Return the expected number of HTTP fetches for *schedule*.
 
-    The contract is: every ``resolve`` event whose virtual clock is
-    at or beyond the previous fetch's expiry triggers a new fetch.
-    The first ``resolve`` in any schedule always fetches (the cache
-    is empty); subsequent resolves reuse the cache iff
-    ``clock - last_fetch_at < ttl``.
+ The contract is: every ``resolve`` event whose virtual clock is
+ at or beyond the previous fetch's expiry triggers a new fetch.
+ The first ``resolve`` in any schedule always fetches (the cache
+ is empty); subsequent resolves reuse the cache iff
+ ``clock - last_fetch_at < ttl``.
 
-    We replay the schedule against a virtual clock and a single
-    ``last_fetch_at`` slot, mirroring the resolver's internal state
-    machine but without any HTTP plumbing. Keeping this predictor
-    lock-step with the spec — *not* with the resolver's
-    implementation — is what gives the property its independence:
-    if the resolver drifts from the spec, the assertion fails; if
-    the spec changes, both the resolver and the predictor must be
-    updated together.
+ We replay the schedule against a virtual clock and a single
+ ``last_fetch_at`` slot, mirroring the resolver's internal state
+ machine but without any HTTP plumbing. Keeping this predictor
+ lock-step with the spec — *not* with the resolver's
+ implementation — is what gives the property its independence:
+ if the resolver drifts from the spec, the assertion fails; if
+ the spec changes, both the resolver and the predictor must be
+ updated together.
 
-    Important: ``resolve`` events with unknown field names are not
-    generated by the strategy, so the predictor doesn't need to
-    handle the ``JiraFieldNotFoundError`` path. Unknown-name
-    behaviour is covered exhaustively by the unit suite.
-    """
+ Important: ``resolve`` events with unknown field names are not
+ generated by the strategy, so the predictor doesn't need to
+ handle the ``JiraFieldNotFoundError`` path. Unknown-name
+ behaviour is covered exhaustively by the unit suite.
+ """
 
     last_fetched_at: datetime | None = None
     clock = datetime(2026, 1, 1, tzinfo=timezone.utc)
@@ -294,15 +291,15 @@ def _iter_resolves(
 ) -> Iterator[tuple[str, Any]]:
     """Yield every event in *schedule* (preserves input order).
 
-    Trivial helper kept named so the replay loop in the property
-    body reads as plainly as the predictor.
-    """
+ Trivial helper kept named so the replay loop in the property
+ body reads as plainly as the predictor.
+ """
 
     yield from schedule
 
 
 # ---------------------------------------------------------------------------
-# Property
+# Resolver cache behavior
 # ---------------------------------------------------------------------------
 
 
@@ -322,33 +319,31 @@ def test_resolver_fetch_count_matches_ttl_bucket_prediction(
     schedule: list[tuple[str, Any]],
     ttl: timedelta,
 ) -> None:
-    """**Validates: Requirement 3.7**
+    """For any randomised schedule of ``resolve`` and ``advance``
+ events, the resolver issues exactly one ``GET /rest/api/3/field``
+ fetch per TTL bucket that contains at least one resolve.
 
-    For any randomised schedule of ``resolve`` and ``advance``
-    events, the resolver issues exactly one ``GET /rest/api/3/field``
-    fetch per TTL bucket that contains at least one resolve.
+ Failure modes the property catches:
 
-    Failure modes the property catches:
+ * **Cache disabled regression** — if the resolver ever forgets
+ to populate ``self._cache`` after a successful fetch, every
+ ``resolve`` becomes its own bucket and the actual fetch count
+ explodes past the prediction.
+ * **TTL boundary inversion** — if the freshness predicate flips
+ from ``>=`` to ``>`` (or vice versa), schedules that land
+ exactly on the boundary diverge from the prediction by ±1.
+ * **Snapshot mutation** — if the cache is mutated in place
+ mid-refresh, concurrent-ish replay shapes can observe a
+ half-populated mapping and trigger an unexpected
+ ``KeyError``-driven refetch. The property surfaces this as a
+ counter-example whose schedule mixes ``advance`` and
+ ``resolve`` interleaved across the boundary.
 
-    * **Cache disabled regression** — if the resolver ever forgets
-      to populate ``self._cache`` after a successful fetch, every
-      ``resolve`` becomes its own bucket and the actual fetch count
-      explodes past the prediction.
-    * **TTL boundary inversion** — if the freshness predicate flips
-      from ``>=`` to ``>`` (or vice versa), schedules that land
-      exactly on the boundary diverge from the prediction by ±1.
-    * **Snapshot mutation** — if the cache is mutated in place
-      mid-refresh, concurrent-ish replay shapes can observe a
-      half-populated mapping and trigger an unexpected
-      ``KeyError``-driven refetch. The property surfaces this as a
-      counter-example whose schedule mixes ``advance`` and
-      ``resolve`` interleaved across the boundary.
-
-    The test runs each example under :func:`asyncio.run` so the
-    resolver's ``async`` surface is exercised end-to-end. Per-example
-    state (resolver, clock, fake client) is constructed fresh, so
-    one failing case cannot poison subsequent ones.
-    """
+ The test runs each example under:func:`asyncio.run` so the
+ resolver's ``async`` surface is exercised end-to-end. Per-example
+ state (resolver, clock, fake client) is constructed fresh, so
+ one failing case cannot poison subsequent ones.
+ """
 
     expected = _predicted_fetch_count(schedule, ttl)
 
@@ -386,22 +381,22 @@ def test_resolver_fetch_count_matches_ttl_bucket_prediction(
 
 
 # ---------------------------------------------------------------------------
-# Targeted invariants — sanity checks that the predictor itself is
-# right. These are property tests over the predictor (no resolver
+# Targeted checks that the predictor itself is
+# right. These operate over the predictor (no resolver
 # involvement) so a regression in the predictor cannot silently mask
 # a regression in the resolver.
 # ---------------------------------------------------------------------------
 
 
 class TestPredictorSelfChecks:
-    """Pin :func:`_predicted_fetch_count` against hand-checked cases.
+    """Pin:func:`_predicted_fetch_count` against hand-checked cases.
 
-    The property above is only as strong as the predictor that
-    powers it. These checks exercise the predictor against the same
-    fixed schedules covered by the resolver's unit suite, so any
-    drift between the spec and the predictor surfaces as a failure
-    here rather than a silent mismatch in the property.
-    """
+ The property above is only as strong as the predictor that
+ powers it. These checks exercise the predictor against the same
+ fixed schedules covered by the resolver's unit suite, so any
+ drift between the spec and the predictor surfaces as a failure
+ here rather than a silent mismatch in the property.
+ """
 
     def test_empty_schedule_is_zero_fetches(self) -> None:
         # Strategy enforces ``min_size=1``, but the predictor is
@@ -458,16 +453,16 @@ class TestPredictorSelfChecks:
 # Static AST counterpart — no hard-coded field id literals
 # ---------------------------------------------------------------------------
 #
-# Property 19 (d) — the structural complement to the runtime cache
-# property — is enforced by ``tests/property/test_no_hardcoded_field_ids.py``
+# The structural complement to the runtime cache
+# property is enforced by ``tests/property/test_no_hardcoded_field_ids.py``
 # (sibling file in this directory). That scanner walks every ``.py``
 # under ``services/automation-service``, ``workers/`` and ``libs/``
 # and asserts no string literal matches ``^customfield_\d+$``. This
 # file does not duplicate the AST scan; the two files together cover
-# Requirement 3.7 / design Property 19 end-to-end:
+# field-id lookup behavior end-to-end:
 #
 # * runtime — this file (cache + TTL semantics under randomised
-#   schedules);
+# schedules);
 # * static — sibling file (no literal field ids escape into source).
 #
 # A pointer-test below makes the relationship explicit so a future
@@ -478,17 +473,16 @@ class TestPredictorSelfChecks:
 def test_static_ast_counterpart_exists() -> None:
     """The sibling AST scanner must remain alongside this file.
 
-    Property 19 (d) is a *paired* invariant — a runtime cache test
-    here and a static literal scanner next door. Removing either
-    half degrades the property to a half-truth, so we pin the
-    sibling file's existence as a structural assertion. The check
-    is intentionally cheap (a single ``Path.is_file()``) so it adds
-    no measurable cost to the suite.
-    """
+ Runtime cache checks here pair with a static literal scanner next
+ door. Removing either half weakens coverage, so we pin the
+ sibling file's existence as a structural assertion. The check
+ is intentionally cheap (a single ``Path.is_file``) so it adds
+ no measurable cost to the suite.
+ """
 
     sibling = Path(__file__).with_name("test_no_hardcoded_field_ids.py")
     assert sibling.is_file(), (
-        "Property 19 (d) requires both halves of the invariant: "
+        "field-id lookup coverage requires both cache and literal checks: "
         f"missing static AST scanner at {sibling!s}. "
         "Restore it (or update this docstring if the property has "
         "been intentionally restructured)."
@@ -507,13 +501,13 @@ def test_static_ast_counterpart_exists() -> None:
 
 
 def test_unknown_field_name_raises_after_first_fetch() -> None:
-    """An unknown name surfaces as :class:`JiraFieldNotFoundError`.
+    """An unknown name surfaces as:class:`JiraFieldNotFoundError`.
 
-    The error must be raised *after* a successful refresh so the
-    caller knows the absence is real on the upstream side, not a
-    stale cache miss. We assert this by checking that the recording
-    client saw exactly one fetch when the resolver finally raises.
-    """
+ The error must be raised *after* a successful refresh so the
+ caller knows the absence is real on the upstream side, not a
+ stale cache miss. We assert this by checking that the recording
+ client saw exactly one fetch when the resolver finally raises.
+ """
 
     async def _run() -> None:
         clock = _ManualClock(datetime(2026, 1, 1, tzinfo=timezone.utc))

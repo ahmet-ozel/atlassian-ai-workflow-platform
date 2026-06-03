@@ -5,8 +5,7 @@ Validates that the FastAPI endpoint returns:
   reason="concurrency_limit_exceeded"
 - 200 for all other drops/passes (Atlassian acknowledge contract)
 
-This pins task 22.1's deliverable item (5): the HTTP 429 mapping for
-the concurrency rejection branch.
+This pins the HTTP 429 mapping for the concurrency rejection branch.
 """
 
 from __future__ import annotations

@@ -1,15 +1,14 @@
 # http-shared
 
-Shared HTTP client factory for the multi-service scaffold. Every outgoing
+Shared HTTP client factory for the platform services. Every outgoing
 MCP or Firecrawl call must originate from :func:`http_shared.make_mcp_client`
-so that the `X-Client-Source` header is stamped consistently (see
-`MIMARI.md` §6.6 and the multi-service-scaffold spec, Requirement 13).
+so that the `X-Client-Source` header is stamped consistently.
 
 ## Public API
 
 - `KNOWN_CLIENT_SOURCES: frozenset[str]` — the eight Component identities
-  that may appear in `X-Client-Source` (design §3.4). The `automation-worker`
-  identity was added by platform-gap-fill task 8.2 (Requirement 9.3).
+  that may appear in `X-Client-Source`. The `automation-worker`
+  identity is included for worker-originated MCP calls.
 - `make_mcp_client(client_source, *, timeout=30.0, **kwargs) -> httpx.AsyncClient`
   — returns an `httpx.AsyncClient` whose default headers already include
   `X-Client-Source: <client_source>`. Caller-supplied `headers=` are

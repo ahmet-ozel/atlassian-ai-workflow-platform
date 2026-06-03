@@ -2,9 +2,8 @@
 
 The production ``AgentRunnerWorkflow`` (under
 ``platform/workers/agent-runner-worker/src/workflows/agent_runner_workflow.py``)
-is currently an empty stub — see the AgentRunner task in
-``.kiro/specs/p0-critical-path/tasks.md``. The integration tests for tasks
-15.2, 15.3, and 15.4 need a registered child workflow under the name
+is currently an empty stub. The end-to-end integration tests need a
+registered child workflow under the name
 ``"AgentRunnerWorkflow"`` so AutomationWorkflow's
 ``execute_child_workflow("AgentRunnerWorkflow", ...)`` dispatch resolves.
 
@@ -22,7 +21,7 @@ Why a dedicated module?
 The Temporal workflow sandbox imports every module containing a
 ``@workflow.defn`` to validate it for non-deterministic side effects.
 If the test module also performs filesystem work at import time
-(``Path.resolve()``, environment reads, etc.), the sandbox rejects the
+(``Path.resolve``, environment reads, etc.), the sandbox rejects the
 module with ``RestrictedWorkflowAccessError``. Keeping the workflow
 classes in this dedicated, side-effect-free module avoids that.
 
@@ -56,9 +55,9 @@ __all__ = [
 class AgentRunnerInputShape:
     """Mirror of the child input shape AutomationWorkflow constructs.
 
-    Must remain structurally identical to
-    ``automation_workflow._AgentRunnerInputShape``.
-    """
+ Must remain structurally identical to
+ ``automation_workflow._AgentRunnerInputShape``.
+ """
 
     parent_workflow_id: str
     issue_key: str
@@ -79,12 +78,12 @@ class AgentRunnerInputShape:
 class ConfluenceDocUpdateAgentRunnerStub:
     """Test-local AgentRunnerWorkflow exercising the confluence branch.
 
-    Flow: ``confluence_search`` → ``confluence_get_page`` →
-    ``llm_generate_doc`` → ``confluence_update_page``.
+ Flow: ``confluence_search`` → ``confluence_get_page`` →
+ ``llm_generate_doc`` → ``confluence_update_page``.
 
-    Returns a short success summary; the parent's
-    ``_stringify_child_result`` flattens it into the completion comment.
-    """
+ Returns a short success summary; the parent's
+ ``_stringify_child_result`` flattens it into the completion comment.
+ """
 
     @workflow.run
     async def run(self, inp: AgentRunnerInputShape) -> str:
@@ -145,8 +144,8 @@ class ConfluenceDocUpdateAgentRunnerStub:
 class ResearchSummaryJiraAgentRunnerStub:
     """Test-local AgentRunnerWorkflow exercising the research_summary branch.
 
-    Flow: ``llm_research`` → ``jira_add_comment`` (with the research summary).
-    """
+ Flow: ``llm_research`` → ``jira_add_comment`` (with the research summary).
+ """
 
     @workflow.run
     async def run(self, inp: AgentRunnerInputShape) -> str:
@@ -185,14 +184,14 @@ class ResearchSummaryJiraAgentRunnerStub:
 class PRReviewAgentRunnerStub:
     """Test-local AgentRunnerWorkflow exercising the pr_review branch.
 
-    Flow: ``bitbucket_fetch_pr_diff`` → ``llm_review_code`` →
-    ``bitbucket_add_pr_comment``.
+ Flow: ``bitbucket_fetch_pr_diff`` → ``llm_review_code`` →
+ ``bitbucket_add_pr_comment``.
 
-    The child input encodes the target PR via ``output_actions`` — the
-    first action's payload carries ``workspace``, ``repo_slug``, and
-    ``pr_id``. This mirrors how the bitbucket webhook handler
-    populates the child input for ``pullrequest:reviewer_added`` events.
-    """
+ The child input encodes the target PR via ``output_actions`` — the
+ first action's payload carries ``workspace``, ``repo_slug``, and
+ ``pr_id``. This mirrors how the bitbucket webhook handler
+ populates the child input for ``pullrequest:reviewer_added`` events.
+ """
 
     @workflow.run
     async def run(self, inp: AgentRunnerInputShape) -> str:

@@ -1,6 +1,5 @@
-"""CI gate — end-user docs catalog (`platform-mimari-ops` task 15.5 / W2).
+"""CI gate — end-user docs catalog (ops work / W2).
 
-**Validates: Requirement 9.1**
 
 Every page documented in design.md §"User Guide" MUST exist under
 ``platform/docs/user-guide/`` and carry non-empty content. The list is
@@ -30,7 +29,7 @@ _REQUIRED_PAGES: tuple[str, ...] = (
 
 def test_user_guide_directory_exists() -> None:
     assert _USER_GUIDE_DIR.is_dir(), (
-        f"Missing platform/docs/user-guide/ — task 15.1 ships the "
+        f"Missing platform/docs/user-guide/ — the user guide catalog needs the "
         f"end-user documentation tree at {_USER_GUIDE_DIR}."
     )
 
@@ -39,7 +38,7 @@ def test_user_guide_directory_exists() -> None:
 def test_required_user_guide_page_exists_and_is_non_empty(page: str) -> None:
     path = _USER_GUIDE_DIR / page
     assert path.is_file(), (
-        f"Missing user-guide page {page!r}; task 15.1 / W2 requires "
+        f"Missing user-guide page {page!r}; the user guide catalog requires "
         "this file to be present so end users have stable links."
     )
     body = path.read_text(encoding="utf-8").strip()

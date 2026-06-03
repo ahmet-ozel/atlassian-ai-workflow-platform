@@ -1,8 +1,7 @@
 """Unit tests for pii_shared.filter.
 
 These are *example-based* sanity checks. The exhaustive
-property-based test lives at
-`platform/tests/property/test_pii_filter.py` (Property 2 — task 3.3).
+property-based coverage lives in the platform property tests.
 """
 
 from __future__ import annotations

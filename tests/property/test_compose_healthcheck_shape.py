@@ -1,7 +1,6 @@
-# Feature: vps-e2e-deployment-test, Property 4: Compose healthcheck shape
-"""Property test for Compose healthcheck shape invariants.
+"""invariant for Compose healthcheck shape invariants.
 
-**Validates: Requirements 9.2**
+
 
 Every Compose service in ``infra/docker-compose.yml`` that declares a
 custom ``healthcheck:`` block MUST satisfy the following invariants:
@@ -18,12 +17,12 @@ Implementation notes
 --------------------
 
 * The Compose YAML uses anchor / merge syntax (``<<: *http-healthcheck``)
-  which ``yaml.safe_load`` resolves into plain dicts; we exploit that
-  to treat ``healthcheck`` uniformly across services.
+ which ``yaml.safe_load`` resolves into plain dicts; we exploit that
+ to treat ``healthcheck`` uniformly across services.
 * Duration strings like ``10s``, ``1m30s``, ``500ms`` are parsed via
-  a regex-based accumulator matching Compose's duration format.
+ a regex-based accumulator matching Compose's duration format.
 * Services without a ``healthcheck:`` block are skipped — only custom
-  healthcheck configurations are validated.
+ healthcheck configurations are validated.
 """
 
 from __future__ import annotations
@@ -58,10 +57,10 @@ COMPOSE_PATH: Path = WORKSPACE_ROOT / "infra" / "docker-compose.yml"
 def _load_compose() -> dict[str, Any]:
     """Parse ``infra/docker-compose.yml`` with ``yaml.safe_load``.
 
-    YAML anchor / merge keys (``<<: *http-healthcheck``) are resolved
-    into plain dicts by ``safe_load``, so downstream code can treat
-    ``healthcheck`` uniformly across services.
-    """
+ YAML anchor / merge keys (``<<: *http-healthcheck``) are resolved
+ into plain dicts by ``safe_load``, so downstream code can treat
+ ``healthcheck`` uniformly across services.
+ """
     assert COMPOSE_PATH.is_file(), (
         f"Compose file missing at {COMPOSE_PATH.relative_to(WORKSPACE_ROOT)}"
     )
@@ -78,7 +77,7 @@ def _load_compose() -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 _DURATION_RE = re.compile(
-    r"(?P<value>\d+(?:\.\d+)?)(?P<unit>ms|s|m|h)", re.IGNORECASE
+    r"(sectionP<value>\d+(section:\.\d+)section)(sectionP<unit>ms|s|m|h)", re.IGNORECASE
 )
 _DURATION_UNIT_SECONDS: dict[str, float] = {
     "ms": 1e-3,
@@ -91,10 +90,10 @@ _DURATION_UNIT_SECONDS: dict[str, float] = {
 def _parse_duration_seconds(value: str | int | float) -> float:
     """Parse a Compose duration string (e.g. ``"10s"``) to seconds.
 
-    Numeric inputs are interpreted as already-in-seconds (Compose's
-    schema accepts integer seconds in some contexts). Composite values
-    like ``1m30s`` are accumulated.
-    """
+ Numeric inputs are interpreted as already-in-seconds (Compose's
+ schema accepts integer seconds in some contexts). Composite values
+ like ``1m30s`` are accumulated.
+ """
     if isinstance(value, (int, float)):
         return float(value)
 
@@ -129,7 +128,7 @@ _HEALTHCHECK_SERVICES: list[str] = _services_with_healthcheck()
 
 
 # ---------------------------------------------------------------------------
-# Property 4: Compose healthcheck shape
+# invariant: Compose healthcheck shape
 # ---------------------------------------------------------------------------
 
 
@@ -140,13 +139,13 @@ _HEALTHCHECK_SERVICES: list[str] = _services_with_healthcheck()
 )
 @given(service_name=st.sampled_from(_HEALTHCHECK_SERVICES))
 def test_healthcheck_interval_in_bounds(service_name: str) -> None:
-    """Property 4 (a) — healthcheck interval ∈ [5s, 30s].
+    """invariant (a) — healthcheck interval ∈ [5s, 30s].
 
-    **Validates: Requirements 9.2**
 
-    Every Compose service with a custom ``healthcheck:`` block MUST
-    have an ``interval`` that parses to a value in [5, 30] seconds.
-    """
+
+ Every Compose service with a custom ``healthcheck:`` block MUST
+ have an ``interval`` that parses to a value in [5, 30] seconds.
+ """
     doc = _load_compose()
     service = doc["services"][service_name]
     healthcheck = service["healthcheck"]
@@ -154,13 +153,13 @@ def test_healthcheck_interval_in_bounds(service_name: str) -> None:
     interval_raw = healthcheck.get("interval")
     assert interval_raw is not None, (
         f"{service_name}: healthcheck.interval is missing "
-        f"(Req 9.2, Property 4)"
+        f"(the operational rule, invariant)"
     )
 
     interval_sec = _parse_duration_seconds(interval_raw)
     assert 5.0 <= interval_sec <= 30.0, (
         f"{service_name}: healthcheck.interval must be in [5s, 30s] "
-        f"(Req 9.2, Property 4); got {interval_raw!r} = {interval_sec}s"
+        f"(the operational rule, invariant); got {interval_raw!r} = {interval_sec}s"
     )
 
 
@@ -171,13 +170,13 @@ def test_healthcheck_interval_in_bounds(service_name: str) -> None:
 )
 @given(service_name=st.sampled_from(_HEALTHCHECK_SERVICES))
 def test_healthcheck_retries_bounded(service_name: str) -> None:
-    """Property 4 (b) — healthcheck retries ≤ 3.
+    """invariant (b) — healthcheck retries ≤ 3.
 
-    **Validates: Requirements 9.2**
 
-    Every Compose service with a custom ``healthcheck:`` block MUST
-    have ``retries ≤ 3``.
-    """
+
+ Every Compose service with a custom ``healthcheck:`` block MUST
+ have ``retries ≤ 3``.
+ """
     doc = _load_compose()
     service = doc["services"][service_name]
     healthcheck = service["healthcheck"]
@@ -185,15 +184,15 @@ def test_healthcheck_retries_bounded(service_name: str) -> None:
     retries = healthcheck.get("retries")
     assert retries is not None, (
         f"{service_name}: healthcheck.retries is missing "
-        f"(Req 9.2, Property 4)"
+        f"(the operational rule, invariant)"
     )
     assert isinstance(retries, int), (
         f"{service_name}: healthcheck.retries must be an int "
-        f"(Req 9.2, Property 4); got {type(retries).__name__}"
+        f"(the operational rule, invariant); got {type(retries).__name__}"
     )
     assert retries <= 3, (
         f"{service_name}: healthcheck.retries must be ≤ 3 "
-        f"(Req 9.2, Property 4); got {retries}"
+        f"(the operational rule, invariant); got {retries}"
     )
 
 
@@ -204,14 +203,14 @@ def test_healthcheck_retries_bounded(service_name: str) -> None:
 )
 @given(service_name=st.sampled_from(_HEALTHCHECK_SERVICES))
 def test_healthcheck_timeout_less_than_interval(service_name: str) -> None:
-    """Property 4 (c) — healthcheck timeout < interval.
+    """invariant (c) — healthcheck timeout < interval.
 
-    **Validates: Requirements 9.2**
 
-    Every Compose service with a custom ``healthcheck:`` block MUST
-    have ``timeout < interval``. If ``timeout`` is not explicitly set,
-    Docker's default of 30s is assumed.
-    """
+
+ Every Compose service with a custom ``healthcheck:`` block MUST
+ have ``timeout < interval``. If ``timeout`` is not explicitly set,
+ Docker's default of 30s is assumed.
+ """
     doc = _load_compose()
     service = doc["services"][service_name]
     healthcheck = service["healthcheck"]
@@ -219,7 +218,7 @@ def test_healthcheck_timeout_less_than_interval(service_name: str) -> None:
     interval_raw = healthcheck.get("interval")
     assert interval_raw is not None, (
         f"{service_name}: healthcheck.interval is missing "
-        f"(Req 9.2, Property 4)"
+        f"(the operational rule, invariant)"
     )
     interval_sec = _parse_duration_seconds(interval_raw)
 
@@ -230,7 +229,7 @@ def test_healthcheck_timeout_less_than_interval(service_name: str) -> None:
     assert timeout_sec < interval_sec, (
         f"{service_name}: healthcheck.timeout ({timeout_raw} = {timeout_sec}s) "
         f"must be less than interval ({interval_raw} = {interval_sec}s) "
-        f"(Req 9.2, Property 4)"
+        f"(the operational rule, invariant)"
     )
 
 
@@ -241,16 +240,16 @@ def test_healthcheck_timeout_less_than_interval(service_name: str) -> None:
 
 @pytest.mark.parametrize("service_name", _HEALTHCHECK_SERVICES)
 def test_healthcheck_shape_all_invariants(service_name: str) -> None:
-    """Property 4 (combined) — all healthcheck invariants in one pass.
+    """invariant (combined) — all healthcheck invariants in one pass.
 
-    **Validates: Requirements 9.2**
 
-    Deterministic parametrized test ensuring every service with a
-    custom healthcheck satisfies all three invariants:
-    - 5 ≤ interval ≤ 30 seconds
-    - retries ≤ 3
-    - timeout < interval
-    """
+
+ Deterministic parametrized test ensuring every service with a
+ custom healthcheck satisfies all three invariants:
+ - 5 ≤ interval ≤ 30 seconds
+ - retries ≤ 3
+ - timeout < interval
+ """
     doc = _load_compose()
     service = doc["services"][service_name]
     healthcheck = service["healthcheck"]

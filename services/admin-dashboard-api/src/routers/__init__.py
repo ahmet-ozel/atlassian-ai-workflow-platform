@@ -16,7 +16,7 @@ module fails to load (eg. while a feature is in flight).
 
 from __future__ import annotations
 
-# platform-completion task 26.2 — register the three new routers
+# Register the additional admin dashboard routers
 # (firecrawl allowlist, setup wizard, test results) alongside the
 # existing ones so the admin dashboard surface picks them up.
 try:  # pragma: no cover - exercised by unit tests
@@ -34,9 +34,9 @@ try:  # pragma: no cover - exercised by unit tests
 except Exception:  # noqa: BLE001
     test_results = None  # type: ignore[assignment]
 
-# platform-gap-fill task 9.1 — capability probe matrix router. Soft
+# Capability probe matrix router. Soft
 # imported so the rest of the admin surface stays available even if
-# the module fails to load (eg. while task 9.3's asyncpg adapter is
+# the module fails to load (eg. while capability persistence wiring's asyncpg adapter is
 # in flight and one of its imports breaks).
 try:  # pragma: no cover - exercised by unit tests
     from . import capabilities  # noqa: F401

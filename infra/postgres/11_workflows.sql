@@ -1,5 +1,5 @@
 -- 11_workflows.sql
--- platform-mimari-workflows spec — Task 3.1
+-- Workflow schema additions.
 -- Workflow-scope additions on top of foundation 10_automation.sql.
 -- Idempotent — safe to run multiple times without side effects.
 --
@@ -20,24 +20,22 @@
 -- column already encodes the dept boundary — and therefore do NOT
 -- carry a `dept_id` column and are NOT subject to RLS.
 --
--- Validates: Requirements 1.8, 2.4, 2.5, 2.6, 8.2, 10.1, 10.6
+-- Defines workflow idempotency, deduplication, and cache tables used by
+-- webhook and review flows.
 -- Design ref: design.md "Postgres şeması — yeni / değişen tablolar"
 
 
 -- ===========================================================================
 -- 1. automation.processed_events — webhook delivery_id replay-dedup
 -- ===========================================================================
--- Validates: R1.8 (replay dedup property test parity),
---            R2.4 (signalWithStart 503 → row rolled back so retry
---                  can re-claim),
---            R2.5 (duplicate delivery → HTTP 200 OK, no workflow start),
---            R2.6 (`test_temporal_idempotency.py` — N replays, exactly
---                  one Temporal execution).
+-- Replay dedup keeps duplicate deliveries from starting extra workflows.
+-- If signalWithStart returns 503, the row is rolled back so retry can
+-- re-claim it; repeated deliveries still converge to one Temporal execution.
 --
 -- Schema migration vs foundation 10_automation.sql:
---   The foundation spec shipped a `automation.processed_events` keyed
+--   The initial table used `automation.processed_events` keyed
 --   on `event_hash` (sha256 of canonical payload) with a 7-day TTL.
---   The workflows spec replaces that scheme with `delivery_id` (the
+--   The workflow migration replaces that scheme with `delivery_id` (the
 --   provider-assigned webhook delivery id) — this is the column the
 --   webhook filter chain and `WebhookFilterChain.evaluate()` rely on
 --   per design.md (`delivery_id` → `processed_events.delivery_id` PK
@@ -52,7 +50,7 @@
 --   ordering runs 10_automation.sql first, then this file); on an
 --   upgrade boot the worst case is that a window of in-flight webhook
 --   deliveries replay once before the new table accepts them, which
---   the workflow_id-based `signalWithStart` idempotency (R2.2) absorbs
+--   the workflow_id-based `signalWithStart` idempotency absorbs
 --   without side effects.
 DROP INDEX IF EXISTS automation.idx_processed_events_expires_at;
 DROP TABLE IF EXISTS automation.processed_events;
@@ -68,7 +66,7 @@ CREATE TABLE IF NOT EXISTS automation.processed_events (
 
 -- Hot-path index for ad-hoc operational queries ("recent webhook
 -- deliveries") and for the future TTL pruner if/when the workflows
--- spec adds one. Kept narrow (received_at only) so the PK index
+-- one is added. Kept narrow (received_at only) so the PK index
 -- carries the dedup lookup load without contention.
 CREATE INDEX IF NOT EXISTS idx_processed_events_received_at
     ON automation.processed_events (received_at DESC);
@@ -77,11 +75,10 @@ CREATE INDEX IF NOT EXISTS idx_processed_events_received_at
 -- ===========================================================================
 -- 2. automation.confluence_section_hashes — section-level dedup (V10)
 -- ===========================================================================
--- Validates: R8.2 (Confluence update_page section hash dedup —
---                  `should_skip_section_update(workflow_id, page_id,
---                  section_path, content_hash)` returns True iff the
---                  same tuple is already in this table; audit
---                  `confluence_section_dedup_skip`).
+-- Confluence section hash dedup stores tuples that make
+-- `should_skip_section_update(workflow_id, page_id, section_path, content_hash)`
+-- return True when the same section content was already written; skipped writes
+-- emit `confluence_section_dedup_skip`.
 --
 -- The composite PK encodes the design contract verbatim:
 --   "aynı `(workflow_id, page_id, section_path, content_hash)`
@@ -105,21 +102,17 @@ CREATE TABLE IF NOT EXISTS automation.confluence_section_hashes (
 );
 
 -- Lookup index for the "all sections written for this page" query
--- used by the Confluence overwrite-protection check (R8.7).
+-- used by the Confluence overwrite-protection check.
 CREATE INDEX IF NOT EXISTS idx_confluence_section_hashes_page
     ON automation.confluence_section_hashes (page_id, written_at DESC);
 
 
 -- ===========================================================================
--- 3. automation.diff_summary_cache — LLM diff summary cache (R10.6)
+-- 3. automation.diff_summary_cache - LLM diff summary cache
 -- ===========================================================================
--- Validates: R10.6 (Orphan Branches V7 LLM diff özeti cache:
---                   `compute_diff_summary(diff_hash, cache, llm)`
---                   cache hit'te LLM çağrısı yapmaz),
---            R8.2-R8.7 dolaylı (commit-only PO review akışında
---                   `code_change_commit_only` Jira yorumuna diff
---                   özeti yazılır — aynı diff_hash için tek LLM
---                   çağrısı).
+-- Caches LLM diff summaries so `compute_diff_summary(diff_hash, cache, llm)`
+-- avoids another LLM call on cache hits. Commit-only review comments can reuse
+-- the same summary for identical diff hashes.
 --
 -- `diff_hash` is sha256 of the unified diff body; once an LLM
 -- summary is computed, every subsequent request for the same hash
@@ -135,11 +128,9 @@ CREATE TABLE IF NOT EXISTS automation.diff_summary_cache (
 -- ===========================================================================
 -- 4. automation.pr_supersede_log — multi-iter PR supersede ledger (Y9)
 -- ===========================================================================
--- Validates: R10.1 (iter-N başlatılırken iter-(N-1)'in eski PR'ına
---                   `superseded-by-pr-{new_id}` etiketi + bir log
---                   satırı; `iter_advance` activity idempotent —
---                   PK constraint guarantees no duplicate rows when
---                   the activity is retried).
+-- Records each iter-N supersede transition by tagging the previous PR with
+-- `superseded-by-pr-{new_id}` and inserting one ledger row. The primary key
+-- keeps `iter_advance` idempotent on retries.
 --
 -- PK = (workflow_id, old_pr_id) so that:
 --   • re-running `iter_advance(state, new_pr_id)` for the same
@@ -157,6 +148,6 @@ CREATE TABLE IF NOT EXISTS automation.pr_supersede_log (
 );
 
 -- Lookup index for "what was superseded by PR #X" queries from the
--- PO Review Inbox endpoint (R10.4).
+-- PO Review Inbox endpoint.
 CREATE INDEX IF NOT EXISTS idx_pr_supersede_log_new_pr
     ON automation.pr_supersede_log (new_pr_id);

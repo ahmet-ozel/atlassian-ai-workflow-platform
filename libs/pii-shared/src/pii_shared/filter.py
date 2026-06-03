@@ -4,10 +4,7 @@ Implements the `mask(text)` pure function consumed by
 `assistant-service` chat handler before any user-provided text is
 forwarded to an LLM, audit log or tool dispatcher.
 
-Validates: Requirements 1.5 (PII filter zorunlu ve tam maskeleme).
-
-Design contract (see `.kiro/specs/platform-mimari-ops/design.md`,
-section "PiiFilter"):
+Design contract:
 
 * No I/O, no logging, no global mutable state.
 * `mask(text)` is referentially transparent — same input always
@@ -41,8 +38,7 @@ class PiiMatch:
 
     `start` and `end` are byte/codepoint offsets into the **original**
     input string passed to `mask(...)`, not into the masked output.
-    This matches the design contract in
-    `.kiro/specs/platform-mimari-ops/design.md` (PiiMatch dataclass).
+    This matches the PiiMatch dataclass contract.
 
     Attributes:
         kind:  Which pattern matched (one of `PiiKind`).
@@ -121,8 +117,6 @@ def _luhn_valid(candidate: str) -> bool:
 
 def mask(text: str) -> tuple[str, list[PiiMatch]]:
     """Mask PII patterns in `text`.
-
-    Validates: Requirement 1.5 (PII filter zorunlu ve tam maskeleme).
 
     The function:
 

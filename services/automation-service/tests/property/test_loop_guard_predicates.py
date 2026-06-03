@@ -1,8 +1,6 @@
 """Property tests for webhook loop-guard predicates.
 
-**Validates: Requirements 2.5, 2.6, 2.7, 2.8, 2.9, 2.13, 3.5**
-
-Property 7: Webhook predicate guards (loop, assignee, changelog, event-type).
+Webhook predicate guards (loop, assignee, changelog, event-type).
 
 The functions under test live in
 ``services/automation-service/src/decision/loop_guard.py``. They are pure
@@ -180,7 +178,7 @@ _PROFILE = settings(
 
 
 # ---------------------------------------------------------------------------
-# Property 7a — is_self_actor membership
+# is_self_actor membership
 # ---------------------------------------------------------------------------
 
 
@@ -192,9 +190,7 @@ class TestIsSelfActorMembership:
     def test_actor_membership_iff_true(
         self, actor_id: str, bot_ids: frozenset[str]
     ) -> None:
-        """**Validates: Requirements 2.5, 2.6, 3.5**
-
-        For every actor and registry, the predicate's truth value
+        """For every actor and registry, the predicate's truth value
         equals set membership.
         """
         assert is_self_actor(actor_id, bot_ids) is (actor_id in bot_ids)
@@ -202,34 +198,25 @@ class TestIsSelfActorMembership:
     @_PROFILE
     @given(bot_ids=_bot_registries)
     def test_none_actor_always_false(self, bot_ids: frozenset[str]) -> None:
-        """**Validates: Requirements 2.5, 2.6, 3.5**
-
-        ``None`` actor (system-generated event) is never treated as a bot.
-        """
+        """``None`` actor (system-generated event) is never treated as a bot."""
         assert is_self_actor(None, bot_ids) is False
 
     @_PROFILE
     @given(actor_id=_optional_account_ids)
     def test_empty_registry_always_false(self, actor_id: str | None) -> None:
-        """**Validates: Requirements 2.5, 2.6, 3.5**
-
-        With no registered bots, no actor can be classified as one.
-        """
+        """With no registered bots, no actor can be classified as one."""
         assert is_self_actor(actor_id, frozenset()) is False
 
     @_PROFILE
     @given(bot_ids=_non_empty_bot_registries)
     def test_known_bot_returns_true(self, bot_ids: frozenset[str]) -> None:
-        """**Validates: Requirements 2.5, 2.6, 3.5**
-
-        Sampling an actor from the registry must always classify True.
-        """
+        """Sampling an actor from the registry must always classify True."""
         for bot in bot_ids:
             assert is_self_actor(bot, bot_ids) is True
 
 
 # ---------------------------------------------------------------------------
-# Property 7b — is_bot_assignee membership
+# is_bot_assignee membership
 # ---------------------------------------------------------------------------
 
 
@@ -241,16 +228,13 @@ class TestIsBotAssigneeMembership:
     def test_assignee_membership_iff_true(
         self, assignee_id: str, bot_ids: frozenset[str]
     ) -> None:
-        """**Validates: Requirements 2.7, 2.8**"""
+        """Assignee membership in the bot registry returns true."""
         assert is_bot_assignee(assignee_id, bot_ids) is (assignee_id in bot_ids)
 
     @_PROFILE
     @given(bot_ids=_bot_registries)
     def test_none_assignee_always_false(self, bot_ids: frozenset[str]) -> None:
-        """**Validates: Requirements 2.7, 2.8**
-
-        Unassigned issue (``None`` assignee) is never a bot.
-        """
+        """Unassigned issue (``None`` assignee) is never a bot."""
         assert is_bot_assignee(None, bot_ids) is False
 
     @_PROFILE
@@ -258,7 +242,7 @@ class TestIsBotAssigneeMembership:
     def test_empty_registry_always_false(
         self, assignee_id: str | None
     ) -> None:
-        """**Validates: Requirements 2.7, 2.8**"""
+        """An empty registry never matches an assignee."""
         assert is_bot_assignee(assignee_id, frozenset()) is False
 
     @_PROFILE
@@ -266,9 +250,7 @@ class TestIsBotAssigneeMembership:
     def test_agrees_with_is_self_actor_on_same_inputs(
         self, actor_id: str | None, bot_ids: frozenset[str]
     ) -> None:
-        """**Validates: Requirements 2.5, 2.6, 2.7, 2.8**
-
-        The two membership predicates have identical semantics; only the
+        """The two membership predicates have identical semantics; only the
         operational role of the input differs (actor vs. assignee).
         """
         assert is_self_actor(actor_id, bot_ids) is is_bot_assignee(
@@ -277,7 +259,7 @@ class TestIsBotAssigneeMembership:
 
 
 # ---------------------------------------------------------------------------
-# Property 7c — assignee_changed_to_bot changelog invariants
+# assignee_changed_to_bot changelog invariants
 # ---------------------------------------------------------------------------
 
 
@@ -289,9 +271,7 @@ class TestAssigneeChangedToBot:
     def test_changelog_assigning_to_bot_returns_true(
         self, data: st.DataObject, bot_ids: frozenset[str]
     ) -> None:
-        """**Validates: Requirement 2.9**
-
-        Any changelog containing a single ``assignee → bot`` item, even
+        """Any changelog containing a single ``assignee → bot`` item, even
         among unrelated noise items, must be flagged.
         """
         changelog = data.draw(_changelog_with_assignee_to_bot(bot_ids))
@@ -300,7 +280,7 @@ class TestAssigneeChangedToBot:
     @_PROFILE
     @given(bot_ids=_bot_registries)
     def test_none_changelog_always_false(self, bot_ids: frozenset[str]) -> None:
-        """**Validates: Requirement 2.9**"""
+        """A missing changelog never indicates an assignee change to a bot."""
         assert assignee_changed_to_bot(None, bot_ids) is False
 
     @_PROFILE
@@ -308,7 +288,7 @@ class TestAssigneeChangedToBot:
     def test_missing_items_key_always_false(
         self, bot_ids: frozenset[str]
     ) -> None:
-        """**Validates: Requirement 2.9**"""
+        """A missing ``items`` key never indicates an assignee change to a bot."""
         assert assignee_changed_to_bot({}, bot_ids) is False
 
     @_PROFILE
@@ -316,7 +296,7 @@ class TestAssigneeChangedToBot:
     def test_empty_items_list_always_false(
         self, bot_ids: frozenset[str]
     ) -> None:
-        """**Validates: Requirement 2.9**"""
+        """An empty ``items`` list never indicates an assignee change to a bot."""
         assert assignee_changed_to_bot({"items": []}, bot_ids) is False
 
     @_PROFILE
@@ -324,9 +304,7 @@ class TestAssigneeChangedToBot:
     def test_assignee_removed_to_none_returns_false(
         self, bot_ids: frozenset[str]
     ) -> None:
-        """**Validates: Requirement 2.9**
-
-        Assignee removal (``to`` is ``None``) is not a bot assignment,
+        """Assignee removal (``to`` is ``None``) is not a bot assignment,
         even when bots exist in the registry.
         """
         changelog = {
@@ -339,7 +317,7 @@ class TestAssigneeChangedToBot:
     def test_assignee_changed_to_non_bot_returns_false(
         self, non_bot_id: str, bot_ids: frozenset[str]
     ) -> None:
-        """**Validates: Requirement 2.9**"""
+        """Changing assignee to a non-bot does not trigger the predicate."""
         assume(non_bot_id not in bot_ids)
         changelog = {
             "items": [
@@ -362,9 +340,7 @@ class TestAssigneeChangedToBot:
         bot_ids: frozenset[str],
         items: list[dict[str, object]],
     ) -> None:
-        """**Validates: Requirement 2.9**
-
-        A changelog whose items never reference the ``assignee`` field
+        """A changelog whose items never reference the ``assignee`` field
         cannot trigger the predicate, regardless of registry contents.
         """
         assert assignee_changed_to_bot({"items": items}, bot_ids) is False
@@ -376,9 +352,7 @@ class TestAssigneeChangedToBot:
         changelog: dict | None,
         bot_ids: frozenset[str],
     ) -> None:
-        """**Validates: Requirement 2.9**
-
-        ``True`` from the predicate implies that the changelog actually
+        """``True`` from the predicate implies that the changelog actually
         contains a matching item — i.e. there are no false positives.
         """
         if assignee_changed_to_bot(changelog, bot_ids):
@@ -398,7 +372,7 @@ class TestAssigneeChangedToBot:
 
 
 # ---------------------------------------------------------------------------
-# Property 7d — route event-type classifier
+# route event-type classifier
 # ---------------------------------------------------------------------------
 
 
@@ -408,7 +382,7 @@ class TestRouteEventType:
     @_PROFILE
     @given(event_type=_supported_event_types)
     def test_supported_event_types_are_accepted(self, event_type: str) -> None:
-        """**Validates: Requirements 2.13, 3.5**"""
+        """Supported event types are accepted."""
         assert route(event_type) == "accepted"
 
     @_PROFILE
@@ -416,10 +390,7 @@ class TestRouteEventType:
     def test_unsupported_event_types_are_ignored(
         self, event_type: str
     ) -> None:
-        """**Validates: Requirements 2.13, 3.5**
-
-        Any string not in the explicit supported set is ignored.
-        """
+        """Any string not in the explicit supported set is ignored."""
         assume(event_type not in _ACCEPTED_EVENT_TYPES)
         assert route(event_type) == "ignored"
 
@@ -428,19 +399,13 @@ class TestRouteEventType:
     def test_return_value_is_one_of_two_literals(
         self, event_type: str
     ) -> None:
-        """**Validates: Requirements 2.13, 3.5**
-
-        ``route`` is total: the codomain is exactly
+        """``route`` is total: the codomain is exactly
         ``{"accepted", "ignored"}``.
         """
         assert route(event_type) in ("accepted", "ignored")
 
     def test_required_event_type_set_is_exhaustive(self) -> None:
-        """**Validates: Requirements 2.13, 3.5**
-
-        The platform must support these specific event types per design
-        sections 2.13 (Jira) and 3.5 (Bitbucket).
-        """
+        """The platform must support these specific Jira and Bitbucket event types."""
         required = {
             "jira:issue_created",
             "jira:issue_assigned",
@@ -456,7 +421,7 @@ class TestRouteEventType:
 
 
 # ---------------------------------------------------------------------------
-# Property 7e — short-circuit ordering composition
+# short-circuit ordering composition
 # ---------------------------------------------------------------------------
 
 
@@ -488,9 +453,7 @@ class TestShortCircuitOrdering:
         changelog: dict | None,
         event_type: str,
     ) -> None:
-        """**Validates: Requirements 2.5, 2.6, 3.5**
-
-        When the actor *is* a registered bot, ``is_self_actor`` returns
+        """When the actor *is* a registered bot, ``is_self_actor`` returns
         ``True`` no matter what downstream inputs (assignee, changelog,
         event type) the webhook carries. This is the formal statement
         of "step 1 short-circuits steps 2–3".
@@ -522,9 +485,7 @@ class TestShortCircuitOrdering:
         bot_ids: frozenset[str],
         event_type: str,
     ) -> None:
-        """**Validates: Requirements 2.5, 2.6, 3.5**
-
-        When the actor is *not* a bot, the loop guard does not fire
+        """When the actor is *not* a bot, the loop guard does not fire
         and the routing predicate becomes the next decision point.
         """
         assume(actor_id not in bot_ids)
@@ -538,9 +499,7 @@ class TestShortCircuitOrdering:
     def test_loop_guard_dominates_assignee_check(
         self, bot_ids: frozenset[str]
     ) -> None:
-        """**Validates: Requirements 2.5, 2.6, 2.7, 2.8, 2.9, 3.5**
-
-        Even when the bot is *also* the assignee, the loop guard's
+        """Even when the bot is *also* the assignee, the loop guard's
         decision still applies first: the event is skipped because
         ``is_self_actor`` already returned True.
 
@@ -555,7 +514,7 @@ class TestShortCircuitOrdering:
 
 
 # ---------------------------------------------------------------------------
-# Property 7f — determinism (purity)
+# determinism (purity)
 # ---------------------------------------------------------------------------
 
 
@@ -567,7 +526,7 @@ class TestDeterminism:
     def test_is_self_actor_deterministic(
         self, actor_id: str | None, bot_ids: frozenset[str]
     ) -> None:
-        """**Validates: Requirements 2.5, 2.6, 3.5**"""
+        """``is_self_actor`` is deterministic."""
         r1 = is_self_actor(actor_id, bot_ids)
         r2 = is_self_actor(actor_id, bot_ids)
         r3 = is_self_actor(actor_id, bot_ids)
@@ -578,7 +537,7 @@ class TestDeterminism:
     def test_is_bot_assignee_deterministic(
         self, assignee_id: str | None, bot_ids: frozenset[str]
     ) -> None:
-        """**Validates: Requirements 2.7, 2.8**"""
+        """``is_bot_assignee`` is deterministic."""
         r1 = is_bot_assignee(assignee_id, bot_ids)
         r2 = is_bot_assignee(assignee_id, bot_ids)
         r3 = is_bot_assignee(assignee_id, bot_ids)
@@ -589,7 +548,7 @@ class TestDeterminism:
     def test_assignee_changed_to_bot_deterministic(
         self, changelog: dict | None, bot_ids: frozenset[str]
     ) -> None:
-        """**Validates: Requirement 2.9**"""
+        """``assignee_changed_to_bot`` is deterministic."""
         r1 = assignee_changed_to_bot(changelog, bot_ids)
         r2 = assignee_changed_to_bot(changelog, bot_ids)
         r3 = assignee_changed_to_bot(changelog, bot_ids)
@@ -598,7 +557,7 @@ class TestDeterminism:
     @_PROFILE
     @given(event_type=_arbitrary_event_types)
     def test_route_deterministic(self, event_type: str) -> None:
-        """**Validates: Requirements 2.13, 3.5**"""
+        """``route`` is deterministic."""
         r1 = route(event_type)
         r2 = route(event_type)
         r3 = route(event_type)

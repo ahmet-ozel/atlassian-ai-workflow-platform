@@ -1,16 +1,10 @@
-"""Property 11 — Auth gate blocks every endpoint before any side-effect.
-
-# Feature: llm-provider-management, Property 11: Auth gate blocks every endpoint before any side-effect
-
-Validates Requirements 11.1, 11.2, 11.3. For every endpoint defined by
-the spec the property asserts:
-
+"""— Auth gate blocks every endpoint before any side-effect.
+the test asserts:
 * A request with no ``Authorization`` header → HTTP 401.
 * A request with a valid token whose principal is not admin → HTTP 403.
 * The asyncpg fake, ``VaultClient`` fake and ``httpx.MockTransport``
   recorded ZERO calls in either case — the gate short-circuits before
-  any router-level logic runs.
-"""
+  any router-level logic runs."""
 
 from __future__ import annotations
 

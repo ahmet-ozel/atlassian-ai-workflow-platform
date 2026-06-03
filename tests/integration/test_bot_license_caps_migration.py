@@ -1,19 +1,18 @@
 """Integration test 1.4 — ``002_bot_license_caps.sql`` migration.
 
-Spec: ``.kiro/specs/platform-mimari-uyumluluk/tasks.md`` task 1.4
-(Requirements 16.1, 16.2).
+.
 
 Validates that the ``infra/postgres/migrations/002_bot_license_caps.sql``
 migration applies cleanly on top of the workspace schema bootstrap
 (``00_schemas.sql`` + ``10_automation.sql``) and produces:
 
 1. ``automation.bot_license_caps`` table with the design-mandated columns
-   and defaults (``max_concurrent_workflows=10``,
-   ``max_workflows_per_day=100``, ``max_token_usd_per_month=1000.00``).
+ and defaults (``max_concurrent_workflows=10``,
+ ``max_workflows_per_day=100``, ``max_token_usd_per_month=1000.00``).
 2. ``automation.departments.license_id`` nullable FK column referencing
-   ``bot_license_caps(license_id)``.
+ ``bot_license_caps(license_id)``.
 3. The FK constraint is enforced — inserting a department row with a
-   ``license_id`` that does not exist in ``bot_license_caps`` is rejected.
+ ``license_id`` that does not exist in ``bot_license_caps`` is rejected.
 4. The migration is idempotent (re-running is a no-op).
 
 Gating
@@ -79,13 +78,13 @@ def _docker_available() -> bool:
 def _wait_for_pg(container_name: str, timeout: float) -> bool:
     """Wait until Postgres accepts a real ``SELECT 1`` against ``PG_DB``.
 
-    ``pg_isready`` alone is not sufficient: the official ``postgres:16-alpine``
-    image starts the server briefly during entrypoint bootstrap before the
-    init scripts have created the user database, so ``pg_isready`` can
-    return success momentarily while ``psql -d test_db`` still gets
-    ``database "test_db" does not exist``. Probing with a real SELECT
-    closes that race.
-    """
+ ``pg_isready`` alone is not sufficient: the official ``postgres:16-alpine``
+ image starts the server briefly during entrypoint bootstrap before the
+ init scripts have created the user database, so ``pg_isready`` can
+ return success momentarily while ``psql -d test_db`` still gets
+ ``database "test_db" does not exist``. Probing with a real SELECT
+ closes that race.
+ """
 
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
@@ -118,10 +117,10 @@ def _wait_for_pg(container_name: str, timeout: float) -> bool:
 def _run_sql_file(container_name: str, sql_path: Path) -> subprocess.CompletedProcess:
     """Run a SQL file via psql, forcing UTF-8 on stdin/stdout/stderr.
 
-    The SQL files contain non-ASCII characters in comments (em-dashes,
-    arrows, Turkish letters); on Windows the default subprocess codec
-    (cp1254) cannot encode those, so we explicitly request UTF-8.
-    """
+ The SQL files contain non-ASCII characters in comments (em-dashes,
+ arrows, Turkish letters); on Windows the default subprocess codec
+ (cp1254) cannot encode those, so we explicitly request UTF-8.
+ """
 
     sql_content = sql_path.read_text(encoding="utf-8")
     return subprocess.run(
@@ -240,7 +239,7 @@ def _apply_full_stack(container: str, paths: tuple[Path, Path, Path]) -> None:
 
 @pytest.mark.integration
 class TestBotLicenseCapsMigration:
-    """Validates Requirements 16.1, 16.2 — bot_license_caps + FK column."""
+    """Validates bot_license_caps + FK column."""
 
     def test_migration_applies_cleanly(
         self, pg_container: str, sql_paths: tuple[Path, Path, Path]
@@ -275,12 +274,12 @@ class TestBotLicenseCapsMigration:
         result = _run_sql(
             pg_container,
             """
-            SELECT column_name, data_type
-            FROM information_schema.columns
-            WHERE table_schema = 'automation'
-              AND table_name = 'bot_license_caps'
-            ORDER BY column_name;
-            """,
+ SELECT column_name, data_type
+ FROM information_schema.columns
+ WHERE table_schema = 'automation'
+ AND table_name = 'bot_license_caps'
+ ORDER BY column_name;
+ """,
         )
         assert result.returncode == 0, f"Column query failed: {result.stderr}"
 
@@ -401,12 +400,12 @@ class TestBotLicenseCapsMigration:
         result = _run_sql(
             pg_container,
             """
-            SELECT data_type, is_nullable
-            FROM information_schema.columns
-            WHERE table_schema = 'automation'
-              AND table_name = 'departments'
-              AND column_name = 'license_id';
-            """,
+ SELECT data_type, is_nullable
+ FROM information_schema.columns
+ WHERE table_schema = 'automation'
+ AND table_name = 'departments'
+ AND column_name = 'license_id';
+ """,
         )
         assert result.returncode == 0
         row = next(
@@ -421,8 +420,8 @@ class TestBotLicenseCapsMigration:
             f"departments.license_id expected text; got {data_type!r}"
         )
         assert is_nullable.upper() == "YES", (
-            "departments.license_id must be NULLABLE per the migration "
-            f"(R16.1); got is_nullable={is_nullable!r}"
+            "departments.license_id must be NULLABLE the migration "
+            f"; got is_nullable={is_nullable!r}"
         )
 
     def test_fk_targets_bot_license_caps_license_id(
@@ -435,21 +434,21 @@ class TestBotLicenseCapsMigration:
         result = _run_sql(
             pg_container,
             """
-            SELECT kcu.column_name,
-                   ccu.table_name,
-                   ccu.column_name
-            FROM information_schema.table_constraints tc
-            JOIN information_schema.key_column_usage kcu
-              ON tc.constraint_name = kcu.constraint_name
-             AND tc.table_schema = kcu.table_schema
-            JOIN information_schema.constraint_column_usage ccu
-              ON tc.constraint_name = ccu.constraint_name
-             AND tc.table_schema = ccu.table_schema
-            WHERE tc.table_schema = 'automation'
-              AND tc.table_name = 'departments'
-              AND tc.constraint_type = 'FOREIGN KEY'
-              AND kcu.column_name = 'license_id';
-            """,
+ SELECT kcu.column_name,
+ ccu.table_name,
+ ccu.column_name
+ FROM information_schema.table_constraints tc
+ JOIN information_schema.key_column_usage kcu
+ ON tc.constraint_name = kcu.constraint_name
+ AND tc.table_schema = kcu.table_schema
+ JOIN information_schema.constraint_column_usage ccu
+ ON tc.constraint_name = ccu.constraint_name
+ AND tc.table_schema = ccu.table_schema
+ WHERE tc.table_schema = 'automation'
+ AND tc.table_name = 'departments'
+ AND tc.constraint_type = 'FOREIGN KEY'
+ AND kcu.column_name = 'license_id';
+ """,
         )
         assert result.returncode == 0, f"FK introspection failed: {result.stderr}"
 

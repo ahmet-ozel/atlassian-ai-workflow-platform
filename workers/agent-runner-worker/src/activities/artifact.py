@@ -12,9 +12,6 @@ by :mod:`temporal_shared.identifiers` helpers:
 
 The ``artifact_delete`` activity is idempotent: a 404 (NoSuchKey) response
 is treated as success, making it safe for saga compensation.
-
-Design reference: design.md §3.3, MIMARI §7 (Artifact Storage)
-Requirements: 6.11, 7.6
 """
 
 from __future__ import annotations

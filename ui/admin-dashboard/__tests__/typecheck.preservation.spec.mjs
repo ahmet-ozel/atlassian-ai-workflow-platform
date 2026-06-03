@@ -1,14 +1,14 @@
 /**
- * Preservation Property Tests — Task 2
+ * Preservation Tests
  *
  * These tests lock in the CURRENT (unfixed) behavior of the admin-dashboard
  * codebase as the preservation oracle. They MUST PASS on unfixed code.
- * After the fix is applied (task 3), they are re-run (task 3.6) to confirm
+ * After the fix is applied, they are re-run to confirm
  * no regressions.
  *
  * Uses fast-check for property-based testing with Node's built-in test runner.
  *
- * **Validates: Requirements 3.1, 3.2, 3.3, 3.5, 3.6, 3.7**
+ * Checks the behavior that must remain intact after the type fix.
  */
 
 import { describe, it } from "node:test";
@@ -110,7 +110,7 @@ function runTsc() {
 
 // ---------------------------------------------------------------------------
 // PBT 2a — Non-generic `apiFetch` callers preserve `Response` typing
-// **Validates: Requirements 3.1, 3.2, 3.3**
+// Existing exports remain available.
 // ---------------------------------------------------------------------------
 
 describe("PBT 2a — Non-generic apiFetch callers preserve Response typing", () => {
@@ -144,7 +144,7 @@ describe("PBT 2a — Non-generic apiFetch callers preserve Response typing", () 
     );
 
     // Verify that tsc diagnostics do NOT include any errors from the
-    // non-generic call sites (Requirement 3.1 sites)
+    // non-generic call sites
     const nonGenericCallSites = [
       "app/services/_components/WorkspacesTab.tsx",
       "app/services/_components/StopConfirmationModal.tsx",
@@ -202,7 +202,7 @@ describe("PBT 2a — Non-generic apiFetch callers preserve Response typing", () 
 
 // ---------------------------------------------------------------------------
 // PBT 2b — `apiFetch` runtime call is byte-identical for non-generic callers
-// **Validates: Requirements 3.2**
+// Generic call sites keep their inferred types.
 // ---------------------------------------------------------------------------
 
 describe("PBT 2b — apiFetch runtime call is byte-identical for non-generic callers", () => {
@@ -331,7 +331,7 @@ describe("PBT 2b — apiFetch runtime call is byte-identical for non-generic cal
 
 // ---------------------------------------------------------------------------
 // PBT 2c — Diagnostic delta is exactly the known bug errors
-// **Validates: Requirements 3.1, 3.2 (design Property 5, aggregate)**
+// Component exports and call sites stay type-compatible.
 // ---------------------------------------------------------------------------
 
 describe("PBT 2c — Diagnostic delta is exactly the known bug errors", () => {
@@ -407,7 +407,7 @@ describe("PBT 2c — Diagnostic delta is exactly the known bug errors", () => {
 
 // ---------------------------------------------------------------------------
 // PBT 2d — Compiler strictness flags unchanged
-// **Validates: Requirements 3.6 (design Property 7)**
+// Type errors are limited to the expected missing declarations.
 // ---------------------------------------------------------------------------
 
 describe("PBT 2d — Compiler strictness flags unchanged", () => {
@@ -478,7 +478,7 @@ describe("PBT 2d — Compiler strictness flags unchanged", () => {
 
 // ---------------------------------------------------------------------------
 // PBT 2e — Only one "web-shared" import site exists pre-fix
-// **Validates: Requirements 3.5**
+// Route components remain importable.
 // ---------------------------------------------------------------------------
 
 describe('PBT 2e — web-shared import site preservation', () => {

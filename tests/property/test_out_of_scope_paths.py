@@ -1,26 +1,20 @@
-"""Property test for out-of-scope artifact absence.
+"""Tests for out-of-scope artifact absence.
 
-Validates: Requirements 18.1, 18.2, 18.5
-Property 11: Out-of-scope artifacts are absent.
-
-Per the design's "Kapsam Dışı Bileşenler" section and Requirement 18,
-the multi-service-scaffold workspace MUST NOT contain artifacts that
+The project workspace must not contain artifacts that
 belong to features explicitly deferred or excluded from the in-scope
 deliverable set:
 
 * ``helm/`` and ``k8s/`` (and the nested ``k8s/manifests/``) — Kubernetes
-  deployment artifacts are out of scope (Requirement 18.1).
+  deployment artifacts are out of scope.
 * Any nested ``helm/`` directory anywhere under the workspace root
-  (Requirement 18.1).
+  is out of scope.
 * Any KEDA ``ScaledObject``-style YAML or ``keda-*.yaml`` autoscaler
-  manifests (Requirement 18.2).
+  manifests are out of scope.
 
 Note: ``forge-app/`` was historically listed here as a backlog item
-(Requirement 18.3) but the ``platform-mimari-uyumluluk`` spec (R6 /
-MIMARI Q3) introduces a Forge add-on skeleton under
-``platform/forge-app/`` gated by ``FEATURE_FLAG_FORGE_ADDON_ENABLED``.
-The directory is now an in-scope (opt-in) artifact and has been
-removed from ``FORBIDDEN_PATHS`` accordingly.
+but now exists as an opt-in Forge add-on under ``platform/forge-app/``
+gated by ``FEATURE_FLAG_FORGE_ADDON_ENABLED``. The directory is now an
+in-scope artifact and has been removed from ``FORBIDDEN_PATHS`` accordingly.
 
 The fixture ``FORBIDDEN_PATHS`` (defined in ``tests/conftest.py``)
 encodes both literal paths and glob-style patterns. This test
@@ -30,14 +24,13 @@ parameterizes over each entry and asserts:
   beneath ``WORKSPACE_ROOT``.
 * For glob patterns (``**/<basename-pattern>``), the workspace tree —
   pruned of heavy / vendored directories such as ``node_modules/``,
-  ``.venv/``, ``.git/``, ``.next/``, and ``atlassian_unified/`` — yields
+  ``.venv/``, ``.git/``, ``.next/``, and ``atlassian_mcp_bitbucket/`` — yields
   no matching paths.
 
-The ``atlassian_unified/`` exclusion is critical: that subtree is
-treated as an immutable input (Property 2 / Requirement 17.1) and
+The ``atlassian_mcp_bitbucket/`` exclusion is critical: that gateway
 already ships a vendored ``helm/`` chart of its own. Walking into it
 would produce false positives for the ``**/helm`` pattern even though
-the scaffold has not produced any new helm artifacts.
+the platform has not produced any new helm artifacts.
 """
 
 from __future__ import annotations
@@ -70,8 +63,8 @@ from conftest import FORBIDDEN_PATHS, WORKSPACE_ROOT  # noqa: E402
 #:   ``.venv/``, ``.next/``, ``dist/``).
 #: - Tooling and cache trees (``.git/``, ``.pytest_cache/``,
 #:   ``.hypothesis/``, ``__pycache__/``).
-#: - ``atlassian_unified/`` — immutable input subtree (Property 2 /
-#:   Requirement 17.1) which legitimately owns its own ``helm/`` chart.
+#: - ``atlassian_mcp_bitbucket/`` — gateway subtree which legitimately
+#:   owns its own ``helm/`` chart.
 _EXCLUDED_DIR_NAMES: frozenset[str] = frozenset(
     {
         "node_modules",
@@ -79,7 +72,7 @@ _EXCLUDED_DIR_NAMES: frozenset[str] = frozenset(
         "venv",
         ".git",
         ".next",
-        "atlassian_unified",
+        "atlassian_mcp_bitbucket",
         ".hypothesis",
         ".pytest_cache",
         "__pycache__",
@@ -119,7 +112,7 @@ def _walk_workspace(root: Path) -> list[Path]:
     """Walk ``root`` yielding every file and directory path, pruned.
 
     Heavy / vendored directories listed in ``_EXCLUDED_DIR_NAMES`` are
-    pruned in-place so the walk stays scoped to the scaffold's own
+    pruned in-place so the walk stays scoped to the project's own
     output. Returned paths are absolute ``Path`` instances; callers
     typically only inspect the leaf name.
     """
@@ -145,15 +138,13 @@ _WORKSPACE_INVENTORY: list[Path] = _walk_workspace(WORKSPACE_ROOT)
 
 
 # ---------------------------------------------------------------------------
-# Property 11 — out-of-scope artifact absence
+# Out-of-scope artifact absence
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize("forbidden", FORBIDDEN_PATHS, ids=list(FORBIDDEN_PATHS))
 def test_out_of_scope_artifacts_absent(forbidden: str) -> None:
-    """Property 11 — every entry in ``FORBIDDEN_PATHS`` is absent.
-
-    Validates: Requirements 18.1, 18.2, 18.5.
+    """Every entry in ``FORBIDDEN_PATHS`` is absent.
 
     Two cases per entry:
 
@@ -169,7 +160,7 @@ def test_out_of_scope_artifacts_absent(forbidden: str) -> None:
         assert not candidate.exists(), (
             f"Out-of-scope artifact present at workspace root: "
             f"{candidate} (forbidden literal path '{forbidden}'). "
-            f"Per Requirement 18.1, the scaffold MUST NOT produce "
+            f"The project must not produce "
             f"this directory or file."
         )
         return
@@ -185,6 +176,6 @@ def test_out_of_scope_artifacts_absent(forbidden: str) -> None:
         f"Out-of-scope artifact(s) match forbidden glob '{forbidden}' "
         f"(basename pattern '{basename_pattern}'): "
         f"{[str(p.relative_to(WORKSPACE_ROOT)) for p in matches]}. "
-        f"Per Requirement 18.1/18.2, helm/k8s/KEDA artifacts MUST NOT "
-        f"appear anywhere outside the immutable atlassian_unified/ tree."
+        f"Helm/k8s/KEDA artifacts MUST NOT appear anywhere outside the "
+        f"atlassian_mcp_bitbucket/ gateway tree."
     )

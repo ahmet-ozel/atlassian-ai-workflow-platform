@@ -13,8 +13,6 @@ Design decisions:
   - Hourly cleanup job deletes expired rows (``expires_at < NOW()``).
   - The ``X-Atlassian-Webhook-Identifier`` header is preferred when
     present because it is Atlassian's canonical delivery identifier.
-
-Requirements: 3.1, 3.2, 3.3, 3.4, 3.5
 """
 
 from __future__ import annotations
@@ -191,8 +189,8 @@ class EventDedup:
         try:
             await self._insert(event_id, payload)
         except Exception as exc:  # noqa: BLE001
-            # DB write failure — pass through (at-least-once semantics)
-            # Requirement 3.5: log dedup_write_failed and continue
+            # DB write failure — log dedup_write_failed and continue
+            # with at-least-once semantics.
             _logger.error(
                 "dedup_write_failed",
                 event_id=event_id,
@@ -206,7 +204,7 @@ class EventDedup:
     async def cleanup_expired(self, now: datetime | None = None) -> int:
         """Delete expired entries from the dedup table.
 
-        Called by the hourly cleanup job (Requirement 3.4).
+        Called by the hourly cleanup job.
 
         Parameters
         ----------
@@ -239,7 +237,7 @@ class EventDedup:
     def _derive_event_id(self, payload: WebhookPayload) -> str:
         """Derive a unique event_id for deduplication.
 
-        Strategy (Requirement 3.1):
+        Strategy:
           1. If ``X-Atlassian-Webhook-Identifier`` header is present,
              use it directly — this is Atlassian's canonical delivery ID.
           2. Otherwise, compute SHA-256 of

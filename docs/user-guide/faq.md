@@ -18,12 +18,11 @@ Jira task'ına atanırsan ne yapacağını description'dan çıkarır: kod yazar
 ### 3. Bot maliyeti ne kadar?
 
 İkinci comment'te tahmin verir (`$0.41` gibi). Limit'i aşmadan önce onayını ister.
-[Detay: §16.6.8](../../MIMARI.md).
 
 ### 4. Bot Türkçe mi İngilizce mi konuşur?
 
 Departmanın default diline göre. Türkçe departmanda Türkçe, İngilizce departmanda
-İngilizce. [Detay: §16.6.53](../../MIMARI.md).
+İngilizce.
 
 ## Task Açma
 
@@ -68,7 +67,6 @@ bildir — prompt veya repo özel sebebi olabilir.
 ### 12. Bot hata aldıysa nereden öğrenirim?
 
 Jira'da `❌ Hata aldım: ...` comment'i + departmanına göre Slack/email bildirimi.
-[Detay: §16.7.17](../../MIMARI.md).
 
 ### 13. Bot bittiyse ne göreceğim?
 
@@ -103,44 +101,42 @@ Description ve önceki comment'ler çelişebilir. Description'ı netleştir, yen
 
 ### 19. Bot PR'ı merge edebilir mi?
 
-❌ Hayır. **Daima draft PR** açar; sen merge edersin. [Detay: §1 Kural 10](../../MIMARI.md).
+❌ Hayır. **Daima draft PR** açar; sen merge edersin.
 
 ### 20. Draft PR'da CI çalışmıyor
 
 Departman config'inde `pr_draft_strategy=open_after_test_pass` aç → bot CI'yi
-geçince PR'ı open'a çeker. [Detay: §16.7.18](../../MIMARI.md).
+geçince PR'ı open'a çeker.
 
 ### 21. PR açıldı ama CI fail
 
 Departman `auto_fix_on_ci_fail` açıksa bot otomatik `[fix]` çalıştırır. Aksi halde
-sen `[fix]` yaz. [Detay: §16.6.47](../../MIMARI.md).
+sen `[fix]` yaz.
 
 ### 22. Bot Confluence'a yazınca ne olur?
 
 Departmanın space'inde sayfa oluşturur veya günceller. Sayfa silinmişse sana sorar
-(yeni sayfa? task'a comment? iptal?). [Detay: §16.7.15](../../MIMARI.md).
+(yeni sayfa? task'a comment? iptal?).
 
 ## Limit & Güvenlik
 
 ### 23. Bot Epic aldı, tüm subtask'ları yapacak mı?
 
 Evet — `multi_step` workflow'uyla sırayla. Bir subtask fail ederse Epic durur, sana
-bildirir. [Detay: §16.6.14](../../MIMARI.md).
+bildirir.
 
 ### 24. Bot kritik dosyaya dokunacaksa ne olur?
 
 Departman config'inde `approval_required_paths` listesindeki path'lerde önce onay ister.
-[Detay: §16.7.9](../../MIMARI.md).
 
 ### 25. Bot başka departmanın repo'suna erişemez mi?
 
 ❌ Hayır. Atlassian seviyesinde yetki sınırı + sistem seviyesinde capability gate. Bot
-yanlış dept'e atanırsa anında reddeder. [Detay: §16.6.16](../../MIMARI.md).
+yanlış dept'e atanırsa anında reddeder.
 
 ---
 
 **Cevabını bulamadın mı?**
 
-- Detaylı mimari: [`MIMARI.md`](../../MIMARI.md)
 - AI Admin Slack kanalı (canlı destek)
 - Issue olarak repo'da: `ai-admin` ekibi yanıtlar

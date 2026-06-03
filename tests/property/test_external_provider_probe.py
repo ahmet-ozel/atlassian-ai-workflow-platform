@@ -1,16 +1,13 @@
-"""Property test 11 — External Provider Probe Status Mapping.
+"""External Provider Probe Status Mapping.
 
-Spec: ``platform-real-usage-gaps`` — Property 11.
 
-**Validates: Requirements 10.3, 10.4, 10.7, 10.8**
 
 Background
 ----------
 
 External providers (vLLM, OpenAI, Anthropic, Firecrawl) are services
 running outside the Compose stack. The admin-dashboard probes them via
-HTTP to determine their availability. The
-:func:`~lifecycle.external_probe.probe_external` helper maps HTTP
+HTTP to determine their availability. The:func:`~lifecycle.external_probe.probe_external` helper maps HTTP
 responses to one of four statuses:
 
 * ``200`` (expected) → ``"ok"``
@@ -18,12 +15,12 @@ responses to one of four statuses:
 * ``429`` → ``"rate_limited"``
 * timeout / connection refused → ``"unreachable"``
 
-The :func:`~lifecycle.external_probe.emit_probe_audit` function tracks
+The:func:`~lifecycle.external_probe.emit_probe_audit` function tracks
 consecutive failures per provider and emits:
 
 * ``external_provider_probe_failed`` on every non-ok probe.
 * ``external_provider_streak_alert`` once when 3 consecutive failures
-  accumulate (mirrors the ``health_streak_alert`` pattern).
+ accumulate (mirrors the ``health_streak_alert`` pattern).
 
 Strategy
 --------
@@ -33,15 +30,15 @@ codes, timeouts, connection errors) against a fake HTTP server
 (httpx mock transport). The tests verify:
 
 (a) **Status mapping correctness**: Each HTTP response code maps to
-    the correct ``ExternalProbeStatus``.
+ the correct ``ExternalProbeStatus``.
 (b) **Credential injection**: Providers requiring auth get the correct
-    header; missing credentials yield ``"unauthorized"`` without
-    making a request.
+ header; missing credentials yield ``"unauthorized"`` without
+ making a request.
 (c) **Audit emission**: Failed probes emit
-    ``external_provider_probe_failed``; 3 consecutive failures emit
-    ``external_provider_streak_alert``; recovery resets the streak.
+ ``external_provider_probe_failed``; 3 consecutive failures emit
+ ``external_provider_streak_alert``; recovery resets the streak.
 (d) **Cache behaviour**: Repeated probes within 30s return cached
-    results; ``bypass_cache=True`` forces a fresh probe.
+ results; ``bypass_cache=True`` forces a fresh probe.
 """
 
 from __future__ import annotations
@@ -217,16 +214,16 @@ def _clean_state():
 
 
 # ---------------------------------------------------------------------------
-# Property 11a: Status Mapping Correctness
+# invariant: Status Mapping Correctness
 # ---------------------------------------------------------------------------
 
 
 class TestStatusMappingCorrectness:
-    """**Validates: Requirements 10.3, 10.8**
+    """HTTP responses map to the correct probe status.
 
-    Each HTTP response code maps to the correct ExternalProbeStatus.
-    The _map_status function is the core mapping logic.
-    """
+ Each HTTP response code maps to the correct ExternalProbeStatus.
+ The _map_status function is the core mapping logic.
+ """
 
     @settings(
         max_examples=200,
@@ -240,8 +237,8 @@ class TestStatusMappingCorrectness:
     def test_status_mapping_deterministic(
         self, status_code: int, expected_status: int
     ) -> None:
-        """R10.3, R10.8: HTTP status codes map deterministically to
-        ExternalProbeStatus values."""
+        """,: HTTP status codes map deterministically to
+ ExternalProbeStatus values."""
 
         result = _map_status(status_code, expected_status)
 
@@ -271,8 +268,8 @@ class TestStatusMappingCorrectness:
         expected_status=st.sampled_from([200, 201, 204]),
     )
     def test_expected_status_configurable(self, expected_status: int) -> None:
-        """R10.3: The expected status code is configurable per provider.
-        Only the configured expected code maps to 'ok'."""
+        """: The expected status code is configurable per provider.
+ Only the configured expected code maps to 'ok'."""
 
         assert _map_status(expected_status, expected_status) == "ok"
         # A different 2xx code should NOT map to ok if it's not the expected one
@@ -293,8 +290,8 @@ class TestStatusMappingCorrectness:
     async def test_probe_external_maps_responses_correctly(
         self, scenario: tuple[str, int | None]
     ) -> None:
-        """R10.3, R10.8: probe_external correctly maps HTTP responses,
-        timeouts, and connection errors to the right status."""
+        """,: probe_external correctly maps HTTP responses,
+ timeouts, and connection errors to the right status."""
 
         clear_cache()
         scenario_type, status_code = scenario
@@ -325,16 +322,16 @@ class TestStatusMappingCorrectness:
 
 
 # ---------------------------------------------------------------------------
-# Property 11b: Credential Injection
+# invariant: Credential Injection
 # ---------------------------------------------------------------------------
 
 
 class TestCredentialInjection:
-    """**Validates: Requirements 10.4**
+    """Provider probes handle credentials before making requests.
 
-    Providers requiring authentication get the correct header injected.
-    Missing credentials yield 'unauthorized' without making a request.
-    """
+ Providers requiring authentication get the correct header injected.
+ Missing credentials yield 'unauthorized' without making a request.
+ """
 
     @pytest.mark.asyncio
     @settings(
@@ -348,8 +345,8 @@ class TestCredentialInjection:
     async def test_missing_credential_returns_unauthorized(
         self, provider: str
     ) -> None:
-        """R10.4: When a provider requires auth but no API key is found,
-        the result is 'unauthorized' without making an HTTP request."""
+        """: When a provider requires auth but no API key is found,
+ the result is 'unauthorized' without making an HTTP request."""
 
         clear_cache()
 
@@ -380,8 +377,8 @@ class TestCredentialInjection:
 
     @pytest.mark.asyncio
     async def test_vllm_no_credential_required(self) -> None:
-        """R10.4: vLLM does not require authentication — probe proceeds
-        without credential injection."""
+        """: vLLM does not require authentication — probe proceeds
+ without credential injection."""
 
         clear_cache()
 
@@ -410,8 +407,8 @@ class TestCredentialInjection:
         provider=st.sampled_from(["openai", "anthropic", "firecrawl-cloud"]),
     )
     async def test_with_credential_probe_proceeds(self, provider: str) -> None:
-        """R10.4: When credentials are available, the probe makes an
-        HTTP request and returns the mapped status."""
+        """: When credentials are available, the probe makes an
+ HTTP request and returns the mapped status."""
 
         clear_cache()
 
@@ -442,17 +439,17 @@ class TestCredentialInjection:
 
 
 # ---------------------------------------------------------------------------
-# Property 11c: Audit Emission and Streak Alerting
+# invariant: Audit Emission and Streak Alerting
 # ---------------------------------------------------------------------------
 
 
 class TestAuditEmissionAndStreakAlerting:
-    """**Validates: Requirements 10.7, 10.8**
+    """Failed probes emit audit entries and streak alerts.
 
-    Failed probes emit ``external_provider_probe_failed`` audit entries.
-    Three consecutive failures emit ``external_provider_streak_alert``.
-    Recovery resets the streak counter.
-    """
+ Failed probes emit ``external_provider_probe_failed`` audit entries.
+ Three consecutive failures emit ``external_provider_streak_alert``.
+ Recovery resets the streak counter.
+ """
 
     @pytest.mark.asyncio
     @settings(
@@ -464,7 +461,7 @@ class TestAuditEmissionAndStreakAlerting:
         status=st.sampled_from(["unreachable", "unauthorized", "rate_limited"]),
     )
     async def test_failed_probe_emits_audit(self, status: str) -> None:
-        """R10.7: Every non-ok probe emits external_provider_probe_failed."""
+        """: Every non-ok probe emits external_provider_probe_failed."""
 
         reset_streak_state()
         audit_writer = FakeAuditWriter()
@@ -487,7 +484,7 @@ class TestAuditEmissionAndStreakAlerting:
 
     @pytest.mark.asyncio
     async def test_ok_probe_does_not_emit_audit(self) -> None:
-        """R10.7: A successful probe does not emit any audit entry."""
+        """: A successful probe does not emit any audit entry."""
 
         reset_streak_state()
         audit_writer = FakeAuditWriter()
@@ -509,8 +506,8 @@ class TestAuditEmissionAndStreakAlerting:
 
     @pytest.mark.asyncio
     async def test_streak_alert_after_three_consecutive_failures(self) -> None:
-        """R10.7, R10.8: Three consecutive failures trigger a single
-        external_provider_streak_alert audit entry."""
+        """,: Three consecutive failures trigger a single
+ external_provider_streak_alert audit entry."""
 
         reset_streak_state()
         audit_writer = FakeAuditWriter()
@@ -540,8 +537,8 @@ class TestAuditEmissionAndStreakAlerting:
 
     @pytest.mark.asyncio
     async def test_streak_alert_not_repeated(self) -> None:
-        """R10.7: The streak alert is emitted only once per streak —
-        additional failures do not re-emit it."""
+        """: The streak alert is emitted only once per streak —
+ additional failures do not re-emit it."""
 
         reset_streak_state()
         audit_writer = FakeAuditWriter()
@@ -567,8 +564,8 @@ class TestAuditEmissionAndStreakAlerting:
 
     @pytest.mark.asyncio
     async def test_recovery_resets_streak(self) -> None:
-        """R10.7, R10.8: A successful probe resets the streak counter.
-        After recovery, a new streak of failures triggers a new alert."""
+        """,: A successful probe resets the streak counter.
+ After recovery, a new streak of failures triggers a new alert."""
 
         reset_streak_state()
         audit_writer = FakeAuditWriter()
@@ -624,8 +621,8 @@ class TestAuditEmissionAndStreakAlerting:
         failure_count=st.integers(min_value=1, max_value=10),
     )
     async def test_streak_threshold_boundary(self, failure_count: int) -> None:
-        """R10.7: Streak alert is emitted exactly when the threshold
-        is reached — not before, not after (per streak)."""
+        """: Streak alert is emitted exactly when the threshold
+ is reached — not before, not after (per streak)."""
 
         reset_streak_state()
         audit_writer = FakeAuditWriter()
@@ -654,21 +651,21 @@ class TestAuditEmissionAndStreakAlerting:
 
 
 # ---------------------------------------------------------------------------
-# Property 11d: Cache Behaviour
+# invariant: Cache Behaviour
 # ---------------------------------------------------------------------------
 
 
 class TestCacheBehaviour:
-    """**Validates: Requirements 10.3**
+    """Probe results are cached and can be bypassed explicitly.
 
-    Probe results are cached for 30 seconds. Repeated probes within
-    the TTL return cached results. bypass_cache forces a fresh probe.
-    """
+ Probe results are cached for 30 seconds. Repeated probes within
+ the TTL return cached results. bypass_cache forces a fresh probe.
+ """
 
     @pytest.mark.asyncio
     async def test_cached_result_returned_within_ttl(self) -> None:
-        """R10.3: Within the 30s TTL, probe_external returns the cached
-        result without making a new HTTP request."""
+        """: Within the 30s TTL, probe_external returns the cached
+ result without making a new HTTP request."""
 
         clear_cache()
 
@@ -694,8 +691,8 @@ class TestCacheBehaviour:
 
     @pytest.mark.asyncio
     async def test_bypass_cache_forces_fresh_probe(self) -> None:
-        """R10.3: bypass_cache=True skips the cache and makes a fresh
-        HTTP request."""
+        """: bypass_cache=True skips the cache and makes a fresh
+ HTTP request."""
 
         clear_cache()
 
@@ -721,8 +718,8 @@ class TestCacheBehaviour:
 
     @pytest.mark.asyncio
     async def test_no_base_url_returns_unreachable(self) -> None:
-        """R10.3: When no base URL is configured (env unset, no default),
-        the result is 'unreachable' with a descriptive error."""
+        """: When no base URL is configured (env unset, no default),
+ the result is 'unreachable' with a descriptive error."""
 
         clear_cache()
 

@@ -1,9 +1,9 @@
 "use client";
 
 /**
- * Prompt editor page — `platform-gap-fill` task 14.2.
+ * Prompt editor page.
  *
- * **Validates: Requirement 14.5** (the editor surface for the
+ * Editor surface for the
  * Prompt_Versioning system — diff, sandbox LLM call, draft PR).
  *
  * Catch-all route — the prompt name is everything after `/prompts/`

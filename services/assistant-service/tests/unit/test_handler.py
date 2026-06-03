@@ -1,26 +1,26 @@
-"""Unit tests for :mod:`src.chat.handler` (task 4.4, Requirements 1.1-1.10).
+"""Unit tests for :mod:`src.chat.handler`.
 
 These tests exercise :class:`src.chat.handler.ChatHandler` end-to-end
 using fake collaborators that conform to the protocols declared on
 :class:`src.chat.handler.ChatHandlerDeps`. They cover the deterministic
 six-step pipeline:
 
-1. PII mask is applied **before** any LLM invocation (R1.5).
-2. Sliding window receives the masked-and-appended history (R1.7).
+1. PII mask is applied **before** any LLM invocation.
+2. Sliding window receives the masked-and-appended history.
 3. System prompt is rendered with the dept-scoped template variables
-   (R1.4, R2.7).
-4. Banned-tool list (R1.2) and capability gate are applied to the
+   with template variables.
+4. Banned-tool list and capability gate are applied to the
    catalogue before it reaches the LLM.
 5. Write-action intent triggers ``redirect_to_task_creator`` and the
-   tool dispatch is **never invoked** (R1.3).
+   tool dispatch is **never invoked**.
 6. Audit ``chat_message`` row carries the mandatory
    ``prompt_version``, ``token_in``, ``token_out``, ``cost_usd``
-   payload fields (R1.8).
+   payload fields.
 
 Property-style enumerations live in
-``platform/tests/property/test_write_action_intercept.py`` (task 4.9)
-and ``platform/tests/property/test_sliding_window.py`` (task 4.8);
-this file focuses on the **integration shape** of the handler — that
+``platform/tests/property/test_write_action_intercept.py`` and
+``platform/tests/property/test_sliding_window.py``; this file focuses
+on the **integration shape** of the handler — that
 the steps run in the right order and the right collaborator is called
 for each step.
 """
@@ -189,7 +189,7 @@ def _identity_compress(
 ) -> Sequence[Message]:
     """No-op compressor: return the last ``n`` messages verbatim.
 
-    Mirrors the contract of task 4.1's ``compress`` for the simple
+    Mirrors the contract of ``compress`` for the simple
     case where ``len(messages) <= n``. We keep the summariser
     parameter to match the protocol shape but never invoke it in this
     fake.
@@ -358,7 +358,7 @@ class TestConstruction:
 class TestPipelineWiring:
     def test_pii_masked_text_is_what_reaches_llm(self) -> None:
         """Step 1 + 2: the LLM receives the *masked* user message,
-        not the raw input. Requirement 1.5."""
+        not the raw input."""
         orch = _ScriptedOrchestrator([SseEvent("done", {})])
         handler, *_ = _build_handler(orchestrator=orch)
 
@@ -379,7 +379,7 @@ class TestPipelineWiring:
     def test_sliding_window_receives_full_history_then_summarises(self) -> None:
         """Step 2: when the history exceeds ``sliding_window_n``, the
         compressor is called with the full list and the summariser
-        receives the dropped older messages. Requirement 1.7."""
+        receives the dropped older messages."""
         orch = _ScriptedOrchestrator([SseEvent("done", {})])
         history = tuple(
             Message(role="user" if i % 2 == 0 else "assistant", text=f"m{i}")
@@ -404,7 +404,7 @@ class TestPipelineWiring:
     def test_system_prompt_rendered_with_dept_vars(self) -> None:
         """Step 3: the system prompt is rendered through the
         :class:`PromptLoader` with the dept's template vars.
-        Requirements 1.4, 2.7."""
+        """
         orch = _ScriptedOrchestrator([SseEvent("done", {})])
         loader = _RecordingPromptLoader(body="hi {bot_username} of {department_id}")
         handler, *_ = _build_handler(orchestrator=orch, prompt_loader=loader)
@@ -422,7 +422,7 @@ class TestPipelineWiring:
     def test_banned_tools_filtered_before_capability_gate(self) -> None:
         """Step 4: ``mcp_client.filter_tools`` strips banned tools
         first, then the capability gate narrows further.
-        Requirements 1.2, 1.8."""
+        """
         orch = _ScriptedOrchestrator([SseEvent("done", {})])
         handler, *_ = _build_handler(
             orchestrator=orch,
@@ -449,7 +449,7 @@ class TestPipelineWiring:
 
     def test_token_cap_is_forwarded_to_orchestrator(self) -> None:
         """Step 5: the orchestrator receives ``token_cap`` so it can
-        fail-fast when exceeded. Requirement 1.6."""
+        fail-fast when exceeded."""
         orch = _ScriptedOrchestrator([SseEvent("done", {})])
         handler, *_ = _build_handler(orchestrator=orch, token_cap=4242)
 
@@ -460,7 +460,7 @@ class TestPipelineWiring:
 
 
 # ---------------------------------------------------------------------------
-# Write-action intercept (Requirement 1.3)
+# Write-action intercept
 # ---------------------------------------------------------------------------
 
 
@@ -541,7 +541,7 @@ class TestWriteActionIntercept:
 
 
 # ---------------------------------------------------------------------------
-# Audit chat_message row (Requirement 1.8)
+# Audit chat_message row
 # ---------------------------------------------------------------------------
 
 
@@ -616,7 +616,7 @@ class TestAuditWrite:
 
 
 # ---------------------------------------------------------------------------
-# Pass-through SSE events (R1.9, R1.10, R1.6)
+# Pass-through SSE events
 # ---------------------------------------------------------------------------
 
 
@@ -627,7 +627,7 @@ class TestTerminalEventsArePropagated:
     )
     def test_orchestrator_terminal_events_propagate(self, terminal: str) -> None:
         """SSE events emitted by the orchestrator pass through the
-        handler verbatim. Requirements 1.6, 1.9, 1.10."""
+        handler verbatim."""
         orch = _ScriptedOrchestrator(
             [
                 SseEvent("token", {"text": "x"}),
@@ -643,14 +643,14 @@ class TestTerminalEventsArePropagated:
 
 
 # ---------------------------------------------------------------------------
-# Intent SSE event emission (Requirement 4.1)
+# Intent SSE event emission
 # ---------------------------------------------------------------------------
 
 
 class TestIntentEventEmission:
     """Tests for the ``event: intent`` SSE emission when the LLM
     response contains ``intent == "write_action_requested"``
-    (Requirement 4.1, task 4.2)."""
+    """
 
     def test_done_with_write_intent_emits_intent_event(self) -> None:
         """When the ``done`` event payload carries
@@ -770,7 +770,7 @@ class TestIntentEventEmission:
 
 
 # ---------------------------------------------------------------------------
-# Task 5.4 — Timeout and Truncation Handling (Requirements 1.7, 1.8)
+# Timeout and Truncation Handling
 # ---------------------------------------------------------------------------
 
 
@@ -813,9 +813,7 @@ class _SlowOrchestrator:
 
 
 class TestTimeoutHandling:
-    """**Validates: Requirement 1.7**
-
-    When the LLM call exceeds ``LLM_REQUEST_TIMEOUT_S`` seconds, the
+    """When the LLM call exceeds ``LLM_REQUEST_TIMEOUT_S`` seconds, the
     handler aborts the request, writes an ``assistant_llm_timeout``
     audit event, and emits an SSE error event with
     ``{"reason": "llm_timeout"}``.
@@ -909,9 +907,7 @@ class TestTimeoutHandling:
 
 
 class TestTruncationHandling:
-    """**Validates: Requirement 1.8**
-
-    When the LLM response exceeds ``LLM_MAX_TOKENS_OUTPUT`` tokens,
+    """When the LLM response exceeds ``LLM_MAX_TOKENS_OUTPUT`` tokens,
     the handler closes the stream cleanly and emits a final ``done``
     event with ``truncated: true``.
     """

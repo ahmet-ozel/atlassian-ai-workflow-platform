@@ -1,11 +1,9 @@
-"""Comment-burst debounce coordinator — task 4.4 of ``platform-mimari-workflows``.
+"""Comment-burst debounce coordinator.
 
 This module owns the **final** stage of the webhook filter chain: a
 3-second debounce window that collapses consecutive events targeting
 the same Jira ``issue_key`` into a single dispatched signal. The
-behaviour is mandated by Requirement 4.7 and the design document's
-"Webhook Filter Chain" section, which lists ``burst_debounce 3s
-window`` as the last hop before ``signalWithStart``.
+behaviour is the final hop before ``signalWithStart``.
 
 Why this stage lives outside the workflow body
 ----------------------------------------------
@@ -64,8 +62,8 @@ the timer fires while the coordinator is shutting down. Cancellation
 is cooperative: :meth:`BurstDebounceCoordinator.aclose` cancels every
 outstanding timer and discards pending buffers without flushing them.
 
-Process-local scope (out-of-scope for 4.4)
-------------------------------------------
+Process-local scope
+-------------------
 
 The coordinator stores its state in a plain ``dict`` guarded by an
 ``asyncio.Lock``; all timing is via ``loop.call_later``. That makes
@@ -73,8 +71,7 @@ it correct for a **single** ``automation-service`` worker process.
 Horizontal scaling — multiple automation-service replicas behind a
 load balancer — would race because each replica owns an independent
 buffer. The design earmarks Redis (or Postgres advisory locks) as
-the cross-process backend; that wiring is out of scope for task 4.4
-and tracked separately. Until then, the deployment topology must
+the cross-process backend; that wiring is tracked separately. Until then, the deployment topology must
 ensure webhook deliveries for the same issue land on the same
 replica (typical Atlassian Connect / app sticky-session arrangement
 already provides this).
@@ -121,8 +118,7 @@ __all__ = [
 ]
 
 
-#: Default 3-second debounce window mandated by Requirement 4.7 and
-#: the design document. Exposed as a module constant so other parts of
+#: Default 3-second debounce window. Exposed as a module constant so other parts of
 #: the chain (notably :class:`automation_service.webhook_filters.WebhookFilterChain`)
 #: can derive the same value without a circular import.
 DEFAULT_BURST_WINDOW: Final[timedelta] = timedelta(seconds=3)
@@ -243,7 +239,7 @@ class BufferedDelivery:
 
 
 class BurstDebounceCoordinator:
-    """In-memory 3-second debounce coordinator (Requirement 4.7).
+    """In-memory 3-second debounce coordinator.
 
     Construction
     ------------

@@ -1,10 +1,10 @@
 """Unit tests for the ``POST /admin/vault/init`` endpoint.
 
-Validates Requirements 7.1, 7.3, 7.6 from the production-hardening spec:
+These tests cover the main Vault init outcomes:
 
-* Requirement 7.1: Execute vault operator init with 5 key shares and 3 threshold.
-* Requirement 7.3: Write root token to Vault's own secret engine after init.
-* Requirement 7.6: Return HTTP 409 if Vault already initialized.
+* Execute vault operator init with 5 key shares and 3 threshold.
+* Write root token to Vault's own secret engine after init.
+* Return HTTP 409 if Vault is already initialized.
 """
 
 from __future__ import annotations
@@ -57,7 +57,7 @@ class TestVaultInitEndpoint:
     def test_vault_already_initialized_returns_409(
         self, client, mock_http_client
     ) -> None:
-        """Requirement 7.6: Already initialized → 409 Conflict."""
+        """Already initialized → 409 Conflict."""
         # Mock the /v1/sys/init GET check — Vault reports initialized
         init_check_response = MagicMock()
         init_check_response.status_code = 200
@@ -74,7 +74,7 @@ class TestVaultInitEndpoint:
     def test_successful_init_returns_keys_and_token(
         self, client, mock_http_client
     ) -> None:
-        """Requirement 7.1: Successful init returns unseal keys and root token."""
+        """Successful init returns unseal keys and root token."""
         # Mock the /v1/sys/init GET check — Vault is NOT initialized
         init_check_response = MagicMock()
         init_check_response.status_code = 200
@@ -121,7 +121,7 @@ class TestVaultInitEndpoint:
     def test_init_with_custom_shares_and_threshold(
         self, client, mock_http_client
     ) -> None:
-        """Requirement 7.1: Custom key shares and threshold are accepted."""
+        """Custom key shares and threshold are accepted."""
         # Mock the /v1/sys/init GET check — Vault is NOT initialized
         init_check_response = MagicMock()
         init_check_response.status_code = 200
@@ -214,7 +214,7 @@ class TestVaultInitEndpoint:
     def test_root_token_write_failure_is_non_fatal(
         self, client, mock_http_client
     ) -> None:
-        """Requirement 7.3: Root token write failure is non-fatal — keys still returned."""
+        """Root token write failure is non-fatal — keys still returned."""
         # Mock the /v1/sys/init GET check — Vault is NOT initialized
         init_check_response = MagicMock()
         init_check_response.status_code = 200
@@ -265,7 +265,7 @@ class TestVaultInitEndpoint:
     def test_default_shares_and_threshold(
         self, client, mock_http_client
     ) -> None:
-        """Default request uses 5 shares and 3 threshold (Requirement 7.1)."""
+        """Default request uses 5 shares and 3 threshold."""
         # Mock the /v1/sys/init GET check — Vault is NOT initialized
         init_check_response = MagicMock()
         init_check_response.status_code = 200

@@ -1,6 +1,4 @@
-"""Property 5 — shutdown closes every owned resource exactly once.
-
-# Feature: automation-service-wiring, Property 5: Shutdown closes once
+"""Shutdown closes every owned resource exactly once.
 
 For any successful run of the lifespan startup phase followed by an
 unconditional shutdown, the handler invokes ``close`` / ``aclose``
@@ -9,9 +7,6 @@ client and exactly once for the Temporal client it constructed during
 startup. After shutdown returns, none of those three resources are
 observable in an open state via their public ``is_closed`` /
 ``is_connected`` predicates.
-
-Validates Requirements 4.1, 4.2 and 4.4 of the
-``automation-service-wiring`` spec.
 """
 
 from __future__ import annotations

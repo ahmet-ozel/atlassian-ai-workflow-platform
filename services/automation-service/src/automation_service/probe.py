@@ -1,42 +1,39 @@
 """Probe runner — read / write credential validation for department bots.
 
 Implements the ``ProbeRunner.run(dept_id, service, cred) -> ProbeResult``
-API specified in
-``.kiro/specs/platform-mimari-foundation/design.md`` §"Probe Runner"
-and the corresponding acceptance criteria in
-``requirements.md`` §Requirement 5 (R5.1, R5.2, R5.5, R5.10).
+API for validating department bot credentials.
 
-What this module owns (task 6.1)
----------------------------------
+What this module owns
+---------------------
 
 * A **read probe** for each Atlassian surface: Jira
   ``GET /rest/api/3/myself``, Bitbucket ``GET /2.0/user``, Confluence
   ``GET /wiki/rest/api/user/current``. The read probe must succeed
   before the write probe runs; if it fails, the credential is rejected
-  and ``ProbeResult.state == "read_failed"`` is returned (R5.1).
+  and ``ProbeResult.state == "read_failed"`` is returned.
 * A **write probe** for each surface — Confluence draft create+delete,
   Bitbucket temporary branch create+delete, Jira self-comment on a
-  bot-owned issue (R5.2). Every artifact uses the canonical sentinel
+  bot-owned issue. Every artifact uses the canonical sentinel
   title / branch name format ``_AI_PROBE_<unix_ts>_DELETE_ME``
   (Invariant 10).
 * **Idempotent cleanup**: before every probe call the runner searches
   the target system for orphan ``_AI_PROBE_*`` artifacts and deletes
   them. Repeated invocations therefore leave no extra residue
-  (R5.5).
+  by the cleanup pass.
 * **Sensitive data hygiene**: the probe artifact body / branch
   description never contains plain-text credentials, tokens or
-  passwords (R5.10). The artifact carries only the sentinel marker
+  passwords. The artifact carries only the sentinel marker
   string defined in :data:`PROBE_ARTIFACT_PREFIX`.
 
-Out-of-scope for this task (delivered by sibling tasks)
--------------------------------------------------------
+Out-of-scope here
+-----------------
 
 * ``account_id`` auto-fetch and manual / fetched mismatch fail-fast
-  is task 6.2 — the read probe **does** capture an
+  is handled by startup validation. The read probe **does** capture an
   ``auto_fetched_account_id`` for the caller, but the assertion logic
   is not enforced here.
 * ``partial_orphan`` row insertion into ``automation.probe_artifacts``
-  is task 6.3 — the dataclass shape is provided
+  is handled by the cleanup persistence layer; the dataclass shape is provided
   (:class:`ProbeArtifact`) and ``ProbeResult.state`` already exposes
   ``"partial_orphan"`` as a possible value so callers can branch
   today.
@@ -44,14 +41,14 @@ Out-of-scope for this task (delivered by sibling tasks)
 Atlassian client abstraction
 ----------------------------
 
-Per MIMARI §1 Kural 1 (R1.2) every outbound Atlassian HTTP call must
-go through the ``atlassian_unified`` MCP service. The probe runner
+Every outbound Atlassian HTTP call must go through the
+``atlassian_unified`` MCP service. The probe runner
 does **not** issue raw HTTP itself; it depends on a thin
 :class:`AtlassianProbeClient` :class:`~typing.Protocol` that the
-production wiring (Spec 2) backs with an MCP-routed implementation.
+production wiring backs with an MCP-routed implementation.
 Tests inject an in-memory fake satisfying the protocol — the suite at
 ``tests/unit/test_probe.py`` and the property test at
-``platform/tests/property/test_probe_runner.py`` (task 6.4) exercise
+``platform/tests/property/test_probe_runner.py`` exercise
 the runner this way.
 """
 
@@ -70,7 +67,7 @@ logger = logging.getLogger(__name__)
 
 #: Sentinel prefix every probe artifact (Confluence draft title,
 #: Bitbucket branch name, Jira comment marker) carries. Required by
-#: R5.5 / Invariant 10 — listing this prefix in a target system is
+#: listing this prefix in a target system is
 #: the canonical way to find probe leftovers and clean them up.
 PROBE_ARTIFACT_PREFIX: Final[str] = "_AI_PROBE_"
 
@@ -97,7 +94,7 @@ ProbeArtifactType = Literal["confluence_page", "bitbucket_branch", "jira_comment
 #:   leftover).
 #: * ``partial_orphan`` — write probe created an artifact but failed
 #:   to delete it. The artifact is captured on
-#:   :attr:`ProbeResult.artifact` so the caller (task 6.3) can persist
+#:   :attr:`ProbeResult.artifact` so the caller can persist
 #:   it for admin cleanup.
 ProbeState = Literal["ok", "read_failed", "write_failed", "partial_orphan"]
 
@@ -141,7 +138,7 @@ class ResolvedCredential:
     """Resolved credential triple passed into the probe runner.
 
     The runner never reads the raw value from Vault directly — that
-    work is done by ``CredentialResolver`` (task 5.7 / 12.5). The
+    work is done by ``CredentialResolver``. The
     runner accepts an opaque ``ResolvedCredential`` so the same
     surface can probe department org-default and per-user session
     credentials uniformly (Q6/Q7).
@@ -166,7 +163,7 @@ class ProbeArtifact:
     """A leftover probe artifact captured for admin cleanup.
 
     The shape mirrors the ``automation.probe_artifacts`` table column
-    set so task 6.3 can persist instances directly via ``db_shared``.
+    set so callers can persist instances directly via ``db_shared``.
 
     Attributes:
         dept_id: Department that owns the bot the probe ran against.
@@ -199,11 +196,11 @@ class ProbeResult:
             failed (the write probe is skipped).
         auto_fetched_account_id: ``account_id`` returned by the read
             probe. ``None`` when the target system did not surface one
-            or the read probe failed. Task 6.2 consumes this field to
+            or the read probe failed. Startup validation consumes this field to
             decide whether to update ``departments.json`` /
             ``automation.departments``.
         artifact: Populated only when ``state == "partial_orphan"`` —
-            the leftover artifact the caller (task 6.3) should record
+            the leftover artifact the caller should record
             in ``automation.probe_artifacts``.
         state: Terminal state (see :data:`ProbeState`).
         error_message: Human-readable detail when ``state`` is anything
@@ -229,9 +226,8 @@ class AtlassianProbeClient(Protocol):
     """Minimum surface the probe runner needs from the MCP wrapper.
 
     The protocol is intentionally narrow — only the calls required to
-    implement R5.1 (read probe) and R5.2 (write probe). The
-    production implementation (delivered in Spec 2) routes every call
-    through the ``atlassian_unified`` MCP service per R1.2; tests
+    implement read and write probes. The production implementation
+    routes every call through the ``atlassian_unified`` MCP service; tests
     inject a fake whose method signatures match this protocol.
 
     All methods are ``async`` so the runner can be wired into the
@@ -243,9 +239,9 @@ class AtlassianProbeClient(Protocol):
     async def jira_myself(self, cred: ResolvedCredential) -> dict[str, Any]:
         """``GET /rest/api/3/myself`` — returns the authenticated user.
 
-        Used by the read probe (R5.1). The implementation must surface
+        Used by the read probe. The implementation must surface
         the response JSON unchanged so the probe runner can extract
-        ``accountId`` for auto-fetch (R5.6 — task 6.2 reads this).
+        ``accountId`` for auto-fetch.
         """
         ...
 
@@ -257,7 +253,7 @@ class AtlassianProbeClient(Protocol):
         """Find Jira comments authored by *author_account_id* whose body
         starts with the probe sentinel prefix.
 
-        Used during idempotent cleanup (R5.5) before issuing a fresh
+        Used during idempotent cleanup before issuing a fresh
         write probe. Each returned dict must carry at least the
         comment ``id`` and the parent ``issue_key`` so the runner can
         delete the comment with :meth:`jira_delete_comment`.
@@ -271,7 +267,7 @@ class AtlassianProbeClient(Protocol):
     ) -> dict[str, Any]:
         """Create a comment on a bot-owned issue.
 
-        Used by the Jira write probe (R5.2). The implementation is
+        Used by the Jira write probe. The implementation is
         responsible for picking a target issue the bot owns (typically
         a long-lived dedicated probe issue per departman). The
         returned dict must carry the new comment's ``id`` and the
@@ -292,7 +288,7 @@ class AtlassianProbeClient(Protocol):
     # ----- Bitbucket -----------------------------------------------------
 
     async def bitbucket_user(self, cred: ResolvedCredential) -> dict[str, Any]:
-        """``GET /2.0/user`` — returns the authenticated user (R5.1)."""
+        """``GET /2.0/user`` — returns the authenticated user."""
         ...
 
     async def bitbucket_list_probe_branches(
@@ -303,7 +299,7 @@ class AtlassianProbeClient(Protocol):
     ) -> list[str]:
         """Return branch names starting with the probe sentinel prefix.
 
-        Used during idempotent cleanup before each write probe (R5.5).
+        Used during idempotent cleanup before each write probe.
         """
         ...
 
@@ -317,7 +313,7 @@ class AtlassianProbeClient(Protocol):
         """Create *branch_name* off the repo's default branch.
 
         Returns the new branch's reference identifier (typically the
-        commit hash of the branch tip). Required by R5.2.
+        commit hash of the branch tip).
         """
         ...
 
@@ -337,7 +333,7 @@ class AtlassianProbeClient(Protocol):
         """Confluence "current user" read probe.
 
         Returns the response JSON; the runner extracts ``accountId``
-        for auto-fetch (R5.1, R5.6).
+        for auto-fetch.
         """
         ...
 
@@ -347,7 +343,7 @@ class AtlassianProbeClient(Protocol):
         space_key: str,
     ) -> list[dict[str, Any]]:
         """Return draft pages in *space_key* whose title matches the
-        probe sentinel prefix (R5.5)."""
+        probe sentinel prefix."""
         ...
 
     async def confluence_create_draft_page(
@@ -359,7 +355,7 @@ class AtlassianProbeClient(Protocol):
         """Create a draft Confluence page named *title* in *space_key*.
 
         The body is a single sentinel marker line; the runner never
-        sends credentials, tokens or PII (R5.10).
+        sends credentials, tokens or PII.
         """
         ...
 
@@ -419,7 +415,7 @@ class ProbeRunner:
 
     The runner is **stateless** between calls — every invocation does
     its own idempotent cleanup before issuing the new write probe so
-    repeated calls leave no extra residue (R5.5).
+    repeated calls leave no extra residue.
     """
 
     def __init__(
@@ -451,19 +447,19 @@ class ProbeRunner:
         The flow is:
 
         1. **Idempotent cleanup** — list and delete any existing
-           ``_AI_PROBE_*`` artifacts on the target service (R5.5).
+           ``_AI_PROBE_*`` artifacts on the target service.
         2. **Read probe** — verify the credential can authenticate
-           and capture ``account_id`` for auto-fetch (R5.1).
+           and capture ``account_id`` for auto-fetch.
         3. **Write probe** — create + delete a sentinel artifact
-           (R5.2). On delete failure return ``state="partial_orphan"``
-           with the artifact attached (R5.3 — fully wired by 6.3).
+           On delete failure return ``state="partial_orphan"``
+           with the artifact attached.
 
         Args:
             dept_id: Department identifier.
             service: One of ``"jira"``, ``"bitbucket"``, ``"confluence"``.
             cred: Resolved credential triple. The plain-text
                 ``personal_token`` is **never** echoed into artifacts
-                or logs (R5.10).
+                or logs.
             targets: Per-department target metadata (Bitbucket
                 workspace+repo, Confluence space). Required for
                 ``service == "bitbucket"`` and ``service == "confluence"``.
@@ -495,7 +491,7 @@ class ProbeRunner:
         dept_id: str,
         cred: ResolvedCredential,
     ) -> ProbeResult:
-        # ----- 1. Read probe (R5.1) ------------------------------------
+        # ----- 1. Read probe -------------------------------------------
         try:
             myself = await self._client.jira_myself(cred)
         except Exception as exc:  # noqa: BLE001 — surface as terminal state
@@ -503,7 +499,7 @@ class ProbeRunner:
 
         account_id = _extract_account_id(myself)
 
-        # ----- 2. Idempotent cleanup (R5.5) ----------------------------
+        # ----- 2. Idempotent cleanup -----------------------------------
         # Cleanup runs *after* the read probe succeeds so a totally
         # broken credential does not waste time listing comments.
         if account_id:
@@ -533,7 +529,7 @@ class ProbeRunner:
                         dept_id, comment.get("id"), type(exc).__name__,
                     )
 
-        # ----- 3. Write probe (R5.2) -----------------------------------
+        # ----- 3. Write probe ------------------------------------------
         sentinel = make_probe_title(int(self._clock()))
         try:
             created = await self._client.jira_create_self_comment(
@@ -605,7 +601,7 @@ class ProbeRunner:
                 ),
             )
 
-        # ----- 1. Read probe (R5.1) ------------------------------------
+        # ----- 1. Read probe -------------------------------------------
         try:
             user = await self._client.bitbucket_user(cred)
         except Exception as exc:  # noqa: BLE001
@@ -615,7 +611,7 @@ class ProbeRunner:
         workspace = targets.bitbucket_workspace
         repo = targets.bitbucket_repo
 
-        # ----- 2. Idempotent cleanup (R5.5) ----------------------------
+        # ----- 2. Idempotent cleanup -----------------------------------
         try:
             stale_branches = await self._client.bitbucket_list_probe_branches(
                 cred, workspace=workspace, repo=repo
@@ -640,7 +636,7 @@ class ProbeRunner:
                     dept_id, branch_name, type(exc).__name__,
                 )
 
-        # ----- 3. Write probe (R5.2) -----------------------------------
+        # ----- 3. Write probe ------------------------------------------
         sentinel = make_probe_title(int(self._clock()))
         try:
             await self._client.bitbucket_create_branch(
@@ -711,7 +707,7 @@ class ProbeRunner:
                 ),
             )
 
-        # ----- 1. Read probe (R5.1) ------------------------------------
+        # ----- 1. Read probe -------------------------------------------
         try:
             user = await self._client.confluence_user(cred)
         except Exception as exc:  # noqa: BLE001
@@ -720,7 +716,7 @@ class ProbeRunner:
 
         space_key = targets.confluence_space_key
 
-        # ----- 2. Idempotent cleanup (R5.5) ----------------------------
+        # ----- 2. Idempotent cleanup -----------------------------------
         try:
             stale_pages = await self._client.confluence_list_probe_pages(
                 cred, space_key=space_key
@@ -746,7 +742,7 @@ class ProbeRunner:
                     dept_id, page.get("id"), type(exc).__name__,
                 )
 
-        # ----- 3. Write probe (R5.2) -----------------------------------
+        # ----- 3. Write probe ------------------------------------------
         sentinel = make_probe_title(int(self._clock()))
         try:
             created = await self._client.confluence_create_draft_page(
@@ -769,8 +765,7 @@ class ProbeRunner:
             await self._client.confluence_delete_page(cred, page_id=page_id)
         except Exception as exc:  # noqa: BLE001
             # Confluence partial-orphan is the canonical example of
-            # the V6 fallback path (R5.3). We surface the artifact so
-            # task 6.3 can persist it for admin cleanup.
+            # Surface the artifact so callers can persist it for admin cleanup.
             artifact = ProbeArtifact(
                 dept_id=dept_id,
                 service="confluence",
@@ -810,7 +805,7 @@ def _read_failed(service: str, exc: BaseException) -> ProbeResult:
     The error message includes only the exception class name — never
     the raw ``str(exc)`` — to avoid accidentally leaking
     ``Authorization: Basic ...`` strings or token suffixes that some
-    HTTP clients echo into their exceptions (R5.10).
+    HTTP clients echo into their exceptions.
     """
 
     return ProbeResult(
@@ -835,7 +830,7 @@ def _extract_account_id(payload: Any) -> str | None:
 
     Returns ``None`` for falsy / missing values so the caller never
     sees an empty string masquerading as an id (which would later
-    trigger the mismatch fail-fast in task 6.2).
+    trigger the mismatch fail-fast path).
     """
 
     if not isinstance(payload, dict):
@@ -848,7 +843,7 @@ def _extract_account_id(payload: Any) -> str | None:
 
 
 # ---------------------------------------------------------------------------
-# Inline bot identity probe (R6.2 — post-create endpoint)
+# Inline bot identity probe
 # ---------------------------------------------------------------------------
 
 
@@ -876,7 +871,7 @@ async def probe_bot_identity(
     """Probe Atlassian to resolve the bot's account_id for *(dept_id, service)*.
 
     This is the inline probe called by the post-create credential
-    endpoint (R6.2) after Vault write + DB upsert succeed. It issues
+    endpoint after Vault write + DB upsert succeed. It issues
     a lightweight read-only call:
 
     * Jira / Confluence: ``GET /rest/api/3/myself`` or equivalent.

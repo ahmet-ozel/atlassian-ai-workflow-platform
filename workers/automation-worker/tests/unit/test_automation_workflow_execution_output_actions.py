@@ -1,5 +1,5 @@
 """Unit tests for the ``ExecutionRunWorkflow`` output_actions wire-in
-inside :class:`AutomationWorkflow` (platform-mimari-workflows task 12).
+inside :class:`AutomationWorkflow`.
 
 The gateway ``AutomationWorkflow`` dispatches
 :class:`ExecutionRunWorkflow` for the ``remote_ssh_test_only`` workflow
@@ -17,7 +17,6 @@ them into ``(bucket, key)`` pairs.  The full async ``run`` body lives
 behind ``workflow.execute_activity`` / ``start_child_workflow`` and is
 covered by the existing replay-determinism integration tests.
 
-Validates:
 * Empty :attr:`LlmAnalysisResult.output_actions` keeps the legacy
   dispatch-and-forget contract — the gateway never awaits the child
   (regression guard).

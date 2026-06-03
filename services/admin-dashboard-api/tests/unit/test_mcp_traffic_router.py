@@ -1,19 +1,12 @@
-"""Unit tests for ``src.routers.mcp_traffic`` (platform-gap-fill task 8.3).
-
-**Validates: Requirement 9.5**
-
+"""Unit tests for ``src.routers.mcp_traffic`` .
 The router exposes:
-
 * ``GET /api/v1/mcp/traffic`` — counters fetched from the MCP server's
   ``/metrics`` endpoint, optionally filtered by ``client_source`` /
   ``tool`` / ``status``.
-
 These tests inject:
-
 * A :class:`_FakeMcpMetricsClient` that records the requested call and
   scripts the response (success / :class:`McpMetricsError`).
-* An override on :func:`require_admin` so the OIDC layer can be bypassed.
-"""
+* An override on :func:`require_admin` so the OIDC layer can be bypassed."""
 
 from __future__ import annotations
 

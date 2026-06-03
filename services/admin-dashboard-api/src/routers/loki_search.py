@@ -1,18 +1,15 @@
-"""``LokiSearchProxy`` (`platform-mimari-ops` task 11.3 +
-`platform-gap-fill` task 7.3).
-
-**Validates: Requirements 4.5, 6.5, 6.9, 8.6**
+"""``LokiSearchProxy``.
 
 Forwards an audit search query to Loki + cross-references the MinIO
-archive index (task 13.4) when the query window extends beyond the
+archive index when the query window extends beyond the
 hot retention horizon (default 90 days). Each result carries an
 ``archived`` flag so the admin UI can render archived rows under a
 separate banner.
 
 In addition to the audit-aggregation surface this module also ships
-the workflow-scoped log filter required by Requirement 8.6 — the
-admin dashboard's workflow detail page asks for *all* log lines
-that share a given ``trace_id`` so an operator can follow a single
+the workflow-scoped log filter. The admin dashboard's workflow
+detail page asks for *all* log lines that share a given ``trace_id``
+so an operator can follow a single
 request across automation-service, automation-worker,
 agent-runner-worker, and the MCP server in chronological order.
 
@@ -89,7 +86,7 @@ async def search(
         description=(
             "Filter results to log entries carrying the given trace_id "
             "label. Used by the workflow detail page to follow a "
-            "single request across services (Requirement 8.6)."
+            "single request across services."
         ),
     ),
     start: str | None = Query(default=None),
@@ -102,13 +99,12 @@ async def search(
     panel always renders.
 
     The ``client_source`` filter narrows results to events originating
-    from a specific MCP client (Requirement 7.8 — observability by
-    caller identity). When supplied, only log entries whose
+    from a specific MCP client. When supplied, only log entries whose
     ``client_source`` field matches the filter value are returned.
 
-    The ``trace_id`` filter (Requirement 8.6) narrows results to log
-    entries carrying the matching trace_id label. The filter is
-    forwarded to :meth:`LokiClient.search` when the underlying
+    The ``trace_id`` filter narrows results to log entries carrying
+    the matching trace_id label. The filter is forwarded to
+    :meth:`LokiClient.search` when the underlying
     client supports it; otherwise the router falls back to a
     client-side filter on the returned hits so an older client still
     yields a correct (if smaller) result set.
@@ -271,7 +267,7 @@ async def _invoke_loki_search(
 
 
 # ---------------------------------------------------------------------------
-# Workflow-scoped log filter (Requirement 8.6)
+# Workflow-scoped log filter
 # ---------------------------------------------------------------------------
 
 
@@ -290,7 +286,7 @@ def _build_logql(workflow_id: str, trace_id: str | None) -> str:
     rather than scoped to a particular ``service`` label so the
     response folds in lines from automation-service,
     automation-worker, agent-runner-worker, and the MCP server in a
-    single round-trip — Property 10 (Requirements 8.1–8.6).
+    single round-trip.
     """
 
     def _escape(value: str) -> str:
@@ -340,8 +336,8 @@ async def workflow_logs(
         max_length=_MAX_TRACE_ID_LEN,
         description=(
             "When supplied, restrict results to log lines carrying the "
-            "matching ``trace_id`` label. Validates Property 10 — same "
-            "trace_id appears across all services for a single request."
+            "matching ``trace_id`` label across all services for a "
+            "single request."
         ),
     ),
     start: str | None = Query(
@@ -365,7 +361,7 @@ async def workflow_logs(
         description=f"Maximum number of log lines (max {_MAX_LOG_LINES}).",
     ),
 ) -> dict[str, Any]:
-    """Return log lines for ``workflow_id`` (Requirement 8.6).
+    """Return log lines for ``workflow_id``.
 
     The endpoint builds a LogQL stream selector ``{workflow_id="..."}``
     (plus an optional ``trace_id="..."`` matcher) and forwards to

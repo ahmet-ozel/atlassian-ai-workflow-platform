@@ -1,8 +1,7 @@
 """Runtime configuration loaded from environment variables.
 
 The wrapper deliberately keeps the surface tiny — every knob maps 1:1 to a
-row in ``platform/docs/env-reference.md`` so the env-coverage property test
-(task 10.6) stays green.
+row in ``platform/docs/env-reference.md`` so env coverage stays green.
 """
 
 from __future__ import annotations

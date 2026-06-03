@@ -1,18 +1,12 @@
-"""Property 4 — Vault write failure leaves no row; rollback failure surfaces 502.
-
-# Feature: llm-provider-management, Property 4: Vault write failure leaves no row; rollback failure still surfaces 502
-
-Validates Requirements 3.5, 3.6 of the ``llm-provider-management``
+"""— Vault write failure leaves no row; rollback failure surfaces 502.
 spec. Two scenarios are parametrised:
-
 * ``rollback_raises=False`` — the Vault write raises; the service
   rolls back cleanly and no row survives.
 * ``rollback_raises=True`` — the Vault write raises AND the asyncpg
   ROLLBACK itself raises; the service still surfaces
   :class:`VaultWriteFailed` (→ 502) and logs
   ``llm_provider_rollback_failed`` at ERROR with the provider_id +
-  exception class on the log record.
-"""
+  exception class on the log record."""
 
 from __future__ import annotations
 

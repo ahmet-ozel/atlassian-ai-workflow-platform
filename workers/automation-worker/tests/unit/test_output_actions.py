@@ -1,7 +1,4 @@
-"""Unit tests for the ``output_actions`` activity (task 4.1).
-
-Validates Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8,
-                        3.9, 3.10, 3.11
+"""Unit tests for the ``output_actions`` activity.
 
 Strategy
 --------
@@ -109,7 +106,7 @@ def _make_batch_input(
 
 
 # ---------------------------------------------------------------------------
-# Tests: Empty/null actions list (Requirement 3.10)
+# Tests: Empty/null actions list
 # ---------------------------------------------------------------------------
 
 
@@ -117,7 +114,7 @@ class TestEmptyActionsList:
     """Empty or null action list completes successfully."""
 
     def test_empty_list_returns_success(self, fake_caller: _FakeMCPCaller) -> None:
-        """Requirement 3.10: empty list → successful completion."""
+        """Empty list → successful completion."""
         inp = _make_batch_input(actions=[])
         result = asyncio.run(execute_output_actions(inp))
 
@@ -128,7 +125,7 @@ class TestEmptyActionsList:
 
 
 # ---------------------------------------------------------------------------
-# Tests: Sequential execution order (Requirement 3.1)
+# Tests: Sequential execution order
 # ---------------------------------------------------------------------------
 
 
@@ -138,7 +135,7 @@ class TestSequentialExecution:
     def test_actions_executed_in_index_order(
         self, fake_caller: _FakeMCPCaller
     ) -> None:
-        """Requirement 3.1: actions executed in index order."""
+        """Actions executed in index order."""
         actions = [
             OutputAction(type=ActionType.JIRA_COMMENT, params={"body": "c2"}, index=2),
             OutputAction(type=ActionType.JIRA_COMMENT, params={"body": "c0"}, index=0),
@@ -159,7 +156,7 @@ class TestSequentialExecution:
     def test_max_20_actions_enforced(
         self, fake_caller: _FakeMCPCaller
     ) -> None:
-        """Requirement 3.1: max 20 actions per batch."""
+        """Max 20 actions per batch."""
         actions = [
             OutputAction(
                 type=ActionType.JIRA_COMMENT,
@@ -180,7 +177,7 @@ class TestSequentialExecution:
 
 
 # ---------------------------------------------------------------------------
-# Tests: Action handlers (Requirements 3.2-3.6)
+# Tests: Action handlers
 # ---------------------------------------------------------------------------
 
 
@@ -190,7 +187,7 @@ class TestActionHandlers:
     def test_jira_comment_calls_jira_add_comment(
         self, fake_caller: _FakeMCPCaller
     ) -> None:
-        """Requirement 3.2: jira_comment → jira_add_comment tool."""
+        """jira_comment → jira_add_comment tool."""
         actions = [
             OutputAction(
                 type=ActionType.JIRA_COMMENT,
@@ -207,7 +204,7 @@ class TestActionHandlers:
     def test_jira_attachment_calls_jira_add_attachment(
         self, fake_caller: _FakeMCPCaller
     ) -> None:
-        """Requirement 3.3: jira_attachment → jira_add_attachment tool."""
+        """jira_attachment → jira_add_attachment tool."""
         actions = [
             OutputAction(
                 type=ActionType.JIRA_ATTACHMENT,
@@ -223,7 +220,7 @@ class TestActionHandlers:
     def test_jira_attachment_with_minio_ref_uses_pipeline_activity(
         self, fake_caller: _FakeMCPCaller
     ) -> None:
-        """Requirement 3.3: when ``bucket``/``key`` are present the
+        """When ``bucket``/``key`` are present the
         attachment action is dispatched to the
         ``upload_artifact_to_jira`` agent-runner activity (MinIO →
         tempfile → Jira). The legacy ``jira_add_attachment`` MCP tool
@@ -262,7 +259,7 @@ class TestActionHandlers:
     def test_bitbucket_pr_calls_bitbucket_create_pr(
         self, fake_caller: _FakeMCPCaller
     ) -> None:
-        """Requirement 3.4: bitbucket_pr → bitbucket_create_pr tool."""
+        """bitbucket_pr → bitbucket_create_pr tool."""
         actions = [
             OutputAction(
                 type=ActionType.BITBUCKET_PR,
@@ -343,7 +340,7 @@ class TestActionHandlers:
     def test_confluence_page_with_page_id_calls_update(
         self, fake_caller: _FakeMCPCaller
     ) -> None:
-        """Requirement 3.5: confluence_page with page_id → update."""
+        """confluence_page with page_id → update."""
         actions = [
             OutputAction(
                 type=ActionType.CONFLUENCE_PAGE,
@@ -359,7 +356,7 @@ class TestActionHandlers:
     def test_confluence_page_without_page_id_calls_create(
         self, fake_caller: _FakeMCPCaller
     ) -> None:
-        """Requirement 3.5: confluence_page without page_id → create."""
+        """confluence_page without page_id → create."""
         actions = [
             OutputAction(
                 type=ActionType.CONFLUENCE_PAGE,
@@ -375,7 +372,7 @@ class TestActionHandlers:
     def test_jira_transition_calls_jira_transition_issue(
         self, fake_caller: _FakeMCPCaller
     ) -> None:
-        """Requirement 3.6: jira_transition → jira_transition_issue tool."""
+        """jira_transition → jira_transition_issue tool."""
         actions = [
             OutputAction(
                 type=ActionType.JIRA_TRANSITION,
@@ -390,7 +387,7 @@ class TestActionHandlers:
 
 
 # ---------------------------------------------------------------------------
-# Tests: Error handling (Requirements 3.7, 3.8)
+# Tests: Error handling
 # ---------------------------------------------------------------------------
 
 
@@ -400,7 +397,7 @@ class TestErrorHandling:
     def test_failed_action_continues_to_next(
         self, fake_caller: _FakeMCPCaller
     ) -> None:
-        """Requirement 3.7: log error, continue to next action."""
+        """Log error, continue to next action."""
         fake_caller.errors["jira_add_comment"] = RuntimeError("API 500")
         fake_caller.responses["bitbucket_create_pr"] = {"id": 42}
 
@@ -434,7 +431,7 @@ class TestErrorHandling:
     def test_failure_summary_posted_to_jira(
         self, fake_caller: _FakeMCPCaller
     ) -> None:
-        """Requirement 3.7: failure list posted as Jira comment."""
+        """Failure list posted as Jira comment."""
         # Make bitbucket_create_pr fail but jira_add_comment succeed
         fake_caller.errors["bitbucket_create_pr"] = RuntimeError("PR error")
 
@@ -459,7 +456,7 @@ class TestErrorHandling:
     def test_timeout_marks_action_as_timeout(
         self, fake_caller: _FakeMCPCaller, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Requirement 3.8: 30s timeout → action marked as timeout."""
+        """30s timeout → action marked as timeout."""
         import automation_worker.activities.output_actions as oa_mod
 
         # Temporarily reduce timeout to 0.5s for fast testing
@@ -481,7 +478,7 @@ class TestErrorHandling:
 
 
 # ---------------------------------------------------------------------------
-# Tests: Audit completeness (Requirement 3.9)
+# Tests: Audit completeness
 # ---------------------------------------------------------------------------
 
 
@@ -491,7 +488,7 @@ class TestAuditCompleteness:
     def test_all_results_have_timestamps(
         self, fake_caller: _FakeMCPCaller
     ) -> None:
-        """Requirement 3.9: each result has a timestamp."""
+        """Each result has a timestamp."""
         fake_caller.errors["bitbucket_create_pr"] = RuntimeError("fail")
 
         actions = [
@@ -517,7 +514,7 @@ class TestAuditCompleteness:
     def test_results_contain_action_type_and_index(
         self, fake_caller: _FakeMCPCaller
     ) -> None:
-        """Requirement 3.9: each result has action_type and index."""
+        """Each result has action_type and index."""
         actions = [
             OutputAction(
                 type=ActionType.JIRA_COMMENT,

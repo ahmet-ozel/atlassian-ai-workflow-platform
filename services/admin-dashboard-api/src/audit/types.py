@@ -1,6 +1,6 @@
-"""Audit search data classes (platform-mimari-ops design §"audit/types.py").
+"""Audit search data classes used by the operations surface.
 
-Mirrors the frozen dataclasses prescribed by design.md so the
+Defines the frozen dataclasses used so the
 ``LokiSearchProxy`` and the :class:`MinIOArchiveIndex` exchange
 strongly-typed values rather than ad-hoc dicts.
 
@@ -55,7 +55,7 @@ class AuditQuery:
 class ArchivedAuditHit:
     """A single archived audit row materialised from MinIO.
 
-    ``archived`` is hard-coded to ``True`` per design §audit/types.py;
+    ``archived`` is hard-coded to ``True`` for archived rows;
     the field is kept for symmetry with future ``archived: False``
     Loki hits in the unified ``AuditResult.loki`` tuple.
     """
@@ -66,16 +66,16 @@ class ArchivedAuditHit:
     summary: str
 
 
-# AuditHit (Loki side) is not part of task 13.4's scope, but the
-# union type is required by ``AuditResult`` per design.md. We define
+# AuditHit (Loki side) is not part of archive index wiring's scope, but the
+# union type is required by ``AuditResult``. We define
 # it here as a structural placeholder so the package is internally
-# consistent; the LokiSearchProxy task (out-of-scope here) will
-# refine it with concrete fields.
+# consistent; the LokiSearchProxy implementation will refine it with concrete
+# fields.
 @dataclass(frozen=True, slots=True)
 class AuditHit:
-    """Loki-side audit hit (placeholder for the LokiSearchProxy task).
+    """Loki-side audit hit (placeholder for LokiSearchProxy results).
 
-    Kept minimal here so the task 13.4 archive_index module compiles
+    Kept minimal here so the archive index wiring archive_index module compiles
     standalone; the full shape lands when the LokiSearchProxy router
     is implemented.
     """

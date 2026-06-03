@@ -1,24 +1,23 @@
 """Platform-completion integration helpers for ``AutomationWorkflow``.
 
-This module ships the four helper coroutines required by
-:doc:`platform-completion task 26.1 <.kiro/specs/platform-completion/tasks.md>`.
-The existing :class:`automation_worker.workflows.automation_workflow.AutomationWorkflow`
+This module ships the four helper coroutines required by:doc:` <`.
+The existing:class:`automation_worker.workflows.automation_workflow.AutomationWorkflow`
 is large and battle-tested — instead of rewriting its body, the
 gateway workflow can call these helpers at the documented hook
 points to wire in the new components shipped by the
-platform-completion spec:
+ spec:
 
-* multi-step orchestrator delegation (R5.1–5.10)
-* pre-workflow repo-field resolution (R9.1–9.5)
-* pre-commit approval gate (R11.1–11.8)
-* post-execution output-action batch (R3.1–3.11)
+* multi-step orchestrator delegation (–5.10)
+* pre-workflow repo-field resolution (–9.5)
+* pre-commit approval gate (–11.8)
+* post-execution output-action batch (–3.11)
 
 Determinism contract
 --------------------
 
 Every helper is **pure orchestration** — its only side effects are
 ``workflow.execute_activity`` and
-``workflow.execute_child_workflow`` calls.  The helpers explicitly
+``workflow.execute_child_workflow`` calls. The helpers explicitly
 do **not**:
 
 * import or call activity callables directly;
@@ -26,12 +25,11 @@ do **not**:
 * perform any direct I/O (HTTP, Postgres, files).
 
 This keeps them safe to call from inside the Temporal workflow
-sandbox — the static AST scanner used by the determinism property
-test treats ``workflow.execute_*`` exactly like the existing
+sandbox — the static AST scanner used by the determinism Invariant test treats ``workflow.execute_*`` exactly like the existing
 ``AutomationWorkflow`` body.
 
 Activity / workflow imports live inside
-``workflow.unsafe.imports_passed_through()`` so the sandbox accepts
+``workflow.unsafe.imports_passed_through`` so the sandbox accepts
 the network-side dataclasses without complaint.
 """
 
@@ -49,7 +47,7 @@ from temporalio.common import RetryPolicy
 # ---------------------------------------------------------------------------
 #
 # The dataclasses below are pulled into the workflow process as plain
-# data carriers. Their modules import :mod:`temporalio.activity` (for
+# data carriers. Their modules import:mod:`temporalio.activity` (for
 # the ``@activity.defn`` decorator on the activity callables) which
 # would otherwise trip the sandbox; the ``imports_passed_through``
 # block is the Temporal-blessed escape hatch for that case.
@@ -81,10 +79,10 @@ with workflow.unsafe.imports_passed_through():
 # Constants
 # ---------------------------------------------------------------------------
 
-#: Activity name string for the output-action executor (R3.1–3.11).
+#: Activity name string for the output-action executor (–3.11).
 _ACT_EXECUTE_OUTPUT_ACTIONS: Final[str] = "execute_output_actions"
 
-#: Activity name string for the repo-field resolver (R9.1–9.5).
+#: Activity name string for the repo-field resolver (–9.5).
 _ACT_RESOLVE_REPO_FIELD: Final[str] = "resolve_repo_field"
 
 #: Default timeout for the output-action batch — 20 actions × 30 s
@@ -126,7 +124,7 @@ __all__ = (
 
 
 # ---------------------------------------------------------------------------
-# Helper 1 — multi-step delegation (R5.1–5.10)
+# Helper 1 — multi-step delegation (–5.10)
 # ---------------------------------------------------------------------------
 
 
@@ -138,42 +136,41 @@ async def maybe_run_multi_step(
     workflow_id: str,
     output_actions: list[dict[str, Any]] | None = None,
 ) -> bool:
-    """Delegate to :class:`MultiStepWorkflow` when the LLM picks ``multi_step``.
+    """Delegate to:class:`MultiStepWorkflow` when the LLM picks ``multi_step``.
 
-    Validates Requirements **5.1** (2–20 step plan), **5.2** (each
-    step runs as an independent child workflow), **5.7**, **5.8**.
+ (2–20 step plan), **5.2** (each
+ step runs as an independent child workflow), **5.7**, **5.8**.
 
-    The helper inspects ``workflow_type`` and, only when it equals
-    ``"multi_step"``, builds a :class:`MultiStepInput` from ``plan``
-    (a list of dicts shaped like
-    ``{"name", "workflow_type", "input_data", "timeout_seconds",
-    "max_retries"}``) and dispatches the child workflow via
-    ``workflow.execute_child_workflow``. Any other ``workflow_type``
-    is left to the existing dispatch logic and the helper returns
-    ``False``.
+ The helper inspects ``workflow_type`` and, only when it equals
+ ``"multi_step"``, builds a:class:`MultiStepInput` from ``plan``
+ (a list of dicts shaped like
+ ``{"name", "workflow_type", "input_data", "timeout_seconds",
+ "max_retries"}``) and dispatches the child workflow via
+ ``workflow.execute_child_workflow``. Any other ``workflow_type``
+ is left to the existing dispatch logic and the helper returns
+ ``False``.
 
-    The child runs to completion before this helper returns so the
-    parent workflow can observe its outcome and short-circuit the
-    rest of the gateway pipeline (the parent should treat a True
-    return value as "the work is done — do not dispatch further
-    children").
+ The child runs to completion before this helper returns so the
+ parent workflow can observe its outcome and short-circuit the
+ rest of the gateway pipeline (the parent should treat a True
+ return value as "the work is done — do not dispatch further
+ children").
 
-    Returns
-    -------
-    bool
-        ``True`` when the multi-step child workflow was dispatched
-        (and awaited); ``False`` when ``workflow_type`` is anything
-        other than ``"multi_step"``.
+ Returns
+ -------
+ bool
+ ``True`` when the multi-step child workflow was dispatched
+ (and awaited); ``False`` when ``workflow_type`` is anything
+ other than ``"multi_step"``.
 
-    Notes
-    -----
-    Determinism: only ``workflow.execute_child_workflow`` is used for
-    the side effect.  Empty / None ``plan`` values trigger an early
-    ``False`` return without raising — the validator inside
-    :class:`MultiStepWorkflow` would reject the input anyway, so
-    bouncing here keeps the parent's failure handling close to its
-    own decision points.
-    """
+ Notes
+ -----
+ Determinism: only ``workflow.execute_child_workflow`` is used for
+ the side effect. Empty / None ``plan`` values trigger an early
+ ``False`` return without raising — the validator inside:class:`MultiStepWorkflow` would reject the input anyway, so
+ bouncing here keeps the parent's failure handling close to its
+ own decision points.
+ """
 
     if workflow_type != "multi_step":
         return False
@@ -237,7 +234,7 @@ async def maybe_run_multi_step(
 
 
 # ---------------------------------------------------------------------------
-# Helper 2 — approval gate (R11.1–11.8)
+# Helper 2 — approval gate (–11.8)
 # ---------------------------------------------------------------------------
 
 
@@ -247,38 +244,38 @@ async def maybe_run_approval_gate(
     issue_key: str,
     workflow_id: str,
 ) -> bool:
-    """Block on :class:`ApprovalGateWorkflow` when commit paths are protected.
+    """Block on:class:`ApprovalGateWorkflow` when commit paths are protected.
 
-    Validates Requirements **11.1** (regex-based path matching),
-    **11.2** (block + Jira comment), **11.3**/**11.4** (signal-driven
-    approve/reject), **11.6** (authorized approvers only).
+ (regex-based path matching),
+ **11.2** (block + Jira comment), **11.3**/**11.4** (signal-driven
+ approve/reject), **11.6** (authorized approvers only).
 
-    Reads two keys from ``dept_config``:
+ Reads two keys from ``dept_config``:
 
-    * ``approval_required_paths`` — a list of regex patterns. When
-      empty/missing the helper returns ``True`` immediately (the
-      commit is implicitly approved — Requirement 11.7).
-    * ``approvers`` — a list of authorized Jira account IDs.
+ * ``approval_required_paths`` — a list of regex patterns. When
+ empty/missing the helper returns ``True`` immediately (the
+ commit is implicitly approved —).
+ * ``approvers`` — a list of authorized Jira account IDs.
 
-    The pure path-matching logic and signal authorization live
-    inside :class:`ApprovalGateWorkflow`; this helper's job is just
-    to dispatch the child and surface the boolean outcome to the
-    parent gateway. ``True`` means "commit allowed", ``False``
-    means "commit blocked" (rejected or timed out).
+ The pure path-matching logic and signal authorization live
+ inside:class:`ApprovalGateWorkflow`; this helper's job is just
+ to dispatch the child and surface the boolean outcome to the
+ parent gateway. ``True`` means "commit allowed", ``False``
+ means "commit blocked" (rejected or timed out).
 
-    Returns
-    -------
-    bool
-        ``True`` when the approval gate signalled approval *or*
-        when it was skipped because no protected paths were
-        configured; ``False`` when the gate rejected or timed
-        out.
+ Returns
+ -------
+ bool
+ ``True`` when the approval gate signalled approval *or*
+ when it was skipped because no protected paths were
+ configured; ``False`` when the gate rejected or timed
+ out.
 
-    Notes
-    -----
-    Determinism: the helper only awaits a child workflow.  All
-    branching is on dataclass fields, not external state.
-    """
+ Notes
+ -----
+ Determinism: the helper only awaits a child workflow. All
+ branching is on dataclass fields, not external state.
+ """
 
     approval_paths = dept_config.get("approval_required_paths") or []
     if not approval_paths:
@@ -321,7 +318,7 @@ async def maybe_run_approval_gate(
 
 
 # ---------------------------------------------------------------------------
-# Helper 3 — output-action batch (R3.1–3.11)
+# Helper 3 — output-action batch (–3.11)
 # ---------------------------------------------------------------------------
 
 
@@ -333,26 +330,24 @@ async def execute_output_actions_post(
 ) -> dict[str, Any]:
     """Run the LLM-proposed output_actions list via the executor activity.
 
-    Validates Requirements **3.1** (sequential execution), **3.7**
-    (continue on failure), **3.9** (per-action audit record), **3.11**
-    (failure summary).
+ (sequential execution), **3.7**
+ (continue on failure), **3.9** (per-action audit record), **3.11**
+ (failure summary).
 
-    Each action dict is expected to carry at least ``type`` and
-    ``params`` keys; ``index`` is filled in by the helper using the
-    list position so callers can build the actions in plain
-    declaration order.  Action types are coerced into the
-    :class:`db_shared.enums.ActionType` enum — unknown values are
-    skipped with a warning so a single bad action does not block
-    the rest of the batch.
+ Each action dict is expected to carry at least ``type`` and
+ ``params`` keys; ``index`` is filled in by the helper using the
+ list position so callers can build the actions in plain
+ declaration order. Action types are coerced into the:class:`db_shared.enums.ActionType` enum — unknown values are
+ skipped with a warning so a single bad action does not block
+ the rest of the batch.
 
-    Returns
-    -------
-    dict
-        ``{"all_succeeded": bool, "results": [...]}`` — the
-        :class:`ExecutionBatchResult` projected into a plain dict
-        so the caller can round-trip it through Temporal's data
-        converter without coupling to the activity's dataclass.
-    """
+ Returns
+ -------
+ dict
+ ``{"all_succeeded": bool, "results": [...]}`` — the:class:`ExecutionBatchResult` projected into a plain dict
+ so the caller can round-trip it through Temporal's data
+ converter without coupling to the activity's dataclass.
+ """
 
     if not actions:
         return {
@@ -427,7 +422,7 @@ async def execute_output_actions_post(
 
 
 # ---------------------------------------------------------------------------
-# Helper 4 — pre-workflow repo resolution (R9.1–9.5)
+# Helper 4 — pre-workflow repo resolution (–9.5)
 # ---------------------------------------------------------------------------
 
 
@@ -440,24 +435,24 @@ async def resolve_repo_pre_workflow(
 ) -> dict[str, Any]:
     """Resolve the target repo before dispatching the child workflow.
 
-    Validates Requirements **9.1** (allowed-list validation), **9.2**
-    (structured field priority), **9.3** (LLM fallback parsing),
-    **9.4** (rejection on out-of-list values), **9.5** (user-prompt
-    comment).
+ (allowed-list validation), **9.2**
+ (structured field priority), **9.3** (LLM fallback parsing),
+ **9.4** (rejection on out-of-list values), **9.5** (user-prompt
+ comment).
 
-    Reads ``repo_mappings`` and ``department_id`` from
-    ``dept_config``; the activity itself enforces the priority
-    order documented in :mod:`automation_worker.activities.repo_resolver`.
+ Reads ``repo_mappings`` and ``department_id`` from
+ ``dept_config``; the activity itself enforces the priority
+ order documented in:mod:`automation_worker.activities.repo_resolver`.
 
-    Returns
-    -------
-    dict
-        ``{"resolved": bool, "repo_url": str | None, "confidence":
-        float, "needs_user_input": bool, "error": str | None}`` —
-        the :class:`RepoResolveResult` projected into a plain
-        dict so callers can serialize it onto the parent workflow
-        output without coupling to the activity's dataclass.
-    """
+ Returns
+ -------
+ dict
+ ``{"resolved": bool, "repo_url": str | None, "confidence":
+ float, "needs_user_input": bool, "error": str | None}`` —
+ the:class:`RepoResolveResult` projected into a plain
+ dict so callers can serialize it onto the parent workflow
+ output without coupling to the activity's dataclass.
+ """
 
     repo_mappings = list(dept_config.get("repo_mappings") or [])
     dept_id = str(dept_config.get("department_id", ""))

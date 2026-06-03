@@ -1,4 +1,4 @@
-"""SQLAlchemy declarative models for platform-completion tables.
+"""SQLAlchemy declarative models for automation tables.
 
 These models map to the tables created by
 ``infra/postgres/migrations/006_platform_completion_tables.sql`` in the
@@ -8,8 +8,6 @@ gate events, and disk quota warning tables.
 
 All models use the SQLAlchemy 2.0 declarative style with
 :class:`~sqlalchemy.orm.DeclarativeBase` and ``Mapped[]`` annotations.
-
-Requirements: 5.3, 3.9, 14.1, 11.8, 16.3
 """
 
 from __future__ import annotations
@@ -35,7 +33,7 @@ from .enums import ActionStatus, ActionType, ApprovalEventType, StepStatus
 
 
 class Base(DeclarativeBase):
-    """Shared declarative base for all platform-completion models."""
+    """Shared declarative base for all automation models."""
 
     pass
 
@@ -47,7 +45,6 @@ class WorkflowStep(Base):
     Steps transition through: pending → running → completed | failed.
 
     Table: automation.workflow_steps
-    Validates: Requirements 5.3, 5.7
     """
 
     __tablename__ = "workflow_steps"
@@ -98,7 +95,6 @@ class OutputActionLog(Base):
     status, and any error details.
 
     Table: automation.output_action_log
-    Validates: Requirements 3.9
     """
 
     __tablename__ = "output_action_log"
@@ -131,7 +127,6 @@ class SSHHealthcheckLog(Base):
     performed by the Healthcheck_Cron workflow.
 
     Table: automation.ssh_healthcheck_log
-    Validates: Requirements 14.1
     """
 
     __tablename__ = "ssh_healthcheck_log"
@@ -162,7 +157,6 @@ class ApprovalEvent(Base):
     approval is requested, granted, rejected, or times out.
 
     Table: automation.approval_events
-    Validates: Requirements 11.8
     """
 
     __tablename__ = "approval_events"
@@ -196,7 +190,6 @@ class DiskQuotaWarning(Base):
     enforce the 60-minute deduplication window.
 
     Table: automation.disk_quota_warnings
-    Validates: Requirements 16.3
     """
 
     __tablename__ = "disk_quota_warnings"

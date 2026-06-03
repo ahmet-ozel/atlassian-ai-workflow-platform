@@ -13,8 +13,6 @@ This directory holds the bootstrap department roster consumed by
 
 ## Why are all `account_id` values empty?
 
-> **MIMARI.md §2.5.4 item 4 — `auto-fetched on first probe; leave empty initially`**
-
 The Atlassian `accountId` for each bot service is resolved on first contact:
 
 1. Operator commits the department definition with `account_id: ""`.
@@ -25,16 +23,12 @@ The Atlassian `accountId` for each bot service is resolved on first contact:
    (`shared.department_bot_identity`) keyed by `(department_id, service)`.
 4. Subsequent runs read from cache; the JSON file is never rewritten.
 
-This is **Requirement 7.2** of the `multi-service-scaffold` spec and the
-canonical reference is **MIMARI.md §2.5.4 item 4**.
-
 ## Schema notes
 
 - `id` is kebab-case only: `^[a-z][a-z0-9-]{1,30}$` (no underscores).
 - Each `bot` object must contain at least one of `{jira, bitbucket, confluence}`.
-- `BotEntry` accepts either a single `credential_ref` (Vault path,
-  MIMARI §2.5.2) **or** the `email` + `api_token_ref` pair
-  (Requirement 7.5 alternate form).
+- `BotEntry` accepts either a single `credential_ref` (Vault path) **or** the
+  `email` + `api_token_ref` pair.
 - The schema does **not** allow a top-level `_comment` field inside
   `departments.json` itself (`additionalProperties: false` at the root).
   This README is the durable home for that comment so the JSON file
@@ -42,15 +36,12 @@ canonical reference is **MIMARI.md §2.5.4 item 4**.
 
 ## `mode` enum — `active` / `shadow` / `disabled`
 
-> **Reference:** `platform-mimari-foundation` requirements R3.2, R10.10 ve
-> design "Tasarım Kararları" tablosundaki `mode` enum migration kararı.
-
 `Department.mode` üç değerden birini alır:
 
 | Mode | Anlam | Capability gate davranışı | Açık workflow'lar |
 |---|---|---|---|
 | `active` (default) | Normal operasyon. Webhook'lar işlenir, workflow'lar başlatılır, `output_actions` execute edilir. | İzinli (capability'ler yeterliyse). | Çalışmaya devam eder. |
-| `shadow` | Bot plan üretir ancak `output_actions` execute edilmez (dry-run). MIMARI §16.6.49. | İzinli; workflow start edilir fakat side-effect'ler atlanır. | Plan adımları çalışır, execution adımları atlanır. |
+| `shadow` | Bot plan üretir ancak `output_actions` execute edilmez (dry-run). | İzinli; workflow start edilir fakat side-effect'ler atlanır. | Plan adımları çalışır, execution adımları atlanır. |
 | `disabled` | Departman geçici olarak askıya alınmış. | **Reddeder.** Departmana gelen tüm workflow start çağrıları HTTP 202 + `decision: denied` ile döner ve audit'e `dept_disabled` kaydı yazılır. | Çalışan workflow'lar `automation-service` tarafından drain edilir (yeni signal/start gönderilmez); zaten başlamış aktiviteler tamamlanır. |
 
 ### `disabled` modu için geçiş kuralları
@@ -69,7 +60,7 @@ canonical reference is **MIMARI.md §2.5.4 item 4**.
    doğrulaması (probe çalıştırması) önerilir.
 5. **Setup wizard ile ilişki:** `POST /admin/departments/wizard` akışı bir adımdaki
    probe başarısız olursa kaydı `mode=disabled` olarak commit eder veya hiç
-   commit etmez (R5.9). `disabled` durumundan `active`'e geçiş için tüm
+   commit etmez. `disabled` durumundan `active`'e geçiş için tüm
    probe'ların yeşil olması gerekir.
 6. **Decommission:** Tam silme (departmanı kaldırma) için
    `docs/runbooks/dept-decommission.md` runbook'u izlenir; ilk adım her zaman
@@ -81,9 +72,7 @@ canonical reference is **MIMARI.md §2.5.4 item 4**.
 `api_key_ref`, `fallback_api_key_ref`) alanları için schema regex pattern'i
 `^vault:[a-zA-Z0-9/_-]+$`'dir. Bu **mevcut karakter sınıfını** kabul etmeye
 devam eder; yeni-yazılan path'lerin lowercase + kebab-case kullanması bir
-**konvansiyon** (style guide) gereğidir, schema seviyesinde zorlanmaz. Bk.
-`platform-mimari-foundation` design "Tasarım Kararları" tablosu — Vault path
-konvansiyonu satırı.
+**konvansiyon** (style guide) gereğidir, schema seviyesinde zorlanmaz.
 
 ## Validation
 
@@ -94,17 +83,12 @@ python -c "import json,sys; from jsonschema import Draft202012Validator; \
   Draft202012Validator(s).validate(d); print('OK')"
 ```
 
-## Cost & Notification Fields (`platform-mimari-ops`)
+## Cost & Notification Fields
 
-`platform-mimari-ops` spec'i `Department` nesnesine **5 yeni blok** ekler.
-Bunlar ops katmanının (cost tracking + notification + feature flag override)
-schema sözleşmesidir.
+`Department` nesnesi ops katmanı için cost tracking, notification ve feature
+flag override alanları içerir.
 
 ### `budget_caps` (zorunlu)
-
-> **Reference:** `platform-mimari-ops` requirements R5.5; design "departments.json
-> Şema Eklemeleri" bölümü; design Property 7 (cost prediction + budget cap
-> enforcement).
 
 `Department.budget_caps` her departman için **zorunludur** ve dört alt alan
 içerir; tümü USD cinsinden, hepsi `>= 0`:
@@ -129,18 +113,14 @@ büyüklüğüne göre revize eder.
 
 ### `notify_on_success` (opsiyonel, default `false`)
 
-> **Reference:** `platform-mimari-ops` requirements R5.2; MIMARI §16.13 S8.
-
 Bir workflow başarıyla tamamlandığında bildirim gönderilip gönderilmeyeceğini
 kontrol eder. Default `false` çünkü tasarım kararı "success-gated, failure
 mandatory"dir: success bildirimleri gürültü yaratır ve opt-in'dir.
 
 **Önemli:** Failure bildirimleri bu alandan **bağımsızdır** ve dept
-config'den bağımsız olarak Slack'e **her zaman** gönderilir (R5.3, S8).
+config'den bağımsız olarak Slack'e **her zaman** gönderilir.
 
 ### `notify_channels` (opsiyonel, default `[]`)
-
-> **Reference:** `platform-mimari-ops` requirements R5.1.
 
 Bu departman için etkin bildirim kanallarının listesi. Enum:
 `["slack", "email", "teams"]`. `uniqueItems: true`.
@@ -156,10 +136,8 @@ ek kanalları kontrol eder (örn. failure'da email de istiyorsa
 
 ### `slack_webhook_ref` (opsiyonel, regex `^vault:[a-zA-Z0-9/_-]+$`)
 
-> **Reference:** `platform-mimari-ops` requirements R5.1.
-
 Departmanın Slack incoming webhook URL'sini içeren Vault path'i. **Plain-text
-webhook URL JSON'a yazılmaz** (Spec 1 Vault konvansiyonu paritesi).
+webhook URL JSON'a yazılmaz**.
 Örnek: `vault:notifications/payments/slack`.
 
 `null` veya alan yoksa Slack notification akışı sessizce atlanır
@@ -168,16 +146,12 @@ ile yazılır).
 
 ### `notify_email` (opsiyonel, RFC 5322 format)
 
-> **Reference:** `platform-mimari-ops` requirements R5.1.
-
 JSON Schema `format: email` ile doğrulanan RFC 5322 e-posta adresi. SMTP
 bağlantı kimliği ayrı ve global bir Vault path'inden çözülür
 (`vault:notifications/smtp/credential`); bu alan yalnızca alıcı adresidir.
 `null` veya alan yoksa email kanalı atlanır.
 
 ### `feature_flag_overrides` (opsiyonel, default `{}`)
-
-> **Reference:** `platform-mimari-ops` requirements R4.10; MIMARI §16.17 Q8.
 
 Free-form bool map. Anahtar feature flag adı, değer `true` veya `false`.
 Global `feature_flags` tablosundaki default değeri **bu departman için**
@@ -196,38 +170,35 @@ Override öncelik sırası (yüksekten düşüğe):
 3. `feature_flags.default_value` (boot-time fallback)
 
 Toggle aksiyonları admin-dashboard `/feature-flags` panelinde yapıldığında
-audit'e `feature_flag_toggled` event'i ile yazılır (R4.6).
+audit'e `feature_flag_toggled` event'i ile yazılır.
 
-## Migration Notes — `platform-mimari-ops` schema additions
+## Migration Notes
 
-`platform-mimari-ops` spec'i `budget_caps` alanını **zorunlu** yaptığından,
-mevcut `departments.json` fixture'ı (`payment`, `hr`, `legal`) bu spec'in
-1.2 görevi kapsamında varsayılan değerlerle migrate edilmiştir. Üretimde
+`budget_caps` alanı **zorunlu** olduğundan mevcut `departments.json` fixture'ı
+(`payment`, `hr`, `legal`) varsayılan değerlerle migrate edilmiştir. Üretimde
 çalışan bir kurulumdan upgrade için:
 
 1. Operatör `departments.json` dosyasına her dept için `budget_caps` bloğunu
    üstte tanımlanan 4 alanla doldurur (≥0, USD).
 2. Boot anında schema validator yeni alanı arar; eksiklik servis başlangıcını
-   `additionalProperties: false` paritesiyle başarısız sayar (Foundation
-   R3.1 paritesi).
+   `additionalProperties: false` paritesiyle başarısız sayar.
 3. Diğer dört alan (`notify_on_success`, `notify_channels`,
    `slack_webhook_ref`, `notify_email`, `feature_flag_overrides`) opsiyoneldir;
    eksiklerse default davranışlar (`false`, `[]`, `null`, `{}`) uygulanır.
 
-## DEPRECATED — `ssh_workspace_quota_mb` (single-runner canonical contract — G1)
+## DEPRECATED — `ssh_workspace_quota_mb`
 
-> **Status:** Deprecated since the single-runner canonical contract (G1)
-> was adopted. The field is preserved in the schema for backwards
+> **Status:** Deprecated since the single-runner model was adopted. The field is preserved in the schema for backwards
 > compatibility with existing `departments.json` files but the runtime
 > **ignores** it. It will be removed in a future release.
 
 ### Why
 
 The platform runs **exactly one** SSH runner host shared by all
-departments under `RUNNER_BASE_PATH` (G1). Per-department disk quotas
+departments under `RUNNER_BASE_PATH`. Per-department disk quotas
 no longer make sense in this topology — the disk is a single shared
 resource, not partitioned per dept. Disk pressure is now managed
-globally by `WorkspaceCleanupSchedulerWorkflow` (G2) using two
+globally by `WorkspaceCleanupSchedulerWorkflow` using two
 host-wide thresholds:
 
 | Env | Default | Behaviour |

@@ -1,6 +1,4 @@
-"""Property 3 — shared singletons are shared across containers.
-
-# Feature: automation-service-wiring, Property 3: Singletons shared
+"""Shared singletons are shared across containers.
 
 For any successful run of the lifespan startup phase, the asyncpg
 pool, Vault client and AuditLogger instances reachable through every
@@ -8,8 +6,6 @@ pool, Vault client and AuditLogger instances reachable through every
 is the same Python object (``is``-identity) as the one stashed on
 ``app.state``. Every container that holds a ``connection_factory``
 callable derives that factory from the same pool.
-
-Validates Requirement 3.10 of the ``automation-service-wiring`` spec.
 """
 
 from __future__ import annotations

@@ -1,6 +1,4 @@
-"""``HealthcheckAggregator`` cascade router (`platform-mimari-ops` task 11.5).
-
-**Validates: Requirements 4.9, 4.10**
+"""``HealthcheckAggregator`` cascade router.
 
 Aggregates the per-service healthcheck status into a single
 ``CascadeReport`` consumed by the admin-dashboard ``/services``
@@ -12,8 +10,7 @@ panel. The cascade rule:
 * ``unknown`` (probe failed / timed out) propagates the same as
   ``unhealthy``.
 
-The aggregator does not write audit events itself — those live in
-the foundation health probe (`Spec 1 R12` parity). It only computes
+The aggregator does not write audit events itself. It only computes
 the cascade and returns the latest snapshot.
 """
 

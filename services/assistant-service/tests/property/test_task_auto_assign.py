@@ -1,10 +1,9 @@
 """Property test: Task auto-assign bot resolution.
 
-Feature: platform-completion, Property 27: For any task creation with "Bot'a ata"
+For any task creation with "Bot'a ata"
 active, the Streamlit_Assistant SHALL resolve the bot account_id from the
 selected department's configuration.
 
-Validates: Requirements 13.2
 """
 from __future__ import annotations
 import sys

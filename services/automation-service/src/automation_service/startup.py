@@ -6,23 +6,23 @@ exit before any HTTP request lands. Each function is async so it can
 be awaited from the FastAPI lifespan handler with the same DB pool
 the rest of the service uses.
 
-Currently shipped (task 6.2):
+Startup checks:
 
 * :func:`validate_account_id_consistency` — when a department row
   carries both a manually configured ``account_id`` and an
   ``auto_fetched_account_id`` returned by the read probe, the two
   values MUST be byte-equal. Otherwise the service refuses to start
   and the error message lists **both** values verbatim so an
-  operator can diagnose without consulting logs (R5.7, R5.8).
+  operator can diagnose without consulting logs.
 
-Added by platform-real-usage-gaps task 6.1:
+Best-effort enrichment:
 
 * :func:`auto_probe_missing_account_ids` — best-effort startup hook
   that queries ``automation.department_bots`` for rows where
   ``account_id IS NULL OR account_id = ''``, runs an Atlassian read
   probe for each, and upserts the resolved ``account_id`` back into
   the table. Failures are audited but never block service startup
-  (R6.1, R6.4, R6.5).
+  without blocking startup.
 
 The module exposes a small dataclass
 :class:`AccountIdMismatch` so callers can render structured errors
@@ -60,7 +60,7 @@ _LOG = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# Process-level probe cache (R6.4) — 5 minute TTL
+# Process-level probe cache — 5 minute TTL
 # ---------------------------------------------------------------------------
 
 _PROBE_CACHE_TTL_SECONDS: int = 300  # 5 minutes
@@ -177,7 +177,7 @@ def compare_account_ids(
 ) -> bool:
     """Return ``True`` when the two values are *consistent*.
 
-    Consistency rules (R5.7):
+    Consistency rules:
 
     * Both ``None`` → consistent (no validation possible yet).
     * Either side ``None`` → consistent (only one source has spoken
@@ -273,7 +273,7 @@ async def validate_account_id_consistency(
     """Walk every dept_bot row; raise on any manual/auto-fetched mismatch.
 
     Called by the FastAPI lifespan handler before the service starts
-    accepting traffic (R5.7 / R5.8). On the first inconsistency the
+    accepting traffic. On the first inconsistency the
     helper raises :class:`AccountIdMismatchError` whose message lists
     every offending row — supplying both values verbatim so the
     operator can diff without round-tripping logs.
@@ -299,7 +299,7 @@ async def validate_account_id_consistency(
 
 
 # ---------------------------------------------------------------------------
-# Auto-probe: fill missing bot account_ids at startup (R6.1, R6.4, R6.5)
+# Auto-probe: fill missing bot account_ids at startup
 # ---------------------------------------------------------------------------
 
 
@@ -428,9 +428,9 @@ async def auto_probe_missing_account_ids(
        ``bot_account_id_probe_failed`` audit.
 
     This function **never raises** — all errors are caught and logged.
-    Service startup is never blocked by probe failures (R6.1 best-effort).
+    Service startup is never blocked by probe failures.
 
-    .. important:: **Invariant (foundation R7.2 — idempotent config)**
+    .. important:: **Invariant: idempotent config**
 
        Probe results are written **only** to the
        ``automation.department_bot_identity`` Postgres table via the
@@ -471,7 +471,7 @@ async def auto_probe_missing_account_ids(
     )
 
     for row in rows:
-        # Check cache — skip if recently probed (R6.4)
+        # Check cache — skip if recently probed.
         cached = _cache_get(row.dept_id, row.service)
         if cached is not _MISS:
             _LOG.debug(

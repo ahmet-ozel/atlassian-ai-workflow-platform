@@ -350,7 +350,7 @@ $evidence += ""
 
 $localEnvFiles = @(
     (Join-Path $WORKSPACE_ROOT "platform\.env"),
-    (Join-Path $WORKSPACE_ROOT "platform\services\atlassian_unified\.env")
+    (Join-Path $WORKSPACE_ROOT "platform\services\atlassian_mcp_bitbucket\.env")
 )
 
 if ($CredentialSweep) {

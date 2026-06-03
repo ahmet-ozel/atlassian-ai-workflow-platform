@@ -1,8 +1,7 @@
-"""Task 5.3 — "test override wins" per slot (automation-service-wiring).
+"""Test override wins per lifespan slot.
 
 Pins the contract that the production lifespan handler skips populating
-any ``app.state.<slot>`` whose value is already set before startup runs
-(Requirements 7.1, 7.2, 7.3 of the ``automation-service-wiring`` spec).
+any ``app.state.<slot>`` whose value is already set before startup runs.
 Tests that hand-build their own ``*EndpointDeps`` containers MUST continue
 to observe their own sentinels after the lifespan starts.
 
@@ -173,7 +172,7 @@ def _patch_shared_infrastructure(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 # ---------------------------------------------------------------------------
-# The lifespan slot set (mirrors the design's Property 2 enumeration).
+# The lifespan slot set used by override-preservation tests.
 # ---------------------------------------------------------------------------
 
 

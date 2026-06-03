@@ -1,13 +1,12 @@
 # observability
 
-Shared Prometheus metric registry used by every `platform-mimari-ops`
-service and worker (`assistant-service`, `automation-service`,
+Shared Prometheus metric registry used by platform services and workers
+(`assistant-service`, `automation-service`,
 `admin-dashboard-api`, `agent-runner-worker`, `execution-runner-worker`,
 `automation-worker`).
 
 The package owns the **single source of truth** for the metric *names,
-*types* and *label sets* required by `design.md` (`Prometheus Histogram +
-Counter` block) and `tasks.md` task **14.1**, and exposes a single
+*types* and *label sets*, and exposes a single
 `render()` helper that produces the Prometheus exposition format
 consumed by `GET /metrics` endpoints.
 
@@ -85,32 +84,26 @@ process.
 
 ## Metric Catalogue
 
-The names and label sets are dictated by:
-
-* `.kiro/specs/platform-mimari-ops/design.md` — *Prometheus Histogram +
-  Counter* note + `Component → Requirement Eşlemesi` row "Prometheus +
-  Grafana setup → R6.6, R6.7".
-* `.kiro/specs/platform-mimari-ops/requirements.md` — Requirement 6.6
-  (workflow execution duration, MCP latency, LLM token cost,
-  capability_denied, healthcheck status, queue depth).
-* `.kiro/specs/platform-mimari-ops/tasks.md` — task 14.1.
+The names and label sets cover workflow execution duration, MCP latency,
+LLM token cost, capability denials, healthcheck status, queue depth, chat
+traffic, audit pruning, budget enforcement, and notification dispatch.
 
 | Metric | Type | Labels | Notes |
 | --- | --- | --- | --- |
 | `workflow_execution_duration_seconds` | Histogram | `workflow_type`, `dept_id`, `result` | Buckets exposed as `_bucket`/`_sum`/`_count` by `prometheus_client`. |
 | `mcp_latency_seconds` | Histogram | `tool`, `result` | One observation per MCP tool invocation. |
-| `llm_token_cost_usd_total` | Counter | `dept_id`, `model`, `provider`, `cost_tag` | Increment with `cost_usd` per LLM activity (R5.4). `cost_tag ∈ {production, sandbox, probe}`. |
+| `llm_token_cost_usd_total` | Counter | `dept_id`, `model`, `provider`, `cost_tag` | Increment with `cost_usd` per LLM activity. `cost_tag ∈ {production, sandbox, probe}`. |
 | `cost_usd_total` | Counter | `dept_id`, `model` | Convenience aggregate — same activity may also bump `llm_token_cost_usd_total`; this metric drops the provider/tag dimensions for the dept-by-model dashboard. |
-| `capability_denied_total` | Counter | `dept_id`, `workflow_type` | Spec 1 parity (foundation R7) — extended to ops scope. |
+| `capability_denied_total` | Counter | `dept_id`, `workflow_type` | Tracks capability gate denials across operational workflows. |
 | `healthcheck_status` | Gauge | `service` | `1` healthy, `0` unhealthy, `0.5` degraded. |
 | `queue_depth` | Gauge | `dept_id`, `workflow_type` | Pending work in the per-dept Temporal task queue. |
-| `chat_pii_matches_total` | Counter | `pii_kind` | One increment per `PiiMatch` reported by `pii_shared.mask` (R1.5). |
-| `chat_messages_total` | Counter | `dept_id`, `result` | One per `POST /api/chat/stream` request (R1.1, R1.8). `result ∈ {ok, redirect_to_task_creator, rate_limit_exhausted, token_cap_exceeded, error}`. |
-| `llm_provider_fallback_total` | Counter | `primary`, `fallback`, `reason` | Bumped when `LlmOrchestrator` switches to the fallback provider (R1.10). |
-| `audit_prune_archived_rows_total` | Counter | *(none)* | Cumulative rows moved to MinIO by `AuditPruneWorkflow` (R6.3). |
-| `audit_prune_failed_total` | Counter | *(none)* | Cumulative `AuditPruneWorkflow` failures — drives admin Slack alarm (R6.4). |
-| `budget_exceeded_total` | Counter | `dept_id`, `scope` | Bumped by `BudgetCapPolicy.enforce` on deny (R5.5). `scope ∈ {dept_weekly, user_weekly, dept_monthly, user_monthly}`. |
-| `notification_dispatch_total` | Counter | `channel`, `kind`, `result` | One per `NotificationService.send(...)` outcome (R5.1, R5.2, R5.3). `result ∈ {sent, failed, deduped}`. |
+| `chat_pii_matches_total` | Counter | `pii_kind` | One increment per `PiiMatch` reported by `pii_shared.mask`. |
+| `chat_messages_total` | Counter | `dept_id`, `result` | One per `POST /api/chat/stream` request. `result ∈ {ok, redirect_to_task_creator, rate_limit_exhausted, token_cap_exceeded, error}`. |
+| `llm_provider_fallback_total` | Counter | `primary`, `fallback`, `reason` | Bumped when `LlmOrchestrator` switches to the fallback provider. |
+| `audit_prune_archived_rows_total` | Counter | *(none)* | Cumulative rows moved to MinIO by `AuditPruneWorkflow`. |
+| `audit_prune_failed_total` | Counter | *(none)* | Cumulative `AuditPruneWorkflow` failures — drives admin Slack alarm. |
+| `budget_exceeded_total` | Counter | `dept_id`, `scope` | Bumped by `BudgetCapPolicy.enforce` on deny. `scope ∈ {dept_weekly, user_weekly, dept_monthly, user_monthly}`. |
+| `notification_dispatch_total` | Counter | `channel`, `kind`, `result` | One per `NotificationService.send(...)` outcome. `result ∈ {sent, failed, deduped}`. |
 
 ## Determinism guarantee
 

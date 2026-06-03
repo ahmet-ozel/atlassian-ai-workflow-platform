@@ -1,10 +1,4 @@
-"""Property tests for runner assignment audit completeness (Property 8).
-
-# Feature: platform-quick-fixes, Property 8: Runner Assignment Audit Completeness
-
-**Validates: Requirements 4.15, 4.16**
-
-Property 8 — Runner Assignment Audit Completeness
+"""Property-based tests for runner assignment audit completeness.
 --------------------------------------------------
 
 *For any* runner assignment addition or removal, the system SHALL write
@@ -199,7 +193,7 @@ async def select_runner_with_audit(
     # Determine selection reason
     selection_reason = "least_busy" if len(candidates) > 1 else "only_one"
 
-    # Emit audit event (R4.16)
+# Emit audit event
     from audit_logger import AuditEvent
 
     now = datetime.now(timezone.utc)
@@ -325,14 +319,13 @@ def _runner_candidates_strategy(draw: st.DrawFn) -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
-# Property 8 (a) — Assignment audit event count invariant
+# Assignment audit event count invariant
 # ---------------------------------------------------------------------------
 
 
 class TestAssignmentAuditCompleteness:
     """Each assignment add/remove produces exactly one audit event.
 
-    **Validates: Requirements 4.15**
     """
 
     @settings(
@@ -344,9 +337,7 @@ class TestAssignmentAuditCompleteness:
     def test_exactly_one_audit_event_per_assignment_change(
         self, scenario: dict[str, Any]
     ) -> None:
-        """**Validates: Requirements 4.15**
-
-        For any set of current and desired runner assignments, the
+        """For any set of current and desired runner assignments, the
         reconciliation logic emits exactly one ``dept_ssh_runner_assigned``
         event per added runner and exactly one
         ``dept_ssh_runner_unassigned`` event per removed runner.
@@ -403,9 +394,7 @@ class TestAssignmentAuditCompleteness:
     def test_assigned_events_contain_correct_runner_ids(
         self, scenario: dict[str, Any]
     ) -> None:
-        """**Validates: Requirements 4.15**
-
-        Each ``dept_ssh_runner_assigned`` event payload contains the
+        """Each ``dept_ssh_runner_assigned`` event payload contains the
         correct ``dept_id`` and ``runner_id`` for the added runner.
         """
         dept_id = scenario["dept_id"]
@@ -449,9 +438,7 @@ class TestAssignmentAuditCompleteness:
     def test_unassigned_events_contain_correct_runner_ids(
         self, scenario: dict[str, Any]
     ) -> None:
-        """**Validates: Requirements 4.15**
-
-        Each ``dept_ssh_runner_unassigned`` event payload contains the
+        """Each ``dept_ssh_runner_unassigned`` event payload contains the
         correct ``dept_id`` and ``runner_id`` for the removed runner.
         """
         dept_id = scenario["dept_id"]
@@ -495,9 +482,7 @@ class TestAssignmentAuditCompleteness:
     def test_no_audit_events_when_no_changes(
         self, scenario: dict[str, Any]
     ) -> None:
-        """**Validates: Requirements 4.15**
-
-        When current and desired assignments are identical, no audit
+        """When current and desired assignments are identical, no audit
         events are emitted.
         """
         dept_id = scenario["dept_id"]
@@ -522,14 +507,13 @@ class TestAssignmentAuditCompleteness:
 
 
 # ---------------------------------------------------------------------------
-# Property 8 (b) — Runner selection audit required fields
+# Runner selection audit required fields
 # ---------------------------------------------------------------------------
 
 
 class TestRunnerSelectionAuditCompleteness:
     """``ssh_runner_selected`` event contains all required fields.
 
-    **Validates: Requirements 4.16**
     """
 
     @settings(
@@ -541,9 +525,7 @@ class TestRunnerSelectionAuditCompleteness:
     def test_ssh_runner_selected_contains_required_fields(
         self, scenario: dict[str, Any]
     ) -> None:
-        """**Validates: Requirements 4.16**
-
-        For any runner selection, the ``ssh_runner_selected`` audit event
+        """For any runner selection, the ``ssh_runner_selected`` audit event
         SHALL contain ``dept_id``, ``runner_id``, and ``selection_reason``
         in its payload.
         """
@@ -597,9 +579,7 @@ class TestRunnerSelectionAuditCompleteness:
     def test_selection_reason_only_one_when_single_candidate(
         self, scenario: dict[str, Any]
     ) -> None:
-        """**Validates: Requirements 4.16**
-
-        When there is exactly one candidate, ``selection_reason`` SHALL
+        """When there is exactly one candidate, ``selection_reason`` SHALL
         be ``"only_one"``. When there are multiple candidates,
         ``selection_reason`` SHALL be ``"least_busy"``.
         """
@@ -636,9 +616,7 @@ class TestRunnerSelectionAuditCompleteness:
     def test_selected_runner_matches_least_busy_algorithm(
         self, scenario: dict[str, Any]
     ) -> None:
-        """**Validates: Requirements 4.16**
-
-        The ``runner_id`` in the audit event matches the runner selected
+        """The ``runner_id`` in the audit event matches the runner selected
         by the least-busy algorithm (minimum active_count, tiebreak by
         priority).
         """
@@ -679,9 +657,7 @@ class TestRunnerSelectionAuditCompleteness:
     def test_no_audit_event_when_no_candidates(
         self, dept_id: str
     ) -> None:
-        """**Validates: Requirements 4.16**
-
-        When there are no candidates (empty list), no
+        """When there are no candidates (empty list), no
         ``ssh_runner_selected`` event is emitted and the function
         returns None.
         """
@@ -710,9 +686,7 @@ class TestRunnerSelectionAuditCompleteness:
     def test_audit_event_dept_id_matches_request(
         self, scenario: dict[str, Any]
     ) -> None:
-        """**Validates: Requirements 4.16**
-
-        The ``dept_id`` field on the audit event itself (not just in
+        """The ``dept_id`` field on the audit event itself (not just in
         payload) matches the department for which the runner was resolved.
         """
         dept_id = scenario["dept_id"]

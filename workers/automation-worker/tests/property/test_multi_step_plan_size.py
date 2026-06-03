@@ -1,9 +1,8 @@
-"""Property test: Multi-step plan size constraint.
+"""Invariant test: Multi-step plan size constraint.
 
-Feature: platform-completion, Property 11: For any multi_step workflow,
+Feature:,: For any multi_step workflow,
 the number of generated steps SHALL be between 2 and 20 inclusive.
 
-Validates: Requirements 5.1
 """
 from __future__ import annotations
 import sys

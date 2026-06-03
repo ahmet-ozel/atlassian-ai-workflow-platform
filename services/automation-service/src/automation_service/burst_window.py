@@ -1,8 +1,7 @@
-"""Comment-burst debounce window — task 4.4 of ``platform-mimari-workflows``.
+"""Comment-burst debounce window.
 
 This module provides the ``BurstWindow`` class — the final stage of
-the webhook filter chain mandated by Requirement 4.7 and the design
-document's "Webhook Filter Chain" section. The window collapses
+the webhook filter chain. The window collapses
 consecutive ``WebhookEvent`` deliveries that target the same Jira
 ``issue_key`` within a 3-second wall-clock window into a single
 dispatched signal; subsequent deliveries inside the open window are
@@ -18,8 +17,8 @@ This stage is intentionally **NOT replay-safe**. Every other stage in
 :class:`~automation_service.webhook_filters.FilterDecision`); the
 burst debouncer is the deliberate exception because it must observe
 wall-clock timing across independent webhook deliveries that arrive
-out of order on different threads / event loops. The design document
-therefore confines this stage to the **webhook HTTP handler scope**
+out of order on different threads / event loops. This confines the
+stage to the **webhook HTTP handler scope**
 (the ``automation-service`` FastAPI layer) — it must **never** be
 invoked from inside a Temporal workflow body:
 
@@ -68,7 +67,7 @@ The window stores its state in a plain ``dict`` and is correct for a
 — multiple replicas behind a load balancer — would race because each
 replica owns an independent buffer. The design earmarks Postgres
 advisory locks (or Redis) as the cross-process backend; that wiring
-is out of scope for task 4.4 and is tracked separately. Until then,
+is tracked separately. Until then,
 the deployment topology must ensure webhook deliveries for the same
 issue land on the same replica (typical Atlassian Connect / app
 sticky-session arrangement already provides this).
@@ -112,8 +111,7 @@ __all__ = [
 # Window threshold
 # ---------------------------------------------------------------------------
 
-#: Comment-burst debounce window in seconds — Requirement 4.7 mandates
-#: 3 seconds. Stored as a float so :meth:`BurstWindow.register` can
+#: Comment-burst debounce window in seconds. Stored as a float so :meth:`BurstWindow.register` can
 #: compare against ``time.monotonic()`` deltas directly without a
 #: ``timedelta`` round trip.
 BURST_WINDOW_SECONDS: Final[float] = 3.0
@@ -185,7 +183,7 @@ class _WindowBuffer:
 
 
 class BurstWindow:
-    """In-memory 3-second debounce coordinator (Requirement 4.7).
+    """In-memory 3-second debounce coordinator.
 
     The coordinator is deliberately simple: it owns a plain ``dict``
     keyed by ``issue_key`` and exposes two synchronous methods,
@@ -201,7 +199,7 @@ class BurstWindow:
     A built-in ``loop.call_later`` timer would tie the window's
     lifecycle to a specific asyncio event loop. The chain may run
     inside FastAPI (async) **or** inside a synchronous test harness
-    (the property tests in this spec); both call sites need to
+    (property tests); both call sites need to
     observe the same window semantics. By exposing :meth:`register`
     and :meth:`flush_window` as pure synchronous methods that take
     ``now`` explicitly, the window stays trivial to test with
@@ -240,7 +238,7 @@ class BurstWindow:
             :data:`BURST_WINDOW_SECONDS` (3.0). Tests may override
             with smaller values to keep test runtimes short, but
             production callers should leave this at the default so
-            the behaviour matches Requirement 4.7.
+            the debounce behaviour stays consistent.
         """
 
         if window_seconds < 0:

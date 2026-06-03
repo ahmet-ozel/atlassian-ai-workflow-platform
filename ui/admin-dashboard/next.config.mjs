@@ -1,9 +1,9 @@
-// Minimal Next.js 14 config for the admin-dashboard scaffold.
+// Minimal Next.js 14 config for the admin dashboard.
 // See: https://nextjs.org/docs/app/api-reference/next-config-js
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // production-hardening Requirement 13.5 — security headers applied to
+  // Security headers applied to
   // every response served by the Next.js server (XSS, clickjacking,
   // MIME-sniffing mitigation).
   async headers() {

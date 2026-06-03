@@ -5,16 +5,16 @@ build-backend = "hatchling.build"
 [project]
 name = "temporal-shared"
 version = "0.0.0"
-description = "Shared Temporal capability dictionary and helpers for the multi-service scaffold (mirrors MIMARI §2.5.3)."
+description = "Shared Temporal capability dictionary and helpers for platform services and workers."
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 license = { text = "Proprietary" }
 authors = [
-    { name = "Multi-Service Scaffold" },
+    { name = "Platform" },
 ]
 dependencies = [
     "temporalio>=1.7,<2",
-    # ``temporal_shared.pdf_render`` (task 8.3): renders Jinja2 HTML
+    # ``temporal_shared.pdf_render`` renders Jinja2 HTML
     # templates to PDF bytes for the ``jira_attachment`` output
     # action.  WeasyPrint requires native runtime deps (Pango, Cairo,
     # GLib); the runtime image installs them, the unit test skips

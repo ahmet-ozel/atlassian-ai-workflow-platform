@@ -1,7 +1,7 @@
 -- 006_platform_completion_tables.sql
--- Spec: platform-completion — Task 1.1 (Database Schema)
+-- Platform completion database schema.
 --
--- Adds tables required by the platform completion spec:
+-- Adds tables used by platform completion workflows:
 --   1. automation.workflow_steps — Multi-Step Orchestrator step tracking
 --   2. automation.output_action_log — Output action execution history
 --   3. automation.ssh_healthcheck_log — SSH healthcheck results
@@ -13,8 +13,6 @@
 --
 -- Idempotent — uses IF NOT EXISTS guards so re-running on an already-migrated
 -- database is a no-op.
---
--- Requirements: 5.7, 3.9, 14.1, 12.5, 6.8, 7.4, 11.8, 16.3
 
 -- pgcrypto provides gen_random_uuid(); already created by 10_automation.sql,
 -- but we re-declare for migration self-sufficiency.

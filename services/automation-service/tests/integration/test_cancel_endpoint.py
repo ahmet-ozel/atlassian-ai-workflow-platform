@@ -1,7 +1,5 @@
 """Integration tests for ``POST /api/workflows/{workflow_id}/cancel``.
 
-Validates: Requirement 11.1 (workflows spec, task 13.1).
-
 Exercises the full FastAPI router end-to-end using ``TestClient`` plus
 hand-rolled fakes for every collaborator (OIDC validator, issue
 lookup, Temporal client, audit logger). Two end-to-end paths are

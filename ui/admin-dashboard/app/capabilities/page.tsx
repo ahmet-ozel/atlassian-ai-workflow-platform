@@ -1,8 +1,7 @@
 "use client";
 
 /**
- * Capability matrix page — `platform-gap-fill` task 9.2
- * (Requirement 10.6).
+ * Capability matrix page.
  *
  * Renders the dept × service connectivity grid for every department.
  * Cells are colour-coded:

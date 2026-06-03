@@ -1,14 +1,9 @@
-"""Property 7 — lifespan handler is registered on the FastAPI app.
-
-# Feature: automation-service-wiring, Property 7: Lifespan registered
+"""Lifespan handler is registered on the FastAPI app.
 
 For every :class:`Settings` instance produced by the strategy,
 ``create_app(settings).router.lifespan_context is not None`` and the
 underlying callable's ``__qualname__`` resolves to the production
 ``lifespan`` symbol in :mod:`automation_service.app`.
-
-Validates Requirements 1.1, 1.2 and 1.3 of the
-``automation-service-wiring`` spec.
 """
 
 from __future__ import annotations

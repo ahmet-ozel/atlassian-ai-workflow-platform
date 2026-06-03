@@ -1,9 +1,9 @@
 """``POST /admin/vault/init`` — Vault production initialization endpoint.
 
-This router exposes the Vault operator init flow described in
-Requirement 7. The endpoint executes ``vault operator init`` with
-5 key shares and 3 threshold, returning the unseal keys and root
-token for one-time display by the Setup Wizard UI.
+This router exposes the Vault operator init flow. The endpoint
+executes ``vault operator init`` with 5 key shares and 3 threshold,
+returning the unseal keys and root token for one-time display by
+the Setup Wizard UI.
 
 Flow:
 1. Check if Vault is already initialized via ``/v1/sys/init``.
@@ -18,8 +18,6 @@ Security considerations:
   possession and (for the root token) in Vault's secret engine.
 - This endpoint should be protected by admin authentication in
   production.
-
-Requirements: 7.1, 7.3, 7.6
 """
 
 from __future__ import annotations
@@ -149,7 +147,6 @@ async def vault_init(
     After initialization, the root token is written to Vault's own
     secret engine for safekeeping.
 
-    **Validates: Requirements 7.1, 7.3, 7.6**
     """
 
     if body is None:
@@ -168,7 +165,7 @@ async def vault_init(
     vault_addr = _get_vault_addr(request)
     http_client = _get_http_client(request)
 
-    # ---- 1. Check if Vault is already initialized (Requirement 7.6) ----
+    # ---- 1. Check if Vault is already initialized ---------------------
     try:
         init_status_resp = await http_client.get(
             f"{vault_addr}/v1/sys/init",
@@ -204,7 +201,7 @@ async def vault_init(
             detail={"error": "vault_already_initialized"},
         )
 
-    # ---- 2. Initialize Vault (Requirement 7.1) ----
+    # ---- 2. Initialize Vault -----------------------------------------
     # Execute vault operator init via the HTTP API with 5 key shares
     # and 3 threshold (configurable via request body).
     init_payload = {
@@ -263,7 +260,7 @@ async def vault_init(
         body.secret_threshold,
     )
 
-    # ---- 3. Write root token to Vault's secret engine (Requirement 7.3) ----
+    # ---- 3. Write root token to Vault's secret engine -----------------
     # After init, we use the new root token to authenticate and store
     # the root token in Vault's own KV-v2 secret engine for safekeeping.
     try:

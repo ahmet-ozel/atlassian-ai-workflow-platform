@@ -1,11 +1,6 @@
-"""Property tests for credential masking in logs.
+"""Credential masking in logs.
 
-**Property 3: Credential masking in logs**
-
-**Validates: Requirements 2.7**
-
-Per ``.kiro/specs/platform-completion/design.md`` §"Property 3", for any
-credential value retrieved from Vault, it SHALL never appear as plain text
+For any credential value retrieved from Vault, it never appears as plain text
 in any log output produced by the Credential_Injector — only masked as "***".
 
 This property test uses Hypothesis to generate random credential strings and
@@ -44,18 +39,15 @@ from activities.credential_injector import (  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
-# Property 3: Credential masking in logs
+# Credential masking in logs
 # ---------------------------------------------------------------------------
 
 
 class TestCredentialMaskingProperty:
-    """Property-based tests for credential masking in log output.
+    """Generated-input tests for credential masking in log output.
 
-    **Validates: Requirements 2.7**
-
-    THE Credential_Injector SHALL credential bilgilerini hiçbir log çıktısında
-    düz metin olarak göstermemelidir; credential değerleri loglarda maskelenmiş
-    ("***") olarak görünmelidir.
+    The Credential_Injector must not show credential values as plain text in
+    log output; credential values should appear masked as "***".
     """
 
     @given(credential=st.text(min_size=1, max_size=100))
@@ -67,9 +59,7 @@ class TestCredentialMaskingProperty:
         self, credential: str
     ) -> None:
         """For any credential string added to the masking filter, the
-        credential SHALL NOT appear in plain text in the filtered log record.
-
-        **Validates: Requirements 2.7**
+        credential does not appear in plain text in the filtered log record.
         """
         # Set up the masking filter with the credential
         masking_filter = CredentialMaskingFilter()
@@ -108,9 +98,7 @@ class TestCredentialMaskingProperty:
         self, credential: str
     ) -> None:
         """For any credential string in a log message, after filtering,
-        the mask placeholder SHALL be present where the credential was.
-
-        **Validates: Requirements 2.7**
+        the mask placeholder is present where the credential was.
         """
         masking_filter = CredentialMaskingFilter()
         masking_filter.add_sensitive(credential)
@@ -144,11 +132,7 @@ class TestCredentialMaskingProperty:
     def test_credential_masked_even_with_multiple_occurrences(
         self, credential: str
     ) -> None:
-        """If a credential appears multiple times in a log message, ALL
-        occurrences SHALL be masked.
-
-        **Validates: Requirements 2.7**
-        """
+        """If a credential appears multiple times, all occurrences are masked."""
         masking_filter = CredentialMaskingFilter()
         masking_filter.add_sensitive(credential)
 
@@ -179,10 +163,8 @@ class TestCredentialMaskingProperty:
     def test_mask_credential_value_never_returns_original(
         self, credential: str
     ) -> None:
-        """The mask_credential_value function SHALL never return the
+        """The mask_credential_value function never returns the
         original credential value for strings of length >= 3.
-
-        **Validates: Requirements 2.7**
         """
         masked = mask_credential_value(credential)
 
@@ -199,10 +181,8 @@ class TestCredentialMaskingProperty:
     def test_mask_credential_value_contains_mask_placeholder(
         self, credential: str
     ) -> None:
-        """The mask_credential_value function SHALL always include the
+        """The mask_credential_value function always includes the
         CREDENTIAL_MASK placeholder in its output.
-
-        **Validates: Requirements 2.7**
         """
         masked = mask_credential_value(credential)
 

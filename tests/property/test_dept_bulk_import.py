@@ -1,21 +1,19 @@
-"""Property test 12 — Dept Bulk Import Atomicity.
+"""Dept bulk import atomicity.
 
-Spec: ``platform-real-usage-gaps`` — Property 12.
 
-**Validates: Requirements 11.2, 11.3, 11.4, 11.8**
 
 Background
 ----------
 
 The bulk import service (``dept_bulk_import_service.py``) orchestrates
-importing multiple departments from a single JSON file upload.  It
-reuses the foundation R3.6 staging pattern:
+importing multiple departments from a single JSON file upload. It
+reuses the foundation staging pattern:
 
-    For each department in the uploaded file:
-    1. Write credentials to staging Vault path.
-    2. Run connectivity probe against staged credentials.
-    3. On success: promote to final Vault path + DB commit.
-    4. On failure: skip department, clean up staging, report in result.
+ For each department in the uploaded file:
+ 1. Write credentials to staging Vault path.
+ 2. Run connectivity probe against staged credentials.
+ 3. On success: promote to final Vault path + DB commit.
+ 4. On failure: skip department, clean up staging, report in result.
 
 The ``dry_run=True`` mode validates the schema and simulates probes
 without writing any state (Vault or DB).
@@ -24,14 +22,14 @@ Strategy
 --------
 
 We use Hypothesis to generate random department JSON payloads (1-20
-departments) with varying probe outcomes.  Fake implementations of
+departments) with varying probe outcomes. Fake implementations of
 VaultClient, AtlassianProbeClient, AsyncConnection, and AuditLogger
 are injected to verify:
 
 (a) Schema-invalid payloads raise SchemaValidationError (→ HTTP 422).
 (b) Departments whose probe fails are skipped; successful ones commit.
 (c) Each department is processed atomically — failure of one does not
-    affect others.
+ affect others.
 (d) dry_run=True never writes any state (Vault or DB).
 """
 
@@ -179,8 +177,8 @@ class FakeAsyncConnection:
 class FakeProbeClient:
     """Fake Atlassian probe client with configurable per-dept outcomes.
 
-    The ``fail_for`` set contains dept_ids whose probes should fail.
-    """
+ The ``fail_for`` set contains dept_ids whose probes should fail.
+ """
 
     def __init__(
         self,
@@ -257,9 +255,9 @@ class FakeAuditLogger:
 class _TestableBulkImportService(BulkImportService):
     """Subclass that overrides probe execution with fake results.
 
-    This allows us to control probe outcomes per-department without
-    needing real Atlassian API access.
-    """
+ This allows us to control probe outcomes per-department without
+ needing real Atlassian API access.
+ """
 
     __test__ = False  # Prevent pytest from collecting this class
 
@@ -509,17 +507,15 @@ def _make_service(
 
 
 # ---------------------------------------------------------------------------
-# Property 12a: Schema-invalid payloads → SchemaValidationError (HTTP 422)
+# Schema-invalid payloads → SchemaValidationError (HTTP 422)
 # ---------------------------------------------------------------------------
 
 
 class TestSchemaInvalidReturns422:
-    """**Validates: Requirement 11.2**
-
-    When the uploaded JSON fails ``departments.schema.json`` validation,
-    the service raises ``SchemaValidationError`` which the router maps
-    to HTTP 422.
-    """
+    """When the uploaded JSON fails ``departments.schema.json`` validation,
+ the service raises ``SchemaValidationError`` which the router maps
+ to HTTP 422.
+ """
 
     @settings(
         max_examples=50,
@@ -530,7 +526,7 @@ class TestSchemaInvalidReturns422:
     def test_invalid_schema_raises_validation_error(
         self, payload: dict[str, Any]
     ) -> None:
-        """R11.2: Schema-invalid JSON raises SchemaValidationError."""
+        """: Schema-invalid JSON raises SchemaValidationError."""
         service, vault, conn, audit = _make_service()
 
         with pytest.raises(SchemaValidationError) as exc_info:
@@ -551,7 +547,7 @@ class TestSchemaInvalidReturns422:
         assert len(conn.executions) == 0
 
     def test_malformed_json_raises_validation_error(self) -> None:
-        """R11.2: Non-JSON content raises SchemaValidationError."""
+        """: Non-JSON content raises SchemaValidationError."""
         service, vault, conn, audit = _make_service()
 
         with pytest.raises(SchemaValidationError) as exc_info:
@@ -566,7 +562,7 @@ class TestSchemaInvalidReturns422:
         assert "Invalid JSON" in exc_info.value.errors[0]
 
     def test_empty_bytes_raises_validation_error(self) -> None:
-        """R11.2: Empty content raises SchemaValidationError."""
+        """: Empty content raises SchemaValidationError."""
         service, vault, conn, audit = _make_service()
 
         with pytest.raises(SchemaValidationError):
@@ -576,18 +572,16 @@ class TestSchemaInvalidReturns422:
 
 
 # ---------------------------------------------------------------------------
-# Property 12b: Probe-failing departments are skipped
+# Probe-failing departments are skipped
 # ---------------------------------------------------------------------------
 
 
 class TestProbeFailSkipsDept:
-    """**Validates: Requirement 11.3**
-
-    Departments whose connectivity probe fails are skipped (not
-    imported). They appear in the ``failed`` list of the result with
-    an error description. Successfully probed departments are still
-    imported.
-    """
+    """Departments whose connectivity probe fails are skipped (not
+ imported). They appear in the ``failed`` list of the result with
+ an error description. Successfully probed departments are still
+ imported.
+ """
 
     @settings(
         max_examples=50,
@@ -598,8 +592,8 @@ class TestProbeFailSkipsDept:
     def test_probe_fail_skips_dept_imports_others(
         self, payload: dict[str, Any]
     ) -> None:
-        """R11.3: Departments with failed probes are skipped; others
-        are imported successfully."""
+        """: Departments with failed probes are skipped; others
+ are imported successfully."""
         departments = payload["departments"]
         assume(len(departments) >= 2)
 
@@ -639,8 +633,8 @@ class TestProbeFailSkipsDept:
     def test_all_probes_fail_results_in_all_failed(
         self, payload: dict[str, Any]
     ) -> None:
-        """R11.3: When all probes fail, all departments are in the
-        failed list and none are imported."""
+        """: When all probes fail, all departments are in the
+ failed list and none are imported."""
         departments = payload["departments"]
         all_ids = {dept["id"] for dept in departments}
 
@@ -672,8 +666,8 @@ class TestProbeFailSkipsDept:
     def test_probe_exception_treated_as_failure(
         self, payload: dict[str, Any]
     ) -> None:
-        """R11.3: When a probe raises an exception (network error),
-        the department is treated as failed, not as a crash."""
+        """: When a probe raises an exception (network error),
+ the department is treated as failed, not as a crash."""
         departments = payload["departments"]
         raise_ids = {dept["id"] for dept in departments}
 
@@ -692,17 +686,15 @@ class TestProbeFailSkipsDept:
 
 
 # ---------------------------------------------------------------------------
-# Property 12c: Atomic per-department behavior
+# Atomic per-department behavior
 # ---------------------------------------------------------------------------
 
 
 class TestAtomicPerDeptBehavior:
-    """**Validates: Requirement 11.4**
-
-    Each department is processed atomically: failure of one department
-    does not affect the processing of others. Staging paths are cleaned
-    up on failure.
-    """
+    """Each department is processed atomically: failure of one department
+ does not affect the processing of others. Staging paths are cleaned
+ up on failure.
+ """
 
     @settings(
         max_examples=50,
@@ -713,8 +705,8 @@ class TestAtomicPerDeptBehavior:
     def test_failure_of_one_dept_does_not_affect_others(
         self, payload: dict[str, Any]
     ) -> None:
-        """R11.4: When one department fails, others are still
-        processed independently."""
+        """: When one department fails, others are still
+ processed independently."""
         departments = payload["departments"]
         assume(len(departments) >= 2)
 
@@ -747,8 +739,8 @@ class TestAtomicPerDeptBehavior:
     def test_all_probes_succeed_all_imported(
         self, payload: dict[str, Any]
     ) -> None:
-        """R11.4: When all probes succeed, all departments are
-        imported successfully."""
+        """: When all probes succeed, all departments are
+ imported successfully."""
         departments = payload["departments"]
 
         service, vault, conn, audit = _make_service()
@@ -780,8 +772,8 @@ class TestAtomicPerDeptBehavior:
     def test_staging_cleanup_on_probe_failure(
         self, payload: dict[str, Any]
     ) -> None:
-        """R11.4: When a department's probe fails, its staging Vault
-        paths are cleaned up (deleted)."""
+        """: When a department's probe fails, its staging Vault
+ paths are cleaned up (deleted)."""
         departments = payload["departments"]
         assume(len(departments) >= 2)
 
@@ -815,8 +807,8 @@ class TestAtomicPerDeptBehavior:
     def test_result_total_matches_input_count(
         self, payload: dict[str, Any]
     ) -> None:
-        """R11.4: The result's total field always matches the number
-        of departments in the input, regardless of outcomes."""
+        """: The result's total field always matches the number
+ of departments in the input, regardless of outcomes."""
         departments = payload["departments"]
 
         # Random subset fails
@@ -838,17 +830,15 @@ class TestAtomicPerDeptBehavior:
 
 
 # ---------------------------------------------------------------------------
-# Property 12d: dry_run=True never changes state
+# dry_run=True never changes state
 # ---------------------------------------------------------------------------
 
 
 class TestDryRunNoStateChange:
-    """**Validates: Requirement 11.8**
-
-    When ``dry_run=True``, the service validates the schema and
-    simulates probes but NEVER writes to Vault or DB. The result
-    contains validated departments but no imported ones.
-    """
+    """When ``dry_run=True``, the service validates the schema and
+ simulates probes but NEVER writes to Vault or DB. The result
+ contains validated departments but no imported ones.
+ """
 
     @settings(
         max_examples=50,
@@ -859,7 +849,7 @@ class TestDryRunNoStateChange:
     def test_dry_run_no_vault_writes(
         self, payload: dict[str, Any]
     ) -> None:
-        """R11.8: dry_run=True produces zero Vault writes."""
+        """: dry_run=True produces zero Vault writes."""
         service, vault, conn, audit = _make_service()
 
         result = asyncio.run(
@@ -884,7 +874,7 @@ class TestDryRunNoStateChange:
     def test_dry_run_no_db_commits(
         self, payload: dict[str, Any]
     ) -> None:
-        """R11.8: dry_run=True produces zero DB commits."""
+        """: dry_run=True produces zero DB commits."""
         service, vault, conn, audit = _make_service()
 
         result = asyncio.run(
@@ -909,8 +899,8 @@ class TestDryRunNoStateChange:
     def test_dry_run_returns_validated_departments(
         self, payload: dict[str, Any]
     ) -> None:
-        """R11.8: dry_run=True returns validated departments in the
-        validated list (not imported)."""
+        """: dry_run=True returns validated departments in the
+ validated list (not imported)."""
         departments = payload["departments"]
         service, vault, conn, audit = _make_service()
 
@@ -936,8 +926,8 @@ class TestDryRunNoStateChange:
     def test_dry_run_no_vault_deletes(
         self, payload: dict[str, Any]
     ) -> None:
-        """R11.8: dry_run=True produces zero Vault deletes (no staging
-        cleanup needed since nothing was staged)."""
+        """: dry_run=True produces zero Vault deletes (no staging
+ cleanup needed since nothing was staged)."""
         service, vault, conn, audit = _make_service()
 
         asyncio.run(
@@ -959,8 +949,8 @@ class TestDryRunNoStateChange:
     def test_dry_run_still_writes_audit(
         self, payload: dict[str, Any]
     ) -> None:
-        """R11.8: dry_run=True still writes audit events (start +
-        complete) for observability, but no state-changing operations."""
+        """: dry_run=True still writes audit events (start +
+ complete) for observability, but no state-changing operations."""
         service, vault, conn, audit = _make_service()
 
         asyncio.run(

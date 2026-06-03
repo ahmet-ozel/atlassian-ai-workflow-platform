@@ -2,7 +2,7 @@
 
 The end-user Streamlit UI. It provides the per-session **Credentials**,
 **Chat** and **Task Creator** surfaces, backed by `assistant-service` and
-`atlassian-mcp` (see `MIMARI.md` and the platform specs).
+`atlassian-mcp`.
 
 Governance surfaces (Workflows, PO Review, Orphan Branches) intentionally live
 in the **admin dashboard** (admin-gated), not here — every user who opens

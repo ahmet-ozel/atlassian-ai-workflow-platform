@@ -11,7 +11,6 @@
  * these tests validate the component's decision logic by simulating the
  * state machine and verifying expected behavior.
  *
- * Requirements: 7.2, 7.4
  */
 
 import { describe, it } from "node:test";
@@ -75,7 +74,7 @@ class VaultInitStateMachine {
     if (this.phase !== "display") return false;
     if (!this.confirmed) return false;
 
-    // Clear keys from memory (Requirement 7.2)
+    // Clear keys from memory
     this.data = null;
     this.phase = "closed";
     this.confirmed = false;
@@ -176,10 +175,10 @@ describe("VaultInitModal — State Machine Transitions", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Tests: Confirmation Checkbox Requirement (Requirement 7.4)
+// Tests: Confirmation Checkbox
 // ---------------------------------------------------------------------------
 
-describe("VaultInitModal — Confirmation Checkbox (Requirement 7.4)", () => {
+describe("VaultInitModal — Confirmation Checkbox", () => {
   it("close button is disabled when checkbox is unchecked", () => {
     const sm = new VaultInitStateMachine();
     sm.startInit();
@@ -226,10 +225,10 @@ describe("VaultInitModal — Confirmation Checkbox (Requirement 7.4)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Tests: Key Clearing After Modal Close (Requirement 7.2)
+// Tests: Key Clearing After Modal Close
 // ---------------------------------------------------------------------------
 
-describe("VaultInitModal — Key Clearing (Requirement 7.2)", () => {
+describe("VaultInitModal — Key Clearing", () => {
   it("keys are present in display phase", () => {
     const sm = new VaultInitStateMachine();
     sm.startInit();
@@ -379,7 +378,7 @@ describe("VaultInitModal — API URL Construction", () => {
 // Tests: One-Time Display Guarantee
 // ---------------------------------------------------------------------------
 
-describe("VaultInitModal — One-Time Display Guarantee (Requirement 7.2)", () => {
+describe("VaultInitModal — One-Time Display Guarantee", () => {
   it("keys are only available during display phase", () => {
     const sm = new VaultInitStateMachine();
 

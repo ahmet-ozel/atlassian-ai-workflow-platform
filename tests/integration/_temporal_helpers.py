@@ -8,29 +8,27 @@ activities, and start a single workflow run to drive a particular
 state-machine branch.
 
 To keep each scenario file small and focused on its assertions, the
-common scaffolding lives here:
+common support code lives here:
 
 - ``ensure_worker_on_sys_path`` — prepend the ``agent-runner-worker``
-  directory to ``sys.path`` so ``from src.workflows...`` imports resolve
-  without first installing the worker package.
+ directory to ``sys.path`` so ``from src.workflows...`` imports resolve
+ without first installing the worker package.
 - ``StubAgentRunnerWorkflow`` — a tiny ``@workflow.defn(name=...)``
-  child workflow that just returns the string passed in. It satisfies
-  ``AutomationWorkflow.execute_child_workflow("AgentRunnerWorkflow", ...)``
-  for tests that drive the workflow through to completion. The
-  scenarios that fail before the child dispatch step still register it
-  to keep the worker bootstrap uniform.
+ child workflow that just returns the string passed in. It satisfies
+ ``AutomationWorkflow.execute_child_workflow("AgentRunnerWorkflow", ...)``
+ for tests that drive the workflow through to completion. The
+ scenarios that fail before the child dispatch step still register it
+ to keep the worker bootstrap uniform.
 - ``make_default_activities`` — returns the canonical bag of pure
-  no-op acknowledgement activities (jira_add_comment,
-  jira_transition_issue, update_work_item_status, jira_get_issue) plus
-  a ``CallLog`` capturing every invocation by name. Each scenario
-  layers its own ``llm_analyze_task`` mock on top so the LLM behaviour
-  is the only differing element across tests.
+ no-op acknowledgement activities (jira_add_comment,
+ jira_transition_issue, update_work_item_status, jira_get_issue) plus
+ a ``CallLog`` capturing every invocation by name. Each scenario
+ layers its own ``llm_analyze_task`` mock on top so the LLM behaviour
+ is the only differing element across tests.
 - ``CallLog`` — append-only list of ``(activity_name, args)`` tuples
-  the activity wrappers append to. Tests use this to assert e.g. that
-  the timeout-comment was posted exactly once or that the LLM was
-  re-run after a signal.
-
-Validates Requirements: 5.5, 5.6, 5.7, 5.3, 10.4, 11.5 (shared with
+ the activity wrappers append to. Tests use this to assert e.g. that
+ the timeout-comment was posted exactly once or that the LLM was
+ re-run after a signal.
 each scenario file's own requirements list).
 """
 
@@ -57,12 +55,12 @@ _AGENT_RUNNER_WORKER: Path = (
 def ensure_worker_on_sys_path() -> None:
     """Prepend the agent-runner-worker root onto ``sys.path``.
 
-    Mirrors the bootstrap in ``test_workflow_determinism_replay.py``:
-    the worker ships its sources under ``workers/agent-runner-worker/src``
-    and imports them under the ``src.`` namespace, so adding the worker
-    directory (not its ``src/`` child) makes ``from src.workflows...``
-    resolve correctly during the integration suite.
-    """
+ Mirrors the bootstrap in ``test_workflow_determinism_replay.py``:
+ the worker ships its sources under ``workers/agent-runner-worker/src``
+ and imports them under the ``src.`` namespace, so adding the worker
+ directory (not its ``src/`` child) makes ``from src.workflows...``
+ resolve correctly during the integration suite.
+ """
 
     candidate = str(_AGENT_RUNNER_WORKER)
     if _AGENT_RUNNER_WORKER.is_dir() and candidate not in sys.path:
@@ -78,11 +76,11 @@ def ensure_worker_on_sys_path() -> None:
 class CallLog:
     """Append-only invocation log shared across activity stubs.
 
-    Each ``(name, args)`` tuple is appended in call order. Tests inspect
-    ``names_called()`` for ordering / count assertions and
-    ``args_for(name)`` for payload assertions (e.g. the Jira comment
-    body posted on the timeout branch).
-    """
+ Each ``(name, args)`` tuple is appended in call order. Tests inspect
+ ``names_called`` for ordering / count assertions and
+ ``args_for(name)`` for payload assertions (e.g. the Jira comment
+ body posted on the timeout branch).
+ """
 
     calls: list[tuple[str, tuple[Any, ...]]] = field(default_factory=list)
 
@@ -112,15 +110,15 @@ def make_default_activities(
 ) -> list[Any]:
     """Return the canonical no-op activity bag used by every scenario.
 
-    Each activity is decorated with ``@activity.defn(name=...)`` so the
-    Temporal worker registers it under the same name the workflow body
-    passes to ``execute_activity("name", ...)``. Every call appends to
-    ``log`` so tests can assert on the call sequence without re-mocking.
+ Each activity is decorated with ``@activity.defn(name=...)`` so the
+ Temporal worker registers it under the same name the workflow body
+ passes to ``execute_activity("name", ...)``. Every call appends to
+ ``log`` so tests can assert on the call sequence without re-mocking.
 
-    LLM analysis is *not* included here — each scenario binds its own
-    ``llm_analyze_task`` mock to drive the state machine into the
-    branch under test.
-    """
+ LLM analysis is *not* included here — each scenario binds its own
+ ``llm_analyze_task`` mock to drive the state machine into the
+ branch under test.
+ """
 
     from temporalio import activity
 
@@ -173,15 +171,15 @@ def make_default_activities(
 def make_stub_agent_runner_workflow() -> type:
     """Return the module-level ``AgentRunnerWorkflow`` ``@workflow.defn`` stub.
 
-    The stub returns the constant string ``"stub-ok"`` immediately,
-    which is enough to satisfy
-    :class:`AutomationWorkflow`'s ``execute_child_workflow`` call for
-    happy-path scenarios. Temporal forbids ``@workflow.run`` on a
-    *local* class, so the stub is defined at module scope (see
-    :class:`_StubAgentRunnerWorkflow` below); this helper just returns
-    the same class to every caller and keeps test files free of the
-    Temporal decorator import.
-    """
+ The stub returns the constant string ``"stub-ok"`` immediately,
+ which is enough to satisfy
+ :class:`AutomationWorkflow`'s ``execute_child_workflow`` call for
+ happy-path scenarios. Temporal forbids ``@workflow.run`` on a
+ *local* class, so the stub is defined at module scope (see
+ :class:`_StubAgentRunnerWorkflow` below); this helper just returns
+ the same class to every caller and keeps test files free of the
+ Temporal decorator import.
+ """
 
     return _StubAgentRunnerWorkflow
 
@@ -197,15 +195,15 @@ def make_task_analysis(
 ) -> Any:
     """Build a :class:`TaskAnalysis` dataclass instance for LLM-mock returns.
 
-    The real ``llm_analyze_task`` activity returns a ``TaskAnalysis``
-    dataclass; the workflow body relies on attribute access
-    (``analysis.workflow_type``, ``a.type for a in analysis.output_actions``,
-    ...). Our mocks must return the same type so the data converter
-    round-trips identically and the workflow receives objects, not dicts.
+ The real ``llm_analyze_task`` activity returns a ``TaskAnalysis``
+ dataclass; the workflow body relies on attribute access
+ (``analysis.workflow_type``, ``a.type for a in analysis.output_actions``,
+ ...). Our mocks must return the same type so the data converter
+ round-trips identically and the workflow receives objects, not dicts.
 
-    Imports happen lazily so this helper can be called from inside
-    activity functions without polluting module-import time.
-    """
+ Imports happen lazily so this helper can be called from inside
+ activity functions without polluting module-import time.
+ """
 
     from src.prompts.parser import OutputAction, TaskAnalysis
 
@@ -239,13 +237,13 @@ def make_task_analysis(
 class _StubAgentRunnerWorkflow:
     """Module-level stub satisfying ``execute_child_workflow("AgentRunnerWorkflow", ...)``.
 
-    Returns a fixed string so happy-path scenarios can drive
-    :class:`AutomationWorkflow` through to a ``status="completed"``
-    result without needing the real (currently stub) AgentRunner body.
-    The fixed return value is short and human-readable so it shows up
-    legibly in the completion-comment assertion when scenarios choose
-    to inspect it.
-    """
+ Returns a fixed string so happy-path scenarios can drive
+ :class:`AutomationWorkflow` through to a ``status="completed"``
+ result without needing the real (currently stub) AgentRunner body.
+ The fixed return value is short and human-readable so it shows up
+ legibly in the completion-comment assertion when scenarios choose
+ to inspect it.
+ """
 
     @_temporal_workflow.run
     async def run(self, _input: Any) -> str:

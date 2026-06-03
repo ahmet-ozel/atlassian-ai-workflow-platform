@@ -1,4 +1,4 @@
-"""Integration smoke — Chat SSE end-to-end (`platform-mimari-ops` task 16.1).
+"""Integration smoke — Chat SSE end-to-end (`ops work` the implementation).
 
 Requires a running stack (assistant-service + dependencies). Gated
 by ``--run-docker`` so the default fast-lane skips it. Drives a

@@ -1,6 +1,4 @@
-"""Property test 1 — Streamlit chat MUST proxy via assistant-service.
-
-**Validates: Requirements 3.1 (V2)**
+"""Static test for Streamlit chat proxying through assistant-service.
 
 Static AST scan of the Streamlit pages directory. The chat page
 (``pages/1_chat.py``) and the task creator page
@@ -31,7 +29,7 @@ _STREAMLIT_PAGES = (
     / "pages"
 )
 
-_FORBIDDEN_IMPORTS = ("mcp_client", "atlassian_unified")
+_FORBIDDEN_IMPORTS = ("mcp_client", "atlassian_mcp_bitbucket")
 _GUARDED_PAGES = ("1_chat.py", "2_task_creator.py")
 
 
@@ -40,7 +38,7 @@ def test_chat_pages_do_not_import_mcp_client(page_name: str) -> None:
     page = _STREAMLIT_PAGES / page_name
     if not page.is_file():
         pytest.skip(
-            f"{page_name} not present yet — task 9.1 / 9.2 still in flight"
+            f"{page_name} not present yet"
         )
     source = page.read_text(encoding="utf-8")
     tree = ast.parse(source)
@@ -57,6 +55,6 @@ def test_chat_pages_do_not_import_mcp_client(page_name: str) -> None:
 
     assert not offenders, (
         f"{page_name} imports forbidden module(s) {offenders!r}; the "
-        "chat surface must proxy via assistant-service (R3.1 / V2). "
+        "chat surface must proxy via assistant-service. "
         "Move the call site behind the assistant-service client."
     )

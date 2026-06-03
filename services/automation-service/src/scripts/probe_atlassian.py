@@ -1,4 +1,4 @@
-"""Atlassian connectivity probe — automation-service flavour (R9.7, Q10).
+"""Atlassian connectivity probe for automation-service.
 
 This module is the script referenced by the
 ``connectivity_probe_command`` field on the ``automation-service``
@@ -7,10 +7,9 @@ entry in ``platform/config/services.manifest.json``::
     "connectivity_probe_command": "python -m src.scripts.probe_atlassian"
 
 ``LifecycleService.start`` (admin-dashboard-api) invokes the configured
-command as Step 9.5 — *after* ``_wait_for_healthy`` reports the
-container ready and *before* writing the final ``service_started``
-audit (uyumluluk design §"R9 — Connectivity Probe", Q10). The script
-itself is also runnable from the operator shell::
+command after ``_wait_for_healthy`` reports the container ready and
+before writing the final ``service_started`` audit. The script itself
+is also runnable from the operator shell::
 
     python -m src.scripts.probe_atlassian
 
@@ -128,7 +127,7 @@ _SERVICE_PATHS: Final[Mapping[ProbeService, str]] = {
 #: ``PROBE_HTTP_TIMEOUT_SECONDS``; the default is generous enough for
 #: a Cloud round-trip but well below the 30-second budget the
 #: LifecycleService allocates to ``connectivity_probe_command`` as a
-#: whole (uyumluluk design §"R9 / Step 9.5").
+#: whole.
 _DEFAULT_HTTP_TIMEOUT_SECONDS: Final[float] = 10.0
 
 
@@ -226,7 +225,7 @@ def _read_credential(
 
     The :class:`VaultPath` constructor validates the
     ``vault:<path>`` grammar; an invalid ``credential_ref`` (e.g. a
-    legacy plain-text token written before R6.1 was enforced) raises
+    legacy plain-text token written before Vault path enforcement) raises
     :class:`ValueError`, which the caller maps to a
     ``credential_ref_invalid`` reason.
     """

@@ -1,8 +1,7 @@
 // Feature: llm-provider-management, Property: ProviderTable badge + masking invariants
 //
 // Property tests for the LLM provider table's badge color rule
-// (Requirement 9.5) and the credential-masking invariant
-// (Requirements 4.4, 9.4).
+// and the credential-masking invariant.
 //
 // The project uses node:test without React Testing Library / jsdom, so
 // these tests re-implement the pure decision logic of
@@ -20,7 +19,7 @@ import fc from "fast-check";
 // ---------------------------------------------------------------------------
 
 /**
- * Returns the badge color for a provider row per Requirement 9.5:
+ * Returns the badge color for a provider row:
  *   grey  — never tested (last_tested_at == null)
  *   green — tested successfully (last_tested_at != null && last_test_error == null)
  *   red   — tested and failed (last_tested_at != null && last_test_error != null)
@@ -76,7 +75,7 @@ const rowArb = fc.record({
 // ---------------------------------------------------------------------------
 
 describe("ProviderTable badge + masking invariants", () => {
-  it("badgeColor matches the rule from R9.5", () => {
+  it("badgeColor matches the provider status rule", () => {
     fc.assert(
       fc.property(rowArb, (row) => {
         const color = badgeColor(row);

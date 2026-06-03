@@ -1,9 +1,9 @@
-"""Task 5.4 — shutdown continues through close errors (automation-service-wiring).
+"""Shutdown continues through close errors.
 
-Pins Requirement 4.3: a failing close on one owned resource MUST NOT
+Pins the behavior that a failing close on one owned resource MUST NOT
 block the remaining closes from running, and the lifespan handler's
-``__aexit__`` MUST return without re-raising so the orchestrator's
-grace-period contract still holds.
+``__aexit__`` MUST return without re-raising so the shutdown grace-period
+contract still holds.
 
 The test injects a fake :class:`asyncpg.Pool` whose ``close()`` raises
 :class:`RuntimeError("boom")`, runs the production lifespan startup +

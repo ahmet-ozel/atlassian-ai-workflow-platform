@@ -1,5 +1,5 @@
 -- 001_prompt_sandbox_runs.sql
--- platform-mimari-uyumluluk R7 (Q4): prompt promote endpoint + sandbox run tablosu.
+-- Prompt promote endpoint + sandbox run table.
 -- Stores every sandbox-test run so /admin/prompts/{path}/promote can verify
 -- that a previously-tested draft actually passed before opening a PR.
 --
@@ -9,7 +9,6 @@
 -- here so this migration can be applied standalone (e.g. via testcontainer
 -- bootstrap in tests/integration/test_prompt_sandbox_runs_migration.py).
 --
--- Requirements: 7.2
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 

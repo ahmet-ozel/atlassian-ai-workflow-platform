@@ -1,15 +1,10 @@
-"""Property 1 — every router slot is populated after startup completes.
-
-# Feature: automation-service-wiring, Property 1: All slots populated
+"""Every router slot is populated after startup completes.
 
 For any :class:`FastAPI` application produced by :func:`create_app` and
 any successful run of the production lifespan startup phase, every slot
 in ``SLOT_NAMES`` is set to a non-``None`` instance after startup
 completes. The :class:`Settings` instance is sampled by Hypothesis so
-the property holds across the full configuration space.
-
-Validates Requirements 3.1 — 3.9 + 5.3 of the
-``automation-service-wiring`` spec.
+the invariant holds across the full configuration space.
 """
 
 from __future__ import annotations
@@ -116,8 +111,7 @@ def test_every_slot_is_populated_after_startup(
 
     The property holds for every :class:`Settings` instance the
     strategy produces; the assertion enumerates the canonical
-    ``SLOT_NAMES`` tuple shared with the design document's
-    Property 2 enumeration.
+    ``SLOT_NAMES`` tuple shared with the expected slot enumeration.
 
     Uses an explicit :class:`pytest.MonkeyPatch` instance per
     iteration rather than the function-scoped ``monkeypatch`` fixture

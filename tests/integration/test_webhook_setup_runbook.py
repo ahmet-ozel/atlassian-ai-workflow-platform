@@ -1,12 +1,11 @@
 """Webhook setup runbook existence and section header checks.
 
-Validates: Requirements 3.10 (`platform-mimari-workflows`).
 
-This test is the *basic* existence + section header check companion to
-task 4.8. The full integration coverage (audit assertions, Vault path
-parity, etc.) is the responsibility of task 15.11; this file only
+
+This test is the *basic* existence + section header check companion to. The full integration coverage (audit assertions, Vault path
+parity, etc.) is the responsibility of; this file only
 asserts that the runbook exists and contains every section header
-required by Property 19's `test_webhook_setup_runbook` pin.
+required by invariant's `test_webhook_setup_runbook` pin.
 """
 
 from __future__ import annotations
@@ -17,7 +16,7 @@ import pytest
 
 # This is a doc-presence check, not a real Temporal integration test, but it
 # is colocated under ``tests/integration/`` because it asserts a deliverable
-# of the platform-mimari-workflows spec (Requirement 3.10) and runs in the
+# of the spec and runs in the
 # integration lane alongside the webhook gateway tests. No external services
 # (Temporal, Postgres, Vault) are touched — the test only reads the runbook
 # file from disk.
@@ -30,7 +29,7 @@ PLATFORM_ROOT = Path(__file__).resolve().parents[2]
 RUNBOOK_PATH = PLATFORM_ROOT / "docs" / "runbooks" / "webhook-setup.md"
 
 
-# Event types the gateway is required to support per R3.2 / R3.3, that the
+# Event types the gateway is required to support per /, that the
 # runbook must instruct admins to subscribe to in the provider UI. These are
 # the same strings the production handler in
 # ``automation_service/api/webhooks.py`` matches against.
@@ -69,7 +68,7 @@ REQUIRED_VAULT_PATHS: tuple[str, ...] = (
 def runbook_text() -> str:
     assert RUNBOOK_PATH.exists(), (
         f"webhook setup runbook missing at {RUNBOOK_PATH}; "
-        "task 4.8 of platform-mimari-workflows must produce this file"
+        "implementation milestone produce this file"
     )
     return RUNBOOK_PATH.read_text(encoding="utf-8")
 
@@ -93,10 +92,10 @@ def test_webhook_setup_runbook_contains_required_section_headers(
 def test_webhook_setup_runbook_mentions_vault_secret_paths(
     runbook_text: str, vault_path: str
 ) -> None:
-    """The runbook SHALL document per-dept vault secret paths (R3.10 / V3)."""
+    """The runbook SHALL document per-dept vault secret paths."""
     assert vault_path in runbook_text, (
         f"vault secret path {vault_path!r} not documented in webhook setup runbook; "
-        "this is required by Requirement 3.10 (MIMARI §16.14.3 V3 — dept başına ayrı secret)"
+        "this is required by the operational rule ( §16.14.3 V3 — dept başına ayrı secret)"
     )
 
 
@@ -121,15 +120,15 @@ def test_webhook_setup_runbook_mentions_signature_headers(runbook_text: str) -> 
 
 
 def test_webhook_setup_runbook_documents_loop_guard_caveats(runbook_text: str) -> None:
-    """The runbook SHALL document the loop guard caveats (R4.1, R4.2; N15).
+    """The runbook SHALL document the loop guard caveats (,; N15).
 
-    Two facts must be reachable to operators:
+ Two facts must be reachable to operators:
 
-    - Bot ``account_id`` values must be present in ``departments.json`` so
-      that the primary loop guard short-circuits bot self-actions.
-    - For legacy installs that do not send ``actor.account_id``, the
-      gateway falls back to a comment-body regex (``^\\s*\\[bot:``).
-    """
+ - Bot ``account_id`` values must be present in ``departments.json`` so
+ that the primary loop guard short-circuits bot self-actions.
+ - For legacy installs that do not send ``actor.account_id``, the
+ gateway falls back to a comment-body regex (``^\\s*\\[bot:``).
+ """
     assert "departments.json" in runbook_text, (
         "loop guard caveat about departments.json bot account_ids missing"
     )
@@ -142,12 +141,12 @@ def test_webhook_setup_runbook_documents_loop_guard_caveats(runbook_text: str) -
 
 
 def test_runbook_contains_jira_section_headers(runbook_text: str) -> None:
-    """The runbook SHALL contain Jira-section markers required by R3.10.
+    """The runbook SHALL contain Jira-section markers required by.
 
-    R3.10 enumerates the fields an operator must fill in the Jira UI: URL,
-    Events, and Secret. The runbook must reference the canonical Vault key
-    for the per-dept HMAC secret as well.
-    """
+ enumerates the fields an operator must fill in the Jira UI: URL,
+ Events, and Secret. The runbook must reference the canonical Vault key
+ for the per-dept HMAC secret as well.
+ """
     assert "Jira" in runbook_text, "Jira section header missing"
     assert "webhook" in runbook_text.lower(), "runbook subject ('webhook') missing"
     assert "URL" in runbook_text, "URL field marker missing"
@@ -161,12 +160,12 @@ def test_runbook_contains_jira_section_headers(runbook_text: str) -> None:
 
 
 def test_runbook_contains_bitbucket_section(runbook_text: str) -> None:
-    """The runbook SHALL also cover Bitbucket setup (R3.10 parity).
+    """The runbook SHALL also cover Bitbucket setup ( parity).
 
-    R3.1 names ``X-Hub-Signature`` as the Bitbucket signature header, so the
-    runbook must reference both ``Bitbucket`` and that header to be a
-    complete operator artifact.
-    """
+ names ``X-Hub-Signature`` as the Bitbucket signature header, so the
+ runbook must reference both ``Bitbucket`` and that header to be a
+ complete operator artifact.
+ """
     assert "Bitbucket" in runbook_text, "Bitbucket section missing from runbook"
     assert "X-Hub-Signature" in runbook_text, (
         "Bitbucket signature header X-Hub-Signature not documented"
@@ -177,15 +176,15 @@ def test_runbook_contains_bitbucket_section(runbook_text: str) -> None:
 def test_runbook_includes_supported_jira_event_types(
     runbook_text: str, event_type: str
 ) -> None:
-    """The runbook SHALL list every Jira event type the gateway supports (R3.2).
+    """The runbook SHALL list every Jira event type the gateway supports.
 
-    These are the four event types the production handler accepts. If the
-    runbook does not instruct an operator to subscribe to all four, the
-    deployed webhook will silently miss event types and workflows will not
-    fire.
-    """
+ These are the four event types the production handler accepts. If the
+ runbook does not instruct an operator to subscribe to all four, the
+ deployed webhook will silently miss event types and workflows will not
+ fire.
+ """
     assert event_type in runbook_text, (
-        f"required Jira event type {event_type!r} (R3.2) not listed in runbook"
+        f"required Jira event type {event_type!r} (the operational rule) not listed in runbook"
     )
 
 
@@ -193,7 +192,7 @@ def test_runbook_includes_supported_jira_event_types(
 def test_runbook_includes_supported_bitbucket_event_types(
     runbook_text: str, event_type: str
 ) -> None:
-    """The runbook SHALL list every Bitbucket event type the gateway supports (R3.3)."""
+    """The runbook SHALL list every Bitbucket event type the gateway supports."""
     assert event_type in runbook_text, (
-        f"required Bitbucket event type {event_type!r} (R3.3) not listed in runbook"
+        f"required Bitbucket event type {event_type!r} (the operational rule) not listed in runbook"
     )

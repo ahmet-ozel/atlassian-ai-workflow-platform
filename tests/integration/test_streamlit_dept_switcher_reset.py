@@ -1,4 +1,4 @@
-"""Integration smoke — Streamlit dept switcher reset (`platform-mimari-ops` task 16.6).
+"""Integration smoke — Streamlit dept switcher reset (`ops work` the implementation).
 
 Drives the Streamlit page through ``streamlit.testing.v1.AppTest``
 to confirm a dept change clears every session_state key except

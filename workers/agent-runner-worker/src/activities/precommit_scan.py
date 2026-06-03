@@ -2,11 +2,10 @@
 
 Implements :func:`precommit_scanner` — the **commit-gating** activity
 that ``AgentRunnerWorkflow`` invokes immediately before every
-``bitbucket_commit_patch`` call (Requirement 7.10, design §"`precommit_scanner`
-activity — gitleaks + bandit (T2)").
+``bitbucket_commit_patch`` call.
 
-Contract (Requirement 7.10)
----------------------------
+Contract
+--------
 
 The activity takes a unified-diff string and returns a frozen
 :class:`ScanResult` with two fields:
@@ -20,7 +19,7 @@ The activity takes a unified-diff string and returns a frozen
 
 When ``decision == "block"`` the activity emits a single audit event
 ``precommit_secret_leak_blocked`` via the foundation
-:mod:`audit_logger` (Requirement 7.10, MIMARI §16.15 T2). The audit
+:mod:`audit_logger`. The audit
 ``payload`` carries only the matched **pattern names** — never the
 secret values themselves; secret values are masked at the audit
 boundary so the audit log does not become a secondary leak surface.
@@ -28,8 +27,8 @@ The audit emission is best-effort: a broken audit pipeline must
 **not** suppress the ``"block"`` decision (the workflow still fails
 the commit).
 
-Determinism (Property 16, design §"Property 16: Pre-commit secret scan (T2)")
----------------------------------------------------------------------------
+Determinism
+-----------
 
 For any ``diff`` string, ``precommit_scanner(diff)`` is a pure
 function of its input: same diff → same :class:`ScanResult` (same
@@ -50,11 +49,10 @@ holds whether or not an :class:`audit_logger.AuditLogger` is wired in.
 Implementation choice — pure-Python regex fallback
 --------------------------------------------------
 
-MIMARI §16.15 T2 references ``gitleaks`` (binary) and ``bandit``
-(Python) as the recommended detail-scan tools. Those binaries are
-deployment artefacts of the ``agent-runner-worker`` container image
-and are not always available in unit / property test environments.
-Per the task description we therefore implement the activity as a
+``gitleaks`` (binary) and ``bandit`` (Python) are optional detail-scan
+tools. Those binaries are deployment artefacts of the
+``agent-runner-worker`` container image and are not always available in
+unit / property test environments. The activity is implemented as a
 **pure-Python regex sweep** over the documented secret pattern list:
 
 * ``aws_access_key``       — ``AKIA`` followed by 16 ``[0-9A-Z]``
@@ -63,33 +61,29 @@ Per the task description we therefore implement the activity as a
 * ``generic_password``     — ``password = "..."`` (case-insensitive,
   single or double quoted, non-empty value)
 
-These four cover the P0 scope called out in MIMARI §16.15.1 (AWS keys,
-Atlassian API tokens, Bearer headers, hard-coded passwords). The
+These four cover the critical scope for AWS keys, Atlassian API tokens,
+Bearer headers, and hard-coded passwords. The
 ``gitleaks`` / ``bandit`` binaries can be layered on top as additional
 findings sources without changing the :class:`ScanResult` contract —
 their output normalises to additional entries in
-``matched_patterns``. That extension is out of scope for this task.
+``matched_patterns``. That extension is out of scope here.
 
 Why no I/O on the scan path?
 ----------------------------
 
-Property 16 (``test_precommit_scanner.py``) drives the activity with
+``test_precommit_scanner.py`` drives the activity with
 hypothesis-generated diffs and asserts ``precommit_scanner(diff) ==
 precommit_scanner(diff)`` across runs. Subprocess invocation against
 ``gitleaks`` would introduce shell environment, working directory, and
 binary version into the determinism equation; the pure-Python
-fallback keeps the property test self-contained and the activity body
+fallback keeps the test self-contained and the activity body
 trivially replay-safe in Temporal terms.
 
-Cross-references
-----------------
+Usage
+-----
 
-* Requirement 7.10 (MIMARI §16.15 T2) — pre-commit secret scan hook.
-* design.md §"Property 16: Pre-commit secret scan (T2)" — the
-  property test that consumes :class:`ScanResult`.
-* tasks.md task 7.4 — this activity.
-* tasks.md task 7.5 — ``AgentRunnerWorkflow`` `code_change_*` flows
-  call this activity before ``bitbucket_commit_patch``.
+``AgentRunnerWorkflow`` `code_change_*` flows call this activity before
+``bitbucket_commit_patch``.
 """
 
 from __future__ import annotations
@@ -120,8 +114,7 @@ _LOG = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 
-#: Audit ``action`` string emitted on a ``"block"`` decision. Mirrors
-#: the value documented in Requirement 7.10 / MIMARI §16.15 T2 and is
+#: Audit ``action`` string emitted on a ``"block"`` decision. This is
 #: also the value the Streamlit *Security > Secret Leak Olayları*
 #: dashboard greps for.
 PRECOMMIT_AUDIT_ACTION: Final[str] = "precommit_secret_leak_blocked"
@@ -185,8 +178,7 @@ class ScanResult:
     decision:
         ``"pass"`` when no secret pattern matched the diff; ``"block"``
         when at least one pattern matched. The workflow MUST treat
-        ``"block"`` as a hard failure of the commit step
-        (Requirement 7.10).
+        ``"block"`` as a hard failure of the commit step.
     matched_patterns:
         Stable, alphabetically-sorted tuple of pattern *names* (not
         secret values) that fired against the diff. Empty tuple iff
@@ -194,7 +186,7 @@ class ScanResult:
 
     The dataclass is :class:`frozen <dataclasses.dataclass>` so the
     return value can be safely cached / compared by Hypothesis-driven
-    property tests (Property 16) and so the audit payload references
+    property tests and so the audit payload references
     a value that cannot be mutated after construction.
     """
 
@@ -237,8 +229,8 @@ def get_audit_logger() -> Any | None:
     ``None`` so the scanning path stays a pure deterministic function
     of the input diff: a worker that has not wired audit yet still
     produces a correct :class:`ScanResult`, just without the audit
-    write side-effect (Requirement 7.10 calls audit emission a
-    *consequence* of ``"block"``, not a precondition for it).
+    write side-effect. Audit emission is a consequence of ``"block"``,
+    not a precondition for it.
     """
 
     return _audit_logger
@@ -253,7 +245,7 @@ def scan_diff(diff: str) -> ScanResult:
     """Run the deterministic regex sweep over *diff* and return the result.
 
     This is the **pure** core of the activity — same input, same
-    output, no side effects. Property 16 (``test_precommit_scanner``)
+    output, no side effects. ``test_precommit_scanner``
     asserts:
 
     1. clean diff → ``ScanResult(decision="pass", matched_patterns=())``,
@@ -268,7 +260,7 @@ def scan_diff(diff: str) -> ScanResult:
     * We iterate :data:`SECRET_PATTERNS` in **insertion order** but
       sort the matched names before returning. Sorting makes the
       tuple invariant under future reordering of the table — the
-      property test compares tuples for equality, so the sort keeps
+      test compares tuples for equality, so the sort keeps
       the test stable across pattern-list edits.
     * Each pattern is checked with :meth:`re.Pattern.search`; we do
       not use :meth:`re.findall` because we only need to know
@@ -306,7 +298,7 @@ def scan_diff(diff: str) -> ScanResult:
     # Iterate the table once, collecting names of patterns that fired.
     # Using a set avoids duplicates if a pattern matches multiple
     # locations, and feeding the set into ``sorted()`` produces the
-    # stable, deterministic tuple required by Property 16.
+    # stable, deterministic tuple required by the scanner contract.
     matched: set[str] = set()
     for name, pattern in SECRET_PATTERNS.items():
         if pattern.search(diff) is not None:
@@ -388,8 +380,8 @@ async def _emit_block_audit(
     audit_logger = get_audit_logger()
     if audit_logger is None:
         # Worker has not wired audit yet (eg. unit / property test
-        # environment). Property 16 explicitly tolerates this: the
-        # determinism assertion holds regardless of audit wiring.
+        # environment). The determinism assertion holds regardless of
+        # audit wiring.
         return
 
     try:
@@ -448,7 +440,7 @@ def _resolve_workflow_context() -> tuple[str | None, str | None]:
 
 @activity.defn(name="precommit_scanner")
 async def precommit_scanner(diff: str) -> ScanResult:
-    """Scan *diff* for secrets and gate the commit (Requirement 7.10, T2).
+    """Scan *diff* for secrets and gate the commit.
 
     The activity is intentionally a thin wrapper around the pure
     :func:`scan_diff` core: the deterministic scan happens first, the
@@ -463,11 +455,11 @@ async def precommit_scanner(diff: str) -> ScanResult:
       because the scan is CPU-bound regex work over a single diff.
     * The activity is **idempotent** — same diff always produces the
       same ``ScanResult`` — so Temporal retries on transient worker
-      failures are safe (``maximumAttempts ≤ 3`` per Requirement 1.6).
+      failures are safe.
     * On ``decision == "block"`` the workflow MUST fail the
       ``bitbucket_commit_patch`` step. The audit row produced here
-      satisfies the audit half of Requirement 7.10; the workflow
-      handles the user-visible Jira comment / needs_info reply.
+      records the scanner decision; the workflow handles the user-visible
+      Jira comment / needs_info reply.
 
     Parameters
     ----------
@@ -485,7 +477,7 @@ async def precommit_scanner(diff: str) -> ScanResult:
 
     if result.decision == "block":
         workflow_id, dept_id = _resolve_workflow_context()
-        # The activity argument signature pinned by task 7.4 is
+        # The activity argument signature is
         # ``precommit_scanner(diff: str) -> ScanResult`` — no
         # ``issue_key`` is passed in. Operators can correlate the
         # audit row to the issue via ``workflow_id`` (which encodes

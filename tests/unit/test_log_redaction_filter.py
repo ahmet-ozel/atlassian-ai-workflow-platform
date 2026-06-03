@@ -1,13 +1,10 @@
 """Unit tests for :mod:`http_shared.redaction`.
 
-Validates: Requirement 6.10 — task 9.1 of
-``.kiro/specs/platform-mimari-foundation/tasks.md``.
-
 The :class:`RedactionFilter` is the *log-call site* half of the
-secret-hygiene story. Property C5 (``test_log_redaction.py``) covers
+secret-hygiene story. ``test_log_redaction.py`` covers
 the lifecycle-service log endpoint's ``KEY=<redacted>`` form for
 arbitrary ``Sensitive_Env_Key`` values; this module pins down the
-five concrete patterns enumerated in Requirement 6.10:
+five concrete redaction patterns:
 
 1. ``Authorization: Basic <...>`` (HTTP header echo).
 2. ``Bearer <...>`` (OAuth / OIDC tokens).
@@ -203,7 +200,7 @@ class TestRedactText:
         assert "password=" in out
         assert "secret=" in out
 
-    def test_pattern_count_matches_requirement(self) -> None:
+    def test_pattern_count_matches_redaction_surface(self) -> None:
         """Pattern set expanded beyond the original 5: now 11 covers
         Bearer/Basic auth + KEY=VALUE forms (api_token/password/secret)
         + provider key shapes (sk-ant-*, ghp_*, AKIA*, etc.)."""

@@ -1,11 +1,11 @@
-"""Write-action intent intercept (Requirement 1.3, design §"WriteActionIntercept").
+"""Write-action intent intercept.
 
-The chat tool-call loop in :mod:`src.chat.handler` (task 4.4) consults
+The chat tool-call loop in :mod:`src.chat.handler` consults
 :func:`is_write_intent` *before* dispatching any LLM-issued tool call.
 When the predicate returns ``True`` the handler emits a
 ``redirect_to_task_creator`` SSE event and stops the iteration --- the
 underlying tool is **never invoked**. This is the deterministic mechanism
-that fulfils Requirement 1.3:
+that enforces the write-action guard:
 
     THE Assistant_Service SHALL LLM çıktısında
     ``intent: write_action_requested`` algıladığında doğrudan yazma
@@ -13,22 +13,13 @@ that fulfils Requirement 1.3:
     gönderir [...]
 
 The module is intentionally tiny and dependency-free so the property
-test (task 4.9, ``test_write_action_intercept.py``) can validate the
+test can validate the
 decision table by table-driven enumeration without standing up the
 chat handler.
 
-Design references:
-
-* ``platform-mimari-ops`` design.md §"WriteActionIntercept" --- defines
-  the seven-element ``WRITE_ACTION_TOOLS`` frozen set and the
-  :func:`is_write_intent` predicate exactly as implemented here.
-* ``platform-mimari-ops`` design.md §"Property 13: Write-action intent
-  intercept" --- the predicate's truth table is the property under
-  test.
-
 The ``ToolCall`` dataclass declared in this module is a *minimal*
 local placeholder used only by :func:`is_write_intent`. The richer
-SSE/messages contract lives in ``libs/messages`` (task 4.6); when that
+SSE/messages contract lives in ``libs/messages``; when that
 module lands :func:`is_write_intent` will continue to accept any
 object whose ``tool_name`` attribute is a string thanks to the
 ``Protocol`` typing below, so the property test will keep working
@@ -62,12 +53,11 @@ __all__ = [
 #: bug that mutates this set would silently widen what the chat handler
 #: lets through.
 #:
-#: The seven entries match design.md §"WriteActionIntercept" verbatim;
-#: they cover Bitbucket (PR creation Cloud + DC, raw commit), Confluence
+#: The seven entries cover Bitbucket (PR creation Cloud + DC, raw commit), Confluence
 #: (create + update page), and Jira (create issue, transition issue).
 #: Bitbucket *merge* and Confluence *delete* are not listed here because
 #: they are blocked even earlier by the foundation banned-tool list
-#: (Spec 1, ``libs/mcp_client.tool_filter``); reaching this predicate
+#: by the shared MCP tool filter; reaching this predicate
 #: with one of those names would already be a bug elsewhere.
 WRITE_ACTION_TOOLS: frozenset[str] = frozenset(
     {
@@ -91,7 +81,7 @@ class ToolCallLike(Protocol):
     """Structural type for any object exposing a ``tool_name`` string.
 
     The chat handler will eventually receive ``ToolCall`` instances from
-    ``libs/messages`` (task 4.6). Until that module is wired this
+    ``libs/messages``. Until that module is wired this
     protocol keeps :func:`is_write_intent` decoupled from the concrete
     type so callers --- including the property test --- can pass either
     the local :class:`ToolCall` placeholder or the future shared
@@ -132,8 +122,7 @@ def is_write_intent(
 ) -> bool:
     """Return ``True`` iff the upcoming tool call is a write action.
 
-    The decision table fulfils Requirement 1.3 and matches design.md
-    §"WriteActionIntercept" exactly:
+    The decision table is:
 
     +---------------------------------------+--------------------------------+--------+
     | ``llm_intent_field``                  | ``tool_call.tool_name``        | result |

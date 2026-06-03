@@ -1,16 +1,11 @@
-"""``WorkflowsDrillDownRouter`` (`platform-mimari-ops` task 11.2 +
-``platform-mimari-uyumluluk`` task 12.1).
-
-**Validates: Requirements 4.3, 8.4 (Q9 — workflow drill-down with
-``llm_usage[]``, ``audit_chain[]``, ``external_links{}``).**
+"""``WorkflowsDrillDownRouter``.
 
 Three endpoints:
 
 * ``GET /admin/workflows`` — list dept-scoped workflows (forwarded
   to automation-service via :class:`AdminProxy`).
 * ``GET /admin/workflows/{workflow_id}`` — drill-down: history,
-  signals, activities, failures, **plus** the additive fields
-  required by ``platform-mimari-uyumluluk`` task 12.1:
+  signals, activities, failures, plus these additive fields:
 
     - ``llm_usage[]`` — one entry per ``shared.cost_tracking`` row
       keyed on the workflow_id, carrying

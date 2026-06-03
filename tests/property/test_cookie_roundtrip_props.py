@@ -1,8 +1,8 @@
-"""Property tests for Cookie Sign/Verify Round-Trip.
+"""invariant for Cookie Sign/Verify Round-Trip.
 
-**Validates: Requirements 10.2, 10.5**
 
-Property 4: Cookie Sign/Verify Round-Trip
+
+invariant: Cookie Sign/Verify Round-Trip
 
 For any non-empty department string and any valid secret key,
 ``verify_cookie(sign_cookie(department, secret), secret)`` SHALL return
@@ -57,7 +57,7 @@ _SECRET = st.text(
 
 
 # ---------------------------------------------------------------------------
-# Property Tests
+# invariant
 # ---------------------------------------------------------------------------
 
 
@@ -67,14 +67,14 @@ _SECRET = st.text(
     secret=_SECRET,
 )
 def test_cookie_sign_verify_roundtrip(department: str, secret: str) -> None:
-    """Feature: production-hardening, Property 4: Cookie Sign/Verify Round-Trip
+    """Feature:, invariant: Cookie Sign/Verify Round-Trip
 
-    **Validates: Requirements 10.2, 10.5**
 
-    For any non-empty department string and any valid secret key,
-    verify_cookie(sign_cookie(department, secret), secret) returns
-    the original department string.
-    """
+
+ For any non-empty department string and any valid secret key,
+ verify_cookie(sign_cookie(department, secret), secret) returns
+ the original department string.
+ """
     signed = sign_cookie(department, secret)
     result = verify_cookie(signed, secret)
 
@@ -97,13 +97,13 @@ def test_tampered_signature_returns_none(
     tamper_byte: int,
     tamper_pos: int,
 ) -> None:
-    """Feature: production-hardening, Property 4: Cookie Sign/Verify Round-Trip (tamper)
+    """Feature:, invariant: Cookie Sign/Verify Round-Trip (tamper)
 
-    **Validates: Requirements 10.2, 10.5**
 
-    For any signed cookie value where the signature portion has been
-    modified (tampered), verify_cookie SHALL return None.
-    """
+
+ For any signed cookie value where the signature portion has been
+ modified (tampered), verify_cookie SHALL return None.
+ """
     signed = sign_cookie(department, secret)
 
     # Split into value and signature parts
@@ -148,12 +148,12 @@ def test_wrong_secret_returns_none(
     secret: str,
     wrong_secret: str,
 ) -> None:
-    """Feature: production-hardening, Property 4: Cookie Sign/Verify Round-Trip (wrong key)
+    """Feature:, invariant: Cookie Sign/Verify Round-Trip (wrong key)
 
-    **Validates: Requirements 10.2, 10.5**
 
-    A cookie signed with one secret cannot be verified with a different secret.
-    """
+
+ A cookie signed with one secret cannot be verified with a different secret.
+ """
     assume(secret != wrong_secret)
 
     signed = sign_cookie(department, secret)

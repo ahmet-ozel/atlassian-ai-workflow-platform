@@ -6,22 +6,12 @@ method assembles an explicit ``argv`` list and hands it to
 :func:`asyncio.create_subprocess_exec` with ``shell=False`` so the
 operating system is responsible for argument tokenisation — there is
 no intermediate shell that could expand metacharacters from
-manifest-supplied or operator-supplied strings (Requirement 8.3,
-design §3.4).
+manifest-supplied or operator-supplied strings.
 
-Design references
------------------
-* design §3.4 — ComposeRunner contract: argv list, ``shell=False``,
-  scrubbed environment, ``env_overrides`` injected via the spawned
-  subprocess's ``env`` dict (never a temporary ``.env`` file).
-* Requirement 6.7 — non-zero ``docker compose`` exit code → 502
-  upstream; surfaced here as :class:`ComposeFailureError` so the
-  router can render the canonical error envelope.
-* Requirement 8.3 — argv-list invocation, no shell metacharacter
-  expansion.
-* Requirement 9.3 — Property P2: ``Env_Override`` values must never
-  be persisted to disk; this module only ever places them in the
-  subprocess ``env`` mapping that the OS hands to the child process.
+Environment overrides are injected via the spawned subprocess's ``env`` dict
+and are never written to a temporary ``.env`` file. Non-zero Compose exits are
+surfaced as :class:`ComposeFailureError` so the router can render a consistent
+upstream error envelope.
 
 Public surface
 --------------
@@ -88,8 +78,8 @@ class TestResult:
 
     Distinct from :class:`ComposeResult` because the upstream
     ``LifecycleService.run_tests`` flow parses the captured ``stdout``
-    into a structured pytest summary (see task 6.1) and the router
-    surfaces it under a different schema (Requirement 8.4).
+    into a structured pytest summary (see prompt git wiring) and the router
+    surfaces it under a different schema.
     """
 
     # Hint to pytest: this is a result *type*, not a test class. Without
@@ -108,7 +98,7 @@ class ComposeFailureError(Exception):
     The exception captures the assembled :class:`ComposeResult` so
     callers (the lifecycle service / router) can surface the failing
     argv plus stderr in their 502 response and audit ``details_json``
-    (Requirement 6.7).
+    on failure.
     """
 
     def __init__(self, message: str, *, result: ComposeResult) -> None:
@@ -139,8 +129,8 @@ class ComposeRunner:
         runner should pin every command to via ``-f``. Validated in
         :func:`load_manifest` upstream — this class trusts the value.
     workspace_root:
-        Workspace root path. Stored so callers / Property P2 tests can
-        confirm the runner never writes inside it (no ``.env`` files,
+        Workspace root path. Stored so callers can confirm the runner never
+        writes inside it (no ``.env`` files,
         no override files), but the runner itself does not perform any
         filesystem writes.
     """
@@ -197,7 +187,7 @@ class ComposeRunner:
                 # masking lives in LifecycleService and the form layer
                 # — by the time a value reaches the runner it has
                 # already been schema-checked against the
-                # ``.env.example`` LHS set (Property P4).
+                # ``.env.example`` LHS set.
                 env[key] = value
         return env
 
@@ -216,8 +206,7 @@ class ComposeRunner:
         The argv list is forwarded **as-is** to
         :func:`asyncio.create_subprocess_exec`. No shell is involved —
         there is no opportunity for ``$(...)``, ``;``, ``|``, ``&&``
-        or any other metacharacter to be re-interpreted (Requirement
-        8.3).
+        or any other metacharacter to be re-interpreted.
         """
 
         try:
@@ -269,7 +258,7 @@ class ComposeRunner:
 
         ``env_overrides`` are placed into the subprocess environment.
         They are **never** written to a temporary ``.env`` file or
-        any other on-disk artefact (Requirement 9.3, Property P2).
+        any other on-disk artefact.
         """
 
         argv: list[str] = [
@@ -295,10 +284,10 @@ class ComposeRunner:
         When ``remove_volumes=True`` the runner additionally invokes
         ``docker compose -f F rm -fv S`` to tear down the stopped
         container and any **anonymous** volumes attached to it. Named
-        volumes (``pg_data``, ``minio_data``, ``agent_workspace`` —
-        Requirement 13.5) are owned by the top-level ``volumes:`` block
+        volumes (``pg_data``, ``minio_data``, ``agent_workspace``) are owned by
+        the top-level ``volumes:`` block
         in ``infra/docker-compose.yml`` and are not affected by
-        ``rm -fv`` on a per-service basis (Requirement 6.4).
+        ``rm -fv`` on a per-service basis.
         """
 
         # No env_overrides for stop — there are no Component-defined
@@ -326,7 +315,7 @@ class ComposeRunner:
         # Surface the rm result so callers can inspect the final argv.
         # rm failures are reported the same way as stop failures —
         # the operator gets a 502 with the failing argv in the audit
-        # detail (Requirement 6.7).
+        # detail.
         return self._raise_on_failure(rm_result, action="rm")
 
     async def restart(
@@ -343,7 +332,7 @@ class ComposeRunner:
         ``env_overrides`` taking effect on the second boot. We
         intentionally invoke ``stop`` then ``up`` separately rather
         than calling ``docker compose restart`` so the override path
-        stays consistent with :meth:`up` (Requirement 6.6).
+        stays consistent with :meth:`up`.
         """
 
         await self.stop(service_name=service_name, remove_volumes=False)
@@ -457,7 +446,7 @@ class ComposeRunner:
         wrapper the output is always collected at process exit and
         returned via :class:`TestResult`. The router layer is
         responsible for line-by-line SSE relaying when ``stream=True``
-        (Requirement 8.5).
+        when streaming is requested.
         """
 
         full_argv: list[str] = [

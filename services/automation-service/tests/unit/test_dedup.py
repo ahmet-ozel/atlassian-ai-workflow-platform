@@ -2,8 +2,6 @@
 
 Validates event_id derivation, dedup check logic, cleanup job, and
 at-least-once semantics on DB failure.
-
-Requirements: 3.1, 3.2, 3.3, 3.4, 3.5
 """
 
 from __future__ import annotations
@@ -120,10 +118,10 @@ class TestWebhookPayload:
 
 
 class TestDeriveEventId:
-    """Tests for event_id derivation logic (Requirement 3.1)."""
+    """Tests for event_id derivation logic."""
 
     def test_uses_atlassian_header_when_present(self, dedup: EventDedup) -> None:
-        """R3.1: X-Atlassian-Webhook-Identifier header is preferred."""
+        """X-Atlassian-Webhook-Identifier header is preferred."""
         payload = _make_payload(
             headers={"X-Atlassian-Webhook-Identifier": "unique-delivery-id"}
         )
@@ -131,7 +129,7 @@ class TestDeriveEventId:
         assert event_id == "unique-delivery-id"
 
     def test_falls_back_to_hash_when_no_header(self, dedup: EventDedup) -> None:
-        """R3.1: Falls back to hash(event+timestamp+issue_id)."""
+        """Falls back to hash(event+timestamp+issue_id)."""
         payload = _make_payload(headers={})
         event_id = dedup._derive_event_id(payload)
         # Should be a SHA-256 hex digest
@@ -190,13 +188,13 @@ class TestDeriveEventId:
 
 
 class TestCheck:
-    """Tests for the check() method (Requirements 3.2, 3.3, 3.5)."""
+    """Tests for the check() method."""
 
     @pytest.mark.asyncio
     async def test_new_event_passes(
         self, dedup: EventDedup, mock_pool: AsyncMock
     ) -> None:
-        """R3.3: New event_id → insert + pass to next stage."""
+        """New event_id → insert + pass to next stage."""
         # _exists returns None (not found)
         mock_pool._conn.fetchrow.return_value = None
         # _insert succeeds
@@ -212,7 +210,7 @@ class TestCheck:
     async def test_duplicate_event_drops(
         self, dedup: EventDedup, mock_pool: AsyncMock
     ) -> None:
-        """R3.2: Existing event_id → drop with reason 'duplicate'."""
+        """Existing event_id → drop with reason 'duplicate'."""
         # _exists returns a row (found)
         mock_pool._conn.fetchrow.return_value = {"?column?": 1}
 
@@ -226,7 +224,7 @@ class TestCheck:
     async def test_db_write_failure_passes_through(
         self, dedup: EventDedup, mock_pool: AsyncMock
     ) -> None:
-        """R3.5: DB write failure → pass through (at-least-once semantics)."""
+        """DB write failure → pass through with at-least-once semantics."""
         # _exists returns None (not found)
         mock_pool._conn.fetchrow.return_value = None
         # _insert raises an exception
@@ -242,7 +240,7 @@ class TestCheck:
     async def test_db_read_failure_passes_through(
         self, dedup: EventDedup, mock_pool: AsyncMock
     ) -> None:
-        """R3.5: DB read failure → pass through (at-least-once semantics)."""
+        """DB read failure → pass through with at-least-once semantics."""
         # _exists raises an exception
         mock_pool._conn.fetchrow.side_effect = ConnectionError("DB connection lost")
 
@@ -259,7 +257,7 @@ class TestCheck:
 
 
 class TestCleanupExpired:
-    """Tests for the cleanup_expired() method (Requirement 3.4)."""
+    """Tests for the cleanup_expired() method."""
 
     @pytest.mark.asyncio
     async def test_returns_deleted_count(

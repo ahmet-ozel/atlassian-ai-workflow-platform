@@ -1,14 +1,10 @@
-"""Property test 16 — Activity-level token cap fail-fast.
-
-**Validates: Requirements 1.6**
+"""Activity-level token cap fail-fast tests.
 
 Hypothesis-driven verification of the activity-level token cap
-fail-fast behaviour described in design.md §"LlmOrchestrator.\
-stream_with_tool_loop" and tasks.md §4.3 / §4.11 of the
-``platform-mimari-ops`` spec.
+fail-fast behaviour in ``LlmOrchestrator.stream_with_tool_loop``.
 
-Property statement (design.md §"Property 16")
----------------------------------------------
+Expected behaviour
+------------------
 
 For any hypothesis-generated ``(token_chunks, token_cap)`` pair
 where every element of ``token_chunks`` is an integer in
@@ -40,9 +36,7 @@ stream_with_tool_loop` MUST satisfy:
 Surface under test
 ------------------
 
-The orchestrator lives at
-``platform/libs/llm-orchestrator/src/llm_orchestrator/\
-orchestrator.py`` (task 4.3) and exposes::
+The orchestrator exposes::
 
     class LlmOrchestrator:
         async def stream_with_tool_loop(
@@ -68,12 +62,12 @@ of standing up vLLM / OpenAI. The fake is the *only* place chunks
 are produced, which keeps the cumulative-token accounting visible
 and makes the determinism assertion of clause (e) meaningful.
 
-Cross-references
+Related coverage
 ----------------
 
-* The companion sliding-window property is task 4.8
-  (``test_sliding_window.py``) and the LLM retry / fallback
-  property is task 4.10 (``test_llm_retry_fallback.py``).
+* Companion sliding-window coverage lives in
+  ``test_sliding_window.py`` and LLM retry / fallback coverage
+  lives in ``test_llm_retry_fallback.py``.
 * The :class:`messages.SseEvent` event type catalogue —
   including the ``token_cap_exceeded`` literal asserted here —
   lives at ``platform/libs/messages/src/messages/chat.py`` and is
@@ -128,20 +122,19 @@ for _src in _LIB_SRC_DIRS:
 
 from messages import SseEvent  # noqa: E402
 
-# The orchestrator is task 4.3; until that task ships the import
-# fails with ``ModuleNotFoundError``. We mirror the
+# If the orchestrator import fails with ``ModuleNotFoundError``,
+# capture the error string and mirror the
 # ``test_sliding_window.py`` pattern: capture the error string and
 # skip the entire module with a precise reason so collection stays
-# clean. Once task 4.3 lands the try/except collapses into a normal
-# import.
-try:  # pragma: no cover - guard collapses once task 4.3 ships
+# clean.
+try:  # pragma: no cover - import guard for optional dependency
     from llm_orchestrator.orchestrator import (  # type: ignore[import-not-found]
         LlmOrchestrator,
     )
 except ModuleNotFoundError as exc:  # pragma: no cover
     LlmOrchestrator = None  # type: ignore[assignment,misc]
     _IMPORT_ERROR: str | None = str(exc)
-else:  # pragma: no cover - exercised only after task 4.3 lands
+else:  # pragma: no cover - import succeeds in integrated runs
     _IMPORT_ERROR = None
 
 
@@ -150,9 +143,8 @@ else:  # pragma: no cover - exercised only after task 4.3 lands
 # ---------------------------------------------------------------------------
 
 #: SSE event type yielded when the running token total crosses the
-#: configured cap (design.md §"LlmOrchestrator.stream_with_tool_loop"
-#: pseudocode and §"SseEvent dataclass ve type catalogu"). The literal
-#: is also a member of :data:`messages.SSE_EVENT_TYPES`.
+#: configured cap. The literal is also a member of
+#: :data:`messages.SSE_EVENT_TYPES`.
 TOKEN_CAP_EVENT: str = "token_cap_exceeded"
 
 #: Terminal event yielded when a stream completes within the cap.
@@ -172,10 +164,9 @@ class _Chunk:
     :meth:`LlmOrchestrator.stream_with_tool_loop`'s loop body
     (``chunk.token_count``, ``chunk.kind``, ``chunk.text``,
     ``chunk.is_final``). Keeping the fake in-line — rather than
-    importing a production chunk dataclass — pins the property to
-    the protocol described in design.md and prevents a future
-    rename of the provider chunk type from silently weakening the
-    invariant.
+    importing a production chunk dataclass — pins the test to the
+    protocol shape and prevents a future rename of the provider
+    chunk type from silently weakening the invariant.
     """
 
     token_count: int
@@ -190,11 +181,11 @@ class _ScriptedProvider:
     The class is intentionally minimal: it implements the two
     methods the orchestrator inspects (``stream`` and
     ``downtime``) and nothing else. ``downtime`` always returns
-    ``0`` so the failover branch (Property 15 territory) cannot
+    ``0`` so the failover branch cannot
     interfere with the cap-crossing assertions.
 
     A counter records how many chunks the orchestrator actually
-    drained from the iterator; clause (b) of Property 16 needs
+    drained from the iterator; this confirms
     this to confirm the orchestrator stopped *immediately* after
     the cap-cross (and didn't keep pulling chunks from the
     provider only to discard them).
@@ -282,8 +273,8 @@ async def _drain(orch_stream: AsyncIterator[SseEvent]) -> list[SseEvent]:
 async def _on_tool_call(_call: Any) -> Any:  # noqa: ARG001 — protocol parity
     """Tool-call callback that should *never* be invoked.
 
-    Property 16 fixes the chunk kind to ``"token"``; the
-    orchestrator's tool-call branch is exercised by Property 13
+    These tests fix the chunk kind to ``"token"``; the
+    orchestrator's tool-call branch is exercised separately in
     (``test_write_action_intercept.py``). Raising here means a
     regression that misroutes a token chunk through the tool path
     surfaces immediately rather than silently passing.
@@ -291,15 +282,14 @@ async def _on_tool_call(_call: Any) -> Any:  # noqa: ARG001 — protocol parity
 
     raise AssertionError(
         "on_tool_call must not run for token-chunk-only streams "
-        "(Property 16 fixes ``kind == 'token'``)."
+        "(these tests fix ``kind == 'token'``)."
     )
 
 
 def _build_orchestrator(provider: _ScriptedProvider) -> Any:
     """Construct an :class:`LlmOrchestrator` around the provider.
 
-    The orchestrator's constructor is part of task 4.3's design
-    contract; we accept either ``LlmOrchestrator(primary,
+    Accept either ``LlmOrchestrator(primary,
     fallback)`` (positional) or the keyword form so a minor naming
     drift in the implementation does not silently neuter the
     property. Both shapes are explicitly tried and the first one
@@ -330,7 +320,7 @@ def _build_orchestrator(provider: _ScriptedProvider) -> Any:
 
 
 # ---------------------------------------------------------------------------
-# Strategies (per design.md §"Property 16" input space)
+# Strategies for token chunks and cap limits
 # ---------------------------------------------------------------------------
 
 #: ``token_chunks`` ∈ list of integers each in ``[0, 1000]``. The
@@ -343,14 +333,14 @@ _chunks_strategy: st.SearchStrategy[list[int]] = st.lists(
     max_size=40,
 )
 
-#: ``token_cap`` ∈ ``[100, 100_000]`` per design.md.
+#: ``token_cap`` ∈ ``[100, 100_000]``.
 _cap_strategy: st.SearchStrategy[int] = st.integers(
     min_value=100, max_value=100_000
 )
 
 
 # ---------------------------------------------------------------------------
-# Module-level skip — covers the case where task 4.3 has not landed.
+# Module-level skip for unavailable orchestrator implementation.
 # ---------------------------------------------------------------------------
 
 
@@ -358,17 +348,15 @@ pytestmark = pytest.mark.skipif(
     LlmOrchestrator is None,
     reason=(
         "llm_orchestrator.orchestrator.LlmOrchestrator is not yet "
-        "implemented (task 4.3 of platform-mimari-ops is still "
-        "``[-]``); import failed with: "
-        f"{_IMPORT_ERROR!r}. Property 16 is fully specified by "
-        "design.md and will be exercised end-to-end as soon as task "
-        "4.3 ships."
+        "implemented; import failed with: "
+        f"{_IMPORT_ERROR!r}. This coverage will run once the "
+        "orchestrator is available."
     ),
 )
 
 
 # ---------------------------------------------------------------------------
-# Property 16 — full invariant set (a)..(e)
+# Full invariant set (a)..(e)
 # ---------------------------------------------------------------------------
 
 
@@ -381,9 +369,7 @@ pytestmark = pytest.mark.skipif(
 def test_token_cap_fail_fast_invariants(
     chunks: list[int], token_cap: int
 ) -> None:
-    """Property 16 (a)..(e) — fail-fast on cap cross + determinism.
-
-    Validates: Requirements 1.6.
+    """Fail-fast on cap cross with deterministic output.
 
     The orchestrator is exercised twice with identical inputs to
     verify clause (e); both runs use independent
@@ -435,7 +421,7 @@ def test_token_cap_fail_fast_invariants(
         f"inputs produced different SSE sequences.\n"
         f"  run #1: {events_a!r}\n"
         f"  run #2: {events_b!r}\n"
-        f"Property 16 (e) requires identical outputs."
+        "Token-cap fail-fast requires identical outputs."
     )
 
     event_types = [ev.type for ev in events_a]
@@ -450,7 +436,7 @@ def test_token_cap_fail_fast_invariants(
         assert len(cap_indices) == 1, (
             f"Expected exactly one ``{TOKEN_CAP_EVENT}`` event when "
             f"cap is crossed; saw {len(cap_indices)} in "
-            f"{event_types!r}. Property 16 (a)."
+            f"{event_types!r}."
         )
 
         # ----- (a) payload exposes the configured ``limit`` -----
@@ -463,12 +449,12 @@ def test_token_cap_fail_fast_invariants(
         assert "limit" in cap_event.payload, (
             f"``{TOKEN_CAP_EVENT}`` payload {cap_event.payload!r} "
             "does not expose the configured ``limit`` field. "
-            "Property 16 (a)."
+            "The cap event must expose the configured limit."
         )
         assert cap_event.payload["limit"] == token_cap, (
             f"``{TOKEN_CAP_EVENT}`` payload limit "
             f"{cap_event.payload['limit']!r} != configured "
-            f"{token_cap}. Property 16 (a)."
+            f"{token_cap}."
         )
 
         # ----- (b) generator stops after the cap event -----
@@ -477,7 +463,7 @@ def test_token_cap_fail_fast_invariants(
             f"``{TOKEN_CAP_EVENT}`` was emitted at index {cap_idx} "
             f"but {len(events_a) - 1 - cap_idx} more events "
             f"followed: {event_types[cap_idx + 1:]!r}. "
-            f"Property 16 (b) requires the generator to stop after "
+            "The generator must stop after "
             f"the cap event."
         )
 
@@ -485,8 +471,8 @@ def test_token_cap_fail_fast_invariants(
         assert DONE_EVENT not in event_types, (
             f"``{DONE_EVENT}`` event was emitted alongside "
             f"``{TOKEN_CAP_EVENT}`` for cap-crossing input "
-            f"{chunks!r} / cap={token_cap}; Property 16 (b) and "
-            f"(c) are mutually exclusive."
+            f"{chunks!r} / cap={token_cap}; cap and done events "
+            f"are mutually exclusive."
         )
 
         # ----- (b) provider was not drained past the cap-cross chunk
@@ -496,8 +482,8 @@ def test_token_cap_fail_fast_invariants(
         assert provider_a.consumed == cross + 1, (
             f"Provider drained {provider_a.consumed} chunks but the "
             f"cap was crossed at index {cross} (expected "
-            f"{cross + 1}). Property 16 (b) — fail-fast — requires "
-            f"the orchestrator to stop pulling immediately after "
+            f"{cross + 1}). Fail-fast behavior requires the "
+            f"orchestrator to stop pulling immediately after "
             f"detecting the cap cross."
         )
 
@@ -506,7 +492,7 @@ def test_token_cap_fail_fast_invariants(
         assert TOKEN_CAP_EVENT not in event_types, (
             f"``{TOKEN_CAP_EVENT}`` was emitted for non-crossing "
             f"input chunks={chunks!r} cap={token_cap} "
-            f"(sum={sum(chunks)}). Property 16 (c) forbids it."
+            f"(sum={sum(chunks)})."
         )
         # ``done`` must be the terminal event when chunks are
         # non-empty; an empty chunk list is a degenerate case where
@@ -518,7 +504,7 @@ def test_token_cap_fail_fast_invariants(
             assert event_types and event_types[-1] == DONE_EVENT, (
                 f"Stream over non-empty chunks {chunks!r} without "
                 f"crossing cap={token_cap} terminated with events "
-                f"{event_types!r}; Property 16 (c) requires "
+                f"{event_types!r}; within-budget streams require "
                 f"``{DONE_EVENT}`` as the closing event."
             )
 
@@ -533,7 +519,7 @@ def test_token_cap_fail_fast_invariants(
     running = 0
     for c in chunks:
         assert c >= 0, (
-            f"Property 16 (d) requires non-decreasing cumulative "
+            "Token accounting requires non-decreasing cumulative "
             f"tokens; strategy generated negative count {c}."
         )
         running += c
@@ -555,7 +541,6 @@ def test_cap_crossed_on_first_chunk_emits_only_cap_event() -> None:
     regression that always emits at least one ``token`` event
     before the cap check is caught deterministically.
 
-    Validates: Requirements 1.6.
     """
 
     assert LlmOrchestrator is not None
@@ -604,7 +589,6 @@ def test_cap_crossed_at_boundary_keeps_preceding_token_events() -> None:
     SSE sequence is two ``token`` events followed by the cap
     event — never any ``done``.
 
-    Validates: Requirements 1.6.
     """
 
     assert LlmOrchestrator is not None
@@ -632,7 +616,7 @@ def test_cap_crossed_at_boundary_keeps_preceding_token_events() -> None:
 
     # Two within-budget token chunks (running totals 40 / 80) then
     # the cap fires. The exact ``type`` of the within-budget events
-    # is ``"token"`` per design pseudocode.
+    # is ``"token"``.
     assert types[-1] == TOKEN_CAP_EVENT, (
         f"Last event type should be {TOKEN_CAP_EVENT!r}; got "
         f"{types!r}."
@@ -669,7 +653,6 @@ def test_under_cap_terminates_with_done() -> None:
     ``sum([10, 20, 30]) == 60 < cap=100`` so the only allowed
     closing event is ``done``.
 
-    Validates: Requirements 1.6.
     """
 
     assert LlmOrchestrator is not None
@@ -707,12 +690,11 @@ def test_under_cap_terminates_with_done() -> None:
 def test_cap_at_exact_boundary_does_not_fire() -> None:
     """``used_tokens == token_cap`` is **not** a crossing.
 
-    Design pseudocode uses ``used_tokens > token_cap`` (strict
+    The loop uses ``used_tokens > token_cap`` (strict
     inequality), so reaching the cap exactly is allowed and the
     stream must continue. ``[50, 50]`` with ``cap=100`` produces
     a final running total of exactly ``100`` — no cap event.
 
-    Validates: Requirements 1.6.
     """
 
     assert LlmOrchestrator is not None
@@ -750,8 +732,8 @@ def test_cap_at_exact_boundary_does_not_fire() -> None:
 
 # ---------------------------------------------------------------------------
 # Defensive: the unused-import shield silences linters for symbols
-# that exist purely so call-site type signatures stay accurate when
-# task 4.3 lands (``Iterable``, ``Awaitable``, ``Callable``).
+# that exist purely so call-site type signatures stay accurate
+# (``Iterable``, ``Awaitable``, ``Callable``).
 # ---------------------------------------------------------------------------
 
 _ = (Iterable, Awaitable, Callable)

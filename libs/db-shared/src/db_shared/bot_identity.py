@@ -1,6 +1,6 @@
-"""Bot account_id uniqueness validator (R18.4 — boot-time leg).
+"""Bot account_id uniqueness validator.
 
-This module owns the third layer of the R18 uniqueness defence:
+This module owns the third layer of the bot account uniqueness defence:
 
 * DB layer  — partial UNIQUE INDEX on ``automation.department_bots``
   ``(service, account_id) WHERE account_id <> ''`` (migration
@@ -28,7 +28,6 @@ participate in conflict detection — same convention as
 ``_extract_bot_identities`` in the CRUD layer so the three layers
 agree on the same notion of "real" id.
 
-Validates: Requirement 18.4
 """
 
 from __future__ import annotations
@@ -108,8 +107,7 @@ class BotAccountIdConflictError(ValueError):
         self.conflicts = tuple(conflicts)
         header = (
             f"refusing to start: {len(self.conflicts)} bot account_id "
-            f"uniqueness violation(s) detected in departments.json "
-            f"(R18.4):"
+            f"uniqueness violation(s) detected in departments.json:"
         )
         body = "\n".join(f"  - {c.message()}" for c in self.conflicts)
         super().__init__(f"{header}\n{body}")

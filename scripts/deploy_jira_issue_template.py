@@ -1,4 +1,4 @@
-"""Idempotent Jira Issue Template deploy script (task 12.2, R10.2).
+"""Idempotent Jira Issue Template deploy script.
 
 Deploys the platform's standard Issue Template — issue type, custom
 fields and screen scheme — to a target Jira tenant. The script reads
@@ -7,8 +7,8 @@ in-memory dict for direct programmatic use) and aligns the live Jira
 state with that desired state via per-entity ``read → diff → write``
 operations.
 
-Idempotency contract (Property 17 / R10.2)
-------------------------------------------
+Idempotency contract
+--------------------
 
 Two consecutive invocations of :func:`deploy` with the same template
 SHALL leave Jira in identical states:
@@ -26,11 +26,11 @@ The script never deletes entities — Jira admin objects can be
 referenced by historical issues, so the cleanup of removed fields /
 issue types is a separate operator-driven workflow.
 
-Dependency on ``atlassian_unified`` MCP
----------------------------------------
+Dependency on ``atlassian_mcp_bitbucket`` MCP
+---------------------------------------------
 
 Production usage routes every Jira call through the
-``atlassian_unified`` MCP service per MIMARI §1 Kural 1 (R1.2). The
+``atlassian_mcp_bitbucket`` MCP service. The
 ``deploy`` function accepts any client that satisfies the structural
 :class:`JiraTemplateClient` protocol — production wiring binds an
 MCP-backed implementation; the property test
@@ -180,8 +180,7 @@ def deploy(
 
     Returns:
         :class:`TemplateDeployResult` summarising the mutations.
-        ``result.total_mutations == 0`` indicates a strict no-op
-        (Property 17 / R10.2).
+        ``result.total_mutations == 0`` indicates a strict no-op.
     """
 
     issue_type_changes = _deploy_issue_type(client, template["issue_type"])
@@ -304,10 +303,9 @@ def load_template(path: str) -> dict[str, Any]:
 def _make_default_client(base_url: str) -> JiraTemplateClient:
     """Construct the production MCP-backed client.
 
-    Stub for now — the full MCP-backed Jira admin client lands in
-    Spec 2 alongside the rest of the activity surface. The CLI path
-    is exposed today so an operator can run the deploy step against
-    a future client without changing the script.
+    Stub for now — the full MCP-backed Jira admin client is wired by
+    the runtime layer. The CLI path is exposed so an operator can run
+    the deploy step against that client without changing the script.
     """
 
     raise RuntimeError(

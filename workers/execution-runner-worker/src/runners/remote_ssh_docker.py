@@ -1,8 +1,5 @@
 """Remote-SSH-Docker runner — workspace path derivation entry point.
 
-Spec: ``platform-mimari-uyumluluk`` Requirement 11.3 (Q13 —
-``RUNNER_BASE_PATH`` env standard) — task 13.3.
-
 Scope of this module
 --------------------
 
@@ -12,9 +9,9 @@ This module is the Docker-on-remote-host counterpart of
 under :mod:`src.activities.docker`; the surface here is intentionally
 limited to *workspace path derivation*.
 
-Task 13.3 pins the rule that both ``remote_ssh.py`` and
-``remote_ssh_docker.py`` derive the host-side workspace mount point
-**only** through :func:`runners.workspace_path.build_workspace_path`.
+Both ``remote_ssh.py`` and ``remote_ssh_docker.py`` derive the host-side
+workspace mount point **only** through
+:func:`runners.workspace_path.build_workspace_path`.
 The Docker runner mounts that path into the container as a bind-mount
 working directory, so any drift between the SSH runner's ``cd <path>``
 and the Docker runner's ``-v <path>:<path>`` would manifest as missing
@@ -70,7 +67,7 @@ def derive_workspace_path(
         issue_key: Jira-style task key (e.g. ``PAY-4211``). Validated by
             :func:`build_workspace_path`; rejected values raise
             :class:`InvalidIssueKeyError` **before** any Docker / SSH
-            command is issued (path-traversal safety, R11.3 / R11.6).
+            command is issued for path-traversal safety.
         iter_n: Iteration counter ``0..999``. Out-of-range or non-int
             values raise :class:`InvalidIterError`.
         settings: Optional :class:`Settings` instance; if omitted a

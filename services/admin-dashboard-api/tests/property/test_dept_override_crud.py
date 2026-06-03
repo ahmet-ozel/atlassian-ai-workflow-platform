@@ -1,9 +1,4 @@
-"""Property 10 — Department override CRUD honours referential / lifecycle rules.
-
-# Feature: llm-provider-management, Property 10: Department override CRUD honours referential and lifecycle rules
-
-Validates Requirements 10.2 — 10.7:
-
+"""— Department override CRUD honours referential / lifecycle rules.
 * ``set_override(dept, provider)`` upserts when ``provider`` is active.
 * ``get_override(dept)`` returns the documented payload (with shaped
   provider) or the ``provider=None`` shape for missing depts.
@@ -11,8 +6,7 @@ Validates Requirements 10.2 — 10.7:
   ``provider_not_found``).
 * Inactive provider → :class:`ProviderInactive` (→ 409
   ``provider_inactive``).
-* ``set_override(dept, provider_id=None)`` deletes the row.
-"""
+* ``set_override(dept, provider_id=None)`` deletes the row."""
 
 from __future__ import annotations
 

@@ -1,18 +1,15 @@
-"""Integration test 1.4 — ``001_prompt_sandbox_runs.sql`` migration.
+"""Integration coverage for the ``001_prompt_sandbox_runs.sql`` migration.
 
-Spec: ``.kiro/specs/platform-mimari-uyumluluk/tasks.md`` task 1.4.
 
 Validates that the ``infra/postgres/migrations/001_prompt_sandbox_runs.sql``
 migration applies cleanly on a fresh ``postgres:16-alpine`` container and
-produces the table shape the design document declares:
+produces the expected table shape:
 
 1. Schema bootstrap (``00_schemas.sql``) followed by the migration must
-   succeed without errors and be idempotent (re-running is a no-op).
-2. ``automation.prompt_sandbox_runs`` exists with **all** the columns
-   listed in design §"R7 — Prompt Promote Endpoint + ``prompt_sandbox_runs``"
-   — covering Requirement 7.2.
-3. The composite index ``idx_prompt_sandbox_runs_path_created`` exists on
-   ``(prompt_path, created_at DESC)``.
+ succeed without errors and be idempotent (re-running is a no-op).
+2. ``automation.prompt_sandbox_runs`` exists with **all** expected columns.
+ The composite index ``idx_prompt_sandbox_runs_path_created`` exists on
+ ``(prompt_path, created_at DESC)``.
 
 Gating
 ------
@@ -86,13 +83,13 @@ def _docker_available() -> bool:
 def _wait_for_pg(container_name: str, timeout: float) -> bool:
     """Wait until Postgres accepts a real ``SELECT 1`` against ``PG_DB``.
 
-    ``pg_isready`` alone is not sufficient: the official ``postgres:16-alpine``
-    image starts the server briefly during entrypoint bootstrap before the
-    init scripts have created the user database, so ``pg_isready`` can
-    return success momentarily while ``psql -d test_db`` still gets
-    ``database "test_db" does not exist``. Probing with a real SELECT
-    closes that race.
-    """
+ ``pg_isready`` alone is not sufficient: the official ``postgres:16-alpine``
+ image starts the server briefly during entrypoint bootstrap before the
+ init scripts have created the user database, so ``pg_isready`` can
+ return success momentarily while ``psql -d test_db`` still gets
+ ``database "test_db" does not exist``. Probing with a real SELECT
+ closes that race.
+ """
 
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
@@ -125,10 +122,10 @@ def _wait_for_pg(container_name: str, timeout: float) -> bool:
 def _run_sql_file(container_name: str, sql_path: Path) -> subprocess.CompletedProcess:
     """Run a SQL file via psql, forcing UTF-8 on stdin/stdout/stderr.
 
-    The SQL files contain non-ASCII characters in comments (em-dashes,
-    arrows, Turkish letters); on Windows the default subprocess codec
-    (cp1254) cannot encode those, so we explicitly request UTF-8.
-    """
+ The SQL files contain non-ASCII characters in comments (em-dashes,
+ arrows, Turkish letters); on Windows the default subprocess codec
+ (cp1254) cannot encode those, so we explicitly request UTF-8.
+ """
 
     sql_content = sql_path.read_text(encoding="utf-8")
     return subprocess.run(
@@ -238,7 +235,7 @@ def sql_paths(repo_root: Path) -> tuple[Path, Path]:
 
 @pytest.mark.integration
 class TestPromptSandboxRunsMigration:
-    """Validates Requirement 7.2 — prompt_sandbox_runs schema."""
+    """Validates prompt_sandbox_runs schema."""
 
     def test_migration_applies_cleanly(
         self, pg_container: str, sql_paths: tuple[Path, Path]
@@ -290,11 +287,11 @@ class TestPromptSandboxRunsMigration:
         result = _run_sql(
             pg_container,
             """
-            SELECT table_name
-            FROM information_schema.tables
-            WHERE table_schema = 'automation'
-              AND table_name = 'prompt_sandbox_runs';
-            """,
+ SELECT table_name
+ FROM information_schema.tables
+ WHERE table_schema = 'automation'
+ AND table_name = 'prompt_sandbox_runs';
+ """,
         )
         assert result.returncode == 0, f"Table query failed: {result.stderr}"
         tables = [line.strip() for line in result.stdout.splitlines() if line.strip()]
@@ -306,7 +303,7 @@ class TestPromptSandboxRunsMigration:
     def test_table_columns_match_design(
         self, pg_container: str, sql_paths: tuple[Path, Path]
     ) -> None:
-        """All columns from design §R7 must be present with the expected types."""
+        """All expected columns must be present with the expected types."""
 
         schemas_sql, migration_sql = sql_paths
         _run_sql_file(pg_container, schemas_sql)
@@ -315,12 +312,12 @@ class TestPromptSandboxRunsMigration:
         result = _run_sql(
             pg_container,
             """
-            SELECT column_name, data_type
-            FROM information_schema.columns
-            WHERE table_schema = 'automation'
-              AND table_name = 'prompt_sandbox_runs'
-            ORDER BY column_name;
-            """,
+ SELECT column_name, data_type
+ FROM information_schema.columns
+ WHERE table_schema = 'automation'
+ AND table_name = 'prompt_sandbox_runs'
+ ORDER BY column_name;
+ """,
         )
         assert result.returncode == 0, f"Column query failed: {result.stderr}"
 
@@ -352,7 +349,7 @@ class TestPromptSandboxRunsMigration:
     def test_id_is_primary_key_with_uuid_default(
         self, pg_container: str, sql_paths: tuple[Path, Path]
     ) -> None:
-        """``id`` must be the PK with ``gen_random_uuid()`` default."""
+        """``id`` must be the PK with ``gen_random_uuid`` default."""
 
         schemas_sql, migration_sql = sql_paths
         _run_sql_file(pg_container, schemas_sql)
@@ -362,15 +359,15 @@ class TestPromptSandboxRunsMigration:
         pk = _run_sql(
             pg_container,
             """
-            SELECT kcu.column_name
-            FROM information_schema.table_constraints tc
-            JOIN information_schema.key_column_usage kcu
-              ON tc.constraint_name = kcu.constraint_name
-             AND tc.table_schema = kcu.table_schema
-            WHERE tc.table_schema = 'automation'
-              AND tc.table_name = 'prompt_sandbox_runs'
-              AND tc.constraint_type = 'PRIMARY KEY';
-            """,
+ SELECT kcu.column_name
+ FROM information_schema.table_constraints tc
+ JOIN information_schema.key_column_usage kcu
+ ON tc.constraint_name = kcu.constraint_name
+ AND tc.table_schema = kcu.table_schema
+ WHERE tc.table_schema = 'automation'
+ AND tc.table_name = 'prompt_sandbox_runs'
+ AND tc.constraint_type = 'PRIMARY KEY';
+ """,
         )
         assert pk.returncode == 0
         pk_cols = [line.strip() for line in pk.stdout.splitlines() if line.strip()]
@@ -378,16 +375,16 @@ class TestPromptSandboxRunsMigration:
             f"Expected PK on (id,), got {pk_cols!r}"
         )
 
-        # Default check (must reference gen_random_uuid()).
+        # Default check (must reference gen_random_uuid).
         default = _run_sql(
             pg_container,
             """
-            SELECT column_default
-            FROM information_schema.columns
-            WHERE table_schema = 'automation'
-              AND table_name = 'prompt_sandbox_runs'
-              AND column_name = 'id';
-            """,
+ SELECT column_default
+ FROM information_schema.columns
+ WHERE table_schema = 'automation'
+ AND table_name = 'prompt_sandbox_runs'
+ AND column_name = 'id';
+ """,
         )
         assert default.returncode == 0
         assert "gen_random_uuid" in default.stdout, (
@@ -406,12 +403,12 @@ class TestPromptSandboxRunsMigration:
         result = _run_sql(
             pg_container,
             """
-            SELECT column_default
-            FROM information_schema.columns
-            WHERE table_schema = 'automation'
-              AND table_name = 'prompt_sandbox_runs'
-              AND column_name = 'passed';
-            """,
+ SELECT column_default
+ FROM information_schema.columns
+ WHERE table_schema = 'automation'
+ AND table_name = 'prompt_sandbox_runs'
+ AND column_name = 'passed';
+ """,
         )
         assert result.returncode == 0
         # Postgres normalizes the default to ``false`` for BOOLEAN.
@@ -431,12 +428,12 @@ class TestPromptSandboxRunsMigration:
         result = _run_sql(
             pg_container,
             """
-            SELECT indexname, indexdef
-            FROM pg_indexes
-            WHERE schemaname = 'automation'
-              AND tablename = 'prompt_sandbox_runs'
-            ORDER BY indexname;
-            """,
+ SELECT indexname, indexdef
+ FROM pg_indexes
+ WHERE schemaname = 'automation'
+ AND tablename = 'prompt_sandbox_runs'
+ ORDER BY indexname;
+ """,
         )
         assert result.returncode == 0, f"Index query failed: {result.stderr}"
 
@@ -481,20 +478,20 @@ class TestPromptSandboxRunsMigration:
         ins = _run_sql(
             pg_container,
             """
-            INSERT INTO automation.prompt_sandbox_runs
-                (prompt_path, draft_branch)
-            VALUES ('prompts/example.md', 'feature/draft-1');
-            """,
+ INSERT INTO automation.prompt_sandbox_runs
+ (prompt_path, draft_branch)
+ VALUES ('prompts/example.md', 'feature/draft-1');
+ """,
         )
         assert ins.returncode == 0, f"Minimal insert failed: {ins.stderr}"
 
         sel = _run_sql(
             pg_container,
             """
-            SELECT id::text, prompt_path, draft_branch,
-                   passed, created_at IS NOT NULL
-            FROM automation.prompt_sandbox_runs;
-            """,
+ SELECT id::text, prompt_path, draft_branch,
+ passed, created_at IS NOT NULL
+ FROM automation.prompt_sandbox_runs;
+ """,
         )
         assert sel.returncode == 0
         rows = [line for line in sel.stdout.splitlines() if line.strip()]

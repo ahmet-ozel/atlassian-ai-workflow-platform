@@ -1,26 +1,24 @@
-"""Property test P1 — ``/healthz`` becomes 200 within ``HEALTH_READY_TIMEOUT_SECONDS``.
+"""invariant P1 — ``/healthz`` becomes 200 within ``HEALTH_READY_TIMEOUT_SECONDS``.
 
-**Validates: Requirement 12.6**
 
-Property
+
+invariant
 --------
 For any drawn ``(delay, timeout_input)`` pair, after a successful
-Compose ``up`` the :class:`LifecycleService.start` orchestrator
+Compose ``up`` the:class:`LifecycleService.start` orchestrator
 SHALL satisfy:
 
 * ``state == "running"`` when the configured health probe transitions
-  to ``healthy`` no later than the *clamped*
-  ``HEALTH_READY_TIMEOUT_SECONDS`` (default ``60``, hard upper bound
-  ``180``).
+ to ``healthy`` no later than the *clamped*
+ ``HEALTH_READY_TIMEOUT_SECONDS`` (default ``60``, hard upper bound
+ ``180``).
 * ``state == "failed"`` when the health probe stays ``unhealthy``
-  beyond the clamped timeout — independent of how far out-of-range
-  the operator-supplied ``timeout_input`` was.
+ beyond the clamped timeout — independent of how far out-of-range
+ the operator-supplied ``timeout_input`` was.
 
 The property exercises both the normal case (``timeout_input`` inside
-``[1, 180]``) and the **clamp** behaviour required by Requirement
-12.6: ``timeout_input <= 0`` clamps up to ``1`` second and any value
-above ``180`` clamps down to ``180`` seconds. The clamp lives inside
-:class:`LifecycleService.__init__` (see
+``[1, 180]``) and the **clamp** behaviour required by the operational rule: ``timeout_input <= 0`` clamps up to ``1`` second and any value
+above ``180`` clamps down to ``180`` seconds. The clamp lives inside:class:`LifecycleService.__init__` (see
 ``services/admin-dashboard-api/src/lifecycle/service.py``); this test
 asserts the *observable outcome* of the clamp rather than the
 internal attribute, so the property keeps passing if the clamp is
@@ -29,19 +27,19 @@ later refactored as long as the contract is preserved.
 Strategy
 --------
 ``delay``: ``st.integers(min_value=0, max_value=180)``
-    The "delay" in seconds before the stub ``HealthProbe.probe``
-    starts returning ``healthy`` snapshots. The fake emits exactly
-    ``2 * delay`` consecutive ``unhealthy`` snapshots (each polling
-    step is :data:`_HEALTH_POLL_STEP_SECONDS` ``= 0.5`` seconds —
-    see :func:`_wait_for_healthy`) before flipping to ``healthy``.
-    With this mapping the orchestrator's polling loop reaches the
-    healthy snapshot at virtual elapsed-time ``delay`` seconds.
+ The "delay" in seconds before the stub ``HealthProbe.probe``
+ starts returning ``healthy`` snapshots. The fake emits exactly
+ ``2 * delay`` consecutive ``unhealthy`` snapshots (each polling
+ step is:data:`_HEALTH_POLL_STEP_SECONDS` ``= 0.5`` seconds —
+ see:func:`_wait_for_healthy`) before flipping to ``healthy``.
+ With this mapping the orchestrator's polling loop reaches the
+ healthy snapshot at virtual elapsed-time ``delay`` seconds.
 
 ``timeout_input``: ``st.integers(min_value=-30, max_value=300)``
-    The raw value passed to ``LifecycleService(...,
-    health_ready_timeout_seconds=...)``. Negative and zero values
-    exercise the lower clamp; values above ``180`` exercise the
-    upper clamp; values in ``[1, 180]`` flow through unchanged.
+ The raw value passed to ``LifecycleService(...,
+ health_ready_timeout_seconds=...)``. Negative and zero values
+ exercise the lower clamp; values above ``180`` exercise the
+ upper clamp; values in ``[1, 180]`` flow through unchanged.
 
 Predicate
 ---------
@@ -51,14 +49,14 @@ The orchestrator's polling loop returns ``running`` iff
 ``delay <= effective_timeout`` and ``failed`` otherwise. This
 follows from the loop body:
 
-    while True:
-        snap = await probe(entry)
-        if snap.state in {"healthy", "unknown"}:
-            return True
-        if elapsed >= deadline:
-            return False
-        await sleep(0.5)
-        elapsed += 0.5
+ while True:
+ snap = await probe(entry)
+ if snap.state in {"healthy", "unknown"}:
+ return True
+ if elapsed >= deadline:
+ return False
+ await sleep(0.5)
+ elapsed += 0.5
 
 For ``2 * delay`` unhealthy probes the most stringent timeout check
 is ``(2*delay - 1) * 0.5 >= effective_timeout`` at the last
@@ -69,7 +67,7 @@ Stub fakes
 ----------
 Mirror the patterns in
 ``services/admin-dashboard-api/tests/unit/test_lifecycle_service.py``
-and the sister property test
+and the sister invariant
 ``tests/property/test_stop_idempotent.py``: Vault writes succeed,
 Compose ``up`` exits ``0``, audit precheck/write all return cleanly,
 and ``asyncio.sleep`` is replaced by a no-op so the polling loop
@@ -99,7 +97,7 @@ if str(_TESTS_DIR) not in sys.path:
 
 # The ``admin-dashboard-api`` package is not pip-installed inside the
 # test environment, so we expose its source tree on ``sys.path`` the
-# same way the sister property tests do. This lets us
+# same way the sister invariant do. This lets us
 # ``import src.lifecycle.service`` directly.
 _SERVICE_ROOT = (
     Path(__file__).resolve().parents[2]
@@ -172,9 +170,9 @@ class _FakeVaultClient:
 @dataclass
 class _FakeComposeRunner:
     """Compose stub — every ``up`` call exits 0 (the precondition for
-    Property P1). ``stop`` / ``logs`` / ``exec_test`` are not
-    exercised by this property but are stubbed so the orchestrator
-    can be constructed end-to-end."""
+ invariant). ``stop`` / ``logs`` / ``exec_test`` are not
+ exercised by this property but are stubbed so the orchestrator
+ can be constructed end-to-end."""
 
     up_calls: list[dict[str, Any]] = field(default_factory=list)
 
@@ -232,14 +230,14 @@ class _FakeComposeRunner:
 @dataclass
 class _FakeHealthProbe:
     """Returns ``unhealthy_count`` consecutive ``unhealthy`` snapshots,
-    then ``healthy`` from then on.
+ then ``healthy`` from then on.
 
-    The orchestrator's polling loop drives ``probe`` until it sees a
-    ``healthy`` snapshot or the timeout fires. Modelling the delay as
-    "N unhealthy snapshots before the first healthy one" maps cleanly
-    to the elapsed-time the loop reaches when it observes the healthy
-    state — see the predicate analysis in the module docstring.
-    """
+ The orchestrator's polling loop drives ``probe`` until it sees a
+ ``healthy`` snapshot or the timeout fires. Modelling the delay as
+ "N unhealthy snapshots before the first healthy one" maps cleanly
+ to the elapsed-time the loop reaches when it observes the healthy
+ state — see the predicate analysis in the module docstring.
+ """
 
     unhealthy_count: int
     calls: list[ManagedServiceEntry] = field(default_factory=list)
@@ -281,7 +279,7 @@ _HTTP_ENV_EXAMPLE = (
 )
 
 #: ``HEALTH_POLL_STEP_SECONDS`` is the cadence at which
-#: :meth:`LifecycleService._wait_for_healthy` re-probes between
+#::meth:`LifecycleService._wait_for_healthy` re-probes between
 #: unhealthy snapshots. We mirror it here as a literal so the test's
 #: predicate stays in sync with the implementation; if the constant
 #: ever changes the regression will surface as a clean assertion
@@ -350,18 +348,16 @@ def _make_service(
 
 
 def _effective_timeout(timeout_input: float) -> float:
-    """Mirror the clamp applied by :class:`LifecycleService.__init__`.
-
-    Requirement 12.6: default ``60``, hard upper bound ``180``;
-    out-of-range values clamp to ``[1, 180]`` (lower bound chosen by
-    the implementation to keep the polling loop well-defined).
-    """
+    """Mirror the clamp applied by:class:`LifecycleService.__init__`.: default ``60``, hard upper bound ``180``;
+ out-of-range values clamp to ``[1, 180]`` (lower bound chosen by
+ the implementation to keep the polling loop well-defined).
+ """
 
     return min(max(1.0, timeout_input), MAX_HEALTH_READY_TIMEOUT_SECONDS)
 
 
 # ---------------------------------------------------------------------------
-# Property — Property P1
+# invariant — invariant
 # ---------------------------------------------------------------------------
 
 
@@ -379,11 +375,11 @@ def test_health_ready_timeout_property(
     timeout_input: int,
     tmp_path_factory: Any,
 ) -> None:
-    """Property P1 — ``state`` flips to ``running`` iff ``delay`` ≤
-    clamped ``HEALTH_READY_TIMEOUT_SECONDS``.
+    """invariant — ``state`` flips to ``running`` iff ``delay`` ≤
+ clamped ``HEALTH_READY_TIMEOUT_SECONDS``.
 
-    Validates: Requirement 12.6.
-    """
+
+ """
 
     workspace = _build_workspace(tmp_path_factory.mktemp("ws"))
 
@@ -439,7 +435,7 @@ def test_health_ready_timeout_property(
 
 
 # ---------------------------------------------------------------------------
-# Concrete clamp anchors (Requirement 12.6 — clamp behaviour)
+# Concrete clamp anchors — clamp behaviour)
 # ---------------------------------------------------------------------------
 
 
@@ -457,7 +453,7 @@ def test_max_timeout_is_180_seconds(tmp_path: Path) -> None:
 
 def test_timeout_input_above_180_clamps_down(tmp_path: Path) -> None:
     """``timeout_input=300`` clamps to ``180``; a probe needing 200 s
-    therefore times out (``failed``) even though ``200 < 300``."""
+ therefore times out (``failed``) even though ``200 < 300``."""
 
     workspace = _build_workspace(tmp_path)
     # 200 seconds of unhealthy delay => 400 unhealthy snapshots.
@@ -483,7 +479,7 @@ def test_timeout_input_above_180_clamps_down(tmp_path: Path) -> None:
 
 def test_timeout_input_at_or_below_zero_clamps_up(tmp_path: Path) -> None:
     """``timeout_input=0`` clamps to ``1``; a probe needing 0 s
-    succeeds, but a probe needing 2 s fails."""
+ succeeds, but a probe needing 2 s fails."""
 
     workspace = _build_workspace(tmp_path)
 
@@ -526,7 +522,7 @@ def test_timeout_input_at_or_below_zero_clamps_up(tmp_path: Path) -> None:
 
 def test_within_default_timeout_succeeds(tmp_path: Path) -> None:
     """Concrete sanity case — a probe that flips healthy after 30 s
-    must succeed against the default 60 s timeout."""
+ must succeed against the default 60 s timeout."""
 
     workspace = _build_workspace(tmp_path)
     svc, _, _, _, _ = _make_service(

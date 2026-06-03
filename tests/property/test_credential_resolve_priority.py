@@ -1,47 +1,43 @@
-"""Property test 17 — Credential resolve priority + audit emission.
+"""invariant 17 — Credential resolve priority + audit emission.
 
-**Validates: Requirements 8.5, 8.4**
+
 
 Hypothesis-driven verification of the audit-emitting credential
-resolver wrapper described in design.md §"Property 17" and
-tasks.md §4.7 / §4.12 of the ``platform-mimari-ops`` spec.
+resolver wrapper.
 
 Scope and surface under test
 ----------------------------
 
-The foundation resolver
+The base resolver
 (:class:`automation_service.credentials.CredentialResolver`) already
-owns the per-user → org-default *priority decision* — Property 15
-(``test_credential_inject.py`` §Property 15) pins that contract
+owns the per-user → org-default *priority decision* — invariant
+(``test_credential_inject.py`` §invariant) pins that contract
 across the full 2x2 matrix of
 ``(per_user_present, org_default_present)``.
 
-Property 17 layers one extra concern on top: the **audit emission**
-contract owned by
-:class:`assistant_service.credentials.AuditingCredentialResolver`
-(task 4.7). For every resolution outcome the wrapper writes exactly
+invariant layers one extra concern on top: the **audit emission**
+contract owned by:class:`assistant_service.credentials.AuditingCredentialResolver`. For every resolution outcome the wrapper writes exactly
 one audit event whose ``action`` field discriminates the path that
 was used (or the failure mode). The four invariants below pin that
 contract:
 
-* P17a — per-user override hit emits ``credential_resolved_per_user_session``
-  (``result="ok"``); the underlying resolver returned source
-  ``"user_session"`` so the wrapper MUST NOT mis-tag the event.
-* P17b — org-default fallback hit emits ``credential_resolved_org_default``
-  (``result="ok"``); the underlying resolver returned source
-  ``"org_default"``.
-* P17c — both paths missing emits ``credential_resolve_failed``
-  (``result="error"``) and re-raises :class:`CredentialNotFoundError`
-  (a documented public alias of the foundation
-  :class:`CredentialMissing`); the audit row is written **before**
-  the exception escapes so a caller dropping the exception still
-  leaves the failure observable in the audit log.
-* P17d — the audit ``payload`` dict carries diagnostic identifiers
-  only (``service``, ``session_id``, ``vault_path`` /
-  ``attempted_paths``) and **never** any plain-credential token /
-  password / secret value (Spec 1 R6 log redaction parity).
+* Per-user override hit emits ``credential_resolved_per_user_session``
+ (``result="ok"``); the underlying resolver returned source
+ ``"user_session"`` so the wrapper MUST NOT mis-tag the event.
+* Org-default fallback hit emits ``credential_resolved_org_default``
+ (``result="ok"``); the underlying resolver returned source
+ ``"org_default"``.
+* Both paths missing emits ``credential_resolve_failed``
+ (``result="error"``) and re-raises:class:`CredentialNotFoundError`
+ (a documented public alias of the base:class:`CredentialMissing`); the audit row is written **before**
+ the exception escapes so a caller dropping the exception still
+ leaves the failure observable in the audit log.
+* The audit ``payload`` dict carries diagnostic identifiers
+ only (``service``, ``session_id``, ``vault_path`` /
+ ``attempted_paths``) and **never** any plain-credential token /
+ password / secret value.
 
-A fifth invariant (P17e) pins **determinism**: re-running the
+The determinism invariant pins re-running the
 wrapper with the same ``(session_id, dept_id, service)`` triple
 against the same Vault state produces the same output (same
 ``ResolvedCredential.path`` / ``ResolvedCredential.source`` and the
@@ -50,7 +46,7 @@ same audit ``action`` / ``payload``).
 Strategies stay tight: the test only varies the boolean inputs that
 drive the audit decision — ``(has_user_session_cred,
 has_org_default_cred)`` — plus path-safe identifier strings.
-The Vault payload values are kept fixed because Property 15 already
+The Vault payload values are kept fixed because invariant already
 covers payload pass-through; varying them here would burn Hypothesis
 budget without improving coverage of the audit contract.
 """
@@ -69,8 +65,8 @@ from hypothesis import strategies as st
 # ---------------------------------------------------------------------------
 # sys.path bootstrap — the assistant-service is *not* a shared library so
 # it is not on ``pytest.ini``'s ``pythonpath``. We insert its source root
-# manually so ``from src.credentials import ...`` resolves. We also need
-# ``automation_service.credentials`` (the foundation resolver) so the
+# manually so ``from src.credentials import...`` resolves. We also need
+# ``automation_service.credentials`` (the base resolver) so the
 # wrapper's import chain succeeds; that module lives under
 # ``services/automation-service/src/`` and is added the same way.
 # Mirrors the bootstrap used by ``test_session_credential.py`` and
@@ -139,7 +135,7 @@ _SESSION_ID = st.text(
     max_size=32,
 )
 
-# Department ids — same character class, non-empty (foundation
+# Department ids — same character class, non-empty (base
 # resolver rejects empty strings with ValueError; we don't want to
 # accidentally exercise that pre-condition path here).
 _DEPT_ID = st.text(
@@ -163,10 +159,10 @@ _SERVICE: st.SearchStrategy[AtlassianService] = st.sampled_from(
 # ---------------------------------------------------------------------------
 
 
-# Distinct sentinel payloads so "which path won?" is unambiguous in
+# Distinct sentinel payloads so "which path wonsection" is unambiguous in
 # assertions. Both contain plain-credential keys
 # (``personal_token`` / ``api_token``) so the no-leak invariant
-# (P17d) is genuinely exercised — if the wrapper ever copied
+# is genuinely exercised — if the wrapper ever copied
 # ``data`` into the audit payload, the property would catch it.
 _USER_SECRET: Mapping[str, str] = {
     "url": "https://acme.atlassian.net",
@@ -198,10 +194,10 @@ _FORBIDDEN_VALUES: frozenset[str] = frozenset(
 class _FakeVault:
     """Tiny in-memory ``VaultReader`` (KeyError on miss).
 
-    Records every read so determinism (P17e) can assert two
-    consecutive calls hit the same path. Mirrors the protocol
-    contract documented in :mod:`automation_service.credentials`.
-    """
+ Records every read so determinism can assert two
+ consecutive calls hit the same path. Mirrors the protocol
+ contract documented in:mod:`automation_service.credentials`.
+ """
 
     def __init__(self, secrets: Mapping[str, Mapping[str, str]] | None = None) -> None:
         self.secrets: dict[str, Mapping[str, str]] = dict(secrets or {})
@@ -215,7 +211,7 @@ class _FakeVault:
 
 
 class _CapturingAudit:
-    """List-backed :class:`AuditWriterProtocol` for assertion."""
+    """List-backed:class:`AuditWriterProtocol` for assertion."""
 
     def __init__(self) -> None:
         self.events: list[AuditEvent] = []
@@ -232,11 +228,11 @@ def _build_resolver(
 ) -> tuple[AuditingCredentialResolver, _FakeVault, _CapturingAudit]:
     """Build the wrapper + its collaborators with a fixed clock.
 
-    Using a fixed clock keeps ``timestamp`` stable across the two
-    calls in the determinism property (P17e). The clock value
-    itself is irrelevant to the audit contract; only the action /
-    payload / result fields are asserted on.
-    """
+ Using a fixed clock keeps ``timestamp`` stable across the two
+ calls in the determinism property. The clock value
+ itself is irrelevant to the audit contract; only the action /
+ payload / result fields are asserted on.
+ """
 
     vault = _FakeVault(secrets)
     audit = _CapturingAudit()
@@ -254,33 +250,33 @@ def _build_resolver(
 def _assert_no_plain_credential(payload: Mapping[str, object] | None) -> None:
     """Assert no Vault ``data`` value bleeds into the audit payload.
 
-    P17 (d) — the audit row carries diagnostic identifiers only.
-    We check both shapes the leak could take:
+ The audit row carries diagnostic identifiers only.
+ We check both shapes the leak could take:
 
-    1. A ``data`` / token-shaped key landed in the payload.
-    2. A token *value* appears anywhere in the payload's stringified
-       form (defends against a future regression that nests the
-       resolver result under an unexpected key).
-    """
+ 1. A ``data`` / token-shaped key landed in the payload.
+ 2. A token *value* appears anywhere in the payload's stringified
+ form (defends against a future regression that nests the
+ resolver result under an unexpected key).
+ """
 
     assert payload is not None
     # Shape: forbidden keys.
     for key in payload.keys():
         assert key not in PLAIN_CREDENTIAL_KEYS, (
-            f"Property 17d violated: audit payload contains plain-credential "
+            f"invariant violated: audit payload contains plain-credential "
             f"key {key!r}. payload={dict(payload)!r}"
         )
     # Shape: forbidden values, anywhere in the rendered payload.
     rendered = repr(payload)
     for forbidden in _FORBIDDEN_VALUES:
         assert forbidden not in rendered, (
-            f"Property 17d violated: audit payload contains plain-credential "
+            f"invariant violated: audit payload contains plain-credential "
             f"value {forbidden!r}. payload={dict(payload)!r}"
         )
 
 
 # ---------------------------------------------------------------------------
-# Property 17a — per-user override hit emits the per-user audit action
+# invariant — per-user override hit emits the per-user audit action
 # ---------------------------------------------------------------------------
 
 
@@ -293,21 +289,21 @@ def _assert_no_plain_credential(payload: Mapping[str, object] | None) -> None:
 def test_p17a_per_user_hit_emits_per_user_session_audit(
     session_id: str, dept_id: str, service: AtlassianService
 ) -> None:
-    """Property 17a — per-user hit emits ``credential_resolved_per_user_session``.
+    """invariant — per-user hit emits ``credential_resolved_per_user_session``.
 
-    **Validates: Requirements 8.5, 8.4**
 
-    For every ``(session_id, dept_id, service)`` triple where the
-    per-user override exists at
-    ``vault:atlassian/_user_session/<session_id>/<service>``, the
-    wrapper MUST emit exactly one audit event whose ``action`` is
-    the per-user session action and whose ``result`` is ``"ok"``.
 
-    The org-default path may or may not exist — the audit decision
-    is owned solely by which path *produced* the credential
-    (Property 15 short-circuits on the per-user hit, so the
-    org-default state is irrelevant here).
-    """
+ For every ``(session_id, dept_id, service)`` triple where the
+ per-user override exists at
+ ``vault:atlassian/_user_session/<session_id>/<service>``, the
+ wrapper MUST emit exactly one audit event whose ``action`` is
+ the per-user session action and whose ``result`` is ``"ok"``.
+
+ The org-default path may or may not exist — the audit decision
+ is owned solely by which path *produced* the credential
+ (invariant short-circuits on the per-user hit, so the
+ org-default state is irrelevant here).
+ """
 
     user_path = build_user_session_path(session_id, service)
     org_path = build_org_default_path(dept_id, service)
@@ -325,12 +321,12 @@ def test_p17a_per_user_hit_emits_per_user_session_audit(
     assert result.data == _USER_SECRET
 
     assert len(audit.events) == 1, (
-        f"Property 17a violated: expected exactly one audit event, "
+        f"invariant violated: expected exactly one audit event, "
         f"got {len(audit.events)} ({audit.events!r})."
     )
     event = audit.events[0]
     assert event.action == AUDIT_ACTION_PER_USER, (
-        f"Property 17a violated: expected action="
+        f"invariant violated: expected action="
         f"{AUDIT_ACTION_PER_USER!r}, got {event.action!r}."
     )
     assert event.result == "ok"
@@ -344,7 +340,7 @@ def test_p17a_per_user_hit_emits_per_user_session_audit(
 
 
 # ---------------------------------------------------------------------------
-# Property 17b — org-default hit emits the org-default audit action
+# invariant — org-default hit emits the org-default audit action
 # ---------------------------------------------------------------------------
 
 
@@ -357,17 +353,17 @@ def test_p17a_per_user_hit_emits_per_user_session_audit(
 def test_p17b_org_default_fallback_emits_org_default_audit(
     session_id: str, dept_id: str, service: AtlassianService
 ) -> None:
-    """Property 17b — org-default fallback emits ``credential_resolved_org_default``.
+    """invariant — org-default fallback emits ``credential_resolved_org_default``.
 
-    **Validates: Requirements 8.5, 8.4**
 
-    When the per-user path is absent and the org-default path
-    populated, the wrapper MUST emit exactly one audit event whose
-    ``action`` is the org-default action and whose ``result`` is
-    ``"ok"``. The payload's ``vault_path`` MUST point at the
-    org-default path so dashboards can correlate the resolution
-    with the bot credential.
-    """
+
+ When the per-user path is absent and the org-default path
+ populated, the wrapper MUST emit exactly one audit event whose
+ ``action`` is the org-default action and whose ``result`` is
+ ``"ok"``. The payload's ``vault_path`` MUST point at the
+ org-default path so dashboards can correlate the resolution
+ with the bot credential.
+ """
 
     org_path = build_org_default_path(dept_id, service)
 
@@ -382,7 +378,7 @@ def test_p17b_org_default_fallback_emits_org_default_audit(
     assert len(audit.events) == 1
     event = audit.events[0]
     assert event.action == AUDIT_ACTION_ORG_DEFAULT, (
-        f"Property 17b violated: expected action="
+        f"invariant violated: expected action="
         f"{AUDIT_ACTION_ORG_DEFAULT!r}, got {event.action!r}."
     )
     assert event.result == "ok"
@@ -395,7 +391,7 @@ def test_p17b_org_default_fallback_emits_org_default_audit(
 
 
 # ---------------------------------------------------------------------------
-# Property 17c — both missing → CredentialNotFoundError + failure audit
+# invariant — both missing → CredentialNotFoundError + failure audit
 # ---------------------------------------------------------------------------
 
 
@@ -408,17 +404,17 @@ def test_p17b_org_default_fallback_emits_org_default_audit(
 def test_p17c_both_missing_raises_and_emits_failure_audit(
     session_id: str, dept_id: str, service: AtlassianService
 ) -> None:
-    """Property 17c — both missing → ``credential_resolve_failed`` + raise.
+    """invariant — both missing → ``credential_resolve_failed`` + raise.
 
-    **Validates: Requirements 8.5, 8.4**
 
-    The wrapper writes the failure audit **before** re-raising the
-    exception so a caller dropping the exception still leaves the
-    failure observable in the audit log. The exception type is the
-    documented public alias :class:`CredentialNotFoundError` which
-    subclasses the foundation :class:`CredentialMissing` so callers
-    that catch the foundation type keep working.
-    """
+
+ The wrapper writes the failure audit **before** re-raising the
+ exception so a caller dropping the exception still leaves the
+ failure observable in the audit log. The exception type is the
+ documented public alias:class:`CredentialNotFoundError` which
+ subclasses the base:class:`CredentialMissing` so callers
+ that catch the base type keep working.
+ """
 
     user_path = build_user_session_path(session_id, service)
     org_path = build_org_default_path(dept_id, service)
@@ -430,7 +426,7 @@ def test_p17c_both_missing_raises_and_emits_failure_audit(
         resolver.resolve(session_id, dept_id, service)
 
     err = exc_info.value
-    # Public alias preserves the foundation contract.
+    # Public alias preserves the base resolver contract.
     assert isinstance(err, CredentialMissing)
     assert err.attempted_paths == (user_path, org_path)
 
@@ -438,7 +434,7 @@ def test_p17c_both_missing_raises_and_emits_failure_audit(
     assert len(audit.events) == 1
     event = audit.events[0]
     assert event.action == AUDIT_ACTION_FAILED, (
-        f"Property 17c violated: expected action="
+        f"invariant violated: expected action="
         f"{AUDIT_ACTION_FAILED!r}, got {event.action!r}."
     )
     assert event.result == "error"
@@ -447,7 +443,7 @@ def test_p17c_both_missing_raises_and_emits_failure_audit(
     # Both paths recorded (path strings only — no secret material).
     attempted = event.payload.get("attempted_paths")
     assert attempted == [user_path, org_path], (
-        f"Property 17c violated: failure payload attempted_paths "
+        f"invariant violated: failure payload attempted_paths "
         f"mismatch. expected={[user_path, org_path]!r}, got={attempted!r}"
     )
     assert event.payload.get("service") == service
@@ -455,7 +451,7 @@ def test_p17c_both_missing_raises_and_emits_failure_audit(
 
 
 # ---------------------------------------------------------------------------
-# Property 17d — full 2x2 matrix: payload never carries plain credential
+# invariant — full 2x2 matrix: payload never carries plain credential
 # ---------------------------------------------------------------------------
 
 
@@ -478,17 +474,17 @@ def test_p17d_audit_payload_never_contains_plain_credential(
     has_user: bool,
     has_org: bool,
 ) -> None:
-    """Property 17d — audit payload never leaks plain-credential material.
+    """invariant — audit payload never leaks plain-credential material.
 
-    **Validates: Requirements 8.5, 8.4** (Spec 1 R6 log-redaction parity)
 
-    For *every* combination of ``(has_user, has_org)`` — including
-    the failure case — the resulting audit ``payload`` MUST NOT
-    contain any forbidden token / password / secret key, and MUST
-    NOT contain any of the plain-credential *values* the resolver
-    fetched from Vault. This is the dual of the foundation log
-    redaction filter (Spec 1 R6) at the application layer.
-    """
+
+ For *every* combination of ``(has_user, has_org)`` — including
+ the failure case — the resulting audit ``payload`` MUST NOT
+ contain any forbidden token / password / secret key, and MUST
+ NOT contain any of the plain-credential *values* the resolver
+ fetched from Vault. This is the application-layer counterpart to
+ the log redaction filter.
+ """
 
     user_path = build_user_session_path(session_id, service)
     org_path = build_org_default_path(dept_id, service)
@@ -513,7 +509,7 @@ def test_p17d_audit_payload_never_contains_plain_credential(
 
 
 # ---------------------------------------------------------------------------
-# Property 17e — determinism: same inputs ⇒ same path read + same audit
+# invariant — determinism: same inputs ⇒ same path read + same audit
 # ---------------------------------------------------------------------------
 
 
@@ -536,21 +532,21 @@ def test_p17e_resolution_is_deterministic(
     has_user: bool,
     has_org: bool,
 ) -> None:
-    """Property 17e — two calls produce the same path + audit action.
+    """invariant — two calls produce the same path + audit action.
 
-    **Validates: Requirements 8.5, 8.4**
 
-    Calling :meth:`resolve` twice with identical
-    ``(session_id, dept_id, service)`` against an unchanged Vault
-    state MUST produce identical observable behaviour:
 
-    * The resolver reads the same path(s) on both calls (vault.calls
-      doubles in length and the second half mirrors the first).
-    * The audit emits the same ``action`` / ``result`` / ``payload``
-      shape on both calls (timestamps may differ in production but
-      we pin the clock for the property; the *kinds* of fields are
-      what matter for the determinism contract).
-    """
+ Calling:meth:`resolve` twice with identical
+ ``(session_id, dept_id, service)`` against an unchanged Vault
+ state MUST produce identical observable behaviour:
+
+ * The resolver reads the same path(s) on both calls (vault.calls
+ doubles in length and the second half mirrors the first).
+ * The audit emits the same ``action`` / ``result`` / ``payload``
+ shape on both calls (timestamps may differ in production but
+ we pin the clock for the property; the *kinds* of fields are
+ what matter for the determinism contract).
+ """
 
     user_path = build_user_session_path(session_id, service)
     org_path = build_org_default_path(dept_id, service)
@@ -581,13 +577,13 @@ def test_p17e_resolution_is_deterministic(
     # call — the second call's reads mirror the first call's.
     n = len(vault.calls)
     assert n % 2 == 0, (
-        f"Property 17e violated: vault.calls length is odd ({n}); "
+        f"invariant violated: vault.calls length is odd ({n}); "
         f"the two resolver invocations did not produce a symmetric "
         f"call sequence."
     )
     half = n // 2
     assert vault.calls[:half] == vault.calls[half:], (
-        f"Property 17e violated: vault.calls are not deterministic. "
+        f"invariant violated: vault.calls are not deterministic. "
         f"first half={vault.calls[:half]!r}, "
         f"second half={vault.calls[half:]!r}."
     )
@@ -599,7 +595,7 @@ def test_p17e_resolution_is_deterministic(
     assert a.result == b.result
     assert a.dept_id == b.dept_id
     assert a.payload == b.payload, (
-        f"Property 17e violated: audit payloads diverge across "
+        f"invariant violated: audit payloads diverge across "
         f"identical resolver inputs. first={a.payload!r}, "
         f"second={b.payload!r}."
     )

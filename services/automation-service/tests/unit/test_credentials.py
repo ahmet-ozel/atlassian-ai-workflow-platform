@@ -1,8 +1,8 @@
 """Unit tests for ``automation_service.credentials.CredentialResolver``.
 
-Covers task 12.5 / Requirement 10.8: per-user credential takes
-priority over org-default; both missing surfaces ``CredentialMissing``
-with ``error_code == "credential_missing"``.
+Covers the priority rule where a per-user credential takes precedence
+over the org-default; both missing surfaces ``CredentialMissing`` with
+``error_code == "credential_missing"``.
 
 The 2x2 truth table is exercised explicitly so the priority rule is
 locked down for both directions:
@@ -123,7 +123,7 @@ def test_org_default_path_layout() -> None:
 
 
 def test_resolve_user_present_org_present_prefers_user() -> None:
-    """When both paths exist, the per-user override wins (R10.8)."""
+    """When both paths exist, the per-user override wins."""
 
     vault = _FakeVault({_USER_PATH: _USER_SECRET, _ORG_PATH: _ORG_SECRET})
     resolver = CredentialResolver(vault=vault)

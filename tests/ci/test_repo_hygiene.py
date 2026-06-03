@@ -1,21 +1,17 @@
-"""CI gate — repo hygiene (`platform-mimari-uyumluluk` task 17.3).
-
-**Validates: Requirement 17.4**
+"""CI gate — repo hygiene.
 
 Some development sessions accidentally redirected Python REPL output
 (`type(x).__name__`, `dir(x)`, ad-hoc print statements) to disk and
 left files literally named ``{key``, ``0,``, ``bytes``, ``dict[str``,
-``None``, ``set()`` or ``str`` checked into ``services/atlassian_unified/``.
-Tasks 17.1 and 17.2 deleted those leftovers and updated ``.gitignore``;
-this gate keeps the repository clean by failing CI the moment any of
-those names reappear anywhere in the workspace tree.
+``None``, ``set()`` or ``str`` checked into the services tree. This gate
+keeps the repository clean by failing CI the moment any of those names
+reappear anywhere in the workspace tree.
 
-The list of forbidden basename patterns mirrors Requirement 17.1
-verbatim. We deliberately match only file *basenames* (not directory
-names) so legitimate package directories such as ``services/``,
-``src/`` and ``str/`` are not flagged, and legitimate Python source
-files such as ``dict_utils.py`` or ``none_test.py`` keep their
-extensions and therefore never match the bare-identifier patterns.
+We deliberately match only file *basenames* (not directory names) so
+legitimate package directories such as ``services/``, ``src/`` and
+``str/`` are not flagged, and legitimate Python source files such as
+``dict_utils.py`` or ``none_test.py`` keep their extensions and
+therefore never match the bare-identifier patterns.
 
 The walker prunes the same vendor / cache / build trees as
 ``tests/property/test_out_of_scope_paths.py`` so we do not hand-roll
@@ -46,9 +42,8 @@ from conftest import WORKSPACE_ROOT  # noqa: E402
 # ---------------------------------------------------------------------------
 
 #: Forbidden file basenames. Each entry is an ``fnmatch`` pattern
-#: applied against the leaf filename only. The list is the canonical
-#: enumeration from Requirement 17.1 plus two extra patterns covering
-#: the long form of the same Python type-hint leakage:
+#: applied against the leaf filename only. The list covers accidental
+#: Python type-hint leakage:
 #:
 #: * ``{*``         — anything starting with ``{`` (``{key``,
 #:                    ``{value: int}``, …).
@@ -79,8 +74,8 @@ _FORBIDDEN_BASENAME_PATTERNS: tuple[str, ...] = (
 #: Directories pruned during the recursive walk. Mirrors the exclusion
 #: set in ``tests/property/test_out_of_scope_paths.py`` so vendored
 #: trees, virtual envs, build outputs and tooling caches are not
-#: scanned. ``atlassian_unified`` is kept as a defensive prune in case
-#: the directory is re-introduced as an immutable input.
+#: scanned. ``atlassian_mcp_bitbucket`` is pruned with the other
+#: service-owned dependency trees.
 _EXCLUDED_DIR_NAMES: frozenset[str] = frozenset(
     {
         "node_modules",
@@ -88,7 +83,7 @@ _EXCLUDED_DIR_NAMES: frozenset[str] = frozenset(
         "venv",
         ".git",
         ".next",
-        "atlassian_unified",
+        "atlassian_mcp_bitbucket",
         ".hypothesis",
         ".pytest_cache",
         "__pycache__",
@@ -141,7 +136,7 @@ def _walk_repo_files(root: Path) -> list[Path]:
     "pattern", _FORBIDDEN_BASENAME_PATTERNS, ids=list(_FORBIDDEN_BASENAME_PATTERNS)
 )
 def test_no_forbidden_basenames_anywhere(pattern: str) -> None:
-    """Requirement 17.4 — no Python type-hint leakage filenames remain.
+    """No Python type-hint leakage filenames remain.
 
     For each forbidden basename pattern we walk the workspace tree and
     assert there is no file whose leaf name matches it. The failure
@@ -156,36 +151,28 @@ def test_no_forbidden_basenames_anywhere(pattern: str) -> None:
 
     assert not offenders, (
         f"Forbidden basename pattern {pattern!r} matched {len(offenders)} "
-        f"file(s) under the workspace root. Per Requirement 17.4 these "
-        f"are accidental Python type-hint outputs (e.g. "
+        f"file(s) under the workspace root. These are accidental Python "
+        f"type-hint outputs (e.g. "
         f"``type(x).__name__``) redirected to disk and must be deleted. "
         f"Offending paths: {offenders}"
     )
 
 
-def test_atlassian_unified_subtree_has_no_venv_or_nested_git() -> None:
-    """Requirement 17.2/17.3 — no ``.venv`` or worktree-style ``.git``
-    inside ``services/atlassian_unified/``.
+def test_atlassian_mcp_bitbucket_subtree_has_no_venv_or_nested_git() -> None:
+    """No ``.venv`` or worktree-style ``.git`` inside the MCP gateway.
 
-    The ``services/atlassian_unified/`` tree itself is a legitimate
-    immutable input subtree (it ships its own vendored ``helm/``
-    chart and is excluded from the property-test walker). What MUST
-    NOT live inside it are:
+    The ``services/atlassian_mcp_bitbucket/`` tree is the real MCP
+    gateway. What MUST NOT live inside it are:
 
     * a ``.venv/`` directory (developer virtualenv accidentally
-      committed; Requirement 17.2),
-    * a ``.git/`` worktree (nested git checkout / submodule artefact;
-      Requirement 17.3).
+      committed),
+    * a ``.git/`` worktree (nested git checkout / submodule artefact).
 
-    Task 17.1 removed both. This gate keeps them removed. We probe
-    both ``platform/services/atlassian_unified/`` and the workspace
-    root sibling ``services/atlassian_unified/`` so the assertion is
-    robust to either layout.
+    This gate keeps them removed inside ``platform/``.
     """
 
     candidate_roots = (
-        WORKSPACE_ROOT / "services" / "atlassian_unified",
-        WORKSPACE_ROOT.parent / "services" / "atlassian_unified",
+        WORKSPACE_ROOT / "services" / "atlassian_mcp_bitbucket",
     )
     offenders: list[str] = []
     for root in candidate_roots:
@@ -197,9 +184,9 @@ def test_atlassian_unified_subtree_has_no_venv_or_nested_git() -> None:
                 offenders.append(str(candidate))
 
     assert not offenders, (
-        "Forbidden artefacts found inside services/atlassian_unified/: "
-        f"{offenders}. Tasks 17.1/17.2 removed these and "
-        "``.gitignore`` blocks ``services/atlassian_unified/.venv/``; "
+        "Forbidden artefacts found inside services/atlassian_mcp_bitbucket/: "
+        f"{offenders}. ``.gitignore`` blocks "
+        "``services/atlassian_mcp_bitbucket/.venv/``; "
         "if either path reappears the cleanup has regressed."
     )
 

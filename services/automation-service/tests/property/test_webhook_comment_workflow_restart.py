@@ -1,8 +1,5 @@
 """Property test: Webhook comment decision determinism.
 
-**Property 4: Webhook Comment Decision Determinism (Q5 ④)**
-**Validates: Requirements 3.1, 3.2, 3.3, 3.4, 3.5**
-
 For any combination of ``(workflow_exists, issue_status,
 assignee_account_id, dept_config)`` the handler's decision is
 **deterministic** — the same inputs always produce the same outcome:
@@ -477,14 +474,12 @@ _any_scenario = st.one_of(
 )
 
 # ---------------------------------------------------------------------------
-# Property 4 — Decision determinism
+# Decision determinism
 # ---------------------------------------------------------------------------
 
 
 class TestWebhookCommentDecisionDeterminism:
-    """**Property 4: Webhook Comment Decision Determinism (Q5 ④)**
-
-    **Validates: Requirements 3.1, 3.2, 3.3, 3.4, 3.5**
+    """Webhook comment decision determinism.
 
     For any ``(workflow_exists, issue_status, assignee_account_id,
     dept_config)`` combination the handler always produces the same
@@ -588,7 +583,7 @@ class TestWebhookCommentDecisionDeterminism:
 
 
 # ---------------------------------------------------------------------------
-# Property 4 — Temporal call invariants
+# Temporal call invariants
 # ---------------------------------------------------------------------------
 
 
@@ -601,7 +596,7 @@ class TestWebhookCommentTemporalCallInvariants:
     async def test_signal_forwarded_calls_signal_workflow(
         self, scenario: dict[str, Any]
     ) -> None:
-        """**Validates: Requirement 3.1** — existing workflow → signal_workflow called."""
+        """Existing workflow → ``signal_workflow`` called."""
         store = _fresh_store()
         pool = _FakePoolWithDeptConfig(store)
         temporal = _FakeTemporalClient(workflow_exists=True)
@@ -627,7 +622,7 @@ class TestWebhookCommentTemporalCallInvariants:
     async def test_restart_calls_signal_with_start(
         self, scenario: dict[str, Any]
     ) -> None:
-        """**Validates: Requirement 3.2** — restart → signal_with_start called."""
+        """Restart → ``signal_with_start`` called."""
         store = _fresh_store(retrigger_statuses=scenario["retrigger_statuses"])
         pool = _FakePoolWithDeptConfig(store)
         temporal = _FakeTemporalClient(workflow_exists=False)
@@ -655,7 +650,7 @@ class TestWebhookCommentTemporalCallInvariants:
     async def test_ignored_makes_no_temporal_calls(
         self, scenario: dict[str, Any]
     ) -> None:
-        """**Validates: Requirement 3.3** — ignored → no Temporal calls."""
+        """Ignored outcome → no Temporal calls."""
         store = _fresh_store()
         pool = _FakePoolWithDeptConfig(store)
         temporal = _FakeTemporalClient(workflow_exists=False)

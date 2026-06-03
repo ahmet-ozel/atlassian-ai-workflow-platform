@@ -5,10 +5,6 @@ with a 3-second per-probe timeout. The :func:`check_readiness`
 aggregation function runs all probes in parallel and returns a
 summary suitable for the ``/readyz`` endpoint.
 
-Design references
------------------
-* design.md §Component 6 — Readiness Probe.
-* Requirements 11.3, 11.4, 11.5, 11.6.
 """
 
 from __future__ import annotations
@@ -81,7 +77,7 @@ async def probe_temporal(host: str) -> DependencyProbeResult:
     """Probe Temporal via gRPC health check with a 3s timeout.
 
     Attempts to connect to the Temporal frontend service using the
-    ``temporalio`` client library (Requirement 11.3).
+    ``temporalio`` client library.
     """
     from temporalio.client import Client  # type: ignore[import-not-found]
 

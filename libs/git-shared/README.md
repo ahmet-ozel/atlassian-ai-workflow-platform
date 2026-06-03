@@ -1,8 +1,7 @@
 # git-shared
 
 GitPython-backed adapter used by the admin-dashboard-api `PromptsGitRouter`
-(platform-mimari-ops task 6.1) to drive the prompt CRUD / draft branch / PR
-flow described in MIMARI §16.5 / Requirements 2.2 and 2.9.
+to drive the prompt CRUD / draft branch / PR flow.
 
 The library is deliberately tiny — it owns nothing more than:
 

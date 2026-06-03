@@ -1,20 +1,13 @@
-"""Unit tests for ``src.routers.active_workflows`` (platform-gap-fill task 19.1).
-
-**Validates: Requirement 19.4** (admin dashboard surface for the
+"""Unit tests for ``src.routers.active_workflows`` .
 per-dept concurrency saturation badge).
-
 The router exposes a single read-only endpoint:
-
 * ``GET /api/v1/departments/{dept_id}/active-workflows`` →
   ``{active, max_concurrent_workflows, saturation, source}``.
-
 Tests cover:
-
 * 200 happy path with cap configured (saturation computed).
 * 200 path with cap unset (``max_concurrent_workflows=None`` →
   ``saturation=None``).
-* 503 when the asyncpg pool is unwired.
-"""
+* 503 when the asyncpg pool is unwired."""
 
 from __future__ import annotations
 

@@ -1,11 +1,11 @@
 """Unit tests for :class:`auth_shared.AuthContext` claim extraction
-and :meth:`OIDCConfig.from_env` (task 8.1, Requirement 7.2 + 7.9).
+and :meth:`OIDCConfig.from_env`.
 
-Covers the three explicit deliverables of tasks.md §8.1:
+Covers the three explicit environment and claim-extraction behaviors:
 
 1. ``OIDCConfig.from_env`` honours the ``AUTH_PROVIDER`` /
    ``OIDC_ISSUER_URL`` / ``OIDC_CLIENT_ID`` / ``OIDC_CLIENT_SECRET``
-   contract from MIMARI §13 B14.
+   contract.
 2. ``AUTH_PROVIDER=local`` selects the dev bypass without requiring
    any of the OIDC_* variables.
 3. ``extract_auth_context`` maps ``sub`` → ``actor_id``, the
@@ -31,7 +31,7 @@ from auth_shared import (
 
 
 # ---------------------------------------------------------------------------
-# OIDCConfig.from_env — Requirement 7.2
+# OIDCConfig.from_env
 # ---------------------------------------------------------------------------
 
 
@@ -98,8 +98,8 @@ class TestFromEnvProductionMode:
 
 class TestFromEnvLocalMode:
     def test_local_provider_yields_dev_mode(self) -> None:
-        # AUTH_PROVIDER=local is the explicit dev opt-in (Requirement
-        # 7.2). It must not require any OIDC_* variables.
+        # AUTH_PROVIDER=local is the explicit dev opt-in. It must not
+        # require any OIDC_* variables.
         cfg = OIDCConfig.from_env({"AUTH_PROVIDER": "local"})
 
         assert cfg.auth_mode == "dev"
@@ -128,7 +128,7 @@ class TestFromEnvLocalMode:
 
 
 # ---------------------------------------------------------------------------
-# extract_auth_context — Requirement 7.9
+# extract_auth_context
 # ---------------------------------------------------------------------------
 
 

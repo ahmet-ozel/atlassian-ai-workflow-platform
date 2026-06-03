@@ -1,12 +1,11 @@
 """Unit tests for :class:`src.config.Settings.runner_base_path`.
 
-Spec: ``platform-mimari-uyumluluk`` task 13.2 — ``RUNNER_BASE_PATH`` is the
-canonical env var; ``SSH_BASE_PATH`` is preserved as a deprecated alias for
-backwards compatibility (Requirement 11.4). The Hypothesis-based property
-test that randomises the full input space lives in
-``platform/tests/property/test_runner_workspace_path.py`` (task 13.5);
-this file documents the alias resolution priority at the example level so a
-developer can ``pytest tests/unit -k runner_base_path`` for fast feedback.
+``RUNNER_BASE_PATH`` is the canonical env var; ``SSH_BASE_PATH`` is preserved
+as a deprecated alias for backwards compatibility. The Hypothesis-based
+property test that randomises the full input space lives in
+``platform/tests/property/test_runner_workspace_path.py``; this file
+documents the alias resolution priority at the example level so a developer
+can ``pytest tests/unit -k runner_base_path`` for fast feedback.
 """
 
 from __future__ import annotations
@@ -83,7 +82,7 @@ class TestRunnerBasePathAliasResolution:
         # Settings field declares ``RUNNER_BASE_PATH`` ahead of
         # ``SSH_BASE_PATH``, so the canonical name takes precedence even
         # when the deprecated alias is also populated. This is the
-        # backwards-compatibility contract described in Requirement 11.4.
+        # backwards-compatibility contract.
         _clear_env(monkeypatch)
         monkeypatch.setenv("SSH_BASE_PATH", "/legacy/ai-runner")
         monkeypatch.setenv("RUNNER_BASE_PATH", "/srv/runner")

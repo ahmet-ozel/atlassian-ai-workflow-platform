@@ -2,20 +2,19 @@
 # ---------------------------------------------------------------------------
 # streamlit-app — multi-stage Dockerfile (UI component on :8501)
 # ---------------------------------------------------------------------------
-# Stage 1 (builder): install Streamlit + scaffold deps from requirements.txt
+# Stage 1 (builder): install Streamlit + app deps from requirements.txt
 # into an isolated /install prefix so the runtime stage gets a single layer
 # of artifacts.
 # Stage 2 (runtime): minimal python:3.12-slim with curl for HEALTHCHECK and
-# a non-root appuser (uid 10001) per Requirement 9.5 / design §5.5.
+# a non-root appuser (uid 10001).
 #
 # Build context = this directory (ui/streamlit-app/). No `COPY ../...`
-# directives — Standalone Mode (Property 12.3) requires that
-# `docker build .` succeeds from inside the Component folder without parent
-# traversal.
+# directives — building from inside the component folder keeps
+# `docker build .` working without parent traversal.
 #
 # Healthcheck choice
 # ------------------
-# The scaffold uses `/_stcore/health`, which is Streamlit's *built-in* HTTP
+# The app uses `/_stcore/health`, which is Streamlit's *built-in* HTTP
 # health endpoint (served by Tornado on the same port as the app). The task
 # description references `/healthz` for symmetry with FastAPI services, but
 # Streamlit does not expose `/healthz`; documenting the chosen path here

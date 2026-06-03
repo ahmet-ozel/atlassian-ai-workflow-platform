@@ -1,46 +1,36 @@
-# Feature: platform-mimari-uyumluluk
-# Property 15: Stop + `purge_vault` Profile Guard Matrisi (Q16)
-# Validates: Requirements 14.2, 14.3, 14.4, 14.6
-"""Property test: Stop + ``purge_vault`` Profile Guard Matrisi (Q16).
-
-**Property 15: Stop + ``purge_vault`` Profile Guard Matrisi (Q16)**
-**Validates: Requirements 14.2, 14.3, 14.4, 14.6**
-
+#
+# Stop + `purge_vault` Profile Guard Matrisi (Q16)
+#
+"""Stop + ``purge_vault`` Profile Guard Matrisi (Q16).
+Stop + ``purge_vault`` Profile Guard Matrisi (Q16)**
 For any tuple ``(deployment_profile, purge_vault, vault_list_outcome,
 vault_delete_outcome)`` driving the ``POST /admin/services/{name}/stop``
 endpoint, the observable behaviour must satisfy the following deterministic
 matrix (a strict superset of ``tests/property/test_stop_lifecycle_purge_guard.py``):
-
 1.  **Production guard** — ``purge_vault=True`` AND
     ``deployment_profile.lower() == "production"`` →
     HTTP ``403`` with ``error="purge_vault_forbidden_in_production"``;
     a ``purge_vault_blocked_in_production`` audit row is written;
     Compose stop is **never** invoked; Vault is **never** touched.
-
 2.  **Non-production passthrough** — ``purge_vault=True`` AND
     ``deployment_profile.lower() != "production"`` (e.g. ``dev``,
     ``staging``, ``test``) → HTTP ``200``; Compose stop runs; Vault
     LIST + DELETE run (best-effort).
-
 3.  **purge_vault=False** — for every profile (including production)
     the request proceeds normally → HTTP ``200``; Compose stop runs;
-    Vault is **never** touched (R14.1 backwards-compat default).
-
+    Vault is **never** touched .
 4.  **Audit emission discipline** — the ``purge_vault_blocked_in_production``
     audit row appears **only** on the 403 path; the
     ``vault_overrides_purged`` / ``vault_purge_partial_failure`` rows
     appear **only** when the guard passed AND ``purge_vault=True``;
     they are mutually exclusive with the block row.
-
 5.  **Vault failure best-effort** — when the guard passes and a Vault
-    LIST or DELETE call fails, the HTTP response stays ``200`` (R14.4)
+    LIST or DELETE call fails, the HTTP response stays ``200``
     and a ``vault_purge_partial_failure`` audit row carries the
     ``partial_count`` of keys deleted before the failure.
-
 Strategy
 --------
 Hypothesis generates random combinations of:
-
 * ``profile`` — sampled from a wide set covering case variants of
   ``production`` (must block), other deployment names (``dev``,
   ``staging``, ``test``, ``prod``, ``production-eu``) that must NOT
@@ -51,12 +41,10 @@ Hypothesis generates random combinations of:
   ``{"success", "list_fail", "delete_fail_first", "delete_fail_last"}``
   (only relevant on the non-blocked path).
 * ``stored_keys`` — small dicts of override keys to populate Vault.
-
 The tests run the full FastAPI request pipeline (URL → router →
 ``LifecycleService.stop`` → fake Vault) so the production guard,
 ``StopRequest`` schema, ``LifecycleService.stop`` purge wiring, and
-audit chain are all exercised together.
-"""
+audit chain are all exercised together."""
 
 from __future__ import annotations
 
@@ -337,7 +325,7 @@ def _build_app(
 # ---------------------------------------------------------------------------
 
 # Every case-folded form of "production" must trigger the guard
-# (Requirement 14.2 — case-insensitive match).
+# .
 _PRODUCTION_PROFILES = st.sampled_from(
     ["production", "PRODUCTION", "Production", "PrOdUcTiOn"]
 )
@@ -411,7 +399,7 @@ def _build_vault_for_outcome(
 
 
 # ---------------------------------------------------------------------------
-# Property 15a — Production guard blocks purge_vault=true (case-insensitive)
+#  — Production guard blocks purge_vault=true (case-insensitive)
 # ---------------------------------------------------------------------------
 
 
@@ -426,15 +414,11 @@ def test_production_profile_blocks_purge_vault_true(
     stored: dict[str, str],
     tmp_path: Path,
 ) -> None:
-    """Property 15a — production + purge_vault=true → 403 + block audit.
-
-    **Validates: Requirements 14.2, 14.6**
-
+    """— production + purge_vault=true → 403 + block audit.
     The router rejects the request before any Compose / Vault call.
     The 403 envelope carries ``error="purge_vault_forbidden_in_production"``.
     A ``purge_vault_blocked_in_production`` audit row is written.
-    The state cache and Vault store are unchanged.
-    """
+    The state cache and Vault store are unchanged."""
 
     workspace = _build_workspace(tmp_path)
     vault = _FakeVaultClient(stored={_SERVICE_NAME: dict(stored)})
@@ -491,7 +475,7 @@ def test_production_profile_blocks_purge_vault_true(
 
 
 # ---------------------------------------------------------------------------
-# Property 15b — Non-production + purge_vault=true → 200 + Vault purge runs
+#  — Non-production + purge_vault=true → 200 + Vault purge runs
 # ---------------------------------------------------------------------------
 
 
@@ -506,15 +490,11 @@ def test_non_production_profile_runs_vault_purge(
     stored: dict[str, str],
     tmp_path: Path,
 ) -> None:
-    """Property 15b — non-production + purge_vault=true → 200 + purge runs.
-
-    **Validates: Requirements 14.3, 14.6**
-
+    """— non-production + purge_vault=true → 200 + purge runs.
     The guard does not fire for any profile that does not exactly
     case-fold to ``"production"``. The Compose stop runs, then the
     Vault LIST + DELETE chain runs (best-effort). The block audit
-    row is NOT written; the ``vault_overrides_purged`` row IS written.
-    """
+    row is NOT written; the ``vault_overrides_purged`` row IS written."""
 
     workspace = _build_workspace(tmp_path)
     vault = _FakeVaultClient(stored={_SERVICE_NAME: dict(stored)})
@@ -569,7 +549,7 @@ def test_non_production_profile_runs_vault_purge(
 
 
 # ---------------------------------------------------------------------------
-# Property 15c — purge_vault=false → Vault never touched on any profile
+#  — purge_vault=false → Vault never touched on any profile
 # ---------------------------------------------------------------------------
 
 
@@ -584,15 +564,11 @@ def test_purge_vault_false_never_touches_vault(
     stored: dict[str, str],
     tmp_path: Path,
 ) -> None:
-    """Property 15c — purge_vault=false → Vault never touched, any profile.
-
-    **Validates: Requirements 14.1, 14.6** (default-flag backwards-compat)
-
+    """— purge_vault=false → Vault never touched, any profile.
     Whether the body explicitly sets ``purge_vault=False`` or omits it
     entirely, the production guard does NOT fire, Compose stop runs,
     Vault is NOT enumerated, and only the canonical ``stop`` audit
-    row is written.
-    """
+    row is written."""
 
     workspace = _build_workspace(tmp_path)
     vault = _FakeVaultClient(stored={_SERVICE_NAME: dict(stored)})
@@ -634,7 +610,7 @@ def test_purge_vault_false_never_touches_vault(
 
 
 # ---------------------------------------------------------------------------
-# Property 15d — Vault failures stay best-effort (200 + partial_failure audit)
+#  — Vault failures stay best-effort (200 + partial_failure audit)
 # ---------------------------------------------------------------------------
 
 
@@ -659,18 +635,14 @@ def test_vault_failure_is_best_effort(
     outcome: str,
     tmp_path: Path,
 ) -> None:
-    """Property 15d — Vault LIST/DELETE failures stay best-effort.
-
-    **Validates: Requirements 14.4, 14.6**
-
+    """— Vault LIST/DELETE failures stay best-effort.
     Compose stop has already committed by the time the Vault purge
     runs. Any LIST or DELETE failure must:
     - Stay HTTP 200 (the canonical stop succeeded).
     - Emit ``vault_purge_partial_failure`` with ``partial_count``
       reflecting the number of keys deleted before the failure.
     - Leave the lifecycle state at ``stopped``.
-    - NOT emit the success ``vault_overrides_purged`` row.
-    """
+    - NOT emit the success ``vault_overrides_purged`` row."""
 
     workspace = _build_workspace(tmp_path)
     vault = _build_vault_for_outcome(outcome, stored)
@@ -733,7 +705,7 @@ def test_vault_failure_is_best_effort(
 
 
 # ---------------------------------------------------------------------------
-# Property 15e — Determinism: same inputs → same outcome on repeated calls
+# same inputs → same outcome on repeated calls
 # ---------------------------------------------------------------------------
 
 
@@ -753,14 +725,10 @@ def test_guard_decision_is_deterministic(
     stored: dict[str, str],
     tmp_path: Path,
 ) -> None:
-    """Property 15e — same ``(profile, purge_vault)`` → same status code.
-
-    **Validates: Requirements 14.2, 14.6**
-
+    """— same ``(profile, purge_vault)`` → same status code.
     Two independent invocations against fresh service instances must
     produce identical HTTP status codes. The guard is a pure function
-    of ``(deployment_profile, purge_vault)``.
-    """
+    of ``(deployment_profile, purge_vault)``."""
 
     statuses: list[int] = []
     for _ in range(2):
@@ -795,7 +763,7 @@ def test_guard_decision_is_deterministic(
 
 
 # ---------------------------------------------------------------------------
-# Property 15f — Audit emission discipline matrix
+#  — Audit emission discipline matrix
 # ---------------------------------------------------------------------------
 
 
@@ -815,20 +783,15 @@ def test_audit_emission_matrix(
     stored: dict[str, str],
     tmp_path: Path,
 ) -> None:
-    """Property 15f — audit-row emission depends only on ``(profile, purge_vault)``.
-
-    **Validates: Requirements 14.2, 14.3, 14.6**
-
+    """— audit-row emission depends only on ``(profile, purge_vault)``.
     The four observable audit actions partition the profile/flag matrix:
-    - 403 path  → exactly ``["purge_vault_blocked_in_production"]``.
+    - 403 path → exactly ``["purge_vault_blocked_in_production"]``.
     - 200 path, ``purge_vault=False`` → exactly ``["stop"]``.
-    - 200 path, ``purge_vault=True``  → exactly
+    - 200 path, ``purge_vault=True`` → exactly
       ``["stop", "vault_overrides_purged"]`` (Vault success — fakes
       always succeed on this property).
-
     The ``purge_vault_blocked_in_production`` row never co-occurs with
-    ``vault_overrides_purged`` or ``vault_purge_partial_failure``.
-    """
+    ``vault_overrides_purged`` or ``vault_purge_partial_failure``."""
 
     workspace = _build_workspace(tmp_path)
     vault = _FakeVaultClient(stored={_SERVICE_NAME: dict(stored)})
@@ -912,13 +875,11 @@ def test_case_insensitive_production_match_blocks(
 
 
 def test_legacy_guard_helper_remains_pure_function() -> None:
-    """Document the guard's pure-function shape (R14.2 invariant).
-
+    """Document the guard's pure-function shape .
     The legacy ``_guard`` helper was a stand-alone function. This
     test re-establishes the same property here so refactors that
     accidentally introduce side effects into the production check
-    fail fast.
-    """
+    fail fast."""
 
     def _guard(*, deployment_profile: str, purge_vault: bool) -> bool:
         """Return True iff the stop request should be blocked."""

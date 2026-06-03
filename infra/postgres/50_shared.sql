@@ -1,8 +1,7 @@
 -- TODO: shared schema-specific tables
 
--- admin-dashboard-control-plane / Requirement 11
 -- shared.audit_log: Lifecycle_Action audit trail (audit-or-rollback semantics).
--- The shared. schema is created by 00_schemas.sql (scaffold Requirement 6.1).
+-- The shared schema is created by 00_schemas.sql.
 -- IF NOT EXISTS guards keep boot idempotent; existing pg_data volume is preserved.
 CREATE TABLE IF NOT EXISTS shared.audit_log (
     id UUID PRIMARY KEY,

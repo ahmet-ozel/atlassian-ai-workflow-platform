@@ -9,7 +9,7 @@ description = "Assistant HTTP service (chat + LLM orchestration). Scaffold skele
 requires-python = ">=3.12,<3.13"
 readme = "README.md"
 license = { text = "Proprietary" }
-authors = [{ name = "yeni_atlassian" }]
+authors = [{ name = "Platform" }]
 dependencies = [
     "fastapi",
     "pydantic>=2,<3",
@@ -21,11 +21,11 @@ dependencies = [
     "asyncpg",
     # Workspace path dependency on the shared HTTP / logging utilities.
     # ``http-shared`` ships the secret-redaction logging filter wired
-    # in ``src/main.py`` (Requirement 6.10, task 9.1).
+    # in ``src/main.py``.
     "http-shared @ file:../../libs/http-shared",
-    # platform-gap-fill task 7.2 — :class:`observability.TraceMiddleware`
+    # :class:`observability.TraceMiddleware`
     # is mounted on the FastAPI app for end-to-end trace_id propagation
-    # (Requirement 8.2 — assistant-service trace boundary).
+    # marks the assistant-service trace boundary.
     "observability @ file:../../libs/observability",
 ]
 

@@ -1,7 +1,7 @@
 """One-time admin bootstrap token management.
 
 This module implements the :class:`BootstrapTokenService` which handles
-the initial admin access flow described in Requirement 2. On first boot
+the initial admin access flow described in behavior 2. On first boot
 (when no admin user exists in the database), a cryptographically secure
 one-time token is generated, hashed (SHA-256), and stored in the
 ``auth.bootstrap_tokens`` table. The plain token is printed to stdout
@@ -9,7 +9,7 @@ exactly once so the operator can use it to create the first admin user
 via ``POST /auth/bootstrap``.
 
 Once OIDC is configured the bootstrap mechanism is disabled entirely
-(Requirement 2.5).
+(behavior 2.5).
 
 Security properties:
 - Plain token is NEVER persisted — only the SHA-256 hash is stored.
@@ -18,7 +18,6 @@ Security properties:
 - Token generation is idempotent: if a valid (unexpired, unconsumed)
   token already exists, no new token is generated.
 
-Requirements: 2.1, 2.2, 2.3, 2.5
 """
 
 from __future__ import annotations
@@ -96,7 +95,7 @@ class BootstrapTokenService:
                 expires_at,
             )
 
-            # Print to stdout for operator retrieval (Requirement 2.1)
+            # Print to stdout for operator retrieval (behavior 2.1)
             print(  # noqa: T201
                 f"\n{'=' * 60}\n"
                 f"  BOOTSTRAP ADMIN TOKEN (one-time use, expires in 1 hour)\n"
@@ -154,7 +153,7 @@ class BootstrapTokenService:
         """Check whether an OIDC provider is actively configured.
 
         When OIDC is configured, the bootstrap token mechanism is
-        disabled (Requirement 2.5). This checks for the presence of
+        disabled (behavior 2.5). This checks for the presence of
         the required OIDC environment variables with non-empty values.
         """
 

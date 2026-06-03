@@ -1,11 +1,11 @@
 -- 005_audit_log_vault_purge_actions.sql
--- Spec: platform-mimari-uyumluluk — Task 15.2 (R14 / Q16 — stop + purge_vault Vault purge behaviour)
+-- Vault purge audit actions for service stop.
 --
 -- Widens the ``shared.audit_log.action`` CHECK constraint to include
 -- ``vault_overrides_purged`` (success path) and
 -- ``vault_purge_partial_failure`` (best-effort fallback) so
 -- :meth:`LifecycleService.stop` can record the post-stop Vault purge
--- outcome (Requirements 14.3, 14.4).
+-- outcome.
 --
 -- Builds on top of migration ``004_audit_log_purge_vault_action.sql``
 -- which introduced the named constraint ``audit_log_action_check_v3``.

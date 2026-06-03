@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Audit panel — `platform-mimari-ops` task 12.5 (R4.5 / R6.5 / R6.9)
+ * Audit panel.
  * + `gereksinim.txt` G9 E3 iyileştirmesi.
  *
  * Loki + archive-flag enrichment search surface. Calls

@@ -1,22 +1,22 @@
 # mcp_client
 
-Foundation MCP client library for the platform-mimari-foundation spec.
-This package owns the **single-source enforcement points** for two of
-the MIMARI §1 critical rules:
+Foundation MCP client library for the platform.
+This package owns the **single-source enforcement points** for two
+critical routing rules:
 
-- **Kural 9 — banned MCP tool list (R1.8)** — `tool_filter.filter_tools`
+- **Banned MCP tool list** — `tool_filter.filter_tools`
   removes the canonical banned tools (`bitbucket_merge_pr`,
   `confluence_delete_page`) from any tool catalog handed to an LLM.
-- **Kural 10 — PR draft enforcement (R1.9)** — `pr_draft.enforce_pr_draft`
+- **PR draft enforcement** — `pr_draft.enforce_pr_draft`
   rewrites outgoing PR payloads so that `draft` is always `True`,
   regardless of what an LLM produced, and emits an audit
   `pr_draft_enforced` event when it had to flip a `False` (or absent)
   value.
 
 The `atlassian_client` module is currently a thin skeleton. The real
-HTTP wiring (Jira / Bitbucket / Confluence) is delivered by later
-specs; the skeleton lives here in this spec only so that the
-single-source enforcement tests have a stable import point.
+HTTP wiring (Jira / Bitbucket / Confluence) lives behind the MCP
+gateway; the skeleton exists here so the single-source enforcement
+tests have a stable import point.
 
 ## Public API
 
@@ -27,12 +27,11 @@ from mcp_client import (
     filter_tools,
 )
 
-# R1.8 — strip banned tools out of a tool catalog before exposing it
-# to an LLM.
+# Strip banned tools out of a tool catalog before exposing it to an LLM.
 safe_tools = filter_tools(catalog)
 
-# R1.9 — coerce ``draft`` to True on every outgoing PR payload and
-# audit the cases where the caller intended otherwise.
+# Coerce ``draft`` to True on every outgoing PR payload and audit the
+# cases where the caller intended otherwise.
 safe_payload = enforce_pr_draft(
     payload,
     audit_logger=logger,
@@ -50,15 +49,14 @@ enforcement actually changed the payload.
 
 ## Why a separate package?
 
-`atlassian_unified` is treated as immutable in this spec (R2.4); we
-cannot push enforcement helpers into it. `mcp_client` is therefore the
-**outbound** wrapper used by `assistant-service`,
+`atlassian_mcp_bitbucket` is the Atlassian MCP gateway; enforcement
+helpers stay in `mcp_client` so callers share one outbound wrapper.
+`mcp_client` is used by `assistant-service`,
 `agent-runner-worker`, and `automation-service` whenever they need to
 call into Atlassian via the MCP. Keeping the enforcement code in one
-shared lib means the property tests
-(`test_tool_filter.py`, `test_pr_draft_enforcement.py` — task 2.8) can
-assert the rule with a single import path rather than walking every
-caller.
+shared lib means the focused tests (`test_tool_filter.py`,
+`test_pr_draft_enforcement.py`) can assert the rule with a single
+import path rather than walking every caller.
 
 ## Standalone build & run
 

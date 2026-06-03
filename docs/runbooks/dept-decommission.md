@@ -1,6 +1,5 @@
 # Runbook: Departman Decommission
 
-> **Spec:** `platform-mimari-foundation` — Requirement 10.9 (`MIMARI §16.14 T5 — decommission runbook`).
 > **Audience:** Platform `admin` rolü; gerektiğinde DBA + DevSecOps eşliğinde.
 > **Scope:** Bir departmanın (`dept_id`) Compose stack'inden ve veri/kimlik altyapısından **kalıcı olarak** kaldırılması.
 > **Reversibility:** Adım 1 ve 2 geri alınabilir; Adım 3 (Vault revoke) ve Adım 4 (DB silme) **yıkıcıdır** ve geri alınamaz.
@@ -23,7 +22,7 @@ Bu runbook aşağıdaki durumlarda izlenir:
 | Iletişim | Departman temsilcisi onayı (Adım 4 öncesi yazılı) | Slack/E-posta arşiv |
 | Yedekleme | Postgres logical dump (`pg_dump --schema=public --table=departments --table=audit_events`) | Adım 4 öncesi zorunlu |
 
-> **Audit beklentisi:** Her HTTP çağrısı `audit_events` tablosuna `actor_role=admin`, `dept_id=<hedef>` ile kaydedilir (R7.7). Manuel SQL aksiyonlarında `audit_events` satırını **manuel** ekle.
+> **Audit beklentisi:** Her HTTP çağrısı `audit_events` tablosuna `actor_role=admin`, `dept_id=<hedef>` ile kaydedilir. Manuel SQL aksiyonlarında `audit_events` satırını **manuel** ekle.
 
 ## Genel Akış (özet)
 
@@ -65,7 +64,7 @@ HTTP/1.1 200 OK
 Endpoint'in iki yan etkisi vardır:
 
 1. `departments.mode` sütununu `"disabled"` olarak günceller.
-2. `audit_events` tablosuna `action="dept_disabled"`, `actor_role="admin"` event'i yazar (R10.10).
+2. `audit_events` tablosuna `action="dept_disabled"`, `actor_role="admin"` event'i yazar.
 
 ### 1.2 Verify
 
@@ -122,7 +121,7 @@ tctl --address <temporal_host>:7233 \
 
 Veya Temporal Web UI: `https://<temporal-web>/namespaces/<ns>/workflows?status=Running&query=DeptId%3D'<dept_id>'`.
 
-> **Not:** `DeptId` search attribute'ünün indekslenmiş olduğunu varsayar (Spec 2'de tanımlı). İndekslenmediyse `WorkflowId STARTS_WITH '<dept_id>-'` sorgusunu kullan; workflow_id konvansiyonu için bkz. `temporal_shared.identifiers`.
+> **Not:** `DeptId` search attribute'ünün indekslenmiş olduğunu varsayar. İndekslenmediyse `WorkflowId STARTS_WITH '<dept_id>-'` sorgusunu kullan; workflow_id konvansiyonu için bkz. `temporal_shared.identifiers`.
 
 ### 2.2 Drain stratejisi seç
 
@@ -130,7 +129,7 @@ Veya Temporal Web UI: `https://<temporal-web>/namespaces/<ns>/workflows?status=R
 |---|---|---|
 | **Doğal drain** | Açık workflow ≤ 5 ve hepsi 30 dk içinde bitecek | Bekle; 30 dk sonra Adım 2.3'e geç |
 | **Hızlandırılmış drain** | Açık workflow > 5 veya uzun süreli (örn. `bot_branch_retention` cron) | `tctl workflow signal` ile `drain` sinyali yolla; workflow'lar checkpoint'te biter |
-| **Zorla iptal** | Operasyon penceresi sınırlı veya workflow takılı | `tctl workflow cancel`; risk: yarım iş; Spec 1 R1.6 idempotency telafi eder |
+| **Zorla iptal** | Operasyon penceresi sınırlı veya workflow takılı | `tctl workflow cancel`; risk: yarım iş; idempotency telafi eder |
 
 ### 2.3 Doğal drain
 
@@ -180,19 +179,19 @@ tctl --address <temporal_host>:7233 workflow list \
            AND DeptId='<dept_id>' AND CloseTime > '2025-01-14T10:00:00Z'"
 ```
 
-> **Stop & ask:** Hala çalışan workflow varsa veya drain sinyali yanıt vermiyorsa, Spec 2 workflow tasarımcılarına başvur; Adım 3'e **geçme**.
+> **Stop & ask:** Hala çalışan workflow varsa veya drain sinyali yanıt vermiyorsa, workflow sahiplerine başvur; Adım 3'e **geçme**.
 
 ---
 
 ## Adım 3 — Vault credential revoke
 
-**Amaç:** Departman bot'larına ait tüm Atlassian credential'larını ve webhook secret'larını Vault'tan **kalıcı olarak** silmek. Bu adımdan sonra credential `read(...) → not_found` döner; rotation overlap (R6.8) penceresi de geçersiz olur.
+**Amaç:** Departman bot'larına ait tüm Atlassian credential'larını ve webhook secret'larını Vault'tan **kalıcı olarak** silmek. Bu adımdan sonra credential `read(...) → not_found` döner; rotation overlap penceresi de geçersiz olur.
 
 > ⚠️ **Yıkıcı.** Aşağıdaki path'lere yazılı tüm secret değerleri silinir; geri yüklemek için yedek + Vault audit log gerekir. Adım 1 ve 2 doğrulanmadan bu adıma geçme.
 
 ### 3.1 Silinecek path'leri belirle
 
-Departman Vault path konvansiyonu (design.md §Vault path domeni):
+Departman Vault path konvansiyonu:
 
 | Path | İçerik |
 |---|---|
@@ -203,7 +202,7 @@ Departman Vault path konvansiyonu (design.md §Vault path domeni):
 | `vault:webhooks/bitbucket/<dept_id>` | Bitbucket webhook HMAC secret (mevcut + previous) |
 | `vault:webhooks/confluence/<dept_id>` | Confluence webhook HMAC secret (varsa) |
 
-> Per-user oturum credential'ları (`vault:atlassian/_user_session/<session_id>/...`) departman bazında değildir; bu runbook'un kapsamı dışındadır ve TTL ile otomatik süresi dolar (R10.7).
+> Per-user oturum credential'ları (`vault:atlassian/_user_session/<session_id>/...`) departman bazında değildir; bu runbook'un kapsamı dışındadır ve TTL ile otomatik süresi dolar.
 
 ### 3.2 Yedekle (zorunlu)
 
@@ -255,7 +254,7 @@ for path in \
 done
 ```
 
-> **KV v2 davranışı:** `vault kv delete` yalnızca mevcut versiyonu işaretler; **geçmiş silmek için `metadata delete` zorunludur**. Aksi halde rotation overlap (R6.8) için tutulan eski versiyon hala okunabilir kalır.
+> **KV v2 davranışı:** `vault kv delete` yalnızca mevcut versiyonu işaretler; **geçmiş silmek için `metadata delete` zorunludur**. Aksi halde rotation overlap için tutulan eski versiyon hala okunabilir kalır.
 
 ### 3.5 Verify
 
@@ -288,7 +287,7 @@ kubectl logs deploy/automation-service --since=10m | grep -i "<dept_id>" | grep 
 
 ## Adım 4 — DB kaydı silme
 
-**Amaç:** `departments` tablosundan kaydı kaldırmak. Audit izi (`audit_events`) **silinmez**; uyumluluk için saklanır (R7.7).
+**Amaç:** `departments` tablosundan kaydı kaldırmak. Audit izi (`audit_events`) **silinmez**; uyumluluk için saklanır.
 
 > ⚠️ **Yıkıcı ve geri alınamaz.** Adım 1, 2, 3 hepsi doğrulanmadan bu adıma geçme. Yedek (Adım 4.2) zorunludur.
 
@@ -304,7 +303,7 @@ WHERE dept_id = '<dept_id>' AND created_at > now() - interval '1 hour'
 -- probe_artifacts orphan kalmış mı? (cleanup gerekir)
 SELECT id, artifact_type, state FROM probe_artifacts
 WHERE dept_id = '<dept_id>' AND state = 'partial_orphan';
--- varsa: önce admin-dashboard'da "Cleanup" yaparak temizle (Spec 1 R5.4)
+-- varsa: önce admin-dashboard'da "Cleanup" yaparak temizle
 ```
 
 ### 4.2 Yedek
@@ -359,7 +358,7 @@ DELETE FROM probe_artifacts WHERE dept_id = '<dept_id>';
 COMMIT;
 ```
 
-> **Audit kayıtlarını silme.** `audit_events` tablosuna ait satırlar hukuki ve forensic gereklilikle saklanır (R7.7). Bu adımda yalnızca `departments` ve `probe_artifacts` etkilenir.
+> **Audit kayıtlarını silme.** `audit_events` tablosuna ait satırlar hukuki ve forensic gereklilikle saklanır. Bu adımda yalnızca `departments` ve `probe_artifacts` etkilenir.
 
 ### 4.4 `departments.json` config dosyasından çıkar
 
@@ -371,7 +370,7 @@ COMMIT;
 # 4. Merge sonrası automation-service redeploy edilir; servis schema validation'ı yine geçer.
 ```
 
-> **Boot invariant:** `departments.json` schema validation'ı boot zamanında çalışır (R3.1). Config dosyasından bir entry silmek tek başına yeterlidir; DB ve Vault hali zaten temiz olduğundan stale referans riski yoktur.
+> **Boot invariant:** `departments.json` schema validation'ı boot zamanında çalışır. Config dosyasından bir entry silmek tek başına yeterlidir; DB ve Vault hali zaten temiz olduğundan stale referans riski yoktur.
 
 ### 4.5 Verify
 
@@ -394,7 +393,7 @@ SELECT count(*) FROM probe_artifacts WHERE dept_id = '<dept_id>';
 ```bash
 # Servis kendi durumunu yeniden doğrulasın (departments.json içermiyor):
 curl -s "https://<automation-service>/healthz"
-# beklenen: 200 OK; departman hala referans veriliyorsa boot fail (R3.1)
+# beklenen: 200 OK; departman hala referans veriliyorsa boot fail
 
 # admin-dashboard-ui departments listesi:
 # beklenen: <dept_id> görünmemeli
@@ -423,11 +422,3 @@ curl -s "https://<automation-service>/healthz"
 | Adım 4: `DELETE 0 rows` | Daha önce silinmiş veya RLS engelliyor | `app.current_role=admin` set edildi mi? Superuser ile dene |
 | Adım 4: Boot fail (`automation-service` start) | `departments.json`'da kalan referans | Config dosyasını da güncellediğinden emin ol (4.4) |
 
-## Referanslar
-
-- Requirement 10.9, 10.10 — `platform-mimari-foundation/requirements.md`
-- Property 7 — `platform-mimari-foundation/design.md` (`mode=disabled` davranışı)
-- Vault path domeni — `platform-mimari-foundation/design.md` §Vault path domeni
-- Endpoint kontratları — `platform-mimari-foundation/design.md` §Admin endpoints tablosu
-- Spec 2 — workflow-bazlı drain sinyalleri ve search attribute (`DeptId`) tanımı
-- `MIMARI.md` §16.14 T5 — decommission akışı kaynak referansı

@@ -9,7 +9,7 @@ All URL and port resolution lives in a single module, `lib/config.ts`
 (env-driven, no hard-coded ports). `lib/api-client.ts` exposes `apiFetch`,
 which talks to `admin-dashboard-api` via that config.
 
-See `MIMARI.md` and `.kiro/specs/` for the broader architecture.
+See the platform documentation for the broader architecture.
 
 ## Standalone build & run
 

@@ -1,15 +1,12 @@
 """Integration test — ``GET /healthz`` returns 200 after lifespan startup.
 
-Validates: Requirement 6.2 of the ``automation-service-wiring`` spec.
-
 The test wires the production lifespan handler in-process via FastAPI's
 ``TestClient`` (which enters the lifespan on ``__enter__``) and asserts
 ``/healthz`` returns HTTP 200 with ``{"status": "ok"}``.
 
-This is the in-process variant of the Compose-based smoke test
-described in ``.kiro/specs/automation-service-wiring/tasks.md`` task
-8.2. The Compose-harness version runs the same assertion against a
-live container; that variant is delivered alongside the
+This is the in-process variant of the Compose-based smoke test. The
+Compose-harness version runs the same assertion against a live
+container; that variant is delivered alongside the
 ``platform/tests/integration/`` Docker harness and is opt-in via the
 ``--run-docker`` pytest flag registered in ``platform/tests/conftest.py``.
 The in-process variant here runs unconditionally on every CI shard so

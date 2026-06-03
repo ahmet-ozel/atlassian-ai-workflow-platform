@@ -1,30 +1,27 @@
-"""Design-aligned Jira webhook handlers (task 5.2).
+"""Jira webhook handlers.
 
-Implements the explicit endpoints from
-``platform-mimari-foundation/design.md`` §"Webhook Handler" sequence
-diagram:
+Implements the explicit Jira webhook endpoints:
 
 * ``POST /webhooks/jira/issue_created``
 * ``POST /webhooks/jira/issue_commented``
 
-The chain is the canonical four-step sequence from
-``platform-mimari-foundation/tasks.md`` §5.2:
+The chain is the canonical four-step sequence:
 
 1. **HMAC verify** via :func:`vault_client.verify_webhook_hmac`
    (per-department secret at ``vault:webhooks/jira/<dept_id>``;
-   1h rotation overlap window — Requirements 6.4, 6.5, 6.8).
+   1h rotation overlap window).
 
    *  ``dept_id`` is resolved from the payload's ``issue.fields.project.key``
       via an injected :class:`DeptResolver`. If the lookup yields
       ``None``, the handler returns **HTTP 400** with audit
-      ``webhook_dept_unresolved`` (Requirement 6.5, design Property 10b).
+      ``webhook_dept_unresolved``.
    *  If HMAC fails → **HTTP 401** ``unauthorized`` (audit
       ``webhook_hmac_failed``).
 
 2. **Loop guard**: if the event ``actor.account_id`` matches *any*
    department's ``bot.<svc>.account_id``, the handler drops the event
-   and emits audit ``loop_guard_dropped`` (Requirement 1.7, MIMARI §1
-   Kural 7). Response is **HTTP 200** ``loop_guard``.
+   and emits audit ``loop_guard_dropped``. Response is **HTTP 200**
+   ``loop_guard``.
 
 3. **Capability gate**: :func:`temporal_shared.gate` is consulted with
    the resolved ``Department`` and the workflow type (``noop_test`` for
@@ -33,14 +30,13 @@ The chain is the canonical four-step sequence from
    design's two-phase capability check). If the gate denies, the
    handler posts a bot comment to the Jira issue listing the missing
    capabilities, emits audit ``capability_denied``, and returns
-   **HTTP 202** with ``{"decision": "denied", "missing": [...]}``
-   (Requirements 4.4, 4.5).
+   **HTTP 202** with ``{"decision": "denied", "missing": [...]}``.
 
 4. **Idempotent workflow start**:
    :func:`temporal_shared.start_workflow_idempotent` swallows
    ``WorkflowAlreadyStarted`` and returns the existing
    ``execution_id`` so the caller always gets **HTTP 202** with the
-   same body shape (Requirements 1.6, 10.4, 10.5).
+   same body shape.
 
 The implementation deliberately decouples the *protocol* of every
 external collaborator (dept resolver, vault client, capability gate,
@@ -107,7 +103,7 @@ _PROVIDER_JIRA = "jira"
 #: issue_commented. ``noop_test`` only requires ``jira_read``, which is
 #: the minimum capability for any Jira-triggered automation. The real
 #: workflow_type is refined inside the workflow once the LLM analyzer
-#: classifies the issue (design §"Capability Gate — Phase 1 vs Phase 2").
+#: classifies the issue.
 #: At the webhook layer we only enforce the cheapest precondition:
 #: the dept must at minimum have a Jira read credential.
 _WEBHOOK_WORKFLOW_TYPE = "noop_test"
@@ -119,8 +115,7 @@ _TASK_QUEUE = task_queue_for(_WORKFLOW_NAME)
 
 #: Bot comment body posted to Jira when capability gate denies. The
 #: ``{missing}`` placeholder is filled with the comma-separated set of
-#: missing capabilities (design §"Workflow Başlatma Akışı" — Jira'ya
-#: bot yorumu).
+#: missing capabilities.
 _CAPABILITY_DENIED_COMMENT = (
     "🤖 Otomasyon başlatılamadı: bu departman için eksik yetenek(ler): {missing}. "
     "Lütfen sistem yöneticinize başvurun."
@@ -128,11 +123,10 @@ _CAPABILITY_DENIED_COMMENT = (
 
 #: Audit ``actor_id`` for webhook-handler-emitted events. The handler
 #: itself is the actor; the role is always ``"system"`` per
-#: design §"libs/audit_logger" (background-process audit rows).
+#: background-process audit rows.
 _AUDIT_ACTOR_ID = "automation-service.webhook"
 
-#: All Jira webhook events the handler accepts (design §"Webhook Handler"
-#: sequence diagram + R10.4/R10.5).
+#: All Jira webhook events the handler accepts.
 _EVENT_ISSUE_CREATED = "jira:issue_created"
 _EVENT_COMMENT_CREATED = "jira:comment_created"
 
@@ -156,7 +150,7 @@ class BotRegistryEntry:
     """A single ``(dept_id, service, account_id)`` tuple.
 
     The webhook handler iterates the full registry to build the
-    set of bot account IDs for the loop guard (Requirement 1.7) and
+    set of bot account IDs for the loop guard and
     to look up a dept's Jira bot account when posting the
     capability-denied comment.
     """
@@ -378,8 +372,7 @@ def _is_bot_actor(
     """Return ``(is_bot, dept_id_of_match)`` for the actor.
 
     A match against *any* registered bot — regardless of dept or
-    service — triggers the loop guard (Requirement 1.7 — "*any*
-    department's ``bot.<svc>.account_id``").
+    service — triggers the loop guard.
     """
 
     if not actor_id:
@@ -717,10 +710,7 @@ async def _process_jira_webhook(
 
 @router.post("/jira/issue_created")
 async def post_issue_created(request: Request) -> JSONResponse:
-    """``POST /webhooks/jira/issue_created``.
-
-    Validates Requirements 1.6, 1.7, 4.4, 4.5, 6.4, 6.5, 10.4.
-    """
+    """``POST /webhooks/jira/issue_created``."""
 
     return await _process_jira_webhook(
         request,
@@ -731,10 +721,7 @@ async def post_issue_created(request: Request) -> JSONResponse:
 
 @router.post("/jira/issue_commented")
 async def post_issue_commented(request: Request) -> JSONResponse:
-    """``POST /webhooks/jira/issue_commented``.
-
-    Validates Requirements 1.6, 1.7, 4.4, 4.5, 6.4, 6.5, 10.5.
-    """
+    """``POST /webhooks/jira/issue_commented``."""
 
     return await _process_jira_webhook(
         request,
@@ -745,7 +732,7 @@ async def post_issue_commented(request: Request) -> JSONResponse:
 
 @router.post("/jira/issue_assigned")
 async def post_issue_assigned(request: Request) -> JSONResponse:
-    """``POST /webhooks/jira/issue_assigned`` (Feature 8).
+    """``POST /webhooks/jira/issue_assigned``.
 
     Handles Jira issue assignment events with dept-handover detection.
     When a task is re-assigned from one department's bot to another:

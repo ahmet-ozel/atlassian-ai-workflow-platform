@@ -2,7 +2,7 @@
 # =============================================================================
 # platform/scripts/vps_wizard_probe.sh — Setup Wizard 7-step state polling
 # =============================================================================
-# Runs on VPS_Host. Implements Requirement 8 (R8.1–R8.7):
+# Runs on VPS_Host. Setup wizard probe checks:
 #
 #   1. Prompt operator to open admin-dashboard and trigger wizard steps  (R8.1)
 #   2. Poll setup_wizard_state every 30s until all steps completed       (R8.2)
@@ -21,7 +21,7 @@
 # =============================================================================
 set -euo pipefail
 
-PLATFORM_DIR="/opt/yeni_atlassian/platform"
+PLATFORM_DIR="/opt/atlassian-ai-workflow-platform"
 COMPOSE_FILE="$PLATFORM_DIR/infra/docker-compose.yml"
 EVIDENCE_FILE="/tmp/08-wizard.txt"
 POLL_INTERVAL=30
@@ -115,7 +115,7 @@ echo "" >> "$EVIDENCE_FILE"
 # =============================================================================
 echo ""
 echo "============================================================================="
-echo "  SETUP WIZARD PROBE — Requirement 8"
+echo "  SETUP WIZARD PROBE"
 echo "============================================================================="
 echo ""
 echo "  Operator action required:"

@@ -1,10 +1,10 @@
-"""Unit tests for ``AuditPruneWorkflow`` (Spec 3 task 13.1).
+"""Unit tests for ``AuditPruneWorkflow``.
 
 The tests exercise the workflow body **without** spinning up a Temporal
 worker. Two strategies cover the surface:
 
 * **AST/source inspection** — verifies the workflow module obeys the
-  determinism contract (Spec 2 Property 2 / Property 11 parity): no
+  determinism contract: no
   ``datetime.now``, ``time.time``, ``random``, ``uuid``, ``os.environ``
   reads in the workflow body; activities referenced by string name
   only; no import of activity modules at workflow-module import time.
@@ -14,9 +14,7 @@ worker. Two strategies cover the surface:
   ``workflow.now()`` and ``workflow.logger`` all resolve to recording
   doubles. This lets us assert the exact activity call sequence,
   retry policies, timeouts, and the mandatory failure-alarm contract
-  (R6.4) deterministically.
-
-Validates Requirements: **R6.3, R6.4** (Spec 3 task 13.1).
+  deterministically.
 """
 
 from __future__ import annotations
@@ -80,23 +78,23 @@ from automation_worker.workflows.audit_prune import (  # noqa: E402
 
 class TestPublicConstants:
     """The cron schedule, task queue, and workflow ID are part of the
-    public contract — Spec 3 task 13.3 (cron schedule registration)
-    relies on the *exact* string values."""
+    public contract. Cron schedule registration relies on the exact string
+    values."""
 
     def test_task_queue_is_automation_tq(self) -> None:
-        # Spec 3 task 13.3: ``task_queue="automation-tq"``.
+        # Cron registration uses ``task_queue="automation-tq"``.
         assert AUTOMATION_TASK_QUEUE == "automation-tq"
 
     def test_workflow_id_is_audit_prune_cron(self) -> None:
-        # Spec 3 task 13.3: ``id="audit-prune-cron"``.
+        # Cron registration uses ``id="audit-prune-cron"``.
         assert AUDIT_PRUNE_WORKFLOW_ID == "audit-prune-cron"
 
     def test_cron_schedule_is_daily_at_03_00_utc(self) -> None:
-        # Spec 3 task 13.3 + design.md §"Cron scheduling": 0 3 * * *.
+        # Cron runs daily at 03:00 UTC.
         assert AUDIT_PRUNE_CRON_SCHEDULE == "0 3 * * *"
 
     def test_default_retention_days_is_90(self) -> None:
-        # design.md §"AuditPruneWorkflow" — RETENTION_DAYS=90.
+        # RETENTION_DAYS defaults to 90.
         assert DEFAULT_RETENTION_DAYS == 90
 
 
@@ -106,9 +104,7 @@ class TestPublicConstants:
 
 
 class TestDeterminismStatic:
-    """Spec 2 Property 2 / Property 11 parity.
-
-    The workflow module body must be replay-safe: only Temporal-
+    """The workflow module body must be replay-safe: only Temporal-
     deterministic primitives are allowed. We enforce this by AST-walking
     the workflow source and rejecting forbidden symbols.
     """
@@ -220,9 +216,9 @@ class TestDeterminismStatic:
 
 class TestRetryPolicyConfiguration:
     """The retry policies and activity timeouts are part of the
-    workflow's reliability contract (R6.3, R6.4). These tests assert
-    against the module-level constants so a refactor that flattens
-    them inline still surfaces here as a regression."""
+    workflow's reliability contract. These tests assert against the
+    module-level constants so a refactor that flattens them inline still
+    surfaces here as a regression."""
 
     def test_default_retry_caps_attempts(self) -> None:
         # Three short attempts is the contract; an unlimited retry
@@ -248,7 +244,7 @@ class TestRetryPolicyConfiguration:
         assert policy.backoff_coefficient == 2.0
 
     def test_timeouts_match_design(self) -> None:
-        # Mirrors design.md §"AuditPruneWorkflow" timeout budgets.
+        # Mirrors the workflow timeout budgets.
         assert audit_prune_mod._GET_RETENTION_TIMEOUT == timedelta(seconds=10)  # noqa: SLF001
         assert audit_prune_mod._ARCHIVE_TIMEOUT == timedelta(minutes=30)  # noqa: SLF001
         assert audit_prune_mod._DELETE_TIMEOUT == timedelta(minutes=10)  # noqa: SLF001
@@ -365,9 +361,10 @@ def _run_workflow() -> AuditPruneReport:
 
 
 class TestRunHappyPath:
-    """Validates R6.3: cron archives ``audit_events`` older than
-    retention to MinIO, then deletes them. Also covers the activity
-    *order* invariant (archive must precede delete)."""
+    """Cron archives old ``audit_events`` to MinIO, then deletes them.
+
+    Also covers the activity order invariant: archive must precede delete.
+    """
 
     def test_returns_audit_prune_report_with_typed_results(
         self, fake_workflow: _FakeWorkflow, fixed_now: datetime
@@ -395,7 +392,7 @@ class TestRunHappyPath:
     def test_activity_call_order_archive_then_delete(
         self, fake_workflow: _FakeWorkflow
     ) -> None:
-        # Property: ``archive_audit_to_minio`` MUST run before
+        # ``archive_audit_to_minio`` must run before
         # ``delete_audit_older_than`` — deleting before archiving
         # would lose audit data on a partial failure.
         fake_workflow.responses = {
@@ -495,8 +492,7 @@ class TestRunHappyPath:
     def test_int_returning_activities_handled_gracefully(
         self, fake_workflow: _FakeWorkflow
     ) -> None:
-        # Spec 3 task 13.2 *will* introduce dataclass-returning
-        # activities. While that work is pending, an activity stub
+        # Dataclass-returning activities are preferred, but an activity stub
         # returning a plain int must still produce a sensible report.
         fake_workflow.responses = {
             "get_retention_setting": [90],
@@ -526,12 +522,12 @@ class TestRunHappyPath:
 
 
 # ---------------------------------------------------------------------------
-# Failure path — mandatory admin Slack alarm (R6.4)
+# Failure path — mandatory admin Slack alarm
 # ---------------------------------------------------------------------------
 
 
 class TestFailurePathMandatoryAlarm:
-    """Validates R6.4: any failure on the data path invokes
+    """Any failure on the data path invokes
     ``notify_audit_prune_failed`` (mandatory admin alarm) before the
     original exception propagates."""
 
@@ -639,9 +635,9 @@ class TestIdempotentRunSemantics:
     """A second cron tick on the same day with no new audit rows must
     be a safe no-op (zero archived, zero deleted) and must not raise.
 
-    The workflow body itself does not implement an idempotence guard —
-    that responsibility is delegated to the activities (Spec 3 task
-    13.2) — so this test verifies the *contract* the workflow expects:
+    The workflow body itself does not implement an idempotence guard; that
+    responsibility is delegated to the activities. This test verifies the
+    contract the workflow expects:
     repeat calls with identical inputs produce identical reports."""
 
     def test_two_runs_with_zero_rows_each_succeed(
@@ -675,8 +671,8 @@ class TestIdempotentRunSemantics:
 
 class TestResultDataclasses:
     """The three result dataclasses are part of the activity-side
-    contract (Spec 3 task 13.2 implements them) so freezing them and
-    asserting fields here keeps the seam stable."""
+    contract, so freezing them and asserting fields here keeps the interface
+    stable."""
 
     def test_audit_archive_result_is_frozen(self) -> None:
         result = AuditArchiveResult(archived_rows=5, archive_uri="s3://x")
@@ -700,8 +696,8 @@ class TestResultDataclasses:
             report.archived_rows = 2  # type: ignore[misc]
 
     def test_audit_prune_report_has_expected_fields(self) -> None:
-        # The admin UI archive index (Spec 3 task 13.4) reads these
-        # field names; freezing the names keeps that integration safe.
+        # The admin UI archive index reads these field names; freezing the
+        # names keeps that integration safe.
         fields_set = {
             "archived_rows",
             "deleted_rows",
@@ -721,7 +717,7 @@ class TestResultDataclasses:
 class TestWorkflowRegistration:
     """The class must be a Temporal workflow with name
     ``"AuditPruneWorkflow"`` so ``Worker(workflows=[AuditPruneWorkflow])``
-    in the boot script (Spec 3 task 13.3) registers it correctly."""
+    in the boot script registers it correctly."""
 
     def test_class_has_temporal_workflow_marker(self) -> None:
         # ``temporalio.workflow.defn`` attaches private markers to the

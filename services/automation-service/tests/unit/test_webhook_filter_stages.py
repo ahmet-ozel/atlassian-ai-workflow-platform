@@ -1,15 +1,15 @@
-"""Unit tests for the task-4.2 stages of :class:`WebhookFilterChain`.
+"""Unit tests for stages of :class:`WebhookFilterChain`.
 
 This test module pins the behaviour of the three filter-chain stages
-landed by ``platform-mimari-workflows`` task 4.2 of the workflows spec:
+used by the webhook workflow:
 
-* ``_stage_verify_hmac``  → R3.4, raises
+* ``_stage_verify_hmac`` raises
   :class:`automation_service.webhook_filters.WebhookHmacInvalidError`
   on miss.
-* ``_stage_resolve_dept`` → R3.5, raises
+* ``_stage_resolve_dept`` raises
   :class:`automation_service.webhook_filters.WebhookDeptUnresolvedError`
   on miss.
-* ``_stage_loop_guard``   → R4.1 / R4.2 / R4.6, returns either
+* ``_stage_loop_guard`` returns either
   ``loop_guard_dropped`` (actor-id match against the bot registry
   union) or ``loop_guard_regex_dropped`` (actor-id missing + body
   text matches ``BOT_PREFIX_REGEX``).
@@ -18,25 +18,12 @@ The tests instantiate the chain directly (no FastAPI / no HTTP) and
 substitute pure callbacks for every collaborator. This keeps the test
 matrix focused on the **decision logic** of each stage; the HTTP-side
 mapping (401 / 400 / 200) is owned by the router unit tests in
-``tests/unit/test_app.py`` once task 4.5 lands. The composite "all
+``tests/unit/test_app.py``. The composite "all
 stages chained together" coverage lives in the property suite at
 ``platform/tests/property/test_webhook_predicates.py``.
 
-Property → test mapping
------------------------
-
-Every test has a 1:1 mapping back to the requirements doc to make
-the audit-trail from spec to code unambiguous:
-
-==================================  =========  =================================================
-Test class                          Stage      Requirements
-==================================  =========  =================================================
-``TestVerifyHmacStage``             verify     3.4
-``TestResolveDeptStage``            dept       3.5
-``TestLoopGuardActorIdStage``       loop       4.1 (and design's "loop_guard_dropped" row)
-``TestLoopGuardRegexFallbackStage`` loop-fall  4.2, 4.6 (design N15 / "loop_guard_regex_dropped")
-``TestEvaluateStageOrdering``       compose    3.4 + 3.5 + 4.1 + 4.6 (precedence)
-==================================  =========  =================================================
+Test coverage maps each stage to positive, negative, callback, and
+ordering behavior.
 """
 
 from __future__ import annotations
@@ -148,7 +135,7 @@ def _make_event(
 
 
 # ---------------------------------------------------------------------------
-# verify_hmac stage — Requirement 3.4
+# verify_hmac stage
 # ---------------------------------------------------------------------------
 
 
@@ -165,7 +152,6 @@ class TestVerifyHmacStage:
     def test_valid_hmac_passes_through(self) -> None:
         """A truthy ``verify_hmac`` callback lets the chain proceed.
 
-        Validates: Requirement 3.4 (positive path).
         """
 
         chain = _make_chain(verify_hmac=lambda ev: True)
@@ -182,7 +168,6 @@ class TestVerifyHmacStage:
     def test_invalid_hmac_raises(self) -> None:
         """A falsy ``verify_hmac`` callback raises with the canonical reason.
 
-        Validates: Requirement 3.4 (negative path).
         """
 
         chain = _make_chain(verify_hmac=lambda ev: False)
@@ -206,7 +191,6 @@ class TestVerifyHmacStage:
         the callback's implementation choices open. This test pins
         the contract.
 
-        Validates: Requirement 3.4 (callback contract).
         """
 
         captured: list[WebhookEvent] = []
@@ -230,7 +214,6 @@ class TestVerifyHmacStage:
         not leak the project_key → dept_id mapping (or the absence
         thereof) via differential responses.
 
-        Validates: Requirement 3.4 (precedence over 3.5).
         """
 
         dept_calls = 0
@@ -253,7 +236,7 @@ class TestVerifyHmacStage:
 
 
 # ---------------------------------------------------------------------------
-# resolve_dept stage — Requirement 3.5
+# resolve_dept stage
 # ---------------------------------------------------------------------------
 
 
@@ -263,7 +246,6 @@ class TestResolveDeptStage:
     def test_dept_resolved_passes_through(self) -> None:
         """A non-None dept_id lets the chain proceed.
 
-        Validates: Requirement 3.5 (positive path).
         """
 
         chain = _make_chain(resolve_dept=lambda ev: "payments")
@@ -276,7 +258,6 @@ class TestResolveDeptStage:
     def test_unresolved_dept_raises(self) -> None:
         """``resolve_dept`` returning ``None`` raises with the canonical reason.
 
-        Validates: Requirement 3.5 (negative path).
         """
 
         chain = _make_chain(resolve_dept=lambda ev: None)
@@ -296,7 +277,6 @@ class TestResolveDeptStage:
         the same ``resolve_dept`` callback, which inspects the event
         and returns the appropriate dept_id.
 
-        Validates: Requirement 3.5 (Bitbucket dialect).
         """
 
         # Pretend the dept registry only knows about the bitbucket
@@ -327,7 +307,6 @@ class TestResolveDeptStage:
         operator signal) rather than ``loop_guard_dropped`` — the
         latter would silently swallow the misconfiguration.
 
-        Validates: Requirement 3.5 (precedence over 4.1).
         """
 
         loop_calls = 0
@@ -350,7 +329,7 @@ class TestResolveDeptStage:
 
 
 # ---------------------------------------------------------------------------
-# loop_guard stage — Requirement 4.1
+# loop_guard stage
 # ---------------------------------------------------------------------------
 
 
@@ -360,7 +339,6 @@ class TestLoopGuardActorIdStage:
     def test_actor_matching_bot_drops_with_loop_guard_dropped(self) -> None:
         """Actor-id ∈ bot_account_ids() → drop with ``loop_guard_dropped``.
 
-        Validates: Requirement 4.1 (MIMARI §1 K7).
         """
 
         chain = _make_chain(
@@ -378,7 +356,6 @@ class TestLoopGuardActorIdStage:
     def test_actor_not_in_registry_passes_loop_guard(self) -> None:
         """A human actor is allowed through.
 
-        Validates: Requirement 4.1 (negative path — non-bot actor).
         """
 
         chain = _make_chain(
@@ -395,9 +372,8 @@ class TestLoopGuardActorIdStage:
 
         A fresh install has no departments, hence no bot accounts. The
         loop guard must not silently drop every webhook in this state
-        — the foundation Property 4 invariant carries through.
+        — this startup invariant carries through.
 
-        Validates: Requirement 4.1 (empty registry).
         """
 
         chain = _make_chain(bot_account_ids=lambda: frozenset())
@@ -414,7 +390,6 @@ class TestLoopGuardActorIdStage:
         circuit the loop. This matches the design invariant that
         cross-dept bot activity cannot create a loop.
 
-        Validates: Requirement 4.1 (cross-dept).
         """
 
         chain = _make_chain(
@@ -441,7 +416,6 @@ class TestLoopGuardActorIdStage:
         dept boots, a bot rotates) propagate without rebuilding the
         chain. This test pins that lazy semantics.
 
-        Validates: Requirement 4.1 (registry refresh).
         """
 
         calls = 0
@@ -461,7 +435,7 @@ class TestLoopGuardActorIdStage:
 
 
 # ---------------------------------------------------------------------------
-# loop_guard regex fallback — Requirements 4.2 / 4.6 (design N15)
+# loop_guard regex fallback
 # ---------------------------------------------------------------------------
 
 
@@ -471,7 +445,6 @@ class TestLoopGuardRegexFallbackStage:
     def test_actor_none_with_bot_prefix_drops(self) -> None:
         """No actor + body starts with ``[bot:`` → drop with regex reason.
 
-        Validates: Requirements 4.2, 4.6 (design N15 positive path).
         """
 
         chain = _make_chain()
@@ -499,7 +472,6 @@ class TestLoopGuardRegexFallbackStage:
         anchor allows zero or more whitespace characters before the
         ``[bot:`` token.
 
-        Validates: Requirement 4.6 (regex shape).
         """
 
         chain = _make_chain()
@@ -513,7 +485,6 @@ class TestLoopGuardRegexFallbackStage:
     def test_actor_none_without_bot_prefix_passes(self) -> None:
         """No actor + body without ``[bot:`` → pass through.
 
-        Validates: Requirement 4.6 (negative path — system event).
         """
 
         chain = _make_chain()
@@ -532,7 +503,6 @@ class TestLoopGuardRegexFallbackStage:
         comment body (e.g. lifecycle hooks). The chain must let them
         through cleanly so subsequent stages can decide.
 
-        Validates: Requirement 4.6 (no body branch).
         """
 
         chain = _make_chain()
@@ -550,7 +520,6 @@ class TestLoopGuardRegexFallbackStage:
         condition that separates the actor-id check from the regex
         fallback.
 
-        Validates: Requirement 4.2 (regex gating).
         """
 
         chain = _make_chain(
@@ -583,7 +552,6 @@ class TestLoopGuardRegexFallbackStage:
         attempts: the pattern is anchored to the start of the string
         with optional whitespace, never anywhere else.
 
-        Validates: Requirement 4.6 (regex precision).
         """
 
         chain = _make_chain()
@@ -602,10 +570,9 @@ class TestLoopGuardRegexFallbackStage:
         the contract surfaces as a test diff rather than a silent
         behaviour change.
 
-        Validates: Requirement 4.6 (constant exposure).
         """
 
-        # ``re.Pattern.pattern`` is the source string; the design
+        # ``re.Pattern.pattern`` is the source string; this assertion
         # specifies ``^\s*\[bot:`` exactly.
         assert BOT_PREFIX_REGEX.pattern == r"^\s*\[bot:"
         # Sanity: the pattern matches and rejects the canonical examples.
@@ -625,7 +592,6 @@ class TestEvaluateStageOrdering:
     def test_hmac_runs_before_dept_resolve(self) -> None:
         """HMAC failure surfaces even when no dept is configured.
 
-        Validates: Requirement 3.4 (precedence over 3.5).
         """
 
         chain = _make_chain(
@@ -638,7 +604,6 @@ class TestEvaluateStageOrdering:
     def test_dept_resolve_runs_before_loop_guard(self) -> None:
         """Dept failure surfaces even when the actor is a bot.
 
-        Validates: Requirement 3.5 (precedence over 4.1).
         """
 
         chain = _make_chain(
@@ -658,7 +623,6 @@ class TestEvaluateStageOrdering:
         regex fallback exists specifically for the case where the
         actor is missing.
 
-        Validates: Requirement 4.1 (precedence over 4.2/4.6 fallback).
         """
 
         chain = _make_chain(
@@ -680,7 +644,6 @@ class TestEvaluateStageOrdering:
         The chain must not waste a Postgres round-trip for an event
         we are about to drop with audit ``loop_guard_dropped``.
 
-        Validates: Requirement 4.1 (short-circuit).
         """
 
         is_processed_calls = 0

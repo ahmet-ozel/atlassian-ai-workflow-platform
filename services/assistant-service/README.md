@@ -1,7 +1,7 @@
 # assistant-service
 
 FastAPI HTTP service that hosts chat orchestration and LLM access for the
-multi-service-scaffold. This is the **scaffold skeleton** — `/healthz`
+the platform. This is the initial service skeleton — `/healthz`
 and `/readyz` are wired, business logic is intentionally absent.
 
 - Runtime: Python 3.12, FastAPI, Pydantic v2
@@ -34,9 +34,9 @@ root Compose stack:
 
 ```bash
 # 1. Seed environment
-cp .env.example .env   # populated by task 7.1
+cp .env.example .env
 
-# 2. Build the image (Dockerfile added by task 6.1)
+# 2. Build the image
 docker build -t assistant-service:dev .
 
 # 3. Run, publishing the service port to the host
@@ -53,7 +53,7 @@ curl -fsS http://localhost:8081/readyz    # → {"status":"ready"}  (or 503 {"st
 When external dependencies (Postgres, Redis, MCP) are not reachable,
 `/readyz` returns `503` with `{"status":"not_ready"}` while `/healthz`
 keeps returning `200`. The process does not crash on dependency loss
-(Requirement 15.3).
+for local smoke testing.
 
 ## Local dev (without Docker)
 

@@ -13,9 +13,6 @@ Activities:
 - ``llm_generate_doc``: Generates documentation content.
 - ``llm_review_code``: Reviews code from a PR diff.
 - ``llm_research``: Performs research with optional Firecrawl web search.
-
-Design reference: design.md §3.3, MIMARI §7 (LLM Activities)
-Requirements: 7.4, 9.6
 """
 
 from __future__ import annotations

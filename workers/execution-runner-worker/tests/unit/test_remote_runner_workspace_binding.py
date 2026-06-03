@@ -1,9 +1,6 @@
 """Unit tests for the ``derive_workspace_path`` wrappers in
 :mod:`src.runners.remote_ssh` and :mod:`src.runners.remote_ssh_docker`.
 
-Spec: ``platform-mimari-uyumluluk`` Requirement 11.3 (Q13 —
-``RUNNER_BASE_PATH`` env standard) — task 13.3.
-
 The tests pin two contracts:
 
 1. **Single source of truth.** Each wrapper delegates to
@@ -21,9 +18,9 @@ The tests pin two contracts:
    relies on the typed exception attributes.
 
 The exhaustive Hypothesis-based property test for the helper itself
-lives in ``platform/tests/property/test_runner_workspace_path.py``
-(task 13.5); these unit tests document the binding contract at the
-example level so a developer can ``pytest tests/unit -k
+lives in ``platform/tests/property/test_runner_workspace_path.py``; these
+unit tests document the binding contract at the example level so a developer
+can ``pytest tests/unit -k
 remote_runner_workspace_binding`` and get fast feedback while editing.
 """
 
@@ -104,7 +101,7 @@ class TestDerivationDelegatesToCentralHelper:
         self, derive, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         # ``SSH_BASE_PATH`` is the deprecated alias preserved for
-        # backwards compatibility (R11.4). When ``RUNNER_BASE_PATH`` is
+        # backwards compatibility. When ``RUNNER_BASE_PATH`` is
         # unset the wrapper MUST still resolve the legacy variable —
         # otherwise existing deployments would silently fall back to
         # the ``/var/ai-runner`` default and write workspaces in the

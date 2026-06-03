@@ -2,7 +2,7 @@
 # =============================================================================
 # platform/scripts/vps_property_tests.sh — Property test runner (R21)
 # =============================================================================
-# Runs on VPS_Host at /opt/yeni_atlassian/platform.
+# Runs on VPS_Host at /opt/atlassian-ai-workflow-platform.
 # Executes the four property tests in a single pytest invocation and produces
 # evidence at /tmp/21-property-tests.txt.
 #
@@ -26,7 +26,7 @@ set -uo pipefail
 # NOTE: We do NOT use `set -e` because pytest exit code 1 (test failures) is
 # handled gracefully — it is not a script error but a test result.
 
-PLATFORM_DIR="/opt/yeni_atlassian/platform"
+PLATFORM_DIR="/opt/atlassian-ai-workflow-platform"
 EVIDENCE_FILE="/tmp/21-property-tests.txt"
 SCRIPTS_DIR="$PLATFORM_DIR/scripts"
 TESTS_DIR="$PLATFORM_DIR/tests/property"

@@ -1,26 +1,18 @@
-"""Property tests for workflow_id idempotency and ID format determinism.
+"""Tests for workflow_id idempotency and ID format determinism.
 
-This file consolidates two related properties from the
-``platform-mimari-foundation`` spec:
-
-* **Property 3 — workflow_id idempotency**
+* **workflow_id idempotency**
   *For all* valid ``workflow_id`` strings, two consecutive
   ``start_workflow`` calls with the same id produce exactly **one**
   Temporal execution; the second call returns the existing
   ``execution_id`` and ``was_existing=True`` (HTTP 202 in the caller).
   Tested with a mocked Temporal client via
   :func:`temporal_shared.start_helper.start_workflow_idempotent`.
-  **Validates: Requirements 1.6, 9.2**
-
-* **Workflow ID format determinism / uniqueness** (legacy from the
-  ``multi-service-scaffold`` spec; kept for parity with existing
-  property test surface — see Requirement 9.1: the suite must contain
-  ``test_workflow_id.py``).  The :mod:`temporal_shared.identifiers`
+* **Workflow ID format determinism / uniqueness**. The
+  :mod:`temporal_shared.identifiers`
   formatters must be deterministic, injective, and produce IDs that
   match the documented regex patterns.
 
-Both halves run under Hypothesis with ``max_examples ≥ 100`` per
-property as required by design §"Property → Test eşlemesi".
+Both halves run under Hypothesis with ``max_examples ≥ 100``.
 """
 
 from __future__ import annotations
@@ -105,7 +97,7 @@ _EXEC_ID_RE = re.compile(r"^exec-.+-\d+$")
 
 
 # ---------------------------------------------------------------------------
-# Property 6a: Format match — Jira workflow ID
+# Format match — Jira workflow ID
 # ---------------------------------------------------------------------------
 
 
@@ -122,7 +114,7 @@ def test_jira_workflow_id_format_match(issue_key: str) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Property 6b: Format match — Bitbucket workflow ID
+# Format match — Bitbucket workflow ID
 # ---------------------------------------------------------------------------
 
 
@@ -139,7 +131,7 @@ def test_bb_workflow_id_format_match(workspace: str, repo: str, pr_id: int) -> N
 
 
 # ---------------------------------------------------------------------------
-# Property 6c: Format match — Agent workflow ID
+# Format match — Agent workflow ID
 # ---------------------------------------------------------------------------
 
 
@@ -156,7 +148,7 @@ def test_agent_workflow_id_format_match(parent_id: str, iteration: int) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Property 6d: Format match — Execution workflow ID
+# Format match — Execution workflow ID
 # ---------------------------------------------------------------------------
 
 
@@ -173,7 +165,7 @@ def test_execution_workflow_id_format_match(parent_id: str, ts: int) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Property 6e: Idempotence — repeated calls yield identical output
+# Idempotence — repeated calls yield identical output
 # ---------------------------------------------------------------------------
 
 
@@ -228,7 +220,7 @@ def test_execution_workflow_id_idempotent(parent_id: str, ts: int) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Property 6f: Injectivity — distinct inputs produce distinct IDs
+# Injectivity — distinct inputs produce distinct IDs
 # ---------------------------------------------------------------------------
 
 
@@ -318,7 +310,7 @@ def test_execution_workflow_id_injectivity(
 
 
 # ---------------------------------------------------------------------------
-# Property 6g: Invalid inputs raise appropriate errors
+# Invalid inputs raise appropriate errors
 # ---------------------------------------------------------------------------
 
 
@@ -362,9 +354,7 @@ def test_bb_workflow_id_rejects_invalid_workspace_slug(bad_slug: str) -> None:
 
 
 # =============================================================================
-# Property 3: workflow_id idempotency
-#
-# **Validates: Requirements 1.6, 9.2**
+# workflow_id idempotency
 #
 # For all valid ``workflow_id`` strings, two consecutive
 # ``start_workflow`` calls with the same id produce exactly **one**
@@ -451,7 +441,7 @@ class _MockTemporalClient:
 
 
 # ---------------------------------------------------------------------------
-# Property 3a: First start produces was_existing=False; second start
+# First start produces was_existing=False; second start
 # with the same id produces was_existing=True with the same execution_id.
 # ---------------------------------------------------------------------------
 
@@ -464,9 +454,7 @@ class _MockTemporalClient:
 @given(workflow_id=_WORKFLOW_ID_STRATEGY)
 @pytest.mark.asyncio
 async def test_second_start_with_same_id_is_idempotent(workflow_id: str) -> None:
-    """**Validates: Requirements 1.6, 9.2**
-
-    Two consecutive starts with the same ``workflow_id`` produce
+    """Two consecutive starts with the same ``workflow_id`` produce
     exactly one execution.  The second call returns
     ``was_existing=True`` and echoes the caller-supplied id.
     """
@@ -500,7 +488,7 @@ async def test_second_start_with_same_id_is_idempotent(workflow_id: str) -> None
 
 
 # ---------------------------------------------------------------------------
-# Property 3b: Three+ consecutive starts with the same id all collapse
+# Three+ consecutive starts with the same id all collapse
 # onto the same single execution; only the first call sets
 # was_existing=False.
 # ---------------------------------------------------------------------------
@@ -519,9 +507,7 @@ async def test_second_start_with_same_id_is_idempotent(workflow_id: str) -> None
 async def test_n_starts_with_same_id_yield_single_execution(
     workflow_id: str, extra_starts: int
 ) -> None:
-    """**Validates: Requirements 1.6, 9.2**
-
-    Repeated starts (1 + N) with the same id always yield exactly one
+    """Repeated starts (1 + N) with the same id always yield exactly one
     execution, and every start after the first reports was_existing=True.
     """
     client = _MockTemporalClient()
@@ -553,7 +539,7 @@ async def test_n_starts_with_same_id_yield_single_execution(
 
 
 # ---------------------------------------------------------------------------
-# Property 3c: Distinct workflow_ids produce distinct executions —
+# Distinct workflow_ids produce distinct executions —
 # idempotency is keyed strictly on the workflow_id, never collapsing
 # unrelated workflows.
 # ---------------------------------------------------------------------------
@@ -572,9 +558,7 @@ async def test_n_starts_with_same_id_yield_single_execution(
 async def test_distinct_ids_yield_distinct_executions(
     workflow_id_a: str, workflow_id_b: str
 ) -> None:
-    """**Validates: Requirements 1.6, 9.2**
-
-    Different workflow_ids must always produce separate executions —
+    """Different workflow_ids must always produce separate executions —
     the idempotency rule keys on workflow_id and nothing else.
     """
     client = _MockTemporalClient()
@@ -608,7 +592,7 @@ async def test_distinct_ids_yield_distinct_executions(
 
 
 # ---------------------------------------------------------------------------
-# Property 3d: The helper returns the caller-supplied workflow_id even
+# The helper returns the caller-supplied workflow_id even
 # when the SDK exception happens to carry a different id — pinning the
 # contract that the response id is provable from inputs alone.
 # ---------------------------------------------------------------------------
@@ -627,9 +611,7 @@ async def test_distinct_ids_yield_distinct_executions(
 async def test_helper_echoes_caller_supplied_id_on_duplicate(
     caller_id: str, sdk_id: str
 ) -> None:
-    """**Validates: Requirements 1.6, 9.2**
-
-    On a duplicate start the helper returns the *caller's* workflow_id
+    """On a duplicate start the helper returns the *caller's* workflow_id
     even if the SDK exception happens to carry a different value.
     This locks the HTTP 202 response contract: the id returned to the
     webhook caller is always the id they supplied.
@@ -662,10 +644,7 @@ async def test_helper_echoes_caller_supplied_id_on_duplicate(
 
 
 # =============================================================================
-# Property 1 (platform-mimari-workflows §"Property → Test eşlemesi"):
 # workflow_id format ve round-trip parse
-#
-# **Validates: Requirements 2.1**
 #
 # For any ``(project_key, issue_num)`` Jira tuple,
 # ``parse_workflow_id(jira_workflow_id(project_key, issue_num))`` must
@@ -681,10 +660,9 @@ async def test_helper_echoes_caller_supplied_id_on_duplicate(
 # preserved across the two namespaces, which are disjoint by prefix).
 #
 # These properties extend the foundation-parity surface above with the
-# new workflows-spec formatters (``jira_workflow_id``,
+# new formatters (``jira_workflow_id``,
 # ``bitbucket_pr_workflow_id``, ``parse_workflow_id``,
-# :class:`WorkflowIdRef`) introduced in task 1.2 of
-# ``platform-mimari-workflows``.
+# :class:`WorkflowIdRef`).
 # =============================================================================
 
 
@@ -697,7 +675,7 @@ from temporal_shared.identifiers import (
 )
 
 # ---------------------------------------------------------------------------
-# Pinned regexes from design.md Property 1
+# Pinned workflow-id regexes
 # ---------------------------------------------------------------------------
 
 _JIRA_WF_FMT_RE = re.compile(r"^automation-jira-[A-Z][A-Z0-9_]{1,9}-\d+$")
@@ -763,7 +741,7 @@ _PR_ID = st.integers(min_value=1, max_value=10**9)
 
 
 # ---------------------------------------------------------------------------
-# Property 1a: Format regex match — Jira
+# Format regex match — Jira
 # ---------------------------------------------------------------------------
 
 
@@ -776,9 +754,7 @@ _PR_ID = st.integers(min_value=1, max_value=10**9)
 def test_jira_workflow_id_matches_documented_regex(
     project_key: str, issue_num: int
 ) -> None:
-    """**Validates: Requirements 2.1**
-
-    Every formatted Jira workflow_id matches exactly the pinned regex
+    """Every formatted Jira workflow_id matches exactly the pinned regex
     ``^automation-jira-[A-Z][A-Z0-9_]{1,9}-\\d+$`` and does **not** match
     the Bitbucket regex.
     """
@@ -792,7 +768,7 @@ def test_jira_workflow_id_matches_documented_regex(
 
 
 # ---------------------------------------------------------------------------
-# Property 1b: Format regex match — Bitbucket
+# Format regex match — Bitbucket
 # ---------------------------------------------------------------------------
 
 
@@ -805,9 +781,7 @@ def test_jira_workflow_id_matches_documented_regex(
 def test_bitbucket_pr_workflow_id_matches_documented_regex(
     repo_slug: str, pr_id: int
 ) -> None:
-    """**Validates: Requirements 2.1**
-
-    Every formatted Bitbucket workflow_id matches exactly the pinned
+    """Every formatted Bitbucket workflow_id matches exactly the pinned
     regex ``^automation-bb-[a-z0-9-]+-pr-\\d+$`` and does **not** match
     the Jira regex.
     """
@@ -821,7 +795,7 @@ def test_bitbucket_pr_workflow_id_matches_documented_regex(
 
 
 # ---------------------------------------------------------------------------
-# Property 1c: Round-trip — Jira
+# Round-trip — Jira
 # ---------------------------------------------------------------------------
 
 
@@ -832,9 +806,7 @@ def test_bitbucket_pr_workflow_id_matches_documented_regex(
 )
 @given(project_key=_PROJECT_KEY, issue_num=_ISSUE_NUM)
 def test_jira_workflow_id_round_trip(project_key: str, issue_num: int) -> None:
-    """**Validates: Requirements 2.1**
-
-    ``parse_workflow_id(jira_workflow_id(pk, n))`` returns the original
+    """``parse_workflow_id(jira_workflow_id(pk, n))`` returns the original
     ``(pk, n)`` tuple wrapped in a ``WorkflowIdRef`` with provider
     ``"jira"`` and Bitbucket fields cleared to ``None``.
     """
@@ -853,7 +825,7 @@ def test_jira_workflow_id_round_trip(project_key: str, issue_num: int) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Property 1d: Round-trip — Bitbucket
+# Round-trip — Bitbucket
 # ---------------------------------------------------------------------------
 
 
@@ -864,9 +836,7 @@ def test_jira_workflow_id_round_trip(project_key: str, issue_num: int) -> None:
 )
 @given(repo_slug=_REPO_SLUG, pr_id=_PR_ID)
 def test_bitbucket_pr_workflow_id_round_trip(repo_slug: str, pr_id: int) -> None:
-    """**Validates: Requirements 2.1**
-
-    ``parse_workflow_id(bitbucket_pr_workflow_id(slug, pr))`` returns
+    """``parse_workflow_id(bitbucket_pr_workflow_id(slug, pr))`` returns
     the original ``(slug, pr)`` tuple wrapped in a ``WorkflowIdRef``
     with provider ``"bitbucket"`` and Jira fields cleared to ``None``.
     """
@@ -884,7 +854,7 @@ def test_bitbucket_pr_workflow_id_round_trip(repo_slug: str, pr_id: int) -> None
 
 
 # ---------------------------------------------------------------------------
-# Property 1e: Injectivity — Jira (no two distinct inputs collide)
+# Injectivity — Jira (no two distinct inputs collide)
 # ---------------------------------------------------------------------------
 
 
@@ -902,9 +872,7 @@ def test_bitbucket_pr_workflow_id_round_trip(repo_slug: str, pr_id: int) -> None
 def test_jira_workflow_id_injective(
     pk_a: str, num_a: int, pk_b: str, num_b: int
 ) -> None:
-    """**Validates: Requirements 2.1**
-
-    Two distinct ``(project_key, issue_num)`` tuples never produce the
+    """Two distinct ``(project_key, issue_num)`` tuples never produce the
     same formatted Jira workflow_id.
     """
     if (pk_a, num_a) != (pk_b, num_b):
@@ -912,7 +880,7 @@ def test_jira_workflow_id_injective(
 
 
 # ---------------------------------------------------------------------------
-# Property 1f: Injectivity — Bitbucket (no two distinct inputs collide)
+# Injectivity — Bitbucket (no two distinct inputs collide)
 # ---------------------------------------------------------------------------
 
 
@@ -930,9 +898,7 @@ def test_jira_workflow_id_injective(
 def test_bitbucket_pr_workflow_id_injective(
     slug_a: str, pr_a: int, slug_b: str, pr_b: int
 ) -> None:
-    """**Validates: Requirements 2.1**
-
-    Two distinct ``(repo_slug, pr_id)`` tuples never produce the same
+    """Two distinct ``(repo_slug, pr_id)`` tuples never produce the same
     formatted Bitbucket workflow_id.  The ``-pr-`` literal infix is
     what disambiguates the slug from the pr_id even when the slug
     happens to contain trailing digits.
@@ -945,7 +911,7 @@ def test_bitbucket_pr_workflow_id_injective(
 
 
 # ---------------------------------------------------------------------------
-# Property 1g: Cross-namespace injectivity
+# Cross-namespace injectivity
 #
 # A Jira-formatted id and a Bitbucket-formatted id are always distinct,
 # regardless of inputs — the prefix alone (``automation-jira-`` vs
@@ -968,9 +934,7 @@ def test_bitbucket_pr_workflow_id_injective(
 def test_jira_and_bitbucket_namespaces_disjoint(
     project_key: str, issue_num: int, repo_slug: str, pr_id: int
 ) -> None:
-    """**Validates: Requirements 2.1**
-
-    No Jira-formatted id collides with any Bitbucket-formatted id, and
+    """No Jira-formatted id collides with any Bitbucket-formatted id, and
     each id parses back to the correct provider.
     """
     jira_id = jira_workflow_id(project_key, issue_num)
@@ -982,7 +946,7 @@ def test_jira_and_bitbucket_namespaces_disjoint(
 
 
 # ---------------------------------------------------------------------------
-# Property 1h: Strings outside both regexes are rejected
+# Strings outside both regexes are rejected
 # ---------------------------------------------------------------------------
 
 
@@ -1003,9 +967,7 @@ def test_jira_and_bitbucket_namespaces_disjoint(
     )
 )
 def test_parse_rejects_strings_outside_both_regexes(junk: str) -> None:
-    """**Validates: Requirements 2.1**
-
-    Any string that does not match either documented regex must raise
+    """Any string that does not match either documented regex must raise
     :class:`InvalidWorkflowIdError`.  Conversely, any string that *does*
     match one of the regexes must parse cleanly (modulo the additional
     structural checks the parser layers on top, e.g. forbidding

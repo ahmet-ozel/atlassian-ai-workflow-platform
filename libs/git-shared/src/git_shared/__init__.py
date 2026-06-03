@@ -5,10 +5,8 @@ Re-exports the public API so callers can simply do::
     from git_shared import GitRepo, PullRequestOpener, PullRequestRef
     from git_shared import GitRepoError, BranchAlreadyExistsError, MergeConflictError
 
-The package mirrors the design in
-``.kiro/specs/platform-mimari-ops/design.md`` §`PromptsGitRouter` and
-backs Requirement 2.2 (git CRUD endpoints) and Requirement 2.9
-(template-format validation prior to writing).
+The package backs git CRUD endpoints and template-format validation
+prior to writing.
 """
 
 from .errors import (

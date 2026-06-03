@@ -49,7 +49,7 @@
         },
         "env_example_path": {
           "type": "string",
-          "description": "Workspace-root-relative path to the .env.example file whose left-hand-side (LHS) keys drive the Start form schema. For atlassian-mcp this points into services/atlassian_unified/ which is read-only per the scaffold immutability guarantee."
+          "description": "Workspace-root-relative path to the .env.example file whose left-hand-side (LHS) keys drive the Start form schema. For atlassian-mcp this points into services/atlassian_mcp_bitbucket/."
         },
         "health_endpoint": {
           "description": "HTTP path probed by HealthProbe for http_service entries (e.g. /healthz). null for worker/infra/ui entries that do not expose an HTTP health endpoint.",
@@ -67,7 +67,7 @@
         },
         "depends_on_services": {
           "type": "array",
-          "description": "Names of services this entry depends on for cascade healthcheck and auto-start dependency-chain orchestration (Q11, N20, T17). Strings may reference other Managed_Service entries (by name) OR Boot_Bundle / external infra components (e.g. postgres, vault, temporal, atlassian_unified) which do not appear as manifest entries. Cycle detection cannot be expressed at JSON Schema level across array entries; the Python loader and boot validator (platform/scripts/check_services_manifest_schema.py) reject manifests whose intra-manifest depends_on_services edges form a cycle. Default [].",
+          "description": "Names of services this entry depends on for cascade healthcheck and auto-start dependency-chain orchestration. Strings may reference other Managed_Service entries (by name) OR Boot_Bundle / external infra components (e.g. postgres, vault, temporal, atlassian_mcp_bitbucket) which do not appear as manifest entries. Cycle detection cannot be expressed at JSON Schema level across array entries; the Python loader and boot validator (platform/scripts/check_services_manifest_schema.py) reject manifests whose intra-manifest depends_on_services edges form a cycle. Default [].",
           "default": [],
           "items": {
             "type": "string",

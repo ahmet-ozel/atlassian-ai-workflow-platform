@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * ExternalProvidersSection — AI model provider status widget (R10, task 10.5).
+ * ExternalProvidersSection — AI model provider status widget.
  *
  * Renders a compact section above the managed services table showing the
  * live status of explicitly configured AI model providers.
@@ -16,7 +16,6 @@
  * When no AI provider is configured, the section renders a neutral grey
  * "AI model tanimli degil" state instead of red provider failures.
  *
- * Requirements: 10.5, 10.6
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -67,7 +66,7 @@ const STATUS_BADGE_MAP: Record<ExternalProviderStatus, BadgeConfig> = {
 };
 
 // --------------------------------------------------------------------------
-// Contextual error messages for unreachable providers (Requirement 10.6)
+// Contextual error messages for unreachable providers
 // --------------------------------------------------------------------------
 
 const UNREACHABLE_HINTS: Record<string, string> = {
@@ -199,7 +198,7 @@ function ProviderCard({ provider, onTestNow, testing }: ProviderCardProps) {
         </span>
       </div>
 
-      {/* Unreachable hint (Requirement 10.6) */}
+      {/* Unreachable hint */}
       {isUnreachable && (
         <div
           role="alert"

@@ -1,4 +1,4 @@
-"""Bot info endpoint for the Task Creator assignee card (R7.6).
+"""Bot info endpoint for the Task Creator assignee card.
 
 Exposes ``GET /api/dept/{id}/bot-info`` which returns the department's
 display name and a list of registered bots with their service type,
@@ -12,7 +12,7 @@ Data sources:
     (dept_id, service) pair (probe_status, probed_at).
 
 The endpoint is consumed by the Streamlit Task Creator page to render
-the "Bot Assignee Info Card" (Requirement 7.1–7.5).
+the "Bot Assignee Info Card".
 """
 
 from __future__ import annotations

@@ -1,7 +1,6 @@
-# Feature: vps-e2e-deployment-test, Property 5: Open_Issue schema validity
-"""Property test for Open_Issue schema validity.
+"""invariant for Open_Issue schema validity.
 
-Validates: Requirements 16.1
+
 
 Uses Hypothesis strategies to generate valid and invalid Open_Issue entries,
 verifying that:
@@ -42,7 +41,7 @@ from vps_open_issue_logger import (  # noqa: E402
 # Strategies
 # ---------------------------------------------------------------------------
 
-# Valid requirement IDs: R1-R9, R10-R19, R20-R23
+# Valid the operational rule IDs: -, -, -
 _valid_requirement_ids = st.sampled_from(
     [f"R{i}" for i in range(1, 24)]
 )
@@ -121,7 +120,7 @@ def _isolate_logger(tmp_dir: Path):
 
 
 # ---------------------------------------------------------------------------
-# Property 5a: Valid entries are accepted and produce correct schema
+# invariant: Valid entries are accepted and produce correct schema
 # ---------------------------------------------------------------------------
 
 
@@ -130,8 +129,8 @@ def _isolate_logger(tmp_dir: Path):
 def test_valid_entry_accepted_and_schema_correct(entry):
     """Valid Open_Issue entries are accepted by the logger without error.
 
-    **Validates: Requirements 16.1**
-    """
+
+ """
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_path = Path(tmp_dir)
         patch_ed, patch_file, open_issues_file = _isolate_logger(tmp_path)
@@ -161,7 +160,7 @@ def test_valid_entry_accepted_and_schema_correct(entry):
 
 
 # ---------------------------------------------------------------------------
-# Property 5b: Monotonic id invariant across consecutive entries
+# invariant: Monotonic id invariant across consecutive entries
 # ---------------------------------------------------------------------------
 
 
@@ -170,8 +169,8 @@ def test_valid_entry_accepted_and_schema_correct(entry):
 def test_monotonic_id_invariant(entries):
     """Consecutive Open_Issue entries have strictly increasing ids.
 
-    **Validates: Requirements 16.1**
-    """
+
+ """
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_path = Path(tmp_dir)
         patch_ed, patch_file, open_issues_file = _isolate_logger(tmp_path)
@@ -197,7 +196,7 @@ def test_monotonic_id_invariant(entries):
 
 
 # ---------------------------------------------------------------------------
-# Property 5c: Invalid entries are rejected with ValueError
+# invariant: Invalid entries are rejected with ValueError
 # ---------------------------------------------------------------------------
 
 
@@ -206,8 +205,8 @@ def test_monotonic_id_invariant(entries):
 def test_invalid_severity_rejected(bad_severity):
     """Invalid severity values are rejected with ValueError.
 
-    **Validates: Requirements 16.1**
-    """
+
+ """
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_path = Path(tmp_dir)
         patch_ed, patch_file, _ = _isolate_logger(tmp_path)
@@ -215,7 +214,7 @@ def test_invalid_severity_rejected(bad_severity):
         with patch_ed, patch_file:
             with pytest.raises(ValueError):
                 log_open_issue(
-                    requirement_id="R10",
+                    requirement_id="the operational rule",
                     scenario_id=None,
                     severity=bad_severity,
                     category="config",
@@ -230,8 +229,8 @@ def test_invalid_severity_rejected(bad_severity):
 def test_invalid_category_rejected(bad_category):
     """Invalid category values are rejected with ValueError.
 
-    **Validates: Requirements 16.1**
-    """
+
+ """
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_path = Path(tmp_dir)
         patch_ed, patch_file, _ = _isolate_logger(tmp_path)
@@ -239,7 +238,7 @@ def test_invalid_category_rejected(bad_category):
         with patch_ed, patch_file:
             with pytest.raises(ValueError):
                 log_open_issue(
-                    requirement_id="R10",
+                    requirement_id="the operational rule",
                     scenario_id=None,
                     severity="major",
                     category=bad_category,
@@ -254,8 +253,8 @@ def test_invalid_category_rejected(bad_category):
 def test_invalid_recommended_action_rejected(bad_action):
     """Invalid recommended_action values are rejected with ValueError.
 
-    **Validates: Requirements 16.1**
-    """
+
+ """
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_path = Path(tmp_dir)
         patch_ed, patch_file, _ = _isolate_logger(tmp_path)
@@ -263,7 +262,7 @@ def test_invalid_recommended_action_rejected(bad_action):
         with patch_ed, patch_file:
             with pytest.raises(ValueError):
                 log_open_issue(
-                    requirement_id="R10",
+                    requirement_id="the operational rule",
                     scenario_id=None,
                     severity="major",
                     category="config",
@@ -278,8 +277,8 @@ def test_invalid_recommended_action_rejected(bad_action):
 def test_invalid_summary_too_long_rejected(bad_summary):
     """Summaries exceeding 160 characters are rejected with ValueError.
 
-    **Validates: Requirements 16.1**
-    """
+
+ """
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_path = Path(tmp_dir)
         patch_ed, patch_file, _ = _isolate_logger(tmp_path)
@@ -287,7 +286,7 @@ def test_invalid_summary_too_long_rejected(bad_summary):
         with patch_ed, patch_file:
             with pytest.raises(ValueError):
                 log_open_issue(
-                    requirement_id="R10",
+                    requirement_id="the operational rule",
                     scenario_id=None,
                     severity="major",
                     category="config",
@@ -302,8 +301,8 @@ def test_invalid_summary_too_long_rejected(bad_summary):
 def test_invalid_evidence_path_rejected(bad_path):
     """Evidence paths not starting with 'vps-test-evidence/' are rejected.
 
-    **Validates: Requirements 16.1**
-    """
+
+ """
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_path = Path(tmp_dir)
         patch_ed, patch_file, _ = _isolate_logger(tmp_path)
@@ -311,7 +310,7 @@ def test_invalid_evidence_path_rejected(bad_path):
         with patch_ed, patch_file:
             with pytest.raises(ValueError):
                 log_open_issue(
-                    requirement_id="R10",
+                    requirement_id="the operational rule",
                     scenario_id=None,
                     severity="major",
                     category="config",
@@ -324,10 +323,10 @@ def test_invalid_evidence_path_rejected(bad_path):
 @settings(max_examples=100, suppress_health_check=[HealthCheck.function_scoped_fixture])
 @given(bad_req_id=_invalid_requirement_id)
 def test_invalid_requirement_id_rejected(bad_req_id):
-    """Requirement IDs not matching ^R(1[0-9]|2[0-3]|[1-9])$ are rejected.
+    """the operational rule IDs not matching ^R(1[0-9]|2[0-3]|[1-9])$ are rejected.
 
-    **Validates: Requirements 16.1**
-    """
+
+ """
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_path = Path(tmp_dir)
         patch_ed, patch_file, _ = _isolate_logger(tmp_path)
@@ -339,7 +338,7 @@ def test_invalid_requirement_id_rejected(bad_req_id):
                     scenario_id=None,
                     severity="major",
                     category="config",
-                    summary="Test invalid requirement id",
+                    summary="Test invalid the operational rule id",
                     evidence_path="vps-test-evidence/test.json",
                     recommended_action="manual_fix",
                 )

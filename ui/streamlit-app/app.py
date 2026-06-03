@@ -1,4 +1,4 @@
-"""Streamlit boot script — wires session-state collaborators (`platform-mimari-ops` task 9.10).
+"""Streamlit boot script wiring session-state collaborators.
 
 Streamlit runs each page module independently, but every page in
 ``pages/`` reads its collaborators from ``st.session_state``:
@@ -186,7 +186,7 @@ def _build_http_client(base_url: str) -> Any:
 
 
 # ---------------------------------------------------------------------------
-# Cookie helpers (R3.11, R10.1–R10.5)
+# Cookie helpers
 # ---------------------------------------------------------------------------
 
 
@@ -324,7 +324,7 @@ class _ProbeRunner:
 
 
 class _CostsApi:
-    """Wraps GET /api/costs/me for the sidebar cost widget (R5.8)."""
+    """Wraps GET /api/costs/me for the sidebar cost widget."""
 
     def __init__(self, admin_client: Any) -> None:
         self._client = admin_client
@@ -349,7 +349,7 @@ class _CostsApi:
 
 
 class _CredentialApi:
-    """Wraps the per-user session credential POST (R8.4)."""
+    """Wraps the per-user session credential POST."""
 
     def __init__(self, assistant_client: Any) -> None:
         self._client = assistant_client
@@ -529,7 +529,7 @@ class _BotInfoApi:
 
 
 class _McpReadClient:
-    """Read-only Atlassian MCP wrapper used by the Explorer page (R3.3).
+    """Read-only Atlassian MCP wrapper used by the Explorer page.
 
     The Explorer is the single page allowed to talk to MCP directly
     (every other page proxies through assistant-service for the
@@ -774,7 +774,7 @@ def _inject_session_state() -> None:
     if "_bot_info_api" not in state:
         state["_bot_info_api"] = _BotInfoApi(state["_assistant_client"])
 
-    # --- Cookie controller initialization (Requirement 10.1) ---
+# --- Cookie controller initialization ---
     # Initialize the streamlit-cookies-controller once per session.
     # The controller must be created before any cookie read/write.
     if "_cookie_reader" not in state or "_cookie_writer" not in state:
@@ -785,7 +785,7 @@ def _inject_session_state() -> None:
     if "_probe_runner" not in state:
         state["_probe_runner"] = _ProbeRunner(state["_admin_api_client"])
 
-    # --- Department cookie integration (Requirements 10.2, 10.3, 10.5) ---
+# --- Department cookie integration ---
     # On app load: read department cookie, verify signature, load into
     # session state. Pre-fill department selector with cookie value.
     # On invalid signature: delete cookie, redirect to selector.
@@ -801,7 +801,7 @@ def _inject_session_state() -> None:
         )
         state["current_dept"] = dept_from_cookie or fallback_dept or "default"
         # Also populate active_dept_id so the dept_switcher component
-        # can use the cookie value as its pre-fill default (Req 10.3).
+# can use the cookie value as its pre-fill default.
         if "active_dept_id" not in state:
             state["active_dept_id"] = state["current_dept"]
 
@@ -843,7 +843,7 @@ def _read_verified_department_cookie(state: dict) -> str | None:
     (written by the dept_switcher component) for maximum compatibility.
 
     On invalid signature: deletes the cookie so the user is redirected
-    to the department selector (Requirement 10.5).
+    to the department selector.
 
     Returns:
         The verified department string, or None if cookie is absent,
@@ -878,7 +878,7 @@ def _read_verified_department_cookie(state: dict) -> str | None:
         department = verify_cookie(raw_value, secret)
 
         if department is None:
-            # Invalid signature — delete the tampered cookie (Req 10.5)
+# Invalid signature — delete the tampered cookie.
             try:
                 reader.delete(cookie_name)
             except Exception:  # noqa: BLE001
@@ -897,8 +897,7 @@ def _has_bound_credentials() -> bool:
     are recorded into ``st.session_state["bound_credentials"]`` (set of
     service names) by the credentials page. While that set is empty —
     or absent entirely on a freshly opened session — the landing page
-    surfaces a "go to Credentials first" call-to-action (R4.5, MIMARI
-    §16.17 Q6 + Y1 UX vurgusu).
+    surfaces a "go to Credentials first" call-to-action.
     """
 
     bound = st.session_state.get("bound_credentials")
@@ -915,7 +914,7 @@ def _render_empty_credentials_banner() -> None:
 
     Streamlit ``st.page_link`` accepts a path relative to the entry
     script (``app.py``); ``pages/0_credentials.py`` is the canonical
-    target enforced by R4.1 + R4.3 (the legacy
+    target used by the credentials page flow (the legacy
     ``pages/7_session_credentials.py`` was removed in task 9.2).
     """
 
@@ -962,7 +961,7 @@ def main() -> None:
         icon="🤖",
     )
 
-    # R4.5 — empty-credentials gate. Surfaced *before* the rest of the
+# Empty-credentials gate. Surfaced *before* the rest of the
     # landing page content so a freshly-onboarded user cannot miss the
     # required first step.
     if not _has_bound_credentials():

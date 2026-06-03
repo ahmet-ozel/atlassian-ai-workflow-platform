@@ -2,15 +2,12 @@
 
 Validates the pure :func:`multi_step_dispatch` decision function and the
 :func:`aggregated_output` aggregator against
-``platform-mimari-workflows`` requirements.md §R6.3 and design.md
-§"Workflow Type Routing" (multi_step graceful skip), Property 17.
+§"Workflow Type Routing" (multi_step graceful skip), the invariant.
 
 The dedicated property-test suite for this module lives in
-``platform/tests/property/test_multi_step_dispatch.py`` (task 10.7) —
 this file covers concrete examples and the validation error paths so a
 ``pytest libs/temporal-shared`` run remains hermetic.
 
-Validates: Requirement 6.3 (R6.3), Property 17.
 """
 
 from __future__ import annotations
@@ -56,11 +53,10 @@ class TestMultiStepDispatchHappyPath:
     """Concrete examples for the core start/skip discriminator."""
 
     def test_empty_children_returns_empty_list(self) -> None:
-        """**Validates: Requirement 6.3**"""
         assert multi_step_dispatch([], frozenset({"jira"})) == []
 
     def test_all_children_have_caps_returns_all_start(self) -> None:
-        """**Validates: Requirement 6.3**
+        """
 
         When every child's required capabilities are satisfied, every
         plan is ``"start"`` with reason ``"dispatched"``.
@@ -78,7 +74,7 @@ class TestMultiStepDispatchHappyPath:
         assert all(p.missing_capabilities == frozenset() for p in plans)
 
     def test_missing_capability_yields_skip_with_missing_set(self) -> None:
-        """**Validates: Requirement 6.3**
+        """
 
         ``code_change_with_test`` requires ``execution`` — a dept with
         only ``jira`` + ``bitbucket`` skips it as ``out_of_scope``
@@ -95,7 +91,7 @@ class TestMultiStepDispatchHappyPath:
         assert plans[0].missing_capabilities == frozenset({"execution"})
 
     def test_partial_skip_preserves_total_length(self) -> None:
-        """**Validates: Requirement 6.3, Property 17**
+        """
 
         Mixed children — some with all caps, some without — produce a
         plan list of exactly ``len(children)``: graceful skip means no
@@ -129,7 +125,7 @@ class TestMultiStepDispatchHappyPath:
         assert plans[3].missing_capabilities == frozenset({"web_search"})
 
     def test_set_argument_accepted_alongside_frozenset(self) -> None:
-        """**Validates: Requirement 6.3**
+        """
 
         ``dept_capabilities`` accepts both :class:`set` and
         :class:`frozenset` for ergonomics — the function normalises
@@ -145,7 +141,7 @@ class TestMultiStepDispatchHappyPath:
         assert plans_frozen == plans_mut
 
     def test_iterable_argument_accepted_alongside_sequence(self) -> None:
-        """**Validates: Requirement 6.3**
+        """
 
         The ``children`` parameter accepts a generator / iterator, not
         only sequences.
@@ -158,7 +154,7 @@ class TestMultiStepDispatchHappyPath:
         assert all(p.action == "start" for p in plans)
 
     def test_dispatch_is_deterministic_for_same_input(self) -> None:
-        """**Validates: Requirement 6.3, Property 17**
+        """
 
         Two calls with the same inputs return equal plan lists — the
         function is pure.
@@ -182,7 +178,7 @@ class TestMultiStepDispatchEdgeCases:
     """Coverage for the guard branches that keep the dispatcher total."""
 
     def test_unknown_workflow_type_yields_skip(self) -> None:
-        """**Validates: Requirement 6.3**
+        """
 
         The LLM may occasionally emit a workflow type outside the
         closed vocabulary — the dispatcher records it and continues
@@ -195,7 +191,7 @@ class TestMultiStepDispatchEdgeCases:
         assert plans[0].missing_capabilities == frozenset()
 
     def test_nested_multi_step_yields_skip_with_dedicated_reason(self) -> None:
-        """**Validates: Requirement 6.3**
+        """
 
         ``multi_step`` cannot nest inside ``multi_step``; the
         dispatcher catches it with a dedicated reason rather than
@@ -208,7 +204,6 @@ class TestMultiStepDispatchEdgeCases:
         assert plans[0].missing_capabilities == frozenset()
 
     def test_dept_with_no_capabilities_skips_everything(self) -> None:
-        """**Validates: Requirement 6.3, Property 17**"""
         children = [
             ChildProposal("pr_review", _spec("c-1")),
             ChildProposal("noop_test", _spec("c-2")),
@@ -219,7 +214,7 @@ class TestMultiStepDispatchEdgeCases:
         assert all(p.reason == REASON_OUT_OF_SCOPE for p in plans)
 
     def test_skip_carries_original_child_spec_unchanged(self) -> None:
-        """**Validates: Requirement 6.3**
+        """
 
         Both ``"start"`` and ``"skip"`` plans must echo the proposal's
         :class:`ChildWorkflowSpec` byte-for-byte so the parent has the
@@ -240,7 +235,6 @@ class TestAggregatedOutputHappyPath:
     """Concrete examples for the started/skipped counter."""
 
     def test_empty_outcomes_yields_zero_aggregate(self) -> None:
-        """**Validates: Requirement 6.3, Property 17**"""
         agg = aggregated_output([])
         assert agg.started == 0
         assert agg.skipped == 0
@@ -248,7 +242,7 @@ class TestAggregatedOutputHappyPath:
         assert agg.child_outcomes == ()
 
     def test_invariant_started_plus_skipped_equals_total(self) -> None:
-        """**Validates: Requirement 6.3, Property 17**
+        """
 
         For every input the aggregate satisfies
         ``started + skipped == len(child_outcomes)``.
@@ -282,7 +276,6 @@ class TestAggregatedOutputHappyPath:
         assert agg.child_outcomes == tuple(outcomes)
 
     def test_preserves_outcome_order(self) -> None:
-        """**Validates: Requirement 6.3, Property 17**"""
         outcomes = [
             ChildOutcome("skipped", _spec("a"), REASON_OUT_OF_SCOPE),
             ChildOutcome("started", _spec("b"), REASON_DISPATCHED),
@@ -305,7 +298,7 @@ class TestAggregatedOutputInvariantEnforcement:
     """Coverage for :class:`InvariantViolation` paths."""
 
     def test_unknown_action_raises_invariant_violation(self) -> None:
-        """**Validates: Requirement 6.3, Property 17**
+        """
 
         An outcome whose ``action`` is outside ``{"started",
         "skipped"}`` would silently lose a child from the summary;
@@ -325,7 +318,7 @@ class TestAggregatedOutputInvariantEnforcement:
             aggregated_output([bad_outcome])
 
     def test_constructor_rejects_mismatched_total(self) -> None:
-        """**Validates: Requirement 6.3, Property 17**
+        """
 
         Constructing :class:`AggregatedOutput` with mismatched
         counters raises immediately — even without going through the
@@ -342,7 +335,6 @@ class TestAggregatedOutputInvariantEnforcement:
     def test_constructor_rejects_mismatched_child_outcomes_length(
         self,
     ) -> None:
-        """**Validates: Requirement 6.3, Property 17**"""
         with pytest.raises(InvariantViolation):
             AggregatedOutput(
                 started=1,
@@ -352,7 +344,6 @@ class TestAggregatedOutputInvariantEnforcement:
             )
 
     def test_constructor_rejects_negative_counts(self) -> None:
-        """**Validates: Requirement 6.3, Property 17**"""
         with pytest.raises(InvariantViolation):
             AggregatedOutput(
                 started=-1,
@@ -373,7 +364,6 @@ class TestChildPlanShape:
     """Shape contract sanity — frozen, hashable, and discriminator typed."""
 
     def test_child_plan_is_frozen(self) -> None:
-        """**Validates: Requirement 6.3**"""
         plan = ChildPlan(
             action="start",
             child_spec=_spec("c-1"),
@@ -383,7 +373,6 @@ class TestChildPlanShape:
             plan.action = "skip"  # type: ignore[misc]
 
     def test_child_outcome_is_frozen(self) -> None:
-        """**Validates: Requirement 6.3**"""
         outcome = ChildOutcome(
             action="started",
             child_spec=_spec("c-1"),
@@ -393,7 +382,6 @@ class TestChildPlanShape:
             outcome.status = "tampered"  # type: ignore[misc]
 
     def test_aggregated_output_is_frozen(self) -> None:
-        """**Validates: Requirement 6.3**"""
         agg = aggregated_output([])
         with pytest.raises((AttributeError, Exception)):
             agg.total = 99  # type: ignore[misc]

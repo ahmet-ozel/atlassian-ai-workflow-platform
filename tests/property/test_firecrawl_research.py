@@ -1,97 +1,95 @@
-"""Property test 12 — Firecrawl egress + research output invariants.
+"""Firecrawl egress and research output behavior.
 
-# Feature: platform-mimari-workflows, Property 12: Firecrawl egress + research output invariants
 
-**Validates: Requirements 9.1, 9.2, 9.3, 9.4, 9.5**
+
+
 
 Hypothesis-driven verification of the **research output formatters**
 shipped by ``platform/libs/temporal-shared/src/temporal_shared/research.py``
-(workflows-spec task 9.2). Both renderers are pure helpers fed by the
+(both renderers are pure helpers fed by the
 ``research_*`` workflow types defined in
-``.kiro/specs/platform-mimari-workflows`` §R9:
+the workflow registry:
 
-* :func:`temporal_shared.research.format_research_publish_confluence_body`
-  — renders the body of a Confluence page produced by the
-  ``research_publish_confluence`` workflow (R9.4).
-* :func:`temporal_shared.research.format_research_summary_jira_comment`
-  — renders the Jira comment posted by the ``research_summary_jira``
-  workflow plus an optional MinIO sentinel for the offload path
-  (R9.5).
+*:func:`temporal_shared.research.format_research_publish_confluence_body`
+ — renders the body of a Confluence page produced by the
+ ``research_publish_confluence`` workflow.
+*:func:`temporal_shared.research.format_research_summary_jira_comment`
+ — renders the Jira comment posted by the ``research_summary_jira``
+ workflow plus an optional MinIO sentinel for the offload path.
 
 Why the egress predicate is **not** retested here
 -------------------------------------------------
 
-Acceptance criteria R9.1, R9.2 and R9.3 (allowlist gating, dept
-overrides, graceful 403 / Jira fallback) are already exercised by
-:mod:`tests.property.test_firecrawl_egress` (Property 16,
-foundation-spec). Both files import the same single source of
+Allowlist gating, department overrides, and graceful 403 / Jira fallback
+behavior are already exercised by:mod:`tests.property.test_firecrawl_egress`.
+Both files import the same single source of
 truth (:func:`mcp_client.firecrawl.effective_allowlist`); duplicating
 the egress matrix here would only invite drift. We add a single
-sentinel test in :class:`TestEgressAllowlistCoverage` that pins the
+sentinel test in:class:`TestEgressAllowlistCoverage` that pins the
 allowlist set algebra so a regression *anywhere* in either property
-file is visible from this one too — and we leave a TODO referencing
-task 9.1 (``firecrawl_client``) for the post-flight 403 → Jira
+file is visible from this one too — and we leave a TODO for the
+post-flight 403 → Jira
 fallback predicate, which still lives inside the activity layer.
 
-Property statements (mirror design.md §"Property 12")
------------------------------------------------------
+Behavior statements
+-------------------
 
-(P1)  ``format_research_publish_confluence_body(content, sources)``
-      contains ``content`` verbatim (modulo trailing whitespace
-      normalisation) for every well-formed input.
+``format_research_publish_confluence_body(content, sources)``
+ contains ``content`` verbatim (modulo trailing whitespace
+ normalisation) for every well-formed input.
 
-(P2)  Every source URL passed in ``sources`` appears **at least
-      once** in the rendered body. Duplicate URLs in the input list
-      may render multiple times; the workflow body owns the dedup
-      decision before calling this helper, so the property only
-      asserts presence — never absence — of a URL.
+Every source URL passed in ``sources`` appears **at least
+ once** in the rendered body. Duplicate URLs in the input list
+ may render multiple times; the workflow body owns the dedup
+ decision before calling this helper, so the property only
+ asserts presence — never absence — of a URL.
 
-(P3)  ``format_research_publish_confluence_body`` is **deterministic
-      and pure**: two consecutive calls with the same arguments
-      return identical strings, and the input ``sources`` iterable
-      is not mutated.
+``format_research_publish_confluence_body`` is **deterministic
+ and pure**: two consecutive calls with the same arguments
+ return identical strings, and the input ``sources`` iterable
+ is not mutated.
 
-(P4)  ``format_research_publish_confluence_body`` returns the bare
-      ``content`` (no ``## Kaynaklar`` header) when every source
-      lacks a usable URL — a graceful degradation guard so the bot
-      never publishes a dangling sources block.
+``format_research_publish_confluence_body`` returns the bare
+ ``content`` (no ``## Kaynaklar`` header) when every source
+ lacks a usable URL — a graceful degradation guard so the bot
+ never publishes a dangling sources block.
 
-(P5)  ``format_research_summary_jira_comment(summary, sources)``
-      always returns a 2-tuple ``(comment_text, minio_uri)`` with
-      ``comment_text`` a non-empty string and ``minio_uri`` either
-      ``None`` or ``"minio://research-summary-pending"`` (the
-      pinned sentinel).
+``format_research_summary_jira_comment(summary, sources)``
+ always returns a 2-tuple ``(comment_text, minio_uri)`` with
+ ``comment_text`` a non-empty string and ``minio_uri`` either
+ ``None`` or ``"minio://research-summary-pending"`` (the
+ pinned sentinel).
 
-(P6)  ``format_research_summary_jira_comment`` returns
-      ``minio_uri is None`` when the rendered comment fits within
-      ``max_words`` *and* the rendered sources list fits within
-      ``max_sources`` (the "happy path" — fits inline).
+``format_research_summary_jira_comment`` returns
+ ``minio_uri is None`` when the rendered comment fits within
+ ``max_words`` *and* the rendered sources list fits within
+ ``max_sources`` (the "happy path" — fits inline).
 
-(P7)  ``format_research_summary_jira_comment`` returns the pinned
-      ``minio_uri`` sentinel whenever the summary exceeds
-      ``max_words`` words **or** more than ``max_sources`` URL-bearing
-      sources are supplied (the overflow path).
+``format_research_summary_jira_comment`` returns the pinned
+ ``minio_uri`` sentinel whenever the summary exceeds
+ ``max_words`` words **or** more than ``max_sources`` URL-bearing
+ sources are supplied (the overflow path).
 
-(P8)  When the input sources list contains the same URL twice but
-      every other field is identical, the rendered Jira comment
-      lines for that URL are byte-identical (dedup is the workflow
-      body's job; the formatter must at least be **idempotent under
-      duplicate input**).
+When the input sources list contains the same URL twice but
+ every other field is identical, the rendered Jira comment
+ lines for that URL are byte-identical (dedup is the workflow
+ body's job; the formatter must at least be **idempotent under
+ duplicate input**).
 
-(P9)  Empty / degenerate inputs produce a coherent fallback: empty
-      ``summary`` + empty ``sources`` ⇒ a non-empty comment string
-      and ``minio_uri is None``. The bot's Jira comment is therefore
-      always intelligible even if firecrawl returns nothing.
+Empty / degenerate inputs produce a coherent fallback: empty
+ ``summary`` + empty ``sources`` ⇒ a non-empty comment string
+ and ``minio_uri is None``. The bot's Jira comment is therefore
+ always intelligible even if firecrawl returns nothing.
 
-(P10) Determinism: two consecutive calls of
-      ``format_research_summary_jira_comment`` with the same
-      arguments return identical results.
+Determinism: two consecutive calls of
+ ``format_research_summary_jira_comment`` with the same
+ arguments return identical results.
 
 Hypothesis configuration
 ------------------------
 
 Every property runs at ``max_examples=100`` with ``deadline=None``
-per the brief, matching the existing property suite cadence (see
+per the brief, matching the existing invariant cadence (see
 ``test_explain_keyword.py``, ``test_fix_keyword.py``,
 ``test_code_change_formatters.py``).
 """
@@ -116,11 +114,11 @@ from temporal_shared.research import (
 # ---------------------------------------------------------------------------
 
 #: Exact sentinel string the renderer returns for the offload path
-#: (R9.5; see ``research.py`` ``minio_uri`` literal). Pinned here so
+#: (; see ``research.py`` ``minio_uri`` literal). Pinned here so
 #: a stealth rename of the constant trips this property file.
 MINIO_OVERFLOW_SENTINEL: Final[str] = "minio://research-summary-pending"
 
-#: Default budgets the renderer ships with (R9.5).
+#: Default budgets the renderer ships with.
 DEFAULT_MAX_WORDS: Final[int] = 500
 DEFAULT_MAX_SOURCES: Final[int] = 5
 
@@ -181,11 +179,11 @@ _ACCESS_DATES: Final[st.SearchStrategy[str]] = st.dates(
 def _sources(draw: st.DrawFn, min_size: int = 0, max_size: int = 8) -> list[dict[str, str]]:
     """Build a list of source dicts ``{title, url, accessed_at}``.
 
-    Every dict carries all three keys so the formatters' "missing
-    field" branches are covered by the unit-test class; the property
-    strategies stay on the well-formed path so the assertions remain
-    universally true.
-    """
+ Every dict carries all three keys so the formatters' "missing
+ field" branches are covered by the unit-test class; the property
+ strategies stay on the well-formed path so the assertions remain
+ universally true.
+ """
     n = draw(st.integers(min_value=min_size, max_value=max_size))
     out: list[dict[str, str]] = []
     for _ in range(n):
@@ -213,28 +211,28 @@ _CONTENT: Final[st.SearchStrategy[str]] = st.text(
 
 
 # ---------------------------------------------------------------------------
-# (P1)–(P4) — format_research_publish_confluence_body
+# format_research_publish_confluence_body behavior
 # ---------------------------------------------------------------------------
 
 
 class TestConfluenceBodyFormatter:
-    """Properties of :func:`format_research_publish_confluence_body`.
+    """Properties of:func:`format_research_publish_confluence_body`.
 
-    **Validates: Requirements 9.4**
-    """
+
+ """
 
     @settings(max_examples=100, deadline=None)
     @given(content=_CONTENT, sources=_sources())
     def test_content_appears_verbatim_in_output(
         self, content: str, sources: list[dict[str, str]]
     ) -> None:
-        """**Validates: Requirement 9.4** — (P1).
+        """The renderer preserves the supplied content.
 
-        The renderer must echo ``content`` byte-identical (modulo
-        trailing whitespace normalisation). The Confluence workflow
-        relies on this so the LLM's prose is preserved across the
-        formatter boundary.
-        """
+ The renderer must echo ``content`` byte-identical (modulo
+ trailing whitespace normalisation). The Confluence workflow
+ relies on this so the LLM's prose is preserved across the
+ formatter boundary.
+ """
         body = format_research_publish_confluence_body(content, sources)
         # The renderer rstrips trailing whitespace on the content
         # before composing the sources block — assert the canonical
@@ -246,13 +244,13 @@ class TestConfluenceBodyFormatter:
     def test_every_source_url_appears_in_output(
         self, content: str, sources: list[dict[str, str]]
     ) -> None:
-        """**Validates: Requirement 9.4** — (P2).
+        """Every input source URL appears in the rendered body.
 
-        Every URL in the input ``sources`` list must appear at least
-        once in the rendered body. The workflow body is responsible
-        for deduplicating sources before calling this helper, so we
-        only assert *presence* (not exact count).
-        """
+ Every URL in the input ``sources`` list must appear at least
+ once in the rendered body. The workflow body is responsible
+ for deduplicating sources before calling this helper, so we
+ only assert *presence* (not exact count).
+ """
         body = format_research_publish_confluence_body(content, sources)
         for source in sources:
             assert source["url"] in body, (
@@ -264,17 +262,17 @@ class TestConfluenceBodyFormatter:
     def test_access_date_is_rendered_for_every_source(
         self, content: str, sources: list[dict[str, str]]
     ) -> None:
-        """**Validates: Requirement 9.4** — supplemental to (P2).
+        """Access dates are rendered next to source URLs.
 
-        When ``accessed_at`` is provided, the renderer must include
-        it next to the URL so the published page carries provenance
-        metadata (R9.4 — "her kaynak için başlık + URL + erişim tarihi").
-        """
+ When ``accessed_at`` is provided, the renderer must include
+ it next to the URL so the published page carries provenance
+ metadata ( — "her kaynak için başlık + URL + erişim tarihi").
+ """
         body = format_research_publish_confluence_body(content, sources)
         for source in sources:
             # The renderer formats the access-date with the literal
             # Turkish-language phrase ``erişim tarihi``; pin that
-            # phrase here so a stealth rename trips this property.
+            # phrase here so an unexpected rename trips this property.
             assert (
                 f"erişim tarihi {source['accessed_at']}" in body
             ), (
@@ -287,11 +285,11 @@ class TestConfluenceBodyFormatter:
     def test_render_is_deterministic_and_pure(
         self, content: str, sources: list[dict[str, str]]
     ) -> None:
-        """**Validates: Requirement 9.4** — (P3).
+        """Rendering is deterministic and does not mutate inputs.
 
-        Two consecutive calls with the same inputs return identical
-        strings; the input ``sources`` list is not mutated.
-        """
+ Two consecutive calls with the same inputs return identical
+ strings; the input ``sources`` list is not mutated.
+ """
         snapshot = [dict(s) for s in sources]
         first = format_research_publish_confluence_body(content, sources)
         second = format_research_publish_confluence_body(content, sources)
@@ -303,13 +301,13 @@ class TestConfluenceBodyFormatter:
     def test_no_dangling_sources_header_when_all_urls_missing(
         self, content: str, n: int
     ) -> None:
-        """**Validates: Requirement 9.4** — (P4).
+        """Sources without URLs do not create a dangling section.
 
-        When every supplied source lacks a usable URL the renderer
-        must drop the ``## Kaynaklar`` header rather than leaving a
-        dangling section. This is the graceful-degradation guard
-        for the empty-research-result branch.
-        """
+ When every supplied source lacks a usable URL the renderer
+ must drop the ``## Kaynaklar`` header rather than leaving a
+ dangling section. This is the graceful-degradation guard
+ for the empty-research-result branch.
+ """
         sources_no_urls: list[dict[str, str]] = [
             {"title": f"t{i}", "url": "", "accessed_at": "2025-01-01"}
             for i in range(n)
@@ -321,7 +319,7 @@ class TestConfluenceBodyFormatter:
 
 
 # ---------------------------------------------------------------------------
-# (P5)–(P10) — format_research_summary_jira_comment
+# format_research_summary_jira_comment behavior
 # ---------------------------------------------------------------------------
 
 
@@ -336,24 +334,24 @@ def _url_bearing_count(sources: list[dict[str, str]]) -> int:
 
 
 class TestJiraSummaryFormatter:
-    """Properties of :func:`format_research_summary_jira_comment`.
+    """Properties of:func:`format_research_summary_jira_comment`.
 
-    **Validates: Requirements 9.5**
-    """
+
+ """
 
     @settings(max_examples=100, deadline=None)
     @given(summary=_CONTENT, sources=_sources())
     def test_returns_two_tuple_with_minio_sentinel_or_none(
         self, summary: str, sources: list[dict[str, str]]
     ) -> None:
-        """**Validates: Requirement 9.5** — (P5).
+        """The renderer returns a comment and optional MinIO URI.
 
-        Universal shape contract: the renderer returns a 2-tuple
-        ``(str, str | None)`` where the URI half is either ``None``
-        or the pinned MinIO sentinel. The workflow body relies on
-        this discriminated-tuple shape to decide whether to write
-        the MinIO artifact.
-        """
+ Universal shape contract: the renderer returns a 2-tuple
+ ``(str, str | None)`` where the URI half is either ``None``
+ or the pinned MinIO sentinel. The workflow body relies on
+ this discriminated-tuple shape to decide whether to write
+ the MinIO artifact.
+ """
         comment, minio_uri = format_research_summary_jira_comment(summary, sources)
         assert isinstance(comment, str)
         assert comment, "Jira comment must never be empty"
@@ -374,12 +372,12 @@ class TestJiraSummaryFormatter:
     def test_fits_returns_minio_uri_none(
         self, summary: str, sources: list[dict[str, str]]
     ) -> None:
-        """**Validates: Requirement 9.5** — (P6).
+        """Inline summaries do not request MinIO offload.
 
-        The happy path: when the summary fits in ``max_words`` *and*
-        the URL-bearing source count fits in ``max_sources``, the
-        renderer SHALL NOT offload to MinIO.
-        """
+ The happy path: when the summary fits in ``max_words`` *and*
+ the URL-bearing source count fits in ``max_sources``, the
+ renderer SHALL NOT offload to MinIO.
+ """
         # Pre-conditions for the "fits" branch — assert via Python
         # rather than a Hypothesis ``assume`` because the strategy
         # already constrains both sides.
@@ -414,13 +412,13 @@ class TestJiraSummaryFormatter:
         max_words: int,
         max_sources: int,
     ) -> None:
-        """**Validates: Requirement 9.5** — (P7).
+        """Overflowing summaries return the MinIO sentinel.
 
-        Whenever the summary exceeds ``max_words`` *or* the
-        URL-bearing source count exceeds ``max_sources``, the
-        renderer SHALL return the pinned MinIO sentinel so the
-        workflow body knows to offload.
-        """
+ Whenever the summary exceeds ``max_words`` *or* the
+ URL-bearing source count exceeds ``max_sources``, the
+ renderer SHALL return the pinned MinIO sentinel so the
+ workflow body knows to offload.
+ """
         is_overflow = (
             _word_count(summary) > max_words
             or _url_bearing_count(sources) > max_sources
@@ -450,15 +448,15 @@ class TestJiraSummaryFormatter:
     def test_duplicate_url_dedup_invariant(
         self, summary: str, sources: list[dict[str, str]]
     ) -> None:
-        """**Validates: Requirement 9.5** — (P8).
+        """Duplicate source URLs render consistently.
 
-        Same URL fed twice (with otherwise identical fields) must
-        render the same line shape. The formatter is required to be
-        idempotent under duplicate input — the workflow body owns
-        the *logical* dedup decision before calling this helper, but
-        the renderer must not produce structurally-different lines
-        for the same URL.
-        """
+ Same URL fed twice (with otherwise identical fields) must
+ render the same line shape. The formatter is required to be
+ idempotent under duplicate input — the workflow body owns
+ the *logical* dedup decision before calling this helper, but
+ the renderer must not produce structurally-different lines
+ for the same URL.
+ """
         # Build a duplicate-URL list by appending the first source.
         first = sources[0]
         with_dup = [*sources, dict(first)]
@@ -474,12 +472,12 @@ class TestJiraSummaryFormatter:
         )
 
     def test_empty_inputs_produce_graceful_fallback(self) -> None:
-        """**Validates: Requirement 9.5** — (P9).
+        """Empty inputs still produce a coherent Jira comment.
 
-        Empty summary + empty sources must still produce a coherent
-        Jira comment with ``minio_uri is None`` so the bot's reply
-        remains intelligible after a degenerate firecrawl run.
-        """
+ Empty summary + empty sources must still produce a coherent
+ Jira comment with ``minio_uri is None`` so the bot's reply
+ remains intelligible after a degenerate firecrawl run.
+ """
         comment, minio_uri = format_research_summary_jira_comment("", [])
         assert isinstance(comment, str) and comment.strip()
         assert minio_uri is None
@@ -489,12 +487,12 @@ class TestJiraSummaryFormatter:
     def test_render_is_deterministic_and_pure(
         self, summary: str, sources: list[dict[str, str]]
     ) -> None:
-        """**Validates: Requirement 9.5** — (P10).
+        """Rendering is deterministic and does not mutate sources.
 
-        Two consecutive calls with the same arguments return
-        identical results; the input ``sources`` list is not
-        mutated.
-        """
+ Two consecutive calls with the same arguments return
+ identical results; the input ``sources`` list is not
+ mutated.
+ """
         snapshot = [dict(s) for s in sources]
         first = format_research_summary_jira_comment(summary, sources)
         second = format_research_summary_jira_comment(summary, sources)
@@ -503,39 +501,36 @@ class TestJiraSummaryFormatter:
 
 
 # ---------------------------------------------------------------------------
-# Egress allowlist coverage sentinel (R9.1, R9.2)
+# Egress allowlist coverage sentinel
 # ---------------------------------------------------------------------------
 
 
 class TestEgressAllowlistCoverage:
-    """Sentinel binding to the foundation-spec egress property test.
+    """Sentinel binding to the egress allowlist behavior.
 
-    **Validates: Requirements 9.1, 9.2**
 
-    The full egress allowlist matrix is exercised in
-    :mod:`tests.property.test_firecrawl_egress` (Property 16,
-    foundation spec) — that file owns the host-vs-allowlist
-    Hypothesis universe, the FastAPI 403 / log / metric triple, and
-    the empty-allowlist closed-by-default check. Re-running the same
-    matrix here would only invite drift between the two files.
 
-    We keep one tight sanity test on the **set algebra** so a
-    regression in :func:`mcp_client.firecrawl.effective_allowlist`
-    (the single source of truth shared between this property file,
-    :mod:`tests.property.test_firecrawl_egress`, and
-    :class:`mcp_client.firecrawl.FirecrawlClient`) shows up here as
-    well.
-    """
+ The full egress allowlist matrix is exercised in:mod:`tests.property.test_firecrawl_egress`;
+ that file owns the host-vs-allowlist
+ Hypothesis universe, the FastAPI 403 / log / metric triple, and
+ the empty-allowlist closed-by-default check. Re-running the same
+ matrix here would only invite drift between the two files.
+
+ We keep one tight sanity test on the **set algebra** so a
+ regression in:func:`mcp_client.firecrawl.effective_allowlist`
+ (the single source of truth shared between this property file,:mod:`tests.property.test_firecrawl_egress`, and:class:`mcp_client.firecrawl.FirecrawlClient`) shows up here as
+ well.
+ """
 
     def test_effective_allowlist_set_algebra(self) -> None:
-        """**Validates: Requirement 9.2** — pure set algebra.
+        """The effective allowlist follows the documented set algebra.
 
-        ``effective_allowlist(global, dept) == (global ∪ dept.allow)
-        - dept.deny``. Pinning the equation here means a stealth
-        change to the operator order (e.g. apply deny *before* the
-        union) trips this property file even though the bulk of the
-        egress matrix lives elsewhere.
-        """
+ ``effective_allowlist(global, dept) == (global ∪ dept.allow)
+ - dept.deny``. Pinning the equation here means a stealth
+ change to the operator order (e.g. apply deny *before* the
+ union) trips this property file even though the bulk of the
+ egress matrix lives elsewhere.
+ """
         result = effective_allowlist(
             ("docs.example.com", "rfc.ietf.org"),
             {"allow": ["wiki.local"], "deny": ["rfc.ietf.org"]},
@@ -543,13 +538,13 @@ class TestEgressAllowlistCoverage:
         assert result == frozenset({"docs.example.com", "wiki.local"})
 
     def test_effective_allowlist_deny_overrides_dept_allow(self) -> None:
-        """**Validates: Requirement 9.2**.
+        """Department deny entries override department allow entries.
 
-        A host listed in *both* dept ``allow`` and dept ``deny`` is
-        denied (deny is the closing valve). This is the
-        "principle-of-least-surprise" branch documented in
-        ``firecrawl.py`` ``effective_allowlist`` notes.
-        """
+ A host listed in *both* dept ``allow`` and dept ``deny`` is
+ denied (deny is the closing valve). This is the
+ "principle-of-least-surprise" branch documented in
+ ``firecrawl.py`` ``effective_allowlist`` notes.
+ """
         result = effective_allowlist(
             (),
             {"allow": ["wiki.local"], "deny": ["wiki.local"]},
@@ -559,22 +554,21 @@ class TestEgressAllowlistCoverage:
     @pytest.mark.skip(
         reason=(
             "Activity-layer post-flight 403 → Jira fallback predicate "
-            "(R9.3) lives inside the FirecrawlClient.scrape / search "
+            "(the operational rule) lives inside the FirecrawlClient.scrape / search "
             "code path that requires an async transport mock; covered "
-            "by the foundation-spec FastAPI 403 test in "
+            "by the FastAPI 403 test in "
             "tests.property.test_firecrawl_egress and the workflow "
             "graceful-degradation integration test attached to "
-            "task 9.1 (firecrawl_client). TODO: lift the 403 → "
+            "the Firecrawl client path. TODO: lift the 403 → "
             "EgressBlocked outcome assertion into a pure-helper test "
-            "once task 9.1 ships a transport-free predicate."
+            "once a transport-free predicate is available."
         )
     )
     def test_post_flight_403_yields_egress_blocked(self) -> None:  # pragma: no cover
-        """**Validates: Requirement 9.3** — placeholder.
+        """Placeholder for the post-flight egress-blocked mapping.
 
-        See the ``skip`` reason for why this property is staged
-        rather than implemented inline. The post-flight 403 →
-        ``EgressBlocked`` mapping is currently bound to
-        :class:`mcp_client.firecrawl.FirecrawlClient` and depends on
-        an injected transport.
-        """
+ See the ``skip`` reason for why this property is staged
+ rather than implemented inline. The post-flight 403 →
+ ``EgressBlocked`` mapping is currently bound to:class:`mcp_client.firecrawl.FirecrawlClient` and depends on
+ an injected transport.
+ """

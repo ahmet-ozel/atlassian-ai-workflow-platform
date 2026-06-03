@@ -1,18 +1,16 @@
-"""LLM diff-summary cache repository (task 3.3).
+"""LLM diff-summary cache repository.
 
-Backs the V7 / R10.6 diff-summary cache: every Bitbucket diff is
-summarised by an LLM exactly once, keyed by sha256 of the unified
-diff body.  Subsequent requests for the same hash (Orphan Branches
+Backs the diff-summary cache: every Bitbucket diff is summarised by
+an LLM exactly once, keyed by sha256 of the unified diff body.
+Subsequent requests for the same hash (Orphan Branches
 widget refresh, repeated ``code_change_commit_only`` Jira comments,
 multi-iter PR review) are served from
 ``automation.diff_summary_cache`` without re-invoking the LLM.
 
-Design contract (design.md §"LLM hash dedup family", tasks.md 3.3,
-6.2):
+Cache contract:
 
 * ``get_or_compute(diff_hash, llm_callback)`` is **never allowed** to
-  invoke ``llm_callback`` on a cache hit (Property 15 — single LLM call
-  per ``diff_hash``).  Cache hits short-circuit before the callback
+  invoke ``llm_callback`` on a cache hit. Cache hits short-circuit before the callback
   runs.
 * Cache misses invoke ``llm_callback`` and persist the result through
   ``INSERT ... ON CONFLICT DO NOTHING``; concurrent miss-races resolve
@@ -27,11 +25,10 @@ Design contract (design.md §"LLM hash dedup family", tasks.md 3.3,
 
 The module is deliberately tiny — every public method maps 1:1 onto a
 SQL statement against ``automation.diff_summary_cache``.  The PR
-review previous-findings cache (G13) lives in workflow state, not
+review previous-findings cache lives in workflow state, not
 here, because it depends on per-workflow iteration history and is
 not content-addressable.
 
-Validates: Requirements 10.6.
 """
 
 from __future__ import annotations
@@ -151,7 +148,7 @@ class DiffSummaryCacheRepo:
 
         Notes
         -----
-        Step 1 + step 3 together guarantee Property 15: across any
+        Step 1 + step 3 together guarantee that across any
         sequence of calls for the same ``diff_hash`` only the first
         caller observes a cache miss and therefore only one
         ``llm_callback`` invocation is paid.  Subsequent callers

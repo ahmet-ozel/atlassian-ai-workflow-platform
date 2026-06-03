@@ -1,13 +1,10 @@
-"""Unit tests for ``components.credential_manager`` (`platform-gap-fill` task 12.1).
-
-**Validates: Requirements 13.1, 13.2, 13.3, 13.4, 13.5, 13.6.**
+"""Unit tests for ``components.credential_manager``.
 
 Drives the pure :class:`CredentialManager` slice with synthetic
 ``state`` dicts and a deterministic monotonic clock so the
 inactivity-timeout window can be exercised without sleeping. The
-Streamlit-side ``render_*`` helpers are out of scope here; the
-property test suite (task 12.2) and the CI page-presence test
-cover those surfaces.
+Streamlit-side ``render_*`` helpers are out of scope here; the property
+test suite and the CI page-presence test cover those surfaces.
 """
 
 from __future__ import annotations
@@ -88,12 +85,12 @@ def _make_manager(
 
 
 # ---------------------------------------------------------------------------
-# R13.1 — session_state-only storage
+# session_state-only storage
 # ---------------------------------------------------------------------------
 
 
 def test_store_keeps_token_only_in_session_state() -> None:
-    """R13.1 — credentials live only in the injected ``state`` dict.
+    """Credentials live only in the injected ``state`` dict.
 
     The token is stored on the :class:`StoredCredential` object held
     inside ``state[_STATE_KEY]['credentials']``; nothing else in the
@@ -127,7 +124,7 @@ def test_store_rejects_invalid_inputs() -> None:
 
 
 # ---------------------------------------------------------------------------
-# R13.2 — 60 minute inactivity timeout → auto clear
+# 60 minute inactivity timeout → auto clear
 # ---------------------------------------------------------------------------
 
 
@@ -162,7 +159,7 @@ def test_session_expires_after_sixty_minutes_of_inactivity() -> None:
 
 
 def test_get_implicitly_clears_expired_session() -> None:
-    """``get()`` MUST itself clear an expired bucket (R13.2)."""
+    """``get()`` MUST itself clear an expired bucket."""
     mgr, state, clk = _make_manager()
     mgr.store("jira", email="a@b.com", api_token="t1")
 
@@ -184,16 +181,15 @@ def test_active_interaction_keeps_session_alive() -> None:
 
 
 # ---------------------------------------------------------------------------
-# R13.3 — verbatim warning copy
+# Verbatim warning copy
 # ---------------------------------------------------------------------------
 
 
 def test_warning_text_matches_requirements_doc() -> None:
-    """R13.3 — the warning copy must match the spec verbatim.
+    """The warning copy must match the product text verbatim.
 
-    The requirements doc mandates the exact Turkish phrasing; making
-    this an assertion catches any future drift introduced by a
-    well-meaning copy edit.
+    The exact Turkish phrasing is asserted to catch any future drift
+    introduced by a well-meaning copy edit.
     """
     expected = (
         "Bu bilgiler yalnızca bu tarayıcı sekmesinde, bu oturum süresince "
@@ -204,7 +200,7 @@ def test_warning_text_matches_requirements_doc() -> None:
 
 
 # ---------------------------------------------------------------------------
-# R13.4 — credential validation via injected validator
+# Credential validation via injected validator
 # ---------------------------------------------------------------------------
 
 
@@ -255,7 +251,7 @@ def test_validate_returns_friendly_error_when_no_credential() -> None:
 
 
 # ---------------------------------------------------------------------------
-# R13.5 — auth header building
+# Auth header building
 # ---------------------------------------------------------------------------
 
 
@@ -362,7 +358,7 @@ def test_restore_cookie_key_decodes_url_encoded_cookie_header(monkeypatch) -> No
 
 
 def test_get_auth_header_returns_basic_base64_value() -> None:
-    """R13.5 — the manager builds a Basic auth header on the fly."""
+    """The manager builds a Basic auth header on the fly."""
     import base64
 
     mgr, _, _ = _make_manager()
@@ -388,7 +384,7 @@ def test_get_auth_header_returns_none_after_expiry() -> None:
 
 
 # ---------------------------------------------------------------------------
-# R13.6 — explicit logout / clear-all
+# Explicit logout / clear-all
 # ---------------------------------------------------------------------------
 
 

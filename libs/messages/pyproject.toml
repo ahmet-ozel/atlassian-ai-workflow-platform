@@ -9,7 +9,7 @@ description = "i18n message catalog loader (tr/en) shared across services and wo
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 license = { text = "Proprietary" }
-authors = [{ name = "Multi-Service Scaffold" }]
+authors = [{ name = "Platform" }]
 dependencies = []
 
 [tool.hatch.build.targets.wheel]

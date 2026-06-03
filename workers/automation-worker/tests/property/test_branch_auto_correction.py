@@ -1,10 +1,9 @@
-"""Property test: Branch name auto-correction.
+"""Invariant test: Branch name auto-correction.
 
-Feature: platform-completion, Property 34: For any generated branch name that doesn't
+Feature:,: For any generated branch name that doesn't
 match department branch_pattern_rules, the system SHALL produce a corrected name
 that satisfies all configured rules.
 
-Validates: Requirements 17.2
 """
 from __future__ import annotations
 import asyncio

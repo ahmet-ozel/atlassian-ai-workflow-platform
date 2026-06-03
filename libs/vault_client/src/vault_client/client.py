@@ -1,10 +1,9 @@
 """``VaultClient`` :class:`typing.Protocol` and supporting types.
 
-Mirrors design.md §"libs/vault_client" — the protocol is the single
-contract every backend (``HashicorpBackend``, ``LocalDevBackend``)
-satisfies. Property test 11 (``test_vault_backends.py``) asserts the
-two backends produce equivalent ``read(write(p, v)) == v`` round-trips
-through this protocol.
+The protocol is the single contract every backend
+(``HashicorpBackend``, ``LocalDevBackend``) satisfies. Backend parity
+tests assert that both backends produce equivalent
+``read(write(p, v)) == v`` round-trips through this protocol.
 
 The protocol is **synchronous** for now: most call sites in this spec
 (boot-time credential resolution, atomic department create) are simple
@@ -64,7 +63,7 @@ class RotationResult:
             previous slot is cleared as soon as the new key validates;
             populated for webhook-secret rotation, where Atlassian
             payload signatures must be accepted under both secrets for
-            up to one hour (R6.8).
+            up to one hour.
     """
 
     active_path: VaultPath
@@ -88,7 +87,7 @@ class VaultClient(Protocol):
       production Hashicorp Vault HTTP (KV v2).
     * :class:`vault_client.local_dev_backend.LocalDevBackend` —
       development-only encrypted file backend (libsodium / NaCl
-      ``SecretBox``); rejects plain-text writes (R6.6).
+      ``SecretBox``); rejects plain-text writes.
 
     Protocol semantics
     ------------------
@@ -127,7 +126,7 @@ class VaultClient(Protocol):
         Implementations MUST treat deletion of a non-existent path as a
         no-op (idempotency); this matches Hashicorp Vault KV-v2's
         ``DELETE /data/<path>`` semantics and keeps rollback paths in
-        the atomic-create flow (R3.6) simple.
+        the atomic-create flow simple.
         """
         ...
 
@@ -138,7 +137,7 @@ class VaultClient(Protocol):
         runner_id: str,
         new_key: SshKey,
     ) -> RotationResult:
-        """Dual-slot SSH key rotation (R6.7, MIMARI §13 E8).
+        """Dual-slot SSH key rotation.
 
         Writes *new_key* to ``vault:ssh/runners/<runner_id>/active``
         while preserving the prior active key at
@@ -148,7 +147,7 @@ class VaultClient(Protocol):
         ...
 
     def clear_previous_ssh_slot(self, runner_id: str) -> None:
-        """Drop the ``previous`` SSH slot after the new key is validated (R6.7).
+        """Drop the ``previous`` SSH slot after the new key is validated.
 
         Called by the runner-rotation orchestrator once the freshly
         rotated key has been verified end-to-end against the remote
@@ -163,7 +162,7 @@ class VaultClient(Protocol):
         dept_id: str,
         new_secret: str,
     ) -> RotationResult:
-        """Per-department webhook secret rotation with 1h overlap (R6.8).
+        """Per-department webhook secret rotation with 1h overlap.
 
         After this call, both the new and the prior secret SHALL be
         considered valid for HMAC verification for one hour; after the

@@ -1,30 +1,23 @@
 """Per-department webhook HMAC-SHA256 authentication middleware.
 
-Implements task 9.1 of ``.kiro/specs/platform-completion/tasks.md`` and
-the ``WebhookAuthMiddleware`` section of ``design.md`` (§6 — Webhook
-Secret Isolation).
-
 The middleware intercepts every inbound webhook request and:
 
 1. **Extracts a department hint** from the ``X-Department-Key`` HTTP
    header or the URL path (project_key prefix). When both sources
-   carry a value, the header takes priority (Requirement 8.1).
+   carry a value, the header takes priority.
 2. **Fetches the department-specific HMAC secret** from Vault at
-   ``secret/webhook/{dept_id}/secret`` with a 3-second timeout
-   (Requirement 8.5).
+   ``secret/webhook/{dept_id}/secret`` with a 3-second timeout.
 3. **Computes HMAC-SHA256** over the raw request body and performs a
-   **timing-safe comparison** via :func:`hmac.compare_digest`
-   (Requirement 8.2).
+   **timing-safe comparison** via :func:`hmac.compare_digest`.
 4. **Falls back to a global secret** when the department cannot be
-   determined (Requirement 8.3).
+   determined.
 5. Returns **503** when Vault is unreachable within the 3-second
-   timeout (Requirement 8.4).
+   timeout.
 6. Returns **401** when HMAC verification fails, logging the
-   department and source IP as a security event (Requirement 8.6).
+   department and source IP as a security event.
 7. Returns **401** when the global fallback is undefined and the
-   department cannot be determined (Requirement 8.7).
+   department cannot be determined.
 
-Validates: Requirements 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.7
 """
 
 from __future__ import annotations
@@ -249,7 +242,7 @@ class WebhookAuthMiddleware(BaseHTTPMiddleware):
         Returns ``None`` when neither source provides a usable value.
         """
 
-        # Header takes priority (Requirement 8.1).
+        # Header takes priority.
         header_value = request.headers.get(_DEPT_HEADER)
         if header_value and header_value.strip():
             return header_value.strip()
@@ -373,7 +366,7 @@ class WebhookAuthMiddleware(BaseHTTPMiddleware):
                 media_type="application/json",
             )
 
-        # HMAC-SHA256 timing-safe comparison (Requirement 8.2).
+        # HMAC-SHA256 timing-safe comparison.
         if not self._verify_hmac(
             secret=secret_value, body=body, signature=signature
         ):
@@ -428,7 +421,7 @@ class WebhookAuthMiddleware(BaseHTTPMiddleware):
                     media_type="application/json",
                 )
             except KeyError:
-                # Global fallback not defined (Requirement 8.7).
+                # Global fallback not defined.
                 client_ip = request.client.host if request.client else "unknown"
                 _SECURITY_LOG.warning(
                     "webhook_auth_no_fallback: client=%s path=%s "
@@ -454,7 +447,7 @@ class WebhookAuthMiddleware(BaseHTTPMiddleware):
                 )
 
         if not secret_value:
-            # Fallback secret field is empty (Requirement 8.7).
+            # Fallback secret field is empty.
             client_ip = request.client.host if request.client else "unknown"
             _SECURITY_LOG.warning(
                 "webhook_auth_no_fallback: client=%s path=%s "
@@ -520,5 +513,5 @@ class WebhookAuthMiddleware(BaseHTTPMiddleware):
 
         expected_hex = hmac.new(secret_bytes, body, hashlib.sha256).hexdigest()
 
-        # Timing-safe comparison (Requirement 8.2).
+        # Timing-safe comparison.
         return hmac.compare_digest(expected_hex, received_hex)

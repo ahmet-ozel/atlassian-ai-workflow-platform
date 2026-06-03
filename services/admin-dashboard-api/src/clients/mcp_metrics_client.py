@@ -1,12 +1,11 @@
-"""``McpMetricsClient`` (`platform-gap-fill` task 8.3).
+"""``McpMetricsClient`` (`platform gap-fill work` metrics client wiring).
 
-**Validates: Requirement 9.5**
 
 Forwards a request to the MCP server's Prometheus exposition endpoint
 and parses out the ``mcp_requests_total{client_source, tool, status}``
-counter (registered by task 8.1). The admin dashboard surfaces these
+counter (registered by metrics middleware wiring). The admin dashboard surfaces these
 samples through ``GET /api/v1/mcp/traffic`` so an operator can break
-traffic down by ``client_source`` and ``tool`` (Requirement 9.5).
+traffic down by ``client_source`` and ``tool`` (behavior 9.5).
 
 Design notes
 ------------
@@ -57,7 +56,7 @@ __all__ = [
 logger = logging.getLogger(__name__)
 
 
-#: Counter name registered by the MCP server (task 8.1, Requirement 9.6).
+#: Counter name registered by the MCP server (metrics middleware wiring, behavior 9.6).
 #: The exposition format optionally drops the ``_total`` suffix on the
 #: parsed sample name; we strip the suffix when comparing so both
 #: ``mcp_requests_total`` and ``mcp_requests`` (the legacy parser
@@ -87,7 +86,7 @@ class McpRequestCounter:
     """One ``mcp_requests_total`` sample.
 
     Attributes mirror the Prometheus label set defined by the MCP
-    server's middleware (task 8.1):
+    server's middleware (metrics middleware wiring):
 
     * ``client_source`` — value of ``X-Client-Source`` on the inbound
       MCP request (or ``"unknown"`` when absent).

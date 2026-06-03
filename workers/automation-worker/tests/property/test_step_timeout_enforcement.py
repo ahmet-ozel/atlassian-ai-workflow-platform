@@ -1,10 +1,7 @@
-"""Property test: Step timeout enforcement.
+"""Step timeout enforcement.
 
-Feature: platform-completion, Property 15: For any step that exceeds its configured
-timeout (default 300s), it SHALL be marked as failed and the retry policy SHALL
-be applied.
-
-Validates: Requirements 5.10
+For any step that exceeds its configured timeout, it is marked as failed and
+the retry policy is applied.
 """
 from __future__ import annotations
 import sys
@@ -24,17 +21,17 @@ from automation_worker.workflows.multi_step_workflow import (
 
 
 def test_default_timeout_matches_requirement() -> None:
-    """Default step timeout is 300 seconds per Requirement 5.10."""
+    """Default step timeout is 300 seconds."""
     assert DEFAULT_STEP_TIMEOUT_SECONDS == 300
 
 
 def test_max_retries_matches_requirement() -> None:
-    """Max retries per step is 3 per Requirement 5.5."""
+    """Max retries per step is 3."""
     assert MAX_RETRIES_PER_STEP == 3
 
 
 def test_retry_backoff_intervals() -> None:
-    """Retry backoff intervals are 5s, 10s, 20s per Requirement 5.5."""
+    """Retry backoff intervals are 5s, 10s, 20s."""
     assert RETRY_BACKOFF_INTERVALS == (5, 10, 20)
 
 

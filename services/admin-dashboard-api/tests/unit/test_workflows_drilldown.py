@@ -1,6 +1,4 @@
-"""Unit tests for ``src.routers.workflows_drilldown`` (task 12.1).
-
-**Validates: Requirements 8.4 (Q9 — workflow drill-down enrichment).**
+"""Unit tests for ``src.routers.workflows_drilldown``.
 
 The drill-down endpoint folds three local-DB enrichments into the
 upstream Temporal payload:
@@ -240,7 +238,7 @@ class TestGetWorkflowHappyPath:
         assert response.status_code == 200
         body = response.json()
 
-        # The three fields required by Requirement 8.4 are always
+        # The three enrichment fields are always
         # present, regardless of upstream availability.
         assert "llm_usage" in body
         assert "audit_chain" in body

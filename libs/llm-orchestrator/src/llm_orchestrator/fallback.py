@@ -1,10 +1,8 @@
 """LLM Provider Factory with automatic fallback switching.
 
-Implements task 21.1 of ``platform-completion``. Provides a resilient
+Provides a resilient
 LLM completion interface that automatically switches between primary
 and fallback providers based on timeout and HTTP 5xx error conditions.
-
-Validates: Requirements 15.1, 15.2, 15.3, 15.4, 15.5.
 
 Fallback Logic:
     - Primary timeout (30s): immediately switch to fallback provider.
@@ -259,7 +257,7 @@ class FallbackLLMProviderFactory:
         """Send a completion request with automatic fallback handling.
 
         Tries the active provider (primary or fallback). On failure,
-        applies retry/fallback logic per Requirements 15.1-15.4.
+        applies retry/fallback logic for timeout and HTTP 5xx failures.
 
         Args:
             prompt: The prompt text to send to the LLM.
@@ -294,14 +292,14 @@ class FallbackLLMProviderFactory:
             )
             return result
         except asyncio.TimeoutError:
-            # Requirement 15.1: Primary timeout → switch to fallback
+            # Primary timeout → switch to fallback.
             error_reason = (
                 f"Timeout after {self.primary_config.timeout_seconds}s"
             )
             await self._switch_to_fallback(error_reason)
             return await self._try_fallback(prompt, dept_id, **kwargs)
         except LLMServerError as exc:
-            # Requirement 15.2: Primary 5xx → retry 3 times, then fallback
+            # Primary 5xx → retry 3 times, then fallback.
             return await self._retry_primary_then_fallback(
                 prompt, dept_id, exc, **kwargs
             )
@@ -363,8 +361,8 @@ class FallbackLLMProviderFactory:
     ) -> str:
         """Attempt completion with the fallback provider.
 
-        Requirement 15.4: If fallback also fails (timeout or 5xx),
-        raise LLMUnavailableError to stop the workflow.
+        If fallback also fails (timeout or 5xx), raise
+        LLMUnavailableError to stop the workflow.
         """
         assert self._fallback_provider is not None
 
@@ -402,8 +400,8 @@ class FallbackLLMProviderFactory:
     async def _switch_to_fallback(self, error_reason: str) -> None:
         """Switch routing to the fallback provider and record the event.
 
-        Requirement 15.3: Log timestamp, failed provider, error reason.
-        Notify Admin Dashboard via notification_callback.
+        Log timestamp, failed provider, and error reason. Notify Admin
+        Dashboard via notification_callback.
         """
         self._using_fallback = True
         self._fallback_switch_time = time.monotonic()
@@ -441,8 +439,8 @@ class FallbackLLMProviderFactory:
     def _schedule_health_probe(self) -> None:
         """Schedule a health probe to check if primary can be restored.
 
-        Requirement 15.5: 5 minutes after fallback switch, send single
-        health check to primary; if successful, route back.
+        Five minutes after fallback switch, send a single health check
+        to primary; if successful, route back.
         """
         # Cancel any existing probe task
         if self._health_probe_task is not None and not self._health_probe_task.done():
@@ -476,8 +474,7 @@ class FallbackLLMProviderFactory:
     async def _health_probe_primary(self) -> bool:
         """Send a single health check request to the primary provider.
 
-        Requirement 15.5: If successful, subsequent requests route
-        back to primary.
+        If successful, subsequent requests route back to primary.
 
         Returns:
             True if primary responded successfully, False otherwise.

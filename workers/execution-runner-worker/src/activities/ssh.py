@@ -20,8 +20,6 @@ connection failure and lets Temporal handle retry scheduling.
 
 Total execution timeout (30 minutes) is enforced by the caller workflow
 via ``start_to_close_timeout=timedelta(minutes=30)`` in activity options.
-
-Requirements: 8.2, 8.6, 8.7, 8.8
 """
 
 from __future__ import annotations
@@ -318,7 +316,7 @@ async def ssh_connect_and_run(
         as ``cd {workspace_path} && {command}``.
     timeout_minutes:
         Maximum time in minutes for the command to complete.
-        Defaults to 30 minutes (Requirement 8.8).
+        Defaults to 30 minutes.
 
     Returns
     -------
@@ -441,7 +439,7 @@ async def ssh_cleanup(
 
 
 # ---------------------------------------------------------------------------
-# ssh_run_test — canonical SSH test runner activity (task 2.3)
+# ssh_run_test — canonical SSH test runner activity
 #
 # Combines credential fetch, command execution, MinIO artifact upload, and
 # 30-second heartbeating into a single activity so the canonical
@@ -451,8 +449,8 @@ async def ssh_cleanup(
 # ------------------
 # The blocking SSH command runs on a worker thread via
 # ``asyncio.to_thread``.  A concurrent ``asyncio.Task`` calls
-# ``activity.heartbeat()`` every 30 seconds — design.md "ssh_run_test;
-# heartbeat 30s".  Heartbeating keeps the activity alive against the
+# ``activity.heartbeat()`` every 30 seconds. Heartbeating keeps the activity
+# alive against the
 # heartbeat timeout the workflow sets (default 90 s, ≥ 3× the heartbeat
 # interval) and surfaces partial progress to Temporal so the activity
 # can be resumed on a different worker after a crash.
@@ -475,7 +473,7 @@ async def ssh_cleanup(
 #                          ``"timeout"`` (TimeoutError raised by SSH).
 # * ``exit_code``        — process exit code, or ``None`` on timeout.
 # * ``stdout_uri`` /     — ``s3://{bucket}/{prefix}/stdout.txt`` and
-#   ``stderr_uri``         ``stderr.txt`` (Requirement 1.6); ``None``
+#   ``stderr_uri``         ``stderr.txt``; ``None``
 #                          if upload failed.
 # * ``duration_seconds`` — wall-clock seconds spent inside the activity.
 # * ``runner_id``        — echo of the input runner identifier so the
@@ -504,8 +502,8 @@ from src.activities.minio import (
 from src.activities.vault import vault_fetch_ssh_credentials
 
 #: Heartbeat cadence.  The activity beats every ``HEARTBEAT_INTERVAL_S``
-#: seconds while the SSH command runs.  30 s mirrors design.md
-#: "heartbeat 30s" and matches the heartbeat-timeout 3× safety margin
+#: seconds while the SSH command runs. 30 s matches the heartbeat-timeout
+#: 3× safety margin
 #: (default heartbeat_timeout 90 s in
 #: :mod:`src.workflows.execution_run_workflow`).
 HEARTBEAT_INTERVAL_S: float = 30.0
@@ -621,7 +619,7 @@ def _resolve_command_timeout_seconds() -> int:
 
     Used as the per-command timeout passed to ``paramiko.exec_command``.
     The Temporal-level ``start_to_close_timeout`` is enforced
-    independently by the workflow (Requirement 1.6 — config-driven).
+    independently by the workflow.
 
     Returns
     -------
@@ -710,7 +708,7 @@ async def ssh_run_test(
 
     Combines four side effects into a single Temporal activity so the
     canonical :class:`ExecutionRunWorkflow` keeps to a single activity
-    call (design.md task 2.3):
+    call:
 
     1. Vault lookup for SSH credentials (reusing
        :func:`vault_fetch_ssh_credentials`).  ``parent_workflow_id`` is
@@ -722,15 +720,15 @@ async def ssh_run_test(
     3. UTF-8 stdout / stderr uploads to
        ``s3://{bucket}/{prefix}/stdout.txt`` and ``stderr.txt``.
     4. Heartbeat emission every :data:`HEARTBEAT_INTERVAL_S` seconds for
-       the duration of the SSH session (Requirement 1.6).
+       the duration of the SSH session.
 
     Parameters
     ----------
     runner_id:
         Caller-supplied runner identifier.  Echoed in the result so the
         workflow can correlate retries.  Used for logging only; the
-        actual Vault path comes from the ``vault_path`` argument (K2
-        fix) — see the parameter docstring below.
+        actual Vault path comes from the ``vault_path`` argument; see
+        the parameter docstring below.
     command:
         Shell command to execute on the remote host.  Treated as opaque
         text — the activity wraps it in a ``cd`` / env-export prefix
@@ -753,8 +751,7 @@ async def ssh_run_test(
         :func:`vault_fetch_ssh_credentials` so its error context
         carries the workflow that requested the run.
     vault_path:
-        K2 fix (GEREKSINIM_ANALIZI.md): Vault KV-v2 path for this
-        specific runner's credentials, set by the workflow from
+        Vault KV-v2 path for this specific runner's credentials, set by the workflow from
         ``runner_resolver.RunnerResolution.vault_path``. Accepts the
         canonical ``vault:ssh/runners/{runner_id}/active`` shape
         produced by the admin SSH-runner CRUD. ``None`` triggers the
@@ -790,8 +787,8 @@ async def ssh_run_test(
     )
 
     # Step 1 — fetch credentials from Vault.
-    # K2 fix: pass the resolved ``vault_path`` so the admin-panel-managed
-    # runner's secret is read (not the global ``ssh/runner/current``).
+    # Pass the resolved ``vault_path`` so the admin-panel-managed runner's
+    # secret is read (not the global ``ssh/runner/current``).
     try:
         cred = await vault_fetch_ssh_credentials(
             parent_workflow_id or (runner_id or ""),

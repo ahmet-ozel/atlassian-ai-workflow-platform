@@ -1,7 +1,4 @@
-# Feature: platform-quick-fixes, Property 3: LLM Response Boundary Handling
-"""Property test 3 — LLM Response Boundary Handling.
-
-**Property 3: LLM Response Boundary Handling**
+"""LLM response boundary handling.
 
 *For any* LLM response that exceeds ``LLM_MAX_TOKENS_OUTPUT`` tokens,
 the SSE stream SHALL terminate with a final event containing
@@ -10,7 +7,7 @@ the SSE stream SHALL terminate with a final event containing
 ``{"error": "llm_timeout"}`` and write an ``assistant_llm_timeout``
 audit event.
 
-**Validates: Requirements 1.7, 1.8**
+
 
 This file exercises the ChatHandler's truncation and timeout logic
 by injecting scripted orchestrator fakes that emit token events with
@@ -126,10 +123,10 @@ class _RecordingDispatch:
 class _TokenEmittingOrchestrator:
     """Orchestrator that emits token events with configurable token_out counts.
 
-    Used to test the truncation boundary: the handler should detect when
-    cumulative token_out exceeds max_tokens_output and emit a done event
-    with truncated: true.
-    """
+ Used to test the truncation boundary: the handler should detect when
+ cumulative token_out exceeds max_tokens_output and emit a done event
+ with truncated: true.
+ """
 
     def __init__(self, token_events: list[SseEvent]) -> None:
         self._events = token_events
@@ -153,9 +150,9 @@ class _TokenEmittingOrchestrator:
 class _SlowOrchestrator:
     """Orchestrator that introduces a delay before yielding events.
 
-    Used to test the timeout boundary: the handler should detect when
-    the LLM call exceeds timeout_s and emit an error event.
-    """
+ Used to test the timeout boundary: the handler should detect when
+ the LLM call exceeds timeout_s and emit an error event.
+ """
 
     def __init__(self, delay_s: float) -> None:
         self._delay_s = delay_s
@@ -262,17 +259,15 @@ async def _drain(handler: ChatHandler) -> list[SseEvent]:
 
 
 # ---------------------------------------------------------------------------
-# Property 3 — Truncation: max_tokens_output exceeded
+# Truncation: max_tokens_output exceeded
 # ---------------------------------------------------------------------------
 
 
 class TestLlmResponseTruncation:
-    """**Validates: Requirements 1.8**
-
-    For any LLM response that exceeds ``LLM_MAX_TOKENS_OUTPUT`` tokens,
-    the SSE stream SHALL terminate with a final event containing
-    ``truncated: true``.
-    """
+    """For any LLM response that exceeds ``LLM_MAX_TOKENS_OUTPUT`` tokens,
+ the SSE stream SHALL terminate with a final event containing
+ ``truncated: true``.
+ """
 
     @settings(
         max_examples=100,
@@ -288,13 +283,13 @@ class TestLlmResponseTruncation:
         self, max_tokens: int, excess: int, num_events: int
     ) -> None:
         """When cumulative token_out exceeds max_tokens_output, the handler
-        emits a final ``done`` event with ``truncated: true`` and stops
-        the stream.
+ emits a final ``done`` event with ``truncated: true`` and stops
+ the stream.
 
-        We distribute the total tokens (max_tokens + excess) across
-        num_events token events. The handler should detect the boundary
-        crossing and terminate with truncation.
-        """
+ We distribute the total tokens (max_tokens + excess) across
+ num_events token events. The handler should detect the boundary
+ crossing and terminate with truncation.
+ """
         total_tokens = max_tokens + excess
 
         # Distribute tokens across events. Each event carries a portion.
@@ -343,8 +338,8 @@ class TestLlmResponseTruncation:
         self, max_tokens: int, excess: int
     ) -> None:
         """After the truncation ``done`` event, no further events are
-        emitted. The stream terminates cleanly.
-        """
+ emitted. The stream terminates cleanly.
+ """
         total_tokens = max_tokens + excess
 
         # Single event that exceeds the cap in one shot
@@ -384,13 +379,13 @@ class TestLlmResponseTruncation:
     @given(max_tokens=st.integers(min_value=2, max_value=200))
     def test_below_cap_no_truncation(self, max_tokens: int) -> None:
         """When cumulative token_out stays strictly below max_tokens_output,
-        the stream completes normally without truncation.
+ the stream completes normally without truncation.
 
-        We use max_tokens >= 2 so that (max_tokens - 1) >= 1, ensuring
-        at least one token is emitted while staying below the cap.
-        The handler's condition is ``token_out >= max_tokens_output``,
-        so ``max_tokens - 1`` is guaranteed to be below the threshold.
-        """
+ We use max_tokens >= 2 so that (max_tokens - 1) >= 1, ensuring
+ at least one token is emitted while staying below the cap.
+ The handler's condition is ``token_out >= max_tokens_output``,
+ so ``max_tokens - 1`` is guaranteed to be below the threshold.
+ """
         # Emit tokens that stay strictly below the cap
         below_cap_tokens = max_tokens - 1
 
@@ -415,17 +410,15 @@ class TestLlmResponseTruncation:
 
 
 # ---------------------------------------------------------------------------
-# Property 3 — Timeout: LLM_REQUEST_TIMEOUT_S exceeded
+# Timeout: LLM_REQUEST_TIMEOUT_S exceeded
 # ---------------------------------------------------------------------------
 
 
 class TestLlmResponseTimeout:
-    """**Validates: Requirements 1.7**
-
-    For any LLM call exceeding ``LLM_REQUEST_TIMEOUT_S`` seconds, the
-    stream SHALL emit ``{"error": "llm_timeout"}`` and write an
-    ``assistant_llm_timeout`` audit event.
-    """
+    """For any LLM call exceeding ``LLM_REQUEST_TIMEOUT_S`` seconds, the
+ stream SHALL emit ``{"error": "llm_timeout"}`` and write an
+ ``assistant_llm_timeout`` audit event.
+ """
 
     @settings(
         max_examples=100,
@@ -435,8 +428,8 @@ class TestLlmResponseTimeout:
     @given(timeout_s=st.just(1))
     def test_timeout_emits_error_event(self, timeout_s: int) -> None:
         """When the LLM call exceeds timeout_s, the handler emits an
-        SSE error event with reason 'llm_timeout'.
-        """
+ SSE error event with reason 'llm_timeout'.
+ """
         # The orchestrator delays longer than the timeout
         delay = timeout_s + 1.0
 
@@ -462,8 +455,8 @@ class TestLlmResponseTimeout:
     @given(timeout_s=st.just(1))
     def test_timeout_writes_audit_event(self, timeout_s: int) -> None:
         """When the LLM call times out, the handler writes an
-        ``assistant_llm_timeout`` audit event with the correct payload.
-        """
+ ``assistant_llm_timeout`` audit event with the correct payload.
+ """
         delay = timeout_s + 1.0
 
         orch = _SlowOrchestrator(delay_s=delay)
@@ -490,8 +483,8 @@ class TestLlmResponseTimeout:
     @given(timeout_s=st.just(1))
     def test_no_timeout_when_within_limit(self, timeout_s: int) -> None:
         """When the LLM responds within timeout_s, no timeout error
-        is emitted and the stream completes normally.
-        """
+ is emitted and the stream completes normally.
+ """
         # Use a fast orchestrator that responds immediately
         events: list[SseEvent] = [
             SseEvent(type="token", payload={"text": "fast", "token_out": 5}),

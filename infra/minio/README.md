@@ -1,7 +1,7 @@
 # MinIO (dev mode only)
 
 Dev-mode MinIO; bucket bootstrap is performed by the
-[`init.sh`](./init.sh) script (platform-mimari-ops task 13.4).
+[`init.sh`](./init.sh) script.
 
 ## Bucket inventory
 
@@ -10,10 +10,10 @@ Dev-mode MinIO; bucket bootstrap is performed by the
 | `ai-runs`       | Execution artifacts (stdout, stderr, exit_code) keyed by workflow id     | `execution-runner-worker.minio_upload_artifact` | Workflow lifetime + post-mortem window |
 | `audit-archive` | Daily-partitioned audit-log archive — `audit-archive/{Y}/{M}/{D}/audit-N.jsonl.gz` | `automation-worker.archive_audit_to_minio`     | `RETENTION_DAYS` (default 90 days)     |
 
-The `audit-archive` layout matches design.md §"MinIO arşiv yapısı"
-(platform-mimari-ops Requirement 6.3) and is consumed by
+The `audit-archive` layout is
+consumed by
 `admin_dashboard_api.audit.archive_index.MinIOArchiveIndex` for the
-audit panel's date-bucketed archive search (Requirement 6.5, 6.9).
+audit panel's date-bucketed archive search.
 
 ## Bootstrap
 
@@ -51,7 +51,7 @@ override the endpoint:
 MINIO_ENDPOINT=minio:9000 bash /workspace/platform/infra/minio/init.sh
 ```
 
-## Production hardening (deferred — Requirement 18.5)
+## Production hardening
 
 The dev-mode bootstrap intentionally **does not** apply object-lock,
 versioning enforcement, or lifecycle policies. Production deployments
@@ -70,7 +70,6 @@ are expected to layer the following on top before going live:
    `automation-worker` (write-only on `audit-archive/*`) and the
    `admin-dashboard-api` (read-only / list on `audit-archive/*`).
 
-These are deliberately out of scope for the dev-mode scaffold per
-multi-service-scaffold Requirement 18.5; track them under
-production-hardening backlog when the platform graduates from dev
+These are deliberately out of scope for the dev-mode stack; track them
+for production readiness when the platform graduates from the dev
 profile.

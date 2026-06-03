@@ -1,13 +1,12 @@
-"""Confluence section-hash dedup repository (task 3.3).
+"""Confluence section-hash dedup repository.
 
 Backs the ``confluence_doc_update`` workflow's section-level write
-dedup check (R8.2, V10).  The :class:`ConfluenceSectionHashRepo`
+dedup check. The :class:`ConfluenceSectionHashRepo`
 exposes a single decision helper, :meth:`should_skip_section_update`,
 which the AgentRunnerWorkflow consults before invoking the
 ``confluence_update_page`` MCP tool.
 
-Design contract (design.md §"Confluence write invariants",
-tasks.md 3.3, 8.2):
+Operational contract:
 
 * The four-tuple ``(workflow_id, page_id, section_path, content_hash)``
   is the natural idempotency key — its primary-key constraint is
@@ -16,7 +15,7 @@ tasks.md 3.3, 8.2):
   four-tuple is already in ``automation.confluence_section_hashes``;
   the caller skips the write **and** writes a
   ``confluence_section_dedup_skip`` audit row (audit emission lives in
-  task 8.2 — this module only owns the idempotency lookup).
+  the workflow layer; this module only owns the idempotency lookup).
 * ``False`` triggers an idempotent ``INSERT ... ON CONFLICT DO NOTHING``
   in the same transaction so a concurrent winner is recorded exactly
   once and replays of the activity never duplicate the row.
@@ -31,11 +30,9 @@ tasks.md 3.3, 8.2):
 The module is intentionally tiny — every public method maps 1:1 onto a
 SQL statement against ``automation.confluence_section_hashes``.  The
 audit emission, overwrite-protection check, and ``_AI_PROBE_*`` filter
-listed in task 8.2 are deliberately *not* implemented here; they are
+are deliberately *not* implemented here; they are
 the AgentRunnerWorkflow's responsibility and consume this repo through
 its narrow boolean contract.
-
-Validates: Requirements 8.2.
 """
 
 from __future__ import annotations

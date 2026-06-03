@@ -1,6 +1,4 @@
-"""Streamlit Explorer page (`platform-mimari-ops` task 9.3).
-
-**Validates: Requirements 3.3 (V3), R1.2**
+"""Streamlit Explorer page.
 
 Explorer lets the user browse Jira issues, Bitbucket pull requests
 and Confluence pages from the active department's catalogue. Unlike
@@ -9,8 +7,8 @@ directly through the foundation client — but only after the banned
 tool list is applied (foundation `mcp_client.filter_tools`). Any
 write-action tool (e.g. `bitbucket_merge_pr`,
 `confluence_delete_page`) is filtered out before the catalogue
-reaches this page; the design table at design.md §"Property 3"
-asserts the same invariant from a static-AST angle.
+reaches this page. Static checks assert the same invariant from an
+AST angle.
 
 The page itself does not import write tools by name — only
 ``filter_tools`` and the read-only invocation helpers are called.

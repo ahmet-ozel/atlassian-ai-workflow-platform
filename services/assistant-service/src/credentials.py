@@ -1,9 +1,8 @@
-"""Audit-emitting credential resolver wrapper for assistant-service (task 4.7).
+"""Audit-emitting credential resolver wrapper for assistant-service.
 
 Thin call-site wrapper around
 :class:`automation_service.credentials.CredentialResolver` that adds the
-**audit-emission** contract required by Property 17 / Requirements 8.4 +
-8.5 of the ``platform-mimari-ops`` spec.
+**audit-emission** contract for credential resolution.
 
 The foundation resolver
 (:class:`automation_service.credentials.CredentialResolver`) owns the
@@ -29,8 +28,7 @@ wrapper layers exactly one extra responsibility on top:
    ``vault_path`` (path string, never the secret), and the missing
    ``attempted_paths`` tuple on failure. The Vault ``data`` mapping
    (which contains the plain token) is **never** propagated into the
-   payload. Property 17 (d) and the spec's log redaction parity
-   (Spec 1 R6) both forbid that leak.
+   payload. The audit log must not leak those values.
 
 The resolver itself stays a thin proxy — there is no caching, no
 retry, no rate-limiting layered here. Those concerns live one layer
@@ -50,10 +48,7 @@ the OIDC subject's role for the chat path). Hard-coding the audit
 sink inside the foundation resolver would either pick the wrong role
 for one service or force every caller to pass an audit writer even
 when they don't need one. Keeping the audit wiring at the call site
-mirrors the design's "audit at call-site" contract documented in
-``.kiro/specs/platform-mimari-ops/tasks.md`` §4.7.
-
-Requirements: 8.4, 8.5
+mirrors the "audit at call-site" contract.
 """
 
 from __future__ import annotations
@@ -91,22 +86,20 @@ __all__ = [
 
 
 # ---------------------------------------------------------------------------
-# Canonical audit action names (Property 17 / R8.5)
+# Canonical audit action names
 # ---------------------------------------------------------------------------
 
 #: Emitted when the per-user override at
 #: ``vault:atlassian/_user_session/<session_id>/<service>`` produced
-#: the credential. Mirrors the literal string in design.md §"Property 17"
-#: clause (a).
+#: the credential.
 AUDIT_ACTION_PER_USER: Final[str] = "credential_resolved_per_user_session"
 
 #: Emitted when the per-user path was missing and the org-default path
 #: ``vault:atlassian/<dept_id>/<service>`` produced the credential.
-#: Mirrors design.md §"Property 17" clause (b).
 AUDIT_ACTION_ORG_DEFAULT: Final[str] = "credential_resolved_org_default"
 
 #: Emitted when neither the per-user nor the org-default path exists.
-#: Mirrors design.md §"Property 17" clause (c). The wrapper writes
+#: The wrapper writes
 #: this event **before** re-raising :class:`CredentialNotFoundError`
 #: so failures are observable in the audit log even when the caller
 #: drops the exception.
@@ -132,8 +125,8 @@ class CredentialNotFoundError(CredentialMissing):
     Subclasses :class:`CredentialMissing` (the canonical foundation
     error) so existing call sites that already handle the foundation
     error keep working. The dedicated subclass exists because
-    design.md §"Property 17" clause (c) names the documented error
-    ``CredentialNotFoundError``; the alias avoids forcing every
+    ``CredentialNotFoundError`` is the documented public error; the
+    alias avoids forcing every
     assistant-service call site to import a name from the
     automation-service package and keeps the public failure mode of
     this wrapper independently importable.
@@ -142,7 +135,7 @@ class CredentialNotFoundError(CredentialMissing):
     :class:`CredentialMissing` and remains ``"credential_missing"`` —
     the canonical audit error code. The wrapper, however, writes the
     audit event under ``action=credential_resolve_failed`` because
-    that is the action name Property 17 pins; the two strings refer
+    that is the action name used for this failure; the two strings refer
     to different fields of the same row.
     """
 
@@ -201,8 +194,7 @@ class AuditingCredentialResolver:
         Optional callable returning a timezone-aware
         :class:`~datetime.datetime`. Defaults to
         ``datetime.now(timezone.utc)`` and is exposed as a
-        constructor argument for deterministic property tests
-        (Property 17 (e)).
+        constructor argument for deterministic property tests.
 
     Notes
     -----
@@ -245,7 +237,7 @@ class AuditingCredentialResolver:
     ) -> ResolvedCredential:
         """Resolve credentials and emit the matching audit event.
 
-        Three outcomes (Property 17):
+        Three outcomes:
 
         * Per-user override hit → ``credential_resolved_per_user_session``
           (``result="ok"``); the resolver's
@@ -278,7 +270,7 @@ class AuditingCredentialResolver:
                         "service": service,
                         "session_id": session_id,
                         # Path strings only — never the Vault `data`
-                        # mapping (Property 17 (d) / Spec 1 R6).
+                        # mapping.
                         "attempted_paths": list(err.attempted_paths),
                     },
                 )
@@ -324,7 +316,7 @@ class AuditingCredentialResolver:
 
 # Plain-credential payload keys that MUST NOT appear in any audit
 # payload this wrapper emits. Exposed for the property test so the
-# leak invariant (Property 17 (d)) is asserted against the same
+# leak invariant is asserted against the same
 # canonical key list the production code uses (matches the keys
 # stored under ``vault:atlassian/.../<service>`` per the bot
 # credential schema in ``departments.schema.json``).

@@ -63,7 +63,7 @@ class WorkflowNotFoundError(Exception):
     (no execution found for the given workflow ID — neither running nor
     closed). The Jira ``comment_created`` handler distinguishes this
     from generic transport errors so it can decide whether to restart a
-    new workflow on the issue (Requirement 3.1, MIMARI §16.17 Q5 ④).
+    new workflow on the issue.
     """
 
     def __init__(self, workflow_id: str, cause: RPCError | None = None) -> None:
@@ -283,7 +283,7 @@ class TemporalClient:
             If no execution exists for ``workflow_id`` (neither running
             nor closed). The Jira ``comment_created`` handler relies on
             this typed exception to decide whether to restart a new
-            workflow on the issue (Requirement 3.1).
+            workflow on the issue.
         """
         client = self._ensure_connected()
         handle = client.get_workflow_handle(workflow_id)
@@ -319,8 +319,7 @@ class TemporalClient:
         the existing execution; otherwise a new execution is started
         and the signal is buffered for the first task. This is the
         primitive the Jira ``comment_created`` handler uses to restart
-        a workflow after Temporal has reported ``WorkflowNotFound``
-        (Requirement 3.2).
+        a workflow after Temporal has reported ``WorkflowNotFound``.
 
         Parameters
         ----------

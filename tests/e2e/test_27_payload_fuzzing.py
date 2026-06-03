@@ -1,14 +1,11 @@
 """
-Test 27: Hypothesis MCP payload shape property test (R27).
+Test 27: Hypothesis MCP payload shape property test .
 
-**Property 2: MCP robustness under arbitrary input**
-**Validates: Requirements R19.1, R19.3, R19.4, R27.1, R27.2, R27.3**
+**the invariant: MCP robustness under arbitrary input**
 
 Uses Hypothesis to generate random MCP payloads with varying fields,
 types, missing/extra fields and asserts that the MCP always returns
 either a valid success response or a valid error response (never crashes).
-
-Requirements: R27.1, R27.2, R27.3, R27.4, R27.5, R27.6
 """
 
 import json
@@ -58,9 +55,9 @@ def _check_mcp_healthy() -> bool:
 def _send_mcp_payload(payload: Any) -> dict:
     """Send a payload to the MCP endpoint and return structured result.
 
-    Returns dict with: status_code, has_result, has_error, is_valid_response,
-    response_body, error.
-    """
+ Returns dict with: status_code, has_result, has_error, is_valid_response,
+ response_body, error.
+ """
     result = {
         "status_code": None,
         "has_result": False,
@@ -214,14 +211,13 @@ mcp_payload_strategy = st.one_of(
 # ---------------------------------------------------------------------------
 
 class TestMCPPayloadRobustness:
-    """Property 2: MCP robustness under arbitrary input.
+    """the invariant: MCP robustness under arbitrary input.
 
-    **Validates: Requirements R19.1, R19.3, R19.4, R27.1, R27.2, R27.3**
 
-    FOR ALL generated MCP payloads, the MCP SHALL return either a valid
-    success response (with result field) OR a valid error response
-    (with error.code + error.message) — never an unstructured crash.
-    """
+ FOR ALL generated MCP payloads, the MCP SHALL return either a valid
+ success response (with result field) OR a valid error response
+ (with error.code + error.message) — never an unstructured crash.
+ """
 
     @settings(
         max_examples=MAX_EXAMPLES,
@@ -235,8 +231,7 @@ class TestMCPPayloadRobustness:
     def test_mcp_returns_valid_response_or_error(self, payload: Any):
         """MCP always returns structured response, never crashes.
 
-        **Validates: Requirements R27.1, R27.2, R27.3**
-        """
+ """
         result = _send_mcp_payload(payload)
 
         # The MCP should NOT crash
@@ -272,8 +267,7 @@ class TestMCPPayloadRobustness:
     def test_mcp_container_remains_healthy(self, payload: Any):
         """MCP container remains healthy after processing arbitrary payloads.
 
-        **Validates: Requirements R27.3**
-        """
+ """
         result = _send_mcp_payload(payload)
 
         # Skip if MCP is not running
@@ -294,17 +288,16 @@ class TestMCPPayloadRobustness:
 
 
 class TestMCPPayloadFuzzingEvidence:
-    """R27.6: Emit structured evidence for MCP payload fuzzing."""
+    """: Emit structured evidence for MCP payload fuzzing."""
 
     def test_emit_evidence(self, evidence_collector):
         """Collect MCP payload fuzzing results and emit evidence JSON.
 
-        **Validates: Requirements R27.4, R27.5, R27.6**
-        """
+ """
         evidence_data: dict[str, Any] = {
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            "property": "Property 2: MCP robustness under arbitrary input",
-            "validates": "Requirements R19.1, R19.3, R19.4, R27.1, R27.2, R27.3",
+            "property": "the invariant: MCP robustness under arbitrary input",
+            "validates": "",
             "max_examples": MAX_EXAMPLES,
             "deadline_seconds": DEADLINE_SECONDS,
             "mcp_base_url": MCP_BASE_URL,
@@ -358,7 +351,7 @@ class TestMCPPayloadFuzzingEvidence:
 
         # Emit evidence
         evidence_path = evidence_collector.emit_json(
-            requirement_id="R27.1,R27.2,R27.3,R27.4,R27.5,R27.6",
+            requirement_id=",,,,,",
             filename=EVIDENCE_FILENAME,
             data=evidence_data,
         )

@@ -4,10 +4,9 @@ Re-exports the public API so callers can simply do::
 
     from audit_logger import AuditEvent, AuditLogger
 
-The package mirrors the schema in
-``.kiro/specs/platform-mimari-foundation/design.md`` §`libs/audit_logger`
-and Requirement 7.7 (audit_role mandatory, enforced both at the
-application layer and the Postgres `CHECK` constraint).
+The package mirrors the audit table schema. ``audit_role`` is mandatory
+and is enforced both at the application layer and by the Postgres
+`CHECK` constraint.
 """
 
 from .event import (

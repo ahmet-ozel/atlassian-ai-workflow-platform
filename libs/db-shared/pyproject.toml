@@ -9,7 +9,7 @@ description = "Tenant-aware (RLS) database session helpers and shared data model
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 license = { text = "Proprietary" }
-authors = [{ name = "Multi-Service Scaffold" }]
+authors = [{ name = "Platform" }]
 dependencies = [
     "sqlalchemy>=2.0.0",
 ]

@@ -1,4 +1,4 @@
-"""Unit tests for ``concurrency`` (`platform-gap-fill` task 19.1).
+"""Unit tests for ``concurrency``.
 
 Covers:
 * :func:`check_dept_concurrency` allow / reject behaviour for each
@@ -8,7 +8,6 @@ Covers:
   Visibility raises.
 * :func:`extract_max_concurrent` parsing edge cases.
 
-Validates: Requirements 19.1, 19.2, 19.3.
 """
 
 from __future__ import annotations
@@ -166,14 +165,14 @@ class TestCountActiveWorkflows:
 
 
 # ---------------------------------------------------------------------------
-# check_dept_concurrency — allow / reject behaviour (R19.1, R19.2, R19.3)
+# check_dept_concurrency — allow / reject behaviour
 # ---------------------------------------------------------------------------
 
 
 class TestCheckDeptConcurrency:
     @pytest.mark.asyncio
     async def test_max_none_skips_check_even_when_count_high(self) -> None:
-        """R19.3: ``max_concurrent_workflows = None`` → silent allow."""
+        """``max_concurrent_workflows = None`` → silent allow."""
         pool = _FakePool(count=100)
         result = await check_dept_concurrency(
             "payment", None, db=pool, temporal=None
@@ -184,7 +183,7 @@ class TestCheckDeptConcurrency:
 
     @pytest.mark.asyncio
     async def test_under_cap_allows(self) -> None:
-        """R19.1: ``count < max`` → silent allow."""
+        """``count < max`` → silent allow."""
         pool = _FakePool(count=5)
         result = await check_dept_concurrency(
             "payment", 10, db=pool, temporal=None
@@ -194,7 +193,7 @@ class TestCheckDeptConcurrency:
 
     @pytest.mark.asyncio
     async def test_at_cap_rejects(self) -> None:
-        """R19.2: ``count == max`` → reject (>= comparison)."""
+        """``count == max`` → reject (>= comparison)."""
         pool = _FakePool(count=10)
         with pytest.raises(ConcurrencyLimitExceeded) as exc_info:
             await check_dept_concurrency(
@@ -206,7 +205,7 @@ class TestCheckDeptConcurrency:
 
     @pytest.mark.asyncio
     async def test_over_cap_rejects(self) -> None:
-        """R19.2: ``count > max`` → reject."""
+        """``count > max`` → reject."""
         pool = _FakePool(count=15)
         with pytest.raises(ConcurrencyLimitExceeded) as exc_info:
             await check_dept_concurrency(

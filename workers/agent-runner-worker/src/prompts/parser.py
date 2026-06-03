@@ -11,7 +11,7 @@ This module provides:
 - ``format_task_analysis``: serialises TaskAnalysis back to a plain dict (lossless round-trip).
 - ``render_prompt``: renders a Jinja2 markdown template with the given context.
 
-Validation rules (from MIMARI §1 Kural 10 and design §3.4):
+Validation rules:
 - ``workflow_type`` must be a key in ``WORKFLOW_TYPE_CAPABILITIES``.
 - ``confidence`` must be one of ``{"high", "medium", "low"}``.
 - When ``confidence == "low"``, ``needs_info_question`` must be non-empty.
@@ -44,7 +44,7 @@ _VALID_ACTION_TYPES: frozenset[str] = frozenset({
     "confluence_page",
 })
 
-# Per-workflow-type required-field map (Requirement 6.7).
+# Per-workflow-type required-field map.
 #
 # ``workflow_type``, ``confidence`` and ``output_actions`` are universal
 # required fields; the entries below list the *additional* type-specific
@@ -129,7 +129,7 @@ class TaskAnalysis:
 def _coerce_draft_true(action_payload: dict[str, Any]) -> dict[str, Any]:
     """Ensure ``draft`` is always ``True`` for bitbucket_pr actions.
 
-    MIMARI §1 Kural 10: PR'lar her zaman draft olarak açılır.
+    PR'lar her zaman draft olarak açılır.
     """
     coerced = dict(action_payload)
     coerced["draft"] = True
@@ -157,7 +157,7 @@ def _parse_output_action(raw: Any, index: int) -> OutputAction:
             f"output_actions[{index}]: 'payload' must be a dict, got {type(payload).__name__}"
         )
 
-    # Coerce draft to True for bitbucket_pr actions (MIMARI §1 Kural 10)
+    # Coerce draft to True for bitbucket_pr actions.
     if action_type == "bitbucket_pr":
         payload = _coerce_draft_true(payload)
 
@@ -251,7 +251,7 @@ def parse_task_analysis(payload: dict[str, Any] | str) -> TaskAnalysis:
     if target_branch is not None and not isinstance(target_branch, str):
         raise TaskAnalysisError("'target_branch' must be a string or null")
 
-    # --- workflow-type-specific required fields (Requirement 6.7) ---
+    # --- workflow-type-specific required fields ---
     extras = _TYPE_SPECIFIC_REQUIRED.get(workflow_type, frozenset())
     for field_name in sorted(extras):
         if field_name not in data or data.get(field_name) is None:

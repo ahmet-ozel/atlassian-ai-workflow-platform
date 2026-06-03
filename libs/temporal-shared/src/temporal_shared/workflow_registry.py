@@ -1,14 +1,12 @@
 """Workflow → Temporal task queue registry.
 
 This module is the **single source of truth** for the workflow-name →
-task-queue mapping defined in
-``platform-mimari-workflows`` design.md §"temporal_shared.workflow_registry"
-and Requirements 1.1, 1.2.
+task-queue mapping.
 
 The mapping is wrapped in :class:`types.MappingProxyType` so callers
 cannot mutate the shared dictionary at runtime; this protects the
-worker-boot contract that "a worker SHALL listen on exactly one task
-queue" (R1.2): if any module could rebind queue names, that invariant
+worker-boot contract that a worker listens on exactly one task
+queue: if any module could rebind queue names, that invariant
 would silently break replay determinism.
 
 Public API
@@ -22,15 +20,12 @@ Public API
   the signature worker boot scripts use when registering a worker
   with the Temporal SDK; takes a single ``task_queue`` parameter.
 
-Design references
------------------
-* MIMARI §3 — three workflows host on three task queues; each worker
-  listens on exactly one queue.
-* design.md §"Workflow modülü iskeletleri" — `BotBranchRetention` cron
-  piggy-backs on the ``automation-tq`` queue so the automation-worker
-  owns retention without spinning up an extra worker.
-
-Validates: Requirements 1.1, 1.2.
+Queue ownership
+---------------
+Three workflow families host on three task queues; each worker listens
+on exactly one queue. `BotBranchRetention` cron piggy-backs on the
+``automation-tq`` queue so the automation-worker owns retention without
+spinning up an extra worker.
 """
 
 from __future__ import annotations
@@ -49,10 +44,9 @@ __all__ = [
 # WORKFLOW_TASK_QUEUES — workflow-name → task-queue mapping
 # ---------------------------------------------------------------------------
 
-#: Workflow class name → Temporal task queue name. Mirrors design.md
-#: §"temporal_shared.workflow_registry" exactly. Wrapped in
+#: Workflow class name → Temporal task queue name. Wrapped in
 #: ``MappingProxyType`` so callers cannot mutate the shared dictionary
-#: at runtime (Requirement 1.1, 1.2).
+#: at runtime.
 #:
 #: Entries
 #: -------
@@ -101,8 +95,8 @@ class SupportsWorkerBoot(Protocol):
         )
 
     The protocol documents that a boot helper accepts **exactly one**
-    ``task_queue`` parameter (R1.2: a worker may not listen on multiple
-    queues). Tests can substitute any object with the same shape; in
+    ``task_queue`` parameter; a worker may not listen on multiple
+    queues. Tests can substitute any object with the same shape; in
     production the real type is :class:`temporalio.worker.Worker`.
     """
 
@@ -149,7 +143,7 @@ def task_queue_for(workflow_name: str) -> str:
         :class:`KeyError` (rather than returning a default) forces
         callers to extend the registry whenever a new workflow is
         introduced; silent fall-through to a default queue would
-        violate the single-queue-per-worker contract (R1.2).
+        violate the single-queue-per-worker contract.
 
     Examples
     --------

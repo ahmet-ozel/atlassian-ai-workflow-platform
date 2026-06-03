@@ -1,9 +1,8 @@
-r"""Property test: Iteration workspace isolation (Property 12).
+r"""Invariant test: Iteration workspace isolation.
 
-Feature: platform-gap-fill, Property 12 — *For any* iteration ``N`` and
+Feature:, — *For any* iteration ``N`` and
 ``N+1`` on the same Jira issue, their workspace paths SHALL be
-distinct and SHALL NOT share mutable state. The
-:func:`build_iteration_workspace_path` helper is the single source of
+distinct and SHALL NOT share mutable state. The:func:`build_iteration_workspace_path` helper is the single source of
 truth for the canonical ``{base}/{issue_key}/iter-{N}`` layout used by
 both ``automation-worker`` (which records the path in
 ``shared.workflow_iterations``) and ``execution-runner-worker`` (which
@@ -15,37 +14,36 @@ Generators
 ----------
 
 * ``_BASE_PATH_STRATEGY`` — a small handful of representative root
-  paths (``/var/ai-runner``, ``/runner``, ``/var/ai-runner///``
-  trailing-slash variant). The implementation strips trailing slashes
-  so equivalent bases must collapse to the same canonical prefix.
+ paths (``/var/ai-runner``, ``/runner``, ``/var/ai-runner///``
+ trailing-slash variant). The implementation strips trailing slashes
+ so equivalent bases must collapse to the same canonical prefix.
 * ``_ISSUE_KEY_STRATEGY`` — Jira-style keys matching the
-  ``^[A-Z][A-Z0-9_]*-\d+$`` validator the helper enforces (covers
-  classic ``PAY-4211`` and underscored ``OPS_CORE-12`` shapes).
+ ``^[A-Z][A-Z0-9_]*-\d+$`` validator the helper enforces (covers
+ classic ``PAY-4211`` and underscored ``OPS_CORE-12`` shapes).
 * ``_ITER_STRATEGY`` — integers in ``[1, MAX_ITERATION_NUMBER]``,
-  the inclusive bound the helper accepts.
+ the inclusive bound the helper accepts.
 
 Properties checked
 ------------------
 
 1. **Pairwise distinct paths.** For any two iteration numbers ``N``
-   and ``M`` with ``N != M`` (both within
-   ``[1, MAX_ITERATION_NUMBER]``) and the same ``base`` + ``issue_key``,
-   the resulting paths are distinct strings.
+ and ``M`` with ``N != M`` (both within
+ ``[1, MAX_ITERATION_NUMBER]``) and the same ``base`` + ``issue_key``,
+ the resulting paths are distinct strings.
 2. **Consecutive iterations are non-prefixed.** For any ``N`` in
-   ``[1, MAX_ITERATION_NUMBER - 1]``, ``path(N)`` and ``path(N+1)``
-   are distinct *and* neither is a string prefix of the other. This
-   forbids accidental collisions like ``.../iter-1`` being a prefix
-   of ``.../iter-10`` from creeping in for *consecutive* iterations
-   — a subtle directory-tree foot-gun the design explicitly calls
-   out for the iter-N → iter-N+1 hand-off.
+ ``[1, MAX_ITERATION_NUMBER - 1]``, ``path(N)`` and ``path(N+1)``
+ are distinct *and* neither is a string prefix of the other. This
+ forbids accidental collisions like ``.../iter-1`` being a prefix
+ of ``.../iter-10`` from creeping in for *consecutive* iterations
+ — a subtle directory-tree foot-gun the design explicitly calls
+ out for the iter-N → iter-N+1 hand-off.
 
-These two properties together guarantee Property 12: for the
+These two properties together guarantee: for the
 consecutive case the paths cannot even share a filesystem prefix, and
 for the general case they cannot share an exact path — so two
 iterations can never accidentally write to the same workspace.
 
-**Validates: Requirements 12.2**
-"""
+**"""
 
 from __future__ import annotations
 
@@ -55,7 +53,7 @@ from pathlib import Path
 from hypothesis import given, settings, strategies as st
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — same shape as sibling property tests so the test
+# sys.path bootstrap — same shape as sibling Invariant tests so the test
 # is importable without an editable install of the worker package.
 # ---------------------------------------------------------------------------
 
@@ -109,11 +107,11 @@ _ITER_STRATEGY: st.SearchStrategy[int] = st.integers(
 def _two_distinct_iterations(draw: st.DrawFn) -> tuple[int, int]:
     """Draw two iteration numbers ``(N, M)`` with ``N != M``.
 
-    Both lie in ``[1, MAX_ITERATION_NUMBER]`` — the full domain
-    accepted by :func:`build_iteration_workspace_path`. The shrinker
-    naturally pushes towards small adjacent integers (e.g. ``(1, 2)``)
-    which produces the most informative counter-examples.
-    """
+ Both lie in ``[1, MAX_ITERATION_NUMBER]`` — the full domain
+ accepted by:func:`build_iteration_workspace_path`. The shrinker
+ naturally pushes towards small adjacent integers (e.g. ``(1, 2)``)
+ which produces the most informative counter-examples.
+ """
     n = draw(_ITER_STRATEGY)
     m = draw(_ITER_STRATEGY.filter(lambda x: x != n))
     return n, m
@@ -130,7 +128,7 @@ _CONSECUTIVE_ITER_STRATEGY: st.SearchStrategy[int] = st.integers(
 
 
 # ---------------------------------------------------------------------------
-# Property 12 — pairwise distinctness for arbitrary iteration pairs
+# — pairwise distinctness for arbitrary iteration pairs
 # ---------------------------------------------------------------------------
 
 
@@ -145,14 +143,14 @@ def test_distinct_iterations_yield_distinct_paths(
     issue_key: str,
     iters: tuple[int, int],
 ) -> None:
-    """Validates: Requirements 12.2.
+    """.
 
-    For any two iteration numbers N != M (both in
-    ``[1, MAX_ITERATION_NUMBER]``) the produced workspace paths must
-    be different strings — i.e.
-    ``build_iteration_workspace_path`` is injective over the iteration
-    component when ``base`` and ``issue_key`` are held fixed.
-    """
+ For any two iteration numbers N != M (both in
+ ``[1, MAX_ITERATION_NUMBER]``) the produced workspace paths must
+ be different strings — i.e.
+ ``build_iteration_workspace_path`` is injective over the iteration
+ component when ``base`` and ``issue_key`` are held fixed.
+ """
     n, m = iters
     path_n = build_iteration_workspace_path(base, issue_key, n)
     path_m = build_iteration_workspace_path(base, issue_key, m)
@@ -165,7 +163,7 @@ def test_distinct_iterations_yield_distinct_paths(
 
 
 # ---------------------------------------------------------------------------
-# Property 12 (bonus) — consecutive iterations are mutually non-prefixed
+# — consecutive iterations are mutually non-prefixed
 # ---------------------------------------------------------------------------
 
 
@@ -180,21 +178,21 @@ def test_consecutive_iterations_are_mutually_non_prefixed(
     issue_key: str,
     n: int,
 ) -> None:
-    """Validates: Requirements 12.2 (consecutive iter-N → iter-N+1).
+    """(consecutive iter-N → iter-N+1).
 
-    For any iteration ``N`` with a valid successor ``N+1``, the two
-    rendered paths must:
+ For any iteration ``N`` with a valid successor ``N+1``, the two
+ rendered paths must:
 
-    * differ as strings (the basic injectivity check), and
-    * neither be a string prefix of the other — so ``iter-N`` and
-      ``iter-N+1`` cannot accidentally land on the same filesystem
-      sub-tree (the way ``iter-1`` would otherwise prefix
-      ``iter-10`` for *non-consecutive* pairs).
+ * differ as strings (the basic injectivity check), and
+ * neither be a string prefix of the other — so ``iter-N`` and
+ ``iter-N+1`` cannot accidentally land on the same filesystem
+ sub-tree (the way ``iter-1`` would otherwise prefix
+ ``iter-10`` for *non-consecutive* pairs).
 
-    Together with the pairwise-distinctness property above this is
-    the strict reading of Property 12: consecutive iterations cannot
-    share *any* state, exact path or otherwise.
-    """
+ Together with the pairwise-distinctness property above this is
+ the strict reading of: consecutive iterations cannot
+ share *any* state, exact path or otherwise.
+ """
     path_n = build_iteration_workspace_path(base, issue_key, n)
     path_next = build_iteration_workspace_path(base, issue_key, n + 1)
 

@@ -1,13 +1,11 @@
 """Integration test — ``GET /readyz`` returns 200 when dependencies are reachable.
 
-Validates: Requirement 6.3 of the ``automation-service-wiring`` spec.
-
 The ``/readyz`` endpoint runs :func:`probe_postgres` and
 :func:`probe_temporal` in parallel and returns 200 once both probes
-succeed. The Compose-based smoke test version (task 8.3) stands up
-real Postgres + Temporal; this in-process variant monkey-patches the
-two probes to a successful result so the contract is exercised on
-every CI shard without external infrastructure.
+succeed. The Compose-based smoke test version stands up real Postgres
++ Temporal; this in-process variant monkey-patches the two probes to a
+successful result so the contract is exercised on every CI shard
+without external infrastructure.
 """
 
 from __future__ import annotations

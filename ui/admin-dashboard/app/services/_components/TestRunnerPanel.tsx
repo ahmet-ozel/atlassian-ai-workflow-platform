@@ -3,7 +3,7 @@
 /**
  * TestRunnerPanel — Real-time SSE test runner with terminal-like output.
  *
- * Production-hardening task 6.2 — implements the frontend component for
+ * Frontend component for
  * ``POST /admin/services/{service_name}/test?stream=true``.
  *
  * Features:
@@ -13,7 +13,6 @@
  * - PASSED (green) / FAILED (red) badge on completion
  * - "Connection lost" warning with reconnect option on unexpected disconnect
  *
- * Requirements: 4.1, 4.2, 4.3, 4.4, 4.5
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -223,7 +222,7 @@ export default function TestRunnerPanel({
         // User cancelled — this is expected
         setStatus("cancelled");
       } else {
-        // Unexpected disconnect (Requirement 4.5)
+        // Unexpected disconnect
         setLines((prev) => [
           ...prev,
           `[CONNECTION ERROR] ${err instanceof Error ? err.message : String(err)}`,
@@ -235,7 +234,7 @@ export default function TestRunnerPanel({
     }
   }, [serviceName]);
 
-  // Cancel the stream (Requirement 4.3)
+  // Cancel the stream
   const handleCancel = useCallback(() => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -243,7 +242,7 @@ export default function TestRunnerPanel({
     }
   }, []);
 
-  // Reconnect after disconnect (Requirement 4.5)
+  // Reconnect after disconnect
   const handleReconnect = useCallback(() => {
     void startStream();
   }, [startStream]);
@@ -288,7 +287,7 @@ export default function TestRunnerPanel({
             Run Tests — {serviceName}
           </h2>
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            {/* Status badge (Requirement 4.4) */}
+            {/* Status badge */}
             {status === "passed" && (
               <span style={passedBadgeStyle} role="status" aria-label="Tests passed">
                 PASSED
@@ -312,7 +311,7 @@ export default function TestRunnerPanel({
           </div>
         </div>
 
-        {/* Connection lost warning (Requirement 4.5) */}
+        {/* Connection lost warning */}
         {status === "disconnected" && (
           <div style={disconnectWarningStyle} role="alert">
             <span>⚠️ Connection lost</span>
@@ -361,7 +360,7 @@ export default function TestRunnerPanel({
 
         {/* Action buttons */}
         <div style={footerStyle}>
-          {/* Cancel button (Requirement 4.3) */}
+          {/* Cancel button */}
           {isRunning && (
             <button
               type="button"

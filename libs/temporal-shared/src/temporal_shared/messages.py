@@ -1,13 +1,13 @@
 """Shared workflow / activity message dataclasses (single I/O payload pattern).
 
 This module is the **single source of truth** for the input and output
-dataclasses exchanged across the three Temporal workflows defined in
-design.md (``AutomationWorkflow``, ``AgentRunnerWorkflow``,
+dataclasses exchanged across the three Temporal workflows
+(``AutomationWorkflow``, ``AgentRunnerWorkflow``,
 ``ExecutionRunWorkflow``) and the supporting value objects shared with
 activities (``WebhookEvent``, ``OutputAction``, ``LlmAnalysisResult``,
 ``IterationState``, ``ChildWorkflowSpec``, ``CompensationContext``).
 
-Design contract (design.md §"Components and Interfaces", task 1.3):
+Wire contract:
 
 * Every workflow ``run()`` accepts **exactly one** input dataclass and
   returns **exactly one** output dataclass.  Activities follow the same
@@ -26,8 +26,6 @@ The dataclasses here intentionally do **not** import ``temporalio`` —
 they are plain Python data containers so the same module can be re-used
 by activities, services, and tests without pulling in the workflow
 runtime.
-
-Validates: Requirements 1.9, 12.1.
 """
 
 from __future__ import annotations
@@ -52,7 +50,7 @@ __all__ = [
     "ExplainCacheEntry",
     "ChildWorkflowSpec",
     "CompensationContext",
-    # output-action classification (R12)
+    # output-action classification
     "CRITICAL_OUTPUT_ACTION_KINDS",
     "BEST_EFFORT_OUTPUT_ACTION_KINDS",
     # type aliases (Literal narrowings)
@@ -73,8 +71,7 @@ __all__ = [
 #: Webhook provider identifier — Atlassian product family.
 Provider = Literal["jira", "bitbucket"]
 
-#: Closed vocabulary of side-effect actions an activity may emit (R12.1).
-#: Mirrors design.md §"temporal_shared.output_actions".
+#: Closed vocabulary of side-effect actions an activity may emit.
 OutputActionKind = Literal[
     "jira_comment",
     "jira_attachment",
@@ -87,21 +84,21 @@ OutputActionKind = Literal[
     "email_notify",
 ]
 
-#: Output-action severity — drives partial-failure semantics (R12.1, R12.2,
-#: R12.3): ``critical`` failures fail the workflow and trigger compensation;
+#: Output-action severity — drives partial-failure semantics:
+#: ``critical`` failures fail the workflow and trigger compensation;
 #: ``best_effort`` failures are logged and reported but do not abort.
 OutputActionSeverity = Literal["critical", "best_effort"]
 
-#: Cancel-request origin attached to a :class:`CompensationContext`
-#: (R11.4 — distinguishes ``workflow_cancelled_by_end_user`` from
-#: ``workflow_cancelled_by_admin`` in the audit log).
+#: Cancel-request origin attached to a :class:`CompensationContext`.
+#: Distinguishes ``workflow_cancelled_by_end_user`` from
+#: ``workflow_cancelled_by_admin`` in the audit log.
 CompensationReason = Literal["user_cancel", "admin_cancel"]
 
 #: Outcome of the :class:`AutomationWorkflow` gateway decision.
 #: ``"dispatched"`` — child :class:`AgentRunnerWorkflow` started.
-#: ``"denied"`` — capability gate refused (R6.4).
+#: ``"denied"`` — capability gate refused.
 #: ``"out_of_scope"`` — branch-pattern rules or other policy refused
-#: (R7.9).
+#: by policy.
 #: ``"failed"`` — task-analysis or pre-dispatch step errored.
 AutomationDecision = Literal["dispatched", "denied", "out_of_scope", "failed"]
 
@@ -116,15 +113,14 @@ AgentRunnerStatus = Literal[
 ]
 
 #: Terminal status of an :class:`ExecutionRunWorkflow` execution
-#: (mirrors design.md §"ExecutionRunWorkflow modülü").
 ExecutionRunStatus = Literal["passed", "failed", "timeout"]
 
 
 # ---------------------------------------------------------------------------
-# Output-action classification table (R12.1) — single source of truth
+# Output-action classification table — single source of truth
 # ---------------------------------------------------------------------------
 
-#: ``OutputActionKind`` values that abort the workflow on failure (R12.2).
+#: ``OutputActionKind`` values that abort the workflow on failure.
 CRITICAL_OUTPUT_ACTION_KINDS: Final[frozenset[str]] = frozenset(
     {
         "jira_comment",
@@ -137,7 +133,7 @@ CRITICAL_OUTPUT_ACTION_KINDS: Final[frozenset[str]] = frozenset(
 )
 
 #: ``OutputActionKind`` values that are reported but never abort the
-#: workflow on failure (R12.3).
+#: workflow on failure.
 BEST_EFFORT_OUTPUT_ACTION_KINDS: Final[frozenset[str]] = frozenset(
     {
         "slack_notify",
@@ -154,7 +150,7 @@ BEST_EFFORT_OUTPUT_ACTION_KINDS: Final[frozenset[str]] = frozenset(
 
 @dataclass(frozen=True, slots=True)
 class WebhookEvent:
-    """Provider-normalised webhook event (R3, R4 input).
+    """Provider-normalised webhook event.
 
     The webhook gateway lifts both the Jira (``webhookEvent`` body field)
     and Bitbucket (``X-Event-Key`` header) dialects into this single
@@ -172,15 +168,15 @@ class WebhookEvent:
         ``"pr_commented"``, ``"pr_updated"``).
     delivery_id:
         Provider-supplied delivery identifier — the natural idempotency
-        key written to ``processed_events`` (R1.8, R2.5).
+        key written to ``processed_events``.
     actor_account_id:
         Atlassian account_id of the actor who emitted the event;
-        ``None`` if the payload omits it (regex-fallback loop guard
-        applies, R4.6).
+        ``None`` if the payload omits it and the regex-fallback loop
+        guard applies.
     body_text:
         Comment body or PR title — used for the ``[bot:`` regex
-        loop-guard fallback (R4.2, R4.6) and the ``[bot:hear]`` /
-        ``[fix]`` / ``[explain]`` keyword detection (R4.5, R5.3-5.5).
+        loop-guard fallback and the ``[bot:hear]`` / ``[fix]`` /
+        ``[explain]`` keyword detection.
     project_key:
         Jira project key when applicable, else ``None``.
     repo_slug:
@@ -213,12 +209,12 @@ class WebhookEvent:
 
 @dataclass(frozen=True, slots=True)
 class OutputAction:
-    """A single side-effect requested by an activity (R12.1).
+    """A single side-effect requested by an activity.
 
     Activities never apply side effects directly — they emit a tuple of
     ``OutputAction`` values which the parent workflow then partitions
     by :data:`CRITICAL_OUTPUT_ACTION_KINDS` /
-    :data:`BEST_EFFORT_OUTPUT_ACTION_KINDS` (R12.1) and applies through
+    :data:`BEST_EFFORT_OUTPUT_ACTION_KINDS` and applies through
     a dedicated apply activity.
 
     Attributes
@@ -231,13 +227,12 @@ class OutputAction:
         :data:`BEST_EFFORT_OUTPUT_ACTION_KINDS`.  Carrying severity
         explicitly (rather than recomputing it from the kind) lets the
         wire schema survive future migrations and lets test fixtures
-        construct deliberate violations for partial-failure tests
-        (Property 10).
+        construct deliberate violations for partial-failure tests.
     payload:
         Action-specific arguments as a tuple of ``(key, value)`` pairs.
         We use a tuple-of-pairs rather than a ``dict`` so the dataclass
         remains immutable and hashable.  The keys / value shapes are
-        documented per kind in design.md §"Output Actions Şeması".
+        documented per kind by the output-action contract.
     """
 
     kind: OutputActionKind
@@ -247,13 +242,13 @@ class OutputAction:
 
 @dataclass(frozen=True, slots=True)
 class LlmAnalysisResult:
-    """Output of the ``llm_analyze_task`` activity (R6, R7).
+    """Output of the ``llm_analyze_task`` activity.
 
     The LLM consumes the Jira issue + dept context and returns a
     structured proposal for which workflow type to run, on which repo /
     branch, and what side effects to emit.  The shape below is the
     decoded form of the JSON the LLM returns, after the task-analysis
-    parser (task 10.1) has validated the workflow-type-specific
+    parser has validated the workflow-type-specific
     required fields.
 
     Attributes
@@ -263,7 +258,7 @@ class LlmAnalysisResult:
         :data:`temporal_shared.capabilities.WORKFLOW_TYPE_CAPABILITIES`.
     confidence:
         ``"high"``, ``"medium"``, or ``"low"`` — drives the
-        ``needs_info`` / structured-choice branch (R6.5).
+        ``needs_info`` / structured-choice branch.
     target_repo:
         Bitbucket repo slug when applicable; ``None`` for non-code
         workflow types.
@@ -286,7 +281,7 @@ class LlmAnalysisResult:
         Tuple of clarification questions to surface as a Jira comment
         when ``confidence == "low"``; empty otherwise.
     token_usage:
-        Recorded token usage for cost accounting (T13).
+        Recorded token usage for cost accounting.
     """
 
     workflow_type: str
@@ -300,11 +295,9 @@ class LlmAnalysisResult:
     output_actions: tuple[OutputAction, ...] = ()
     needs_info_questions: tuple[str, ...] = ()
     token_usage: int = 0
-    # EK2 fix (GEREKSINIM_ANALIZI.md): carry the analyser's ``needs_docker``
-    # decision through the bridge so :meth:`AutomationWorkflow._child_args`
-    # can wire it into :attr:`ExecutionRunWorkflowInput.needs_docker`. Without
-    # this the gateway dropped the flag and the Docker chain never ran even
-    # when the analyser explicitly requested it.
+    # Carry the analyser's ``needs_docker`` decision through the bridge
+    # so :meth:`AutomationWorkflow._child_args` can wire it into
+    # :attr:`ExecutionRunWorkflowInput.needs_docker`.
     needs_docker: bool = False
     needs_ssh: bool = False
     execution_command: str | None = None
@@ -312,7 +305,7 @@ class LlmAnalysisResult:
 
 @dataclass(frozen=True, slots=True)
 class ExplainCacheEntry:
-    """Single entry of :attr:`IterationState.explain_cache` (R5.5).
+    """Single entry of :attr:`IterationState.explain_cache`.
 
     Attributes
     ----------
@@ -338,10 +331,9 @@ _EMPTY_EXPLAIN_CACHE: Final[Mapping[str, ExplainCacheEntry]] = {}
 class IterationState:
     """Replay-safe iteration state carried by :class:`AgentRunnerWorkflow`.
 
-    Mirrors design.md §"temporal_shared.iteration".  This module owns
-    only the **shape**; the pure decision functions
+    This module owns only the **shape**; the pure decision functions
     (``should_advance_iter``, ``is_fix_debounced``, ...) live in
-    :mod:`temporal_shared.iteration` (task 6.1).
+    :mod:`temporal_shared.iteration`.
 
     The dataclass is frozen and stores only immutable collections —
     callers evolve state by constructing a new value via
@@ -352,22 +344,22 @@ class IterationState:
     ----------
     iter_count:
         Number of completed iterations; the workflow checks
-        ``iter_count >= max_iter`` before advancing (R5.1).
+        ``iter_count >= max_iter`` before advancing.
     last_fix_trigger_at:
         ``workflow.now()`` of the most recent ``[fix]`` keyword
         acceptance, or ``None`` if no ``[fix]`` has fired yet.  Used
-        for the 60-second debounce window (R5.4, T6).
+        for the 60-second debounce window.
     test_results_by_diff_hash:
         Mapping of diff hash → ``ExecutionRunWorkflowOutput.status``
-        from prior test runs.  ``[fix]`` re-test protection (R5.3, T1)
+        from prior test runs.  ``[fix]`` re-test protection
         consults this map: identical diff → skip re-execution.
     explain_cache:
         Mapping of PR-diff hash → cached ``[explain]`` answer with
         an issued-at timestamp.  Used for the 5-minute TTL
-        cooldown + cache (R5.5, Z10).
+        cooldown + cache.
     needs_info_streak:
         Count of consecutive ``needs_info`` comments emitted by the
-        bot; the loop cap (R5.6, S12) terminates the workflow once
+        bot; the loop cap terminates the workflow once
         this reaches 3.
     """
 
@@ -384,7 +376,7 @@ class IterationState:
 
 @dataclass(frozen=True, slots=True)
 class ChildWorkflowSpec:
-    """Specification of a child workflow to start (R6.3, ``multi_step``).
+    """Specification of a child workflow to start for ``multi_step``.
 
     The :class:`AutomationWorkflow` (and ``multi_step`` orchestrators)
     construct a tuple of these to describe the children to dispatch.
@@ -434,10 +426,10 @@ class ChildWorkflowSpec:
 
 @dataclass(frozen=True, slots=True)
 class CompensationContext:
-    """Input passed to the compensation chain on workflow cancel (R11).
+    """Input passed to the compensation chain on workflow cancel.
 
-    Mirrors design.md §"temporal_shared.compensation".  The chain is a
-    fixed sequence of idempotent activities driven by this context;
+    The chain is a fixed sequence of idempotent activities driven by
+    this context;
     every step receives the same context so each can decide which side
     effect (if any) to undo without consulting external state.
 
@@ -460,11 +452,11 @@ class CompensationContext:
         references it); ``None`` if no branch was created.
     confluence_page_id:
         Page id for ``cancelled`` label + ``[CANCELLED]`` title prefix
-        application (R11.2 step 3); ``None`` if no Confluence write
+        application; ``None`` if no Confluence write
         happened.
     minio_prefix:
         ``ai-runs/{workflow_id}/`` prefix to leave under retention
-        (R11.2 step 4); ``None`` if no artifacts were written.
+        under retention; ``None`` if no artifacts were written.
     reason:
         Cancel origin (:data:`CompensationReason`) — ``user_cancel``
         or ``admin_cancel``; surfaces in the audit event name.
@@ -484,13 +476,13 @@ class CompensationContext:
 
 
 # ---------------------------------------------------------------------------
-# AutomationWorkflow envelope (R1, R2, R6, R12)
+# AutomationWorkflow envelope
 # ---------------------------------------------------------------------------
 
 
 @dataclass(frozen=True, slots=True)
 class AutomationWorkflowInput:
-    """Single input of :class:`AutomationWorkflow.run` (R1.9).
+    """Single input of :class:`AutomationWorkflow.run`.
 
     Constructed by the webhook gateway (``automation-service``) after
     the filter chain accepts the event and ``signalWithStart`` is about
@@ -546,23 +538,22 @@ class AutomationWorkflowInput:
           :func:`observability.get_trace_id` on each outbound
           request and stamps the ``X-Trace-Id`` header)
 
-        Validates platform-gap-fill Requirement 8.3 (Temporal
-        workflow input must carry trace_id) and Property 10
-        (trace_id propagation completeness).  Defaults to the empty
-        string for backwards compatibility — pre-task-7.2 callers
-        that have not yet been updated still produce a valid input.
+        The workflow input carries ``trace_id`` so propagation stays
+        complete across the workflow and activity boundary.  Defaults
+        to the empty string for backwards compatibility with older
+        callers that have not yet been updated.
     notify_on_success:
-        Department-level success-gating flag (R5.2).  When ``True``,
+        Department-level success-gating flag.  When ``True``,
         the gateway dispatches a workflow-completion notification
         (Slack / email) on ``"completed"`` and ``"partial"`` runs.
         ``False`` (default) makes the success-path dispatch a no-op
-        — failure-path dispatch (R5.3) still fires regardless.
+        — failure-path dispatch still fires regardless.
     notify_channels:
         Tuple of notification channels the department subscribed to
         (``"slack"`` / ``"email"`` / ``"teams"``).  Empty tuple
         (default) skips success-path dispatch.  Failure-path
         dispatch always includes Slack regardless of this set
-        (R5.3).
+        on failures.
     slack_webhook:
         Resolved Slack webhook URL (already de-referenced from any
         ``vault:`` ref by the webhook gateway).  ``None`` means the
@@ -583,7 +574,7 @@ class AutomationWorkflowInput:
     raw_event: WebhookEvent | None = None
     trace_id: str = ""
     # ------------------------------------------------------------------
-    # Notification dispatch block (platform-mimari-ops R5.2 / R5.3).
+    # Notification dispatch block.
     # Carried on the workflow input so the gateway can forward a
     # workflow-completion notification (Slack / email) at every
     # terminal return without re-loading the dept config from
@@ -600,7 +591,7 @@ class AutomationWorkflowInput:
 
 @dataclass(frozen=True, slots=True)
 class AutomationWorkflowOutput:
-    """Single result of :class:`AutomationWorkflow.run` (R1.9).
+    """Single result of :class:`AutomationWorkflow.run`.
 
     Attributes
     ----------
@@ -625,7 +616,7 @@ class AutomationWorkflowOutput:
         ``"branch_rule_denied"``, ``"child_failed"``, or ``None``.
     missing_capabilities:
         Tuple of missing capability names — populated when
-        ``failure_reason == "missing_capability"`` (R6.4); empty
+        ``failure_reason == "missing_capability"``; empty
         otherwise.
     """
 
@@ -638,13 +629,13 @@ class AutomationWorkflowOutput:
 
 
 # ---------------------------------------------------------------------------
-# AgentRunnerWorkflow envelope (R5, R7-R10, R12)
+# AgentRunnerWorkflow envelope
 # ---------------------------------------------------------------------------
 
 
 @dataclass(frozen=True, slots=True)
 class AgentRunnerWorkflowInput:
-    """Single input of :class:`AgentRunnerWorkflow.run` (R1.9).
+    """Single input of :class:`AgentRunnerWorkflow.run`.
 
     Constructed by :class:`AutomationWorkflow` when dispatching the
     child.  Carries the LLM analysis result plus everything the agent
@@ -674,8 +665,7 @@ class AgentRunnerWorkflowInput:
         Iteration counter (1 for the initial run; ≥2 for re-entry via
         ``[fix]`` or new comments).  Bounded above by ``max_iter``.
     max_iter:
-        Hard cap (R5.1) — defaults to 5 per design.md §"AgentRunner
-        modülü".
+        Hard cap — defaults to 5.
     default_language:
         ISO-639-1 code passed through from the parent.
     trace_id:
@@ -683,8 +673,7 @@ class AgentRunnerWorkflowInput:
         :class:`AutomationWorkflowInput.trace_id`.  Mirrored verbatim
         from the parent workflow into this child input so the
         AgentRunner's activity log lines and outbound MCP requests
-        carry the same trace_id as the originating webhook
-        (platform-gap-fill task 7.2 / Requirement 8.3).
+        carry the same trace_id as the originating webhook.
     """
 
     parent_workflow_id: str
@@ -702,7 +691,7 @@ class AgentRunnerWorkflowInput:
 
 @dataclass(frozen=True, slots=True)
 class AgentRunnerWorkflowOutput:
-    """Single result of :class:`AgentRunnerWorkflow.run` (R1.9, R12).
+    """Single result of :class:`AgentRunnerWorkflow.run`.
 
     Attributes
     ----------
@@ -711,12 +700,12 @@ class AgentRunnerWorkflowOutput:
         means every output action succeeded;
         ``"completed_with_partial_failure"`` means at least one
         ``best_effort`` action failed but no critical action did
-        (R12.3); ``"out_of_scope"`` means MAX_ITER or
-        ``needs_info_streak`` cap reached (R5.1, R5.6); ``"cancelled"``
+        ; ``"out_of_scope"`` means MAX_ITER or
+        ``needs_info_streak`` cap reached; ``"cancelled"``
         means a cancel signal triggered the compensation chain
-        (R11.2); ``"failed"`` means a critical action or unhandled
-        exception aborted the run (R12.2); ``"needs_info"`` means the
-        workflow exited waiting for a user reply (R6.5).
+        ; ``"failed"`` means a critical action or unhandled
+        exception aborted the run; ``"needs_info"`` means the workflow
+        exited waiting for a user reply.
     iter_count:
         Final iteration counter from :class:`IterationState`.
     pr_id:
@@ -730,7 +719,7 @@ class AgentRunnerWorkflowOutput:
         Short Turkish summary mirrored into the final Jira comment.
     partial_failure_actions:
         Tuple of best-effort action kinds that failed during the run
-        (R12.3); empty when every action succeeded.
+        ; empty when every action succeeded.
     failure_reason:
         Stable failure category when ``status == "failed"``; ``None``
         otherwise.
@@ -747,13 +736,13 @@ class AgentRunnerWorkflowOutput:
 
 
 # ---------------------------------------------------------------------------
-# ExecutionRunWorkflow envelope (R1.6, R7.3)
+# ExecutionRunWorkflow envelope
 # ---------------------------------------------------------------------------
 
 
 @dataclass(frozen=True, slots=True)
 class ExecutionRunWorkflowInput:
-    """Single input of :class:`ExecutionRunWorkflow.run` (R1.9).
+    """Single input of :class:`ExecutionRunWorkflow.run`.
 
     Constructed by :class:`AgentRunnerWorkflow` when the
     ``code_change_with_test`` path needs SSH/Docker test execution, or
@@ -795,9 +784,8 @@ class ExecutionRunWorkflowInput:
         Department slug — used for audit and credential scoping.
     workflow_type:
         Logical workflow type that triggered this execution run.  At
-        present only ``"noop_test"`` is meaningful — see
-        ``platform-mimari-workflows`` requirements.md §R6.8 / tasks.md
-        §10.4.  When set, :class:`ExecutionRunWorkflow` applies a
+        present only ``"noop_test"`` is meaningful.  When set,
+        :class:`ExecutionRunWorkflow` applies a
         workflow-type-specific safety net: an empty :attr:`command`
         is replaced with the smoke-test default ``echo "ok"`` and an
         unset :attr:`start_to_close_timeout` is tightened to a value
@@ -824,7 +812,7 @@ class ExecutionRunWorkflowInput:
     workflow_type: str | None = None
     #: End-to-end correlation identifier inherited from the parent
     #: :class:`AutomationWorkflowInput` / :class:`AgentRunnerWorkflowInput`
-    #: (platform-gap-fill task 7.2 / Requirement 8.3).  Carried into
+    #: Carried into
     #: the runner activity so the captured stdout / exit-code log
     #: lines and the MinIO artifact path can be cross-referenced
     #: against the originating webhook's trace_id.
@@ -838,10 +826,10 @@ class ExecutionRunWorkflowInput:
     #: ``ApplicationError(type="DiskQuotaExceeded", non_retryable=True)``
     #: if the runner is already at or above the cap.  Sourced from
     #: ``departments.json::ssh_workspace_quota_mb`` by the dispatch
-    #: layer.  Requirements 16.1, 16.2 — disk quota enforcement.
+    #: layer.
     workspace_quota_mb: float | None = None
-    #: EK2 fix (GEREKSINIM_ANALIZI.md): when ``True`` the workflow runs
-    #: the Docker chain — ``docker_daemon_healthcheck`` →
+    #: When ``True`` the workflow runs the Docker chain —
+    #: ``docker_daemon_healthcheck`` →
     #: ``docker_build_image`` → ``docker_run_container`` →
     #: ``docker_collect_logs`` → ``docker_cleanup_container`` — instead
     #: of the single ``ssh_run_test`` activity. Sourced from the
@@ -863,12 +851,12 @@ class ExecutionRunWorkflowInput:
 
 @dataclass(frozen=True, slots=True)
 class ExecutionRunWorkflowOutput:
-    """Single result of :class:`ExecutionRunWorkflow.run` (R1.9).
+    """Single result of :class:`ExecutionRunWorkflow.run`.
 
     Attributes
     ----------
     status:
-        ``"passed"``, ``"failed"``, or ``"timeout"`` (R7.3).
+        ``"passed"``, ``"failed"``, or ``"timeout"``.
     exit_code:
         Process exit code; ``None`` when the run timed out before the
         process finished.

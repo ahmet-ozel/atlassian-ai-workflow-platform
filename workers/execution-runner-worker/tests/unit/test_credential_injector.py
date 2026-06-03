@@ -8,7 +8,6 @@ Tests cover:
 - Retry logic for Vault fetch
 - Credential masking filter
 
-Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7
 """
 
 from __future__ import annotations
@@ -43,7 +42,7 @@ from src.activities.credential_injector import (
 
 
 class TestBuildVaultPath:
-    """Tests for Vault path construction (Requirement 2.1)."""
+    """Tests for Vault path construction."""
 
     def test_standard_dept_id(self) -> None:
         assert build_vault_path("payments") == "atlassian/payments/bitbucket"
@@ -65,7 +64,7 @@ class TestBuildVaultPath:
 
 
 class TestMaskCredentialValue:
-    """Tests for credential masking (Requirement 2.7)."""
+    """Tests for credential masking."""
 
     def test_normal_value(self) -> None:
         result = mask_credential_value("username123")
@@ -96,7 +95,7 @@ class TestMaskCredentialValue:
 
 
 class TestCredentialMaskingFilter:
-    """Tests for the log masking filter (Requirement 2.7)."""
+    """Tests for the log masking filter."""
 
     def test_masks_sensitive_value_in_log(self) -> None:
         filter_ = CredentialMaskingFilter()
@@ -162,7 +161,7 @@ class TestCredentialMaskingFilter:
 
 
 class TestBuildCredentialHelperScript:
-    """Tests for credential helper script generation (Requirement 2.2)."""
+    """Tests for credential helper script generation."""
 
     def test_contains_cache_timeout(self) -> None:
         script = _build_credential_helper_script("user", "pass", 15)
@@ -189,7 +188,7 @@ class TestBuildCredentialHelperScript:
 
 
 class TestBuildCleanupScript:
-    """Tests for cleanup script generation (Requirement 2.3)."""
+    """Tests for cleanup script generation."""
 
     def test_contains_credential_cache_exit(self) -> None:
         script = _build_cleanup_script()
@@ -211,7 +210,7 @@ class TestBuildCleanupScript:
 
 
 class TestFetchCredentialFromVault:
-    """Tests for Vault credential fetching with retry (Requirements 2.1, 2.4)."""
+    """Tests for Vault credential fetching with retry."""
 
     @pytest.mark.asyncio
     async def test_successful_fetch(self) -> None:

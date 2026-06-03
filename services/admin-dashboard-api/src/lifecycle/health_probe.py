@@ -9,9 +9,9 @@ strategies based on the entry's ``kind`` and ``health_endpoint``:
    namespace/server is reachable via
    :py:meth:`temporalio.client.Client.connect`. A successful connect
    maps to ``healthz_status=200, state="healthy"``; any timeout or
-   exception maps to ``healthz_status=-1, state="unhealthy"``
-   (Requirement 7.5). ``readyz_*`` fields are ``None`` because workers
-   do not expose an HTTP readiness endpoint (design §3.6).
+   exception maps to ``healthz_status=-1, state="unhealthy"``.
+   ``readyz_*`` fields are ``None`` because workers do not expose an HTTP
+   readiness endpoint.
 
 2. **No HTTP endpoint** (``health_endpoint is None`` and
    ``kind != "worker"``): falls through to ``_probe_assume_running``
@@ -22,8 +22,8 @@ strategies based on the entry's ``kind`` and ``health_endpoint``:
    ``"starting" → "starting"``, and the empty string / ``"<no value>"``
    / subprocess failure (timeout, missing ``docker`` binary, exit
    code != 0) → ``"running_unmonitored"`` (Compose ``healthcheck``
-   block absent — the Control_Plane records that the container is up
-   but unobservable via Docker, R12 / Q14).
+   block absent — the control plane records that the container is up
+   but unobservable via Docker).
 
 3. **HTTP service** (``health_endpoint is not None``): performs ``GET
    http://{compose_service_name}:{port}{health_endpoint}`` and
@@ -31,21 +31,10 @@ strategies based on the entry's ``kind`` and ``health_endpoint``:
    internal network. Both endpoints must return ``200`` for the service
    to be ``healthy``; any other status (or connection failure) flips
    the snapshot to ``unhealthy`` and the failing response body is
-   surfaced via ``readyz_body`` truncated to 200 chars (Requirement
-   7.6, 4.7). ``kind == "infra"`` entries with a health endpoint are
+   surfaced via ``readyz_body`` truncated to 200 chars. ``kind == "infra"``
+   entries with a health endpoint are
    healthz-only because several infrastructure helpers expose no
    platform ``/readyz`` contract.
-
-Design references
------------------
-* design §3.6 — :class:`HealthProbe` interface, kind dispatch, body
-  truncation rule.
-* design §4.4 — :class:`HealthSnapshot` shape (``ts``,
-  ``healthz_status``, ``healthz_body``, ``readyz_status``,
-  ``readyz_body``, ``state``).
-* tasks.md task 5.3 — port resolution via
-  ``compose_internal_ports``; default ``80`` when unknown; httpx
-  timeout 5 s; body 200 chars max.
 
 The module is **pure asyncio + httpx**; it owns no global state and no
 filesystem I/O. Port resolution is deferred to the caller through the
@@ -96,11 +85,11 @@ class HealthSnapshot:
         indicates a connection-level failure (timeout, DNS, TCP reset)
         rather than an HTTP error response. For worker entries this is
         ``200`` on a successful Temporal ``Client.connect`` and ``-1``
-        when the connect fails (Requirement 7.5).
+        when the connect fails.
     healthz_body:
         Up to 200 characters of the ``/healthz`` response body (or the
         error message text on connection failure). Truncated to keep
-        snapshots cheap to store and serialize (Requirement 4.7).
+        snapshots cheap to store and serialize.
     readyz_status:
         HTTP status of the ``/readyz`` request, or ``None`` for worker
         and assume-running entries which do not probe ``/readyz``.
@@ -116,8 +105,8 @@ class HealthSnapshot:
         ``running_unmonitored`` is emitted for entries with no probe
         (``health_endpoint is None`` and ``kind != "worker"``) whose
         Compose container has no ``healthcheck`` block — the
-        container is up but the Control_Plane cannot observe its
-        health (R12 / Q14). ``unknown`` is retained on the type for
+        container is up but the control plane cannot observe its
+        health. ``unknown`` is retained on the type for
         backwards compatibility with persisted snapshots and is not
         emitted by the current probe.
     """
@@ -138,30 +127,28 @@ class HealthSnapshot:
 #: Maximum number of characters retained from any ``/healthz`` or
 #: ``/readyz`` response body. Bodies are truncated *after* decoding so
 #: the snapshot stays bounded regardless of the upstream payload size
-#: (Requirement 4.7, design §4.4).
+#: using the same truncation limit throughout the probe.
 _MAX_BODY_CHARS: Final[int] = 200
 
 #: Per-request timeout in seconds for both HTTP probes and the Temporal
-#: ``Client.connect`` call. Matches the task contract ("httpx.AsyncClient
+#: ``Client.connect`` call. Matches the HTTP client contract ("httpx.AsyncClient
 #: timeout 5s") and applies symmetrically to the worker path so a
 #: hung Temporal frontend cannot block the probe loop.
 _PROBE_TIMEOUT_SECONDS: Final[float] = 10.0
 
 #: Default port used when the caller did not supply an entry for a
 #: given ``compose_service_name`` in ``compose_internal_ports``. ``80``
-#: is the conventional HTTP container port and matches the task
-#: contract ("Default to 80 if unknown").
+#: is the conventional HTTP container port used when no explicit mapping is
+#: available.
 _DEFAULT_INTERNAL_PORT: Final[int] = 80
 
 #: Path probed alongside ``health_endpoint`` for HTTP services. The
-#: spec hard-codes ``/readyz`` because every scaffold-generated
-#: ``http_service`` exposes it (multi-service-scaffold Requirement 12).
+#: standard HTTP services expose ``/readyz`` alongside their health endpoint.
 _READYZ_PATH: Final[str] = "/readyz"
 
 
 #: Per-call timeout in seconds for the ``docker inspect`` subprocess
 #: used by :meth:`HealthProbe._probe_assume_running`. Matches the
-#: design contract for R12 / Q14 ("docker inspect timeout 5 sn"). A
 #: short cap means a hung Docker daemon cannot block the lifecycle
 #: state cache refresh loop, and the caller can deterministically
 #: classify the missing reading as ``running_unmonitored``.
@@ -171,8 +158,7 @@ _DOCKER_INSPECT_TIMEOUT_SECONDS: Final[float] = 5.0
 #: Mapping from ``docker inspect`` ``.State.Health.Status`` strings to
 #: the :data:`HealthState` literal emitted by ``_probe_assume_running``.
 #: Anything not in this map (empty string, ``"<no value>"``, or a
-#: subprocess failure) is classified as ``"running_unmonitored"`` per
-#: design R12 / Q14.
+#: subprocess failure) is classified as ``"running_unmonitored"``.
 _DOCKER_HEALTH_STATUS_MAP: Final[dict[str, HealthState]] = {
     "healthy": "healthy",
     "unhealthy": "unhealthy",
@@ -196,7 +182,7 @@ def _truncate_body(text: str) -> str:
 
     Slicing on a Python ``str`` is character-safe (operates on code
     points), so this is sufficient for the body-truncation rule in
-    design §4.4 — there is no need to worry about splitting a UTF-8
+    the probe body limit — there is no need to worry about splitting a UTF-8
     multibyte sequence mid-codepoint.
     """
 
@@ -283,7 +269,7 @@ class HealthProbe:
     async def probe(self, entry: ManagedServiceEntry) -> HealthSnapshot:
         """Return a fresh :class:`HealthSnapshot` for ``entry``.
 
-        Dispatch order (design §3.6):
+        Dispatch order:
 
         1. ``kind == "worker"`` → :meth:`_probe_temporal_worker`.
         2. ``health_endpoint is None`` → :meth:`_probe_assume_running`.
@@ -301,7 +287,7 @@ class HealthProbe:
         return await self._probe_http(entry)
 
     # ------------------------------------------------------------------
-    # Worker probe (Requirement 7.5)
+    # Worker probe
     # ------------------------------------------------------------------
 
     async def _probe_temporal_worker(
@@ -320,7 +306,7 @@ class HealthProbe:
 
         A successful ``Client.connect`` is treated as the ping itself —
         the gRPC handshake exercises the same path the worker does on
-        startup, which is what Requirement 7.5 calls "ping". Any
+        startup, which is the worker reachability check. Any
         :class:`asyncio.TimeoutError` or other exception flips the
         snapshot to ``unhealthy`` with ``healthz_status=-1``.
         """
@@ -464,7 +450,7 @@ class HealthProbe:
         return names, "running container(s): " + ", ".join(names[:3])
 
     # ------------------------------------------------------------------
-    # Assume-running probe — docker inspect (R12 / Q14)
+    # Assume-running probe — docker inspect
     # ------------------------------------------------------------------
 
     async def _probe_assume_running(
@@ -494,9 +480,9 @@ class HealthProbe:
         subprocess failure (timeout, missing ``docker`` binary, exit
         code != 0, decode error) — is classified as
         ``state="running_unmonitored"``: the container appears to be
-        up but the Control_Plane has no signal to confirm it
+        up but the control plane has no signal to confirm it
         (Compose ``healthcheck`` block likely absent). This honours
-        R12 / Q14: do not fabricate a green tick, but also do not
+        The fallback behavior does not fabricate a green tick, but also does not
         flag the service as unhealthy when the operator's intent was
         "assume running".
 
@@ -653,7 +639,7 @@ class HealthProbe:
         )
 
     # ------------------------------------------------------------------
-    # HTTP probe (Requirement 7.6, 4.7)
+    # HTTP probe
     # ------------------------------------------------------------------
 
     async def _probe_http(self, entry: ManagedServiceEntry) -> HealthSnapshot:
@@ -662,7 +648,7 @@ class HealthProbe:
         URL shape: ``http://{compose_service_name}:{port}{path}``. The
         service hostname is the Compose service key — Docker's internal
         DNS resolves it within the project network, no host-side port
-        publish required (design §3.6).
+        publish required.
 
         Both probes share the same per-request timeout. If either
         request fails to connect, the snapshot uses ``status=-1`` and
@@ -699,7 +685,7 @@ class HealthProbe:
         # considered healthy. Any other shape (non-2xx, ``-1`` connect
         # failure) flips us to unhealthy. The failing-side body
         # already carries the diagnostic; we surface it as-is on the
-        # readyz field so the UI tooltip in design §4 can render it.
+        # readyz field so the UI tooltip can render it.
         state: HealthState = (
             "healthy" if healthz_status == 200 and readyz_status == 200 else "unhealthy"
         )

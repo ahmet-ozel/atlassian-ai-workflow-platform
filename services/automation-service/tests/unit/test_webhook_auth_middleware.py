@@ -1,16 +1,14 @@
-"""Unit tests for ``src.middleware.webhook_auth`` (R8 — platform-completion).
-
-Validates: Requirements 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.7
+"""Unit tests for ``src.middleware.webhook_auth``.
 
 Covers the per-department webhook HMAC authentication middleware:
 
-* Department hint extraction: header priority over URL path (R8.1).
-* HMAC-SHA256 timing-safe verification (R8.2).
-* Global fallback when department is unknown (R8.3).
-* 503 on Vault timeout (R8.4).
-* Per-department Vault path construction (R8.5).
-* 401 + security log on HMAC failure (R8.6).
-* 401 when global fallback undefined and dept unknown (R8.7).
+* Department hint extraction: header priority over URL path.
+* HMAC-SHA256 timing-safe verification.
+* Global fallback when department is unknown.
+* 503 on Vault timeout.
+* Per-department Vault path construction.
+* 401 + security log on HMAC failure.
+* 401 when global fallback undefined and dept unknown.
 """
 
 from __future__ import annotations
@@ -168,7 +166,7 @@ async def test_missing_signature_returns_401():
 
 @pytest.mark.asyncio
 async def test_dept_header_priority_over_url_path():
-    """X-Department-Key header takes priority over URL path hint (R8.1)."""
+    """X-Department-Key header takes priority over URL path hint."""
     dept_secret = "header-dept-secret"
     body = b'{"event":"issue_created"}'
     sig = _compute_signature(dept_secret, body)
@@ -230,7 +228,7 @@ async def test_url_path_dept_extraction():
 
 @pytest.mark.asyncio
 async def test_valid_hmac_passes():
-    """Valid HMAC-SHA256 signature passes authentication (R8.2)."""
+    """Valid HMAC-SHA256 signature passes authentication."""
     secret = "my-webhook-secret"
     body = b'{"action":"created"}'
     sig = _compute_signature(secret, body)
@@ -260,7 +258,7 @@ async def test_valid_hmac_passes():
 
 @pytest.mark.asyncio
 async def test_invalid_hmac_returns_401():
-    """Invalid HMAC signature returns 401 (R8.6)."""
+    """Invalid HMAC signature returns 401."""
     reader = FakeVaultReader(
         secrets={
             "secret/webhook/payments/secret": {"hmac_secret": "real-secret"},
@@ -286,7 +284,7 @@ async def test_invalid_hmac_returns_401():
 
 @pytest.mark.asyncio
 async def test_vault_timeout_returns_503():
-    """Vault timeout (3s) returns 503 (R8.4)."""
+    """Vault timeout returns 503."""
     reader = FakeVaultReader(
         timeout_paths={"secret/webhook/payments/secret"}
     )
@@ -310,7 +308,7 @@ async def test_vault_timeout_returns_503():
 
 @pytest.mark.asyncio
 async def test_global_fallback_when_dept_unknown():
-    """Global fallback secret used when dept cannot be determined (R8.3)."""
+    """Global fallback secret used when dept cannot be determined."""
     fallback_secret = "global-secret"
     body = b'{"event":"test"}'
     sig = _compute_signature(fallback_secret, body)
@@ -335,7 +333,7 @@ async def test_global_fallback_when_dept_unknown():
 
 @pytest.mark.asyncio
 async def test_global_fallback_from_vault():
-    """Global fallback read from Vault when not pre-loaded (R8.3)."""
+    """Global fallback read from Vault when not pre-loaded."""
     fallback_secret = "vault-global-secret"
     body = b'{"event":"test"}'
     sig = _compute_signature(fallback_secret, body)
@@ -364,7 +362,7 @@ async def test_global_fallback_from_vault():
 
 @pytest.mark.asyncio
 async def test_no_fallback_and_no_dept_returns_401():
-    """401 when global fallback undefined and dept unknown (R8.7)."""
+    """401 when global fallback undefined and dept unknown."""
     reader = FakeVaultReader()  # No secrets at all
     app = _create_test_app(reader)
 
@@ -383,7 +381,7 @@ async def test_no_fallback_and_no_dept_returns_401():
 
 @pytest.mark.asyncio
 async def test_vault_path_construction():
-    """Vault path follows secret/webhook/{dept_id}/secret pattern (R8.5)."""
+    """Vault path follows secret/webhook/{dept_id}/secret pattern."""
     reader = FakeVaultReader(
         secrets={
             "secret/webhook/engineering/secret": {"hmac_secret": "eng-secret"},
@@ -412,7 +410,7 @@ async def test_vault_path_construction():
 
 @pytest.mark.asyncio
 async def test_dept_secret_not_found_falls_back_to_global():
-    """When dept secret not in Vault, falls back to global (R8.3)."""
+    """When dept secret not in Vault, falls back to global."""
     fallback_secret = "global-fallback"
     body = b'{"data":"test"}'
     sig = _compute_signature(fallback_secret, body)

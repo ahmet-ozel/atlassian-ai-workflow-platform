@@ -1,10 +1,5 @@
-"""Property test: Test history retention policy.
-
-Feature: platform-completion, Property 39: For any service, the system SHALL retain
-exactly the last 10 test execution results.
-
-Validates: Requirements 7.4
-"""
+"""Test history retention policy.
+exactly the last 10 test execution results."""
 from __future__ import annotations
 import sys
 from pathlib import Path

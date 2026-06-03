@@ -1,6 +1,4 @@
-"""Property 8 — after startup, no router replies with ``Router_Not_Wired_Error``.
-
-# Feature: automation-service-wiring, Property 8: No Router_Not_Wired_Error
+"""After startup, no router replies with ``Router_Not_Wired_Error``.
 
 For any :class:`FastAPI` app produced by :func:`create_app` and any
 successful run of the lifespan startup phase, hitting any path the
@@ -12,9 +10,6 @@ the slot set after lifespan startup completes.
 Auth failures, validation failures and downstream backend errors are
 allowed and expected; only the wiring-error response shape is
 forbidden.
-
-Validates Requirements 5.3, 5.4, 5.5 and 6.1 of the
-``automation-service-wiring`` spec.
 """
 
 from __future__ import annotations

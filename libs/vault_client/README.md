@@ -1,26 +1,25 @@
 # vault_client
 
 Pluggable Vault KV-v2 client used by every service that resolves
-credentials from `vault:<...>` references. Implements **R6** of
-`platform-mimari-foundation`:
+credentials from `vault:<...>` references:
 
 - `VaultPath` value-object that validates the
-  `^vault:[a-zA-Z0-9/_-]+$` convention (R3.3, R6.1) and rejects
+  `^vault:[a-zA-Z0-9/_-]+$` convention and rejects
   anything else with `ValueError`.
 - `VaultClient` `Protocol` defining `read`, `write`, `delete`,
-  `rotate_ssh_key`, `rotate_webhook_secret` (design §"libs/vault_client").
+  `rotate_ssh_key`, `rotate_webhook_secret`.
 - Two pluggable backends:
   - `HashicorpBackend` — real Hashicorp Vault HTTP (KV-v2,
     `data/<path>` semantics).
   - `LocalDevBackend` — file-backed development store using
     libsodium (`pynacl.secret.SecretBox`) authenticated encryption.
-    Plain-text writes are **rejected** (R6.6).
+    Plain-text writes are **rejected**.
 - `make_client(env)` factory that selects the backend from the
   `VAULT_BACKEND` environment variable (`hashicorp` or `local-dev`).
 
-This task (2.2) lands the **value-object, protocol, backends and
-factory**. SSH dual-slot rotation (R6.7) and webhook secret 1h overlap
-(R6.8) implementations live alongside in this package; task 2.3 wires
+This package provides the **value-object, protocol, backends and
+factory**. SSH dual-slot rotation and webhook secret 1h overlap
+implementations live alongside in this package; service wiring connects
 the rotation slots' invariants into property tests
 (`test_ssh_rotation.py`, `test_vault_backends.py`).
 
@@ -58,21 +57,21 @@ python -c "from vault_client import VaultPath, make_client; \
 The base grammar is intentionally permissive (`a-zA-Z0-9/_-`) so existing
 `departments.schema.json` references stay valid; the lowercase /
 kebab-case convention is enforced by the project style guide rather
-than the regex (design §"Tasarım Kararları").
+than the regex.
 
-### Foundation paths (Spec 1)
+### Foundation paths
 
 ```
 vault:atlassian/<dept_id>/<service>            # Atlassian credentials
 vault:atlassian/_staging/<request_id>/<svc>    # atomic-create staging
-vault:webhooks/<provider>/<dept_id>            # per-dept HMAC secret (V3)
+vault:webhooks/<provider>/<dept_id>            # per-dept HMAC secret
 vault:infrastructure/openai/api_key            # LLM fallback
 vault:minio/access_keys                        # object storage
 vault:ssh/runners/<runner_id>/active           # SSH key (current slot)
 vault:ssh/runners/<runner_id>/previous         # SSH key (rotation overlap)
 ```
 
-### Ops-scope paths (Spec 3 — `platform-mimari-ops`)
+### Ops-scope paths
 
 The constants below live in `vault_client.path` and are re-exported from
 the package root. Build concrete references with `str.format` and parse
@@ -89,10 +88,10 @@ path = VaultPath.parse(ref)
 
 | Constant | Path Pattern | Owner | Content | TTL |
 |---|---|---|---|---|
-| `USER_SESSION_PATH_TEMPLATE` | `vault:atlassian/_user_session/{session_id}/{service}` | `assistant-service` (write), `automation-service` (read) | Per-user session credential (Q6/Q7) — Streamlit user's own Atlassian token, scoped to the active session | session lifetime; deleted on logout, 24h cron sweep for orphans (R3.4, R8.4) |
-| `USER_PERSISTED_PATH_TEMPLATE` | `vault:atlassian/_user_persisted/{user_id}/{service}` | `streamlit-ui` (PIN-encrypted client-side) | Opt-in "remember me" persistence (Z7); ciphertext only — bytes are AES-encrypted with a PIN-derived key before write | 30 days (matches signed cookie TTL) |
-| `NOTIFICATION_SMTP_PATH` | `vault:notifications/smtp/credential` | `notification_service` | SMTP server credentials for outbound email (R5.1) | rotation-driven (no fixed TTL) |
-| `NOTIFICATION_SLACK_PATH_TEMPLATE` | `vault:notifications/{dept_id}/slack` | `notification_service` | Per-department Slack webhook URL (R5.1) | rotation-driven (no fixed TTL) |
+| `USER_SESSION_PATH_TEMPLATE` | `vault:atlassian/_user_session/{session_id}/{service}` | `assistant-service` (write), `automation-service` (read) | Per-user session credential: Streamlit user's own Atlassian token, scoped to the active session | session lifetime; deleted on logout, 24h cron sweep for orphans |
+| `USER_PERSISTED_PATH_TEMPLATE` | `vault:atlassian/_user_persisted/{user_id}/{service}` | `streamlit-ui` (PIN-encrypted client-side) | Opt-in "remember me" persistence; ciphertext only — bytes are AES-encrypted with a PIN-derived key before write | 30 days (matches signed cookie TTL) |
+| `NOTIFICATION_SMTP_PATH` | `vault:notifications/smtp/credential` | `notification_service` | SMTP server credentials for outbound email | rotation-driven (no fixed TTL) |
+| `NOTIFICATION_SLACK_PATH_TEMPLATE` | `vault:notifications/{dept_id}/slack` | `notification_service` | Per-department Slack webhook URL | rotation-driven (no fixed TTL) |
 
 **Critical rule:** Plain credentials are **never** stored in cookies or
 local storage. The `_user_persisted/...` path stores AES-encrypted

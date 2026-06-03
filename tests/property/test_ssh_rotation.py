@@ -1,6 +1,4 @@
-"""Property test 11b — SSH dual-slot rotation invariants.
-
-**Validates: Requirements 6.7**
+"""Property-based tests for SSH dual-slot rotation invariants.
 
 For an arbitrary sequence of ``rotate_ssh_key`` calls against the same
 ``runner_id``, the slot machine maintained by a :class:`VaultClient`
@@ -14,7 +12,7 @@ SHALL satisfy:
 3. Rotation never loses material in flight — between any two successive
    rotations the previous slot is exactly the prior active key, so an
    in-flight SSH session that was still using key ``v_(n-1)`` can be
-   re-validated until the operator clears the slot (MIMARI §13 E8 dual-slot).
+   re-validated until the operator clears the slot.
 4. The :class:`RotationResult` returns the canonical Vault path strings
    ``vault:ssh/runners/<id>/active`` and ``.../previous`` regardless of
    which backend produced the result.
@@ -54,7 +52,7 @@ from vault_client import (
 # Strategies
 # ---------------------------------------------------------------------------
 
-#: Runner id grammar mirrors design.md §"Vault path domeni":
+#: Runner id grammar mirrors the Vault path domain:
 #: ``vault:ssh/runners/<runner_id>/active``. The id segment must satisfy
 #: the project-wide ``[a-zA-Z0-9_-]+`` character class so it round-trips
 #: through ``VaultPath.parse``.
@@ -167,7 +165,7 @@ _BACKEND_FACTORIES: tuple[tuple[str, BackendFactory], ...] = (
 
 
 # ---------------------------------------------------------------------------
-# Property: dual-slot invariant under any rotation history
+# Dual-slot invariant under any rotation history
 # ---------------------------------------------------------------------------
 
 
@@ -195,9 +193,7 @@ def test_active_previous_slot_invariant(
     runner_id: str,
     fps: list[str],
 ) -> None:
-    """**Validates: Requirements 6.7**
-
-    Drive a sequence of rotations and assert at every step:
+    """Drive a sequence of rotations and assert at every step:
 
     * ``RotationResult.active_path`` resolves to
       ``vault:ssh/runners/<runner_id>/active``.
@@ -270,7 +266,7 @@ def test_active_previous_slot_invariant(
 
 
 # ---------------------------------------------------------------------------
-# Property: rotations are isolated per runner_id
+# Rotations are isolated per runner_id
 # ---------------------------------------------------------------------------
 
 
@@ -302,9 +298,7 @@ def test_rotation_is_per_runner(
     fp_a: str,
     fp_b: str,
 ) -> None:
-    """**Validates: Requirements 6.7**
-
-    Rotating runner ``A`` MUST NOT shift slot state on runner ``B``.
+    """Rotating runner ``A`` MUST NOT shift slot state on runner ``B``.
     The two runners share the same Vault prefix
     (``vault:ssh/runners/...``) but live under disjoint ``runner_id``
     segments, so a regression that strips the runner segment (e.g.

@@ -1,15 +1,11 @@
-"""``FeatureFlagsRouter`` (`platform-mimari-ops` task 11.6 +
-`platform-gap-fill` task 16.1).
-
-**Validates: Requirements R4.6 (mimari-ops Q8) and R16.1–R16.5
-(platform-gap-fill — feature flag toggle UI with dept overrides).**
+"""``FeatureFlagsRouter``.
 
 Two surfaces are exposed:
 
-1. ``/admin/feature-flags`` (legacy, mimari-ops) — list + per-flag
+1. ``/admin/feature-flags`` (legacy) — list + per-flag
    ``PUT`` for the global value. Kept intact so the existing UI and
    audit pipeline continue to work.
-2. ``/api/v1/feature-flags`` (gap-fill task 16.1) — listing returns
+2. ``/api/v1/feature-flags`` — listing returns
    global value alongside the per-department override map merged
    from ``departments.json`` ``feature_flag_overrides``. Mutation
    uses ``PATCH /api/v1/feature-flags/{key}`` with body
@@ -33,8 +29,7 @@ Audit
 -----
 
 Every successful mutation writes one ``feature_flag_toggled`` event
-to the canonical audit sink. The payload carries the canonical R16.3
-shape::
+to the canonical audit sink. The payload carries this shape::
 
     {
         "key": <flag name>,
@@ -58,8 +53,8 @@ Hot-reload
 * Dept overrides — reuses the same
   ``app.state.departments_reload_publisher`` /
   ``automation-service /admin/departments/_reload`` fan-out the
-  department CRUD endpoints already drive (Requirement 17.4 — 10s
-  budget). When neither path is wired we fall back to a structured
+  department CRUD endpoints already drive with a 10s budget. When
+  neither path is wired we fall back to a structured
   log line and let the standard 30-second config poll pick the
   change up.
 """
@@ -92,7 +87,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 #: Audit action label written for every mutating action on either
-#: surface (Requirement R16.3 / R4.6).
+#: surface.
 _AUDIT_ACTION: str = "feature_flag_toggled"
 
 #: Path to the canonical departments document — same file the runtime
@@ -215,7 +210,7 @@ async def _signal_global_reload(request: Request, *, key: str) -> None:
     if publisher is None:
         logger.info(
             "feature_flag_reload_publisher not wired — flag %r will "
-            "propagate via the next polling cycle (≤10s SLA, R16.5)",
+            "propagate via the next polling cycle (≤10s SLA)",
             key,
         )
         return
@@ -233,7 +228,7 @@ async def _signal_dept_reload(
     """Reuse the departments hot-reload publisher for dept overrides.
 
     The departments CRUD router already wires a 10s-bounded reload
-    mechanism (Requirement 17.4) — overriding a flag is just another
+    mechanism; overriding a flag is just another
     departments.json edit, so we ride the same channel rather than
     bolt on a parallel one.
     """
@@ -432,7 +427,7 @@ def _atomic_write_json(path: Path, doc: dict[str, Any]) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Legacy /admin/feature-flags surface (mimari-ops task 11.6)
+# Legacy /admin/feature-flags surface
 # ---------------------------------------------------------------------------
 
 
@@ -520,7 +515,7 @@ async def toggle_flag(
 
 
 # ---------------------------------------------------------------------------
-# Gap-fill /api/v1/feature-flags surface (task 16.1)
+# /api/v1/feature-flags surface
 # ---------------------------------------------------------------------------
 
 
@@ -571,8 +566,6 @@ def _collect_dept_overrides(
 @v1_router.get("", dependencies=[Depends(require_admin)])
 async def list_flags_with_overrides(request: Request) -> dict:
     """List flags with their global value **and** per-dept overrides.
-
-    **Validates: Requirement R16.1**
 
     Response shape::
 
@@ -778,8 +771,6 @@ async def patch_flag(
 ) -> dict[str, Any]:
     """Update a flag's global value or set a per-dept override.
 
-    **Validates: Requirements R16.1, R16.3, R16.4, R16.5**
-
     Body::
 
         { "value": <bool>, "dept_id"?: <str> }
@@ -787,7 +778,7 @@ async def patch_flag(
     When ``dept_id`` is omitted the global row is updated. When
     supplied the override map for that dept is patched and the
     departments hot-reload channel is poked so the change reaches
-    automation-service within the 10 s SLA mandated by R16.5.
+    automation-service within the 10 s SLA.
     """
 
     if body.dept_id is None:
@@ -814,8 +805,6 @@ async def delete_dept_override(
     actor: AuthClaims = Depends(require_admin),
 ) -> dict[str, Any]:
     """Remove a department's override for ``key``.
-
-    **Validates: Requirements R16.1, R16.3, R16.4, R16.5**
 
     The dept reverts to the global value on the next reload. The
     audit row records ``new_value=null`` so consumers can distinguish

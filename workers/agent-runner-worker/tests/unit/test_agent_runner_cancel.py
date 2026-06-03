@@ -1,7 +1,7 @@
-"""Unit tests for ``AgentRunnerWorkflow`` cancel signal handler (task 13.3).
+"""Unit tests for ``AgentRunnerWorkflow`` cancel signal handler.
 
 Covers the cancel + compensation contract delivered by
-``platform-mimari-workflows`` task 13.3:
+The cancel signal path covers:
 
     1. ``cancel_requested`` signal triggers the
        ``compensation_chain_run`` activity exactly once.
@@ -22,7 +22,6 @@ Temporal worker. Activity calls are intercepted by patching
 ``temporalio.workflow.execute_activity`` so we can assert on the
 exact dispatch sequence.
 
-Validates Requirements: 11.4, 11.5.
 """
 
 from __future__ import annotations
@@ -175,7 +174,7 @@ def _patch_workflow_runtime(activity_mock: AsyncMock):
 
 
 class TestAuditActionForCancelRole:
-    """``_audit_action_for_cancel_role`` is a pure mapping (R11.4)."""
+    """``_audit_action_for_cancel_role`` is a pure mapping."""
 
     def test_end_user_role_maps_to_end_user_audit(self) -> None:
         assert (
@@ -213,7 +212,7 @@ class TestAuditActionForCancelRole:
 
 
 class TestCancelSignalLatch:
-    """``cancel_requested`` latches the first request (R11.4 idempotency)."""
+    """``cancel_requested`` latches the first request."""
 
     def test_first_cancel_records_actor_role_and_reason(
         self, make_wf
@@ -312,7 +311,7 @@ class TestCancelSignalLatch:
         assert wf._cancel_reason == "admin override"
 
     def test_unknown_role_defaults_to_end_user(self, make_wf) -> None:
-        """Unknown ``actor_role`` falls back to ``end_user`` (R11.4)."""
+        """Unknown ``actor_role`` falls back to ``end_user``."""
 
         wf = make_wf()
         wf.cancel_requested(
@@ -610,7 +609,7 @@ class TestHandleCancelCompensation:
 
 
 class TestMaxIterNoCompensation:
-    """MAX_ITER natural termination must not run compensation (R11.5)."""
+    """MAX_ITER natural termination must not run compensation."""
 
     def test_max_iter_signal_marks_out_of_scope_without_cancel(
         self, make_wf, patched_workflow_now
@@ -700,7 +699,7 @@ class TestMaxIterNoCompensation:
 
 
 class TestOutOfScopeNoCompensation:
-    """``needs_info`` streak cap natural termination skips compensation (R11.5)."""
+    """``needs_info`` streak cap natural termination skips compensation."""
 
     def test_needs_info_streak_marks_out_of_scope_without_cancel(
         self, make_wf, patched_workflow_now

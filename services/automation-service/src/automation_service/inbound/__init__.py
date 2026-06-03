@@ -1,15 +1,14 @@
-"""Inbound channel adapters for the automation-service (task 8.5, B19).
+"""Inbound channel adapters for the automation-service.
 
-Implements `Requirement 5.10 <../../../.kiro/specs/platform-mimari-ops/requirements.md>`_
-— **Slack/Email-to-task adapter (B19, MIMARI §16.12)**.
+Provides Slack and email task intake adapters.
 
 These adapters listen on external channels (Slack incoming webhook,
 IMAP mailbox) and, when a user mentions the bot or sends a request to
 the configured inbox, create a Jira task via the *standard task-creator
 path*. The actual Jira issue creation is delegated to Temporal
 (``AutomationWorkflow``) which is the canonical "auto-assign +
-smart-defaults" surface (Requirement 3.5, design §"Komponent Sahipliği")
-— inbound adapters never call the Atlassian MCP directly so the
+smart-defaults" surface. The inbound adapters never call the
+Atlassian MCP directly so the
 bot-loop guard, capability gate and audit chain stay deterministic.
 
 Two surface types are provided:

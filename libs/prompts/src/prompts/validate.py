@@ -1,13 +1,11 @@
-"""Prompt template format validator (task 2.3).
+"""Prompt template format validator.
 
 Validates the brace-balanced ``str.format``-style placeholders used
 in prompt Markdown bodies before they are loaded into the runtime
 :class:`prompts.loader.PromptLoader` cache or committed through the
-prompt PR flow (:mod:`admin_dashboard_api.routers.prompts_git`,
-task 6.1).
+prompt PR flow (:mod:`admin_dashboard_api.routers.prompts_git`).
 
-The validator enforces three rules from MIMARI §16.13 / Requirement
-2.9:
+The validator enforces three rules:
 
 1. Single literal ``{`` or ``}`` characters are not allowed; callers
    must escape them with ``{{`` / ``}}`` if they want literal braces

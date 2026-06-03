@@ -1,6 +1,4 @@
-"""Audit dual-write writer (`platform-mimari-ops` task 14.4).
-
-**Validates: Requirement 6.1 / R6.6**
+"""Audit dual-write writer.
 
 Wraps a primary asyncpg-backed audit writer with a best-effort
 Loki side-channel so every audit event is observable from both

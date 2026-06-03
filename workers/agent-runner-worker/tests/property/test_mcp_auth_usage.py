@@ -1,14 +1,12 @@
-"""Property test for MCP auth usage in agent-runner-worker activity modules.
+"""AST test for MCP auth usage in agent-runner-worker activity modules.
 
-**Property 12 (6): Pure infrastructural invariants — MCP auth usage (AST scan)**
-
-**Validates: Requirements 4.7, 7.7, 7.8**
+Pure infrastructural invariants — MCP auth usage (AST scan).
 
 This test parses the AST of:
 
-- ``platform/workers/agent-runner-worker/src/activities/jira.py``
-- ``platform/workers/agent-runner-worker/src/activities/bitbucket.py``
-- ``platform/workers/agent-runner-worker/src/activities/confluence.py``
+- ``workers/agent-runner-worker/src/activities/jira.py``
+- ``workers/agent-runner-worker/src/activities/bitbucket.py``
+- ``workers/agent-runner-worker/src/activities/confluence.py``
 
 and asserts the following pure infrastructural invariants:
 
@@ -17,12 +15,12 @@ and asserts the following pure infrastructural invariants:
    ``http_shared.make_mcp_client(client_source=...)`` factory. Direct
    ``httpx.AsyncClient(...)`` constructor calls are forbidden so the
    ``X-Client-Source`` observability header is always injected and the
-   credential-injection contract holds (Requirements 4.7, 7.8, design §3.3).
+   credential-injection contract holds.
 
 2. **``make_mcp_client`` is called with a ``client_source`` argument.** Every
    call site to ``make_mcp_client`` MUST supply ``client_source=`` either as
    a keyword argument or as the single positional argument so the factory's
-   contract (Property 10) is honoured.
+   contract is honoured.
 
 3. **Every network call sits inside an ``async with with_atlassian_creds``
    block.** For every ``async def`` function that performs an HTTP request
@@ -30,10 +28,10 @@ and asserts the following pure infrastructural invariants:
    etc.), the call MUST be enclosed by an ``async with with_atlassian_creds(...)``
    block somewhere on its lexical ancestor chain. This guarantees that no
    activity reaches the MCP server without department-scoped Atlassian
-   credentials injected first (Requirements 4.7, 7.7).
+   credentials injected first.
 
 The check is performed entirely with the standard library ``ast`` module —
-no Hypothesis is needed because the invariant is a pure structural property
+no Hypothesis is needed because the invariant is a pure structural check
 of a finite, fully enumerable set of source files. Per-file invariants are
 parametrised over the three activity modules so failures pinpoint the exact
 file. A ``TestScannerSelfChecks`` class additionally validates the scanner
@@ -58,7 +56,7 @@ import pytest
 _WORKER_ROOT: Path = Path(__file__).resolve().parents[2]
 _ACTIVITIES_DIR: Path = _WORKER_ROOT / "src" / "activities"
 
-#: The three activity modules whose AST must satisfy Property 12 (6).
+#: The three activity modules whose AST must satisfy the auth invariants.
 _ACTIVITY_FILES: tuple[Path, ...] = (
     _ACTIVITIES_DIR / "jira.py",
     _ACTIVITIES_DIR / "bitbucket.py",
@@ -415,13 +413,13 @@ def test_activity_files_exist() -> None:
     """Sanity check — the three activity modules exist on disk.
 
     If any of these is missing, the rest of the test would silently pass
-    (vacuous truth on an empty AST). This guard ensures Property 12 (6) is
+    (vacuous truth on an empty AST). This guard ensures the auth invariant is
     actually enforced.
     """
 
     missing = [str(p) for p in _ACTIVITY_FILES if not p.exists()]
     assert not missing, (
-        "Expected activity modules are missing on disk; Property 12 (6) "
+        "Expected activity modules are missing on disk; auth invariant "
         f"cannot be enforced: {missing}"
     )
 
@@ -430,7 +428,7 @@ def test_at_least_one_network_call_was_discovered() -> None:
     """Sanity check — the AST walker actually found network call sites.
 
     A bug in the walker that mis-identifies HTTP methods would silently
-    make the per-call property pass vacuously. Confluence's module is
+    make the per-call check pass vacuously. Confluence's module is
     empty in P0, so we only require at least one network call across
     ``jira.py`` and ``bitbucket.py`` combined.
     """
@@ -450,19 +448,19 @@ def test_at_least_one_network_call_was_discovered() -> None:
 
 @pytest.mark.parametrize("module_name", _ACTIVITY_FILE_IDS, ids=_ACTIVITY_FILE_IDS)
 def test_no_raw_httpx_async_client_in_activity_module(module_name: str) -> None:
-    """**Validates: Requirements 4.7, 7.8** — no module instantiates
+    """No module instantiates
     ``httpx.AsyncClient`` directly.
 
     A raw constructor call would bypass the ``X-Client-Source`` header
-    injection that ``make_mcp_client`` performs (Requirement 7.8) and
+    injection that ``make_mcp_client`` performs and
     therefore the credential-injection contract of
-    ``with_atlassian_creds`` (Requirement 4.7).
+    ``with_atlassian_creds``.
     """
 
     result = _SCAN_RESULTS[module_name]
     offenders = [f"{module_name}:{call.lineno}" for call in result.raw_async_client_calls]
     assert not offenders, (
-        "Property 12 (6) violated: raw ``httpx.AsyncClient(...)`` "
+        "Raw ``httpx.AsyncClient(...)`` "
         "constructor calls found. All clients must be created via "
         "``http_shared.make_mcp_client(client_source=...)`` so the "
         "``X-Client-Source`` header is injected automatically.\n"
@@ -472,7 +470,7 @@ def test_no_raw_httpx_async_client_in_activity_module(module_name: str) -> None:
 
 @pytest.mark.parametrize("module_name", _ACTIVITY_FILE_IDS, ids=_ACTIVITY_FILE_IDS)
 def test_make_mcp_client_calls_have_client_source(module_name: str) -> None:
-    """**Validates: Requirement 7.8** — every ``make_mcp_client`` call
+    """Every ``make_mcp_client`` call
     supplies a ``client_source`` argument so the activity module
     self-identifies for observability.
     """
@@ -483,7 +481,7 @@ def test_make_mcp_client_calls_have_client_source(module_name: str) -> None:
         for call in result.make_mcp_client_calls_without_client_source
     ]
     assert not offenders, (
-        "Property 12 (6) violated: ``make_mcp_client(...)`` called "
+        "``make_mcp_client(...)`` called "
         "without a ``client_source`` argument. Each activity module "
         "must identify itself for observability.\n"
         f"Offending sites: {offenders}"
@@ -492,7 +490,7 @@ def test_make_mcp_client_calls_have_client_source(module_name: str) -> None:
 
 @pytest.mark.parametrize("module_name", _ACTIVITY_FILE_IDS, ids=_ACTIVITY_FILE_IDS)
 def test_every_network_call_is_inside_with_atlassian_creds(module_name: str) -> None:
-    """**Validates: Requirements 4.7, 7.7** — every network call sits
+    """Every network call sits
     inside an ``async with with_atlassian_creds(...)`` block.
 
     For every ``async def`` function that performs an HTTP request
@@ -509,7 +507,7 @@ def test_every_network_call_is_inside_with_atlassian_creds(module_name: str) -> 
         for call in result.network_calls_outside_creds_block
     ]
     assert not offenders, (
-        "Property 12 (6) violated: the following network call sites "
+        "The following network call sites "
         "are not inside an ``async with with_atlassian_creds(...)`` "
         "block:\n  - " + "\n  - ".join(offenders)
     )
@@ -603,7 +601,7 @@ _BAD_MISSING_CLIENT_SOURCE_SRC = (
     + """
 @activity.defn
 async def bad_missing_client_source(dept_id: str) -> str:
-    # No client_source — Property 12 (6).b violation.
+    # No client_source.
     client = make_mcp_client(timeout=30.0)
     async with client:
         async with with_atlassian_creds(
@@ -621,7 +619,7 @@ _BAD_NETWORK_CALL_OUTSIDE_CREDS_SRC = (
 @activity.defn
 async def bad_outside_creds(dept_id: str) -> str:
     client = make_mcp_client(client_source="agent-runner-worker")
-    # Network call OUTSIDE with_atlassian_creds — Property 12 (6).c violation.
+    # Network call OUTSIDE with_atlassian_creds.
     response = await client.post("/mcp", json={})
     return response.text
 """
@@ -699,9 +697,7 @@ class TestScannerSelfChecks:
     # -- Positive cases (no violations expected) ------------------------
 
     def test_good_activity_has_no_violations(self) -> None:
-        """**Validates: Requirements 4.7, 7.7, 7.8**
-
-        A well-formed activity passing through ``make_mcp_client`` and
+        """A well-formed activity passing through ``make_mcp_client`` and
         wrapping the network call in ``with_atlassian_creds`` MUST be
         accepted by all three sub-invariants.
         """
@@ -713,9 +709,7 @@ class TestScannerSelfChecks:
         assert result.network_calls, "scanner failed to detect the post() call"
 
     def test_positional_client_source_is_accepted(self) -> None:
-        """**Validates: Requirement 7.8**
-
-        ``make_mcp_client("agent-runner-worker")`` (positional argument)
+        """``make_mcp_client("agent-runner-worker")`` (positional argument)
         is acceptable since the factory's ``client_source`` parameter is
         positional-or-keyword.
         """
@@ -724,9 +718,7 @@ class TestScannerSelfChecks:
         assert result.network_calls_outside_creds_block == []
 
     def test_nested_as_alias_is_recognised_as_client(self) -> None:
-        """**Validates: Requirements 4.7, 7.7**
-
-        ``async with with_atlassian_creds(...) as authed_client:`` binds
+        """``async with with_atlassian_creds(...) as authed_client:`` binds
         a new name; subsequent ``authed_client.request(...)`` calls MUST
         be recognised as network calls on a tracked client.
         """
@@ -737,16 +729,14 @@ class TestScannerSelfChecks:
     # -- Raw httpx.AsyncClient detection --------------------------------
 
     def test_raw_httpx_async_client_is_detected(self) -> None:
-        """**Validates: Requirement 7.8**"""
+        """Raw ``httpx.AsyncClient(...)`` calls are detected."""
         result = _scan_source(_BAD_RAW_HTTPX_SRC)
         assert len(result.raw_async_client_calls) == 1, (
             "scanner missed the raw ``httpx.AsyncClient(...)`` call"
         )
 
     def test_bare_async_client_import_is_detected(self) -> None:
-        """**Validates: Requirement 7.8**
-
-        ``from httpx import AsyncClient; AsyncClient(...)`` is also
+        """``from httpx import AsyncClient; AsyncClient(...)`` is also
         forbidden — the scanner must catch the bare-name form.
         """
         result = _scan_source(_BAD_BARE_ASYNC_CLIENT_SRC)
@@ -757,7 +747,7 @@ class TestScannerSelfChecks:
     # -- make_mcp_client argument check ---------------------------------
 
     def test_missing_client_source_is_detected(self) -> None:
-        """**Validates: Requirement 7.8**"""
+        """Missing ``client_source`` arguments are detected."""
         result = _scan_source(_BAD_MISSING_CLIENT_SOURCE_SRC)
         assert len(result.make_mcp_client_calls_without_client_source) == 1, (
             "scanner missed ``make_mcp_client(timeout=...)`` with no "
@@ -767,16 +757,14 @@ class TestScannerSelfChecks:
     # -- Network-call placement check -----------------------------------
 
     def test_network_call_outside_creds_block_is_detected(self) -> None:
-        """**Validates: Requirements 4.7, 7.7**"""
+        """Network calls outside ``with_atlassian_creds`` are detected."""
         result = _scan_source(_BAD_NETWORK_CALL_OUTSIDE_CREDS_SRC)
         assert len(result.network_calls_outside_creds_block) == 1, (
             "scanner missed a post() call outside with_atlassian_creds"
         )
 
     def test_network_call_before_entering_creds_is_detected(self) -> None:
-        """**Validates: Requirements 4.7, 7.7**
-
-        A ``client.get(...)`` call inside ``async with client:`` but
+        """A ``client.get(...)`` call inside ``async with client:`` but
         BEFORE ``async with with_atlassian_creds(...)`` is still a
         violation.
         """
@@ -792,9 +780,7 @@ class TestScannerSelfChecks:
     # -- False-positive guards ------------------------------------------
 
     def test_dict_get_is_not_a_network_call(self) -> None:
-        """**Validates: Requirements 4.7, 7.7**
-
-        ``payload.get("key")`` must not be classified as a network call —
+        """``payload.get("key")`` must not be classified as a network call —
         the receiver is not a tracked httpx-client binding.
         """
         result = _scan_source(_FALSE_POSITIVE_DICT_GET_SRC)
@@ -804,7 +790,7 @@ class TestScannerSelfChecks:
         )
 
     def test_os_environ_get_is_not_a_network_call(self) -> None:
-        """**Validates: Requirements 4.7, 7.7**"""
+        """``os.environ.get`` is not classified as a network call."""
         result = _scan_source(_FALSE_POSITIVE_OS_ENVIRON_GET_SRC)
         assert result.network_calls == [], (
             f"scanner falsely flagged os.environ.get as a network call: "

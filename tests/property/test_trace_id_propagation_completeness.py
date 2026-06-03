@@ -1,9 +1,7 @@
-"""Property 10 — Trace ID propagation completeness.
+"""Property-based tests for trace ID propagation completeness.
 
-**Validates: Requirements 8.1-8.6 (platform-gap-fill spec)**
-
-Property statement
-------------------
+Behavior
+--------
 For ANY inbound HTTP request that flows through the platform, the same
 ``trace_id`` value MUST appear at every observable hop:
 
@@ -11,18 +9,18 @@ For ANY inbound HTTP request that flows through the platform, the same
   request (or a freshly generated UUIDv7 when the inbound header is
   absent / malformed).
 * The ``X-Trace-Id`` response header echoed back by automation-service
-  (Requirement 8.7 — Atlassian retries keep the same trace_id).
+  so retries keep the same trace_id.
 * The contextvars-bound :func:`observability.get_trace_id` value
   observed by any code path running inside the request handler
-  (Requirement 8.3 — workers / activities surface trace_id on every
-  log line via the same contextvars slot).
+  so workers / activities can surface trace_id on every log line via
+  the same contextvars slot.
 * The ``X-Trace-Id`` header on every outbound MCP request issued by
   :func:`http_shared.make_mcp_client` while the request handler is
-  active (Requirement 8.4 — MCP isteklerinde X-Trace-Id header).
+  active.
 
 This test does NOT need a live cluster — it exercises the in-process
 middleware + http_shared client + observability ``set_trace_id``
-wiring already in place after platform-gap-fill task 7.2.  We drive a
+wiring already in place. We drive a
 request through ``automation_service.app.create_app()`` test client,
 capture the resolved trace_id at the boundary, and assert it shows up
 in any outbound MCP request fired off the contextvars context that
@@ -31,18 +29,15 @@ the middleware populated.
 Strategies
 ----------
 The Hypothesis search space covers three trace_id input regimes that
-are explicitly called out in the task description:
+cover the expected input regimes:
 
 1. **Inbound UUID-shape trace_id** — UUIDv4 / UUIDv7 strings supplied
-   in ``X-Trace-Id``. Property 10 says these MUST be preserved
-   end-to-end (Requirement 8.7).
+   in ``X-Trace-Id``. These MUST be preserved end-to-end.
 2. **Empty / missing inbound header** — the middleware MUST generate
-   a fresh UUIDv7 and propagate it through the chain
-   (Requirement 8.1).
+   a fresh UUIDv7 and propagate it through the chain.
 3. **Invalid / malformed inbound header** — the middleware MUST
    discard the malformed value, generate a fresh UUIDv7, and
-   propagate that fresh value (Requirement 8.1 + lenient
-   normalisation).
+   propagate that fresh value.
 
 For each regime we then simulate the *next hop* — outbound MCP /
 Firecrawl / admin-side calls — by constructing an
@@ -121,7 +116,7 @@ _UUIDV7_RE = re.compile(
 )
 
 # A generic UUID matcher (any version) — the middleware preserves
-# inbound UUIDs regardless of version per Requirement 8.7.
+# inbound UUIDs regardless of version.
 _ANY_UUID_RE = re.compile(
     r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
     re.IGNORECASE,
@@ -198,8 +193,7 @@ def _run_with_inbound_trace(
         ``(response_header, contextvars_inside_handler, mcp_outbound_header)``
 
         * ``response_header`` — the ``X-Trace-Id`` value echoed back
-          on the response (always non-empty per Requirement 8.7 /
-          8.1 conjunction).
+          on the response (always non-empty).
         * ``contextvars_inside_handler`` — the value
           :func:`observability.get_trace_id` returns from inside the
           request handler.  ``None`` when the route did not capture
@@ -279,7 +273,7 @@ def _run_with_inbound_trace(
 
 
 # ---------------------------------------------------------------------------
-# Property 10 — Hypothesis-driven coverage for the three input regimes
+# Hypothesis-driven coverage for the three input regimes
 # ---------------------------------------------------------------------------
 
 
@@ -298,9 +292,7 @@ _PROFILE = settings(
 def test_property10_valid_inbound_trace_id_propagates_unchanged(
     inbound: str,
 ) -> None:
-    """Property 10 (regime 1) — UUID-shape trace_id is preserved end-to-end.
-
-    **Validates: Requirements 8.1, 8.2, 8.4, 8.7**
+    """UUID-shape trace_id is preserved end-to-end.
 
     For any UUID-shape inbound ``X-Trace-Id`` header, the SAME value
     MUST appear on:
@@ -315,17 +307,17 @@ def test_property10_valid_inbound_trace_id_propagates_unchanged(
     )
 
     assert response_trace == inbound, (
-        f"Requirement 8.7 violation — automation-service did not "
+        f"automation-service did not "
         f"preserve inbound {TRACE_HEADER}; "
         f"inbound={inbound!r}, response={response_trace!r}"
     )
     assert context_trace == inbound, (
-        f"Requirement 8.2 violation — TraceMiddleware did not bind "
+        f"TraceMiddleware did not bind "
         f"the inbound trace_id onto the contextvars slot; "
         f"inbound={inbound!r}, context={context_trace!r}"
     )
     assert outbound_trace == inbound, (
-        f"Requirement 8.4 violation — outbound MCP request did not "
+        f"outbound MCP request did not "
         f"carry the inbound trace_id; "
         f"inbound={inbound!r}, outbound={outbound_trace!r}"
     )
@@ -340,9 +332,7 @@ def test_property10_valid_inbound_trace_id_propagates_unchanged(
 def test_property10_empty_inbound_triggers_fresh_uuidv7_chain(
     inbound: str | None,
 ) -> None:
-    """Property 10 (regime 2) — missing/empty inbound → fresh UUIDv7 flows through.
-
-    **Validates: Requirements 8.1, 8.2, 8.4**
+    """Missing or empty inbound value produces a fresh UUIDv7.
 
     When the inbound ``X-Trace-Id`` header is absent or empty, the
     middleware generates a fresh UUIDv7 and the SAME generated value
@@ -356,16 +346,16 @@ def test_property10_empty_inbound_triggers_fresh_uuidv7_chain(
 
     # The generated value must match the canonical UUIDv7 layout.
     assert _UUIDV7_RE.match(response_trace), (
-        f"Requirement 8.1 violation — generated trace_id is not "
+        f"generated trace_id is not "
         f"a UUIDv7; got response_trace={response_trace!r}"
     )
     assert context_trace == response_trace, (
-        f"Requirement 8.2 violation — contextvars trace_id diverged "
+        f"contextvars trace_id diverged "
         f"from response trace_id; "
         f"context={context_trace!r}, response={response_trace!r}"
     )
     assert outbound_trace == response_trace, (
-        f"Requirement 8.4 violation — outbound MCP request did not "
+        f"outbound MCP request did not "
         f"carry the freshly-generated trace_id; "
         f"outbound={outbound_trace!r}, response={response_trace!r}"
     )
@@ -376,9 +366,7 @@ def test_property10_empty_inbound_triggers_fresh_uuidv7_chain(
 def test_property10_invalid_inbound_triggers_fresh_uuidv7_chain(
     inbound: str,
 ) -> None:
-    """Property 10 (regime 3) — invalid inbound discarded, fresh UUIDv7 flows through.
-
-    **Validates: Requirements 8.1, 8.2, 8.4**
+    """Invalid inbound value is discarded and replaced by a fresh UUIDv7.
 
     When the inbound ``X-Trace-Id`` header is non-empty but malformed
     (e.g. not a UUID), the middleware discards it, generates a fresh
@@ -397,7 +385,7 @@ def test_property10_invalid_inbound_triggers_fresh_uuidv7_chain(
         f"the response; inbound={inbound!r}, response={response_trace!r}"
     )
     assert _UUIDV7_RE.match(response_trace), (
-        "Requirement 8.1 violation — fresh trace_id is not UUIDv7; "
+        "fresh trace_id is not UUIDv7; "
         f"got response={response_trace!r}"
     )
     assert context_trace == response_trace, (
@@ -494,7 +482,7 @@ def test_property10_anchor_invalid_header_discarded() -> None:
 
 # ---------------------------------------------------------------------------
 # Negation property — outside the request scope the contextvars slot
-# does NOT leak the request's trace_id (Requirement 8.2 — per-request
+# does NOT leak the request's trace_id (per-request
 # isolation).
 # ---------------------------------------------------------------------------
 
@@ -502,12 +490,10 @@ def test_property10_anchor_invalid_header_discarded() -> None:
 def test_property10_context_does_not_leak_outside_request() -> None:
     """The trace_id MUST NOT leak past the request lifecycle.
 
-    **Validates: Requirement 8.2 (per-request isolation)**
-
     After the request completes, a fresh observation of
     :func:`observability.get_trace_id` from the test thread MUST NOT
     return the request-scoped trace_id.  This is the negation half
-    of Property 10 — without it, two concurrent requests would
+    of the isolation check — without it, two concurrent requests would
     cross-contaminate trace_ids.
     """
 
@@ -537,9 +523,8 @@ def test_property10_context_does_not_leak_outside_request() -> None:
 def test_property10_outbound_trace_reflects_per_request_value() -> None:
     """A long-lived MCP client emits the *current* request's trace_id, not the construction-time value.
 
-    **Validates: Requirement 8.4** (the trace-id event hook resolves
-    the value per-request via :func:`observability.get_trace_id`,
-    not at client construction time).
+    The trace-id event hook resolves the value per-request via
+    :func:`observability.get_trace_id`, not at client construction time.
 
     Construct a single :func:`make_mcp_client` *outside* any request
     scope, then drive two requests with different inbound trace_ids

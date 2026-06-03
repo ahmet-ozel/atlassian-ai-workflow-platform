@@ -1,6 +1,4 @@
-"""``POST /admin/departments/{id}/repo-mappings/sync`` endpoint (R10.7).
-
-Implements task 14.3 (``platform-mimari-workflows`` tasks.md):
+"""``POST /admin/departments/{id}/repo-mappings/sync`` endpoint.
 
 * Dry-run mode (no ``?apply=true``) — scan the dept's Bitbucket
   workspace through ``mcp_client``, fold the result against the
@@ -12,11 +10,10 @@ Implements task 14.3 (``platform-mimari-workflows`` tasks.md):
   :class:`SupportsDepartmentsRepo` (``departments_repo
   .update_repo_mappings``) and emit one
   ``repo_mapping_synced`` audit row carrying the diff in the payload.
-* Authorization — every request is gated by foundation
-  :func:`auth_shared.requires("admin")` (R10.7 + foundation R7.5
-  global-admin-only contract). A non-admin actor (or one whose token
-  is missing / malformed) receives HTTP 403 with an ``rbac_denied``
-  audit row.
+* Authorization — every request is gated by
+  :func:`auth_shared.requires("admin")`. A non-admin actor (or one
+  whose token is missing / malformed) receives HTTP 403 with an
+  ``rbac_denied`` audit row.
 
 The endpoint is deliberately **thin**: every collaborator (OIDC
 validator, MCP-side Bitbucket scanner, departments registry, audit
@@ -25,21 +22,16 @@ logger, clock) is read from :class:`RepoSyncEndpointDeps` parked on
 router can be exercised end-to-end without a live Bitbucket workspace
 or Postgres connection.
 
-Design references
------------------
+Implementation notes
+--------------------
 
-* ``platform-mimari-workflows/requirements.md`` — Requirement 10.7
-  (MIMARI §16.16 N7 — repo mapping auto-sync).
-* ``platform-mimari-workflows/design.md`` — Components and Interfaces
-  §"repo_mapping_sync API" and the corresponding pure helper
-  re-exported by :mod:`temporal_shared.repo_sync`.
-* ``platform-mimari-foundation/audit_logger`` — ``actor_role`` is
-  required on every audit row; the writer rejects empty / unknown
-  values before any DB round-trip, so the helper here always
-  forwards the resolved role.
-* ``platform-mimari-foundation/auth_shared`` — :func:`requires` is
-  the pure-Python guard that the workflows-spec endpoint composes
-  on top of an explicit OIDC validator dependency. Failures raise
+* The corresponding pure helper is re-exported by
+  :mod:`temporal_shared.repo_sync`.
+* ``actor_role`` is required on every audit row; the writer rejects
+  empty / unknown values before any DB round-trip, so the helper here
+  always forwards the resolved role.
+* :func:`requires` is the pure-Python guard composed on top of an
+  explicit OIDC validator dependency. Failures raise
   :class:`auth_shared.PermissionDenied`; we translate that into an
   HTTP 403 + ``rbac_denied`` audit row.
 
@@ -97,8 +89,7 @@ _LOG = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 #: Audit ``action`` token written on every successful sync invocation
-#: (both dry-run and apply modes). Mirrors MIMARI §16.16 N7's
-#: ``repo_mapping_synced`` event name.
+#: (both dry-run and apply modes).
 _AUDIT_ACTION_SYNCED: str = "repo_mapping_synced"
 
 #: Audit ``action`` token written when an actor without the ``admin``
@@ -124,7 +115,7 @@ class BitbucketRepoScanner(Protocol):
 
     Production wiring binds this to ``mcp_client.atlassian_client
     .bitbucket_list_repos`` (or the equivalent helper) which talks to
-    the ``atlassian_unified`` MCP service. The Protocol is declared
+    the ``atlassian_mcp_bitbucket`` MCP service. The Protocol is declared
     here rather than imported so:
 
     * the endpoint is exercisable in unit tests without a live MCP
@@ -208,8 +199,7 @@ class RepoSyncEndpointDeps:
         the only path that calls the writer.
     audit_logger:
         Audit sink for ``repo_mapping_synced`` and ``rbac_denied``
-        events. Required by Requirement 10.7 (the spec mandates an
-        audit row carrying the diff payload).
+        events carrying the diff payload.
     clock:
         Optional callable returning the current UTC datetime. When
         omitted, the router uses ``datetime.now(timezone.utc)``.
@@ -525,8 +515,6 @@ async def sync_repo_mappings(
     authorization: str | None = Header(default=None),
 ) -> JSONResponse:
     """Scan Bitbucket and diff vs current dept ``repo_mappings``.
-
-    Validates Requirement 10.7 (MIMARI §16.16 N7).
 
     The endpoint runs in two modes selected by the ``apply`` query
     parameter:

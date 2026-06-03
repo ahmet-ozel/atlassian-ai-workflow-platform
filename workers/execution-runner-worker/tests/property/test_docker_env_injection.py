@@ -1,12 +1,7 @@
-"""Property tests for Docker environment variable injection completeness.
+"""Docker environment variable injection completeness.
 
-**Property 2: Docker environment variable injection completeness**
-
-**Validates: Requirements 1.9**
-
-Per ``.kiro/specs/platform-completion/design.md`` §"Property 2", for any
-set of environment variables defined in department configuration, ALL
-key-value pairs SHALL appear as ``--env`` parameters in the docker run
+For any set of environment variables defined in department configuration, all
+key-value pairs appear as ``--env`` parameters in the docker run
 command, with no additions or omissions.
 
 The function under test, :func:`build_docker_run_command`, is a pure
@@ -71,7 +66,7 @@ _env_dict_strategy = st.dictionaries(
 
 
 # ---------------------------------------------------------------------------
-# Property 2: Docker environment variable injection completeness
+# Docker environment variable injection completeness
 # ---------------------------------------------------------------------------
 
 
@@ -82,13 +77,11 @@ _env_dict_strategy = st.dictionaries(
     suppress_health_check=[HealthCheck.function_scoped_fixture, HealthCheck.too_slow],
 )
 def test_all_env_vars_present_as_env_flags(env_vars: dict[str, str]) -> None:
-    """Every key-value pair in environment SHALL appear as --env in the command.
+    """Every key-value pair in environment appears as --env in the command.
 
     For any non-empty dictionary of environment variables, the generated
     docker run command must contain an ``--env`` flag for each key-value
     pair. No environment variable may be omitted.
-
-    **Validates: Requirements 1.9**
     """
     run_input = DockerRunInput(
         image="test-image:latest",
@@ -129,12 +122,10 @@ def test_all_env_vars_present_as_env_flags(env_vars: dict[str, str]) -> None:
     suppress_health_check=[HealthCheck.function_scoped_fixture, HealthCheck.too_slow],
 )
 def test_no_extra_env_flags_beyond_input(env_vars: dict[str, str]) -> None:
-    """The command SHALL NOT contain more --env flags than provided env vars.
+    """The command does not contain more --env flags than provided env vars.
 
     This ensures no spurious environment variables are injected beyond
     what was specified in the input.
-
-    **Validates: Requirements 1.9**
     """
     run_input = DockerRunInput(
         image="test-image:latest",
@@ -171,10 +162,7 @@ def test_no_extra_env_flags_beyond_input(env_vars: dict[str, str]) -> None:
     suppress_health_check=[HealthCheck.function_scoped_fixture],
 )
 def test_empty_env_dict_produces_no_env_flags(env_vars: dict[str, str]) -> None:
-    """An empty environment dict SHALL produce zero --env flags.
-
-    **Validates: Requirements 1.9**
-    """
+    """An empty environment dict produces zero --env flags."""
     run_input = DockerRunInput(
         image="test-image:latest",
         command="echo hello",
@@ -201,10 +189,7 @@ def test_empty_env_dict_produces_no_env_flags(env_vars: dict[str, str]) -> None:
 )
 @given(env_vars=_env_dict_strategy)
 def test_none_environment_produces_no_env_flags(env_vars: dict[str, str]) -> None:
-    """A None environment SHALL produce zero --env flags.
-
-    **Validates: Requirements 1.9**
-    """
+    """A None environment produces zero --env flags."""
     # env_vars is drawn but unused — we always pass None to confirm
     # the None path is safe regardless of what Hypothesis generates.
     run_input = DockerRunInput(

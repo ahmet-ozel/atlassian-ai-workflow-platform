@@ -16,8 +16,8 @@ The resolved credential is returned as an :class:`AtlassianCredential`
 dataclass suitable for injection via
 :func:`http_shared.auth_inject.with_atlassian_creds`.
 
-TTL cache + drift detection (uyumluluk R15 / Q17)
--------------------------------------------------
+TTL cache + drift detection
+---------------------------
 
 Every successful ``get(...)`` populates an in-memory cache keyed by
 ``(scope, dept_id_or_session_id, service)``. Subsequent calls within
@@ -28,14 +28,12 @@ the TTL expires the resolver fetches fresh material via
 ``data.metadata.created_time`` is strictly greater than the cached
 value, the resolver writes a ``vault_credential_refreshed`` audit row
 so operators can correlate worker-side rotation pickup with the
-admin-dashboard *Security* drift banner (R15.2).
+admin-dashboard *Security* drift banner.
 
 The cache is process-local; a worker restart drops it, which is by
 design — admin-triggered restarts are the operator escape hatch when
 the 300 s window is too long.
 
-Requirements: 4.6 (foundation) + 2.1, 2.2, 2.3, 2.4 (uyumluluk Q7) +
-15.1, 15.2 (uyumluluk Q17)
 """
 
 from __future__ import annotations
@@ -83,8 +81,8 @@ class CachedEntry:
     Stores the resolved :class:`AtlassianCredential` together with the
     wall-clock timestamp of insertion (``cached_at``) and the Vault
     KV-v2 ``data.metadata.created_time`` value at the moment the
-    secret was fetched. The latter is what drives drift detection
-    (uyumluluk R15 / Q17): when the TTL expires and the resolver
+    secret was fetched. The latter is what drives drift detection:
+    when the TTL expires and the resolver
     re-reads Vault, a fresh ``created_time`` strictly greater than
     ``vault_created_time`` indicates an out-of-band rotation and
     triggers the ``vault_credential_refreshed`` audit emission.
@@ -113,13 +111,13 @@ class CachedEntry:
 
 
 # ---------------------------------------------------------------------------
-# Cache configuration (uyumluluk R15 / Q17)
+# Cache configuration
 # ---------------------------------------------------------------------------
 
 #: Default cache TTL — 300 seconds (5 minutes). Mirrors the Vault
 #: rotation banner cadence in admin-dashboard *Security* sub-page so
 #: a worker picks up rotated material within one TTL window without
-#: a process restart (Requirement 15.1).
+#: a process restart.
 _CACHE_TTL: Final[timedelta] = timedelta(seconds=300)
 
 
@@ -129,17 +127,17 @@ _CACHE_TTL: Final[timedelta] = timedelta(seconds=300)
 #: ``dept_id`` for org scope and the ``session_id`` for user scope —
 #: keeping a single tuple shape lets one cache serve both scopes
 #: without leaking either side's identity into the other slot
-#: (uyumluluk R2 path-isolation invariant carries over to the cache
+#: (the path-isolation invariant carries over to the cache
 #: layer).
 CacheKey = tuple[str, str, str]
 
 
 # ---------------------------------------------------------------------------
-# Scope literals & path-prefix sentinels (uyumluluk R2 / Q7)
+# Scope literals & path-prefix sentinels
 # ---------------------------------------------------------------------------
 
 #: The resolver accepts ``"org"`` (worker bot) and ``"user"`` (Streamlit
-#: per-session) scopes after task 2.1's deprecation of ``"bot"``. The
+#: per-session) scopes after deprecating ``"bot"``. The
 #: legacy ``"bot"`` literal is still accepted as a silent alias for
 #: ``"org"`` so callers that have not yet migrated continue to work; the
 #: deprecation warning is emitted by
@@ -236,8 +234,7 @@ class VaultClient:
         ``created_time`` ISO-8601 string). ``None`` is returned when
         the path does not exist (404), matching :meth:`read_secret`.
 
-        This method exists for drift detection (uyumluluk R15 /
-        Q17). Implementations that only need :meth:`read_secret`
+        This method exists for drift detection. Implementations that only need :meth:`read_secret`
         may leave this unimplemented; the resolver falls back to
         :meth:`read_secret` and disables drift detection for that
         backend.
@@ -253,8 +250,8 @@ class VaultClient:
 class CredentialResolver:
     """Resolves Atlassian credentials with strict scope isolation.
 
-    Scope semantics (uyumluluk Q7)
-    ------------------------------
+    Scope semantics
+    ---------------
 
     * ``scope="org"`` (default; ``"bot"`` is a deprecated alias) — bot /
       worker credentials. The resolver looks up
@@ -302,7 +299,7 @@ class CredentialResolver:
         self._db = db
         self._audit_logger = audit_logger
         self._dept_bots_cache: list[DeptBotRow] | None = None
-        # In-memory TTL cache (uyumluluk R15 / Q17). Keyed by
+        # In-memory TTL cache. Keyed by
         # ``(scope, dept_id_or_session_id, service)`` so org and user
         # scopes share the same map without ever colliding — ``scope``
         # is part of the key and the second slot semantics differ per
@@ -474,7 +471,7 @@ class CredentialResolver:
                 )
 
         # ------------------------------------------------------------
-        # TTL cache lookup (uyumluluk R15 / Q17)
+        # TTL cache lookup
         # ------------------------------------------------------------
         # Cache key uses the *canonical* scope (``"bot"`` already
         # rewritten to ``"org"``) so legacy callers and modern callers
@@ -534,7 +531,7 @@ class CredentialResolver:
         )
 
         # ------------------------------------------------------------
-        # Drift detection (uyumluluk R15.2 / Q17)
+        # Drift detection
         # ------------------------------------------------------------
         # When refreshing an entry whose ``vault_created_time`` is
         # strictly less than the freshly-read value, emit a
@@ -670,7 +667,7 @@ class CredentialResolver:
 
         Tries :meth:`VaultClient.read_with_metadata` first so the
         resolver can populate ``CachedEntry.vault_created_time`` for
-        drift detection (uyumluluk R15.2). When the underlying
+        drift detection. When the underlying
         backend does not implement that method (legacy fakes, simple
         in-memory stubs), the resolver falls back to
         :meth:`VaultClient.read_secret` and returns ``(data, None)``;
@@ -713,7 +710,7 @@ class CredentialResolver:
         prev_created_time: str,
         new_created_time: str,
     ) -> None:
-        """Emit a ``vault_credential_refreshed`` audit row (R15.2).
+        """Emit a ``vault_credential_refreshed`` audit row.
 
         Best-effort: failures inside the audit write must not
         propagate to the workflow caller, which has already

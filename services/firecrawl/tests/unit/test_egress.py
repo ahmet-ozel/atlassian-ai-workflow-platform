@@ -1,8 +1,7 @@
-"""Unit tests for the egress allowlist matcher (Requirement 10.3).
+"""Unit tests for the egress allowlist matcher.
 
 These cover the canonical happy paths and the negative cases that the
-property test (``platform/tests/property/test_firecrawl_egress.py``,
-task 12.9) only samples — concrete regression anchors here pin the
+property test only samples — concrete regression anchors here pin the
 matching contract so a regression in either side fails this file
 deterministically.
 """

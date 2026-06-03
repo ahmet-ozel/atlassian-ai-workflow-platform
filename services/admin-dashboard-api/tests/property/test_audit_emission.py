@@ -1,16 +1,10 @@
-"""Property 12 — Each mutation/test emits exactly one audit event.
-
-# Feature: llm-provider-management, Property 12: Each successful mutation/test emits exactly one audit event with the documented fields and no credential leakage
-
-Validates Requirements 12.1 — 12.7. For every branch of
+"""— Each mutation/test emits exactly one audit event.
 ``ProviderService``:
-
 * exactly one :class:`AuditEvent` is emitted, with
   ``actor_role="admin"`` and ``actor_id=claims.sub``;
 * the serialised event carries no unredacted credential markers; and
 * if the sink raises, the underlying HTTP response code is unchanged
-  and the failure surfaces as a WARNING log line (R12.7).
-"""
+  and the failure surfaces as a WARNING log line."""
 
 from __future__ import annotations
 
@@ -40,7 +34,7 @@ from src.llm_providers.service import _ProviderCreateInput  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
-# Property: exactly one audit event per mutation/test branch
+# Exactly one audit event per mutation/test branch.
 # ---------------------------------------------------------------------------
 
 
@@ -160,7 +154,7 @@ async def test_test_unsaved_emits_one_audit_event() -> None:
 async def test_sink_failure_logs_warning_but_does_not_raise(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """A failing sink does not propagate (R12.7)."""
+    """A failing sink does not propagate ."""
 
     audit = RecordingAuditSink(raise_on={"llm_provider_created"})
     service, _, _, _, _ = build_service(audit=audit)

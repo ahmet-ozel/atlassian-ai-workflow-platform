@@ -1,11 +1,9 @@
 """``CostTracker`` — idempotent insert into ``shared.cost_tracking``.
 
-Implements task **7.1** of ``platform-mimari-ops``. The tracker is the
-single point through which every LLM-consuming service writes cost
+The tracker is the single point through which every LLM-consuming service writes cost
 rows; it owes its callers two invariants:
 
-1. **Idempotency** — Property 6 (``platform/tests/property/test_cost_tracking_idempotent.py``)
-   asserts that two ``record`` calls with the same ``activity_id``
+1. **Idempotency** — two ``record`` calls with the same ``activity_id``
    produce exactly one row. Enforced by the Postgres
    ``UNIQUE(activity_id)`` constraint (``20_ops.sql``) plus
    ``INSERT ... ON CONFLICT (activity_id) DO NOTHING``.
@@ -16,7 +14,7 @@ rows; it owes its callers two invariants:
    :class:`asyncpg.exceptions.CheckViolationError` to callers.
 
 Every conflict path emits a ``cost_tracking_duplicate_dropped`` audit
-event (Property 6 clause (f)) so retries remain observable through
+event so retries remain observable through
 the audit ledger.
 """
 
@@ -111,11 +109,9 @@ class _AuditEmitter(Protocol):
 class CostTracker:
     """Idempotent cost insert.
 
-    Validates:
-        * R5.4 (per-LLM-activity write to ``shared.cost_tracking``).
-        * Property 6 (idempotent — unique ``activity_id`` collapses
-          retries to a single row, plus ``cost_tracking_duplicate_dropped``
-          audit emit on every conflict).
+    Records one LLM activity cost row per ``activity_id``. A unique
+    ``activity_id`` collapses retries to a single row, and every conflict
+    emits a ``cost_tracking_duplicate_dropped`` audit event.
 
     Args:
         db: Persistence surface (production: asyncpg-backed; tests:

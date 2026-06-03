@@ -1,8 +1,4 @@
-"""Property tests for Security Headers Presence.
-
-**Validates: Requirements 13.1, 13.2, 13.3**
-
-Property 6: Security Headers Presence
+"""Behavioral tests for security header presence.
 
 *For any* HTTP request to any endpoint on Admin_Dashboard_API,
 Assistant_Service, or Automation_Service, the response SHALL contain all
@@ -77,7 +73,7 @@ _STATUS_CODES = st.sampled_from([200, 201, 204, 301, 400, 401, 403, 404, 422, 42
 
 
 # ---------------------------------------------------------------------------
-# Property Test
+# Security header behavior
 # ---------------------------------------------------------------------------
 
 
@@ -94,11 +90,7 @@ def test_security_headers_present_in_every_response(
     content_type: str,
     status_code: int,
 ) -> None:
-    """Feature: production-hardening, Property 6: Security Headers Presence
-
-    **Validates: Requirements 13.1, 13.2, 13.3**
-
-    For every combination of HTTP method, path, content type, and status
+    """For every combination of HTTP method, path, content type, and status
     code, the response MUST contain all three security headers with their
     expected values.
     """

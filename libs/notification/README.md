@@ -3,7 +3,7 @@
 Slack + email notification dispatcher shared across services and workers.
 
 This package implements the **NotificationService** described in
-`.kiro/specs/platform-mimari-ops/design.md` §`Notification & Cost Bileşenleri`,
+the notification and cost component design,
 satisfying:
 
 - Requirement **5.1** — Slack webhook + email (SMTP) adapters; templates loaded
@@ -40,7 +40,7 @@ src/notification/
   Slack channel via `SlackAdapter.send_admin_channel(...,
   alert_type="audit_prune_failed")`. The destination webhook is fixed by
   the adapter to `vault:notifications/slack/admin` and is **not**
-  configurable per call (Property 10 invariant — the alarm cannot be
+  configurable per call; the alarm cannot be
   silenced by dept config). Reuses the workflow-completion `dedup_key`
   shape (`sha256("<run_id>:slack:audit_prune_failed")`) so retries inside
   one cron run dedupe via `shared.notification_log.UNIQUE(dedup_key)`.

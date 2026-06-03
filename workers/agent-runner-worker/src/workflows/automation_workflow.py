@@ -5,7 +5,7 @@ triggered automation run. It is started by ``automation-service`` after
 the webhook handler has accepted the payload (HMAC, replay, loop-guard
 and capability Phase 1 already passed).
 
-Responsibilities (design.md §"AutomationWorkflow İç Akışı")::
+Responsibilities::
 
     1. Best-effort acknowledgement comment on the Jira issue.
     2. Fetch the issue via ``jira_get_issue``.
@@ -28,7 +28,7 @@ Responsibilities (design.md §"AutomationWorkflow İç Akışı")::
        to ``Done`` and mark the work item ``completed``. On child failure,
        post a failure comment and mark the work item ``failed``.
 
-Determinism contract (Property 11, design.md §"Determinism Sözleşmesi"):
+Determinism contract:
 
 * ``workflow.now()`` is the only time source.
 * ``workflow.sleep(...)`` and ``workflow.wait_condition(...)`` are the only
@@ -38,8 +38,6 @@ Determinism contract (Property 11, design.md §"Determinism Sözleşmesi"):
 * Activity modules are imported under the
   ``workflow.unsafe.imports_passed_through()`` sandbox escape hatch.
 
-Validates Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 5.9, 5.10,
-5.11, 11.1, 11.2, 11.3, 11.4, 11.5.
 """
 
 from __future__ import annotations
@@ -121,7 +119,7 @@ NEEDS_INFO_TIMEOUT: timedelta = timedelta(days=7)
 class AutomationInput:
     """Input payload passed by ``automation-service`` when starting the workflow.
 
-    Mirrors the JSON schema in design.md §"AutomationInput JSON şeması".
+    Mirrors the automation input JSON schema.
 
     Attributes
     ----------
@@ -167,7 +165,7 @@ class AutomationInput:
 class AutomationResult:
     """Final result of an :class:`AutomationWorkflow` run.
 
-    Mirrors the JSON schema in design.md §"AutomationResult".
+    Mirrors the automation result JSON schema.
 
     Attributes
     ----------
@@ -373,7 +371,7 @@ class AutomationWorkflow:
             )
 
         # Mark work_item as running. This is the pending → running edge
-        # of the state machine (Property 9) and must succeed for the
+        # of the state machine and must succeed for the
         # workflow to progress.
         await self._update_work_item_status(parent_workflow_id, "running")
 
@@ -719,7 +717,7 @@ class AutomationWorkflow:
         """Best-effort wrapper around ``update_work_item_status`` activity.
 
         The activity itself enforces the state-machine invariant
-        (Property 9). If the update fails (DB unavailable, transition
+        directly. If the update fails (DB unavailable, transition
         rejected because of an unexpected concurrent write) we log and
         continue — the workflow's terminal status is the source of truth
         for downstream observers; the DB row eventually reconciles.

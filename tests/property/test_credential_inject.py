@@ -1,38 +1,37 @@
-"""Property tests for MCP credential injection round-trip and header preservation.
+"""invariant for MCP credential injection round-trip and header preservation.
 
-**Validates: Requirements 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7**
 
-Property 1: MCP credential injection round-trip ve header preservation.
+
+invariant: MCP credential injection round-trip ve header preservation.
 
 This module uses Hypothesis to verify the following invariants of
 ``http_shared.auth_inject.with_atlassian_creds``:
 
 1. **Round-trip**: Credentials read from the resolver are injected into
-   headers with exact fidelity — the header values inside the with-block
-   match the credential fields byte-for-byte (Requirement 4.5).
+ headers with exact fidelity — the header values inside the with-block
+ match the credential fields byte-for-byte.
 
 2. **Header preservation**: All pre-existing headers on the client
-   (including ``X-Client-Source`` and arbitrary user headers) survive
-   the with-block unchanged (Requirement 4.7).
+ (including ``X-Client-Source`` and arbitrary user headers) survive
+ the with-block unchanged.
 
 3. **Header restoration**: After the with-block exits (normally or via
-   exception), the client's headers are restored to their pre-injection
-   state — credential headers are removed if they didn't exist before,
-   or reverted to their original values if they did (Requirement 4.7).
+ exception), the client's headers are restored to their pre-injection
+ state — credential headers are removed if they didn't exist before,
+ or reverted to their original values if they did.
 
 4. **Service routing**: The correct header prefix is used for each
-   service literal (jira → X-Atlassian-Jira-*, bitbucket →
-   X-Atlassian-Bitbucket-*, confluence → X-Atlassian-Confluence-*)
-   (Requirements 4.2, 4.3, 4.4).
+ service literal (jira → X-Atlassian-Jira-*, bitbucket →
+ X-Atlassian-Bitbucket-*, confluence → X-Atlassian-Confluence-*).
 
 5. **Missing credential rejection**: When the resolver returns an
-   incomplete credential (any of url, username, personal_token is
-   empty), ``CredentialResolutionError`` is raised with the correct
-   dept_id and service (Requirement 4.6).
+ incomplete credential (any of url, username, personal_token is
+ empty), ``CredentialResolutionError`` is raised with the correct
+ dept_id and service.
 
 6. **Scope validation**: ``"org"`` (default) and ``"user"`` scopes are
-   accepted; ``"bot"`` is a deprecated alias for ``"org"``; any other
-   scope value raises ``ValueError`` (Requirements 4.1, 2.1).
+ accepted; ``"bot"`` is a deprecated alias for ``"org"``; any other
+ scope value raises ``ValueError``.
 """
 
 from __future__ import annotations
@@ -53,7 +52,7 @@ from http_shared.auth_inject import (
     with_atlassian_creds,
 )
 # ---------------------------------------------------------------------------
-# Shared event loop for performance (avoids asyncio.run() per example)
+# Shared event loop for performance (avoids asyncio.run per example)
 # ---------------------------------------------------------------------------
 
 _LOOP: asyncio.AbstractEventLoop | None = None
@@ -160,11 +159,11 @@ def _header_key_strategy() -> st.SearchStrategy[str]:
 def random_initial_headers(draw: st.DrawFn) -> dict[str, str]:
     """Generate a random set of initial headers for the client.
 
-    Always includes X-Client-Source to test preservation. May include
-    other arbitrary headers.
-    """
+ Always includes X-Client-Source to test preservation. May include
+ other arbitrary headers.
+ """
     headers: dict[str, str] = {}
-    # Always include X-Client-Source (Requirement 4.7 explicitly mentions it).
+    # Always include X-Client-Source explicitly mentions it).
     headers["X-Client-Source"] = draw(_HEADER_VALUE)
     # Add 0-5 additional random headers.
     n_extra = draw(st.integers(min_value=0, max_value=5))
@@ -204,7 +203,7 @@ def _credential_header_keys(service: ServiceLiteral) -> tuple[str, str, str]:
 
 
 # ---------------------------------------------------------------------------
-# Property Tests
+# invariant
 # ---------------------------------------------------------------------------
 
 
@@ -225,14 +224,14 @@ def test_round_trip_credential_values_match_exactly(
     dept_id: str,
     initial_headers: dict[str, str],
 ) -> None:
-    """Property 1a — credential values injected into headers match Vault values exactly.
+    """invariant — credential values injected into headers match Vault values exactly.
 
-    **Validates: Requirements 4.1, 4.2, 4.3, 4.4, 4.5**
 
-    For every valid credential triple (url, username, personal_token) and
-    every service literal, the header values inside the with-block must
-    be byte-for-byte identical to the credential fields.
-    """
+
+ For every valid credential triple (url, username, personal_token) and
+ every service literal, the header values inside the with-block must
+ be byte-for-byte identical to the credential fields.
+ """
     resolver = FakeCredentialResolver(cred)
 
     async def _check() -> None:
@@ -272,13 +271,13 @@ def test_existing_headers_preserved_inside_with_block(
     dept_id: str,
     initial_headers: dict[str, str],
 ) -> None:
-    """Property 1b — all pre-existing headers survive inside the with-block.
+    """invariant — all pre-existing headers survive inside the with-block.
 
-    **Validates: Requirements 4.7**
 
-    For every set of initial headers (including X-Client-Source), all
-    non-credential headers must remain unchanged inside the with-block.
-    """
+
+ For every set of initial headers (including X-Client-Source), all
+ non-credential headers must remain unchanged inside the with-block.
+ """
     resolver = FakeCredentialResolver(cred)
 
     async def _check() -> None:
@@ -324,15 +323,15 @@ def test_headers_restored_after_with_block_exit(
     dept_id: str,
     initial_headers: dict[str, str],
 ) -> None:
-    """Property 1c — headers are fully restored after with-block exits.
+    """invariant — headers are fully restored after with-block exits.
 
-    **Validates: Requirements 4.7**
 
-    After the context manager exits normally, the client's headers must
-    be identical to their state before entering the with-block. Credential
-    headers that didn't exist before are removed; those that did exist
-    are reverted to their original values.
-    """
+
+ After the context manager exits normally, the client's headers must
+ be identical to their state before entering the with-block. Credential
+ headers that didn't exist before are removed; those that did exist
+ are reverted to their original values.
+ """
     resolver = FakeCredentialResolver(cred)
 
     async def _check() -> None:
@@ -353,7 +352,7 @@ def test_headers_restored_after_with_block_exit(
             post_headers = dict(client.headers.items())
             assert post_headers == pre_headers, (
                 f"Headers not restored.\n"
-                f"Pre:  {pre_headers}\n"
+                f"Pre: {pre_headers}\n"
                 f"Post: {post_headers}"
             )
         finally:
@@ -379,13 +378,13 @@ def test_headers_restored_after_exception_in_with_block(
     dept_id: str,
     initial_headers: dict[str, str],
 ) -> None:
-    """Property 1d — headers are restored even when an exception occurs.
+    """invariant — headers are restored even when an exception occurs.
 
-    **Validates: Requirements 4.7**
 
-    The context manager's finally block must restore headers regardless
-    of whether the with-block raises an exception.
-    """
+
+ The context manager's finally block must restore headers regardless
+ of whether the with-block raises an exception.
+ """
     resolver = FakeCredentialResolver(cred)
 
     async def _check() -> None:
@@ -425,13 +424,13 @@ def test_correct_header_prefix_per_service(
     cred: FakeCredential,
     dept_id: str,
 ) -> None:
-    """Property 1e — each service uses its designated header prefix.
+    """invariant — each service uses its designated header prefix.
 
-    **Validates: Requirements 4.2, 4.3, 4.4**
 
-    jira → X-Atlassian-Jira-*, bitbucket → X-Atlassian-Bitbucket-*,
-    confluence → X-Atlassian-Confluence-*.
-    """
+
+ jira → X-Atlassian-Jira-*, bitbucket → X-Atlassian-Bitbucket-*,
+ confluence → X-Atlassian-Confluence-*.
+ """
     resolver = FakeCredentialResolver(cred)
     expected_prefix = _HEADER_PREFIX[service]
 
@@ -481,14 +480,14 @@ def test_incomplete_credential_raises_credential_resolution_error(
     service: ServiceLiteral,
     dept_id: str,
 ) -> None:
-    """Property 1f — incomplete credentials raise CredentialResolutionError.
+    """invariant — incomplete credentials raise CredentialResolutionError.
 
-    **Validates: Requirements 4.6**
 
-    When any of url, username, or personal_token is empty/falsy, the
-    context manager must raise CredentialResolutionError with the correct
-    dept_id and service attributes.
-    """
+
+ When any of url, username, or personal_token is empty/falsy, the
+ context manager must raise CredentialResolutionError with the correct
+ dept_id and service attributes.
+ """
     resolver = FakeCredentialResolver(incomplete_cred)
 
     async def _check() -> None:
@@ -530,15 +529,15 @@ def test_invalid_scope_raises_value_error(
     dept_id: str,
     invalid_scope: str,
 ) -> None:
-    """Property 1g — unknown scope raises ValueError.
+    """invariant — unknown scope raises ValueError.
 
-    **Validates: Requirements 4.1, 2.1**
 
-    Accepted scopes are ``"org"`` (worker bot, default) and ``"user"``
-    (Streamlit per-user). The legacy value ``"bot"`` is silently routed
-    to ``"org"`` (deprecated alias). Any other scope value must raise
-    ValueError before attempting credential resolution.
-    """
+
+ Accepted scopes are ``"org"`` (worker bot, default) and ``"user"``
+ (Streamlit per-user). The legacy value ``"bot"`` is silently routed
+ to ``"org"`` (deprecated alias). Any other scope value must raise
+ ValueError before attempting credential resolution.
+ """
     resolver = FakeCredentialResolver(cred)
 
     async def _check() -> None:
@@ -574,15 +573,15 @@ def test_idempotent_double_injection_restores_correctly(
     service: ServiceLiteral,
     dept_id: str,
 ) -> None:
-    """Property 1h — nested with-blocks restore correctly.
+    """invariant — nested with-blocks restore correctly.
 
-    **Validates: Requirements 4.5, 4.7**
 
-    When with_atlassian_creds is used twice in sequence on the same
-    client, each exit restores the state to what it was before that
-    particular entry. This tests the save/restore mechanism's correctness
-    under repeated use.
-    """
+
+ When with_atlassian_creds is used twice in sequence on the same
+ client, each exit restores the state to what it was before that
+ particular entry. This tests the save/restore mechanism's correctness
+ under repeated use.
+ """
     resolver = FakeCredentialResolver(cred)
 
     async def _check() -> None:
@@ -620,15 +619,14 @@ def test_idempotent_double_injection_restores_correctly(
 
 
 # ===========================================================================
-# Property 6 — Atomik departman ekleme + plain-text sızıntı yasağı (task 5.9)
+# invariant — Atomik departman ekleme + plain-text sızıntı yasağı 
 # ===========================================================================
 #
-# **Validates: Requirements 3.4, 3.6, 5.10, 9.3**
 #
-# Property 6 extends this module with the plain-text leak invariants of the
+# invariant extends this module with the plain-text leak invariants of the
 # atomic department-create flow described in
-# ``.kiro/specs/platform-mimari-foundation/design.md`` §"Atomic Department
-# Create" and the Property 6 row of the design's Property → Test mapping
+# `//design.md`` §"Atomic Department
+# Create" and the invariant row of the design's invariant → Test mapping
 # table (P6 → ``test_credential_inject.py`` extended + new
 # ``test_dept_atomic_create.py``).
 #
@@ -637,15 +635,15 @@ def test_idempotent_double_injection_restores_correctly(
 # tower (fake Vault + fake DB connection + fake probe client + fake audit
 # writer) so the tests focus exclusively on the *secrecy* contract:
 #
-#   P6a — token absent from the success response (``DepartmentCreateResult``).
-#   P6b — token absent from every captured ``logging.LogRecord`` after the
-#         platform's redaction filter runs.
-#   P6c — token absent from every SQL parameter the orchestrator binds.
-#   P6d — token absent from the on-disk bytes of the LocalDevBackend
-#         encrypted store (sodium ``SecretBox`` envelope must hide the
-#         plain-text bytes — Requirement 6.6).
-#   P6e — the ``bytearray`` that carried the token is zeroed once the
-#         orchestrator returns (Requirement 3.4 — best-effort heap scrub).
+# P6a — token absent from the success response (``DepartmentCreateResult``).
+# P6b — token absent from every captured ``logging.LogRecord`` after the
+# platform's redaction filter runs.
+# P6c — token absent from every SQL parameter the orchestrator binds.
+# P6d — token absent from the on-disk bytes of the LocalDevBackend
+# encrypted store (sodium ``SecretBox`` envelope must hide the
+# plain-text bytes —.
+# P6e — the ``bytearray`` that carried the token is zeroed once the
+# orchestrator returns — best-effort heap scrub).
 #
 # Hypothesis only varies the plain-text token here; the remaining inputs
 # (dept_id, services, urls, usernames) are fixed so the test focuses on the
@@ -683,7 +681,7 @@ for _p in (str(_AUTOMATION_SRC), str(_AUTOMATION_ROOT)):
 
 from audit_logger import AuditEvent as _AuditEvent  # noqa: E402
 
-# Task 5.3 ships ``automation_service.admin.router`` as a real module;
+# ships ``automation_service.admin.router`` as a real module;
 # no pre-registered stub is needed.
 
 from automation_service.admin.dept_create import (  # noqa: E402
@@ -717,13 +715,13 @@ from vault_client.local_dev_backend import (  # noqa: E402
 # ---------------------------------------------------------------------------
 
 # We need values that:
-#   1. Are **distinctive** — short common substrings (``a``, ``1234``)
-#      could accidentally appear in fixture text and trigger spurious
-#      "leak" assertions, defeating the property.
-#   2. Are **utf-8 encodable** — the orchestrator decodes the bytearray
-#      via ``decode("utf-8")`` and rejects bad bytes with
-#      ``StagingFailureError``.
-#   3. Stay within Atlassian PAT shape (printable ASCII, no whitespace).
+# 1. Are **distinctive** — short common substrings (``a``, ``1234``)
+# could accidentally appear in fixture text and trigger spurious
+# "leak" assertions, defeating the property.
+# 2. Are **utf-8 encodable** — the orchestrator decodes the bytearray
+# via ``decode("utf-8")`` and rejects bad bytes with
+# ``StagingFailureError``.
+# 3. Stay within Atlassian PAT shape (printable ASCII, no whitespace).
 #
 # We restrict to the same alphabet used by ``_HEADER_VALUE`` above so
 # tokens look realistic and never accidentally collide with English words
@@ -747,20 +745,19 @@ def _make_token_bytearray(plain: str) -> bytearray:
 
 
 class _FakeProbeClient:
-    """Minimal :class:`AtlassianProbeClient` that always returns OK.
+    """Minimal:class:`AtlassianProbeClient` that always returns OK.
 
-    The orchestrator runs probes between the staging write and the DB
-    insert. For the secrecy property tests we don't care about the
-    probe semantics — we just need ``ProbeResult.state == "ok"`` so
-    the run reaches the commit phase. The fake therefore returns a
-    minimal ``myself``-shaped payload for every read call and a
-    fresh artifact id for every write call.
+ The orchestrator runs probes between the staging write and the DB
+ insert. For the secrecy invariant we don't care about the
+ probe semantics — we just need ``ProbeResult.state == "ok"`` so
+ the run reaches the commit phase. The fake therefore returns a
+ minimal ``myself``-shaped payload for every read call and a
+ fresh artifact id for every write call.
 
-    Method signatures preserve the keyword-argument names the
-    :class:`ProbeRunner` uses internally (``body``, ``issue_key``,
-    ``comment_id``, ``workspace``, ``repo``, ``branch_name``,
-    ``space_key``, ``title``, ``page_id``).
-    """
+ Method signatures preserve the keyword-argument names the:class:`ProbeRunner` uses internally (``body``, ``issue_key``,
+ ``comment_id``, ``workspace``, ``repo``, ``branch_name``,
+ ``space_key``, ``title``, ``page_id``).
+ """
 
     async def jira_myself(self, cred: _Any) -> dict[str, _Any]:
         return {"accountId": "auto-fetched-id", "displayName": "Probe Bot"}
@@ -828,12 +825,12 @@ class _FakeProbeClient:
 class _RecordingConnection:
     """asyncpg-shaped connection that records every (sql, args) pair.
 
-    The orchestrator binds parameters via ``$1`` / ``$2`` so SQL
-    injection cannot leak the token into the SQL string itself; the
-    secrecy invariant we test is that **no parameter** ever contains
-    the plain-text token (the canonical write path is Vault, not the
-    DB row — Requirement 3.3 / 3.4 / 6.1).
-    """
+ The orchestrator binds parameters via ``$1`` / ``$2`` so SQL
+ injection cannot leak the token into the SQL string itself; the
+ secrecy invariant we test is that **no parameter** ever contains
+ the plain-text token (the canonical write path is Vault, not the
+ DB row — / 6.1).
+ """
 
     def __init__(self) -> None:
         self.calls: list[tuple[str, tuple[_Any, ...]]] = []
@@ -844,7 +841,7 @@ class _RecordingConnection:
 
 
 class _RecordingAuditWriter:
-    """Captures every :class:`AuditEvent` so we can scan its payload."""
+    """Captures every:class:`AuditEvent` so we can scan its payload."""
 
     def __init__(self) -> None:
         self.events: list[_AuditEvent] = []
@@ -854,7 +851,7 @@ class _RecordingAuditWriter:
 
 
 class _RecordingAuditLogger:
-    """Adapter exposing the :class:`AuditLogger.write` shape."""
+    """Adapter exposing the:class:`AuditLogger.write` shape."""
 
     def __init__(self) -> None:
         self.writer = _RecordingAuditWriter()
@@ -870,14 +867,14 @@ class _RecordingAuditLogger:
 
 
 def _build_create_request(plain_token: str) -> _CreateRequest:
-    """Build a single-bot Jira-only :class:`DepartmentCreateRequest`.
+    """Build a single-bot Jira-only:class:`DepartmentCreateRequest`.
 
-    We restrict the request to a single Jira bot so the test exercises
-    the full staging → probe → DB → promotion sequence with the
-    smallest moving parts. The other services follow the same code
-    path; covering one is sufficient for the secrecy invariant and
-    keeps the property's wall-clock time bounded.
-    """
+ We restrict the request to a single Jira bot so the test exercises
+ the full staging → probe → DB → promotion sequence with the
+ smallest moving parts. The other services follow the same code
+ path; covering one is sufficient for the secrecy invariant and
+ keeps the property's wall-clock time bounded.
+ """
 
     return _CreateRequest(
         dept_id="acme",
@@ -926,12 +923,12 @@ def _build_orchestrator(
 def _new_local_dev_backend(tmpdir: _Path) -> _LocalDevBackend:
     """Build a fresh encrypted-file Vault backend rooted at *tmpdir*.
 
-    We use a real :class:`LocalDevBackend` (libsodium ``SecretBox``)
-    rather than an in-memory fake so Property 6d can read the on-disk
-    bytes and verify the plain-text never appears in the encrypted
-    envelope (Requirement 6.6 — local-dev backend rejects plain-text
-    persistence).
-    """
+ We use a real:class:`LocalDevBackend` (libsodium ``SecretBox``)
+ rather than an in-memory fake so invariant can read the on-disk
+ bytes and verify the plain-text never appears in the encrypted
+ envelope — local-dev backend rejects plain-text
+ persistence).
+ """
 
     key = _secrets.token_bytes(_LOCAL_DEV_KEY_SIZE)
     store = tmpdir / "vault.kv"
@@ -939,7 +936,7 @@ def _new_local_dev_backend(tmpdir: _Path) -> _LocalDevBackend:
 
 
 # ---------------------------------------------------------------------------
-# Property 6a — token absent from the success response
+# invariant — token absent from the success response
 # ---------------------------------------------------------------------------
 
 
@@ -952,15 +949,15 @@ def _new_local_dev_backend(tmpdir: _Path) -> _LocalDevBackend:
 def test_p6a_response_body_does_not_contain_plain_text_token(
     plain_token: str,
 ) -> None:
-    """Property 6a — :class:`DepartmentCreateResult` never carries the token.
+    """invariant —:class:`DepartmentCreateResult` never carries the token.
 
-    **Validates: Requirements 3.4, 9.3**
 
-    For every randomly generated plain-text token, the orchestrator's
-    success response (the value the FastAPI router serialises into
-    JSON) must contain only Vault path references — never the token
-    bytes.
-    """
+
+ For every randomly generated plain-text token, the orchestrator's
+ success response (the value the FastAPI router serialises into
+ JSON) must contain only Vault path references — never the token
+ bytes.
+ """
 
     workspace = _Path(_tempfile.mkdtemp(prefix="p6a-resp-"))
     try:
@@ -988,12 +985,12 @@ def test_p6a_response_body_does_not_contain_plain_text_token(
         # The plain-text token must NOT appear anywhere in the
         # response surface.
         assert plain_token not in result_repr, (
-            "Property 6a violated: plain-text token leaked into "
-            "DepartmentCreateResult repr (Requirement 3.4)."
+            "invariant violated: plain-text token leaked into "
+            "DepartmentCreateResult repr (the operational rule)."
         )
         assert plain_token not in result_refs, (
-            "Property 6a violated: plain-text token leaked into a "
-            "credential_ref (Requirements 3.3, 3.4, 6.1)."
+            "invariant violated: plain-text token leaked into a "
+            "credential_ref (the operational rule)."
         )
 
         # Positive assertion: the response carries the **final** Vault
@@ -1006,7 +1003,7 @@ def test_p6a_response_body_does_not_contain_plain_text_token(
 
 
 # ---------------------------------------------------------------------------
-# Property 6b — token absent from log records (after redaction filter)
+# invariant — token absent from log records (after redaction filter)
 # ---------------------------------------------------------------------------
 
 
@@ -1019,17 +1016,16 @@ def test_p6a_response_body_does_not_contain_plain_text_token(
 def test_p6b_log_records_do_not_contain_plain_text_token(
     plain_token: str,
 ) -> None:
-    """Property 6b — captured log records carry no plain-text token bytes.
+    """invariant — captured log records carry no plain-text token bytes.
 
-    **Validates: Requirements 3.4, 6.10, 9.3**
 
-    The orchestrator logs ``dept_create.start`` / ``dept_create.ok`` /
-    ``dept_create.failed`` records. None of these is supposed to
-    interpolate the token, but we test the negative invariant
-    end-to-end: capture every emitted record (after the platform's
-    :class:`RedactionFilter` runs) and assert the token bytes do not
-    appear in any of them.
-    """
+
+ The orchestrator logs ``dept_create.start`` / ``dept_create.ok`` /
+ ``dept_create.failed`` records. None of these is supposed to
+ interpolate the token, but we test the negative invariant
+ end-to-end: capture every emitted record (after the platform's:class:`RedactionFilter` runs) and assert the token bytes do not
+ appear in any of them.
+ """
 
     workspace = _Path(_tempfile.mkdtemp(prefix="p6b-logs-"))
     captured: list[str] = []
@@ -1079,8 +1075,8 @@ def test_p6b_log_records_do_not_contain_plain_text_token(
         # interpolates the token into a log call.
         for line in captured:
             assert plain_token not in line, (
-                f"Property 6b violated: plain-text token leaked into log "
-                f"record {line!r} (Requirements 3.4, 6.10)."
+                f"invariant violated: plain-text token leaked into log "
+                f"record {line!r} (the operational rule)."
             )
     finally:
         target_logger.removeHandler(handler)
@@ -1089,7 +1085,7 @@ def test_p6b_log_records_do_not_contain_plain_text_token(
 
 
 # ---------------------------------------------------------------------------
-# Property 6c — token absent from SQL parameter bindings
+# invariant — token absent from SQL parameter bindings
 # ---------------------------------------------------------------------------
 
 
@@ -1102,16 +1098,16 @@ def test_p6b_log_records_do_not_contain_plain_text_token(
 def test_p6c_db_parameters_do_not_contain_plain_text_token(
     plain_token: str,
 ) -> None:
-    """Property 6c — no SQL parameter ever carries the plain-text token.
+    """invariant — no SQL parameter ever carries the plain-text token.
 
-    **Validates: Requirements 3.3, 3.4, 6.1, 9.3**
 
-    The Postgres ``automation.department_bots.credential_ref`` column
-    stores the **Vault path**, not the value (Requirement 6.1). This
-    property pins the negative invariant: across every
-    ``connection.execute`` call the orchestrator issues, none of the
-    bound positional parameters may be the plain-text token.
-    """
+
+ The Postgres ``automation.department_bots.credential_ref`` column
+ stores the **Vault path**, not the value. This
+ property pins the negative invariant: across every
+ ``connection.execute`` call the orchestrator issues, none of the
+ bound positional parameters may be the plain-text token.
+ """
 
     workspace = _Path(_tempfile.mkdtemp(prefix="p6c-db-"))
     try:
@@ -1138,20 +1134,20 @@ def test_p6c_db_parameters_do_not_contain_plain_text_token(
         # builds a literal SQL string could still leak).
         for sql, args in connection.calls:
             assert plain_token not in sql, (
-                f"Property 6c violated: token leaked into SQL string "
-                f"{sql!r} (Requirements 3.4, 6.1)."
+                f"invariant violated: token leaked into SQL string "
+                f"{sql!r} (the operational rule)."
             )
             for idx, arg in enumerate(args):
                 if isinstance(arg, str):
                     assert plain_token not in arg, (
-                        f"Property 6c violated: token leaked into SQL "
+                        f"invariant violated: token leaked into SQL "
                         f"parameter ${idx + 1} of {sql.strip().splitlines()[0]!r} "
-                        "(Requirement 6.1)."
+                        "(the operational rule)."
                     )
                 elif isinstance(arg, (bytes, bytearray)):
                     assert plain_token.encode("utf-8") not in bytes(arg), (
-                        f"Property 6c violated: token leaked into SQL "
-                        f"binary parameter ${idx + 1} (Requirement 6.1)."
+                        f"invariant violated: token leaked into SQL "
+                        f"binary parameter ${idx + 1} (the operational rule)."
                     )
 
         # Positive contract: a ``credential_ref`` parameter pointing
@@ -1182,7 +1178,7 @@ def test_p6c_db_parameters_do_not_contain_plain_text_token(
 
 
 # ---------------------------------------------------------------------------
-# Property 6d — token absent from on-disk Vault store bytes
+# invariant — token absent from on-disk Vault store bytes
 # ---------------------------------------------------------------------------
 
 
@@ -1195,16 +1191,16 @@ def test_p6c_db_parameters_do_not_contain_plain_text_token(
 def test_p6d_local_dev_store_bytes_do_not_contain_plain_text_token(
     plain_token: str,
 ) -> None:
-    """Property 6d — on-disk Vault store never carries the token bytes.
+    """invariant — on-disk Vault store never carries the token bytes.
 
-    **Validates: Requirements 3.4, 6.6, 9.3**
 
-    The :class:`LocalDevBackend` encrypts the entire KV payload with
-    libsodium ``SecretBox`` before writing it to disk. After a
-    successful create, reading the raw store bytes back must NOT
-    reveal the plain-text token under any encoding (utf-8, ascii,
-    base64).
-    """
+
+ The:class:`LocalDevBackend` encrypts the entire KV payload with
+ libsodium ``SecretBox`` before writing it to disk. After a
+ successful create, reading the raw store bytes back must NOT
+ reveal the plain-text token under any encoding (utf-8, ascii,
+ base64).
+ """
 
     workspace = _Path(_tempfile.mkdtemp(prefix="p6d-disk-"))
     try:
@@ -1235,13 +1231,13 @@ def test_p6d_local_dev_store_bytes_do_not_contain_plain_text_token(
                 continue
             data = path.read_bytes()
             assert token_utf8 not in data, (
-                f"Property 6d violated: token bytes appear in "
-                f"on-disk file {path.name!r} (Requirement 6.6)."
+                f"invariant violated: token bytes appear in "
+                f"on-disk file {path.name!r} (the operational rule)."
             )
             if token_ascii and token_ascii != token_utf8:
                 assert token_ascii not in data, (
-                    f"Property 6d violated: token ascii bytes appear "
-                    f"in on-disk file {path.name!r} (Requirement 6.6)."
+                    f"invariant violated: token ascii bytes appear "
+                    f"in on-disk file {path.name!r} (the operational rule)."
                 )
 
             # The envelope is always JSON with a single ``ciphertext``
@@ -1255,7 +1251,7 @@ def test_p6d_local_dev_store_bytes_do_not_contain_plain_text_token(
                 # Make sure the token didn't accidentally end up in
                 # an unencrypted sibling field.
                 assert plain_token not in envelope.get("ciphertext", ""), (
-                    "Property 6d violated: token appears in ciphertext "
+                    "invariant violated: token appears in ciphertext "
                     "field literally — encryption was not applied."
                 )
                 for k, v in envelope.items():
@@ -1263,15 +1259,15 @@ def test_p6d_local_dev_store_bytes_do_not_contain_plain_text_token(
                         continue
                     if isinstance(v, str):
                         assert plain_token not in v, (
-                            f"Property 6d violated: token appears in "
-                            f"envelope field {k!r} (Requirement 6.6)."
+                            f"invariant violated: token appears in "
+                            f"envelope field {k!r} (the operational rule)."
                         )
     finally:
         _shutil.rmtree(workspace, ignore_errors=True)
 
 
 # ---------------------------------------------------------------------------
-# Property 6e — token bytearray is zeroed after the orchestrator returns
+# invariant — token bytearray is zeroed after the orchestrator returns
 # ---------------------------------------------------------------------------
 
 
@@ -1282,15 +1278,15 @@ def test_p6d_local_dev_store_bytes_do_not_contain_plain_text_token(
 )
 @given(plain_token=_p6_plain_token_text)
 def test_p6e_token_bytearray_is_zeroed_after_run(plain_token: str) -> None:
-    """Property 6e — the input ``personal_token`` bytearray is fully zeroed.
+    """invariant — the input ``personal_token`` bytearray is fully zeroed.
 
-    **Validates: Requirements 3.4**
 
-    The orchestrator promises a best-effort heap scrub of the
-    ``personal_token`` :class:`bytearray` once Vault has the value.
-    We hold a reference to the same buffer the orchestrator received
-    and check it is all-zero on the success path.
-    """
+
+ The orchestrator promises a best-effort heap scrub of the
+ ``personal_token``:class:`bytearray` once Vault has the value.
+ We hold a reference to the same buffer the orchestrator received
+ and check it is all-zero on the success path.
+ """
 
     workspace = _Path(_tempfile.mkdtemp(prefix="p6e-zero-"))
     try:
@@ -1319,44 +1315,43 @@ def test_p6e_token_bytearray_is_zeroed_after_run(plain_token: str) -> None:
 
         _run_async(_go())
 
-        # After the run the buffer must be all-zero (R3.4 — scrubbed
+        # After the run the buffer must be all-zero ( — scrubbed
         # before the DB transaction begins).
         assert len(token_buffer) == original_length, (
             "token buffer length must not change during scrub"
         )
         assert all(b == 0 for b in token_buffer), (
-            "Property 6e violated: token bytearray was not zeroed after "
+            "invariant violated: token bytearray was not zeroed after "
             "orchestrator.run; remaining non-zero bytes leak the secret "
-            "(Requirement 3.4)."
+            "(the operational rule)."
         )
     finally:
         _shutil.rmtree(workspace, ignore_errors=True)
 
 
 # ===========================================================================
-# Property 15 — Credential resolve önceliği: per-user > org-default (task 12.11)
+# invariant — Credential resolve önceliği: per-user > org-default 
 # ===========================================================================
 #
-# **Validates: Requirements 10.7, 10.8**
 #
-# Property 15 pins the priority rule for
-# :class:`automation_service.credentials.CredentialResolver`:
+# invariant pins the priority rule for
+#:class:`automation_service.credentials.CredentialResolver`:
 #
-#   1. Per-user override — ``vault:atlassian/_user_session/<session_id>/<service>``
-#   2. Org-default bot   — ``vault:atlassian/<dept_id>/<service>``
-#   3. Neither present   → :class:`CredentialMissing`
-#                          (``error_code == "credential_missing"``)
+# 1. Per-user override — ``vault:atlassian/_user_session/<session_id>/<service>``
+# 2. Org-default bot — ``vault:atlassian/<dept_id>/<service>``
+# 3. Neither present →:class:`CredentialMissing`
+# (``error_code == "credential_missing"``)
 #
 # We test the full 2x2 truth table of
 # ``(per_user_present, org_default_present)`` against random
 # ``(session_id, dept_id, service)`` triples to lock down:
 #
-#   P15a — (True, True)  → output comes from the per-user path.
-#   P15b — (True, False) → output still comes from the per-user path.
-#   P15c — (False, True) → output comes from the org-default path.
-#   P15d — (False, False) → ``CredentialMissing`` (a.k.a.
-#          ``credential_missing``) is raised; the resolver attempts both
-#          paths in order and never returns a payload.
+# P15a — (True, True) → output comes from the per-user path.
+# P15b — (True, False) → output still comes from the per-user path.
+# P15c — (False, True) → output comes from the org-default path.
+# P15d — (False, False) → ``CredentialMissing`` (a.k.a.
+# ``credential_missing``) is raised; the resolver attempts both
+# paths in order and never returns a payload.
 #
 # A fifth invariant (P15e) pins the **call ordering** — the per-user
 # path MUST be queried first regardless of org-default presence; this
@@ -1373,11 +1368,11 @@ def test_p6e_token_bytearray_is_zeroed_after_run(plain_token: str) -> None:
 # only burn Hypothesis budget without buying additional coverage.
 # ---------------------------------------------------------------------------
 
-# The Property 6 block above already inserts ``automation-service/src``
+# The invariant block above already inserts ``automation-service/src``
 # onto ``sys.path``, so the import below resolves without further
 # bootstrap. Keeping the imports here (rather than at the top of the
-# module) preserves the "one Property block = one import section"
-# layout that Property 1 / Property 6 already follow.
+# module) preserves the "one invariant block = one import section"
+# layout that invariant / invariant already follow.
 
 from automation_service.credentials import (  # noqa: E402
     AtlassianService as _P15Service,
@@ -1390,7 +1385,7 @@ from automation_service.credentials import (  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
-# Path-safe identifier strategies (R10.7 / R10.8 path layout)
+# Path-safe identifier strategies ( / path layout)
 # ---------------------------------------------------------------------------
 
 # Session ids are opaque tokens minted by the Streamlit / assistant layer;
@@ -1435,10 +1430,10 @@ _p15_service: st.SearchStrategy[_P15Service] = st.sampled_from(
 class _P15FakeVault:
     """Tiny in-memory ``VaultReader`` that records every read.
 
-    The ``calls`` list lets P15e assert the lookup ordering. Missing
-    paths raise ``KeyError`` to match the protocol contract documented
-    in :mod:`automation_service.credentials`.
-    """
+ The ``calls`` list lets P15e assert the lookup ordering. Missing
+ paths raise ``KeyError`` to match the protocol contract documented
+ in:mod:`automation_service.credentials`.
+ """
 
     def __init__(self, secrets: _Mapping[str, _Mapping[str, str]] | None = None) -> None:
         self.secrets: dict[str, _Mapping[str, str]] = dict(secrets or {})
@@ -1451,7 +1446,7 @@ class _P15FakeVault:
         return self.secrets[path]
 
 
-# Distinct sentinel payloads so the "which path won?" assertion is
+# Distinct sentinel payloads so the "which path wonsection" assertion is
 # unambiguous. Using the same dict for both sources would weaken the
 # property — equal output could mean either path was read.
 _P15_USER_SECRET: _Mapping[str, str] = {
@@ -1467,7 +1462,7 @@ _P15_ORG_SECRET: _Mapping[str, str] = {
 
 
 # ---------------------------------------------------------------------------
-# Property 15a — (per_user=True, org_default=True) → per-user wins
+# invariant — (per_user=True, org_default=True) → per-user wins
 # ---------------------------------------------------------------------------
 
 
@@ -1480,10 +1475,10 @@ _P15_ORG_SECRET: _Mapping[str, str] = {
 def test_p15a_user_present_org_present_returns_user(
     session_id: str, dept_id: str, service: _P15Service
 ) -> None:
-    """Property 15a — per-user override wins over org-default when both exist.
+    """invariant — per-user override wins over org-default when both exist.
 
-    **Validates: Requirements 10.7, 10.8**
-    """
+
+ """
 
     user_path = _p15_build_user_session_path(session_id, service)
     org_path = _p15_build_org_default_path(dept_id, service)
@@ -1495,7 +1490,7 @@ def test_p15a_user_present_org_present_returns_user(
 
     assert isinstance(result, _P15ResolvedCredential)
     assert result.source == "user_session", (
-        f"Property 15a violated: with both paths present, expected the "
+        f"invariant violated: with both paths present, expected the "
         f"per-user path to win but got source={result.source!r}."
     )
     assert result.path == user_path
@@ -1505,13 +1500,13 @@ def test_p15a_user_present_org_present_returns_user(
     # contract — observers of the Vault audit log should not see an
     # org-default read on a user-served call.
     assert vault.calls == [user_path], (
-        f"Property 15a violated: org-default path was queried even though "
+        f"invariant violated: org-default path was queried even though "
         f"the per-user override existed. calls={vault.calls!r}"
     )
 
 
 # ---------------------------------------------------------------------------
-# Property 15b — (per_user=True, org_default=False) → per-user wins
+# invariant — (per_user=True, org_default=False) → per-user wins
 # ---------------------------------------------------------------------------
 
 
@@ -1524,10 +1519,10 @@ def test_p15a_user_present_org_present_returns_user(
 def test_p15b_user_present_org_absent_returns_user(
     session_id: str, dept_id: str, service: _P15Service
 ) -> None:
-    """Property 15b — per-user override resolves even with no org-default.
+    """invariant — per-user override resolves even with no org-default.
 
-    **Validates: Requirements 10.7, 10.8**
-    """
+
+ """
 
     user_path = _p15_build_user_session_path(session_id, service)
 
@@ -1544,7 +1539,7 @@ def test_p15b_user_present_org_absent_returns_user(
 
 
 # ---------------------------------------------------------------------------
-# Property 15c — (per_user=False, org_default=True) → org-default wins
+# invariant — (per_user=False, org_default=True) → org-default wins
 # ---------------------------------------------------------------------------
 
 
@@ -1557,10 +1552,10 @@ def test_p15b_user_present_org_absent_returns_user(
 def test_p15c_user_absent_org_present_returns_org(
     session_id: str, dept_id: str, service: _P15Service
 ) -> None:
-    """Property 15c — fall back to org-default when per-user is missing.
+    """invariant — fall back to org-default when per-user is missing.
 
-    **Validates: Requirements 10.7, 10.8**
-    """
+
+ """
 
     user_path = _p15_build_user_session_path(session_id, service)
     org_path = _p15_build_org_default_path(dept_id, service)
@@ -1571,7 +1566,7 @@ def test_p15c_user_absent_org_present_returns_org(
     result = resolver.resolve(session_id, dept_id, service)
 
     assert result.source == "org_default", (
-        f"Property 15c violated: with only org-default present, expected "
+        f"invariant violated: with only org-default present, expected "
         f"source='org_default' but got {result.source!r}."
     )
     assert result.path == org_path
@@ -1582,7 +1577,7 @@ def test_p15c_user_absent_org_present_returns_org(
 
 
 # ---------------------------------------------------------------------------
-# Property 15d — (per_user=False, org_default=False) → credential_missing
+# invariant — (per_user=False, org_default=False) → credential_missing
 # ---------------------------------------------------------------------------
 
 
@@ -1595,10 +1590,10 @@ def test_p15c_user_absent_org_present_returns_org(
 def test_p15d_user_absent_org_absent_raises_credential_missing(
     session_id: str, dept_id: str, service: _P15Service
 ) -> None:
-    """Property 15d — both paths missing → ``credential_missing`` raised.
+    """invariant — both paths missing → ``credential_missing`` raised.
 
-    **Validates: Requirements 10.7, 10.8**
-    """
+
+ """
 
     user_path = _p15_build_user_session_path(session_id, service)
     org_path = _p15_build_org_default_path(dept_id, service)
@@ -1610,7 +1605,7 @@ def test_p15d_user_absent_org_absent_raises_credential_missing(
         resolver.resolve(session_id, dept_id, service)
 
     err = exc_info.value
-    # Canonical audit error code (R10.8).
+    # Canonical audit error code.
     assert err.error_code == "credential_missing"
     assert err.session_id == session_id
     assert err.dept_id == dept_id
@@ -1620,7 +1615,7 @@ def test_p15d_user_absent_org_absent_raises_credential_missing(
     # cannot short-circuit and call ``credential_missing`` without
     # actually checking the org-default fallback.
     assert vault.calls == [user_path, org_path], (
-        f"Property 15d violated: resolver did not attempt both paths "
+        f"invariant violated: resolver did not attempt both paths "
         f"before raising credential_missing. calls={vault.calls!r}"
     )
     # Must subclass LookupError so generic catch sites keep working.
@@ -1628,7 +1623,7 @@ def test_p15d_user_absent_org_absent_raises_credential_missing(
 
 
 # ---------------------------------------------------------------------------
-# Property 15e — call ordering invariant across the entire 2x2 matrix
+# invariant — call ordering invariant across the entire 2x2 matrix
 # ---------------------------------------------------------------------------
 
 
@@ -1651,20 +1646,20 @@ def test_p15e_lookup_order_is_user_then_org_default(
     per_user_present: bool,
     org_default_present: bool,
 ) -> None:
-    """Property 15e — full 2x2 matrix: priority + call ordering.
+    """invariant — full 2x2 matrix: priority + call ordering.
 
-    **Validates: Requirements 10.7, 10.8**
 
-    For every combination of ``(per_user_present, org_default_present)``:
 
-    * The per-user path is **always** the first read.
-    * The org-default path is read **only** when the per-user lookup
-      missed (i.e. the resolver does not over-fetch).
-    * The returned ``source`` matches the boolean inputs:
-        - per_user_present → ``"user_session"``
-        - else org_default_present → ``"org_default"``
-        - else → ``CredentialMissing``
-    """
+ For every combination of ``(per_user_present, org_default_present)``:
+
+ * The per-user path is **always** the first read.
+ * The org-default path is read **only** when the per-user lookup
+ missed (i.e. the resolver does not over-fetch).
+ * The returned ``source`` matches the boolean inputs:
+ - per_user_present → ``"user_session"``
+ - else org_default_present → ``"org_default"``
+ - else → ``CredentialMissing``
+ """
 
     user_path = _p15_build_user_session_path(session_id, service)
     org_path = _p15_build_org_default_path(dept_id, service)

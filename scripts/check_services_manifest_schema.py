@@ -1,19 +1,16 @@
-"""Sanity check that config/services.manifest.schema.json behaves as
-specified by admin-dashboard-control-plane task 2.1, and that
-config/services.manifest.json itself is schema-valid and contains the
-10-entry foundation topology required by platform-mimari-foundation
-task 1.1 (requirements 1.1, 1.10, 2.1, 8.4).
+"""Sanity check that config/services.manifest.schema.json behaves as expected.
 
-platform-mimari-ops task 1.3 extends the schema and this validator with:
+The checker also verifies that config/services.manifest.json is schema-valid
+and contains the baseline service topology used by the platform.
 
 * ``depends_on_services`` (array of string, default ``[]``) — names of
-  services this entry depends on for cascade healthcheck (Q11, N20, T17)
-  and auto-start orchestration. May reference other manifest entries by
+  services this entry depends on for cascade healthcheck and auto-start
+  orchestration. May reference other manifest entries by
   ``name`` OR external Boot_Bundle / infra components (postgres, vault,
-  temporal, atlassian_unified) that do not appear as manifest entries.
+  temporal, atlassian_mcp_bitbucket) that do not appear as manifest entries.
 * ``feature_flag_dependency`` (array of string, default ``[]``) — names
   of feature flags whose enabled state must be ``true`` before the
-  Control_Plane will start the service (Q12).
+  Control_Plane will start the service.
 * Cycle detection (DFS) over the intra-manifest portion of the
   ``depends_on_services`` graph, since JSON Schema 2020-12 cannot
   express cross-array constraints. External dependency names that are
@@ -38,11 +35,8 @@ schema = json.loads((ROOT / "config" / "services.manifest.schema.json").read_tex
 Draft202012Validator.check_schema(schema)
 v = Draft202012Validator(schema)
 
-# Foundation 10-entry topology required by platform-mimari-foundation
-# requirements.md §1.1 + design.md "Komponent Sahipliği Özeti" 10-row
-# table. The manifest is allowed to carry additional entries (e.g.
-# task-intake-service) that are out of scope for this spec, but every
-# name in this set MUST be present.
+# Baseline service topology. The manifest is allowed to carry additional
+# entries, but every name in this set MUST be present.
 FOUNDATION_REQUIRED_NAMES: frozenset[str] = frozenset(
     {
         "atlassian-mcp",
@@ -58,7 +52,7 @@ FOUNDATION_REQUIRED_NAMES: frozenset[str] = frozenset(
     }
 )
 
-# Per requirements.md §1.1 each foundation entry has a fixed kind.
+# Each foundation entry has a fixed kind.
 FOUNDATION_REQUIRED_KIND: dict[str, str] = {
     "atlassian-mcp": "infra",
     "firecrawl": "infra",
@@ -170,7 +164,7 @@ assert_valid(
     "ui with null health",
 )
 
-# Valid: depends_on_services and feature_flag_dependency populated (Q11/Q12).
+# Valid: depends_on_services and feature_flag_dependency populated.
 assert_valid(
     {
         "version": 1,
@@ -183,7 +177,7 @@ assert_valid(
                 "env_example_path": "services/automation-service/.env.example",
                 "health_endpoint": "/healthz",
                 "test_command": None,
-                "depends_on_services": ["postgres", "vault", "temporal", "atlassian_unified"],
+                "depends_on_services": ["postgres", "vault", "temporal", "atlassian_mcp_bitbucket"],
                 "feature_flag_dependency": ["BUDGET_CAPS_ENFORCED"],
             }
         ],
@@ -209,7 +203,7 @@ assert_valid(
             }
         ],
     },
-    "Q11/Q12 empty arrays",
+    "dependency arrays empty",
 )
 
 # Valid: depends_on_services / feature_flag_dependency omitted (default []).
@@ -228,7 +222,7 @@ assert_valid(
             }
         ],
     },
-    "Q11/Q12 omitted (default [])",
+    "dependency arrays omitted (default [])",
 )
 
 # Invalid: version != 1.
@@ -529,7 +523,7 @@ if manifest_errs:
     sys.exit(1)
 print("\nOK   config/services.manifest.json is schema-valid.")
 
-# 2) Foundation 10-entry topology presence (requirements.md §1.1 / §1.10).
+# 2) Foundation 10-entry topology presence.
 manifest_names = {entry["name"] for entry in manifest["services"]}
 missing = FOUNDATION_REQUIRED_NAMES - manifest_names
 if missing:
@@ -544,7 +538,7 @@ print(
     f"{len(manifest_names)} total entries in manifest)."
 )
 
-# 3) Foundation kind invariants (requirements.md §1.1).
+# 3) Foundation kind invariants.
 by_name = {entry["name"]: entry for entry in manifest["services"]}
 kind_errs: list[str] = []
 for name, expected_kind in FOUNDATION_REQUIRED_KIND.items():
@@ -559,7 +553,7 @@ if kind_errs:
 print("OK   foundation kind invariants hold.")
 
 # 4) Required field consistency: each foundation entry's compose_profile
-#    SHALL contain its compose_service_name (requirements.md §2.1).
+#    SHALL contain its compose_service_name.
 profile_errs: list[str] = []
 for name in FOUNDATION_REQUIRED_NAMES:
     entry = by_name[name]
@@ -577,8 +571,8 @@ print("OK   compose_profile contains compose_service_name for all foundation ent
 
 # 5) HTTP-service entries SHALL define a non-null health_endpoint;
 #    worker/sidecar/ui foundation entries SHALL have health_endpoint=null
-#    (requirements.md §1.10 — workers don't open HTTP, sidecars are
-#    Compose-internal-only, UIs serve via their own framework).
+#    (workers don't open HTTP, sidecars are Compose-internal-only, UIs
+#    serve via their own framework).
 health_errs: list[str] = []
 for name in FOUNDATION_REQUIRED_NAMES:
     entry = by_name[name]
@@ -602,7 +596,7 @@ print("OK   foundation health_endpoint invariants hold.")
 # 6) Cycle detection (DFS) over depends_on_services edges, restricted to
 #    intra-manifest references. External dependency names that are not
 #    manifest entry names are skipped — they cannot form a cycle since
-#    they are not nodes in the graph (platform-mimari-ops task 1.3, Q11).
+#    they are not nodes in the graph.
 # ---------------------------------------------------------------------------
 
 

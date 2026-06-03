@@ -5,11 +5,11 @@ build-backend = "hatchling.build"
 [project]
 name = "observability"
 version = "0.0.0"
-description = "Shared Prometheus metric registry for platform-mimari-ops services and workers."
+description = "Shared Prometheus metric registry for platform services and workers."
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 license = { text = "Proprietary" }
-authors = [{ name = "Multi-Service Scaffold" }]
+authors = [{ name = "Platform" }]
 dependencies = [
     "prometheus-client>=0.20,<1",
 ]

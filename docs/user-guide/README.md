@@ -32,5 +32,4 @@ ile ekleyebilirsin (sahibi: `ai-admin` ekibi).
 - "Bot ne kadar sürer?" → [`waiting-for-bot.md`](waiting-for-bot.md#süre-tahmini)
 - Genel sorular → [`faq.md`](faq.md)
 
-> Bu dosyalar mimari spec değildir. Teknik detay için `MIMARI.md`. Hata bildirimi için
-> AI Admin Slack kanalı.
+> Hata bildirimi için AI Admin Slack kanalı.

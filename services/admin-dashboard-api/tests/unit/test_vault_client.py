@@ -1,9 +1,8 @@
-"""Unit tests for ``src.lifecycle.vault_client.VaultClient`` (task 5.1).
+"""Unit tests for ``src.lifecycle.vault_client.VaultClient``.
 
 These tests exercise the Vault KV-v2 wrapper against an in-process
 ``httpx.MockTransport`` — no real Vault, no network, no disk I/O. They
-validate the contract from design §3.5 and Requirements 9.1, 9.2, 9.5,
-9.6.
+validate the Vault client contract.
 
 Test layout:
 
@@ -16,7 +15,7 @@ Test layout:
   GET raises.
 * ``delete_env_override``: ``204`` and idempotent ``404`` succeed;
   ``5xx`` raises.
-* Property P2 sentinel: a sequence of writes never opens or creates
+* Disk I/O sentinel: a sequence of writes never opens or creates
   any file under the workspace tree (smoke check that the wrapper
   doesn't accidentally touch disk).
 """
@@ -96,7 +95,7 @@ def test_constructor_rejects_empty_kv_mount() -> None:
 
 @pytest.mark.asyncio
 async def test_write_env_override_uses_kv_v2_data_url_and_body() -> None:
-    """Requirement 9.1 + 9.6: PUT to the KV-v2 ``data/services/...`` path
+    """PUT to the KV-v2 ``data/services/...`` path
     with body ``{"data": {"value": value}}`` and the ``X-Vault-Token``
     header set."""
 
@@ -179,7 +178,7 @@ async def test_write_env_override_url_encodes_segments() -> None:
 @pytest.mark.asyncio
 @pytest.mark.parametrize("status", [500, 502, 503, 504])
 async def test_write_env_override_raises_on_5xx(status: int) -> None:
-    """Requirement 9.5: any 5xx is fatal."""
+    """Any 5xx is fatal."""
 
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(status, text="boom")
@@ -203,7 +202,7 @@ async def test_write_env_override_raises_on_5xx(status: int) -> None:
 
 @pytest.mark.asyncio
 async def test_write_env_override_raises_on_404() -> None:
-    """Requirement 9.5 explicitly calls out 404 alongside 5xx."""
+    """404 is fatal alongside 5xx."""
 
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(404, json={"errors": ["not found"]})
@@ -475,7 +474,7 @@ async def test_delete_env_override_raises_on_5xx() -> None:
 
 
 # ---------------------------------------------------------------------------
-# list_env_override_keys (platform-mimari-uyumluluk R14 / Q16 task 15.2)
+# list_env_override_keys
 # ---------------------------------------------------------------------------
 
 
@@ -562,7 +561,7 @@ async def test_list_env_override_keys_raises_on_5xx() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Property P2 — VaultClient itself never touches disk
+# VaultClient itself never touches disk
 # ---------------------------------------------------------------------------
 
 
@@ -570,7 +569,7 @@ async def test_list_env_override_keys_raises_on_5xx() -> None:
 async def test_vault_client_does_not_open_disk_files_during_writes(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """A direct sentinel for Requirement 9.2 / Property P2 surface area
+    """A direct sentinel for the disk I/O surface area
     inside the wrapper itself: monkey-patch ``builtins.open`` to crash
     on any disk access for the duration of a multi-key write
     sequence."""
@@ -584,7 +583,7 @@ async def test_vault_client_does_not_open_disk_files_during_writes(
         # touch ``/dev/null`` style helpers; restrict to non-special.
         path = args[0] if args else kwargs.get("file")
         raise AssertionError(
-            f"VaultClient must not perform disk I/O (Property P2); "
+            f"VaultClient must not perform disk I/O; "
             f"open({path!r}) was called"
         )
 

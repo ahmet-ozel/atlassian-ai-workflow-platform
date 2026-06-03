@@ -14,8 +14,6 @@ Activities:
 - docker_stop_container: Stop a container with configurable grace period
 - docker_cleanup_container: Remove container/image based on cleanup policy
 - docker_daemon_healthcheck: Check Docker daemon availability
-
-Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9
 """
 
 from __future__ import annotations
@@ -324,7 +322,6 @@ async def docker_build_image(input: DockerBuildInput) -> DockerBuildResult:
     DockerBuildResult
         Result containing success status, image ID, error, and duration.
 
-    Requirements: 1.1, 1.2
     """
     activity.logger.info(
         "docker_build_image: tag=%s dockerfile=%s workspace=%s "
@@ -469,7 +466,6 @@ async def docker_run_container(input: DockerRunInput) -> DockerRunResult:
         Result containing container ID, exit code, stdout, stderr,
         and optional log artifact URI.
 
-    Requirements: 1.3, 1.5, 1.9
     """
     # Enforce max timeout
     effective_timeout = min(input.timeout_seconds, input.max_timeout_seconds)
@@ -513,7 +509,7 @@ async def docker_run_container(input: DockerRunInput) -> DockerRunResult:
     # Working directory inside container
     cmd_parts.append(f"-w {workspace_arg}")
 
-    # Environment variables (Requirement 1.9)
+    # Environment variables.
     if input.environment:
         for key, value in input.environment.items():
             env_arg = shlex.quote(f"{key}={value}")
@@ -615,7 +611,6 @@ async def docker_collect_logs(
         The MinIO URI of the uploaded log artifact, or empty string
         if upload failed.
 
-    Requirements: 1.4
     """
     activity.logger.info(
         "docker_collect_logs: container=%s max_bytes=%d",
@@ -731,7 +726,6 @@ async def docker_stop_container(
     -------
     None
 
-    Requirements: 1.5
     """
     activity.logger.info(
         "docker_stop_container: container=%s grace_period=%ds",
@@ -802,7 +796,6 @@ async def docker_cleanup_container(input: DockerCleanupInput) -> None:
     -------
     None
 
-    Requirements: 1.6, 1.7
     """
     activity.logger.info(
         "docker_cleanup_container: container=%s image=%s policy=%s "
@@ -910,7 +903,6 @@ async def docker_daemon_healthcheck(
     bool
         True if Docker daemon is accessible, False otherwise.
 
-    Requirements: 1.8
     """
     if isinstance(input, dict):
         input = DockerHealthcheckInput(
@@ -1027,7 +1019,7 @@ def build_docker_run_command(input: DockerRunInput) -> str:
     # Working directory
     cmd_parts.append(f"-w {workspace_arg}")
 
-    # Environment variables (Requirement 1.9)
+    # Environment variables.
     if input.environment:
         for key, value in sorted(input.environment.items()):
             env_arg = shlex.quote(f"{key}={value}")

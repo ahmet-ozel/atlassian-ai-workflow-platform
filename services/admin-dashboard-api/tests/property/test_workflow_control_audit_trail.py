@@ -1,34 +1,27 @@
-# Feature: platform-gap-fill
-# Property 18: Workflow control audit trail
-# Validates: Requirements 6.4
-"""Property test: Workflow control audit trail (Property 18).
-
-**Property 18: Workflow control audit trail**
-**Validates: Requirements 6.4**
-
+#
+# Workflow control audit trail
+#
+"""Workflow control audit trail .
+Workflow control audit trail**
 *For any* workflow control action (``cancel`` / ``retry`` / ``signal``),
 the :mod:`src.routers.workflow_control` router SHALL emit **exactly one**
 ``workflow_control`` audit event whose ``payload.action_kind`` matches
 the action that was attempted and whose ``result`` records the outcome:
-
-- ``"ok"``     when the underlying Temporal call succeeds.
+- ``"ok"`` when the underlying Temporal call succeeds.
 - ``"denied"`` when the workflow does not exist (``WorkflowNotFoundError``
   surfaces the request as ``HTTP 404``; the audit row records the denial).
-- ``"error"``  when Temporal reports a generic
+- ``"error"`` when Temporal reports a generic
   :class:`WorkflowControlError` (``HTTP 502``).
-
-Per Requirement 6.4 ("WHEN herhangi bir workflow control aksiyonu
+Per ("WHEN herhangi bir workflow control aksiyonu
 gerçekleştirildiğinde, THE Admin_Dashboard_API SHALL audit log'a
-``workflow_control`` event'i ... yazmalıdır") **every** mutating call
+``workflow_control`` event'i... yazmalıdır") **every** mutating call
 must produce a single audit row, including the denial / error paths.
-
 Strategy
 --------
 Hypothesis generates random ``(action, outcome, workflow_id, …)``
 quadruples and drives the corresponding endpoint through
 :class:`fastapi.testclient.TestClient`. The :class:`_RecordingAuditSink`
 captures every emitted :class:`AuditEvent`, and each test asserts:
-
 1. Exactly **one** ``workflow_control`` event is recorded.
 2. ``event.action == "workflow_control"``.
 3. ``event.payload["action_kind"]`` equals the requested action
@@ -38,11 +31,9 @@ captures every emitted :class:`AuditEvent`, and each test asserts:
 5. ``event.resource`` references the requested workflow id.
 6. ``event.actor_role == "admin"`` and ``event.actor_id`` matches the
    ``require_admin`` override.
-
 The test is self-contained: it does **not** depend on the real Temporal
 SDK, only on the :class:`SupportsTemporalControl` protocol the router
-declares.
-"""
+declares."""
 
 from __future__ import annotations
 
@@ -401,7 +392,7 @@ def _assert_audit_invariants(
 
 
 # ---------------------------------------------------------------------------
-# Property 18 — exactly one workflow_control audit event per action
+#  — exactly one workflow_control audit event per action
 # ---------------------------------------------------------------------------
 
 
@@ -424,17 +415,13 @@ def test_every_control_action_emits_one_audit_event(
     signal_name: str,
     signal_payload: Any,
 ) -> None:
-    """Property 18 — every control action emits exactly one audit event.
-
-    **Validates: Requirements 6.4**
-
+    """— every control action emits exactly one audit event.
     For any random ``(action, outcome, workflow_id, …)`` tuple, the
     router writes exactly one ``workflow_control`` audit event whose
     ``action_kind`` and ``result`` match the requested action and the
     observed outcome. Holds for all three actions and all three
     outcomes — including the denied path (404) and the error path
-    (502) where the underlying Temporal mutation never executes.
-    """
+    (502) where the underlying Temporal mutation never executes."""
 
     temporal = _FakeTemporalControl()
     _configure_outcome(temporal, action=action, outcome=outcome)
@@ -466,7 +453,7 @@ def test_every_control_action_emits_one_audit_event(
 
 
 # ---------------------------------------------------------------------------
-# Property 18a — happy-path action_kind / result mapping is total
+#  — happy-path action_kind / result mapping is total
 # ---------------------------------------------------------------------------
 
 
@@ -487,15 +474,11 @@ def test_happy_path_audit_records_action_kind_and_ok_result(
     signal_name: str,
     signal_payload: Any,
 ) -> None:
-    """Property 18a — happy-path action_kind / result mapping is total.
-
-    **Validates: Requirements 6.4**
-
+    """— happy-path action_kind / result mapping is total.
     For every successful invocation the audit row carries
     ``payload.action_kind == action`` and ``result == "ok"``. The
     router must not collapse ``cancel`` / ``retry`` / ``signal`` onto
-    the same label or omit the success row.
-    """
+    the same label or omit the success row."""
 
     temporal = _FakeTemporalControl()
     audit_sink = _RecordingAuditSink()
@@ -522,7 +505,7 @@ def test_happy_path_audit_records_action_kind_and_ok_result(
 
 
 # ---------------------------------------------------------------------------
-# Property 18b — denied path always emits one denied event (no double-write)
+#  — denied path always emits one denied event (no double-write)
 # ---------------------------------------------------------------------------
 
 
@@ -543,16 +526,12 @@ def test_denied_path_emits_single_denied_event(
     signal_name: str,
     signal_payload: Any,
 ) -> None:
-    """Property 18b — denied path emits exactly one ``denied`` audit event.
-
-    **Validates: Requirements 6.4**
-
+    """— denied path emits exactly one ``denied`` audit event.
     When Temporal reports the workflow does not exist, the router must
     write **one** audit event with ``result="denied"`` (never two,
     never zero) and never invoke the mutation. This is the property
     that prevents an attacker from flooding the audit log with denied
-    rows by retrying against a missing workflow.
-    """
+    rows by retrying against a missing workflow."""
 
     temporal = _FakeTemporalControl()
     temporal.describe_result = WorkflowNotFoundError(workflow_id)

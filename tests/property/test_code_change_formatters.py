@@ -1,88 +1,87 @@
-"""Property test 13 — Code-change formatters ve routing.
+"""invariant 13 — Code-change formatters ve routing.
 
-**Validates: Requirements 7.1, 7.2, 7.8, 7.9**
+
 
 Hypothesis-driven verification of the four pure helpers used by the
 ``code_change_*`` workflow family in
-``.kiro/specs/platform-mimari-workflows``:
+`/``:
 
-* :func:`temporal_shared.code_change.compute_branch_name` — collision-free
-  iteration branch picker (R7.1, design.md Property 13(a)).
-* :func:`temporal_shared.code_change.format_commit_message` — ``[bot]``
-  prefix + ``Co-authored-by`` provenance footer (R7.2, design.md
-  Property 13(b)).
-* :func:`mcp_client.deployment_router.select_pr_create_tool` — Bitbucket
-  Cloud vs Data Center MCP tool parity (R7.8, design.md Property 13(c),
-  MIMARI §16.15 T9).
-* :func:`temporal_shared.branch_rules.route_by_branch_pattern` —
-  hotfix/release deny / allowlist semantics (R7.9, design.md Property
-  13(d), MIMARI §16.15.6 U6).
+*:func:`temporal_shared.code_change.compute_branch_name` — collision-free
+ iteration branch picker (, design.md invariant(a)).
+*:func:`temporal_shared.code_change.format_commit_message` — ``[bot]``
+ prefix + ``Co-authored-by`` provenance footer (, design.md
+ invariant(b)).
+*:func:`mcp_client.deployment_router.select_pr_create_tool` — Bitbucket
+ Cloud vs Data Center MCP tool parity (, design.md invariant(c),
+ §16.15 T9).
+*:func:`temporal_shared.branch_rules.route_by_branch_pattern` —
+ hotfix/release deny / allowlist semantics (, design.md invariant(d), §16.15.6 U6).
 
-Property statements (mirror design.md §"Property 13")
+Invariant statements (mirror design.md §"invariant")
 -----------------------------------------------------
 
-(P1)  ``compute_branch_name(issue_key, iter, existing)`` is **collision-free**:
-      the returned branch never appears in *existing* whenever the
-      function takes the bare ``ai/{issue_key}`` branch (iter == 1 +
-      slot free); for iter == 1 with the slot taken or any iter >= 2
-      the function returns the iter-suffixed form, which the workflow
-      caller is expected to keep fresh by monotonically incrementing
-      ``iter`` (we therefore do not assert disjointness from
-      *existing* on the iter-suffixed branch — the function does not
-      consult the set in that case, and asserting otherwise would
-      contradict the documented contract).
+(P1) ``compute_branch_name(issue_key, iter, existing)`` is **collision-free**:
+ the returned branch never appears in *existing* whenever the
+ function takes the bare ``ai/{issue_key}`` branch (iter == 1 +
+ slot free); for iter == 1 with the slot taken or any iter >= 2
+ the function returns the iter-suffixed form, which the workflow
+ caller is expected to keep fresh by monotonically incrementing
+ ``iter`` (we therefore do not assert disjointness from
+ *existing* on the iter-suffixed branch — the function does not
+ consult the set in that case, and asserting otherwise would
+ contradict the documented contract).
 
-(P2)  ``compute_branch_name`` always returns one of two shapes:
-      ``"ai/{issue_key}"`` or ``"ai/{issue_key}-iter{iter}"`` — and the
-      bare form is selected **iff** ``iter == 1`` AND the bare slot is
-      free in *existing*.
+(P2) ``compute_branch_name`` always returns one of two shapes:
+ ``"ai/{issue_key}"`` or ``"ai/{issue_key}-iter{iter}"`` — and the
+ bare form is selected **iff** ``iter == 1`` AND the bare slot is
+ free in *existing*.
 
-(P3)  ``compute_branch_name`` is deterministic and pure: given the same
-      ``(issue_key, iter, existing)`` triple, two consecutive calls
-      return identical strings; passing *existing* as a list, tuple,
-      set or frozenset does not change the result; mutating the input
-      iterable after the call cannot affect the returned value.
+(P3) ``compute_branch_name`` is deterministic and pure: given the same
+ ``(issue_key, iter, existing)`` triple, two consecutive calls
+ return identical strings; passing *existing* as a list, tuple,
+ set or frozenset does not change the result; mutating the input
+ iterable after the call cannot affect the returned value.
 
-(P4)  ``format_commit_message(message, issue_key, iter, bot_email)``
-      output **starts with** the literal ``"[bot] "`` prefix.
+(P4) ``format_commit_message(message, issue_key, iter, bot_email)``
+ output **starts with** the literal ``"[bot] "`` prefix.
 
-(P5)  ``format_commit_message`` output **ends with** the trailer line
-      ``"Co-authored-by: ai-bot <{bot_email}>"`` and the trailer is
-      separated from the body by exactly one blank line (Git
-      convention so ``git log --pretty=%(trailers)`` parses it).
+(P5) ``format_commit_message`` output **ends with** the trailer line
+ ``"Co-authored-by: ai-bot <{bot_email}>"`` and the trailer is
+ separated from the body by exactly one blank line (Git
+ convention so ``git log --pretty=%(trailers)`` parses it).
 
-(P6)  ``format_commit_message`` echoes the ``message`` body unchanged
-      (modulo trailing whitespace) — the function does not silently
-      rewrite, truncate, or re-wrap LLM output.
+(P6) ``format_commit_message`` echoes the ``message`` body unchanged
+ (modulo trailing whitespace) — the function does not silently
+ rewrite, truncate, or re-wrap LLM output.
 
-(P7)  ``select_pr_create_tool("cloud")`` returns
-      ``"bitbucket_create_pull_request_cloud"`` and
-      ``select_pr_create_tool("server")`` returns
-      ``"bitbucket_create_pull_request_dc"`` — the parity mapping is
-      exhaustive and any other input raises :class:`KeyError` (no
-      silent fallback to either side, by design).
+(P7) ``select_pr_create_tool("cloud")`` returns
+ ``"bitbucket_create_pull_request_cloud"`` and
+ ``select_pr_create_tool("server")`` returns
+ ``"bitbucket_create_pull_request_dc"`` — the parity mapping is
+ exhaustive and any other input raises:class:`KeyError` (no
+ silent fallback to either side, by design).
 
-(P8)  ``route_by_branch_pattern`` denies ``code_change_commit_only`` on
-      every branch matching ``hotfix/*`` (PR open mandatory).
+(P8) ``route_by_branch_pattern`` denies ``code_change_commit_only`` on
+ every branch matching ``hotfix/*`` (PR open mandatory).
 
-(P9)  ``route_by_branch_pattern`` allows only ``pr_review`` and
-      ``confluence_doc_update`` on branches matching ``release/*`` —
-      every other workflow type is denied with the rule's audit
-      reason.
+(P9) ``route_by_branch_pattern`` allows only ``pr_review`` and
+ ``confluence_doc_update`` on branches matching ``release/*`` —
+ every other workflow type is denied with the rule's audit
+ reason.
 
 (P10) ``route_by_branch_pattern`` always allows on branches matching
-      ``ai/*`` because no default rule matches the ``ai/`` prefix
-      (open default — ``no_rule_matched``).
+ ``ai/*`` because no default rule matches the ``ai/`` prefix
+ (open default — ``no_rule_matched``).
 
 (P11) ``route_by_branch_pattern`` is deterministic and pure: two
-      consecutive calls with the same arguments return identical
-      decisions.
+ consecutive calls with the same arguments return identical
+ decisions.
 
 Hypothesis configuration
 ------------------------
 
 Every property runs at ``max_examples=100`` with ``deadline=None`` per
-the brief, matching the existing property suite cadence (see
+the brief, matching the existing invariant cadence (see
 ``test_explain_keyword.py``, ``test_fix_keyword.py``).
 """
 
@@ -120,7 +119,7 @@ from temporal_shared.identifiers import InvalidIssueKeyError
 # Constants — pinned from the production modules
 # ---------------------------------------------------------------------------
 
-#: Closed set of workflow types referenced by the design (R1.1, R6.1
+#: Closed set of workflow types referenced by the design (, 
 #: ``WORKFLOW_TYPE_CAPABILITIES``). Hypothesis samples from this list
 #: so the strategy stays inside the documented universe.
 _WORKFLOW_TYPES: Final[tuple[str, ...]] = (
@@ -137,13 +136,13 @@ _WORKFLOW_TYPES: Final[tuple[str, ...]] = (
 )
 
 #: Workflow types that ``DEFAULT_RELEASE_RULE`` permits on ``release/*``
-#: branches (mirrors :data:`DEFAULT_RELEASE_RULE.allowed_workflow_types`).
+#: branches (mirrors:data:`DEFAULT_RELEASE_RULE.allowed_workflow_types`).
 _RELEASE_ALLOWED: Final[frozenset[str]] = frozenset(
     {"pr_review", "confluence_doc_update"}
 )
 
 #: Hard-coded shape regexes that pin the formatter outputs. Both come
-#: from requirements.md §R7.1 / design.md Property 13(a). The bare form
+#: from the operational rule.md § / design.md invariant(a). The bare form
 #: matches a Jira issue key with at least 2 chars in the project prefix
 #: and a positive issue number; the iter form appends ``-iter{N}`` with
 #: ``N >= 1``.
@@ -155,7 +154,7 @@ _ITER_BRANCH_RE: Final[re.Pattern[str]] = re.compile(
 )
 
 #: Trailer regex (RFC-5322-ish — same shape the production validator
-#: accepts in :mod:`temporal_shared.code_change`).
+#: accepts in:mod:`temporal_shared.code_change`).
 _TRAILER_RE: Final[re.Pattern[str]] = re.compile(
     r"^Co-authored-by: ai-bot <[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}>$"
 )
@@ -216,7 +215,7 @@ def _bot_emails(draw: st.DrawFn) -> str:
 
 
 # Commit message body — non-empty short ASCII, single-line and
-# multi-line shapes both covered. ``rstrip()``-equivalent characters in
+# multi-line shapes both covered. ``rstrip``-equivalent characters in
 # the production helper are preserved when computing the expected
 # normalised body.
 _MESSAGES: Final[st.SearchStrategy[str]] = st.one_of(
@@ -299,12 +298,12 @@ def _existing_branch_sets(
 
 
 # ---------------------------------------------------------------------------
-# Property 13(a) — compute_branch_name (R7.1)
+# invariant(a) — compute_branch_name 
 # ---------------------------------------------------------------------------
 
 
 class TestComputeBranchName:
-    """Property 13(a) — collision-free + shape + determinism."""
+    """invariant(a) — collision-free + shape + determinism."""
 
     @settings(max_examples=100, deadline=None)
     @given(
@@ -320,19 +319,19 @@ class TestComputeBranchName:
     ) -> None:
         """P1: when the function returns the bare branch the slot is free.
 
-        For iter == 1, the function returns ``ai/{issue_key}`` *iff* the
-        bare slot is not in ``existing_branches``. We therefore assert
-        the post-condition: when the output equals the bare form, the
-        bare form was guaranteed absent from the input set, i.e. the
-        result never collides with an existing branch.
+ For iter == 1, the function returns ``ai/{issue_key}`` *iff* the
+ bare slot is not in ``existing_branches``. We therefore assert
+ the post-condition: when the output equals the bare form, the
+ bare form was guaranteed absent from the input set, i.e. the
+ result never collides with an existing branch.
 
-        For iter >= 2 the function deterministically returns the
-        iter-suffixed form regardless of *existing* (the workflow
-        caller monotonically increments iter, so the result is fresh by
-        construction).
+ For iter >= 2 the function deterministically returns the
+ iter-suffixed form regardless of *existing* (the workflow
+ caller monotonically increments iter, so the result is fresh by
+ construction).
 
-        Validates: Requirements 7.1.
-        """
+
+ """
         existing = data.draw(_existing_branch_sets(issue_key))
 
         result = compute_branch_name(issue_key, iteration, existing)
@@ -360,11 +359,11 @@ class TestComputeBranchName:
     ) -> None:
         """P2: output is always either the bare form or the iter form.
 
-        The bare form is selected **iff** ``iter == 1`` AND the bare
-        slot is free; every other case lands on the iter-suffixed form.
+ The bare form is selected **iff** ``iter == 1`` AND the bare
+ slot is free; every other case lands on the iter-suffixed form.
 
-        Validates: Requirements 7.1.
-        """
+
+ """
         existing = data.draw(_existing_branch_sets(issue_key))
         result = compute_branch_name(issue_key, iteration, existing)
 
@@ -397,15 +396,15 @@ class TestComputeBranchName:
     ) -> None:
         """P3: pure + iterable shape independent + post-call mutation safe.
 
-        Two consecutive calls with the same triple return identical
-        strings. Passing *existing* as a list, tuple, set or frozenset
-        does not change the result. Mutating a mutable iterable after
-        the call cannot retro-actively change the returned value
-        (because the function consumes the iterable eagerly when iter
-        == 1 and skips it otherwise).
+ Two consecutive calls with the same triple return identical
+ strings. Passing *existing* as a list, tuple, set or frozenset
+ does not change the result. Mutating a mutable iterable after
+ the call cannot retro-actively change the returned value
+ (because the function consumes the iterable eagerly when iter
+ == 1 and skips it otherwise).
 
-        Validates: Requirements 7.1.
-        """
+
+ """
         existing_set = data.draw(_existing_branch_sets(issue_key))
 
         # Same input, two calls → same output.
@@ -443,24 +442,24 @@ class TestComputeBranchName:
         assert result_mutable == first
 
     def test_invalid_issue_key_raises(self) -> None:
-        """Non-shape issue keys raise :class:`InvalidIssueKeyError`.
+        """Non-shape issue keys raise:class:`InvalidIssueKeyError`.
 
-        Concrete regression — keeps the property suite anchored to the
-        validator contract.
+ Concrete regression — keeps the invariant anchored to the
+ validator contract.
 
-        Validates: Requirements 7.1.
-        """
+
+ """
         with pytest.raises(InvalidIssueKeyError):
             compute_branch_name("not-an-issue-key", 1, [])
 
 
 # ---------------------------------------------------------------------------
-# Property 13(b) — format_commit_message (R7.2)
+# invariant(b) — format_commit_message 
 # ---------------------------------------------------------------------------
 
 
 class TestFormatCommitMessage:
-    """Property 13(b) — ``[bot]`` prefix + ``Co-authored-by`` footer."""
+    """invariant(b) — ``[bot]`` prefix + ``Co-authored-by`` footer."""
 
     @settings(max_examples=100, deadline=None)
     @given(
@@ -478,8 +477,8 @@ class TestFormatCommitMessage:
     ) -> None:
         """P4: output starts with ``"[bot] "`` (note trailing space).
 
-        Validates: Requirements 7.2.
-        """
+
+ """
         result = format_commit_message(message, issue_key, iteration, bot_email)
 
         assert result.startswith(f"{BOT_COMMIT_PREFIX} ")
@@ -500,12 +499,12 @@ class TestFormatCommitMessage:
     ) -> None:
         """P5: trailer line is the last line and is preceded by a blank line.
 
-        ``Co-authored-by: ai-bot <{bot_email}>`` MUST be the last line
-        of the output, separated from the body by exactly one empty
-        line so Git's trailer parser recognises it.
+ ``Co-authored-by: ai-bot <{bot_email}>`` MUST be the last line
+ of the output, separated from the body by exactly one empty
+ line so Git's trailer parser recognises it.
 
-        Validates: Requirements 7.2.
-        """
+
+ """
         result = format_commit_message(message, issue_key, iteration, bot_email)
         lines = result.split("\n")
 
@@ -539,18 +538,18 @@ class TestFormatCommitMessage:
         iteration: int,
         bot_email: str,
     ) -> None:
-        """P6: body equals ``"[bot] " + message.rstrip()``.
+        """P6: body equals ``"[bot] " + message.rstrip``.
 
-        The function only strips trailing whitespace from *message* so
-        the inserted blank line is unambiguous; internal structure is
-        preserved verbatim. The function does **not** rewrite, truncate
-        or re-flow the LLM body.
+ The function only strips trailing whitespace from *message* so
+ the inserted blank line is unambiguous; internal structure is
+ preserved verbatim. The function does **not** rewrite, truncate
+ or re-flow the LLM body.
 
-        Validates: Requirements 7.2.
-        """
+
+ """
         result = format_commit_message(message, issue_key, iteration, bot_email)
 
-        # Split off the trailer block (``\n\nCo-authored-by: ...``).
+        # Split off the trailer block (``\n\nCo-authored-by:...``).
         trailer = f"\n\nCo-authored-by: ai-bot <{bot_email}>"
         assert result.endswith(trailer)
         body = result[: -len(trailer)]
@@ -561,8 +560,8 @@ class TestFormatCommitMessage:
     def test_concrete_example_pins_shape(self) -> None:
         """Concrete regression for P4+P5+P6.
 
-        Validates: Requirements 7.2.
-        """
+
+ """
         result = format_commit_message(
             "fix payment retry logic",
             "PAY-4211",
@@ -576,12 +575,12 @@ class TestFormatCommitMessage:
 
 
 # ---------------------------------------------------------------------------
-# Property 13(c) — select_pr_create_tool (R7.8)
+# invariant(c) — select_pr_create_tool 
 # ---------------------------------------------------------------------------
 
 
 class TestSelectPrCreateTool:
-    """Property 13(c) — Bitbucket Cloud ↔ Data Center parity (T9)."""
+    """invariant(c) — Bitbucket Cloud ↔ Data Center parity (T9)."""
 
     @settings(max_examples=100, deadline=None)
     @given(deployment=st.sampled_from(("cloud", "server")))
@@ -590,8 +589,8 @@ class TestSelectPrCreateTool:
     ) -> None:
         """P7: ``cloud → cloud_tool``, ``server → dc_tool`` — exhaustive.
 
-        Validates: Requirements 7.8.
-        """
+
+ """
         tool = select_pr_create_tool(deployment)  # type: ignore[arg-type]
 
         if deployment == "cloud":
@@ -612,26 +611,26 @@ class TestSelectPrCreateTool:
     ) -> None:
         """Any value outside ``{"cloud", "server"}`` raises ``KeyError``.
 
-        The router intentionally has **no** default branch so a
-        misconfigured ``departments.json`` surfaces at signal-dispatch
-        time rather than silently routing a Cloud-style PR call to a
-        Data Center instance (or vice versa). This test pins the
-        fail-fast behaviour against the entire complement of valid
-        inputs.
+ The router intentionally has **no** default branch so a
+ misconfigured ``departments.json`` surfaces at signal-dispatch
+ time rather than silently routing a Cloud-style PR call to a
+ Data Center instance (or vice versa). This test pins the
+ fail-fast behaviour against the entire complement of valid
+ inputs.
 
-        Validates: Requirements 7.8.
-        """
+
+ """
         with pytest.raises(KeyError):
             select_pr_create_tool(bad_deployment)  # type: ignore[arg-type]
 
 
 # ---------------------------------------------------------------------------
-# Property 13(d) — route_by_branch_pattern (R7.9)
+# invariant(d) — route_by_branch_pattern 
 # ---------------------------------------------------------------------------
 
 
 class TestRouteByBranchPattern:
-    """Property 13(d) — hotfix deny + release allowlist + ai/ open default."""
+    """invariant(d) — hotfix deny + release allowlist + ai/ open default."""
 
     @settings(max_examples=100, deadline=None)
     @given(
@@ -643,15 +642,15 @@ class TestRouteByBranchPattern:
     ) -> None:
         """P8: ``hotfix/*`` denies ``code_change_commit_only``.
 
-        For any other workflow type the rule is silent — the matching
-        glob still wins (first-match-wins), but the decision is
-        ``allowed=True`` with the passthrough audit reason. This pins
-        the requirement that PR open is mandatory on hotfix branches
-        without accidentally widening the rule to deny unrelated
-        workflows.
+ For any other workflow type the rule is silent — the matching
+ glob still wins (first-match-wins), but the decision is
+ ``allowed=True`` with the passthrough audit reason. This pins
+ the the operational rule that PR open is mandatory on hotfix branches
+ without accidentally widening the rule to deny unrelated
+ workflows.
 
-        Validates: Requirements 7.9.
-        """
+
+ """
         branch = f"hotfix/{issue_key}"
         decision = route_by_branch_pattern(
             branch, candidate, DEFAULT_BRANCH_PATTERN_RULES
@@ -678,11 +677,11 @@ class TestRouteByBranchPattern:
     ) -> None:
         """P9: ``release/*`` allows only ``pr_review`` + ``confluence_doc_update``.
 
-        Every other workflow type is denied with the rule's audit
-        reason ``release_branch_restricted``.
+ Every other workflow type is denied with the rule's audit
+ reason ``release_branch_restricted``.
 
-        Validates: Requirements 7.9.
-        """
+
+ """
         branch = f"release/{issue_key}"
         decision = route_by_branch_pattern(
             branch, candidate, DEFAULT_BRANCH_PATTERN_RULES
@@ -713,14 +712,14 @@ class TestRouteByBranchPattern:
     ) -> None:
         """P10: ``ai/*`` branches always allow (no default rule matches).
 
-        Neither ``hotfix/*`` nor ``release/*`` matches the ``ai/``
-        prefix, so :func:`route_by_branch_pattern` falls through to
-        the open default — ``allowed=True``, reason
-        ``no_rule_matched``, ``matched_glob=None``. This holds for the
-        bare ``ai/{issue_key}`` slot and the iter-suffixed form alike.
+ Neither ``hotfix/*`` nor ``release/*`` matches the ``ai/``
+ prefix, so:func:`route_by_branch_pattern` falls through to
+ the open default — ``allowed=True``, reason
+ ``no_rule_matched``, ``matched_glob=None``. This holds for the
+ bare ``ai/{issue_key}`` slot and the iter-suffixed form alike.
 
-        Validates: Requirements 7.9.
-        """
+
+ """
         branch = (
             f"ai/{issue_key}-iter{iteration}"
             if use_iter_form
@@ -744,8 +743,8 @@ class TestRouteByBranchPattern:
     ) -> None:
         """P11: same ``(branch, candidate, rules)`` → same decision.
 
-        Validates: Requirements 7.9.
-        """
+
+ """
         first = route_by_branch_pattern(
             branch, candidate, DEFAULT_BRANCH_PATTERN_RULES
         )
@@ -768,12 +767,12 @@ class TestRouteByBranchPattern:
     ) -> None:
         """An empty rule list always yields ``no_rule_matched`` (open default).
 
-        Departments that omit ``branch_pattern_rules`` (the schema
-        default per R7.9) keep working unchanged — every branch +
-        workflow combination is permitted.
+ Departments that omit ``branch_pattern_rules`` (the schema
+ default per) keep working unchanged — every branch +
+ workflow combination is permitted.
 
-        Validates: Requirements 7.9.
-        """
+
+ """
         decision = route_by_branch_pattern(branch, candidate, [])
         assert decision.allowed is True
         assert decision.reason == "no_rule_matched"
@@ -782,8 +781,8 @@ class TestRouteByBranchPattern:
     def test_concrete_examples_match_design_doc(self) -> None:
         """Concrete regressions from design.md and module docstring.
 
-        Validates: Requirements 7.9.
-        """
+
+ """
         # hotfix/* + commit_only → denied
         d = route_by_branch_pattern(
             "hotfix/PAY-1",
@@ -823,15 +822,14 @@ class TestRouteByBranchPattern:
     def test_custom_rule_is_evaluated_in_order(self) -> None:
         """A custom prefix rule wins over the default rules when listed first.
 
-        Property 13(d) only fixes the default-rule semantics, but the
-        first-match-wins ordering documented in
-        :func:`route_by_branch_pattern` is part of the same contract —
-        keeping a small concrete regression here pins the iteration
-        order so a future refactor cannot silently re-order the rule
-        scan.
+ invariant(d) only fixes the default-rule semantics, but the
+ first-match-wins ordering documented in:func:`route_by_branch_pattern` is part of the same contract —
+ keeping a small concrete regression here pins the iteration
+ order so a future refactor cannot silently re-order the rule
+ scan.
 
-        Validates: Requirements 7.9.
-        """
+
+ """
         custom = BranchPatternRule(
             glob="hotfix/special-*",
             allowed_workflow_types=frozenset({"code_change_commit_only"}),

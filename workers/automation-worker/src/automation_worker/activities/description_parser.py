@@ -2,22 +2,17 @@
 
 Parses the ``---\\nai-bot:\\n...\\n---`` front-matter block at the top of a
 Jira task description and exposes the structured override values consumed
-by :class:`AutomationWorkflow`. When the user supplies a valid YAML block
+by:class:`AutomationWorkflow`. When the user supplies a valid YAML block
 the workflow takes the deterministic path and skips the LLM analysis
-entirely (Property 7 / Requirement 5.3).
+entirely.
 
-Per the platform-gap-fill spec the parser is **lenient** by design:
+The parser is **lenient** by design:
 
 * Missing front-matter is not an error — the function returns ``None``
-  so the caller can fall through to LLM analysis (Requirement 5.4).
-* Invalid field values do not abort parsing — they are recorded in
-  :attr:`ParsedFrontMatter.parse_errors`, the offending field is set to
-  ``None``, and the rest of the block is preserved. The caller can
-  surface ``parse_errors`` as a warning Jira comment (Requirement 11.8 /
-  Property 19).
-
-Validates Requirements: 5.3, 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7,
-11.8.
+ so the caller can fall through to LLM analysis.
+* Invalid field values do not abort parsing — they are recorded in:attr:`ParsedFrontMatter.parse_errors`, the offending field is set to
+ ``None``, and the rest of the block is preserved. The caller can
+ surface ``parse_errors`` as a warning Jira comment.
 """
 
 from __future__ import annotations
@@ -54,8 +49,8 @@ _logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 #: Closed set of workflow_type discriminators accepted by the platform.
-#: Mirrors Requirement 5.7 / requirements.md §"Gereksinim 5". The parser
-#: validates against this set so a typo in the YAML (eg. ``code_change``
+#: The parser validates against this set so a typo in the YAML
+#: (eg. ``code_change``
 #: vs ``code_change_with_test``) is reported via ``parse_errors`` rather
 #: than silently propagated to the workflow router.
 VALID_WORKFLOW_TYPES: Final[frozenset[str]] = frozenset({
@@ -86,7 +81,7 @@ WORKFLOW_TYPE_ALIASES: Final[dict[str, str]] = {
 
 #: Closed set of cleanup policies accepted in the YAML block. The
 #: ``cleanup`` key overrides ``docker_defaults.cleanup_policy`` from the
-#: department config (Requirement 11.2). Anything outside this set is
+#: department config. Anything outside this set is
 #: dropped to ``None`` and logged in ``parse_errors``.
 VALID_CLEANUP_POLICIES: Final[frozenset[str]] = frozenset({
     "on_success",
@@ -94,10 +89,10 @@ VALID_CLEANUP_POLICIES: Final[frozenset[str]] = frozenset({
     "never",
 })
 
-#: Inclusive lower bound for ``timeout_seconds`` (Requirement 11.3).
+#: Inclusive lower bound for ``timeout_seconds``.
 TIMEOUT_SECONDS_MIN: Final[int] = 60
 
-#: Inclusive upper bound for ``timeout_seconds`` (Requirement 11.3).
+#: Inclusive upper bound for ``timeout_seconds``.
 TIMEOUT_SECONDS_MAX: Final[int] = 7200
 
 #: Closed set of output action ``type`` values accepted in the YAML
@@ -181,15 +176,12 @@ _IDENTIFIER_PARAM_KEYS: Final[frozenset[str]] = frozenset({
 class ParsedFrontMatter:
     """Structured override values extracted from a YAML front-matter block.
 
-    All fields are ``Optional`` because the user is free to omit any of
-    them; the workflow falls back to department defaults for missing
-    values. ``parse_errors`` lists the keys that **were** present but
-    failed validation — those keys appear here as ``None`` even if the
-    raw YAML contained a value.
-
-    Validates: Requirements 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7,
-    11.8.
-    """
+ All fields are ``Optional`` because the user is free to omit any of
+ them; the workflow falls back to department defaults for missing
+ values. ``parse_errors`` lists the keys that **were** present but
+ failed validation — those keys appear here as ``None`` even if the
+ raw YAML contained a value..
+ """
 
     workflow_type: str | None = None
     repo: str | None = None
@@ -278,11 +270,11 @@ def _coerce_bool(
 ) -> tuple[bool | None, str | None]:
     """Return a strict bool or report an error.
 
-    PyYAML ``safe_load`` already converts ``true``/``false``/``yes``/
-    ``no``/``on``/``off`` to ``bool``, but we still reject other types
-    explicitly so a YAML string like ``"true"`` (quoted) surfaces as a
-    parse error rather than being silently accepted.
-    """
+ PyYAML ``safe_load`` already converts ``true``/``false``/``yes``/
+ ``no``/``on``/``off`` to ``bool``, but we still reject other types
+ explicitly so a YAML string like ``"true"`` (quoted) surfaces as a
+ parse error rather than being silently accepted.
+ """
     if value is None:
         return None, None
     if not isinstance(value, bool):
@@ -295,7 +287,7 @@ def _coerce_bool(
 def _coerce_workflow_type(
     value: Any,
 ) -> tuple[str | None, str | None]:
-    """Validate ``workflow_type`` against :data:`VALID_WORKFLOW_TYPES`."""
+    """Validate ``workflow_type`` against:data:`VALID_WORKFLOW_TYPES`."""
     coerced, err = _coerce_str(value, "workflow_type")
     if err is not None or coerced is None:
         return None, err
@@ -310,7 +302,7 @@ def _coerce_workflow_type(
 
 
 def _coerce_cleanup(value: Any) -> tuple[str | None, str | None]:
-    """Validate ``cleanup`` against :data:`VALID_CLEANUP_POLICIES`."""
+    """Validate ``cleanup`` against:data:`VALID_CLEANUP_POLICIES`."""
     coerced, err = _coerce_str(value, "cleanup")
     if err is not None or coerced is None:
         return None, err
@@ -325,10 +317,10 @@ def _coerce_cleanup(value: Any) -> tuple[str | None, str | None]:
 def _coerce_timeout_seconds(value: Any) -> tuple[int | None, str | None]:
     """Validate ``timeout_seconds`` is an int in ``[60, 7200]``.
 
-    Booleans are a subclass of ``int`` in Python; we reject them here
-    explicitly so ``timeout_seconds: true`` doesn't sneak through as
-    ``1``.
-    """
+ Booleans are a subclass of ``int`` in Python; we reject them here
+ explicitly so ``timeout_seconds: true`` doesn't sneak through as
+ ``1``.
+ """
     if value is None:
         return None, None
     if isinstance(value, bool):
@@ -392,17 +384,17 @@ def _coerce_output(
 ) -> tuple[list[dict[str, Any]] | None, list[str]]:
     """Validate the ``output`` list of action dicts.
 
-    Each entry must be a mapping with a ``type`` field that names one of
-    the canonical action types. ``params`` is optional (defaults to an
-    empty dict) and may be any mapping. Invalid entries are dropped from
-    the returned list and reported as individual errors so a single bad
-    action doesn't poison the rest of the override block.
+ Each entry must be a mapping with a ``type`` field that names one of
+ the canonical action types. ``params`` is optional (defaults to an
+ empty dict) and may be any mapping. Invalid entries are dropped from
+ the returned list and reported as individual errors so a single bad
+ action doesn't poison the rest of the override block.
 
-    Returns:
-        ``(coerced_list, errors)``. The list is ``None`` if the
-        ``output`` key was omitted or the top-level value was not a
-        list at all; in the latter case ``errors`` carries the reason.
-    """
+ Returns:
+ ``(coerced_list, errors)``. The list is ``None`` if the
+ ``output`` key was omitted or the top-level value was not a
+ list at all; in the latter case ``errors`` carries the reason.
+ """
     if value is None:
         return None, []
     if not isinstance(value, list):
@@ -462,11 +454,11 @@ def _coerce_output(
 def _extract_front_matter_body(description: str) -> str | None:
     """Return the YAML body between the ``---`` delimiters or ``None``.
 
-    The match is anchored at the start of the description so only a
-    *true* front-matter block is recognised — a stray ``---`` further
-    down in the body (eg. a Markdown horizontal rule) will not trigger
-    parsing.
-    """
+ The match is anchored at the start of the description so only a
+ *true* front-matter block is recognised — a stray ``---`` further
+ down in the body (eg. a Markdown horizontal rule) will not trigger
+ parsing.
+ """
     if not description:
         return None
     match = _FRONT_MATTER_RE.match(description)
@@ -485,22 +477,18 @@ def parse_description_frontmatter(
 ) -> ParsedFrontMatter | None:
     """Parse the ``ai-bot`` YAML front-matter block from a description.
 
-    Behaviour matrix:
+ Behaviour matrix:
 
-    * ``description`` is empty / ``None`` / contains no front-matter →
-      return ``None``. The caller falls through to LLM analysis
-      (Requirement 5.4).
-    * Front-matter delimiters are present but the YAML body is empty,
-      malformed, or does not contain an ``ai-bot`` mapping → return
-      ``None``. We treat a syntactically broken block the same as a
-      missing block; the LLM path is the safety net (Requirement 11.8).
-    * Front-matter is well-formed → return a :class:`ParsedFrontMatter`
-      whose fields carry the validated overrides; invalid field values
-      are dropped to ``None`` and recorded in ``parse_errors``.
-
-    Validates: Requirements 5.3, 11.1, 11.2, 11.3, 11.4, 11.5, 11.6,
-    11.7, 11.8.
-    """
+ * ``description`` is empty / ``None`` / contains no front-matter →
+ return ``None``. The caller falls through to LLM analysis.
+ * Front-matter delimiters are present but the YAML body is empty,
+ malformed, or does not contain an ``ai-bot`` mapping → return
+ ``None``. We treat a syntactically broken block the same as a
+ missing block; the LLM path is the safety net.
+ * Front-matter is well-formed → return a:class:`ParsedFrontMatter`
+ whose fields carry the validated overrides; invalid field values
+ are dropped to ``None`` and recorded in ``parse_errors``..
+ """
     if description is None:
         return None
 

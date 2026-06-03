@@ -1,11 +1,11 @@
 "use client";
 
 /**
- * Workflows panel — `platform-mimari-ops` task 12.2 (R4.3).
+ * Workflows panel.
  *
  * Lists active Temporal workflows with a status filter, pagination and
  * a drill-down link. Data is served by the admin-dashboard-api
- * `WorkflowsDrillDownRouter` (task 11.2) which proxies to
+ * `WorkflowsDrillDownRouter` which proxies to
  * automation-service.
  */
 

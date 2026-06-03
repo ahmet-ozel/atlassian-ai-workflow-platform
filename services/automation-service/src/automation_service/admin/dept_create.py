@@ -1,25 +1,22 @@
-"""Atomic department create orchestrator (task 5.3).
+"""Atomic department create orchestrator.
 
-Implements the sequence diagram in
-``.kiro/specs/platform-mimari-foundation/design.md``
-§"Atomic Department Create" and the acceptance criteria in
-``requirements.md``:
+Implements the atomic department creation flow:
 
-* **R3.4** — plain-text token enters via the request body, lands in
+* Plain-text token enters via the request body, lands in
   Vault under ``vault:atlassian/_staging/<request_id>/<service>``,
   never appears in the response body, never reaches a log handler,
   and is wiped from the heap with ``bytearray.zero()`` (best-effort
   for Python's immutable ``str``; we keep the value in a
   ``bytearray`` from the moment we receive it).
-* **R3.6** — DB insert + Vault staging promotion run inside a single
+* DB insert + Vault staging promotion run inside a single
   transaction. On any failure between staging-write and the final
   COMMIT, the staging key is deleted and the transaction rolls back;
   the caller sees HTTP 5xx.
-* **R3.9** — duplicate ``id`` is rejected with HTTP 409 +
+* Duplicate ``id`` is rejected with HTTP 409 +
   ``dept_duplicate_id`` audit event.
-* **R5.10** — the probe runner used between staging and DB insert
+* The probe runner used between staging and DB insert
   never lands plain-text credentials in any artifact.
-* **R9.3** — full flow leaves no plain-text token in response body,
+* The full flow leaves no plain-text token in response body,
   log records, DB columns, or disk (the local-dev Vault backend
   encrypts the at-rest value; the Hashicorp backend never persists
   plain-text by construction).
@@ -29,10 +26,10 @@ in :mod:`automation_service.admin.router` is the thin shim that
 parses the request, runs the orchestrator, and translates the
 :class:`DepartmentCreateResult` / raised exceptions into HTTP status
 codes. Keeping the orchestration here makes it directly exerciseable
-from unit tests and from the property test in task 5.9
+from unit tests and property tests
 (``test_dept_atomic_create.py``).
 
-Sequence (mirrors design.md):
+Sequence:
 
     1. Validate the incoming :class:`DepartmentCreateRequest`.
     2. For each ``(service, plain_token)`` pair, write the token to
@@ -64,10 +61,10 @@ The plain-text token NEVER appears in:
   outcomes are logged. The token is held in a ``bytearray`` and
   zeroed before the function returns.
 * DB rows — ``automation.department_bots.credential_ref`` stores the
-  **Vault path**, not the value (R3.3 / R6.1).
+  **Vault path**, not the value.
 * Vault staging key — the value is encrypted at rest by the local-dev
   backend (libsodium ``SecretBox``) and is never written in
-  plain-text by the Hashicorp backend (R6.6).
+  plain-text by the Hashicorp backend.
 """
 
 from __future__ import annotations
@@ -120,7 +117,7 @@ _VALID_SERVICES: frozenset[str] = frozenset({"jira", "bitbucket", "confluence"})
 
 
 class DepartmentAlreadyExistsError(Exception):
-    """Raised when ``departments.id`` already exists (R3.9 → HTTP 409)."""
+    """Raised when ``departments.id`` already exists and maps to HTTP 409."""
 
     def __init__(self, dept_id: str) -> None:
         super().__init__(
@@ -165,7 +162,7 @@ class _BotCredential:
 
     The ``personal_token`` field is a :class:`bytearray` so the
     orchestrator can call ``.zero()`` on it once Vault has the value
-    (R3.4 — best effort; Python keeps strings immutable, so the
+    (best effort; Python keeps strings immutable, so the
     public API requires the caller to hand the token in via
     ``bytearray`` from the FastAPI router parsing layer).
 
@@ -196,7 +193,7 @@ class DepartmentCreateRequest:
     The router builds this from the JSON body after running schema
     validation. Constructing :class:`DepartmentCreateRequest`
     directly in unit tests is the supported entry point for the
-    property test in task 5.9.
+    property tests.
 
     Attributes:
         dept_id: Department identifier — must match the
@@ -205,7 +202,7 @@ class DepartmentCreateRequest:
         display_name: Human-readable name.
         default_language: ``"tr"`` or ``"en"``.
         web_search_enabled: Whether the Firecrawl capability is opted
-            in (R4.3-e).
+            in.
         mode: Initial mode. The endpoint always commits ``"active"``
             after a successful probe; ``"shadow"`` and ``"disabled"``
             are accepted for tests / migration tooling.
@@ -244,7 +241,7 @@ class DepartmentCreateResult:
 
     The shape **deliberately omits** any plain-text credential field:
     the only credential reference visible to the caller is the
-    final Vault path each bot ended up at (R3.4, R6.1).
+    final Vault path each bot ended up at.
 
     Attributes:
         dept_id: The department id that was created.
@@ -324,8 +321,7 @@ class DepartmentCreateOrchestrator:
         probe_client: Atlassian probe client (typically the production
             MCP-routed implementation). Tests inject an in-memory fake.
         audit_logger: Where ``dept_created`` / ``dept_duplicate_id`` /
-            ``dept_create_failed`` events go. Required — Requirement
-            7.7 forbids unaudited writes.
+            ``dept_create_failed`` events go. Required for auditable writes.
         clock: Optional UTC-now factory for deterministic timestamps
             in tests. Defaults to :func:`datetime.now`.
 
@@ -359,21 +355,21 @@ class DepartmentCreateOrchestrator:
         actor_id: str,
         actor_role: Literal["admin", "system"],
     ) -> DepartmentCreateResult:
-        """Run the atomic create flow described in design.md.
+        """Run the atomic create flow.
 
         Args:
             request: Validated input.
             actor_id: OIDC ``sub`` of the caller (or the bot's
                 account_id for ``actor_role == "system"``).
-            actor_role: ``"admin"`` for human admins (Requirement
-                7.5 — only admins can create new departments),
+            actor_role: ``"admin"`` for human admins that can create
+                new departments,
                 ``"system"`` for boot-time provisioning hooks.
 
         Returns:
             :class:`DepartmentCreateResult` on success.
 
         Raises:
-            DepartmentAlreadyExistsError: ``id`` already used (R3.9).
+            DepartmentAlreadyExistsError: ``id`` already used.
             ProbeFailureError: A staged credential failed the probe.
             StagingFailureError: Vault rejected the staging write.
             Exception: Any other DB / Vault error after staging keys
@@ -403,7 +399,7 @@ class DepartmentCreateOrchestrator:
         # 1. Stage every credential. Vault holds the encrypted-at-rest
         #    canonical copy; the in-memory bytearray stays alive for
         #    the probe phase below and is zeroed before the DB
-        #    transaction begins (R3.4).
+        #    transaction begins.
         try:
             for bot in request.bots:
                 staging = staging_paths[bot.service]
@@ -430,7 +426,7 @@ class DepartmentCreateOrchestrator:
             )
             raise
 
-        # R3.4 — wipe every plain-text token from heap *before* the
+        # Wipe every plain-text token from heap *before* the
         # DB transaction starts. Vault retains the encrypted-at-rest
         # copy at the staging path and (after promotion below) the
         # final path; the orchestrator never needs the plain-text
@@ -467,7 +463,7 @@ class DepartmentCreateOrchestrator:
 
         # 4. Successful path — emit a single ``dept_created`` audit
         #    row carrying the actor's role for the audit
-        #    actor_role-mandatory invariant (R7.7).
+        #    actor_role-mandatory invariant.
         await self._audit.write(
             AuditEvent(
                 actor_id=actor_id,
@@ -559,7 +555,7 @@ class DepartmentCreateOrchestrator:
     def _staging_path(request_id: str, service: str) -> VaultPath:
         """Return ``vault:atlassian/_staging/<request_id>/<service>``.
 
-        The path matches the design spec exactly so cross-service
+        The path uses the shared staging convention so cross-service
         cleanup tooling can grep for ``_staging`` in the Vault tree.
         """
 
@@ -634,14 +630,14 @@ class DepartmentCreateOrchestrator:
         just wrote. The plain-text bytes have already been zeroed in
         :meth:`_write_staging_credential` — but we kept ``url`` and
         ``username`` on the request, and the probe runner only
-        actually needs the token through the Atlassian client which
-        is mocked in this spec's tests.
+        actually needs the token through the Atlassian client, which
+        is mocked in these tests.
 
-        For production wiring (Spec 2): the probe runner will be
-        passed a credential whose ``personal_token`` is read back
-        from Vault (the staging path is the canonical source). For
-        the unit / property tests we exercise here, the probe client
-        is fully mocked and the token contents are not consulted.
+        In production, the probe runner is passed a credential whose
+        ``personal_token`` is read back from Vault (the staging path
+        is the canonical source). For the unit / property tests we
+        exercise here, the probe client is fully mocked and the token
+        contents are not consulted.
         """
 
         probe_runner = ProbeRunner(self._probe_client, clock=lambda: int(self._clock().timestamp()))
@@ -901,7 +897,7 @@ class DepartmentCreateOrchestrator:
     # ------------------------------------------------------------------
 
     def _zero_all_tokens(self, request: DepartmentCreateRequest) -> None:
-        """Wipe every plain-text token bytearray in *request* (R3.4).
+        """Wipe every plain-text token bytearray in *request*.
 
         Called twice in :meth:`run`:
 
@@ -994,7 +990,7 @@ class DepartmentCreateOrchestrator:
 
 
 def _zero_bytearray(buf: bytearray) -> None:
-    """Overwrite *buf* in-place with NUL bytes, per R3.4.
+    """Overwrite *buf* in-place with NUL bytes.
 
     Python guarantees in-place mutation of ``bytearray``, so this
     actually clears the underlying buffer. The intermediate ``str``
@@ -1026,7 +1022,7 @@ def _default_probe_targets(
     """Build a :class:`ProbeTargets` from the request fields.
 
     The probe runner needs Bitbucket workspace+repo and a Confluence
-    space key. The wizard endpoint (task 5.4) supplies these
+    space key. The wizard endpoint supplies these
     explicitly via ``request.probe_targets``; for direct ``POST
     /admin/departments`` callers we read what we can from the request
     fields. ``bitbucket_repo`` is unknown at create time (no concrete

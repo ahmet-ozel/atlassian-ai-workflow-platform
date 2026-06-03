@@ -1,9 +1,8 @@
-"""Property test: Logical status input validation.
+"""Invariant test: Logical status input validation.
 
-Feature: platform-completion, Property 37: For any jira_transition target_status,
+Feature:,: For any jira_transition target_status,
 it SHALL be accepted only if it is one of {todo, in_progress, review, done, out_of_scope}.
 
-Validates: Requirements 19.4, 19.5
 """
 from __future__ import annotations
 import asyncio

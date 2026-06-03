@@ -1,7 +1,5 @@
 """Unit tests for ``automation_service.budget.policy.BudgetCapPolicy``.
 
-Validates: Requirement 5.5 (BudgetCapPolicy enforcement — task 7.3).
-
 The tests exercise the policy against an in-memory caps provider, a
 list-backed asyncpg fake, and a recording :class:`AuditWriter`. They
 cover:
@@ -354,7 +352,7 @@ class TestSqlInvariants:
         for sql, _args in runner.calls:
             assert "cost_tag = 'production'" in sql, (
                 "every usage aggregate must filter sandbox/probe rows out — "
-                "Requirement 5.5"
+                "budget enforcement"
             )
 
     @pytest.mark.asyncio

@@ -1,7 +1,6 @@
-"""Unit tests for ``prompts.loader.PromptLoader`` (task 2.1).
+"""Unit tests for ``prompts.loader.PromptLoader``.
 
-These tests pin the contract task 2.1 establishes for the
-file-backed prompt loader:
+These tests pin the contract for the file-backed prompt loader:
 
 1. ``load(name)`` resolves the prompt body from one of ``self._roots``
    and caches the result by logical name.
@@ -18,7 +17,6 @@ file-backed prompt loader:
 5. Resolution walks ``self._roots`` in order; missing prompts raise
    :class:`PromptNotFoundError`.
 
-Validates: Requirements 2.5, 2.6, 2.7
 """
 
 from __future__ import annotations
@@ -249,13 +247,13 @@ def test_render_is_deterministic_for_frozensets(prompt_root: Path) -> None:
 def test_load_raises_prompt_template_error_on_unknown_placeholder(
     tmp_path: Path,
 ) -> None:
-    """Boot-time validator (task 2.3) rejects unknown placeholders.
+    """Boot-time validator rejects unknown placeholders.
 
-    Task 2.1's :meth:`PromptLoader._read` runs
-    :func:`validate_template_format` on the body before caching, so an
+    :meth:`PromptLoader._read` runs :func:`validate_template_format`
+    on the body before caching, so an
     unknown placeholder fails the very first ``load`` call instead of
     waiting until ``render`` time. That is the design's
-    *fail-fast-at-boot* contract for Requirement 2.9.
+    *fail-fast-at-boot* contract.
     """
 
     (tmp_path / "broken.md").write_text(

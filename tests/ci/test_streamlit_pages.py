@@ -1,17 +1,15 @@
 """CI gate — Streamlit page catalog.
 
-**Validates: Requirement 3.1** (`platform-mimari-ops` task 15.10) — the
 end-user pages (chat / task creator / workflows / po review inbox) plus
 admin/ops-only pages (explorer / orphan branches / MCP inspector) and the
 three shared components
 (``dept_switcher``, ``credential_form``, ``cost_widget``) are all
 present.
 
-**Validates: Requirement 4.4** (`platform-mimari-uyumluluk` task 9.4) —
 the canonical per-user credentials page lives at ``pages/0_credentials.py``
 and re-uses ``render_credential_form`` via import. The legacy
 ``pages/7_session_credentials.py`` slot MUST NOT exist; its sole
-sidebar replacement is ``0_credentials.py`` (MIMARI §16.17 Q6).
+sidebar replacement is ``0_credentials.py`` (the architecture document §16.17 Q6).
 """
 
 from __future__ import annotations
@@ -57,7 +55,7 @@ _REQUIRED_COMPONENTS: tuple[str, ...] = (
 def test_streamlit_page_exists(page: str) -> None:
     path = _STREAMLIT_ROOT / "pages" / page
     assert path.is_file(), (
-        f"Missing Streamlit page {page!r}; Requirement 3.1 ships all "
+        f"Missing Streamlit page {page!r}; the Streamlit app must ship all "
         "six pages."
     )
 
@@ -92,11 +90,11 @@ def test_user_navigation_excludes_admin_debug_pages() -> None:
 def test_governance_pages_moved_to_admin_dashboard(page: str) -> None:
     """Workflows / Orphan Branches / PO Review left the Streamlit app.
 
-    These are governance surfaces that must be gated by admin auth in
-    the admin dashboard, not exposed to every credential-holding chat
-    user. The Streamlit ``pages/`` slot MUST be gone and the user nav
-    MUST NOT reference them.
-    """
+ These are governance surfaces that must be gated by admin auth in
+ the admin dashboard, not exposed to every credential-holding chat
+ user. The Streamlit ``pages/`` slot MUST be gone and the user nav
+ MUST NOT reference them.
+ """
     path = _STREAMLIT_ROOT / "pages" / page
     assert not path.is_file(), (
         f"Streamlit page {page!r} must be removed; it moved to the "
@@ -123,7 +121,7 @@ def test_streamlit_component_exists(component: str) -> None:
 
 
 # --------------------------------------------------------------------------- #
-# Requirement 4.4 — uyumluluk per-user credentials page                       #
+# uyumluluk per-user credentials page #
 # --------------------------------------------------------------------------- #
 
 _CREDENTIALS_PAGE = _STREAMLIT_ROOT / "pages" / "0_credentials.py"
@@ -133,28 +131,28 @@ _LEGACY_CREDENTIALS_PAGE = _STREAMLIT_ROOT / "pages" / "7_session_credentials.py
 def test_zero_credentials_page_exists() -> None:
     """``pages/0_credentials.py`` is the canonical credentials entry point.
 
-    The ``0_`` numeric prefix forces Streamlit to render this page first
-    in the sidebar, so a freshly-onboarded user always lands on
-    credential setup before any workflow page (R4.1).
-    """
+ The ``0_`` numeric prefix forces Streamlit to render this page first
+ in the sidebar, so a freshly-onboarded user always lands on
+ credential setup before any workflow page .
+ """
     assert _CREDENTIALS_PAGE.is_file(), (
         f"Missing per-user credentials page {_CREDENTIALS_PAGE.name!r}; "
-        "Requirement 4.1 requires the canonical credentials page at "
-        "pages/0_credentials.py (MIMARI §16.17 Q6)."
+        "requires the canonical credentials page at "
+        "pages/0_credentials.py (the architecture document §16.17 Q6)."
     )
 
 
 def test_zero_credentials_page_imports_render_credential_form() -> None:
     """``0_credentials.py`` MUST reuse ``render_credential_form`` via import.
 
-    R4.2 forbids copying the legacy session-credential form logic; the
-    page must consume the existing component so DOM scrubbing, Z7 PIN
-    persistence and audit emission stay single-sourced.
-    """
+ forbids copying the legacy session-credential form logic; the
+ page must consume the existing component so DOM scrubbing, Z7 PIN
+ persistence and audit emission stay single-sourced.
+ """
     body = _CREDENTIALS_PAGE.read_text(encoding="utf-8")
     assert "render_credential_form" in body, (
         "pages/0_credentials.py must import render_credential_form from "
-        "components; Requirement 4.2 mandates re-use rather than a copy."
+        "components; mandates re-use rather than a copy."
     )
     # The import line itself must be present so a stray-string match
     # in a docstring doesn't satisfy the assertion.
@@ -173,12 +171,12 @@ def test_zero_credentials_page_imports_render_credential_form() -> None:
 def test_legacy_session_credentials_page_removed() -> None:
     """The pre-uyumluluk ``pages/7_session_credentials.py`` slot is gone.
 
-    R4.3 collapses credential management onto a single sidebar entry
-    (``0_credentials.py``); leaving the legacy page in place would
-    create two competing UX surfaces for the same Vault path.
-    """
+ collapses credential management onto a single sidebar entry
+ (``0_credentials.py``); leaving the legacy page in place would
+ create two competing UX surfaces for the same Vault path.
+ """
     assert not _LEGACY_CREDENTIALS_PAGE.exists(), (
         "Legacy pages/7_session_credentials.py must be removed; "
-        "Requirement 4.3 routes all per-user credential UX through "
+        "routes all per-user credential UX through "
         "pages/0_credentials.py."
     )

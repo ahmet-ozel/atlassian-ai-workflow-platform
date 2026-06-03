@@ -5,7 +5,7 @@
  *
  * CRUD surface over `GET/POST/DELETE /api/v1/firecrawl/allowlist`. The
  * firecrawl service only fetches external URLs whose domain is on this
- * allowlist (Requirement 10.3 — FIRECRAWL_EGRESS_ALLOWLIST contract).
+ * allowlist (FIRECRAWL_EGRESS_ALLOWLIST contract).
  *
  * Operators add/remove domains here instead of hand-editing env vars.
  * The backend store is currently in-memory (see firecrawl_allowlist.py
@@ -148,7 +148,7 @@ export default function FirecrawlAllowlistPage(): JSX.Element {
             <h1>Firecrawl egress allowlist</h1>
             <p className="page-header__lede">
               Firecrawl yalnızca burada listelenen domain'lere dış HTTP isteği
-              atabilir (Requirement 10.3 — egress allowlist sözleşmesi).
+              atabilir (egress allowlist sözleşmesi).
               Domain ekleyip kaldırarak izinli alanları yönetin.
             </p>
           </div>

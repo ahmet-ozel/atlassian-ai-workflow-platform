@@ -4,9 +4,9 @@ Shared Temporal constants and pure-function helpers for the platform.
 
 This package is the **single source of truth** for the workflow-type →
 capability mapping and the capability-gate algebra defined in
-`platform-mimari-foundation` design.md (libs/temporal-shared.capabilities).
+the shared capability model.
 Other services and workers import these symbols rather than redefining
-them locally (Requirement 4.1, design Property 7).
+them locally.
 
 ## Public API
 
@@ -86,6 +86,6 @@ container is provided for this library.
 - `WORKFLOW_TYPE_CAPABILITIES` is wrapped in `MappingProxyType`; mutation
   attempts raise `TypeError`. Treat it as read-only.
 - `derive_capabilities` and `gate` are pure functions — no network or
-  filesystem I/O (Requirement 4.7). All inputs flow through arguments.
+  filesystem I/O. All inputs flow through arguments.
 - `GateDecision` is a frozen dataclass; attribute assignment fails after
   construction.

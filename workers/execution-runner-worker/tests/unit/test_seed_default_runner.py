@@ -1,8 +1,4 @@
-"""Unit tests for src.seed_default_runner — boot-time SSH_HOST seed logic.
-
-Spec: platform-quick-fixes — Task 7.2
-Requirements: 4.3, 4.17, 4.19
-"""
+"""Unit tests for src.seed_default_runner — boot-time SSH_HOST seed logic."""
 
 from __future__ import annotations
 

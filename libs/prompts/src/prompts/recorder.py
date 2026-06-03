@@ -1,6 +1,4 @@
-"""``PromptVersionRecorder`` (`platform-mimari-ops` task 2.4).
-
-**Validates: Requirements 2.5, 2.6**
+"""``PromptVersionRecorder``.
 
 Records the ``(path, commit_hash, body_hash, seen_at)`` triple
 into ``prompt_versions`` whenever the :class:`PromptLoader`

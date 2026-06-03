@@ -15,8 +15,6 @@ Approval Gate ``[approve]``/``[reject]`` comments are **exempt** from
 the loop guard even when authored by a bot — but a bot cannot approve
 its own work (the approval signal is only processed when the comment
 author differs from the issue assignee).
-
-Requirements: 2.1, 2.2, 2.3, 2.4, 2.5
 """
 
 from __future__ import annotations
@@ -94,7 +92,7 @@ class WebhookPayload:
         detection.
     reporter_account_id:
         The issue reporter's ``accountId``. Used for iteration
-        authorization (Requirement 12.6 — reporter can also iterate).
+        authorization; reporters can also iterate.
     dept_id:
         Resolved department ID (may be ``None`` if not yet resolved).
     trace_id:
@@ -207,7 +205,7 @@ class LoopGuard:
         if actor_id is None or actor_id not in bot_ids:
             return StageResult(action="pass")
 
-        # 3. Check Approval Gate exemption (R2.3).
+        # 3. Check Approval Gate exemption.
         if self._is_approval_gate_exempt(payload):
             _logger.debug(
                 "loop_guard_approval_gate_exempt",
@@ -232,7 +230,7 @@ class LoopGuard:
         return StageResult(action="drop", reason="loop_guard")
 
     # ------------------------------------------------------------------
-    # Approval Gate exemption (R2.3)
+    # Approval Gate exemption
     # ------------------------------------------------------------------
 
     def _is_approval_gate_exempt(self, payload: WebhookPayload) -> bool:

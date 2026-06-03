@@ -1,12 +1,12 @@
-"""Output-action size cap with MinIO redirection (R5.9, R12.3).
+"""Output-action size cap with MinIO redirection.
 
 This module hosts the size-cap policy applied to every
 :class:`temporal_shared.messages.OutputAction` before its payload
 reaches the ``apply()`` step in
-:mod:`temporal_shared.output_actions` (task 12.1).  Two pure helpers
-plus one Turkish-prose formatter live here:
+:mod:`temporal_shared.output_actions`.  Two pure helpers plus one
+Turkish-prose formatter live here:
 
-* :data:`MAX_OUTPUT_BYTES` — the hard 1 MiB cap pinned by R5.9.
+* :data:`MAX_OUTPUT_BYTES` — the hard 1 MiB cap.
 * :func:`measure_payload_bytes` — JSON-encode an
   ``OutputAction.payload`` (``tuple[tuple[str, object], ...]``) and
   return the byte length used by the cap check.  Exposed so callers
@@ -19,18 +19,17 @@ plus one Turkish-prose formatter live here:
   :class:`OutputAction` whose payload is replaced with a
   ``{"summary", "minio_uri", "size_bytes"}`` triple.  Below the cap the
   original action is returned unchanged.
-* :func:`format_final_jira_comment` — the spec-mandated Turkish prose
+* :func:`format_final_jira_comment` — the Turkish prose formatter
   combining the lists of completed critical steps and failed
-  best-effort actions into the canonical final-comment shape (R12.3).
+  best-effort actions into the canonical final-comment shape.
 
 Why a sibling module to ``output_actions``?
 -------------------------------------------
 
-Task 12.1 (the partition + apply orchestrator) hasn't landed in this
-codebase yet.  Per task 12.2 instructions, the size-cap helpers ship
-in :mod:`temporal_shared.output_size_cap` so the consumer module can
-import them when it arrives without a forward-reference dance.  Both
-modules will be re-exported from :mod:`temporal_shared` to give call
+The partition + apply orchestrator lives in a sibling module. The
+size-cap helpers ship in :mod:`temporal_shared.output_size_cap` so the
+consumer module can import them without a forward-reference dance.
+Both modules are re-exported from :mod:`temporal_shared` to give call
 sites a single import surface.
 
 Purity and replay determinism
@@ -44,16 +43,12 @@ exceeds the cap, mirroring the pattern used by
 :class:`mcp_client.firecrawl.FirecrawlClient` for its overflow
 branch.  The encoding (UTF-8 JSON with ``ensure_ascii=False`` and
 ``sort_keys=True``) is deterministic so two evaluations of the same
-input produce identical byte strings — which is exactly what
-Property 10(e) and the determinism assertion in this module's
-property test rely on.
+input produce identical byte strings, which is exactly what the
+determinism assertion in this module's property test relies on.
 
 The Turkish final-comment formatter is also pure: emoji literals,
 fixed labels, and ``", "`` joiners.  It never localises by clock or
-locale — the whole platform addresses end users in Turkish per
-``platform-mimari-foundation`` design.
-
-Validates: Requirements 5.9, 12.3.
+locale — the whole platform addresses end users in Turkish.
 """
 
 from __future__ import annotations
@@ -86,15 +81,14 @@ __all__ = [
 # Configuration constants
 # ---------------------------------------------------------------------------
 
-#: Hard byte cap on a single :class:`OutputAction.payload` (R5.9, R12.3,
-#: design.md §"Property 10(e)").  Exactly 1 MiB — pinned by the
-#: requirement text "1 MB" (interpreted as 2**20 bytes per common
-#: SI/IEC convention used by S3/MinIO size headers).  Anything above
-#: this cap is offloaded to MinIO and replaced with a summary stub.
+#: Hard byte cap on a single :class:`OutputAction.payload`.
+#: Exactly 1 MiB is interpreted as 2**20 bytes per the common SI/IEC
+#: convention used by S3/MinIO size headers.  Anything above this cap
+#: is offloaded to MinIO and replaced with a summary stub.
 MAX_OUTPUT_BYTES: Final[int] = 1 * 1024 * 1024
 
 #: Number of characters retained when summarising a JSON-encoded
-#: payload for the LLM context (R5.9 — "kısa özet").  256 chars keeps
+#: payload for the LLM context.  256 chars keeps
 #: the summary under one Jira-comment paragraph and well below the
 #: token-cap (T13) without losing the leading shape of the structured
 #: payload (which usually identifies the action kind in the first few
@@ -102,15 +96,14 @@ MAX_OUTPUT_BYTES: Final[int] = 1 * 1024 * 1024
 #: ``str`` and slice by code-point.
 SUMMARY_TRUNCATE_CHARS: Final[int] = 256
 
-#: Format string for the offloaded MinIO object key.  Pinned by R5.9
-#: ("``ai-runs/{workflow_id}/output-{idx}.json``").  Exposed so tests
+#: Format string for the offloaded MinIO object key.  Exposed so tests
 #: can assert that the helper builds keys against this template
 #: literally and so future migrations have a single edit point.
 MINIO_KEY_TEMPLATE: Final[str] = "ai-runs/{workflow_id}/output-{idx}.json"
 
 
 # ---------------------------------------------------------------------------
-# Final-comment string constants (R12.3)
+# Final-comment string constants
 # ---------------------------------------------------------------------------
 #
 # The requirement pins the exact Turkish prose; we expose the two
@@ -118,7 +111,7 @@ MINIO_KEY_TEMPLATE: Final[str] = "ai-runs/{workflow_id}/output-{idx}.json"
 # them by name rather than by literal string match.
 
 #: Leading prose of the "completed critical steps" line in the final
-#: Jira comment (R12.3, MIMARI §16.16 R14).  The line is omitted when
+#: Jira comment.  The line is omitted when
 #: ``critical_done`` is empty.  The Turkish characters and the leading
 #: ✅ emoji are written as Unicode escapes so the source file stays
 #: ASCII-clean and the byte content is unambiguous regardless of the
@@ -129,7 +122,7 @@ FINAL_COMMENT_CRITICAL_PREFIX: Final[str] = (
 )
 
 #: Leading prose of the "failed best-effort actions" line in the final
-#: Jira comment (R12.3, MIMARI §16.16 R14).  The line is omitted when
+#: Jira comment.  The line is omitted when
 #: ``best_effort_failed`` is empty.  Same encoding rationale as
 #: :data:`FINAL_COMMENT_CRITICAL_PREFIX`.  At runtime the value is the
 #: real glyph string ``"⚠️ Başarısız yan-aksiyonlar: "``.
@@ -240,9 +233,8 @@ def _encode_payload(payload: Sequence[tuple[str, object]]) -> bytes:
     Centralising the encoder in a single private helper guarantees
     that :func:`measure_payload_bytes` and the offload step in
     :func:`redirect_oversized_payload` operate on **identical** byte
-    strings — a correctness invariant called out by Property 10(e)
-    ("two evaluations of the same input produce the same redirected
-    action").
+    strings — a correctness invariant that ensures two evaluations of
+    the same input produce the same redirected action.
     """
     as_dict = _payload_to_dict(payload)
     # ``ensure_ascii=False`` keeps Turkish characters intact in the
@@ -280,7 +272,7 @@ def _build_summary(encoded: bytes) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Redirect helper (R5.9, R12.3, Property 10(e))
+# Redirect helper
 # ---------------------------------------------------------------------------
 
 
@@ -292,8 +284,7 @@ async def redirect_oversized_payload(
 ) -> OutputAction:
     """Offload an oversized payload to MinIO and return the rewritten action.
 
-    Behaviour is described by Requirement 5.9, Requirement 12.3, and
-    Property 10(e):
+    Behaviour:
 
     1. Compute the JSON-encoded byte length of ``action.payload``.
     2. If the length is **at or below** :data:`MAX_OUTPUT_BYTES`,
@@ -319,7 +310,7 @@ async def redirect_oversized_payload(
 
     The summary is intentionally small enough to fit in the LLM
     context window without re-quoting the full payload — that is the
-    "LLM context'ine sadece özet konur" half of R5.9.
+    "LLM context'ine sadece özet konur" half of the policy.
 
     Parameters
     ----------
@@ -430,7 +421,7 @@ async def redirect_oversized_payload(
 
 
 # ---------------------------------------------------------------------------
-# Final Jira comment formatter (R12.3)
+# Final Jira comment formatter
 # ---------------------------------------------------------------------------
 
 
@@ -438,9 +429,9 @@ def format_final_jira_comment(
     critical_done: Iterable[str],
     best_effort_failed: Iterable[tuple[str, str]],
 ) -> str:
-    """Format the spec-mandated final Jira comment in Turkish.
+    """Format the final Jira comment in Turkish.
 
-    The shape is pinned by Requirement 12.3 and MIMARI §16.16 R14::
+    Shape::
 
         ✅ Tamamlanan kritik adımlar: a, b, c
         ⚠️ Başarısız yan-aksiyonlar: x (sebep1), y (sebep2)
@@ -454,7 +445,7 @@ def format_final_jira_comment(
       case rather than post a blank update).
     * When both are populated, the ``✅`` line precedes the ``⚠️``
       line and the two are separated by a single newline.  The order
-      is fixed by the requirement text.
+      is fixed by the comment shape.
 
     The label prefixes are exposed via
     :data:`FINAL_COMMENT_CRITICAL_PREFIX` and
@@ -466,8 +457,8 @@ def format_final_jira_comment(
     critical_done:
         Iterable of human-readable names of critical actions that
         completed successfully.  Items are joined with ``", "``
-        (comma-space) — matching the requirement text and the
-        Turkish-prose convention used elsewhere in the platform.
+        (comma-space), matching the Turkish-prose convention used
+        elsewhere in the platform.
         Empty strings are filtered out (defensive: an empty name
         contributes a stray comma which would render confusingly in
         the Jira comment).

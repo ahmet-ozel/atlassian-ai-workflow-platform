@@ -1,4 +1,4 @@
--- Postgres schema bootstrap for the multi-service scaffold.
+-- Postgres schema bootstrap for the platform services.
 -- Runs first (alphabetic order) on initial container start via
 -- /docker-entrypoint-initdb.d. Idempotent.
 

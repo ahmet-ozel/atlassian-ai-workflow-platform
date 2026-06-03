@@ -1,4 +1,4 @@
-# Test package manifest for the multi-service-scaffold workspace.
+# Test package manifest for the platform workspace.
 #
 # This ``pyproject.toml`` is intentionally scoped to the ``tests/`` tree
 # so the property and unit suites can be installed and run without
@@ -7,17 +7,16 @@
 # own ``pyproject.toml`` and is consumed by tests via ``sys.path``
 # (configured in the workspace-root ``pytest.ini``).
 #
-# Source of truth for the dependency set is design §6.8; this file and
-# ``tests/requirements.txt`` MUST stay in sync.
+# This file and ``tests/requirements.txt`` MUST stay in sync.
 
 [build-system]
 requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "multi-service-scaffold-tests"
+name = "platform-tests"
 version = "0.0.0"
-description = "Property, unit, and integration tests for the multi-service scaffold."
+description = "Property, unit, and integration tests for the platform."
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 license = { text = "Proprietary" }

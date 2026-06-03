@@ -1,8 +1,7 @@
 """CI gate — Task Creation Prompt kanonik bölüm başlıkları doğrulaması.
 
-**Validates: Requirement 3.8**
 
-`prompts/task_creation_assistant.md` dosyasının R3.3'te tanımlanan kanonik
+`prompts/task_creation_assistant.md` dosyasının 'te tanımlanan kanonik
 bölüm başlıklarını doğru sırayla içerdiğini regex ile doğrular. Bölüm
 sırası:
 
@@ -22,7 +21,7 @@ _PLATFORM_ROOT = Path(__file__).resolve().parent.parent.parent
 
 _CANONICAL_PATH = _PLATFORM_ROOT / "prompts" / "task_creation_assistant.md"
 
-# R3.3 kanonik bölüm başlıkları — sıralı
+# kanonik bölüm başlıkları — sıralı
 # Her biri markdown heading olarak (## veya daha derin) bulunmalı.
 # Regex pattern'leri heading metninin ilgili anahtar kelimeyi İÇERMESİNİ arar;
 # heading'de ek açıklama metni olabilir (ör. "STANDALONE MOD (...) — Z2").
@@ -52,7 +51,7 @@ def test_canonical_prompt_exists() -> None:
     """Kanonik prompt dosyası mevcut olmalı."""
     assert _CANONICAL_PATH.is_file(), (
         f"Kanonik prompt dosyası bulunamadı: {_CANONICAL_PATH}. "
-        "R3.1 gereği bu dosya tek kaynak olarak mevcut olmalıdır."
+        " gereği bu dosya tek kaynak olarak mevcut olmalıdır."
     )
 
 
@@ -68,12 +67,12 @@ def test_all_canonical_sections_present() -> None:
 
     assert not missing_sections, (
         f"Kanonik prompt dosyasında şu bölüm başlıkları eksik: "
-        f"{missing_sections}. R3.3 gereği tüm bölümler mevcut olmalıdır."
+        f"{missing_sections}. Tüm bölümler mevcut olmalıdır."
     )
 
 
 def test_canonical_sections_in_correct_order() -> None:
-    """Kanonik bölüm başlıkları R3.3'teki sırayla yer almalı."""
+    """Kanonik bölüm başlıkları 'teki sırayla yer almalı."""
     content = _CANONICAL_PATH.read_text(encoding="utf-8")
 
     positions: list[tuple[str, int]] = []
@@ -89,5 +88,5 @@ def test_canonical_sections_in_correct_order() -> None:
         assert curr_pos > prev_pos, (
             f"Bölüm sırası hatalı: '{curr_name}' (pos {curr_pos}) "
             f"'{prev_name}' (pos {prev_pos}) öncesinde yer alıyor. "
-            f"R3.3 kanonik sırası ihlal edilmiş."
+            f"Kanonik bölüm sırası ihlal edilmiş."
         )

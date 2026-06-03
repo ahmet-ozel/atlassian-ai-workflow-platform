@@ -4,18 +4,17 @@ Implements the ``resolve_repo_field`` Temporal activity that resolves
 the target repository for a task using a priority-based strategy:
 
 1. If the structured "Repository" field is non-empty, use it directly
-   (skip description parsing entirely).
+ (skip description parsing entirely).
 2. If the field is empty, use LLM to parse the repo from the task
-   description. If confidence < 0.8, post a Jira comment asking the
-   user for the repo info.
+ description. If confidence < 0.8, post a Jira comment asking the
+ user for the repo info.
 3. Validate the resolved repo against the department's ``repo_mappings``
-   list. If not found, reject the task and post a Jira comment with
-   the allowed repo list.
+ list. If not found, reject the task and post a Jira comment with
+ the allowed repo list.
 4. If the user was asked for repo info and no response within 30
-   minutes, move the task to "needs_info" status.
+ minutes, move the task to "needs_info" status.
 
 Design reference: design.md §12 (Repo Field Resolver)
-Validates Requirements: 9.1, 9.2, 9.3, 9.4, 9.5
 """
 
 from __future__ import annotations
@@ -65,20 +64,20 @@ _REPO_LINE_RE = re.compile(
 class RepoResolveInput:
     """Input for the resolve_repo_field activity.
 
-    Attributes:
-        issue_key: The Jira issue key (e.g. "PROJ-123").
-        dept_id: Department identifier for config resolution.
-        workflow_id: Parent workflow identifier for tracing.
-        structured_field_value: Value from the structured "Repository"
-            custom field. None or empty string means not provided.
-        description: The task description text for LLM parsing.
-        repo_mappings: Department's allowed repository mappings list.
-            Each dict has at minimum a "bitbucket_repo" key with the
-            repo URL/identifier.
-        labels: Optional Jira labels. A label in ``repo:<slug>`` or
-            ``repository:<slug>`` form is accepted before free-text LLM
-            parsing and still validated against ``repo_mappings``.
-    """
+ Attributes:
+ issue_key: The Jira issue key (e.g. "PROJ-123").
+ dept_id: Department identifier for config resolution.
+ workflow_id: Parent workflow identifier for tracing.
+ structured_field_value: Value from the structured "Repository"
+ custom field. None or empty string means not provided.
+ description: The task description text for LLM parsing.
+ repo_mappings: Department's allowed repository mappings list.
+ Each dict has at minimum a "bitbucket_repo" key with the
+ repo URL/identifier.
+ labels: Optional Jira labels. A label in ``repo:<slug>`` or
+ ``repository:<slug>`` form is accepted before free-text LLM
+ parsing and still validated against ``repo_mappings``.
+ """
 
     issue_key: str
     dept_id: str
@@ -93,16 +92,16 @@ class RepoResolveInput:
 class RepoResolveResult:
     """Result of the resolve_repo_field activity.
 
-    Attributes:
-        resolved: True if a valid repo was successfully resolved.
-        repo_url: The resolved repository URL/identifier, or None.
-        confidence: Confidence score (1.0 for structured field, LLM
-            score for parsed, 0.0 if unresolved).
-        needs_user_input: True if the user was asked for repo info
-            (confidence < threshold or field empty with no LLM match).
-        error: Error message if resolution failed (e.g. repo not in
-            allowed list).
-    """
+ Attributes:
+ resolved: True if a valid repo was successfully resolved.
+ repo_url: The resolved repository URL/identifier, or None.
+ confidence: Confidence score (1.0 for structured field, LLM
+ score for parsed, 0.0 if unresolved).
+ needs_user_input: True if the user was asked for repo info
+ (confidence < threshold or field empty with no LLM match).
+ error: Error message if resolution failed (e.g. repo not in
+ allowed list).
+ """
 
     resolved: bool
     repo_url: str | None
@@ -120,9 +119,9 @@ class RepoResolveResult:
 class LLMRepoParserProtocol(Protocol):
     """Protocol for LLM-based repo parsing from description text.
 
-    Production wires this to the LLM orchestrator. Tests inject a
-    fake that returns predetermined parse results.
-    """
+ Production wires this to the LLM orchestrator. Tests inject a
+ fake that returns predetermined parse results.
+ """
 
     async def parse_repo_from_description(
         self,
@@ -131,15 +130,15 @@ class LLMRepoParserProtocol(Protocol):
     ) -> dict[str, Any]:
         """Parse repository info from task description using LLM.
 
-        Args:
-            description: The task description text.
-            repo_mappings: Available repos for context.
+ Args:
+ description: The task description text.
+ repo_mappings: Available repos for context.
 
-        Returns:
-            Dict with keys:
-                - "repo_url": str | None — parsed repo identifier
-                - "confidence": float — confidence score (0.0 to 1.0)
-        """
+ Returns:
+ Dict with keys:
+ - "repo_url": str | None — parsed repo identifier
+ - "confidence": float — confidence score (0.0 to 1.0)
+ """
         ...
 
 
@@ -156,11 +155,11 @@ class JiraCommenterProtocol(Protocol):
     ) -> None:
         """Post a comment to the specified Jira issue.
 
-        Args:
-            issue_key: The Jira issue key.
-            body: Comment body text.
-            dept_id: Department ID for credential resolution.
-        """
+ Args:
+ issue_key: The Jira issue key.
+ body: Comment body text.
+ dept_id: Department ID for credential resolution.
+ """
         ...
 
 
@@ -177,11 +176,11 @@ class JiraTransitionerProtocol(Protocol):
     ) -> None:
         """Transition a Jira issue to the target status.
 
-        Args:
-            issue_key: The Jira issue key.
-            target_status: The target status name.
-            dept_id: Department ID for credential resolution.
-        """
+ Args:
+ issue_key: The Jira issue key.
+ target_status: The target status name.
+ dept_id: Department ID for credential resolution.
+ """
         ...
 
 
@@ -197,8 +196,8 @@ _jira_transitioner: JiraTransitionerProtocol | None = None
 def set_llm_parser(parser: LLMRepoParserProtocol) -> None:
     """Register the LLM repo parser used by the activity.
 
-    Called once at worker boot. Tests call this with an in-memory fake.
-    """
+ Called once at worker boot. Tests call this with an in-memory fake.
+ """
     global _llm_parser  # noqa: PLW0603
     _llm_parser = parser
 
@@ -208,7 +207,7 @@ def get_llm_parser() -> LLMRepoParserProtocol:
     if _llm_parser is None:
         raise RuntimeError(
             "repo_resolver activity: LLM parser not initialised; "
-            "call set_llm_parser() during worker startup."
+            "call set_llm_parser during worker startup."
         )
     return _llm_parser
 
@@ -216,8 +215,8 @@ def get_llm_parser() -> LLMRepoParserProtocol:
 def set_jira_commenter(commenter: JiraCommenterProtocol) -> None:
     """Register the Jira commenter used by the activity.
 
-    Called once at worker boot. Tests call this with an in-memory fake.
-    """
+ Called once at worker boot. Tests call this with an in-memory fake.
+ """
     global _jira_commenter  # noqa: PLW0603
     _jira_commenter = commenter
 
@@ -227,7 +226,7 @@ def get_jira_commenter() -> JiraCommenterProtocol:
     if _jira_commenter is None:
         raise RuntimeError(
             "repo_resolver activity: Jira commenter not initialised; "
-            "call set_jira_commenter() during worker startup."
+            "call set_jira_commenter during worker startup."
         )
     return _jira_commenter
 
@@ -235,8 +234,8 @@ def get_jira_commenter() -> JiraCommenterProtocol:
 def set_jira_transitioner(transitioner: JiraTransitionerProtocol) -> None:
     """Register the Jira transitioner used by the activity.
 
-    Called once at worker boot. Tests call this with an in-memory fake.
-    """
+ Called once at worker boot. Tests call this with an in-memory fake.
+ """
     global _jira_transitioner  # noqa: PLW0603
     _jira_transitioner = transitioner
 
@@ -246,7 +245,7 @@ def get_jira_transitioner() -> JiraTransitionerProtocol:
     if _jira_transitioner is None:
         raise RuntimeError(
             "repo_resolver activity: Jira transitioner not initialised; "
-            "call set_jira_transitioner() during worker startup."
+            "call set_jira_transitioner during worker startup."
         )
     return _jira_transitioner
 
@@ -259,8 +258,8 @@ def get_jira_transitioner() -> JiraTransitionerProtocol:
 def _extract_allowed_repos(repo_mappings: list[dict[str, Any]]) -> list[str]:
     """Extract the list of allowed bitbucket_repo values from mappings.
 
-    Returns a deduplicated list of repo identifiers.
-    """
+ Returns a deduplicated list of repo identifiers.
+ """
     repos: list[str] = []
     seen: set[str] = set()
     for mapping in repo_mappings:
@@ -314,9 +313,8 @@ def _is_repo_in_allowed_list(
 ) -> bool:
     """Check if a repo URL/identifier exists in the allowed mappings.
 
-    Comparison is case-insensitive to handle URL variations.
-    Validates: Requirements 9.1, 9.4
-    """
+ Comparison is case-insensitive to handle URL variations.
+ """
     repo_lower = repo_url.strip().lower()
     for mapping in repo_mappings:
         allowed = mapping.get("bitbucket_repo", "")
@@ -328,8 +326,7 @@ def _is_repo_in_allowed_list(
 def _build_repo_ask_comment() -> str:
     """Build a Jira comment asking the user for repo information.
 
-    Validates: Requirement 9.3
-    """
+ """
     return (
         "🔍 Görev açıklamasından repository bilgisi yeterli güvenle "
         "belirlenemedi.\n\n"
@@ -345,8 +342,7 @@ def _build_repo_rejected_comment(
 ) -> str:
     """Build a Jira comment for rejected repo (not in allowed list).
 
-    Validates: Requirement 9.4
-    """
+ """
     allowed_list = "\n".join(f"• {repo}" for repo in allowed_repos)
     return (
         f"❌ Belirtilen repository (`{repo_value}`) bu departman için "
@@ -365,17 +361,16 @@ def _build_repo_rejected_comment(
 async def resolve_repo_field(input: RepoResolveInput) -> RepoResolveResult:
     """Resolve the target repository for a task.
 
-    Priority logic:
-    1. Structured field non-empty → use directly, skip LLM parsing.
-    2. Structured field empty → LLM parse from description.
-       - confidence >= 0.8 → accept parsed repo.
-       - confidence < 0.8 → ask user via Jira comment.
-    3. Validate resolved repo against repo_mappings.
-       - Not in list → reject task, post allowed list comment.
-    4. If user asked and no response within 30 min → "needs_info".
+ Priority logic:
+ 1. Structured field non-empty → use directly, skip LLM parsing.
+ 2. Structured field empty → LLM parse from description.
+ - confidence >= 0.8 → accept parsed repo.
+ - confidence < 0.8 → ask user via Jira comment.
+ 3. Validate resolved repo against repo_mappings.
+ - Not in list → reject task, post allowed list comment.
+ 4. If user asked and no response within 30 min → "needs_info".
 
-    Validates: Requirements 9.1, 9.2, 9.3, 9.4, 9.5
-    """
+ """
     activity.logger.info(
         "repo_resolver: resolving repo for issue %s (workflow=%s, dept=%s)",
         input.issue_key,
@@ -387,7 +382,7 @@ async def resolve_repo_field(input: RepoResolveInput) -> RepoResolveResult:
     jira_commenter = get_jira_commenter()
 
     # ------------------------------------------------------------------
-    # Step 1: Check structured "Repository" field (Requirement 9.2)
+    # Step 1: Check structured "Repository" field 
     # ------------------------------------------------------------------
     if input.structured_field_value and input.structured_field_value.strip():
         repo_value = input.structured_field_value.strip()
@@ -397,7 +392,7 @@ async def resolve_repo_field(input: RepoResolveInput) -> RepoResolveResult:
             input.issue_key,
         )
 
-        # Validate against allowed list (Requirement 9.4)
+        # Validate against allowed list 
         if not _is_repo_in_allowed_list(repo_value, input.repo_mappings):
             activity.logger.warning(
                 "repo_resolver: repo %s not in allowed list for dept %s "
@@ -496,7 +491,7 @@ async def resolve_repo_field(input: RepoResolveInput) -> RepoResolveResult:
         )
 
     # ------------------------------------------------------------------
-    # Step 3: LLM parse from description (Requirement 9.3)
+    # Step 3: LLM parse from description 
     # ------------------------------------------------------------------
     activity.logger.info(
         "repo_resolver: structured field empty, attempting LLM parse "
@@ -551,7 +546,7 @@ async def resolve_repo_field(input: RepoResolveInput) -> RepoResolveResult:
     )
 
     # ------------------------------------------------------------------
-    # Step 2a: Confidence check (Requirement 9.3)
+    # Step 2a: Confidence check 
     # ------------------------------------------------------------------
     if not parsed_repo or confidence < CONFIDENCE_THRESHOLD:
         activity.logger.info(
@@ -576,7 +571,7 @@ async def resolve_repo_field(input: RepoResolveInput) -> RepoResolveResult:
                 exc,
             )
 
-        # Transition to "needs_info" status (Requirement 9.5)
+        # Transition to "needs_info" status 
         # The workflow will handle the 30-minute timeout; we signal
         # that user input is needed so the workflow can set up the
         # timer and transition accordingly.

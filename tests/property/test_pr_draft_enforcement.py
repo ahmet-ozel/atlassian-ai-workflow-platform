@@ -1,14 +1,10 @@
-"""Property test — PR draft enforcement (Property 4 / Requirement 1.9).
+"""Property-based tests for PR draft enforcement.
 
-**Property 4: Loop guard, banned tool list ve PR draft enforcement**
-
-**Validates: Requirements 1.7, 1.8, 1.9**
-
-This file owns the **PR draft enforcement** half of Property 4. The
+This file owns the **PR draft enforcement** behavior. The
 companion files for the same property are:
 
-- ``test_tool_filter.py`` — R1.8 / MIMARI §1 Kural 9
-- ``test_webhook_predicates.py`` (extended) — R1.7 / MIMARI §1 Kural 7
+- ``test_tool_filter.py`` — banned MCP tool filtering
+- ``test_webhook_predicates.py`` (extended) — webhook loop guard behavior
 
 Universal property
 ------------------
@@ -78,7 +74,7 @@ _reviewer_entries = st.fixed_dictionaries(
 
 #: All the values an LLM (or a poorly-typed caller) could plausibly
 #: hand us in the ``draft`` slot. Using ``st.one_of`` over a
-#: deliberately diverse set is the heart of the property — R1.9 says
+#: deliberately diverse set is the heart of the enforcement rule.
 #: "regardless of input", so we treat *every* one of these as a case
 #: that must end up as ``True``.
 _draft_inputs: st.SearchStrategy[Any] = st.one_of(
@@ -190,14 +186,13 @@ def _make_logger() -> tuple[AuditLogger, _CapturingAuditWriter]:
 
 
 # ---------------------------------------------------------------------------
-# Property 4 — PR draft enforcement invariants
+# PR draft enforcement invariants
 # ---------------------------------------------------------------------------
 
 
 class TestEnforcePrDraftCoercion:
     """``enforce_pr_draft`` always returns ``draft=True``.
 
-    **Validates: Requirement 1.9**
     """
 
     @settings(
@@ -209,10 +204,9 @@ class TestEnforcePrDraftCoercion:
     def test_draft_field_is_always_true_in_output(
         self, payload: dict[str, Any]
     ) -> None:
-        """**Validates: Requirement 1.9**
+        """The output unconditionally has ``draft=True``.
 
-        The core property of MIMARI §1 Kural 10: the output
-        unconditionally has ``draft=True``. Every diverse value
+        Every diverse value
         in :data:`_draft_inputs` must be coerced.
         """
 
@@ -224,9 +218,7 @@ class TestEnforcePrDraftCoercion:
     def test_input_payload_is_not_mutated(
         self, payload: dict[str, Any]
     ) -> None:
-        """**Validates: Requirement 1.9**
-
-        The helper performs a deep copy; the caller's mapping must
+        """The helper performs a deep copy; the caller's mapping must
         be byte-for-byte identical after the call so concurrent
         callers do not race on shared state.
         """
@@ -242,9 +234,7 @@ class TestEnforcePrDraftCoercion:
     @settings(max_examples=200, deadline=2000)
     @given(payload=_pr_payloads())
     def test_returns_a_new_mapping(self, payload: dict[str, Any]) -> None:
-        """**Validates: Requirement 1.9**
-
-        The output is a freshly constructed ``dict`` — callers can
+        """The output is a freshly constructed ``dict`` — callers can
         mutate it without aliasing the caller's payload.
         """
 
@@ -257,9 +247,7 @@ class TestEnforcePrDraftCoercion:
     def test_non_draft_keys_are_preserved(
         self, payload: dict[str, Any]
     ) -> None:
-        """**Validates: Requirement 1.9**
-
-        Every key other than ``draft`` survives the enforcement
+        """Every key other than ``draft`` survives the enforcement
         unchanged. This rules out implementations that "fix" the
         ``draft`` field by rebuilding the payload from scratch and
         accidentally dropping fields the LLM cared about (eg.
@@ -278,9 +266,7 @@ class TestEnforcePrDraftCoercion:
     def test_idempotent_under_repeated_application(
         self, payload: dict[str, Any]
     ) -> None:
-        """**Validates: Requirement 1.9**
-
-        Applying the helper a second time on its output produces an
+        """Applying the helper a second time on its output produces an
         equal mapping — the rule reaches a fixed point in one step,
         so chaining through multiple interceptor layers is safe.
         """
@@ -294,9 +280,7 @@ class TestEnforcePrDraftCoercion:
     def test_output_keys_are_a_superset_of_input_keys(
         self, payload: dict[str, Any]
     ) -> None:
-        """**Validates: Requirement 1.9**
-
-        The helper never *drops* keys — even if ``draft`` was
+        """The helper never *drops* keys — even if ``draft`` was
         absent in the input, every other key in the input is in the
         output (and ``draft`` has been added).
         """
@@ -311,7 +295,6 @@ class TestEnforcePrDraftCoercion:
 class TestEnforcePrDraftAuditTrail:
     """Audit-trail invariants for :func:`enforce_pr_draft`.
 
-    **Validates: Requirement 1.9**
     """
 
     @settings(
@@ -323,9 +306,7 @@ class TestEnforcePrDraftAuditTrail:
     def test_exactly_one_audit_event_when_flip_was_needed(
         self, payload: dict[str, Any]
     ) -> None:
-        """**Validates: Requirement 1.9**
-
-        Whenever the rule has to flip a non-``True`` ``draft`` to
+        """Whenever the rule has to flip a non-``True`` ``draft`` to
         ``True``, an audit event with
         ``action="pr_draft_enforced"`` is written exactly once.
         Operators rely on this trail to spot LLMs that try to
@@ -361,9 +342,7 @@ class TestEnforcePrDraftAuditTrail:
     def test_no_audit_event_when_draft_was_already_true(
         self, payload: dict[str, Any]
     ) -> None:
-        """**Validates: Requirement 1.9**
-
-        Already-correct payloads do not pollute the audit log. The
+        """Already-correct payloads do not pollute the audit log. The
         rule still re-asserts ``draft=True`` on the copy, but no
         operator-facing event is emitted (zero noise → faster
         anomaly detection).
@@ -381,9 +360,7 @@ class TestEnforcePrDraftAuditTrail:
     def test_works_without_audit_logger(
         self, payload: dict[str, Any]
     ) -> None:
-        """**Validates: Requirement 1.9**
-
-        Passing ``audit_logger=None`` keeps the helper usable in
+        """Passing ``audit_logger=None`` keeps the helper usable in
         pure-function call paths (eg. dry-run interceptor tests).
         The coercion still happens.
         """
@@ -414,9 +391,7 @@ class TestEnforcePrDraftAuditTrail:
         actor_id: str,
         dept_id: str | None,
     ) -> None:
-        """**Validates: Requirement 1.9**
-
-        The ``actor_id``, ``actor_role``, and ``dept_id`` arguments
+        """The ``actor_id``, ``actor_role``, and ``dept_id`` arguments
         end up on the emitted ``AuditEvent``. Without this property
         the audit trail would be inert (every event indistinguishably
         attributed to ``"system"``).

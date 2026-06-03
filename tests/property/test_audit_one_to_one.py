@@ -1,63 +1,61 @@
-"""Property test P6 — Audit girdisi 1:1 (her aksiyon → tam olarak bir final kayıt).
+"""Audit entries are one-to-one with final action outcomes.
 
-**Validates: Requirements 11.1, 11.4** (with Requirement 11.3 surface)
 
-Property
+
+Behavior
 --------
 For any sequence of actions drawn from
 ``["start", "stop", "restart", "run_tests"]``, the lifecycle service
-SHALL satisfy three simultaneous invariants:
+SHALL satisfy three simultaneous guarantees:
 
-1. **One final outcome row per correlation_id** (Requirement 11.1 +
-   11.4). Every successfully-attempted action results in exactly one
-   audit row with ``outcome ∈ {"success", "failed"}`` carrying that
-   action's ``correlation_id``. The ``start`` flow additionally writes
-   one ``outcome="pending"`` row beforehand, but the property only
-   counts the *final* row.
+1. **One final outcome row per correlation_id**. Every successfully-attempted action results in exactly one
+ audit row with ``outcome ∈ {"success", "failed"}`` carrying that
+ action's ``correlation_id``. The ``start`` flow additionally writes
+ one ``outcome="pending"`` row beforehand, but the property only
+ counts the *final* row.
 
-2. **Action count parity** (Requirement 11.4). The number of distinct
-   ``correlation_id``s that produced *any* audit row equals the number
-   of attempted actions that did not raise a precondition error before
-   any audit write happened (those raise before allocating a
-   correlation_id). ``restart`` is internally implemented as ``stop ∘
-   start`` so it produces **two** correlation_ids — one per leg.
+2. **Action count parity**. The number of distinct
+ ``correlation_id``s that produced *any* audit row equals the number
+ of attempted actions that did not raise a precondition error before
+ any audit write happened (those raise before allocating a
+ correlation_id). ``restart`` is internally implemented as ``stop ∘
+ start`` so it produces **two** correlation_ids — one per leg.
 
-3. **No Env_Override values in details_json** (Requirement 11.3).
-   For every audit row written across the whole trace, no value string
-   from any ``env_overrides`` map (random ``st.text``) appears anywhere
-   inside the row's serialised ``details_json``.
+3. **No Env_Override values in details_json**.
+ For every audit row written across the whole trace, no value string
+ from any ``env_overrides`` map (random ``st.text``) appears anywhere
+ inside the row's serialised ``details_json``.
 
 Strategy
 --------
 * ``actions`` — ``st.lists(st.sampled_from(["start", "stop", "restart",
-  "run_tests"]), min_size=1, max_size=20)`` per task 7.6 of the
-  ``admin-dashboard-control-plane`` plan.
+ "run_tests"]), min_size=1, max_size=20)`` for the lifecycle action set.
 * ``env_overrides`` — a fixed-key dict whose values are randomly
-  generated ``st.text`` strings of length 8..40 from a printable
-  alphabet (excluding ``"<"`` and ``">"`` so values cannot collide with
-  the redaction sentinel and excluding whitespace so single-token
-  serialisations stay tight).
+ generated ``st.text`` strings of length 8..40 from a printable
+ alphabet (excluding ``"<"`` and ``">"`` so values cannot collide with
+ the redaction sentinel and excluding whitespace so single-token
+ serialisations stay tight).
 * ``actions`` are interpreted against an in-memory ``LifecycleService``
-  driven by deterministic fakes (mirrors ``test_stop_idempotent.py``
-  and ``test_log_redaction.py``). The service's actual ``AuditWriter``
-  is replaced by ``_FakeAuditWriter`` that stores every entry in a
-  list — this is the "in-memory test DB" referenced by the task: no
-  PostgreSQL is required and ``correlation_id`` ↔ rows mapping is
-  observable directly.
+ driven by deterministic fakes (mirrors ``test_stop_idempotent.py``
+ and ``test_log_redaction.py``). The service's actual ``AuditWriter``
+ is replaced by ``_FakeAuditWriter`` that stores every entry in a
+ list — this acts as an in-memory test DB: no
+ PostgreSQL is required and ``correlation_id`` ↔ rows mapping is
+ observable directly.
 
 Pre-condition handling
 ----------------------
 ``run_tests`` requires the service to be in the ``running`` state
-(Requirement 8.6) and ``start`` requires a form-schema-matching
+ and ``start`` requires a form-schema-matching
 ``env_overrides`` dict. Both raise *before* writing any audit row, so
 the property filters those actions out of the expected-count tally.
 The implementation is:
 
-* For ``run_tests`` we catch :class:`TestPreconditionError`. Those
-  attempts produce *zero* audit rows, so they don't count toward the
-  expected total.
+* For ``run_tests`` we catch:class:`TestPreconditionError`. Those
+ attempts produce *zero* audit rows, so they don't count toward the
+ expected total.
 * For other actions the fakes are unconditionally green, so no
-  exception escapes.
+ exception escapes.
 """
 
 from __future__ import annotations
@@ -118,21 +116,20 @@ from src.manifest import ManagedServiceEntry  # noqa: E402
 
 @dataclass
 class _FakeAuditWriter:
-    """In-memory replacement for :class:`AuditWriter`.
+    """In-memory replacement for:class:`AuditWriter`.
 
-    Every audit interaction (``precheck``, ``write``,
-    ``write_with_retry``) is recorded so the property can:
+ Every audit interaction (``precheck``, ``write``,
+ ``write_with_retry``) is recorded so the property can:
 
-    * Count rows per ``correlation_id``.
-    * Inspect ``outcome`` to identify "final" rows.
-    * Walk every row's ``details_json`` and assert no Env_Override
-      *value* string ever appears (Requirement 11.3 surface).
+ * Count rows per ``correlation_id``.
+ * Inspect ``outcome`` to identify "final" rows.
+ * Walk every row's ``details_json`` and assert no Env_Override
+ *value* string ever appears surface).
 
-    The writer is intentionally always-green: no failures, no deferred
-    queue. The property under test is *correctness of the audit row
-    set*, not the deferred-queue retry semantics (which Property
-    test on the AuditWriter unit suite covers separately).
-    """
+ The writer is intentionally always-green: no failures, no deferred
+ queue. The property under test is *correctness of the audit row
+ set*, not the deferred-queue retry semantics covered by the AuditWriter unit suite.
+ """
 
     precheck_calls: int = 0
     write_calls: list[AuditEntry] = field(default_factory=list)
@@ -219,7 +216,7 @@ class _FakeComposeRunner:
             argv=("docker", "compose", "stop", service_name),
         )
 
-    async def logs(  # pragma: no cover - not exercised by P6
+    async def logs(  # pragma: no cover - not exercised here
         self, *, service_name: str, tail: int, follow: bool
     ) -> ComposeResult:
         return ComposeResult(
@@ -285,7 +282,7 @@ _ENV_EXAMPLE_RELPATH = f"services/{_MANIFEST_NAME}/.env.example"
 # the "non-empty sensitive value" rule, so any random ``st.text`` value
 # (including the empty string) is accepted. The fixed key set keeps the
 # property focused on audit row semantics rather than form-schema
-# matching — Property P4 owns the latter.
+# matching; separate tests cover that behavior.
 _ENV_EXAMPLE_TEXT = "# Plain config knob\nPORT=8080\n"
 
 _ENV_KEYS: tuple[str, ...] = ("PORT",)
@@ -311,7 +308,7 @@ def _entry() -> ManagedServiceEntry:
         # ``test_command`` must be present for ``run_tests`` to skip
         # the "no test_command" precondition error and proceed to the
         # state check (which is the precondition we *do* want to
-        # exercise — Requirement 8.6).
+        # exercise —.
         test_command=(
             "docker compose -f infra/docker-compose.yml exec "
             f"{_COMPOSE_SERVICE_NAME} pytest tests/integration/ -v"
@@ -332,7 +329,7 @@ def _make_service(
     vault = _FakeVaultClient()
     # Pre-seed Vault with the form-schema env_overrides so a
     # ``restart`` action triggered before any explicit ``start`` still
-    # finds matching overrides on the Vault read path (Requirement
+    # finds matching overrides on the Vault read path (the operational rule
     # 6.6). Without this seed, the first ``restart`` in a trace would
     # raise FormSchemaMismatchError and no audit row would be written
     # for that leg — conflating two distinct contracts.
@@ -366,13 +363,13 @@ _ACTIONS: tuple[str, ...] = ("start", "stop", "restart", "run_tests")
 
 
 # Value alphabet for ``env_overrides`` values. We deliberately exclude:
-#   - ``<`` and ``>`` so values cannot collide with the literal
-#     ``<redacted>`` sentinel used by the log redactor.
-#   - whitespace so each value serialises as a single JSON string token
-#     and substring matching against ``details_json`` payloads is
-#     unambiguous.
-#   - control chars (the ``string.printable`` slice already excludes
-#     them via the ``[:-6]`` cut that drops ``\t\n\r\x0b\x0c``).
+# - ``<`` and ``>`` so values cannot collide with the literal
+# ``<redacted>`` sentinel used by the log redactor.
+# - whitespace so each value serialises as a single JSON string token
+# and substring matching against ``details_json`` payloads is
+# unambiguous.
+# - control chars (the ``string.printable`` slice already excludes
+# them via the ``[:-6]`` cut that drops ``\t\n\r\x0b\x0c``).
 _VALUE_ALPHABET: str = "".join(
     c for c in string.printable[:-6] if c not in {"<", ">", " "}
 )
@@ -396,19 +393,19 @@ async def _run_action(
 ) -> tuple[bool, Any]:
     """Execute a single named action against ``svc``.
 
-    Returns ``(audit_written, response)``: ``audit_written`` is
-    ``True`` when the action wrote at least one audit row (so the
-    property's expected-count tally should include this attempt),
-    ``False`` when a precondition error fired *before* any audit
-    row was written.
+ Returns ``(audit_written, response)``: ``audit_written`` is
+ ``True`` when the action wrote at least one audit row (so the
+ property's expected-count tally should include this attempt),
+ ``False`` when a precondition error fired *before* any audit
+ row was written.
 
-    ``run_tests`` is the only action that raises a precondition
-    error (state must be ``running``); when that fires we return
-    ``(False, None)`` so the caller can exclude it from the count.
-    Form-schema mismatches on ``start``/``restart`` would also raise
-    pre-audit, but the property uses a fixed schema-matching key
-    set so those never happen here.
-    """
+ ``run_tests`` is the only action that raises a precondition
+ error (state must be ``running``); when that fires we return
+ ``(False, None)`` so the caller can exclude it from the count.
+ Form-schema mismatches on ``start``/``restart`` would also raise
+ pre-audit, but the property uses a fixed schema-matching key
+ set so those never happen here.
+ """
 
     if action == "start":
         resp = await svc.start(
@@ -439,18 +436,18 @@ async def _run_action(
 
 
 # ---------------------------------------------------------------------------
-# Property P6
+# Property check
 # ---------------------------------------------------------------------------
 
 
 def _details_text(entry: AuditEntry) -> str:
     """Serialise ``entry.details_json`` to its on-the-wire string form.
 
-    The actual ``AuditWriter`` writes ``json.dumps(details_json,
-    default=str)`` to Postgres (see ``audit_writer._INSERT_SQL``); we
-    reproduce that exact serialisation so the substring check matches
-    what would land in the database.
-    """
+ The actual ``AuditWriter`` writes ``json.dumps(details_json,
+ default=str)`` to Postgres (see ``audit_writer._INSERT_SQL``); we
+ reproduce that exact serialisation so the substring check matches
+ what would land in the database.
+ """
 
     return json.dumps(entry.details_json, default=str)
 
@@ -475,12 +472,12 @@ def test_audit_one_to_one(
     port_value: str,
     tmp_path_factory: pytest.TempPathFactory,
 ) -> None:
-    """Property P6 — one final audit row per correlation_id, no values leak.
+    """One final audit row per correlation_id, with no values leaked.
 
-    Validates: Requirements 11.1, 11.4 (with Requirement 11.3 surface).
-    """
 
-    workspace = _build_workspace(tmp_path_factory.mktemp("ws-p6"))
+ """
+
+    workspace = _build_workspace(tmp_path_factory.mktemp("ws-audit"))
     svc, audit, _, _, _ = _make_service(workspace)
 
     env_overrides = {"PORT": port_value}
@@ -498,7 +495,7 @@ def test_audit_one_to_one(
 
     expected_correlation_count = asyncio.run(run())
 
-    # ----- Invariant 1: every correlation_id has exactly one final row -----
+    # ----- Check 1: every correlation_id has exactly one final row -----
     # A "final" row has ``outcome ∈ {"success", "failed"}``. The
     # ``start`` flow additionally writes one ``outcome="pending"``
     # row beforehand — counted under ``write_calls`` but excluded
@@ -521,7 +518,7 @@ def test_audit_one_to_one(
                 f"{corr_id}"
             )
 
-    # ----- Invariant 2: action count parity (Requirement 11.4) -----
+    # ----- Check 2: action count parity -----
     # Number of distinct correlation_ids with ≥1 audit row equals the
     # number of attempted actions whose lifecycle reached the
     # audit-allocating point. ``restart`` produces two correlation_ids
@@ -531,8 +528,8 @@ def test_audit_one_to_one(
         f"with audit rows for trace {actions!r}, got {len(by_corr)}"
     )
 
-    # ----- Invariant 3: no Env_Override value leaks into details_json -----
-    # Requirement 11.3 forbids the *value* from ever appearing in any
+    # ----- Check 3: no Env_Override value leaks into details_json -----
+    # forbids the *value* from ever appearing in any
     # audit field. We check the on-the-wire ``details_json``
     # serialisation across every row.
     leak_canaries = [v for v in env_overrides.values() if v]
@@ -556,11 +553,11 @@ def test_audit_one_to_one(
 def test_start_writes_pending_then_one_final_row(tmp_path: Path) -> None:
     """Concrete anchor: a single ``start`` writes 1 pending + 1 final row.
 
-    Both rows share the same ``correlation_id``; the final row carries
-    ``outcome="success"`` because the fakes are unconditionally green.
-    Pins the row-shape contract for Property P6 independent of the
-    Hypothesis search order.
-    """
+ Both rows share the same ``correlation_id``; the final row carries
+ ``outcome="success"`` because the fakes are unconditionally green.
+ Pins the row-shape contract independent of the
+ Hypothesis search order.
+ """
 
     workspace = _build_workspace(tmp_path)
     svc, audit, _, _, _ = _make_service(workspace)
@@ -589,10 +586,10 @@ def test_start_writes_pending_then_one_final_row(tmp_path: Path) -> None:
 def test_restart_emits_two_correlation_ids(tmp_path: Path) -> None:
     """Concrete anchor: ``restart`` writes audit rows under two corr_ids.
 
-    ``restart`` is internally ``stop ∘ start``; each leg allocates its
-    own ``correlation_id`` so the audit table holds rows under two
-    distinct IDs after a single restart action.
-    """
+ ``restart`` is internally ``stop ∘ start``; each leg allocates its
+ own ``correlation_id`` so the audit table holds rows under two
+ distinct IDs after a single restart action.
+ """
 
     workspace = _build_workspace(tmp_path)
     svc, audit, _, _, _ = _make_service(workspace)
@@ -618,13 +615,11 @@ def test_restart_emits_two_correlation_ids(tmp_path: Path) -> None:
 
 
 def test_run_tests_without_running_state_writes_no_audit(tmp_path: Path) -> None:
-    """Concrete anchor: ``run_tests`` from ``stopped`` is excluded from count.
-
-    Requirement 8.6: ``run_tests`` requires ``state == "running"``. The
-    precondition error fires *before* any audit row is written, so this
-    attempt is correctly excluded from Property P6's expected-count
-    tally.
-    """
+    """Concrete anchor: ``run_tests`` from ``stopped`` is excluded from count.: ``run_tests`` requires ``state == "running"``. The
+ precondition error fires *before* any audit row is written, so this
+ attempt is correctly excluded from the expected-count
+ tally.
+ """
 
     workspace = _build_workspace(tmp_path)
     svc, audit, _, _, _ = _make_service(workspace)
@@ -643,11 +638,11 @@ def test_run_tests_without_running_state_writes_no_audit(tmp_path: Path) -> None
 def test_env_override_value_never_appears_in_details_json(tmp_path: Path) -> None:
     """Concrete anchor: a uniquely-tagged value is absent from every row.
 
-    Pins Requirement 11.3: ``details_json`` carries the *key list*
-    (``env_keys``) but never the value. Independent of Hypothesis
-    search order so a regression in the audit serialiser fails this
-    test deterministically.
-    """
+ Pins: ``details_json`` carries the *key list*
+ (``env_keys``) but never the value. Independent of Hypothesis
+ search order so a regression in the audit serialiser fails this
+ test deterministically.
+ """
 
     workspace = _build_workspace(tmp_path)
     svc, audit, _, _, _ = _make_service(workspace)
@@ -679,47 +674,42 @@ def test_env_override_value_never_appears_in_details_json(tmp_path: Path) -> Non
 
 
 # ===========================================================================
-# Property 13 (d) — actor_role NOT NULL enforcement
-# (platform-mimari-foundation spec, task 4.3)
+# actor_role NOT NULL enforcement
 # ===========================================================================
 #
-# Validates: Requirements 7.7
 #
-# Property statement (design.md §"Property 13"):
+# Behavior statement:
 #
-#   For every randomly-generated AuditEvent whose ``actor_role`` is
-#   NULL / empty / not one of the four RBAC roles, the application-
-#   layer ``AuditLogger.write()`` MUST raise :class:`ValueError`
-#   BEFORE issuing the INSERT. The Postgres CHECK constraint
-#   (``audit_events.actor_role IS NOT NULL ...`` declared in
-#   ``infra/postgres/init/10_automation.sql``) enforces the same
-#   invariant at the database layer; the application guard exists so
-#   callers fail fast with a clear traceback (Requirement 7.7).
+# For every randomly-generated AuditEvent whose ``actor_role`` is
+# NULL / empty / not one of the four RBAC roles, the application-
+# layer ``AuditLogger.write`` MUST raise:class:`ValueError`
+# BEFORE issuing the INSERT. The Postgres CHECK constraint
+# (``audit_events.actor_role IS NOT NULL...`` declared in
+# ``infra/postgres/init/10_automation.sql``) enforces the same
+# rule at the database layer; the application guard exists so
+# callers fail fast with a clear traceback.
 #
 # Strategy
 # --------
-# * ``invalid_role`` — ``st.one_of(st.none(), st.just(""),
-#   whitespace-only strings, st.text() filtered to NOT be in
-#   AUDIT_ACTOR_ROLES)``. Each variant exercises a different branch
-#   of :class:`AuditLogger.write`'s validation (None / empty /
-#   unknown role).
+# * ``invalid_role`` — ``st.one_of(st.none, st.just(""),
+# whitespace-only strings, st.text filtered to NOT be in
+# AUDIT_ACTOR_ROLES)``. Each variant exercises a different branch
+# of:class:`AuditLogger.write`'s validation (None / empty /
+# unknown role).
 # * ``valid_role`` — ``st.sampled_from(AUDIT_ACTOR_ROLES)`` for the
-#   positive case: every accepted role MUST round-trip through to
-#   the underlying writer's ``insert_audit`` method, with no
-#   ValueError raised.
+# positive case: every accepted role MUST round-trip through to
+# the underlying writer's ``insert_audit`` method, with no
+# ValueError raised.
 # * ``action`` / ``resource`` — short ASCII strings to avoid the
-#   policy's interaction with text encoding; the property is on
-#   ``actor_role`` enforcement, not payload validation.
-# * ``dept_id`` — ``st.one_of(st.none(), short_string)`` because
-#   ``audit_events.dept_id`` is nullable for system-wide events
-#   (Requirement 7.7 wording: "actor_role NULL değildir" — silently
-#   excluding dept_id from the rule).
+# policy's interaction with text encoding; the property is on
+# ``actor_role`` enforcement, not payload validation.
+# * ``dept_id`` — ``st.one_of(st.none, short_string)`` because
+# ``audit_events.dept_id`` is nullable for system-wide events
+# wording: "actor_role NULL değildir" — silently
+# excluding dept_id from the rule).
 #
-# This test is **separate** from ``test_audit_one_to_one`` above
-# (which validates the admin-dashboard-control-plane spec's
-# correlation_id / value-leak invariants). Both tests live in this
-# file because the design.md §"Property → Test mapping" table maps
-# Property 13 to ``test_audit_one_to_one.py``.
+# This test is **separate** from ``test_audit_one_to_one`` above, which
+# checks the correlation_id / value-leak behavior for lifecycle actions.
 
 from datetime import datetime, timezone  # noqa: E402
 
@@ -732,19 +722,18 @@ from audit_logger import (  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
-# In-memory writer for Property 13 (d)
+# In-memory writer for actor_role enforcement
 # ---------------------------------------------------------------------------
 
 
 @dataclass
 class _RecordingAuditWriter:
-    """Bare-bones :class:`AuditWriter` that just records every accepted row.
+    """Bare-bones:class:`AuditWriter` that just records every accepted row.
 
-    The full ``_FakeAuditWriter`` defined earlier in this file is
-    tied to the lifecycle service's pending/final shape. Property
-    13 (d) only needs to observe whether ``insert_audit`` is reached
-    at all, so a tiny dedicated fake keeps the assertions sharp.
-    """
+ The full ``_FakeAuditWriter`` defined earlier in this file is
+ tied to the lifecycle service's pending/final shape. This check only needs to observe whether ``insert_audit`` is reached
+ at all, so a tiny dedicated fake keeps the assertions sharp.
+ """
 
     inserted: list[AuditEvent] = field(default_factory=list)
 
@@ -770,7 +759,7 @@ _SHORT_ASCII: st.SearchStrategy[str] = st.text(
 # Whitespace-only strings — these MUST be rejected by the writer
 # (a role that is just whitespace is semantically empty).
 _WHITESPACE_ONLY: st.SearchStrategy[str] = st.sampled_from(
-    (" ", "\t", "  ", "\n", " \t \n")
+    (" ", "\t", " ", "\n", " \t \n")
 )
 
 # Text strings that are NOT one of the four valid roles. We filter
@@ -810,7 +799,7 @@ _VALID_RESULT: st.SearchStrategy[str] = st.sampled_from(sorted(AUDIT_RESULTS))
 
 
 # ---------------------------------------------------------------------------
-# Property 13 (d) — invalid actor_role MUST raise ValueError
+# Invalid actor_role MUST raise ValueError
 # ---------------------------------------------------------------------------
 
 
@@ -833,17 +822,14 @@ def test_audit_logger_rejects_null_or_invalid_actor_role(
     result: str,
     dept_id: str | None,
 ) -> None:
-    """Validates: Requirement 7.7
-
-    For every randomly-generated :class:`AuditEvent` whose
-    ``actor_role`` is None / empty / whitespace-only / a known typo
-    (``"Admin"``, ``"superuser"``, ...), :meth:`AuditLogger.write`
-    MUST raise :class:`ValueError` and MUST NOT call the underlying
-    writer's ``insert_audit``. This pins the application-layer
-    guard; the Postgres ``CHECK`` constraint enforces the same
-    invariant at the database layer (verified by the integration
-    test in task 4.4).
-    """
+    """For every randomly-generated:class:`AuditEvent` whose
+ ``actor_role`` is None / empty / whitespace-only / a known typo
+ (``"Admin"``, ``"superuser"``,...),:meth:`AuditLogger.write`
+ MUST raise:class:`ValueError` and MUST NOT call the underlying
+ writer's ``insert_audit``. This pins the application-layer
+ guard; the Postgres ``CHECK`` constraint enforces the same
+ rule at the database layer.
+ """
 
     writer = _RecordingAuditWriter()
     logger = AuditLogger(writer=writer)
@@ -869,17 +855,17 @@ def test_audit_logger_rejects_null_or_invalid_actor_role(
     async def run() -> None:
         with pytest.raises(ValueError) as exc_info:
             await logger.write(event)
-        # The error message MUST mention Requirement 7.7 OR the
+        # The error message MUST mention OR the
         # offending value so the operator can pivot from the
-        # traceback to the spec.
+        # traceback to the audit role rule.
         msg = str(exc_info.value)
         assert (
             "actor_role" in msg
-            or "Requirement 7.7" in msg
+            or "the operational rule" in msg
             or "audit" in msg.lower()
         ), (
             f"ValueError message {msg!r} should mention actor_role / "
-            "audit / Requirement 7.7 to help operators triage"
+            "audit / the operational rule to help operators triage"
         )
 
     asyncio.run(run())
@@ -896,7 +882,7 @@ def test_audit_logger_rejects_null_or_invalid_actor_role(
 
 
 # ---------------------------------------------------------------------------
-# Property 13 (d) — valid actor_role admits the event
+# Valid actor_role admits the event
 # ---------------------------------------------------------------------------
 
 
@@ -919,14 +905,12 @@ def test_audit_logger_admits_every_known_role(
     result: str,
     dept_id: str | None,
 ) -> None:
-    """Validates: Requirement 7.7 (positive branch)
-
-    For every member of :data:`AUDIT_ACTOR_ROLES` (``viewer``,
-    ``lead``, ``admin``, ``dept_admin``, ``system``), an otherwise
-    well-formed :class:`AuditEvent` MUST round-trip to the
-    underlying writer's ``insert_audit`` exactly once. This is the
-    positive companion of the rejection test above.
-    """
+    """For every member of:data:`AUDIT_ACTOR_ROLES` (``viewer``,
+ ``lead``, ``admin``, ``dept_admin``, ``system``), an otherwise
+ well-formed:class:`AuditEvent` MUST round-trip to the
+ underlying writer's ``insert_audit`` exactly once. This is the
+ positive companion of the rejection test above.
+ """
 
     writer = _RecordingAuditWriter()
     logger = AuditLogger(writer=writer)
@@ -958,16 +942,16 @@ def test_audit_logger_admits_every_known_role(
 
 
 # ---------------------------------------------------------------------------
-# Concrete regression anchors for Property 13 (d)
+# Concrete regression anchors for actor_role enforcement
 # ---------------------------------------------------------------------------
 
 
 def test_audit_logger_rejects_none_actor_role_concrete() -> None:
     """Concrete anchor: ``actor_role=None`` MUST raise.
 
-    Pins the most common failure mode (a caller forgetting to set
-    ``actor_role``) outside of the Hypothesis search.
-    """
+ Pins the most common failure mode (a caller forgetting to set
+ ``actor_role``) outside of the Hypothesis search.
+ """
 
     writer = _RecordingAuditWriter()
     logger = AuditLogger(writer=writer)
@@ -995,10 +979,10 @@ def test_audit_logger_rejects_none_actor_role_concrete() -> None:
 def test_audit_logger_rejects_empty_actor_role_concrete() -> None:
     """Concrete anchor: ``actor_role=''`` MUST raise.
 
-    Empty string is semantically "no role" and the writer rejects
-    it with the same error class as the None case so callers can
-    catch ValueError once.
-    """
+ Empty string is semantically "no role" and the writer rejects
+ it with the same error class as the None case so callers can
+ catch ValueError once.
+ """
 
     writer = _RecordingAuditWriter()
     logger = AuditLogger(writer=writer)
@@ -1025,12 +1009,10 @@ def test_audit_logger_rejects_empty_actor_role_concrete() -> None:
 def test_audit_logger_admits_system_role_concrete() -> None:
     """Concrete anchor: the ``system`` role is admitted (background events).
 
-    Pins the design decision (design.md §"libs/audit_logger") that
-    background processes — webhook handlers, probe runner, capability
-    gate — write audit rows under the synthetic ``system`` actor_role.
-    The role is NOT in the four-role RBAC enumeration but IS in
-    :data:`AUDIT_ACTOR_ROLES` for exactly this reason.
-    """
+ Background processes — webhook handlers, probe runner, capability
+ gate — write audit rows under the synthetic ``system`` actor_role.
+ The role is NOT in the four-role RBAC enumeration but IS in:data:`AUDIT_ACTOR_ROLES` for exactly this reason.
+ """
 
     writer = _RecordingAuditWriter()
     logger = AuditLogger(writer=writer)

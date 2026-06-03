@@ -1,18 +1,15 @@
-"""Jira custom field name → id resolver with TTL'li cache (task 4.7).
+"""Jira custom field name → id resolver with TTL'li cache.
 
-Implements the **Q3 — P0** invariant from MIMARI §16.17 and the
-``platform-mimari-workflows`` design document (Property 19,
-Requirement 3.7): the platform MUST NOT hard-code Jira custom field
-ids (``customfield_10001``, ``customfield_10049``, ...) anywhere in
-the in-scope source tree. Field ids vary across Jira tenants, so any
-literal embedded in code becomes a deployment-blocker the moment a
-new tenant is onboarded. Instead, callers refer to fields by their
-*human-readable name* (``"Sprint"``, ``"Epic Link"``, ``"Story
-Points"``) and the resolver translates the name to the tenant-local
-id at call time, caching the result for a configurable TTL.
+The platform MUST NOT hard-code Jira custom field ids
+(``customfield_10001``, ``customfield_10049``, ...) anywhere in the
+in-scope source tree. Field ids vary across Jira tenants, so any literal
+embedded in code becomes a deployment-blocker the moment a new tenant is
+onboarded. Instead, callers refer to fields by their *human-readable
+name* (``"Sprint"``, ``"Epic Link"``, ``"Story Points"``) and the
+resolver translates the name to the tenant-local id at call time,
+caching the result for a configurable TTL.
 
-Contract (Property 19, design.md §"Property 19: Jira custom field
-name → id resolver cache")::
+Resolver contract::
 
     resolve_field_id(field_name) -> str
 
@@ -46,23 +43,20 @@ up the full automation-service stack.
 Hard-coded literal ban
 ----------------------
 
-Property 19's static AST counterpart is enforced by the property
-test
-``platform/tests/property/test_no_hardcoded_field_ids.py``. That
-test walks every ``.py`` file under
+The static AST counterpart is enforced by the property test
+``platform/tests/property/test_no_hardcoded_field_ids.py``. That test
+walks every ``.py`` file under
 
 * ``platform/services/automation-service/``
 * ``platform/workers/``
 * ``platform/libs/``
 
 and fails on any string literal matching ``^customfield_\\d+$``
-outside the whitelist (test subtrees and *this* module, which
-mentions the literal in docstrings only). The combination of the
-runtime resolver and the static linter closes Property 19 (d): the
-cache never contains a field id that was hard-coded somewhere else
-in the tree because no such literal exists.
-
-Validates: Requirements 3.7.
+outside the whitelist (test subtrees and *this* module, which mentions
+the literal in docstrings only). The combination of the runtime resolver
+and the static linter ensures the cache never contains a field id that
+was hard-coded somewhere else in the tree because no such literal
+exists.
 """
 
 from __future__ import annotations
@@ -96,11 +90,11 @@ _LOG = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 #: Default TTL for the field-name → id cache. The 1 hour figure comes
-#: from the design document (Property 19, Requirement 3.7) — long
-#: enough that the resolver makes at most one ``GET /rest/api/3/field``
-#: call per hour per process under steady-state load, short enough that
-#: an admin who renames a custom field on the upstream Jira sees the
-#: change pick up within an hour without restarting the service.
+#: from the desired cache behavior: long enough that the resolver makes
+#: at most one ``GET /rest/api/3/field`` call per hour per process under
+#: steady-state load, short enough that an admin who renames a custom
+#: field on the upstream Jira sees the change pick up within an hour
+#: without restarting the service.
 _DEFAULT_TTL: Final[timedelta] = timedelta(hours=1)
 
 
@@ -137,7 +131,7 @@ class JiraFieldClient(Protocol):
     ...}, ...]``). Declaring this as a ``Protocol`` keeps the
     resolver decoupled from the concrete HTTP transport — production
     wiring binds it to an ``httpx``-based client routed through the
-    ``atlassian_unified`` MCP, while tests pass a plain in-memory
+    ``atlassian_mcp_bitbucket`` MCP, while tests pass a plain in-memory
     fake.
     """
 
@@ -309,7 +303,7 @@ class JiraFieldResolver:
         1. Read the current snapshot. If it exists and is still
            within the TTL window, look up ``field_name`` in it and
            return / raise as appropriate. **No HTTP call** in this
-           branch — Property 19 (b).
+           branch.
         2. Otherwise, acquire the lock, re-check the snapshot
            (double-checked locking), and if it is still missing or
            stale issue exactly one ``get_fields()`` call. The new
@@ -381,7 +375,7 @@ class JiraFieldResolver:
         Caller MUST hold ``self._lock``. The HTTP call happens
         without the lock held only conceptually — :class:`asyncio.Lock`
         is held across the ``await`` so concurrent callers see at
-        most one in-flight fetch (Property 19 concurrency clause).
+        most one in-flight fetch.
 
         On success the new :class:`_CacheSnapshot` is assigned to
         ``self._cache`` and returned. On exception ``self._cache`` is
@@ -425,9 +419,8 @@ class JiraFieldResolver:
 
         Pulled out as a static method so both the fast-path and
         slow-path branches of :meth:`resolve_field_id` share the
-        same lookup + error semantics — an important invariant for
-        Property 19 (the lookup result is a pure function of the
-        snapshot, not of which path produced it).
+        same lookup + error semantics: the lookup result is a pure
+        function of the snapshot, not of which path produced it.
         """
 
         try:

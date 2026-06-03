@@ -1,7 +1,6 @@
 """``SshRunnersRouter`` — SSH runner pool CRUD + department assignment.
 
-Provides the admin API surface for managing the multi-SSH runner pool
-(Requirement 4, platform-quick-fixes spec — G5):
+Provides the admin API surface for managing the multi-SSH runner pool:
 
 * ``GET  /admin/ssh-runners``                    — list all runners with
   active count and healthcheck cron status.
@@ -24,9 +23,7 @@ Runner assignment changes emit audit events:
 
 The ``GET /admin/ssh-runners`` endpoint also verifies that the
 ``ssh_healthcheck_cron`` Temporal workflow is scheduled and enables it
-if not (Requirement 9.4, production-hardening spec).
-
-**Validates: Requirements 4.10, 4.11, 4.13, 4.15, 9.1, 9.4**
+if not.
 """
 
 from __future__ import annotations
@@ -210,10 +207,7 @@ class SshRunnerResponse(BaseModel):
 
 
 class SshRunnerListResponse(BaseModel):
-    """Response model for the SSH runners list with active count and cron status.
-
-    **Validates: Requirements 9.1, 9.4**
-    """
+    """Response model for the SSH runners list with active count and cron status."""
 
     active_runners: int = Field(
         description="Number of runners with status 'active'."
@@ -489,7 +483,7 @@ printf 'workspace=%s\nimage=%s\nimage_id=%s\noutput=%s\ncleanup=done\n' \
 
 
 # ---------------------------------------------------------------------------
-# SSH Healthcheck Cron — Temporal schedule verification (Requirement 9.4)
+# SSH Healthcheck Cron — Temporal schedule verification
 # ---------------------------------------------------------------------------
 
 #: Workflow ID used for the SSH healthcheck cron schedule.
@@ -510,8 +504,6 @@ async def _check_and_enable_healthcheck_cron(
     Returns ``True`` when the schedule is confirmed active (either
     already existed or was just created). Returns ``False`` when
     Temporal is unreachable or the schedule could not be created.
-
-    **Validates: Requirement 9.4**
     """
     # Try to get a Temporal client connection. The admin-dashboard-api
     # stores the temporal_host in settings; we connect lazily here.
@@ -624,9 +616,7 @@ async def list_ssh_runners(
     - ``runners``: full list of all runners regardless of status.
     - ``healthcheck_cron_scheduled``: whether the ``ssh_healthcheck_cron``
       Temporal workflow is scheduled. If not scheduled, this endpoint
-      attempts to enable it (Requirement 9.4).
-
-    **Validates: Requirements 4.10, 9.1, 9.4**
+      attempts to enable it.
     """
     pool = _get_pg_pool(request)
 
@@ -643,7 +633,7 @@ async def list_ssh_runners(
     active_runners = sum(1 for r in runners if r.status == "active")
 
     # Verify ssh_healthcheck_cron Temporal workflow is scheduled;
-    # enable if not (Requirement 9.4). Best-effort — if Temporal is
+    # enable if not. Best-effort — if Temporal is
     # unreachable we report False and the FE can surface a warning.
     healthcheck_cron_scheduled = await _check_and_enable_healthcheck_cron(
         request
@@ -674,8 +664,6 @@ async def create_ssh_runner(
 ) -> SshRunnerResponse:
     """Create a new SSH runner. The private key is stored in Vault.
 
-    **Validates: Requirements 4.10, 4.11**
-
     Steps:
     1. Write the private_key to Vault at
        ``vault:ssh/runners/{runner_id}/active``.
@@ -697,8 +685,8 @@ async def create_ssh_runner(
             detail=f"runner '{body.runner_id}' already exists",
         )
 
-    # K2 fix (GEREKSINIM_ANALIZI.md): write the FULL SSH credential
-    # shape — ``{host, port, user, private_key}`` — to Vault at
+    # Write the FULL SSH credential shape — ``{host, port, user,
+    # private_key}`` — to Vault at
     # ``ssh/runners/{runner_id}/active``. Previously this stored only
     # the private key under a single ``value`` field, but the worker's
     # ``vault_fetch_ssh_credentials`` expects all four keys at the
@@ -792,8 +780,6 @@ async def update_ssh_runner(
     actor: AuthClaims = Depends(require_admin),
 ) -> SshRunnerResponse:
     """Update an existing SSH runner's host, port, or status.
-
-    **Validates: Requirement 4.10**
 
     Only provided fields are updated. The private key cannot be
     changed through this endpoint (use the key rotation endpoint).
@@ -952,10 +938,7 @@ async def list_dept_ssh_runners(
     dept_id: str,
     actor: AuthClaims = Depends(require_admin),
 ) -> DeptSshAssignmentResponse:
-    """Return all SSH runners assigned to the given department.
-
-    **Validates: Requirement 4.13**
-    """
+    """Return all SSH runners assigned to the given department."""
     pool = _get_pg_pool(request)
 
     rows = await pool.fetch(
@@ -992,8 +975,6 @@ async def update_dept_ssh_runners(
     actor: AuthClaims = Depends(require_admin),
 ) -> dict[str, Any]:
     """Update the set of SSH runners assigned to a department.
-
-    **Validates: Requirements 4.13, 4.15**
 
     This endpoint performs a full reconciliation:
     1. Fetches current assignments for the department.

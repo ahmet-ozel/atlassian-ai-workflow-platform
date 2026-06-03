@@ -1,14 +1,11 @@
-"""Task 5.5 — startup propagates pool failure with cleanup (automation-service-wiring).
+"""Startup propagates pool failure with cleanup.
 
-Pins Requirements 2.5 and 6.4: when the lifespan handler's pool
-construction raises, the original exception MUST propagate out of the
-context manager's ``__aenter__`` and every resource successfully
-constructed before the failing step MUST be closed before the
-exception escapes. No production-wired ``app.state.<slot>`` should be
-populated.
+When the lifespan handler's pool construction raises, the original exception
+MUST propagate out of the context manager's ``__aenter__`` and every resource
+successfully constructed before the failing step MUST be closed before the
+exception escapes. No production-wired ``app.state.<slot>`` should be populated.
 
-The handler builds resources in this order (matching the design's
-"Construction Order (Forward)" section):
+The handler builds resources in this order:
 
 1. ``httpx.AsyncClient`` — succeeds, must be ``aclose()``-d on failure
 2. ``asyncpg.create_pool`` — RAISES the test's ``OSError``

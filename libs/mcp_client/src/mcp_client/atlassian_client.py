@@ -1,51 +1,45 @@
 """Atlassian MCP client — skeleton import point.
 
-This module is intentionally a thin scaffold in the
-``platform-mimari-foundation`` spec. The real Jira / Bitbucket /
-Confluence HTTP wiring lives in later specs (Spec 2 — workflow
-types & automation). What exists here is the **single import point**
-that the property tests for the banned tool list (R1.8) and the PR
-draft enforcement (R1.9) can attach to without dragging an HTTP
-client into the foundation work.
+This module is intentionally a thin client import point. The real
+Jira / Bitbucket / Confluence HTTP wiring lives behind the Atlassian
+MCP gateway. What exists here is the **single import point** that the
+tests for the banned tool list and PR draft enforcement can attach to
+without dragging an HTTP client into this package.
 
 Design context
 --------------
 
-R1.2 / MIMARI §1 Kural 1 mandates that every outbound Atlassian call
-goes through the ``atlassian_unified`` MCP service — never directly
+Every outbound Atlassian call goes through the
+``atlassian_mcp_bitbucket`` MCP service — never directly
 from a Python module to ``api.atlassian.com``. This client is the
 **caller-side wrapper** around that MCP. By owning a single class
-here we keep R1.8 (banned tool filter) and R1.9 (PR draft
-enforcement) at one chokepoint instead of sprinkling them across
-every caller.
+here we keep the banned tool filter and PR draft enforcement at one
+chokepoint instead of sprinkling them across every caller.
 
 The skeleton exposes the public shape so:
 
 - callers (``automation-service``, ``agent-runner-worker``,
   ``assistant-service``) can already type-import :class:`AtlassianClient`
-  in subsequent task groups; and
-- the property tests
-  (``platform/tests/property/test_tool_filter.py``,
-  ``test_pr_draft_enforcement.py`` — task 2.8) have a stable import
-  path even before the HTTP wiring lands.
+  while the HTTP wiring is implemented; and
+- the focused tests (``platform/tests/property/test_tool_filter.py``,
+  ``test_pr_draft_enforcement.py``) have a stable import path even
+  before the HTTP wiring lands.
 
 Calling any of the placeholder methods raises
 :class:`NotImplementedError` so accidental use in production code
-fails loudly and points at the spec that will provide the
-implementation.
+fails loudly and points at the missing HTTP implementation.
 
-``client_source`` requirement
------------------------------
+``client_source`` header
+------------------------
 
-``platform-quick-fixes`` G6 makes ``client_source`` a **mandatory**
-constructor argument. The MCP traffic dashboard groups inbound calls
-by the ``X-Client-Source`` header so operators can answer "which
-component sent that 5xx-rate burst" without guessing. The header is
-auto-injected into every outbound MCP call by the future HTTP layer
-and is enforced at the MCP boundary (HTTP 400 on miss). Making the
-constructor argument required is the second line of defence: a worker
-that forgets to identify itself fails at import time, not at first
-network call.
+``client_source`` is a **mandatory** constructor argument. The MCP
+traffic dashboard groups inbound calls by the ``X-Client-Source``
+header so operators can answer "which component sent that 5xx-rate
+burst" without guessing. The header is auto-injected into every
+outbound MCP call by the future HTTP layer and is enforced at the MCP
+boundary (HTTP 400 on miss). Making the constructor argument required
+is the second line of defence: a worker that forgets to identify
+itself fails at import time, not at first network call.
 """
 
 from __future__ import annotations
@@ -56,11 +50,10 @@ from typing import Any, Final, Mapping
 from .pr_draft import enforce_pr_draft
 from .tool_filter import filter_tools
 
-#: Pointer to the spec that delivers the real HTTP wiring. Surfaced in
-#: every :class:`NotImplementedError` so the failure trail is short.
+#: Pointer to the component that delivers the real HTTP wiring. Surfaced
+#: in every :class:`NotImplementedError` so the failure trail is short.
 _FOLLOW_UP_SPEC: Final[str] = (
-    "Spec 2 (workflow types & automation) — see "
-    ".kiro/specs/ for the next iteration."
+    "the Atlassian MCP HTTP transport implementation."
 )
 
 #: Header name the MCP boundary inspects. Mirrors the canonical
@@ -80,9 +73,9 @@ _CLIENT_SOURCE_PATTERN: Final[re.Pattern[str]] = re.compile(
 
 
 class AtlassianClient:
-    """Skeleton wrapper around the ``atlassian_unified`` MCP service.
+    """Skeleton wrapper around the ``atlassian_mcp_bitbucket`` MCP service.
 
-    The class binds together the two R1.8 / R1.9 enforcement helpers
+    The class binds together the banned-tool and draft-PR enforcement helpers
     in this library so callers route through a single chokepoint:
 
     - :meth:`available_tools` filters the catalog through
@@ -93,9 +86,9 @@ class AtlassianClient:
       sets ``draft=True`` and audits any flip.
 
     Real HTTP wiring (httpx-based requests to the MCP, retry policy,
-    per-department credential resolution) is intentionally out of
-    scope for the foundation spec; later specs replace the
-    :class:`NotImplementedError` placeholders with concrete behaviour.
+    per-department credential resolution) is intentionally out of scope
+    for this package; the :class:`NotImplementedError` placeholders are
+    replaced by the concrete gateway client.
     """
 
     def __init__(
@@ -108,8 +101,7 @@ class AtlassianClient:
 
         Args:
             client_source: Identifier sent in the ``X-Client-Source``
-                header on every outbound MCP call (G6 — see module
-                docstring). Required. Format:
+                header on every outbound MCP call. Required. Format:
                 ``<component>[:<sub-context>]`` where ``<component>``
                 is lowercase kebab-case (e.g. ``agent-runner-worker``,
                 ``automation-service``) and the optional sub-context
@@ -117,8 +109,8 @@ class AtlassianClient:
                 ``streamlit-ui:user@payment``,
                 ``automation-service:webhook-jira``).
             mcp_base_url: Optional MCP base URL. Stored for the
-                forthcoming HTTP implementation; the foundation spec
-                does not exercise it.
+                forthcoming HTTP implementation; this package does not
+                exercise it.
 
         Raises:
             ValueError: ``client_source`` is empty, whitespace-only, or
@@ -160,7 +152,7 @@ class AtlassianClient:
         return self._client_source
 
     # ------------------------------------------------------------------
-    # R1.8 — banned tool catalog filter
+    # Banned tool catalog filter
     # ------------------------------------------------------------------
 
     def available_tools(self, raw_catalog: Any) -> list[Any]:
@@ -168,8 +160,8 @@ class AtlassianClient:
 
         Thin pass-through to :func:`mcp_client.filter_tools`. The
         method exists on the class so the property test suite can
-        bind to a single object that owns both R1.8 and R1.9, and so
-        downstream callers reach for the same chokepoint regardless
+        bind to a single object that owns both enforcement paths, and
+        so downstream callers reach for the same chokepoint regardless
         of which rule they care about.
 
         Args:
@@ -186,7 +178,7 @@ class AtlassianClient:
         return filter_tools(raw_catalog)
 
     # ------------------------------------------------------------------
-    # R1.9 — PR draft enforcement (skeleton)
+    # PR draft enforcement (skeleton)
     # ------------------------------------------------------------------
 
     async def open_pull_request(
@@ -200,10 +192,10 @@ class AtlassianClient:
     ) -> dict[str, Any]:
         """Skeleton — coerce ``draft=True`` and raise NotImplementedError.
 
-        The HTTP wiring is delivered in Spec 2; for the foundation
-        spec we exercise the enforcement helper and then raise so any
-        caller that mistakenly relies on this class today fails
-        loudly with a pointer to the follow-up spec.
+        The HTTP wiring lives outside this package; here we exercise
+        the enforcement helper and then raise so any caller that
+        mistakenly relies on this class today fails loudly with a
+        pointer to the gateway implementation.
 
         The :func:`mcp_client.enforce_pr_draft` call is intentional:
         even though the method ultimately raises, running the helper
@@ -229,7 +221,7 @@ class AtlassianClient:
         # Run the enforcement helper so the audit side effect (and
         # the ``draft=True`` invariant) is observable even from this
         # skeleton path. Result is discarded because the caller is
-        # never going to reach the real HTTP call in this spec.
+        # never going to reach the real HTTP call in this package.
         await enforce_pr_draft(
             payload,
             audit_logger=audit_logger,

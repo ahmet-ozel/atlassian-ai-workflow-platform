@@ -2,15 +2,12 @@
 
 Validates the pure formatters :func:`compute_branch_name` and
 :func:`format_commit_message` against
-``platform-mimari-workflows`` requirements.md §R7.1, §R7.2 and design.md
-Property 13(a)+(b).
+branch-name invariant+(b).
 
 The dedicated property-test suite for this module lives in
-``platform/tests/property/test_code_change_formatters.py`` (task 7.7) —
 this file covers concrete examples and the validation error paths so a
 ``pytest libs/temporal-shared`` run remains hermetic.
 
-Validates: Requirements 7.1, 7.2.
 """
 
 from __future__ import annotations
@@ -30,7 +27,7 @@ from temporal_shared.identifiers import InvalidIssueKeyError
 
 
 # ---------------------------------------------------------------------------
-# compute_branch_name — happy paths (Requirement 7.1, Property 13(a))
+# compute_branch_name — happy paths
 # ---------------------------------------------------------------------------
 
 
@@ -38,11 +35,10 @@ class TestComputeBranchNameHappyPath:
     """Concrete example coverage for the iter==1 vs iter>=2 decision."""
 
     def test_iter1_with_empty_existing_returns_bare(self) -> None:
-        """**Validates: Requirement 7.1**"""
         assert compute_branch_name("PAY-4211", 1, []) == "ai/PAY-4211"
 
     def test_iter1_with_unrelated_branches_returns_bare(self) -> None:
-        """**Validates: Requirement 7.1**
+        """
 
         Branches that are not the bare ``ai/{issue_key}`` candidate must
         not influence the decision — only the exact name matters.
@@ -57,7 +53,7 @@ class TestComputeBranchNameHappyPath:
         )
 
     def test_iter1_with_bare_taken_falls_back_to_iter1_form(self) -> None:
-        """**Validates: Requirement 7.1, Property 13(a)**
+        """
 
         When the bare ``ai/{issue_key}`` slot is already taken on iter==1
         the formatter must fall back to the iter-suffixed form so the
@@ -69,11 +65,10 @@ class TestComputeBranchNameHappyPath:
         )
 
     def test_iter2_always_returns_iter_form(self) -> None:
-        """**Validates: Requirement 7.1**"""
         assert compute_branch_name("PAY-4211", 2, []) == "ai/PAY-4211-iter2"
 
     def test_iter2_ignores_existing_branches(self) -> None:
-        """**Validates: Requirement 7.1**
+        """
 
         For iter>=2 the existing_branches argument is informational; the
         function deterministically returns the iter-suffixed form
@@ -86,14 +81,13 @@ class TestComputeBranchNameHappyPath:
         )
 
     def test_high_iteration_number(self) -> None:
-        """**Validates: Requirement 7.1**"""
         assert (
             compute_branch_name("PAY-4211", 99, [])
             == "ai/PAY-4211-iter99"
         )
 
     def test_underscore_project_key(self) -> None:
-        """**Validates: Requirement 7.1**
+        """
 
         Project keys with underscores (allowed by the identifiers regex)
         flow through unchanged.
@@ -115,7 +109,7 @@ class TestComputeBranchNameHappyPath:
         ids=["list", "tuple", "set", "frozenset", "iterator"],
     )
     def test_accepts_arbitrary_iterable(self, existing) -> None:
-        """**Validates: Requirement 7.1**
+        """
 
         ``existing_branches`` is typed ``Iterable[str]`` — any iterable
         must work.
@@ -125,7 +119,7 @@ class TestComputeBranchNameHappyPath:
         )
 
     def test_pure_deterministic(self) -> None:
-        """**Validates: Requirement 1.4 (replay determinism)**
+        """
 
         Two invocations with identical arguments return equal results.
         """
@@ -156,23 +150,20 @@ class TestComputeBranchNameValidation:
         ],
     )
     def test_invalid_issue_key_raises(self, bad_issue_key: str) -> None:
-        """**Validates: Requirement 7.1**"""
         with pytest.raises(InvalidIssueKeyError):
             compute_branch_name(bad_issue_key, 1, [])
 
     def test_non_str_issue_key_raises(self) -> None:
-        """**Validates: Requirement 7.1**"""
         with pytest.raises(InvalidIssueKeyError):
             compute_branch_name(12345, 1, [])  # type: ignore[arg-type]
 
     @pytest.mark.parametrize("bad_iter", [0, -1, -100])
     def test_non_positive_iteration_raises(self, bad_iter: int) -> None:
-        """**Validates: Requirement 7.1**"""
         with pytest.raises(InvalidIterationError):
             compute_branch_name("PAY-1", bad_iter, [])
 
     def test_bool_iteration_rejected(self) -> None:
-        """**Validates: Requirement 7.1**
+        """
 
         ``bool`` is a subclass of ``int`` — the validator must reject it
         explicitly so ``True`` is not silently treated as iter==1 and
@@ -184,18 +175,16 @@ class TestComputeBranchNameValidation:
             compute_branch_name("PAY-1", False, [])  # type: ignore[arg-type]
 
     def test_float_iteration_rejected(self) -> None:
-        """**Validates: Requirement 7.1**"""
         with pytest.raises(InvalidIterationError):
             compute_branch_name("PAY-1", 1.0, [])  # type: ignore[arg-type]
 
     def test_none_iteration_rejected(self) -> None:
-        """**Validates: Requirement 7.1**"""
         with pytest.raises(InvalidIterationError):
             compute_branch_name("PAY-1", None, [])  # type: ignore[arg-type]
 
 
 # ---------------------------------------------------------------------------
-# format_commit_message — happy paths (Requirement 7.2, Property 13(b))
+# format_commit_message — happy paths
 # ---------------------------------------------------------------------------
 
 
@@ -203,7 +192,6 @@ class TestFormatCommitMessageHappyPath:
     """The output begins with ``[bot] `` and contains the trailer."""
 
     def test_basic_format(self) -> None:
-        """**Validates: Requirement 7.2**"""
         result = format_commit_message(
             "fix payment retry logic",
             "PAY-4211",
@@ -217,21 +205,19 @@ class TestFormatCommitMessageHappyPath:
         )
 
     def test_starts_with_bot_prefix(self) -> None:
-        """**Validates: Requirement 7.2, Property 13(b)**"""
         result = format_commit_message(
             "implement feature", "PAY-1", 1, "ai-bot@company.com"
         )
         assert result.startswith(f"{BOT_COMMIT_PREFIX} ")
 
     def test_contains_co_authored_by_trailer(self) -> None:
-        """**Validates: Requirement 7.2, Property 13(b)**"""
         result = format_commit_message(
             "do work", "PAY-1", 1, "robo@example.org"
         )
         assert "Co-authored-by: ai-bot <robo@example.org>" in result
 
     def test_trailer_is_on_its_own_line_after_blank(self) -> None:
-        """**Validates: Requirement 7.2**
+        """
 
         Git recognises trailers that follow a blank line; the formatter
         must emit exactly one blank line between the body and the
@@ -244,7 +230,7 @@ class TestFormatCommitMessageHappyPath:
         assert result.count("\n\nCo-authored-by:") == 1
 
     def test_multiline_body_preserved(self) -> None:
-        """**Validates: Requirement 7.2**
+        """
 
         Internal newlines and structure inside the LLM-produced body are
         preserved verbatim — only trailing whitespace is normalised so
@@ -257,7 +243,6 @@ class TestFormatCommitMessageHappyPath:
         assert "[bot] subject line\n\nlonger explanation\nwith two lines\n\nCo-authored-by:" in result
 
     def test_trailing_whitespace_stripped(self) -> None:
-        """**Validates: Requirement 7.2**"""
         result = format_commit_message(
             "subject\n\n", "PAY-1", 1, "ai-bot@company.com"
         )
@@ -266,7 +251,7 @@ class TestFormatCommitMessageHappyPath:
         assert result.endswith("Co-authored-by: ai-bot <ai-bot@company.com>")
 
     def test_iteration_2_does_not_change_output_shape(self) -> None:
-        """**Validates: Requirement 7.2**
+        """
 
         ``iteration`` is currently a structural validation only; the
         commit body itself is the only place the iter is referenced
@@ -281,7 +266,6 @@ class TestFormatCommitMessageHappyPath:
         assert first == later
 
     def test_pure_deterministic(self) -> None:
-        """**Validates: Requirement 1.4 (replay determinism)**"""
         first = format_commit_message(
             "subject", "PAY-1", 1, "ai-bot@company.com"
         )
@@ -300,7 +284,6 @@ class TestFormatCommitMessageValidation:
     """Bad inputs raise typed errors (no silent coercion)."""
 
     def test_non_str_message_raises_type_error(self) -> None:
-        """**Validates: Requirement 7.2**"""
         with pytest.raises(TypeError):
             format_commit_message(
                 123,  # type: ignore[arg-type]
@@ -310,14 +293,12 @@ class TestFormatCommitMessageValidation:
             )
 
     def test_invalid_issue_key_raises(self) -> None:
-        """**Validates: Requirement 7.2**"""
         with pytest.raises(InvalidIssueKeyError):
             format_commit_message(
                 "msg", "pay-1", 1, "ai-bot@company.com"
             )
 
     def test_invalid_iteration_raises(self) -> None:
-        """**Validates: Requirement 7.2**"""
         with pytest.raises(InvalidIterationError):
             format_commit_message("msg", "PAY-1", 0, "ai-bot@company.com")
 
@@ -334,12 +315,10 @@ class TestFormatCommitMessageValidation:
         ],
     )
     def test_invalid_bot_email_raises(self, bad_email: str) -> None:
-        """**Validates: Requirement 7.2**"""
         with pytest.raises(InvalidBotEmailError):
             format_commit_message("msg", "PAY-1", 1, bad_email)
 
     def test_non_str_bot_email_raises(self) -> None:
-        """**Validates: Requirement 7.2**"""
         with pytest.raises(InvalidBotEmailError):
             format_commit_message(
                 "msg", "PAY-1", 1, None  # type: ignore[arg-type]
@@ -361,7 +340,7 @@ class TestModuleIsReplaySafe:
     """
 
     def test_source_does_not_import_forbidden_modules(self) -> None:
-        """**Validates: Requirements 1.4, 1.5**
+        """
 
         ``code_change.py`` is invoked from inside a workflow; it must
         not import ``datetime``, ``random``, ``uuid``, ``os``, ``time``,

@@ -1,8 +1,8 @@
-"""Property tests for Credential Guard decision correctness.
+"""invariant for Credential Guard decision correctness.
 
-**Validates: Requirements 1.1, 1.2, 1.4**
 
-Property 1: Credential Guard Decision Correctness
+
+invariant: Credential Guard Decision Correctness
 
 For any combination of ``platform_env`` value and credential map,
 ``check_credentials`` SHALL return ``blocked=True`` if and only if
@@ -56,7 +56,7 @@ _CREDENTIAL_VALUES = st.sampled_from(
 
 
 # ---------------------------------------------------------------------------
-# Property Test
+# invariant
 # ---------------------------------------------------------------------------
 
 
@@ -71,14 +71,14 @@ _CREDENTIAL_VALUES = st.sampled_from(
     ),
 )
 def test_credential_guard_decision(platform_env: str, credentials: dict[str, str]) -> None:
-    """Feature: production-hardening, Property 1: Credential Guard Decision Correctness
+    """Feature:, invariant: Credential Guard Decision Correctness
 
-    **Validates: Requirements 1.1, 1.2, 1.4**
 
-    For every combination of platform_env and credential map, the guard
-    returns blocked=True iff platform_env is "production" AND at least one
-    credential matches a known dev-default value from DEV_DEFAULTS.
-    """
+
+ For every combination of platform_env and credential map, the guard
+ returns blocked=True iff platform_env is "production" AND at least one
+ credential matches a known dev-default value from DEV_DEFAULTS.
+ """
     result = check_credentials(platform_env=platform_env, env_vars=credentials)
 
     is_production = platform_env == "production"

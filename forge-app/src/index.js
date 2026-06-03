@@ -1,10 +1,8 @@
 /**
  * Forge function entrypoint for the AI Bot Task add-on.
  *
- * Spec: platform-mimari-uyumluluk Requirement 6 (R6 / Q3).
- *
  * This is an intentionally minimal placeholder. The real implementation
- * will live in subsequent tasks (R6 follow-up + workflows backlog).
+ * will be added when the workflow integration is wired in.
  *
  * Two handlers are exported:
  *

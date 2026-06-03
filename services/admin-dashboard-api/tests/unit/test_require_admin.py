@@ -1,6 +1,6 @@
 """Unit tests for ``src.auth.dependencies.require_admin``.
 
-Covers the behaviour matrix from Requirements 10.1 / 10.2 / 10.3:
+Covers the auth dependency behaviour matrix:
 
 * Missing ``Authorization`` header → 401, claim inspection skipped.
 * Non-``Bearer`` scheme (``Basic``, etc.) → 401.
@@ -13,8 +13,8 @@ Covers the behaviour matrix from Requirements 10.1 / 10.2 / 10.3:
 The validator is exercised through a hand-written stub that records each
 ``validate`` call and emits canned claims or :class:`InvalidTokenError`.
 A real ``OIDCValidator`` is **not** instantiated; we only want to verify
-the FastAPI dependency wiring, not the JWKS validator (that's covered by
-the ``libs/auth-shared`` test suite from task 4.1).
+the FastAPI dependency wiring, not the JWKS validator covered by the
+``libs/auth-shared`` test suite.
 """
 
 from __future__ import annotations
@@ -104,16 +104,15 @@ def _build_app(validator: _StubValidator) -> FastAPI:
 
 
 # ---------------------------------------------------------------------------
-# 401 — missing / malformed Authorization header (Requirement 10.2)
+# 401 — missing / malformed Authorization header
 # ---------------------------------------------------------------------------
 
 
 def test_missing_authorization_header_returns_401_without_validation() -> None:
     """No header at all → 401, validator MUST NOT be invoked.
 
-    Requirement 10.2 mandates the 401 fires *before* any claim
-    inspection so anonymous probes can't even tell whether a service
-    name is valid.
+    The 401 fires *before* any claim inspection so anonymous probes
+    can't even tell whether a service name is valid.
     """
 
     validator = _StubValidator(claims={"sub": "x", "groups": ["admin"]})
@@ -175,7 +174,7 @@ def test_whitespace_only_token_returns_401() -> None:
 
 
 # ---------------------------------------------------------------------------
-# 401 — validator rejects the token (Requirement 10.2 second clause)
+# 401 — validator rejects the token
 # ---------------------------------------------------------------------------
 
 
@@ -196,15 +195,14 @@ def test_invalid_token_raises_401() -> None:
 
 
 # ---------------------------------------------------------------------------
-# 403 — valid token without admin claim (Requirement 10.3)
+# 403 — valid token without admin claim
 # ---------------------------------------------------------------------------
 
 
 def test_no_admin_in_groups_or_roles_returns_403() -> None:
     """Authenticated non-admin → 403 ``admin claim required``.
 
-    Requirement 10.3 second sentence: read-only access is *not* granted
-    to authenticated non-admin users.
+    Read-only access is *not* granted to authenticated non-admin users.
     """
 
     validator = _StubValidator(
@@ -254,7 +252,7 @@ def test_non_iterable_groups_value_returns_403() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Happy paths — admin in groups, admin in roles (Requirement 10.3)
+# Happy paths — admin in groups, admin in roles
 # ---------------------------------------------------------------------------
 
 
@@ -282,7 +280,7 @@ def test_admin_in_groups_returns_auth_claims() -> None:
 def test_admin_in_roles_only_returns_auth_claims() -> None:
     """``roles: ["admin"]`` (no ``groups`` claim) is also sufficient.
 
-    Requirement 10.3 takes the **union** of ``groups`` and ``roles`` so
+    The dependency takes the **union** of ``groups`` and ``roles`` so
     IdPs that surface RBAC under either name are both accepted.
     """
 
@@ -344,9 +342,9 @@ def test_bearer_scheme_is_case_insensitive() -> None:
 def test_token_missing_sub_returns_401() -> None:
     """Token validates but has no ``sub`` claim → 401 ``invalid token``.
 
-    The lifecycle audit log relies on ``sub`` for the ``actor`` field
-    (Requirement 11.2); rejecting at this point fails closed and
-    prevents writing audit entries with an undefined actor.
+    The lifecycle audit log relies on ``sub`` for the ``actor`` field;
+    rejecting at this point fails closed and prevents writing audit
+    entries with an undefined actor.
     """
 
     validator = _StubValidator(claims={"groups": ["admin"]})

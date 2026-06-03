@@ -1,21 +1,19 @@
 """FastAPI entry point for the admin-dashboard-api service.
 
-Exposes the standard liveness/readiness contract shared by every HTTP
-service in the multi-service scaffold (design §3.1, Requirement 12)
-**and** the Control_Plane wiring added by the
-``admin-dashboard-control-plane`` spec (task 6.3, Requirement 3.3):
+Exposes the standard liveness/readiness contract shared by every HTTP service
+in the service stack and the Control_Plane wiring for the audit sink:
 
 * ``GET /healthz`` → 200 with body ``{"status": "ok"}``. Always returns
   200 as long as the process is alive — the manifest-load failure does
-  **not** affect liveness (Requirement 12.1 parity).
+  **not** affect liveness.
 * ``GET /readyz``  → 200 ``{"status": "ready"}`` when dependencies are
   reachable **and** the manifest loaded cleanly. Returns 503 with
   ``{"status": "not_ready"}`` (≤64 bytes) when the dependency probe
   fails, or 503 with ``{"status": "not_ready", "reason":
   "manifest_invalid"}`` when ``load_manifest`` raised
-  :class:`ManifestLoadError` during startup (Requirement 3.3).
+  :class:`ManifestLoadError` during startup.
 
-Lifespan wiring (Requirement 3.3, design §3.14):
+Lifespan wiring:
 
 * ``manifest = load_manifest(workspace_root)`` is called inside the
   FastAPI lifespan context. On :class:`ManifestLoadError` we capture
@@ -31,9 +29,9 @@ Lifespan wiring (Requirement 3.3, design §3.14):
   singleton is constructed and stored on ``app.state.lifecycle``. The
   ``get_lifecycle_service()`` dependency returns this instance.
 * The ``/admin/services`` router is mounted via
-  ``app.include_router(services_lifecycle_router)`` when task 6.2 has
+  ``app.include_router(services_lifecycle_router)`` when service lifecycle wiring has
   been merged. The import is guarded with a soft-failure path so this
-  module remains importable while task 6.2 is in flight.
+  module remains importable while service lifecycle wiring is in flight.
 """
 
 from __future__ import annotations
@@ -55,8 +53,7 @@ from http_shared import SecurityHeadersMiddleware, install_redaction_filter
 # per-request :mod:`contextvars` context so downstream code (admin
 # router handlers, audit log writers, the AdminProxy that fans out to
 # automation-service) can correlate logs end to end without threading
-# the value through every helper (platform-gap-fill task 7.2 /
-# Requirement 8.2).
+# the value through every helper.
 from observability import TraceMiddleware
 
 from .auth.dependencies import get_validator
@@ -80,7 +77,7 @@ logger = logging.getLogger(__name__)
 
 # Install the credential / secret redaction filter on the root logger
 # before any handler is constructed by uvicorn / FastAPI / our own
-# lifespan (Requirement 6.10, task 9.1). The helper is idempotent so
+# lifespan. The helper is idempotent so
 # repeat imports under ``uvicorn --reload`` are harmless.
 install_redaction_filter(loggers=[logging.getLogger()], attach_to_root=True)
 
@@ -98,7 +95,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     1. Load the manifest. ``ManifestLoadError`` is captured in
        ``app.state.manifest_error`` so :func:`readyz` can return 503
-       with the documented body shape (Requirement 3.3).
+       with the documented body shape.
     2. Construct the OIDC validator (cached singleton) and place it on
        ``app.state.oidc_validator``.
     3. Open an :class:`httpx.AsyncClient` for outbound HTTP traffic
@@ -125,7 +122,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # Both attribute names point at the same singleton: ``lifecycle``
     # is the historical/ergonomic name kept for any future call sites,
     # while ``lifecycle_service`` is the canonical name expected by
-    # the task 6.2 router (``src.routers.services_lifecycle``). Setting
+    # the service lifecycle wiring router (``src.routers.services_lifecycle``). Setting
     # both lets either consumer resolve the same instance.
     app.state.lifecycle = None
     app.state.lifecycle_service = None
@@ -137,7 +134,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.compose_runner = None
     app.state.health_probe = None
     app.state.admin_proxy = None
-    # PromptsGitRouter (task 6.1) state slots — populated below.
+    # PromptsGitRouter (prompt git wiring) state slots — populated below.
     app.state.prompts_repo = None
     app.state.prompts_pr_opener = None
     app.state.prompts_audit_sink = None
@@ -145,15 +142,15 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.prompts_dir_prefix = None
     app.state.workspace_root = None
     app.state.prompt_sandbox_history = None
-    # PromptSandbox (task 6.2) — populated below alongside prompts_repo.
+    # PromptSandbox (service lifecycle wiring) — populated below alongside prompts_repo.
     app.state.prompt_sandbox = None
-    # RunnerWorkspacesRouter (task 14.1) — populated by future lifespan
+    # RunnerWorkspacesRouter (workspace and prompt router wiring) — populated by future lifespan
     # wiring that builds a paramiko-backed SSH client. Until then the
     # slot stays ``None`` so the router degrades to "empty list / 503"
     # per its module docstring.
     app.state.runner_workspaces_client = None
 
-    # WorkflowControlRouter (platform-gap-fill task 4.1) — populated
+    # WorkflowControlRouter — populated
     # below with a Temporal-backed :class:`SupportsTemporalControl`
     # adapter. If Temporal is unreachable the slot stays ``None`` and
     # the router surfaces 503 with ``reason="temporal_unavailable"``.
@@ -161,10 +158,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # Optional explicit audit sink for workflow-control events. When
     # ``None`` the router falls back to the AdminProxy's audit sink
     # so events land in the same ``automation.audit_events`` stream
-    # as other admin actions (Requirement 6.4).
+    # as other admin actions.
     app.state.workflow_control_audit_sink = None
 
-    # PromptsRouter (platform-gap-fill task 14.1) — populated by
+    # PromptsRouter — populated by
     # future lifespan wiring once the production LLM client +
     # GitRepo-backed committer + Bitbucket adapter ship. Until then
     # the slots stay ``None`` and the mutating endpoints surface
@@ -176,7 +173,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.prompts_committer = None
     app.state.prompts_bitbucket = None
 
-    # CapabilitiesRouter (platform-gap-fill task 9.1) — populated by
+    # CapabilitiesRouter — populated by
     # future lifespan wiring once the production prober + asyncpg
     # ``shared.capability_probes`` store adapter ship. Until then the
     # ``capability_prober`` slot stays ``None`` and the single-probe
@@ -191,7 +188,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.capability_prober = None
     app.state.capability_probe_store = None
 
-    # DepartmentsRouter runtime CRUD (platform-gap-fill task 17.1) —
+    # DepartmentsRouter runtime CRUD —
     # ``departments_reload_publisher`` is an optional async callable
     # ``(dept_id, action) -> None`` that fans the change out to the
     # consumer services (assistant-service, automation-service). When
@@ -201,26 +198,27 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # ``dept_created/updated/deleted`` events; when ``None`` the
     # router falls back to the AdminProxy's audit sink so events land
     # in the same ``automation.audit_events`` stream as other admin
-    # actions (R17.7).
+    # actions.
     app.state.departments_reload_publisher = None
     app.state.dept_audit_sink = None
 
-    # Secret rotation router (platform-gap-fill task 15.1) —
+    # Secret rotation router —
     # ``secret_rotator`` is the :class:`SupportsSecretRotator` adapter
     # that performs the Vault KV-v2 write. ``secret_reload_publisher``
     # is the optional :class:`SupportsHotReloadPublisher` (Redis
     # pub/sub or HTTP fan-out); when ``None`` the rotation logs a
     # structured ``secret_reload_pending`` warning so operators can
-    # page consumers manually (R15.3). ``secret_rotation_audit_sink``
+    # page consumers manually. ``secret_rotation_audit_sink``
     # is the optional explicit audit sink; when ``None`` the router
     # falls back to the AdminProxy's audit sink so ``secret_rotated``
     # events land in the same audit stream as other admin actions
-    # (R15.4). All three stay ``None`` until production wiring lands.
+    # events land in the same audit stream as other admin actions.
+    # All three stay ``None`` until production wiring lands.
     app.state.secret_rotator = None
     app.state.secret_reload_publisher = None
     app.state.secret_rotation_audit_sink = None
 
-    # ---- 0. Credential Guard (production-hardening Req 1.1–1.3) -----
+    # ---- 0. Credential Guard ----------------------------------------
     # Must run at the very beginning of lifespan. When blocked, the
     # service refuses to proceed with remaining startup steps and
     # /healthz returns 503 with reason "insecure_credentials".
@@ -246,7 +244,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         manifest = load_manifest(settings.workspace_root)
         app.state.manifest = manifest
     except ManifestLoadError as exc:
-        # Per Requirement 3.3, we capture the failure but continue to
+        # Capture the failure but continue to
         # bring the process up so the container's HTTP probe can
         # surface the "manifest_invalid" reason via /readyz. The
         # process remains live (HEALTHCHECK passes) so the operator
@@ -259,7 +257,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             exc,
         )
 
-    # ---- 1b. Bot account_id uniqueness — fail-fast (R18.4) ----------
+    # ---- 1b. Bot account_id uniqueness — fail-fast -------------------
     # The admin-dashboard-api owns ``config/departments.json`` (CRUD
     # endpoints + hot-reload signal); enforcing the uniqueness
     # invariant at boot here means an operator who hand-edits the
@@ -274,7 +272,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # transient ``OSError`` to take the whole admin surface down.
     # A real *uniqueness violation*, however, MUST stop the process:
     # we log the error and re-raise so uvicorn exits non-zero, per
-    # the task brief.
+    # the startup brief.
     departments_config_path: Path = (
         settings.workspace_root / "config" / "departments.json"
     )
@@ -297,7 +295,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
         validate_bot_account_id_uniqueness_from_file(departments_config_path)
         logger.info(
-            "bot_identity uniqueness validated at boot (R18.4) — "
+            "bot_identity uniqueness validated at boot — "
             "config=%s",
             departments_config_path,
         )
@@ -305,12 +303,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         # db_shared not available — skip bot_identity validation
         logger.info(
             "db_shared not available — skipping bot_identity "
-            "uniqueness validation (R18.4)"
+            "uniqueness validation"
         )
     except Exception as exc:
         # Catch BotAccountIdConflictError or any other validation error
         logger.error(
-            "bot_identity uniqueness violation at boot (R18.4) — "
+            "bot_identity uniqueness violation at boot — "
             "refusing to start: %s",
             exc,
         )
@@ -341,7 +339,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # ---- 2. OIDC validator (cached singleton) ------------------------
     # ``get_validator`` reads :class:`Settings` and memoises the
     # validator instance — the JWKS cache inside :class:`OIDCValidator`
-    # is therefore shared across requests (design §3.14).
+    # is therefore shared across requests.
     app.state.oidc_validator = get_validator()
 
     # ---- 3. httpx.AsyncClient ---------------------------------------
@@ -420,9 +418,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.lifecycle = lifecycle
         app.state.lifecycle_service = lifecycle
 
-    # ---- 6. AdminProxy (task 8.2 — platform-mimari-foundation) ------
+    # ---- 6. AdminProxy (admin proxy wiring — platform foundation) ------
     # BFF forwarder for ``/admin/*`` endpoints owned by
-    # automation-service (Requirement 3.5). Wired regardless of
+    # automation-service. Wired regardless of
     # manifest state because forwarding does not depend on the local
     # Compose manifest — even when the local lifecycle surface is
     # unavailable the operator should still be able to reach
@@ -440,7 +438,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     )
     app.state.admin_proxy = admin_proxy
 
-    # ---- 7. PromptsGitRouter (task 6.1 — platform-mimari-ops) -------
+    # ---- 7. PromptsGitRouter (prompt git wiring — operations surface) -------
     # Build the :class:`GitRepo` that the ``/admin/prompts`` endpoints
     # operate on. Failures here are non-fatal — we leave
     # ``app.state.prompts_repo`` as ``None`` so the dependency
@@ -448,8 +446,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # surface keeps serving traffic.
     app.state.prompts_dir_prefix = settings.prompts_dir_prefix
     # Stash the workspace root so :func:`_build_pr_description` can
-    # locate ``MIMARI.md`` for the V15 cross-reference section
-    # (task 6.3). Falls back to ``None`` when the manifest failed to
+    # locate ``architecture notes`` for the V15 cross-reference section
+    # (audit sink wiring). Falls back to ``None`` when the manifest failed to
     # load — the renderer prints a soft warning in that case.
     app.state.workspace_root = settings.workspace_root
     try:
@@ -467,7 +465,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     except Exception as exc:  # noqa: BLE001 — soft-fail
         app.state.prompts_repo = None
         logger.warning(
-            "prompts_repo unavailable (task 6.1): %s — "
+            "prompts_repo unavailable (prompt git wiring): %s — "
             "/admin/prompts will return 503 until resolved",
             exc,
         )
@@ -480,7 +478,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.prompts_pr_opener = None
 
     # The audit sink that the prompts router writes to. We try to
-    # build the asyncpg-backed :class:`AsyncpgAuditSink` (task 6.3)
+    # build the asyncpg-backed :class:`AsyncpgAuditSink` (audit sink wiring)
     # so prompt mutation events (``prompt_draft_created``,
     # ``prompt_pr_opened``, ``prompt_pr_conflict``,
     # ``prompt_render_failed``) land in ``automation.audit_events``.
@@ -503,9 +501,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.prompts_audit_sink, "_pool", None
     )
 
-    # ---- 8. Ops routers wiring (platform-mimari-ops §11) -----------
-    # The 6 routers shipped under ``src/routers/`` for tasks 11.2 –
-    # 11.9 expect the following ``app.state`` slots:
+    # ---- 8. Ops routers wiring ------------------------------------
+    # The operations routers shipped under ``src/routers/`` expect
+    # the following ``app.state`` slots:
     #
     # * ``pg_pool`` — asyncpg pool used by costs / feature_flags
     #   routers. We try to reuse the prompts audit pool so we don't
@@ -565,7 +563,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     )
 
     # ----------------------------------------------------------------
-    # K1 — SQL migration runner (GEREKSINIM_ANALIZI.md Faz A)
+    # SQL migration runner
     # ----------------------------------------------------------------
     # Postgres ``docker-entrypoint-initdb.d`` only runs top-level
     # ``infra/postgres/*.sql`` files on first boot. The ``migrations/``
@@ -693,12 +691,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             exc,
         )
 
-    # llm-provider-management task 7.1 — wire the asyncpg-backed audit
+    # llm-provider-management provider audit wiring — wire the asyncpg-backed audit
     # sink onto ``app.state.audit_logger`` so the LLM provider service
     # (routers/llm_providers.py) lands its mutation/test events in the
     # ``automation.audit_events`` table.  When the pool is missing we
     # fall back to the logging sink so the audit pipeline still
-    # produces structured log lines (R12.6 / R12.7).
+    # produces structured log lines.
     if pg_pool is not None:
         try:
             from .audit_sink import AsyncpgAuditSink
@@ -721,7 +719,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             "(pg_pool unavailable)"
         )
 
-    # platform-mimari-uyumluluk R10 / Q12 — feature-flag start gate.
+    # Feature-flag start gate.
     # The lifecycle service was constructed in block 5 with
     # ``feature_flag_reader=None``; now that the asyncpg pool is
     # available we wire :class:`AsyncpgFeatureFlagReader` so Step 1.5
@@ -739,7 +737,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
                 AsyncpgFeatureFlagReader(pool=pg_pool)
             )
             logger.info(
-                "feature_flag_reader wired (R10/Q12 — Step 1.5 start gate "
+                "feature_flag_reader wired (start gate "
                 "active)"
             )
         except Exception as exc:  # noqa: BLE001 — soft-fail
@@ -762,7 +760,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.loki_client = None
         logger.info("loki_client unavailable (soft): %s", exc)
 
-    # 8b'. MCP metrics client (platform-gap-fill task 8.3) — best-effort.
+    # 8b'. MCP metrics client — best-effort.
     #     Powers ``GET /api/v1/mcp/traffic``; when missing the endpoint
     #     surfaces 503 with ``reason="mcp_metrics_unavailable"``.
     try:
@@ -869,9 +867,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         admin_proxy, "_audit", LoggingAuditSink()
     )
 
-    # ---- 8. PromptSandbox (task 6.2 — platform-mimari-ops) ----------
+    # ---- 8. PromptSandbox (service lifecycle wiring — operations surface) ----------
     # The sandbox runs an isolated LLM call with ``cost_tag="sandbox"``
-    # so production budgets are not affected (Requirement 2.4). The
+    # so production budgets are not affected. The
     # production wiring uses the configured LLM provider directly; if
     # provider credentials are missing, sandbox invocations fail closed
     # instead of returning synthetic model output.
@@ -893,7 +891,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     except Exception as exc:  # noqa: BLE001 — soft-fail
         app.state.prompt_sandbox = None
         logger.warning(
-            "prompt_sandbox unavailable (task 6.2): %s — "
+            "prompt_sandbox unavailable (service lifecycle wiring): %s — "
             "/admin/prompts/.../sandbox-test will return 503 until resolved",
             exc,
         )
@@ -907,7 +905,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         except Exception as exc:  # noqa: BLE001
             logger.warning("AuditWriter.close() failed: %s", exc)
         # Close the asyncpg pool that backs the prompts audit sink
-        # (task 6.3). The pool is only present when the eager
+        # (audit sink wiring). The pool is only present when the eager
         # ``_build_prompts_audit_sink`` succeeded; the logging-sink
         # fallback leaves the slot ``None``.
         prompts_pool = getattr(app.state, "prompts_audit_pool", None)
@@ -943,7 +941,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 # ---------------------------------------------------------------------------
-# Prompt audit sink helper (task 6.3 — platform-mimari-ops)
+# Prompt audit sink helper (audit sink wiring — operations surface)
 # ---------------------------------------------------------------------------
 
 
@@ -951,8 +949,8 @@ async def _build_prompts_audit_sink(*, dsn: str) -> Any:
     """Build the audit sink the prompts router writes through.
 
     Tries the asyncpg-backed :class:`AsyncpgAuditSink` first so prompt
-    mutation events land in ``automation.audit_events`` (task 6.3,
-    Requirement 7.7). Falls back to the in-process
+    mutation events land in ``automation.audit_events`` (audit sink wiring,
+    workflow events. Falls back to the in-process
     :class:`LoggingAuditSink` when:
 
     * :mod:`asyncpg` is not importable (rare in production, common
@@ -976,7 +974,7 @@ async def _build_prompts_audit_sink(*, dsn: str) -> Any:
     except ImportError:
         logger.info(
             "asyncpg not available; falling back to LoggingAuditSink "
-            "for prompt mutation events (task 6.3)."
+            "for prompt mutation events (audit sink wiring)."
         )
         return LoggingAuditSink(
             logger_name="admin_dashboard_api.prompts.audit"
@@ -1008,19 +1006,19 @@ async def _build_prompts_audit_sink(*, dsn: str) -> Any:
     # for its private audit handle.
     sink._pool = pool  # type: ignore[attr-defined]
     logger.info(
-        "prompts audit sink wired against asyncpg pool (task 6.3)."
+        "prompts audit sink wired against asyncpg pool (audit sink wiring)."
     )
     return sink
 
 
 app = FastAPI(
     title="admin-dashboard-api",
-    version="0.0.0-scaffold",
-    description="Admin Dashboard API — backs the Next.js admin UI (scaffold).",
+    version="0.0.0",
+    description="Admin Dashboard API — backs the Next.js admin UI .",
     lifespan=lifespan,
 )
 
-# platform-gap-fill task 7.2 — mount :class:`TraceMiddleware` ahead of
+# Trace middleware wiring — mount :class:`TraceMiddleware` ahead of
 # every other middleware / router so the resolved ``X-Trace-Id`` is
 # available to every request handler (and to the AdminProxy that fans
 # out to automation-service via :class:`http_shared.make_mcp_client`,
@@ -1058,14 +1056,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# production-hardening task 7.2 — mount :class:`SecurityHeadersMiddleware`
+# Security headers middleware wiring — mount :class:`SecurityHeadersMiddleware`
 # so every HTTP response carries X-Frame-Options, X-Content-Type-Options
 # and X-XSS-Protection headers regardless of status code or content type
-# (Requirements 13.1, 13.2, 13.3).
+# for every response.
 app.add_middleware(SecurityHeadersMiddleware)
 
-# production-hardening task 10.2 — install rate limiter middleware
-# (Requirement 8.4). Applies per-endpoint rate limits: 100/min for
+# External probe wiring — install rate limiter middleware.
+# Applies per-endpoint rate limits: 100/min for
 # webhook paths (IP-keyed), 60/min for admin API paths (user-keyed),
 # and exempts health-check paths (/healthz, /readyz) from limiting.
 # Storage backend is configured via RATE_LIMIT_STORAGE_URI env var
@@ -1076,21 +1074,21 @@ install_rate_limiter(app)
 
 
 # ---------------------------------------------------------------------------
-# Optional router from task 6.2 (services_lifecycle)
+# Optional router from service lifecycle wiring (services_lifecycle)
 # ---------------------------------------------------------------------------
 #
-# Task 6.2 ships ``services/admin-dashboard-api/src/routers/services_lifecycle.py``
-# with a ``router`` symbol bound to an :class:`fastapi.APIRouter`. Until
-# that task lands the import below is allowed to fail softly so the
-# Boot_Bundle remains operable. When the router is present we mount it
-# under its own prefix (the router itself declares ``/admin/services``).
+# ``services/admin-dashboard-api/src/routers/services_lifecycle.py`` exposes
+# a ``router`` symbol bound to an :class:`fastapi.APIRouter`. The import below
+# is allowed to fail softly so the service remains operable during partial
+# deployments. When the router is present we mount it under its own prefix
+# (the router itself declares ``/admin/services``).
 try:  # pragma: no cover - exercised by integration tests
     from .routers.services_lifecycle import router as services_lifecycle_router
 except Exception as _import_exc:  # noqa: BLE001 - any import failure is tolerated
     services_lifecycle_router = None
-    # EK5 fix (GEREKSINIM_ANALIZI.md): the file ``services_lifecycle.py``
+    # The file ``services_lifecycle.py``
     # exists — this catch is for genuine import errors (missing dep,
-    # syntax error during reload, etc.), NOT "task 6.2 not yet wired"
+    # syntax error during reload, etc.), NOT "service lifecycle wiring not yet wired"
     # any more. Bumped from ``info`` to ``warning`` so an unintended
     # import failure surfaces clearly in admin logs.
     logger.warning(
@@ -1135,19 +1133,19 @@ except Exception as _import_exc:  # noqa: BLE001
     logger.info("ssh_runners router unavailable (early mount): %s", _import_exc)
 
 
-# AdminProxy router (task 8.2 — platform-mimari-foundation)
+# AdminProxy router (admin proxy wiring — platform foundation)
 # ---------------------------------------------------------------------------
 #
 # Mounts the BFF proxy that forwards every ``/admin/*`` route owned by
-# automation-service (Requirement 3.5). Imported with the same soft-
+# automation-service. Imported with the same soft-
 # fail pattern as the lifecycle router so a stale checkout cannot
 # block the rest of the admin surface.
 try:  # pragma: no cover - exercised by unit tests
     from .routers.admin_proxy import router as admin_proxy_router
 except Exception as _import_exc:  # noqa: BLE001
     admin_proxy_router = None
-    # EK5 fix (GEREKSINIM_ANALIZI.md): bumped to warning — admin_proxy
-    # forwards /admin/* to automation-service (R3.5). If the import
+    # Keep this at warning because admin_proxy forwards /admin/* to
+    # automation-service. If the import
     # fails, the dashboard cannot reach automation-service endpoints
     # through the BFF.
     logger.warning(
@@ -1157,13 +1155,12 @@ except Exception as _import_exc:  # noqa: BLE001
     )
 
 if admin_proxy_router is not None:  # pragma: no cover
-    # llm-provider-management spec — mount the LLM provider routers
-    # BEFORE the admin proxy so the more-specific
+    # Mount the LLM provider routers BEFORE the admin proxy so the more-specific
     # ``/admin/llm-providers/...`` and
     # ``/admin/departments/{dept_id}/llm-provider`` routes claim
     # their requests locally instead of being forwarded to
     # automation-service (which does not own those URLs).
-    try:  # pragma: no cover - exercised by unit/property tests
+    try:  # pragma: no cover - exercised by unit/invariant tests
         from .routers.llm_providers import (
             router as _llm_providers_router_early,
             department_router as _llm_providers_dept_router_early,
@@ -1189,11 +1186,11 @@ else:
 
 
 # ---------------------------------------------------------------------------
-# PromptsGitRouter (platform-mimari-ops task 6.1)
+# PromptsGitRouter (operations surface prompt git wiring)
 # ---------------------------------------------------------------------------
 #
 # Mounts the ``/admin/prompts`` CRUD/draft/PR endpoints required by
-# Requirement 2.2. Imported with the same soft-fail pattern as the
+# Imported with the same soft-fail pattern as the
 # other admin routers so a missing GitPython install or an invalid
 # ``PROMPTS_REPO_PATH`` does not block the rest of the admin
 # surface — the readiness probe surfaces the failure mode via
@@ -1204,7 +1201,7 @@ try:  # pragma: no cover - exercised by unit tests
 except Exception as _import_exc:  # noqa: BLE001
     prompts_git_router = None
     logger.info(
-        "prompts_git router unavailable (task 6.1 wiring incomplete): %s",
+        "prompts_git router unavailable (prompt git wiring wiring incomplete): %s",
         _import_exc,
     )
 
@@ -1213,13 +1210,13 @@ if prompts_git_router is not None:  # pragma: no cover
 
 
 # ---------------------------------------------------------------------------
-# Ops routers (platform-mimari-ops §11)
+# Ops routers
 # ---------------------------------------------------------------------------
 #
-# Mounts the six BFF / aggregator routers shipped under
-# ``src/routers/`` for tasks 11.2 – 11.9. Each router is imported
-# with the same soft-fail pattern as the other admin routers so a
-# stale checkout cannot block the rest of the admin surface.
+# Mounts the BFF / aggregator routers shipped under ``src/routers/``.
+# Each router is imported with the same soft-fail pattern as the other
+# admin routers so a stale checkout cannot block the rest of the admin
+# surface.
 
 try:  # pragma: no cover - exercised by unit tests
     from .routers.workflows_drilldown import router as _workflows_drilldown_router
@@ -1233,8 +1230,7 @@ try:  # pragma: no cover - exercised by unit tests
         workflow_logs_router as _workflow_logs_router,
     )
     app.include_router(_loki_search_router)
-    # platform-gap-fill task 7.3 — workflow-scoped log filter
-    # (Requirement 8.6). Mounted alongside the audit-search surface
+    # Workflow-scoped log filter. Mounted alongside the audit-search surface
     # so the workflow detail page can fold a ``trace_id`` filter
     # over a single Loki round-trip.
     app.include_router(_workflow_logs_router)
@@ -1259,7 +1255,7 @@ try:  # pragma: no cover - exercised by unit tests
         v1_router as _feature_flags_v1_router,
     )
     app.include_router(_feature_flags_router)
-    # platform-gap-fill task 16.1 — adds /api/v1/feature-flags surface
+    # Vault init wiring — adds /api/v1/feature-flags surface
     # alongside the legacy /admin/feature-flags listing so the dept
     # override columns and 5s confirm-dialog UX have a backing API
     # without breaking existing callers.
@@ -1275,24 +1271,23 @@ except Exception as _import_exc:  # noqa: BLE001
 
 
 # ---------------------------------------------------------------------------
-# LLM Provider Management routers (llm-provider-management task 8.1 — 8.3)
+# LLM Provider Management routers
 # ---------------------------------------------------------------------------
 #
 # Mount the ``/admin/llm-providers`` CRUD/test surface and the sibling
 # per-department override surface, then register the custom validation
-# error handler so the spec-mandated 422 body shapes
+# error handler so the expected 422 body shapes
 # (``validation_failed``, ``unsupported_provider_type``,
 # ``extra_fields_not_allowed``) reach the UI verbatim. The routers pull
 # their collaborators (``pg_pool``, ``vault_client``, ``http_client``,
-# audit sink) off ``app.state`` per the design's "Audit & redaction
-# wiring" section — see :mod:`src.routers.llm_providers` for the
-# resolution path.
+# audit sink) off ``app.state``; see :mod:`src.routers.llm_providers`
+# for the resolution path.
 if not _llm_providers_routers_mounted_early:
     # Fallback path — early mount above failed (or admin_proxy_router
     # was unavailable). Mount the routers here at the same priority as
     # the rest of the admin surface; the proxy will not claim them
     # because either it wasn't included or this is the regular order.
-    try:  # pragma: no cover - exercised by unit/property tests
+    try:  # pragma: no cover - exercised by unit/invariant tests
         from .routers.llm_providers import (
             router as _llm_providers_router,
             department_router as _llm_providers_dept_router,
@@ -1306,17 +1301,16 @@ if not _llm_providers_routers_mounted_early:
         register_validation_error_handler(app)
     except Exception as _import_exc:  # noqa: BLE001
         logger.info(
-            "llm_providers routers unavailable (llm-provider-management spec "
-            "wiring incomplete): %s",
+            "llm_providers routers unavailable (wiring incomplete): %s",
             _import_exc,
         )
 
 # ---------------------------------------------------------------------------
-# Secret rotation router (platform-gap-fill task 15.1)
+# Secret rotation router
 # ---------------------------------------------------------------------------
 #
 # Mounts ``POST /api/v1/security/rotate/{kind}`` for
-# ``kind ∈ {webhook_secret, bot_credential, llm_api_key}`` (Requirements
+# ``kind ∈ {webhook_secret, bot_credential, llm_api_key}``
 # 15.1–15.5). Resolves its dependencies through three ``app.state`` slots:
 #
 # * ``secret_rotator`` — :class:`SupportsSecretRotator` adapter that
@@ -1327,11 +1321,11 @@ if not _llm_providers_routers_mounted_early:
 # * ``secret_reload_publisher`` — optional
 #   :class:`SupportsHotReloadPublisher` (Redis pub/sub or HTTP fan-out).
 #   When ``None`` the rotation logs a structured ``secret_reload_pending``
-#   warning so operators can page consumers manually (R15.3).
+#   warning so operators can page consumers manually.
 # * ``secret_rotation_audit_sink`` — optional explicit audit sink. When
 #   absent the router falls back to the AdminProxy's audit sink so
 #   ``secret_rotated`` events land in the same audit stream as other
-#   admin actions (R15.4).
+#   admin actions.
 app.state.secret_rotator = None
 app.state.secret_reload_publisher = None
 app.state.secret_rotation_audit_sink = None
@@ -1340,13 +1334,13 @@ try:  # pragma: no cover - exercised by unit tests
     app.include_router(_security_rotation_router)
 except Exception as _import_exc:  # noqa: BLE001
     logger.info(
-        "security rotation router unavailable (task 15.1 wiring incomplete): %s",
+        "security rotation router unavailable (secret rotation wiring wiring incomplete): %s",
         _import_exc,
     )
 
 
 # ---------------------------------------------------------------------------
-# RunnerWorkspacesRouter (platform-mimari-uyumluluk task 14.1)
+# RunnerWorkspacesRouter (platform operations workspace and prompt router wiring)
 # ---------------------------------------------------------------------------
 #
 # Mounts the ``/admin/runner/workspaces[...]`` endpoints used by the
@@ -1366,11 +1360,11 @@ except Exception as _import_exc:  # noqa: BLE001
 
 
 # ---------------------------------------------------------------------------
-# OperationsRouter (platform-mimari-uyumluluk task 16.3)
+# OperationsRouter (platform operations operations router wiring)
 # ---------------------------------------------------------------------------
 #
 # Mounts the ``/admin/operations/license`` endpoint that returns license
-# cap usage for the operations dashboard (Requirement 16.6 / Q20).
+# cap usage for the operations dashboard.
 # Reads directly from the asyncpg pool (``app.state.pg_pool``) — no
 # proxy hop to automation-service needed. Imported with the same
 # soft-fail pattern as the other admin routers.
@@ -1382,18 +1376,17 @@ except Exception as _import_exc:  # noqa: BLE001
 
 
 # ---------------------------------------------------------------------------
-# Platform-completion routers (task 26.2)
+# Additional admin dashboard routers
 # ---------------------------------------------------------------------------
 #
-# Mounts the three new routers shipped under ``src/routers/`` for the
-# platform-completion spec:
+# Mounts the three routers shipped under ``src/routers/``:
 #
 # * ``firecrawl_allowlist`` — Firecrawl egress allowlist CRUD
-#   endpoints (Requirements 12.1–12.6).
+#   endpoints.
 # * ``setup_wizard`` — Step-by-step guided setup for platform
-#   services (Requirements 6.1–6.8).
+#   services.
 # * ``test_results`` — Service test results parsing and history
-#   (Requirements 7.1–7.5).
+#   and history.
 #
 # Each include uses the same soft-fail pattern as the other admin
 # routers so a stale checkout cannot block the rest of the admin
@@ -1413,13 +1406,12 @@ except Exception as _import_exc:  # noqa: BLE001
     logger.info("setup_wizard router unavailable: %s", _import_exc)
 
 # ---------------------------------------------------------------------------
-# AuthBootstrapRouter (production-hardening task 2.3)
+# AuthBootstrapRouter
 # ---------------------------------------------------------------------------
 #
 # Mounts ``POST /auth/bootstrap`` — one-time admin user creation via
 # bootstrap token. Unauthenticated by design (creates the first admin
 # before OIDC is configured). Returns 410 when OIDC is active.
-# Requirements: 2.3, 2.4, 2.5
 try:  # pragma: no cover - exercised by unit tests
     from .routers.auth_bootstrap import router as _auth_bootstrap_router
     app.include_router(_auth_bootstrap_router)
@@ -1434,14 +1426,13 @@ except Exception as _import_exc:  # noqa: BLE001
 
 
 # ---------------------------------------------------------------------------
-# VaultInitRouter (production-hardening task 16.1)
+# VaultInitRouter
 # ---------------------------------------------------------------------------
 #
 # Mounts ``POST /admin/vault/init`` — Vault production initialization
 # with Shamir secret sharing (5 key shares, 3 threshold). Returns
 # unseal keys and root token for one-time display. Returns 409 when
 # Vault is already initialized.
-# Requirements: 7.1, 7.3, 7.6
 try:  # pragma: no cover - exercised by unit tests
     from .routers.vault_init import router as _vault_init_router
     app.include_router(_vault_init_router)
@@ -1450,11 +1441,11 @@ except Exception as _import_exc:  # noqa: BLE001
 
 
 # ---------------------------------------------------------------------------
-# WorkflowControlRouter (platform-gap-fill task 4.1)
+# WorkflowControlRouter
 # ---------------------------------------------------------------------------
 #
 # Mounts the ``/api/v1/workflows/{workflow_id}/(cancel|retry|signal)``
-# and ``/api/v1/workflows`` endpoints (Requirements 6.1–6.7).
+# and ``/api/v1/workflows`` endpoints.
 # Resolves its Temporal entry point through
 # ``app.state.temporal_workflow_client`` — when ``None`` the
 # endpoints surface ``HTTP 503`` with
@@ -1467,11 +1458,11 @@ except Exception as _import_exc:  # noqa: BLE001
 
 
 # ---------------------------------------------------------------------------
-# DepartmentsRouter — runtime CRUD (platform-gap-fill task 17.1)
+# DepartmentsRouter — runtime CRUD
 # ---------------------------------------------------------------------------
 #
 # Mounts the runtime ``POST/PATCH/DELETE /api/v1/departments`` surface
-# (Requirements 17.1–17.7). The legacy ``/admin/departments`` matrix +
+# The legacy ``/admin/departments`` matrix +
 # repo-mapping router is mounted from the same module.
 #
 # Hot-reload signalling is wired through two optional ``app.state`` slots:
@@ -1502,11 +1493,11 @@ if not globals().get("_departments_routers_mounted_early", False):
 
 
 # ---------------------------------------------------------------------------
-# SshRunnersRouter (platform-quick-fixes task 7.6)
+# SshRunnersRouter
 # ---------------------------------------------------------------------------
 #
 # Mounts the SSH runner pool CRUD + department assignment endpoints
-# (Requirements 4.10, 4.11, 4.13, 4.15):
+# Endpoints:
 #
 # * ``GET  /admin/ssh-runners``                    — list all runners.
 # * ``POST /admin/ssh-runners``                    — create a new runner.
@@ -1531,12 +1522,12 @@ if not globals().get("_ssh_runners_routers_mounted_early", False):
 
 
 # ---------------------------------------------------------------------------
-# CapabilitiesRouter (platform-gap-fill task 9.1)
+# CapabilitiesRouter
 # ---------------------------------------------------------------------------
 #
 # Mounts the ``GET /api/v1/departments/capabilities`` matrix endpoint
 # and the ``POST /api/v1/departments/{dept_id}/probe/{service}``
-# single-probe endpoint (Requirements 10.1–10.5).
+# single-probe endpoint.
 #
 # The router resolves its prober + cache through two
 # ``app.state`` slots:
@@ -1549,7 +1540,7 @@ if not globals().get("_ssh_runners_routers_mounted_early", False):
 #   ``reason="prober_unavailable"``. The matrix endpoint stays
 #   answerable regardless — it only reads from the cache.
 # * ``capability_probe_store`` — :class:`SupportsCapabilityProbeStore`
-#   adapter backed by ``shared.capability_probes`` (task 9.3). When
+#   adapter backed by ``shared.capability_probes`` (capability persistence wiring). When
 #   ``None`` the router auto-installs an in-memory store so the
 #   matrix endpoint always has a cache to read from.
 app.state.capability_prober = None
@@ -1580,11 +1571,11 @@ except Exception as _import_exc:  # noqa: BLE001
 
 
 # ---------------------------------------------------------------------------
-# McpTrafficRouter (platform-gap-fill task 8.3)
+# McpTrafficRouter
 # ---------------------------------------------------------------------------
 #
 # Mounts ``GET /api/v1/mcp/traffic`` — the admin dashboard's view into
-# the MCP server's request counter (Requirement 9.5). The router
+# the MCP server's request counter. The router
 # resolves its scrape client through ``app.state.mcp_metrics_client``;
 # when ``None`` the endpoint surfaces ``HTTP 503`` with
 # ``reason="mcp_metrics_unavailable"`` per the router's module docstring.
@@ -1595,12 +1586,12 @@ except Exception as _import_exc:  # noqa: BLE001
     logger.info("mcp_traffic router unavailable: %s", _import_exc)
 
 # ---------------------------------------------------------------------------
-# ActiveWorkflowsRouter (platform-gap-fill task 19.1)
+# ActiveWorkflowsRouter
 # ---------------------------------------------------------------------------
 #
 # Mounts ``GET /api/v1/departments/{dept_id}/active-workflows`` — the
 # admin dashboard's view of the per-dept concurrency saturation badge
-# (Requirement 19.4). The router reads ``automation.work_items`` via
+# The router reads ``automation.work_items`` via
 # ``app.state.pg_pool``; when the pool is missing the endpoint
 # surfaces ``HTTP 503`` with ``reason="pg_pool_unavailable"``.
 try:  # pragma: no cover - exercised by unit tests
@@ -1611,7 +1602,7 @@ except Exception as _import_exc:  # noqa: BLE001
 
 
 # ---------------------------------------------------------------------------
-# TestRunnerRouter (production-hardening task 6.1)
+# TestRunnerRouter
 # ---------------------------------------------------------------------------
 #
 # Mounts ``POST /admin/services/{service_name}/test`` with true
@@ -1620,7 +1611,7 @@ except Exception as _import_exc:  # noqa: BLE001
 # as SSE ``data:`` events with a final ``event: done`` carrying the
 # exit code. Handles client disconnect by terminating the subprocess.
 #
-# NOTE: The ``services_lifecycle`` router (task 6.2) also mounts a
+# NOTE: The ``services_lifecycle`` router (service lifecycle wiring) also mounts a
 # ``/admin/services/{name}/test`` endpoint that captures full output
 # before slicing into SSE frames. When both routers are present,
 # FastAPI resolves the first matching route — since
@@ -1629,7 +1620,6 @@ except Exception as _import_exc:  # noqa: BLE001
 # where the full lifecycle surface is not available, and exports the
 # streaming infrastructure (:func:`stream_subprocess_sse`) for reuse.
 #
-# Requirements: 4.1, 4.2, 4.3
 try:  # pragma: no cover - exercised by unit tests
     from .routers.test_runner import router as _test_runner_router
     app.include_router(_test_runner_router)
@@ -1638,10 +1628,10 @@ except Exception as _import_exc:  # noqa: BLE001
 
 
 # ---------------------------------------------------------------------------
-# PromptsRouter — CRUD + Sandbox + Commit (platform-gap-fill task 14.1)
+# PromptsRouter — CRUD + Sandbox + Commit
 # ---------------------------------------------------------------------------
 #
-# Mounts the ``/api/v1/prompts`` surface (Requirements 14.1–14.4):
+# Mounts the ``/api/v1/prompts`` surface:
 #
 # * ``GET    /api/v1/prompts``                  — list prompt files.
 # * ``GET    /api/v1/prompts/{name}``           — read current content.
@@ -1676,13 +1666,13 @@ except Exception as _import_exc:  # noqa: BLE001
 
 
 # ---------------------------------------------------------------------------
-# ExternalProvidersRouter (platform-real-usage-gaps task 10.3)
+# ExternalProvidersRouter
 # ---------------------------------------------------------------------------
 #
 # Mounts ``GET /api/v1/services/external`` — reads ``kind="external"``
 # entries from the services manifest, probes each provider via
 # :func:`~src.lifecycle.external_probe.probe_external`, and returns
-# aggregated status results (Requirement 10.3).
+# aggregated status results.
 try:  # pragma: no cover - exercised by unit tests
     from .routers.external_providers import router as _external_providers_router
     app.include_router(_external_providers_router)
@@ -1729,7 +1719,7 @@ async def healthz(request: Request) -> JSONResponse:
 
     Returns HTTP 503 with ``{"status": "not_ready", "reason":
     "insecure_credentials"}`` when the credential guard has blocked
-    boot due to dev-default credentials in production (Requirement 1.3).
+    boot due to dev-default credentials in production.
 
     Otherwise, stays at 200 even when the manifest failed to load.
     ``/healthz`` is the signal Compose / Kubernetes uses to decide
@@ -1755,8 +1745,7 @@ async def readyz(request: Request) -> JSONResponse:
     """Readiness probe with real dependency checks.
 
     Probes PostgreSQL (``SELECT 1``) and Vault (``/v1/sys/health``)
-    in parallel with a 3-second per-probe timeout (Requirement 11.1,
-    11.4, 11.5, 11.6).
+    in parallel with a 3-second per-probe timeout.
 
     Returns 200 ``{"status": "ready"}`` when:
 
@@ -1764,11 +1753,11 @@ async def readyz(request: Request) -> JSONResponse:
     * the manifest loaded cleanly during lifespan.
 
     Returns 503 ``{"status": "not_ready", "reason": "manifest_invalid"}``
-    (Requirement 3.3) when ``load_manifest`` raised
+    when ``load_manifest`` raised
     :class:`ManifestLoadError`.
 
     Returns 503 ``{"status": "not_ready", "failed_dependencies": [...]}``
-    (Requirement 11.5) when any dependency probe fails.
+    when any dependency probe fails.
     """
 
     manifest_error = getattr(request.app.state, "manifest_error", None)

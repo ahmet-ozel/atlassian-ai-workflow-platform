@@ -1,12 +1,10 @@
 """Unit tests for ``db_shared.session``.
 
-Covers task 4.2 of the ``platform-mimari-foundation`` spec: the
-``with_dept_session`` async context manager (issues ``SET LOCAL
+Covers the ``with_dept_session`` async context manager (issues ``SET LOCAL
 app.current_dept_id`` / ``app.current_role`` at the start of every
 transaction) and the ``bind_actor`` helper (auto-scopes ``dept_admin``
 actors to their owned department).
 
-Validates: Requirements 7.4, 9.5.
 """
 
 from __future__ import annotations
@@ -83,8 +81,8 @@ def _run(coro):
 def test_allowed_roles_matches_check_constraint() -> None:
     """``ALLOWED_ROLES`` mirrors the four RBAC roles + 'system'.
 
-    Requirement 7.7 ties the DB CHECK constraint to the same set;
-    drift here causes silent INSERT failures in production.
+    The DB CHECK constraint uses the same set; drift here causes
+    silent INSERT failures in production.
     """
 
     assert ALLOWED_ROLES == frozenset(
@@ -129,7 +127,7 @@ def test_with_dept_session_admin_without_dept_id_uses_empty_string() -> None:
     Postgres ``set_config(name, '', true)`` clears the GUC for the
     transaction, which makes the policy's
     ``current_role = 'admin'`` branch the deciding factor (the
-    contract documented in design.md / 10_automation.sql).
+    contract documented in 10_automation.sql).
     """
 
     conn = _FakeConnection()
@@ -322,8 +320,8 @@ def test_bind_actor_dept_admin_explicit_match_allowed() -> None:
 def test_bind_actor_dept_admin_cross_dept_raises() -> None:
     """``dept_admin`` cannot widen scope to a foreign department.
 
-    This is the central guard behind Requirement 7.3 (a ``dept_admin``
-    must not see other departments' rows).
+    This is the central guard preventing a ``dept_admin`` from seeing
+    other departments' rows.
     """
 
     actor = _Actor(actor_role="dept_admin", dept_ids=("engineering",))
@@ -455,7 +453,7 @@ def test_with_actor_session_dept_admin_cross_dept_raises() -> None:
 
 
 # ---------------------------------------------------------------------------
-# AuthContext protocol compatibility (auth-shared task 8.1)
+# AuthContext protocol compatibility
 # ---------------------------------------------------------------------------
 
 
@@ -490,7 +488,7 @@ def test_tenant_aware_session_backwards_compatible() -> None:
     s = TenantAwareSession("engineering", "postgresql://localhost/ai")
     assert s.tenant_id == "engineering"
     assert s.dsn == "postgresql://localhost/ai"
-    # ``set_rls`` is an explicit no-op kept for the scaffold tests.
+    # ``set_rls`` is an explicit no-op kept for compatibility tests.
     assert s.set_rls() is None
 
 

@@ -1,7 +1,6 @@
 """Unit tests for ``agent_runner.main`` boot script.
 
-Validates the **single-queue-per-worker** invariant of
-workflows-spec Requirements 1.1 and 1.2:
+Validates the **single-queue-per-worker** invariant:
 
     * The boot script's ``Worker(...)`` constructor receives **exactly
       one** ``task_queue`` keyword argument.
@@ -19,7 +18,6 @@ The tests exercise both the **import-time module shape** (the
 future refactor cannot trivially hide a queue-string drift behind a
 helper variable.
 
-Validates Requirements: 1.1, 1.2.
 """
 
 from __future__ import annotations
@@ -53,7 +51,7 @@ class TestModuleLevelTaskQueueConstant:
     boot path and tests share a single, registry-derived value."""
 
     def test_constant_resolves_via_registry(self) -> None:
-        """**Validates: Requirements 1.1, 1.2**"""
+        """The exported queue constant resolves through the registry."""
 
         from agent_runner import main as main_mod
         from temporal_shared.workflow_registry import task_queue_for
@@ -63,7 +61,7 @@ class TestModuleLevelTaskQueueConstant:
         )
 
     def test_constant_value_is_agent_runner_tq(self) -> None:
-        """**Validates: Requirement 1.1**"""
+        """The exported queue constant names the agent-runner task queue."""
 
         from agent_runner import main as main_mod
 
@@ -151,7 +149,7 @@ class TestWorkerConstructorCallSite:
     rather than a literal queue string."""
 
     def test_exactly_one_worker_constructor_call(self) -> None:
-        """**Validates: Requirement 1.2**"""
+        """The boot script constructs exactly one Temporal worker."""
 
         worker_calls = _find_worker_calls(_parse_main_module())
         assert len(worker_calls) == 1, (
@@ -161,15 +159,13 @@ class TestWorkerConstructorCallSite:
         )
 
     def test_task_queue_kwarg_is_present(self) -> None:
-        """**Validates: Requirement 1.2**"""
+        """The worker constructor provides a task_queue keyword."""
 
         (call,) = _find_worker_calls(_parse_main_module())
         assert _kwarg(call, "task_queue") is not None
 
     def test_task_queue_kwarg_resolves_via_registry(self) -> None:
-        """**Validates: Requirements 1.1, 1.2**
-
-        The ``task_queue=`` keyword must resolve through
+        """The ``task_queue=`` keyword must resolve through
         ``task_queue_for("AgentRunnerWorkflow")`` — either directly
         or via a module-level constant whose RHS is the same call.
         """
@@ -193,9 +189,7 @@ class TestWorkerConstructorCallSite:
             )
 
     def test_no_hardcoded_queue_string_in_worker_call(self) -> None:
-        """**Validates: Requirement 1.2**
-
-        The ``task_queue=`` kwarg must not be a string literal — that
+        """The ``task_queue=`` kwarg must not be a string literal — that
         would bypass the registry and break the single-source-of-truth
         invariant.
         """
@@ -213,7 +207,7 @@ class TestWorkerWorkflowsRegistration:
     :class:`AgentRunnerWorkflow` for the agent-runner-tq queue."""
 
     def test_workflows_kwarg_registers_agent_runner_workflow(self) -> None:
-        """**Validates: Requirement 1.1**"""
+        """The worker registers the canonical AgentRunnerWorkflow."""
 
         (call,) = _find_worker_calls(_parse_main_module())
         value = _kwarg(call, "workflows")

@@ -1,9 +1,5 @@
-"""Property test P3 — ``LifecycleService.stop`` is idempotent.
+"""Behavioral tests for ``LifecycleService.stop`` idempotency.
 
-**Validates: Requirement 6.5**
-
-Property
---------
 For any sequence of actions drawn from ``["start", "stop", "stop",
 "stop", "restart"]`` (with extra weight on ``stop`` so the strategy
 exercises consecutive stop calls aggressively), the lifecycle service
@@ -22,9 +18,8 @@ SHALL satisfy the following invariants:
 3. **One audit row per action.** The fake :class:`AuditWriter`
    records exactly ``len(actions)`` rows in
    ``write_with_retry_calls`` — one per attempted action — for any
-   trace of length 1..10. This is the structural surface of
-   Requirement 6.5's "audit_log'a aksiyon başına bir Audit_Entry"
-   clause and overlaps with Property P6 (Requirement 11.1).
+   trace of length 1..10. This ensures every attempted action records
+   an audit entry.
 
 Strategy
 --------
@@ -98,7 +93,7 @@ from src.manifest import ManagedServiceEntry  # noqa: E402
 
 @dataclass
 class _FakeAuditWriter:
-    """Records every audit interaction; never fails for this property."""
+    """Records every audit interaction and never fails for this test."""
 
     precheck_calls: int = 0
     write_calls: list[AuditEntry] = field(default_factory=list)
@@ -264,11 +259,8 @@ def _make_service(
     # Pre-seed Vault with the form-schema env_overrides for
     # ``automation-service`` so a ``restart`` action triggered before
     # any explicit ``start`` still finds matching overrides on the
-    # Vault read path (Requirement 6.6: "son Env_Override setini
-    # Vault'tan tekrar okuyarak"). Without this seed, the property
-    # would conflate two distinct contracts — Requirement 6.5
-    # (stop idempotency, the property under test) and Requirement
-    # 5.6 (form-schema matching, exercised by Property P4).
+    # Vault read path. Without this seed, the test would conflate
+    # stop idempotency with form-schema matching.
     vault.stored.setdefault(
         "automation-service",
         {"PORT": "8080", "API_TOKEN": "secret"},
@@ -294,7 +286,7 @@ def _make_service(
 
 
 # ---------------------------------------------------------------------------
-# Property
+# Stop idempotency
 # ---------------------------------------------------------------------------
 
 
@@ -339,17 +331,13 @@ async def _run_action(svc: LifecycleService, action: str) -> Any:
     suppress_health_check=[HealthCheck.function_scoped_fixture],
 )
 def test_stop_is_idempotent(actions: list[str], tmp_path_factory: Any) -> None:
-    """Property P3: ``stop`` is idempotent across arbitrary action traces.
-
-    Validates: Requirement 6.5
-
-    For any sequence of actions in ``["start", "stop", "restart"]``:
+    """``stop`` is idempotent across arbitrary action traces.
 
     * No call raises.
     * If the trace ends with two consecutive ``stop`` actions, both
       return ``state="stopped"``.
     * Exactly one ``write_with_retry`` audit row is recorded per
-      attempted action (Requirement 11.1 surface inside this trace).
+      attempted action.
     """
 
     workspace = _build_workspace(tmp_path_factory.mktemp("ws"))
@@ -379,7 +367,7 @@ def test_stop_is_idempotent(actions: list[str], tmp_path_factory: Any) -> None:
         )
 
     # Invariant 2b: the final state in the cache is ``"stopped"`` whenever
-    # the last action is ``stop`` (Requirement 6.5: "200 OK döndürmeli").
+    # the last action is ``stop``.
     if actions[-1] == "stop":
         slot = svc.state_cache["automation-service"]
         assert slot.state == "stopped", (
@@ -443,7 +431,7 @@ def test_stop_when_already_stopped_returns_noop(tmp_path: Path) -> None:
 
     The orchestrator returns ``state="stopped"``, ``noop=True`` and
     never invokes ``compose.stop``. Two consecutive calls write two
-    audit rows (Requirement 6.5 + 11.1).
+    audit rows.
     """
 
     workspace = _build_workspace(tmp_path)
@@ -467,8 +455,7 @@ def test_stop_when_already_stopped_returns_noop(tmp_path: Path) -> None:
 
     # No Compose invocation when state was already ``stopped``.
     assert compose.stop_calls == []
-    # Two write_with_retry rows — one per attempted stop (Property P6
-    # surface for this trace).
+    # Two write_with_retry rows — one per attempted stop.
     assert len(audit.write_with_retry_calls) == 2
 
 

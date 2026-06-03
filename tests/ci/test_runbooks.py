@@ -1,6 +1,5 @@
-"""CI gate — operator runbooks (`platform-mimari-ops` task 15.6).
+"""CI gate — operator runbooks (ops work).
 
-**Validates: Requirement 9.2**
 
 Operator-facing runbooks under ``platform/docs/runbooks/`` MUST be
 present, parse as Markdown (we just probe non-empty bodies here)
@@ -27,7 +26,7 @@ _REQUIRED_RUNBOOKS: tuple[str, ...] = (
 
 def test_runbooks_directory_exists() -> None:
     assert _RUNBOOKS_DIR.is_dir(), (
-        f"Missing platform/docs/runbooks/ — task 15.2 ships the "
+        f"Missing platform/docs/runbooks/ — the runbook catalog needs the "
         f"operator runbook tree at {_RUNBOOKS_DIR}."
     )
 
@@ -37,7 +36,7 @@ def test_required_runbook_exists_and_has_actionable_content(
     runbook: str,
 ) -> None:
     path = _RUNBOOKS_DIR / runbook
-    assert path.is_file(), f"Missing runbook {runbook!r} (task 15.2)."
+    assert path.is_file(), f"Missing runbook {runbook!r} ."
     body = path.read_text(encoding="utf-8")
     assert len(body) > 500, (
         f"Runbook {runbook!r} is too short to be useful "

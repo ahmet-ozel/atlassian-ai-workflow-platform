@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Prompts catalogue — `platform-gap-fill` task 14.2.
+ * Prompts catalogue.
  *
  * Lists every `.md` under `platform/prompts/`. Each row links to the
  * editor at `/prompts/{name}` (catch-all route) where operators run

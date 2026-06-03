@@ -1,5 +1,5 @@
 """Unit tests for the ``noop_test`` smoke-flow defaults pinned by
-:class:`ExecutionRunWorkflow` (R6.8, task 10.4).
+:class:`ExecutionRunWorkflow`.
 
 The canonical :class:`ExecutionRunWorkflow` applies an opt-in safety
 net when :attr:`ExecutionRunWorkflowInput.workflow_type` is
@@ -19,7 +19,6 @@ workflow-private constants (``_NOOP_TEST_DEFAULT_COMMAND``,
 — driving the workflow body itself requires a Temporal cluster, which
 the integration-test layer covers separately.
 
-Validates: Requirements 6.8.
 """
 
 from __future__ import annotations
@@ -52,14 +51,13 @@ for _module_name in [
 
 
 class TestNoopTestSmokeDefaults:
-    """The constants are pinned by tasks.md §10.4 and consumed inline."""
+    """The constants are pinned by the smoke-flow contract and consumed inline."""
 
     def test_default_command_is_echo_ok(self) -> None:
-        """**Validates: Requirement 6.8**
+        """``echo "ok"`` is the smoke default.
 
-        Tasks.md §10.4 explicitly pins ``echo "ok"`` as the smoke
-        default — the literal string is matched by integration tests
-        and runner-side log scrapers.
+        The literal string is matched by integration tests and runner-side log
+        scrapers.
         """
 
         from src.workflows.execution_run_workflow import (
@@ -69,10 +67,9 @@ class TestNoopTestSmokeDefaults:
         assert _NOOP_TEST_DEFAULT_COMMAND == 'echo "ok"'
 
     def test_default_start_to_close_is_30_seconds(self) -> None:
-        """**Validates: Requirement 6.8**
+        """The smoke timeout is 30 seconds.
 
-        Tasks.md §10.4 pins the smoke timeout at 30 s ("noop should
-        never run long").  A shorter window would race a slow
+        A shorter window would race a slow
         runner; a longer window would mask a stuck pipeline.
         """
 
@@ -83,9 +80,7 @@ class TestNoopTestSmokeDefaults:
         assert _NOOP_TEST_START_TO_CLOSE == timedelta(seconds=30)
 
     def test_workflow_type_discriminator_is_noop_test(self) -> None:
-        """**Validates: Requirement 6.8**
-
-        The discriminator string must match the
+        """The discriminator string must match the
         :data:`temporal_shared.capabilities.WORKFLOW_TYPE_CAPABILITIES`
         key verbatim — a typo would silently disable the safety net.
         """
@@ -104,9 +99,7 @@ class TestExecutionRunWorkflowInputDefaults:
     """The ``workflow_type`` field default keeps the legacy contract."""
 
     def test_workflow_type_defaults_to_none(self) -> None:
-        """**Validates: Requirement 6.8**
-
-        Backward-compat: every existing call site builds an
+        """Backward-compat: every existing call site builds an
         :class:`ExecutionRunWorkflowInput` without the new field, so
         the default must be ``None`` to keep the non-noop path
         verbatim.
@@ -122,9 +115,7 @@ class TestExecutionRunWorkflowInputDefaults:
         assert inp.workflow_type is None
 
     def test_workflow_type_can_be_set_to_noop_test(self) -> None:
-        """**Validates: Requirement 6.8**
-
-        Direct construction with ``workflow_type="noop_test"`` is the
+        """Direct construction with ``workflow_type="noop_test"`` is the
         opt-in entrypoint that triggers the safety net inside
         :class:`ExecutionRunWorkflow.run`.
         """
@@ -193,7 +184,7 @@ class TestExecutionRunWorkflowSafetyNetBranches:
         return command, start_to_close
 
     def test_noop_with_empty_command_substitutes_echo_ok(self) -> None:
-        """**Validates: Requirement 6.8**"""
+        """noop_test with empty command substitutes echo ok."""
 
         cmd, sto = self._safety_net(
             workflow_type="noop_test", command="", start_to_close=None
@@ -202,9 +193,7 @@ class TestExecutionRunWorkflowSafetyNetBranches:
         assert sto == timedelta(seconds=30)
 
     def test_noop_with_explicit_command_keeps_caller_value(self) -> None:
-        """**Validates: Requirement 6.8**
-
-        When the parent :class:`AutomationWorkflow` synthesises the
+        """When the parent :class:`AutomationWorkflow` synthesises the
         noop command itself (production path) the safety net must
         leave it untouched.
         """
@@ -217,9 +206,7 @@ class TestExecutionRunWorkflowSafetyNetBranches:
         assert cmd == 'echo "noop_test ok: PAY-1"'
 
     def test_noop_with_explicit_timeout_keeps_caller_value(self) -> None:
-        """**Validates: Requirement 6.8**
-
-        The caller may want a tighter or looser bound for a specific
+        """The caller may want a tighter or looser bound for a specific
         runner — the safety net only fires when the field is unset.
         """
 
@@ -232,9 +219,7 @@ class TestExecutionRunWorkflowSafetyNetBranches:
         assert sto == timedelta(seconds=5)
 
     def test_non_noop_with_empty_command_does_not_substitute(self) -> None:
-        """**Validates: Requirement 6.8**
-
-        ``remote_ssh_test_only`` and friends must never have their
+        """``remote_ssh_test_only`` and friends must never have their
         command silently rewritten — an empty command for those
         types should surface as a runner-side error so the
         misconfiguration is caught at dispatch time.
@@ -249,9 +234,7 @@ class TestExecutionRunWorkflowSafetyNetBranches:
         assert sto is None
 
     def test_workflow_type_none_is_legacy_contract(self) -> None:
-        """**Validates: Requirement 6.8**
-
-        Existing call sites that build the input without the new
+        """Existing call sites that build the input without the new
         ``workflow_type`` field land here — the input is consumed
         verbatim.
         """

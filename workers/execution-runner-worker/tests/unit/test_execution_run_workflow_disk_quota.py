@@ -1,6 +1,5 @@
 """Unit tests for the workspace disk-quota gate in
-:class:`ExecutionRunWorkflow` and :class:`LegacyExecutionRunWorkflow`
-(Requirements 16.1, 16.2 — disk quota enforcement).
+:class:`ExecutionRunWorkflow` and :class:`LegacyExecutionRunWorkflow`.
 
 Both workflow bodies invoke the ``check_disk_quota`` activity *before*
 launching any SSH command so a department whose runner workspace is
@@ -261,7 +260,7 @@ class TestResolveQuotaBase:
 
 @pytest.mark.asyncio
 async def test_canonical_gate_skipped_when_quota_none() -> None:
-    """**Validates: Backwards compatibility — task pin**
+    """The quota gate is skipped when no quota is configured.
 
     Every existing call site builds an :class:`ExecutionRunWorkflowInput`
     without ``workspace_quota_mb``, so the default ``None`` must skip
@@ -306,7 +305,7 @@ async def test_canonical_gate_skipped_when_quota_none() -> None:
 
 @pytest.mark.asyncio
 async def test_canonical_gate_skipped_when_dept_id_empty() -> None:
-    """**Validates: Requirement 16.1 — gate requires dept_id for dedup**
+    """Gate requires dept_id for dedup.
 
     The activity uses ``dept_id`` for warning deduplication; an empty
     value would short-circuit the dedup table.  The workflow logs a
@@ -352,7 +351,7 @@ async def test_canonical_gate_skipped_when_dept_id_empty() -> None:
 
 @pytest.mark.asyncio
 async def test_canonical_gate_passes_when_usage_below_cap() -> None:
-    """**Validates: Requirements 16.1, 16.2 — happy path**
+    """Happy path when usage is below cap.
 
     With quota=1024 MB and reported usage=500 MB the gate allows the
     run and the workflow proceeds to ``ssh_run_test`` as normal.  The
@@ -415,7 +414,7 @@ async def test_canonical_gate_passes_when_usage_below_cap() -> None:
 
 @pytest.mark.asyncio
 async def test_canonical_gate_rejects_when_usage_exceeds_cap() -> None:
-    """**Validates: Requirement 16.2 — disk_quota_exceeded fail-fast**
+    """disk_quota_exceeded fail-fast.
 
     With quota=1024 MB and reported usage=1100 MB the gate rejects the
     run.  The workflow surfaces ``ApplicationError(type="DiskQuotaExceeded",
@@ -479,7 +478,7 @@ async def test_canonical_gate_rejects_when_usage_exceeds_cap() -> None:
 
 @pytest.mark.asyncio
 async def test_canonical_gate_allows_when_probe_fails_best_effort() -> None:
-    """**Validates: best-effort allow on probe failure**
+    """Probe failures are handled as best-effort allows.
 
     When the SSH probe fails the activity returns ``allowed=True`` with
     a non-empty ``error`` field (matching the contract pinned in
@@ -532,9 +531,9 @@ async def test_canonical_gate_allows_when_probe_fails_best_effort() -> None:
 
 @pytest.mark.asyncio
 async def test_legacy_gate_passes_when_usage_below_cap() -> None:
-    """**Validates: Legacy workflow gate — happy path**
+    """Legacy workflow gate allows runs below the quota cap.
 
-    The legacy scaffold mirrors the canonical contract: when the cap +
+    The legacy workflow mirrors the canonical contract: when the cap +
     dept are both supplied the gate runs after Vault credential fetch
     and before ``ssh_connect_and_run``.  Usage 500 MB / cap 1024 MB
     allows the run.
@@ -628,7 +627,7 @@ async def test_legacy_gate_passes_when_usage_below_cap() -> None:
 
 @pytest.mark.asyncio
 async def test_legacy_gate_rejects_when_usage_exceeds_cap() -> None:
-    """**Validates: Requirement 16.2 — legacy fail-fast**
+    """Legacy fail-fast when usage exceeds cap.
 
     Legacy workflow with cap=1024 MB and usage=1100 MB rejects with
     ``ApplicationError(type="DiskQuotaExceeded")``; the SSH command is
@@ -731,10 +730,10 @@ async def test_legacy_gate_rejects_when_usage_exceeds_cap() -> None:
 
 @pytest.mark.asyncio
 async def test_legacy_gate_skipped_when_quota_fields_unset() -> None:
-    """**Validates: Backwards compatibility — task pin**
+    """The legacy quota gate is skipped when quota fields are unset.
 
     Every existing legacy call site builds an :class:`ExecutionRunInput`
-    without the new ``workspace_quota_mb`` / ``dept_id`` pair, so the
+    without the optional ``workspace_quota_mb`` / ``dept_id`` pair, so the
     defaults (``None`` / ``None``) must skip the gate entirely — no
     ``check_disk_quota`` invocation.  The full legacy flow runs exactly
     as before.
@@ -823,7 +822,7 @@ async def test_legacy_gate_skipped_when_quota_fields_unset() -> None:
 
 
 class TestExecutionRunInputDiskQuotaDefaults:
-    """The new ``workspace_quota_mb`` field defaults to ``None`` so
+    """The ``workspace_quota_mb`` field defaults to ``None`` so
     every existing call site that constructs the dataclass without it
     keeps its current behaviour verbatim."""
 

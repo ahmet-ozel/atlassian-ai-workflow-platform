@@ -1,10 +1,9 @@
 """OIDC/JWT validation for the admin control plane.
 
-This module replaces the original placeholder shipped by the
-``multi-service-scaffold`` spec with a working validator while keeping
+This module replaces the original placeholder with a working validator while keeping
 the public surface backward compatible. The class name and the
 ``validate(token: str) -> dict`` method signature are preserved
-verbatim (Requirement 13.3) so existing callers — and the scaffold
+verbatim so existing callers and the
 ``tests/property/test_path_coverage.py`` invariant — continue to hold.
 
 The validator supports two modes selected via :class:`OIDCConfig`:
@@ -13,7 +12,7 @@ The validator supports two modes selected via :class:`OIDCConfig`:
   the canned admin claims dict ``{"sub": "dev-admin", "groups":
   ["admin"]}``. Empty tokens raise :class:`InvalidTokenError`. This mode
   is intended exclusively for local development; production traffic must
-  never be routed here (Requirement 10.6).
+  never be routed here.
 * ``auth_mode="production"`` — performs the full JWKS-backed signature
   check via ``python-jose``. The JWKS document is fetched once and
   cached in-memory for at least five minutes so subsequent validations
@@ -22,17 +21,16 @@ The validator supports two modes selected via :class:`OIDCConfig`:
   :class:`OIDCConfig` values; any failure raises
   :class:`InvalidTokenError`.
 
-Task 8.1 of ``platform-mimari-foundation`` extends this module with:
+This module also provides:
 
 * :func:`OIDCConfig.from_env` — env-driven factory honouring
   ``AUTH_PROVIDER`` (``"oidc"`` => production JWKS verification,
   ``"local"`` => dev bypass) and the ``OIDC_ISSUER_URL`` /
-  ``OIDC_CLIENT_ID`` / ``OIDC_CLIENT_SECRET`` triplet from MIMARI
-  §13 B14 (Requirement 7.2).
+  ``OIDC_CLIENT_ID`` / ``OIDC_CLIENT_SECRET`` triplet.
 * :class:`AuthContext` and :func:`extract_auth_context` — a frozen
   dataclass and pure helper that extracts ``actor_id`` (OIDC ``sub``),
   ``actor_role`` (one of the four RBAC roles) and ``dept_ids`` from
-  the decoded JWT claim dict (Requirement 7.9).
+  the decoded JWT claim dict.
 
 The module is intentionally self-contained: it only depends on
 ``httpx`` (HTTP client used to fetch the JWKS document) and
@@ -62,7 +60,7 @@ _MIN_JWKS_CACHE_TTL_SECONDS: int = 300
 _JWKS_FETCH_TIMEOUT_SECONDS: float = 5.0
 
 
-#: The four RBAC roles enumerated in Requirement 7.1 ("viewer", "lead",
+#: The four RBAC roles ("viewer", "lead",
 #: "admin", "dept_admin"). The audit_logger package tracks the same
 #: four plus a synthetic ``"system"`` role for background processes;
 #: :class:`AuthContext` only carries roles that can come from a human
@@ -92,8 +90,7 @@ class MissingClaimError(InvalidTokenError):
     Sub-classing :class:`InvalidTokenError` keeps the FastAPI
     ``require_admin`` dependency simple — a single ``except
     InvalidTokenError`` clause covers both signature failures and
-    missing-claim cases, satisfying Requirement 7.9 ("eksik bilgi →
-    HTTP 401").
+    missing-claim cases.
     """
 
 
@@ -127,7 +124,7 @@ class OIDCConfig:
     client_secret: str | None = None
 
     # ------------------------------------------------------------------
-    # Env-driven factory (task 8.1 — Requirement 7.2).
+    # Env-driven factory.
     # ------------------------------------------------------------------
 
     @classmethod
@@ -139,8 +136,7 @@ class OIDCConfig:
     ) -> "OIDCConfig":
         """Build an :class:`OIDCConfig` from environment variables.
 
-        Honours the env contract defined in MIMARI §13 B14 and
-        Requirement 7.2:
+        Honours the configured OIDC environment contract:
 
         * ``AUTH_PROVIDER`` — ``"oidc"`` (default, production JWKS
           verification) or ``"local"`` (dev bypass).
@@ -236,7 +232,7 @@ class OIDCConfig:
 
 
 # ---------------------------------------------------------------------------
-# AuthContext — claim extraction (task 8.1, Requirement 7.9)
+# AuthContext — claim extraction
 # ---------------------------------------------------------------------------
 
 
@@ -247,7 +243,7 @@ class AuthContext:
     Carried on the request scope by FastAPI dependencies so audit
     writes (``audit_logger.AuditEvent.actor_id`` / ``actor_role``) and
     Postgres RLS bindings (``db_shared.with_dept_session``) read from
-    a single source of truth. The fields mirror the design.md
+    a single source of truth. The fields mirror the auth context
     pseudocode in §`AdminProxy`:
 
     .. code-block:: python
@@ -258,8 +254,7 @@ class AuthContext:
         actor_id: The OIDC ``sub`` claim — a stable, opaque user id
             minted by the IdP. Used as the ``actor_id`` column of
             ``audit_events``.
-        actor_role: One of the four RBAC roles defined in Requirement
-            7.1. Anything else is rejected by
+        actor_role: One of the four RBAC roles. Anything else is rejected by
             :func:`extract_auth_context`.
         dept_ids: Frozen set of department ids the user is a member
             of. Empty for ``admin`` accounts (which see every
@@ -278,7 +273,7 @@ class AuthContext:
     raw_claims: Mapping[str, Any] = field(default_factory=dict)
 
     # ------------------------------------------------------------------
-    # Convenience predicates (Requirement 7.3, 7.5)
+    # Convenience predicates
     # ------------------------------------------------------------------
 
     def is_admin(self) -> bool:
@@ -292,7 +287,7 @@ class AuthContext:
         ``admin`` actors may always access; every other role is
         restricted to ``dept_id in self.dept_ids``. ``viewer`` /
         ``lead`` / ``dept_admin`` are all dept-scoped — global
-        actions (Requirement 7.5) are an admin-only concern enforced
+        actions are an admin-only concern enforced
         separately by :func:`auth_shared.policy.requires`.
         """
 
@@ -308,9 +303,7 @@ class AuthContext:
 def extract_auth_context(claims: Mapping[str, Any]) -> AuthContext:
     """Extract an :class:`AuthContext` from a decoded JWT claim dict.
 
-    Implements the claim-mapping rules called out in Requirement 7.9
-    ("kullanıcı rolünü ve dept_id listesini OIDC claim'lerinden
-    okur"):
+    Implements the claim-mapping rules for user role and department ids:
 
     * ``sub`` -> ``actor_id`` (required, non-empty string).
     * ``role`` (preferred) or first matching entry of ``roles`` /
@@ -354,7 +347,7 @@ def extract_auth_context(claims: Mapping[str, Any]) -> AuthContext:
 def _extract_role(claims: Mapping[str, Any]) -> AuthRole:
     """Return the first valid RBAC role found on ``claims``.
 
-    Lookup order (Requirement 7.9):
+    Lookup order:
       1. ``role`` — the canonical single-valued claim shape.
       2. ``roles`` — list or space-separated string.
       3. ``groups`` — list or space-separated string (Keycloak's
@@ -393,10 +386,9 @@ def _extract_role(claims: Mapping[str, Any]) -> AuthRole:
 def _extract_dept_ids(claims: Mapping[str, Any]) -> frozenset[str]:
     """Return the frozen set of department ids on ``claims``.
 
-    Lookup order (Requirement 7.9):
+    Lookup order:
       1. ``dept_ids`` — canonical claim name.
-      2. ``departments`` — alternative used by Streamlit (Spec 3
-         R8.3) and by the original MIMARI §13 B14 wording.
+      2. ``departments`` — alternative used by Streamlit.
 
     Empty / missing claims yield an empty set; this is a legal state
     for ``admin`` users who do not need explicit dept membership.
@@ -452,7 +444,7 @@ class OIDCValidator:
     """Validate OIDC-issued bearer tokens for the admin control plane.
 
     The class name and the :meth:`validate` signature are preserved
-    from the scaffold placeholder (Requirement 13.3). Construction
+    from the original placeholder. Construction
     requires an :class:`OIDCConfig`; existing callers that previously
     instantiated ``OIDCValidator()`` without arguments are not in the
     codebase yet, so the wider signature change is backward compatible.
@@ -525,7 +517,7 @@ class OIDCValidator:
         Convenience wrapper combining :meth:`validate` with
         :func:`extract_auth_context`. FastAPI dependencies in
         ``admin-dashboard-api`` use this entry point so the validator
-        owns the full token-to-actor pipeline (Requirement 7.9).
+        owns the full token-to-actor pipeline.
 
         Raises :class:`InvalidTokenError` for signature / claim
         failures and :class:`MissingClaimError` (a subclass) when the
@@ -544,7 +536,7 @@ class OIDCValidator:
 
         Returns the canned admin claims dict so downstream
         ``require_admin`` checks pass during local development.
-        Production never routes here (Requirement 10.6).
+        Production never routes here.
         """
 
         if not token:

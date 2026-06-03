@@ -6,19 +6,19 @@ by issuing a single HTTP request against the provider's probe endpoint.
 
 Key behaviours
 --------------
-* **Credential header injection** (Requirement 10.4): API keys are
+* **Credential header injection** (behavior 10.4): API keys are
   resolved from environment variables (``OPENAI_API_KEY``,
   ``ANTHROPIC_API_KEY``, ``FIRECRAWL_CLOUD_API_KEY``) or, when absent, from
   Vault paths (``secret/data/external/<provider>/api_key``). If no
   credential is found for a provider that requires one, the result
   status is ``"unauthorized"``.
-* **30-second in-memory cache** (Requirement 10.3): Probe results are
+* **30-second in-memory cache** (behavior 10.3): Probe results are
   cached per entry name with a 30 s TTL so rapid UI refreshes do not
   hammer external APIs. The cache is process-local and resets on
   restart.
 * **Status mapping**: HTTP 200 → ``"ok"``, 401/403 → ``"unauthorized"``,
   429 → ``"rate_limited"``, timeout / connection error → ``"unreachable"``.
-* **Audit + streak alerting** (Requirement 10.7, task 10.4): Every
+* **Audit + streak alerting** (behavior 10.7, audit and alarm wiring): Every
   failed probe emits an ``external_provider_probe_failed`` audit entry.
   When a provider accumulates 3 consecutive failures, a single
   ``external_provider_streak_alert`` audit entry is emitted (mirroring
@@ -27,10 +27,10 @@ Key behaviours
 
 Design references
 -----------------
-* design.md §R10 — External Provider Downtime Widget.
-* tasks.md task 10.2 — External probe helper.
-* tasks.md task 10.4 — Audit + alarm.
-* Requirements 10.3, 10.4, 10.7.
+* design notes §rule 10 — External Provider Downtime Widget.
+* implementation notes external probe wiring — External probe helper.
+* implementation notes audit and alarm wiring — Audit + alarm.
+* behaviors 10.3, 10.4, 10.7.
 """
 
 from __future__ import annotations
@@ -474,7 +474,7 @@ async def probe_external(
 
 
 # ---------------------------------------------------------------------------
-# Streak tracking + audit emission (Requirement 10.7, task 10.4)
+# Streak tracking + audit emission (behavior 10.7, audit and alarm wiring)
 # ---------------------------------------------------------------------------
 
 #: Consecutive failure threshold that triggers a streak alert.

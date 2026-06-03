@@ -3,13 +3,12 @@
 /**
  * VaultInitModal — Production Vault Init step for the Setup Wizard.
  *
- * Production-hardening task 16.2 — Calls `POST /admin/vault/init` and
+ * Calls `POST /admin/vault/init` and
  * displays the 5 unseal keys in a one-time modal dialog. The modal
  * cannot be closed without the operator confirming they have saved the
  * keys. Once closed, keys are cleared from the UI and cannot be
  * retrieved again.
  *
- * Requirements: 7.2, 7.4
  */
 
 import { useCallback, useRef, useState } from "react";
@@ -89,7 +88,7 @@ export default function VaultInitModal({ onComplete }: VaultInitModalProps) {
     }
   }, []);
 
-  // ---- Close modal and clear keys (Requirement 7.2) ----
+  // ---- Close modal and clear keys ----
   const handleClose = useCallback(() => {
     // Clear keys from memory
     keysRef.current = null;
@@ -163,7 +162,7 @@ export default function VaultInitModal({ onComplete }: VaultInitModalProps) {
     );
   }
 
-  // ---- Render: Display keys modal (Requirement 7.2, 7.4) ----
+  // ---- Render: Display keys modal ----
   const { data } = state;
 
   return (
@@ -197,7 +196,7 @@ export default function VaultInitModal({ onComplete }: VaultInitModalProps) {
           <code style={keyCodeStyle}>{data.root_token}</code>
         </div>
 
-        {/* Confirmation checkbox (Requirement 7.4) */}
+        {/* Confirmation checkbox */}
         <label style={checkboxLabelStyle}>
           <input
             type="checkbox"

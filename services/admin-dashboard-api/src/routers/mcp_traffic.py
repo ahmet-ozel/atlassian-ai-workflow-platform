@@ -1,10 +1,8 @@
-"""``McpTrafficRouter`` (`platform-gap-fill` task 8.3).
-
-**Validates: Requirement 9.5**
+"""``McpTrafficRouter``.
 
 Surfaces MCP request traffic statistics for the admin dashboard. The
 router proxies the MCP server's Prometheus exposition endpoint
-(``GET http://atlassian-mcp:8090/metrics`` — wired by task 8.1),
+(``GET http://atlassian-mcp:8090/metrics``),
 parses the ``mcp_requests_total{client_source, tool, status}``
 counter, and returns a filterable JSON envelope grouped by
 ``client_source`` and ``tool``.
@@ -49,7 +47,7 @@ itself does not enforce auth on ``/metrics`` (Prometheus scrape jobs
 expect open access) — gating happens here so unauthenticated users
 cannot poll the admin dashboard for traffic stats.
 
-A "last 24h" window is the documented UX framing for Requirement 9.5.
+A "last 24h" window is the documented UX framing.
 The MCP server exposes cumulative counter samples since process
 start, not a windowed query. To honour the window framing without a
 PromQL aggregator, a future iteration can layer

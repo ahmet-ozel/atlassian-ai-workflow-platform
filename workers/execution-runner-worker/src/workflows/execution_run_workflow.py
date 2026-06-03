@@ -2,9 +2,8 @@
 
 This module hosts **two** Temporal workflow definitions:
 
-* :class:`ExecutionRunWorkflow` — the **canonical** workflow as defined
-  by ``platform-mimari-workflows`` task 2.3 / Requirements 1.1 and 1.6.
-  Accepts the single-payload :class:`ExecutionRunWorkflowInput` from
+* :class:`ExecutionRunWorkflow` — the canonical workflow. Accepts the
+  single-payload :class:`ExecutionRunWorkflowInput` from
   :mod:`temporal_shared.messages` and returns the matching
   :class:`ExecutionRunWorkflowOutput`.  Internally orchestrates a single
   ``ssh_run_test`` activity that performs the credential fetch, command
@@ -31,8 +30,8 @@ This module hosts **two** Temporal workflow definitions:
     are cleaned up (or preserved) according to the task's Forge custom
     field setting.
 
-* :class:`LegacyExecutionRunWorkflow` — the foundation-spec scaffold
-  that the integration tests under ``tests/integration/test_execution_runner.py``
+* :class:`LegacyExecutionRunWorkflow` — the legacy workflow that the
+  integration tests under ``tests/integration/test_execution_runner.py``
   exercise.  Preserved here unchanged in behaviour so the existing
   tested orchestration of ``vault_fetch_ssh_credentials`` →
   ``ssh_connect_and_run`` → ``minio_upload_artifact`` × 3 → optional
@@ -43,8 +42,6 @@ This module hosts **two** Temporal workflow definitions:
 Both workflow bodies are **replay-safe** (no direct I/O, no
 ``datetime.now()``, no ``random`` / ``uuid``).  All side effects happen
 inside activities.
-
-Requirements: 1.1, 1.6 (canonical) and 8.1-8.8 (legacy).
 """
 
 from __future__ import annotations
@@ -106,12 +103,11 @@ DEFAULT_START_TO_CLOSE: timedelta = timedelta(minutes=30)
 
 #: Default heartbeat timeout.  The activity beats every 30 s while it
 #: streams the SSH command, so allowing 90 s here gives a comfortable 3×
-#: safety margin before Temporal declares the activity stalled
-#: (Requirement 1.6 — heartbeat 30 s contract).
+#: safety margin before Temporal declares the activity stalled.
 DEFAULT_HEARTBEAT: timedelta = timedelta(seconds=90)
 
 # ---------------------------------------------------------------------------
-# noop_test smoke-flow defaults  (Requirement 6.8, task 10.4)
+# noop_test smoke-flow defaults
 # ---------------------------------------------------------------------------
 
 #: Workflow-type discriminator that opts into the smoke-flow defaults
@@ -126,22 +122,20 @@ _NOOP_TEST_WORKFLOW_TYPE: Final[str] = "noop_test"
 #: ``echo "ok"`` is intentionally trivial — the smoke-test path
 #: validates the full pipeline (webhook → AutomationWorkflow →
 #: ExecutionRunWorkflow → SSH runner → activity → Jira comment)
-#: without exercising any business logic on the runner.  Matches the
-#: user-pinned wording in tasks.md §10.4.
+#: without exercising any business logic on the runner.
 _NOOP_TEST_DEFAULT_COMMAND: Final[str] = 'echo "ok"'
 
 #: Tighter ``start_to_close_timeout`` applied to ``noop_test`` runs.
 #: A smoke test that takes longer than 30 seconds is almost certainly
 #: a runner / network problem rather than a slow command, so we bound
 #: the wait aggressively and let Temporal surface the timeout to the
-#: parent :class:`AutomationWorkflow` quickly.  Pinned by tasks.md
-#: §10.4 ("e.g. 30 seconds — noop should never run long").
+#: parent :class:`AutomationWorkflow` quickly. A noop run should never
+#: run long.
 _NOOP_TEST_START_TO_CLOSE: Final[timedelta] = timedelta(seconds=30)
 
-#: Retry policy for ``ssh_run_test``.  Limited to 3 attempts to honour the
-#: ``maximumAttempts ≤ 3`` rule for non-idempotent activities (Requirement
-#: 1.6).  An SSH test run is **not** idempotent: re-running the command
-#: re-executes side effects on the runner.
+#: Retry policy for ``ssh_run_test``. Limited to 3 attempts because an SSH
+#: test run is **not** idempotent: re-running the command re-executes side
+#: effects on the runner.
 _RUN_TEST_RETRY_POLICY: RetryPolicy = RetryPolicy(
     initial_interval=timedelta(seconds=2),
     backoff_coefficient=2.0,
@@ -185,7 +179,7 @@ _CLEANUP_RETRY_POLICY: RetryPolicy = RetryPolicy(maximum_attempts=1)
 
 
 # ---------------------------------------------------------------------------
-# Runner resolver activity parameters (Requirements 4.4, 4.5, 4.8)
+# Runner resolver activity parameters
 # ---------------------------------------------------------------------------
 
 #: Timeout for the ``resolve_runner`` activity.  The activity performs a
@@ -205,13 +199,13 @@ _RUNNER_RESOLVER_RETRY_POLICY: RetryPolicy = RetryPolicy(
 )
 
 # ---------------------------------------------------------------------------
-# Disk quota gate parameters (Requirement 16.1, 16.2)
+# Disk quota gate parameters
 # ---------------------------------------------------------------------------
 
 #: Timeout for the ``check_disk_quota`` activity.  The activity itself
-#: bounds the SSH ``du -sm`` window at 30s (R16.1); a 60s start-to-close
-#: gives a 2× safety margin for credential fetch + connect overhead so
-#: a transiently slow runner does not falsely trip the gate.
+#: bounds the SSH ``du -sm`` window at 30s; a 60s start-to-close gives a
+#: 2× safety margin for credential fetch + connect overhead so a transiently
+#: slow runner does not falsely trip the gate.
 _DISK_QUOTA_TIMEOUT: timedelta = timedelta(seconds=60)
 
 #: Retry policy for the disk-quota gate.  A second attempt covers
@@ -346,7 +340,7 @@ def _derive_workdir(
 
 
 # ---------------------------------------------------------------------------
-# Canonical ExecutionRunWorkflow (task 2.3 — Requirements 1.1, 1.6)
+# Canonical ExecutionRunWorkflow
 # ---------------------------------------------------------------------------
 
 
@@ -360,15 +354,15 @@ class ExecutionRunWorkflow:
     credential resolution, command execution, MinIO artifact upload,
     and heartbeating internally.
 
-    Status mapping (Requirement 1.6):
+    Status mapping:
 
     * ``exit_code == 0``                       → ``"passed"``
     * ``exit_code != 0`` (other than timeout)  → ``"failed"``
     * SSH/runner command timeout (signalled by the activity returning
       ``status="timeout"``)                    → ``"timeout"``
 
-    ``noop_test`` smoke-flow safety net (R6.8, task 10.4)
-    -----------------------------------------------------
+    ``noop_test`` smoke-flow safety net
+    -----------------------------------
 
     When :attr:`ExecutionRunWorkflowInput.workflow_type` is
     ``"noop_test"`` the workflow applies two **opt-in defaults** so a
@@ -423,7 +417,7 @@ class ExecutionRunWorkflow:
         )
 
         # -----------------------------------------------------------------
-        # Step 0a: Resolve runner from DB (Requirements 4.4, 4.5, 4.8)
+        # Step 0a: Resolve runner from DB.
         # -----------------------------------------------------------------
         # When a department_id is available and no explicit runner_id is
         # provided, call the resolve_runner activity to select the
@@ -486,7 +480,7 @@ class ExecutionRunWorkflow:
                 failure_reason="runner_unreachable",
             )
 
-        # ``noop_test`` smoke-flow safety net (R6.8, task 10.4).
+        # ``noop_test`` smoke-flow safety net.
         command = inp.command
         start_to_close_override = _coerce_timeout(inp.start_to_close_timeout)
         if inp.workflow_type == _NOOP_TEST_WORKFLOW_TYPE:
@@ -513,7 +507,7 @@ class ExecutionRunWorkflow:
         )
 
         # -----------------------------------------------------------------
-        # Step 0.5: Workspace disk-quota gate (Requirements 16.1, 16.2)
+        # Step 0.5: Workspace disk-quota gate.
         # -----------------------------------------------------------------
         # Before committing to the (non-idempotent) ``ssh_run_test``
         # activity, ask the runner whether the department's workspace
@@ -528,12 +522,12 @@ class ExecutionRunWorkflow:
         # registered worker bundle stays optional.
         await self._enforce_disk_quota(run_input)
 
-        # Activity options sourced from input (R1.6 — config-driven).
+        # Activity options sourced from input.
         start_to_close = start_to_close_override or DEFAULT_START_TO_CLOSE
         heartbeat = _coerce_timeout(inp.heartbeat_timeout) or DEFAULT_HEARTBEAT
 
-        # EK2 fix (GEREKSINIM_ANALIZI.md): when ``needs_docker`` is True
-        # the workflow runs the structured Docker chain
+        # When ``needs_docker`` is True the workflow runs the structured
+        # Docker chain
         # (build → run → collect_logs → cleanup) instead of the single
         # ``ssh_run_test`` invocation. Previously the ``docker_*``
         # activities were registered with the worker but no workflow
@@ -871,7 +865,7 @@ class ExecutionRunWorkflow:
     async def _enforce_disk_quota(
         self, inp: ExecutionRunWorkflowInput
     ) -> None:
-        """Invoke the ``check_disk_quota`` activity gate (R16.1, R16.2).
+        """Invoke the ``check_disk_quota`` activity gate.
 
         The gate is fully opt-in: when
         :attr:`ExecutionRunWorkflowInput.workspace_quota_mb` is ``None``
@@ -1034,7 +1028,7 @@ class ExecutionRunWorkflow:
     async def _resolve_runner(
         self, dept_id: str
     ) -> dict[str, Any] | None:
-        """Invoke the ``resolve_runner`` activity (Requirements 4.4, 4.5, 4.8).
+        """Invoke the ``resolve_runner`` activity.
 
         Selects the least-busy SSH runner assigned to the given
         department from the ``infrastructure.ssh_runners`` table.  The
@@ -1114,7 +1108,7 @@ class ExecutionRunWorkflow:
 
 @dataclass(frozen=True)
 class ExecutionRunInput:
-    """Input parameters for the legacy ExecutionRunWorkflow scaffold.
+    """Input parameters for the legacy ExecutionRunWorkflow.
 
     Attributes
     ----------
@@ -1149,15 +1143,14 @@ class ExecutionRunInput:
     workspace_path: str
     cleanup_policy: str = "on_success"
     timeout_minutes: int = 30
-    # Optional Bitbucket push fields (platform-completion task 26.x —
-    # Requirements 2.1-2.7).  Together they enable the credential-
-    # injection / push / cleanup sub-flow inside ``run``.  All three
-    # default to "no push" so the legacy call sites in
+    # Optional Bitbucket push fields. Together they enable the credential
+    # injection / push / cleanup sub-flow inside ``run``. All three default
+    # to "no push" so the legacy call sites in
     # ``tests/integration/test_execution_runner.py`` keep green.
     git_push_required: bool = False
     git_push_branch: str | None = None
     dept_id: str | None = None
-    # Optional disk-quota gate (Requirements 16.1, 16.2).  When both
+    # Optional disk-quota gate. When both
     # ``dept_id`` and ``workspace_quota_mb`` are populated the workflow
     # invokes ``check_disk_quota`` after Vault credentials are fetched
     # but before any SSH command runs.  ``None`` (the default) skips
@@ -1170,7 +1163,7 @@ class ExecutionRunInput:
 
 @dataclass(frozen=True)
 class ExecutionRunResult:
-    """Result of the legacy ExecutionRunWorkflow scaffold.
+    """Result of the legacy ExecutionRunWorkflow.
 
     Attributes
     ----------
@@ -1197,7 +1190,7 @@ class ExecutionRunResult:
 # Legacy retry policies
 # ---------------------------------------------------------------------------
 
-# SSH connect retry: 3 attempts with exponential backoff (Requirement 8.6)
+# SSH connect retry: 3 attempts with exponential backoff.
 _SSH_RETRY_POLICY = RetryPolicy(
     initial_interval=timedelta(seconds=1),
     backoff_coefficient=2.0,
@@ -1220,13 +1213,13 @@ _VAULT_RETRY_POLICY = RetryPolicy(
 
 
 # ---------------------------------------------------------------------------
-# Git push credential-injection retry policies (R2.1-R2.7)
+# Git push credential-injection retry policies
 # ---------------------------------------------------------------------------
 
 #: Retry policy for ``inject_git_credentials``.  Two attempts mirror the
 #: Vault fetch retry budget already enforced inside the activity body
-#: (Requirement 2.4 — max 2 retries with 5s backoff).  Adding a wrapping
-#: Temporal retry on top of the in-activity retry would multiply
+#: with max 2 retries and 5s backoff. Adding a wrapping Temporal retry on
+#: top of the in-activity retry would multiply
 #: attempts unnecessarily, so we cap workflow-level retries at 2.
 _INJECT_CREDENTIAL_RETRY_POLICY: RetryPolicy = RetryPolicy(
     initial_interval=timedelta(seconds=1),
@@ -1235,10 +1228,9 @@ _INJECT_CREDENTIAL_RETRY_POLICY: RetryPolicy = RetryPolicy(
 )
 
 #: Retry policy for ``cleanup_git_credentials``.  Single attempt —
-#: cleanup is best-effort (Property 4: cleanup guarantee).  The
-#: credential cache has a TTL that will eventually purge anything left
-#: behind, so a flaky retry on shutdown does not justify the extra
-#: latency.
+#: cleanup is best-effort. The credential cache has a TTL that will
+#: eventually purge anything left behind, so a flaky retry on shutdown does
+#: not justify the extra latency.
 _CLEANUP_CREDENTIAL_RETRY_POLICY: RetryPolicy = RetryPolicy(
     maximum_attempts=1,
 )
@@ -1268,13 +1260,13 @@ _GIT_PUSH_TIMEOUT_MINUTES: int = 5
 
 
 # ---------------------------------------------------------------------------
-# Legacy workflow definition (foundation scaffold — unchanged behaviour)
+# Legacy workflow definition
 # ---------------------------------------------------------------------------
 
 
 @workflow.defn(name="LegacyExecutionRunWorkflow")
 class LegacyExecutionRunWorkflow:
-    """Legacy scaffold workflow that runs tests on a remote SSH host.
+    """Legacy workflow that runs tests on a remote SSH host.
 
     Flow:
         vault_fetch_ssh_credentials
@@ -1288,11 +1280,10 @@ class LegacyExecutionRunWorkflow:
     .. note::
 
         This class predates the :class:`ExecutionRunWorkflow` canonical
-        contract introduced by ``platform-mimari-workflows`` task 2.3.
-        It is kept under a Temporal-distinct name
+        contract. It is kept under a Temporal-distinct name
         (``LegacyExecutionRunWorkflow``) so the integration test
-        ``tests/integration/test_execution_runner.py`` (foundation
-        spec) keeps green while the canonical workflow uses the
+        ``tests/integration/test_execution_runner.py`` keeps green while the
+        canonical workflow uses the
         ``"ExecutionRunWorkflow"`` Temporal name.
     """
 
@@ -1317,7 +1308,7 @@ class LegacyExecutionRunWorkflow:
             inp.test_command,
         )
 
-        # Step 1: Fetch SSH credentials from Vault (Requirement 8.1)
+        # Step 1: Fetch SSH credentials from Vault.
         ssh_cred: dict[str, Any] = await workflow.execute_activity(
             "vault_fetch_ssh_credentials",
             args=[inp.workflow_id],
@@ -1329,7 +1320,7 @@ class LegacyExecutionRunWorkflow:
             "SSH credentials fetched for host=%s", ssh_cred["host"]
         )
 
-        # Step 1.5: Workspace disk-quota gate (Requirements 16.1, 16.2)
+        # Step 1.5: Workspace disk-quota gate.
         # ---------------------------------------------------------------
         # Before launching the (non-idempotent) test command, ask the
         # runner whether the department workspace base is already at or
@@ -1386,7 +1377,7 @@ class LegacyExecutionRunWorkflow:
                     non_retryable=True,
                 )
 
-        # Step 2: Connect via SSH and run the test command (Requirement 8.2, 8.6, 8.8)
+        # Step 2: Connect via SSH and run the test command.
         # Retry policy handles transient SSH connection failures (3x exponential).
         # start_to_close_timeout=30min enforces the maximum execution time.
         run_result: dict[str, Any] = await workflow.execute_activity(
@@ -1412,9 +1403,8 @@ class LegacyExecutionRunWorkflow:
         # When the caller marks the run as ``git_push_required=True`` we
         # fetch a TTL-scoped Bitbucket credential from Vault, configure
         # ``git credential.helper cache`` on the SSH runner, run the
-        # push, then **always** clean the credential up (Property 4 —
-        # credential cleanup guarantee).  The cleanup runs from a
-        # ``finally`` block so it fires whether the push succeeded,
+        # push, then **always** clean the credential up. The cleanup runs
+        # from a ``finally`` block so it fires whether the push succeeded,
         # failed, or the inject step itself raised.
         #
         # All three of ``git_push_required`` / ``dept_id`` /
@@ -1434,7 +1424,7 @@ class LegacyExecutionRunWorkflow:
                 workspace_path=inp.workspace_path,
             )
 
-        # Step 3: Upload artifacts to MinIO (Requirement 8.3)
+        # Step 3: Upload artifacts to MinIO.
         # Artifact keys follow the format: executions/{workflow_id}/{name}
         stdout_key = execution_artifact_key(inp.workflow_id, "stdout.log")
         stderr_key = execution_artifact_key(inp.workflow_id, "stderr.log")
@@ -1468,7 +1458,7 @@ class LegacyExecutionRunWorkflow:
             exit_code_key,
         )
 
-        # Step 4: Conditional cleanup based on policy and exit code (Requirement 8.4, 8.5)
+        # Step 4: Conditional cleanup based on policy and exit code.
         # Uses the pure should_cleanup helper (deterministic, no I/O).
         cleanup_performed = False
         policy: CleanupPolicy = inp.cleanup_policy  # type: ignore[assignment]
@@ -1517,7 +1507,7 @@ class LegacyExecutionRunWorkflow:
         )
 
     # -----------------------------------------------------------------
-    # Bitbucket git-push helper (Requirements 2.1-2.7, Property 4)
+    # Bitbucket git-push helper
     # -----------------------------------------------------------------
 
     async def _inject_push_and_cleanup(
@@ -1538,8 +1528,8 @@ class LegacyExecutionRunWorkflow:
         2. ``ssh_connect_and_run`` — execute
            ``git push origin <branch>`` from the workspace directory.
         3. ``cleanup_git_credentials`` — **always** runs from the
-           ``finally`` block (Property 4: cleanup guarantee).  Cleanup
-           failures are swallowed because the credential cache has a
+           ``finally`` block. Cleanup failures are swallowed because the
+           credential cache has a
            TTL that will purge anything left behind.
 
         Determinism contract:
@@ -1547,8 +1537,8 @@ class LegacyExecutionRunWorkflow:
         * Uses :func:`workflow.info().workflow_id` (replay-safe).
         * No direct ``os.environ`` / ``time.time()`` access — all I/O
           happens inside the registered activities.
-        * The cleanup activity is invoked unconditionally (even when
-          inject raises) to honour Property 4.
+        * The cleanup activity is invoked unconditionally, even when
+          inject raises.
 
         Parameters
         ----------
@@ -1584,8 +1574,8 @@ class LegacyExecutionRunWorkflow:
         try:
             # Step 1 — inject credential.  Failures here surface as
             # ApplicationError so the workflow fails before the push
-            # is attempted.  The ``finally`` block still runs the
-            # cleanup activity, mirroring Property 4.
+            # is attempted. The ``finally`` block still runs the cleanup
+            # activity.
             inject_result: CredentialInjectResult = (
                 await workflow.execute_activity(
                     "inject_git_credentials",
@@ -1659,8 +1649,8 @@ class LegacyExecutionRunWorkflow:
                 "git push succeeded: branch=%s exit_code=0", branch
             )
         finally:
-            # Step 3 — cleanup runs unconditionally (Property 4).  We
-            # swallow every exception class because the credential
+            # Step 3 — cleanup runs unconditionally. We swallow every
+            # exception class because the credential
             # cache has a TTL and best-effort cleanup is preferable
             # to surfacing a cleanup error that masks the real
             # push/inject failure above.

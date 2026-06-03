@@ -1,9 +1,6 @@
 """Tenant-aware Postgres session helpers (``with_dept_session`` / ``bind_actor``).
 
-This module materialises the ``db-shared`` connection helper described
-in ``.kiro/specs/platform-mimari-foundation/design.md`` (`libs/db-shared`
-row of the *Komponent Sahipliği* table) and task **4.2** of
-``.kiro/specs/platform-mimari-foundation/tasks.md``.
+This module materialises the ``db-shared`` connection helper.
 
 It enforces two invariants required by Postgres row-level security
 policies (`infra/postgres/10_automation.sql`):
@@ -12,7 +9,7 @@ policies (`infra/postgres/10_automation.sql`):
   with ``SET LOCAL app.current_dept_id = '<id>'`` and
   ``SET LOCAL app.current_role = '<role>'`` so the
   ``dept_isolation`` and ``audit_dept_isolation`` policies see the
-  caller's identity (Requirements 7.4 and 9.5).
+  caller's identity.
 * :func:`bind_actor` automatically scopes a ``dept_admin`` actor to
   their single owned department so callers cannot accidentally widen
   the visible row set by passing a different ``dept_id``.
@@ -30,8 +27,7 @@ environment.
 Backward compatibility
 ----------------------
 
-The legacy :class:`TenantAwareSession` placeholder shipped by the
-multi-service-scaffold spec is **kept** so existing imports continue
+The legacy :class:`TenantAwareSession` placeholder is **kept** so existing imports continue
 to work (``platform/tests/conftest.py`` lists
 ``libs/db-shared/src/db_shared/session.py`` as a required path and
 its public ``TenantAwareSession`` symbol is referenced by
@@ -146,10 +142,9 @@ class AsyncConnection(Protocol):
 class AuthContext(Protocol):
     """Subset of the :class:`auth_shared.AuthContext` shape we depend on.
 
-    The full dataclass is owned by ``libs/auth-shared`` (task 8.1 of
-    ``platform-mimari-foundation/tasks.md``); we declare a Protocol
-    here so :func:`bind_actor` can be used **before** that task lands
-    and so tests do not have to import ``auth-shared`` just to build a
+    The full dataclass is owned by ``libs/auth-shared``; we declare a
+    Protocol here so :func:`bind_actor` can be used without importing
+    ``auth-shared`` just to build a
     fake actor.
 
     Attributes:
@@ -180,7 +175,7 @@ def bind_actor(
 ) -> tuple[str, str | None]:
     """Resolve the ``(role, dept_id)`` pair that should drive RLS.
 
-    The helper enforces the rule from ``design.md`` §`libs/db-shared`:
+    The helper enforces the tenant binding rule:
 
     * **dept_admin** — automatically scoped to the single department
       they own. Passing an explicit ``dept_id`` is allowed only when
@@ -220,8 +215,8 @@ def bind_actor(
     owned: tuple[str, ...] = tuple(getattr(actor, "dept_ids", ()) or ())
 
     if role == "dept_admin":
-        # Design.md / task 4.2: ``dept_admin`` is automatically scoped
-        # to the dept_id it owns. We refuse to guess if the caller
+        # ``dept_admin`` is automatically scoped to the dept_id it owns.
+        # We refuse to guess if the caller
         # owns zero or multiple departments — that's a configuration
         # bug, not a runtime decision.
         if len(owned) != 1:
@@ -232,8 +227,7 @@ def bind_actor(
             )
         owned_dept = _validate_dept_id(owned[0])
         if dept_id is not None and dept_id != owned_dept:
-            # Refuse to widen scope. This is the central guard
-            # behind Requirement 7.3.
+            # Refuse to widen scope.
             raise PermissionError(
                 f"dept_admin actor (dept_ids={owned!r}) cannot bind to "
                 f"dept_id={dept_id!r}; only their owned department is "
@@ -430,15 +424,14 @@ async def with_actor_session(
 
 
 # ---------------------------------------------------------------------------
-# Backward-compatible placeholder (multi-service-scaffold parity)
+# Backward-compatible placeholder
 # ---------------------------------------------------------------------------
 
 
 class TenantAwareSession:
     """Legacy session wrapper kept for backward compatibility.
 
-    The multi-service-scaffold spec required a public
-    ``TenantAwareSession`` symbol re-exported from
+    A public ``TenantAwareSession`` symbol is re-exported from
     :mod:`db_shared`; ``platform/tests/conftest.py`` and
     ``libs/db-shared/README.md`` still reference it. The new
     foundation-spec helpers (:func:`with_dept_session`,
@@ -461,7 +454,7 @@ class TenantAwareSession:
         New code should use :func:`with_dept_session` which issues the
         ``SET LOCAL app.current_dept_id`` / ``app.current_role``
         statements at transaction start. This method is kept so older
-        scaffolding code that calls ``session.set_rls()`` still imports
+        older code that calls ``session.set_rls()`` still imports
         cleanly.
         """
 

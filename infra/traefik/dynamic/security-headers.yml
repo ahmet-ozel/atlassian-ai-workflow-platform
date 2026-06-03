@@ -1,7 +1,7 @@
 # =============================================================================
 # Traefik Dynamic Configuration — Security Headers Middleware
 # =============================================================================
-# Production Hardening — Requirements 3.5, 3.6, 13.4, 13.6
+# Production security headers
 #
 # This file defines HTTP middlewares for security headers applied at the
 # reverse proxy level. Application-level headers (X-Frame-Options, etc.)
@@ -14,7 +14,7 @@
 http:
   middlewares:
     # ─────────────────────────────────────────────────────────────────────────
-    # HSTS — Strict-Transport-Security (Requirement 13.4)
+    # HSTS — Strict-Transport-Security
     # Forces browsers to only connect via HTTPS for 1 year, including
     # subdomains.
     # ─────────────────────────────────────────────────────────────────────────
@@ -25,7 +25,7 @@ http:
         forceSTSHeader: true
 
     # ─────────────────────────────────────────────────────────────────────────
-    # CSP — Content-Security-Policy (Requirement 13.6)
+    # CSP — Content-Security-Policy
     # Basic policy: default-src 'self' with unsafe-inline for styles
     # (required by Streamlit's inline style injection).
     # ─────────────────────────────────────────────────────────────────────────

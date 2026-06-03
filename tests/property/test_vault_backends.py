@@ -1,6 +1,4 @@
-"""Property test 11a — Vault backend equivalence (round-trip).
-
-**Validates: Requirements 6.6**
+"""Vault backend equivalence property tests.
 
 For both pluggable backends (``HashicorpBackend`` against an in-process
 ``httpx.MockTransport`` simulating a Hashicorp KV-v2 mount, and
@@ -11,8 +9,8 @@ the following round-trip property holds for every well-formed
     backend.write(p, v)
     backend.read(p) == v
 
-This is the headline contract behind R6.6 ("pluggable backend mimarisi"
-— `VAULT_BACKEND` ∈ {`hashicorp`, `local-dev`}). The two backends are
+This is the headline contract for pluggable backend behavior
+(``VAULT_BACKEND`` in {``hashicorp``, ``local-dev``}). The two backends are
 constructed independently, but exposed to the test through the
 :class:`vault_client.client.VaultClient` Protocol so the assertion is
 the *same* against either implementation. Hypothesis drives the search
@@ -207,7 +205,7 @@ def test_round_trip_read_write(
     path: VaultPath,
     payload: Mapping[str, str],
 ) -> None:
-    """**Validates: Requirements 6.6** — both backends round-trip identically.
+    """Both backends round-trip identically.
 
     For any (path, payload) drawn by Hypothesis, writing the payload and
     reading it back through the same backend MUST yield the original
@@ -249,7 +247,7 @@ def test_backends_agree_on_read_after_write(
     path: VaultPath,
     payload: Mapping[str, str],
 ) -> None:
-    """**Validates: Requirements 6.6** — equivalence across the two backends.
+    """Equivalence across the two backends.
 
     Stronger than the per-backend round-trip: writing the same payload
     to *both* backends and then reading from each MUST produce
@@ -299,11 +297,11 @@ def test_read_after_delete_raises_key_error(
     path: VaultPath,
     payload: Mapping[str, str],
 ) -> None:
-    """**Validates: Requirements 6.6** — delete semantics align across backends.
+    """Delete semantics align across backends.
 
     ``write -> delete -> read`` must raise :class:`KeyError` on both
     backends. This protects callers (e.g. the atomic-create rollback
-    path in R3.6) from observing a stale value that was supposed to
+    path) from observing a stale value that was supposed to
     have been removed.
     """
     backend = factory(tmp_path)

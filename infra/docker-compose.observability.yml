@@ -1,9 +1,9 @@
 # =============================================================================
 # infra/docker-compose.observability.yml — opt-in observability stack
 # =============================================================================
-# `platform-mimari-ops` task 14.3 — adds Prometheus, Loki and Grafana to a
+# Adds Prometheus, Loki and Grafana to a
 # running platform stack without touching the foundation Compose file's
-# canonical service set (the multi-service-scaffold property test pins
+# canonical service set (the compose service test pins
 # EXPECTED_COMPOSE_SERVICES to a strict equality).
 #
 # Usage
@@ -23,9 +23,9 @@
 # * Prometheus scrapes MCP metrics directly and probes service health via
 #   blackbox-exporter, both configured in ``infra/observability/prometheus.yml``.
 # * Loki is the audit/log store; admin-dashboard-api proxies search
-#   queries through ``LokiSearchProxy`` (task 11.3).
+#   queries through ``LokiSearchProxy``.
 # * Grafana auto-loads the dashboards under
-#   ``infra/observability/grafana-dashboards/`` (task 14.2) via the
+#   ``infra/observability/grafana-dashboards/`` via the
 #   provisioning sidecar mount.
 # =============================================================================
 

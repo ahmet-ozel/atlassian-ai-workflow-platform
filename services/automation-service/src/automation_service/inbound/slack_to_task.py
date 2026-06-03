@@ -1,4 +1,4 @@
-"""Slack → Jira task adapter (B19, Requirement 5.10).
+"""Slack → Jira task adapter.
 
 Exposes ``POST /webhooks/inbound/slack`` — the public surface that
 Slack's incoming-webhook / Events API delivers to. The chain mirrors
@@ -28,7 +28,6 @@ directly — Jira issue creation is the workflow's job. This keeps the
 single-source-of-truth contract for the bot loop guard and capability
 gate, just like the Jira webhook handler.
 
-Validates Requirement 5.10.
 """
 
 from __future__ import annotations

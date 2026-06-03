@@ -1,8 +1,5 @@
 """Property test: Dept credential CRUD atomicity.
 
-**Property 1: Dept Credential CRUD Atomicity**
-**Validates: Requirements 1.3, 1.4, 1.6, 1.10**
-
 For *any* random sequence of ``add → probe → update → remove`` calls
 issued against :class:`services.dept_credential_service.DeptCredentialService`
 the following invariants must hold at every step:
@@ -343,7 +340,7 @@ class _FakePostgres:
             self._mutate(("upsert", row))
             return "INSERT 0 1"
         if "insert into automation.department_bot_identity" in normalised:
-            # R6.2 inline probe upserts the resolved account_id here.
+            # The inline probe upserts the resolved account_id here.
             # The fake accepts and discards — the CRUD test does not
             # assert on the identity table contents.
             return "INSERT 0 1"
@@ -1067,11 +1064,10 @@ TestDeptCredentialCRUDAtomicity = DeptCredentialCRUDStateMachine.TestCase
 class TestRemoveIdempotency:
     """**I2 — Remove is idempotent across repeated calls.**
 
-    Property 1 explicitly calls out "removing a credential is
-    idempotent (multiple removes don't error)".  This test pins the
-    contract on a focused, single-pair scenario: three back-to-back
-    removes after a single add must each return 200; only the first
-    flips ``existed`` from True to False.
+    Removing a credential is idempotent.  This test pins the contract
+    on a focused, single-pair scenario: three back-to-back removes
+    after a single add must each return 200; only the first flips
+    ``existed`` from True to False.
     """
 
     @pytest.mark.asyncio
@@ -1221,10 +1217,9 @@ class TestUnknownDeptIdRejected:
     """``add_or_update`` against an unknown dept_id raises
     :class:`DepartmentNotFoundError` and leaves no side effects.
 
-    This is the ``Requirement 1.3`` 404 surface: the orchestrator
-    must surface a missing department before any DB row is written
-    (``DepartmentNotFoundError`` is the dedicated subclass that the
-    router maps to HTTP 404).
+    The orchestrator must surface a missing department before any DB
+    row is written (``DepartmentNotFoundError`` is the dedicated
+    subclass that the router maps to HTTP 404).
     """
 
     @pytest.mark.asyncio

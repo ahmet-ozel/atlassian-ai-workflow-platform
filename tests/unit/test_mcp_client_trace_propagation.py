@@ -1,11 +1,8 @@
-"""Unit test — ``make_mcp_client`` injects ``X-Trace-Id`` from contextvars.
-
-Validates: platform-gap-fill Requirement 8.4 (MCP requests must carry
-``X-Trace-Id`` from :func:`observability.get_trace_id`).
+"""Unit test for ``make_mcp_client`` trace header propagation.
 
 The :func:`http_shared.make_mcp_client` factory is the single point that
 constructs every outbound MCP / Firecrawl client across the platform.
-After platform-gap-fill task 7.2 each client emits the current
+Each client emits the current
 contextvars-bound trace_id on every outgoing request via an httpx
 event hook, so the MCP server (and every Atlassian API call relayed
 through it) can correlate logs back to the originating webhook /

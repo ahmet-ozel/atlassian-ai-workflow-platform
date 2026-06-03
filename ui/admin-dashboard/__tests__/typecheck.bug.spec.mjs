@@ -1,5 +1,5 @@
 /**
- * Bug Condition Exploration Test — Property 1
+ * Bug Condition Exploration Test
  *
  * This property-based test encodes the expected behavior: for all (file, line, code)
  * in the verified counterexample table from the design document, `tsc --noEmit`
@@ -9,7 +9,7 @@
  * On UNFIXED code this test is EXPECTED TO FAIL — failure confirms the bug exists.
  * On FIXED code this test PASSES — confirming the fix resolves all 14 counterexamples.
  *
- * **Validates: Requirements 1.1, 1.2, 1.3, 1.4, 1.5**
+ * Checks the known counterexample conditions.
  */
 
 import { describe, it, before } from "node:test";
@@ -98,13 +98,13 @@ before(() => {
 });
 
 // ---------------------------------------------------------------------------
-// Property 1: Bug Condition — For all counterexamples, tsc emits NO diagnostic
+// Bug Condition: For all counterexamples, tsc emits NO diagnostic
 // ---------------------------------------------------------------------------
 
-describe("Property 1: Bug Condition Exploration", () => {
+describe("Bug Condition Exploration", () => {
   it("for all (file, line, code) in the verified counterexample table, tsc --noEmit emits no diagnostic with that code at that location", () => {
     /**
-     * **Validates: Requirements 1.1, 1.2, 1.3, 1.4, 1.5**
+     * Checks the known counterexample conditions.
      *
      * Generator: enumerates the 14 rows from the Bug Details table.
      * Property: for each row, assert that NO diagnostic with the listed
@@ -138,9 +138,9 @@ describe("Property 1: Bug Condition Exploration", () => {
 
   it("aggregate post-condition: tsc --noEmit exits with code 0 and reports 0 errors", () => {
     /**
-     * **Validates: Requirements 1.5**
+     * Checks that the final counterexample remains undiagnosed.
      *
-     * This asserts the aggregate condition from design Property 3:
+     * This asserts the aggregate condition for the counterexample set:
      * tsc --noEmit exits 0 with 0 errors.
      */
     assert.equal(

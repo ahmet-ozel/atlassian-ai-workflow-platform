@@ -1,22 +1,22 @@
-"""Hypothesis property test for ``is_cancel_authorized``.
+"""Hypothesis invariant for ``is_cancel_authorized``.
 
-**Validates: Requirements 11.1**
+
 
 Drives the cancel RBAC predicate
 (``automation_service.api.cancel.is_cancel_authorized``) across the
 full input space. Three properties:
 
 1. **Specification equivalence** — for any ``(actor, reporter,
-   past_assignees)``, the predicate returns ``True`` iff
-   ``actor == reporter`` OR ``actor ∈ past_assignees``.
+ past_assignees)``, the predicate returns ``True`` iff
+ ``actor == reporter`` OR ``actor ∈ past_assignees``.
 2. **Determinism (purity)** — repeated calls with identical inputs
-   yield identical outputs and never mutate the inputs.
+ yield identical outputs and never mutate the inputs.
 3. **Monotonicity** — adding members to ``past_assignees`` never
-   *reduces* authorization. Equivalently: if ``A ⊆ B``, then
-   ``is_cancel_authorized(actor, reporter, A) == True`` implies
-   ``is_cancel_authorized(actor, reporter, B) == True``.
+ *reduces* authorization. Equivalently: if ``A ⊆ B``, then
+ ``is_cancel_authorized(actor, reporter, A) == True`` implies
+ ``is_cancel_authorized(actor, reporter, B) == True``.
 
-The predicate is pure (no I/O, no clock) so this property test
+The predicate is pure (no I/O, no clock) so this invariant
 exercises it directly without monkey-patching anything.
 """
 
@@ -28,7 +28,7 @@ from pathlib import Path
 from hypothesis import given, strategies as st
 
 # ---------------------------------------------------------------------------
-# Path setup — mirror sibling property tests that import from
+# Path setup — mirror sibling invariant that import from
 # ``automation_service``.
 # ---------------------------------------------------------------------------
 
@@ -70,7 +70,7 @@ _past_assignees_strategy = st.frozensets(_user_ids, min_size=0, max_size=8)
 
 
 # ---------------------------------------------------------------------------
-# Property 1 — specification equivalence
+# invariant — specification equivalence
 # ---------------------------------------------------------------------------
 
 
@@ -86,16 +86,16 @@ def test_predicate_matches_specification(
 ) -> None:
     """``is_cancel_authorized == (actor == reporter or actor in past)``.
 
-    Verbatim specification from workflows-spec Requirement 11.1 and
-    design Property 11(a).
-    """
+ Verbatim specification from workflows-spec and
+ design invariant(a).
+ """
 
     expected = (actor == reporter) or (actor in past)
     assert is_cancel_authorized(actor, reporter, past) is expected
 
 
 # ---------------------------------------------------------------------------
-# Property 2 — determinism / purity
+# invariant — determinism / purity
 # ---------------------------------------------------------------------------
 
 
@@ -110,13 +110,13 @@ def test_predicate_is_deterministic_and_pure(
     past: frozenset[str],
 ) -> None:
     """Repeated invocations yield identical results and inputs are
-    not mutated.
+ not mutated.
 
-    The predicate has no I/O, no clock and no global state; this
-    property guards against accidental regressions that would break
-    Temporal replay determinism if the function were ever consumed
-    inside a workflow body.
-    """
+ The predicate has no I/O, no clock and no global state; this
+ property guards against accidental regressions that would break
+ Temporal replay determinism if the function were ever consumed
+ inside a workflow body.
+ """
 
     snapshot = frozenset(past)
     a = is_cancel_authorized(actor, reporter, past)
@@ -127,7 +127,7 @@ def test_predicate_is_deterministic_and_pure(
 
 
 # ---------------------------------------------------------------------------
-# Property 3 — monotonicity in ``past_assignees``
+# invariant — monotonicity in ``past_assignees``
 # ---------------------------------------------------------------------------
 
 
@@ -145,14 +145,14 @@ def test_predicate_is_monotonic_in_past_assignees(
 ) -> None:
     """Adding past assignees never reduces authorization.
 
-    Formally: ``A ⊆ B`` implies
-    ``is_cancel_authorized(actor, reporter, A) == True``
-    => ``is_cancel_authorized(actor, reporter, B) == True``.
+ Formally: ``A ⊆ B`` implies
+ ``is_cancel_authorized(actor, reporter, A) == True``
+ => ``is_cancel_authorized(actor, reporter, B) == True``.
 
-    We construct ``B = A ∪ extra`` by union so ``A ⊆ B`` is enforced
-    by construction, then check that authorization at ``A`` carries
-    over to ``B``.
-    """
+ We construct ``B = A ∪ extra`` by union so ``A ⊆ B`` is enforced
+ by construction, then check that authorization at ``A`` carries
+ over to ``B``.
+ """
 
     bigger = base | extra
     assert base.issubset(bigger)

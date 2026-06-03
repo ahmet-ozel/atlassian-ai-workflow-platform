@@ -1,9 +1,7 @@
 """Pure compensation-chain constants and report dataclasses.
 
 This module is the **single source of truth** for the cancel +
-compensation chain ordering and report shapes spelled out in
-``platform-mimari-workflows`` design.md
-§"temporal_shared.compensation" and tasks.md §13.2.
+compensation chain ordering and report shapes.
 
 The actual side-effecting :func:`run` activity body is **not** in
 scope for this module — it lives in the worker layer
@@ -16,7 +14,7 @@ Public API
 ----------
 
 * :data:`COMPENSATION_STEPS` — fixed-order tuple of activity step
-  names (Property 11 P3, R11.2).
+  names.
 * :class:`CompensationContext` — re-exported from
   :mod:`temporal_shared.messages` for caller ergonomics
   (``from temporal_shared.compensation import CompensationContext``).
@@ -25,7 +23,6 @@ Public API
 * :data:`STEP_RESULT_OK`, :data:`STEP_RESULT_FAILED`,
   :data:`STEP_RESULT_SKIPPED` — outcome string vocabulary.
 
-Validates: Requirements 8.5, 11.2, 11.3.
 """
 
 from __future__ import annotations
@@ -49,11 +46,10 @@ __all__ = [
 
 # ---------------------------------------------------------------------------
 # Step vocabulary — the closed set of activity names dispatched by
-# the cancel + compensation chain (R11.2, tasks.md §13.2).  The order
-# is part of the spec; reordering would change the user-visible
+# the cancel + compensation chain. The order is part of the contract;
+# reordering would change the user-visible
 # cleanup behaviour and would silently break compensation idempotency
-# on re-cancel.  Property 11 (``test_compensation_chain.py``) asserts
-# the order verbatim.
+# on re-cancel. Tests assert the order verbatim.
 # ---------------------------------------------------------------------------
 
 COMPENSATION_STEPS: Final[tuple[str, ...]] = (
@@ -74,7 +70,7 @@ COMPENSATION_STEPS: Final[tuple[str, ...]] = (
 STEP_RESULT_OK: Final[str] = "ok"
 
 #: One step failed after exhausting its retry budget.  The chain
-#: continues regardless (R11.3 — failures on a single step do not
+#: continues regardless; failures on a single step do not
 #: abort the chain).
 STEP_RESULT_FAILED: Final[str] = "failed"
 
@@ -110,7 +106,7 @@ class CompensationReport:
         Tuple of step names actually attempted (in the order they
         ran).  In the happy path this is identical to
         :data:`COMPENSATION_STEPS`; in the early-abort path it is a
-        prefix.  R11.3 mandates the chain *continues* on failure so
+        prefix. The chain *continues* on failure so
         ``len(attempted_steps) == len(COMPENSATION_STEPS)`` should be
         the norm.
     step_results:

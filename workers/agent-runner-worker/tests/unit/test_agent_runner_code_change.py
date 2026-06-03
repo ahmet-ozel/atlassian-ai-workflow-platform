@@ -1,4 +1,4 @@
-"""Unit tests for ``AgentRunnerWorkflow`` ``code_change_*`` flows (task 7.5).
+"""Unit tests for ``AgentRunnerWorkflow`` ``code_change_*`` flows.
 
 Covers the four execution paths plumbed into ``_dispatch_workflow_type``:
 
@@ -25,7 +25,6 @@ and ``temporalio.workflow.execute_child_workflow``. ``workflow.now`` is
 also stubbed so the ``[fix]`` debounce / ``[explain]`` cache paths
 remain deterministic.
 
-Validates Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.9, 7.10.
 """
 
 from __future__ import annotations
@@ -204,7 +203,7 @@ def _build_patches(
 
 
 class TestCodeChangeWithTest:
-    """Happy path through the full activity chain (R7.1, R7.3, R7.4)."""
+    """Happy path through the full activity chain."""
 
     def test_happy_path_invokes_full_activity_sequence(
         self, make_wf, patched_workflow_now
@@ -399,7 +398,7 @@ class TestCodeChangeWithTest:
 
 
 class TestCodeChangeCommitOnly:
-    """Commit-only flow: branch + commit + Jira comment, no PR (R7.5)."""
+    """Commit-only flow: branch + commit + Jira comment, no PR."""
 
     def test_commit_only_does_not_invoke_pr_creation(
         self, make_wf, patched_workflow_now
@@ -511,7 +510,7 @@ class TestCodeChangeCommitOnly:
 
 
 class TestPrReviewDedup:
-    """LLM-driven PR review with hash-based dedup (R7.6, G13)."""
+    """LLM-driven PR review with hash-based dedup."""
 
     def test_dedup_suppresses_repeat_findings_across_iterations(
         self, make_wf, patched_workflow_now
@@ -620,7 +619,7 @@ class TestPrReviewDedup:
 
 
 class TestPrecommitBlock:
-    """Secret-leak block aborts the workflow with a stable failure (R7.10)."""
+    """Secret-leak block aborts the workflow with a stable failure."""
 
     def test_block_decision_raises_application_error(
         self, make_wf, patched_workflow_now
@@ -671,7 +670,7 @@ class TestPrecommitBlock:
 
 
 class TestBranchPatternRulesDeny:
-    """Hotfix + commit_only is denied by the foundation default rule (R7.9)."""
+    """Hotfix + commit_only is denied by the foundation default rule."""
 
     def test_hotfix_commit_only_short_circuits(
         self, make_wf, patched_workflow_now

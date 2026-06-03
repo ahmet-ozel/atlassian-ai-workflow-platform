@@ -1,14 +1,13 @@
 """``AuditLogger`` — application-layer write surface for audit events.
 
 The writer enforces the **mandatory ``actor_role``** invariant
-(Requirement 7.7): if a caller hands us an :class:`AuditEvent` whose
+at the application layer: if a caller hands us an :class:`AuditEvent` whose
 ``actor_role`` is ``None`` or the empty string, ``write()`` raises
 :class:`ValueError` *before* any database round-trip.
 
 Postgres also enforces this with a ``CHECK (actor_role IS NOT NULL ...)``
 column on ``audit_events`` (declared in
-``infra/postgres/init/10_automation.sql`` — task group 4 of
-``platform-mimari-foundation/tasks.md``). The application-layer
+``infra/postgres/init/10_automation.sql``). The application-layer
 guard exists so callers fail fast with a clear traceback instead of
 surfacing an opaque integrity error.
 
@@ -21,8 +20,8 @@ will be a :mod:`db_shared`-backed session; the protocol shape lets
 tests inject an in-memory fake without pulling Postgres into the
 test path.
 
-The actual ``INSERT INTO audit_events ...`` SQL is materialised by
-task group 4 alongside the schema migration; the scaffold here calls
+The actual ``INSERT INTO audit_events ...`` SQL is materialised
+alongside the schema migration; this library calls
 ``writer.insert_audit(event)`` and lets the implementation fan out to
 SQL. Splitting the validation surface from the SQL emitter keeps
 this library framework-agnostic (``asyncpg`` vs ``SQLAlchemy``).
@@ -41,7 +40,7 @@ class AuditWriter(Protocol):
 
     Production code wires this to a :mod:`db_shared` tenant-aware
     session whose ``insert_audit`` runs the canonical SQL emitted by
-    task group 4. Tests can inject a list-backed fake whose
+    the database layer. Tests can inject a list-backed fake whose
     ``insert_audit`` simply appends the event for later assertion.
 
     The protocol is intentionally tiny — only the single ``insert_audit``
@@ -97,17 +96,17 @@ class AuditLogger:
         # The dataclass annotation is a ``Literal``, but ``Literal`` is
         # a static-type hint only — at runtime callers can still pass
         # ``None``, an empty string, or a typo. We surface those cases
-        # explicitly so the failure mode matches Requirement 7.7.
+        # explicitly so the failure mode is clear.
         if role is None:
             raise ValueError(
                 "AuditEvent.actor_role is required and must not be None "
-                "(Requirement 7.7; mirrored by the Postgres "
-                "audit_events.actor_role CHECK constraint)."
+                "(mirrored by the Postgres audit_events.actor_role "
+                "CHECK constraint)."
             )
         if not isinstance(role, str) or not role.strip():
             raise ValueError(
                 "AuditEvent.actor_role must be a non-empty string "
-                f"(got {role!r}). Requirement 7.7 forbids empty roles."
+                f"(got {role!r}). Empty roles are not allowed."
             )
         if role not in AUDIT_ACTOR_ROLES:
             raise ValueError(

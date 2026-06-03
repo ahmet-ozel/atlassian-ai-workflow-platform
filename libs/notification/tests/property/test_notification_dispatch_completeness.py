@@ -1,10 +1,9 @@
-"""Property test: Notification dispatch completeness.
+"""Notification dispatch completeness test.
 
-Feature: platform-completion, Property 35: For any workflow completion and N
-configured channels, exactly N independent notification attempts SHALL be made,
+For any workflow completion and N configured channels, exactly N
+independent notification attempts SHALL be made,
 and failure of one channel SHALL NOT block others.
 
-Validates: Requirements 18.1, 18.2, 18.7
 """
 from __future__ import annotations
 import asyncio

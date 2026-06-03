@@ -11,14 +11,13 @@ synchronous; the FastAPI router invokes the wrapper through
 ``await asyncio.to_thread(...)`` so a slow git call cannot stall the
 event loop.
 
-Design references
------------------
-* design.md §`PromptsGitRouter` — endpoint matrix and contract.
-* Requirement 2.2 — git CRUD endpoints (`/admin/prompts`,
-  `/admin/prompts/{path:path}`, ``…/draft``, ``…/pr``).
-* Requirement 2.9 — template-format validation runs *before* any
-  ``write_file`` call (the router enforces this; the wrapper keeps no
-  validation responsibilities).
+Operational references
+----------------------
+* Git CRUD endpoints (`/admin/prompts`, `/admin/prompts/{path:path}`,
+  ``…/draft``, ``…/pr``).
+* Template-format validation runs *before* any ``write_file`` call
+  (the router enforces this; the wrapper keeps no validation
+  responsibilities).
 
 Worktree discipline
 -------------------
@@ -119,10 +118,9 @@ class GitCommit:
 # ---------------------------------------------------------------------------
 
 
-# Default branch we treat as the merge target. The MIMARI spec is
-# explicit about ``main`` (§16.5); production deployments that use a
-# different default branch can override via the ``main_branch`` ctor
-# parameter without changing the public API.
+# Default branch we treat as the merge target. Production deployments
+# that use a different default branch can override via the
+# ``main_branch`` ctor parameter without changing the public API.
 _DEFAULT_MAIN_BRANCH = "main"
 
 

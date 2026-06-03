@@ -1,36 +1,33 @@
-"""Property tests for ``automation_service.probe.ProbeRunner``.
+"""Tests for ``automation_service.probe.ProbeRunner``.
 
-**Validates: Requirements 5.1, 5.2, 5.3, 5.5, 5.6, 5.7, 5.10**
-
-Property 8: Probe runner — idempotent, auto-fetch, partial_orphan ve
-mismatch fail.
+Probe runner — idempotent, auto-fetch, partial_orphan ve mismatch fail.
 
 For all ``(dept_id, service ∈ {jira, bitbucket, confluence}, credential)``
 triples, the following invariants hold:
 
-* **8a — Idempotent cleanup (R5.5)**: Running ``ProbeRunner.run`` twice
+* **Idempotent cleanup**: Running ``ProbeRunner.run`` twice
   in a row leaves no extra ``_AI_PROBE_*`` artifacts in the target
   system. Each invocation cleans up stale sentinels first; both
   invocations remove their own write-probe sentinel before returning.
 
-* **8b — Read-failure short-circuit (R5.1, R5.2)**: When the read probe
+* **Read-failure short-circuit**: When the read probe
   raises, the runner returns ``state="read_failed"`` and **does not
   invoke any write-side method** on the Atlassian client (no creates,
   no deletes).
 
-* **8c — Partial-orphan capture (R5.3, R5.5, R5.10)**: When the
+* **Partial-orphan capture**: When the
   Confluence draft create succeeds but the matching delete fails, the
   runner returns ``state="partial_orphan"`` with a populated
   :class:`ProbeArtifact` whose ``title_or_name`` matches the
   ``_AI_PROBE_<unix_ts>_DELETE_ME`` format and whose payload **never
-  contains the plain-text token** (R5.10).
+  contains the plain-text token**.
 
-* **8d — auto_fetch passthrough (R5.6)**: The runner exposes the
+* **auto_fetch passthrough**: The runner exposes the
   ``accountId`` returned by the read probe on
   :attr:`ProbeResult.auto_fetched_account_id` so the calling code
-  (task 6.2) can update ``departments.json`` / DB records.
+  can update ``departments.json`` / DB records.
 
-* **8e — Mismatch detection primitive (R5.7)**: When a manually
+* **Mismatch detection primitive**: When a manually
   configured ``account_id`` differs from the auto-fetched value, the
   caller can detect the mismatch by comparing the two values and the
   fail-fast error message can include both. The runner exposes the
@@ -59,7 +56,7 @@ from hypothesis import strategies as st
 # ---------------------------------------------------------------------------
 #
 # The ``automation-service`` source tree co-exists with the
-# multi-service-scaffold legacy ``src/main.py`` + ``src/config.py``
+# legacy ``src/main.py`` + ``src/config.py``
 # layer; importing the ``automation_service`` package eagerly executes
 # ``automation_service/__init__.py`` which in turn loads
 # ``automation_service.app`` whose top-of-module imports reach for
@@ -100,7 +97,7 @@ from automation_service.probe import (  # noqa: E402
 #: A distinctive byte sequence we can grep for to detect plain-text token
 #: leakage anywhere downstream. The fake never echoes this into the call
 #: log; if the runner ever passes the credential into an artifact body or
-#: error message we will see it on inspection (R5.10).
+#: error message we will see it on inspection.
 _TOKEN_SENTINEL = "PLAINTEXT_TOKEN_DO_NOT_LEAK_42"
 
 
@@ -365,7 +362,7 @@ def _write_methods_for(service: ProbeService) -> frozenset[str]:
     """Return the fake's write-side method names for *service*.
 
     A "write-side" method is anything that creates or deletes an
-    artifact in the target system. Property 8b uses this to assert
+    artifact in the target system. The read-failure test uses this to assert
     that no write-side method runs after a read-probe failure.
     """
 
@@ -473,7 +470,7 @@ def _seed_stale(
 
 
 # ---------------------------------------------------------------------------
-# Property 8a — Idempotent cleanup
+# Idempotent cleanup
 # ---------------------------------------------------------------------------
 
 
@@ -496,9 +493,7 @@ def test_repeated_runs_leave_no_extra_probe_artifacts(
     stale_count: int,
     unrelated_title: str,
 ) -> None:
-    """Property 8a — Sequential ``ProbeRunner.run`` calls are idempotent.
-
-    **Validates: Requirements 5.1, 5.2, 5.5**
+    """Sequential ``ProbeRunner.run`` calls are idempotent.
 
     For every ``(dept_id, service)`` pair, calling ``run`` twice in a
     row leaves zero ``_AI_PROBE_*`` artifacts in the target system.
@@ -553,7 +548,7 @@ def test_repeated_runs_leave_no_extra_probe_artifacts(
 
 
 # ---------------------------------------------------------------------------
-# Property 8b — Read failure short-circuits the write probe
+# Read failure short-circuits the write probe
 # ---------------------------------------------------------------------------
 
 
@@ -572,9 +567,7 @@ def test_read_failure_skips_all_write_side_calls(
     service: ProbeService,
     ts: int,
 ) -> None:
-    """Property 8b — Read-probe failure aborts before any write activity.
-
-    **Validates: Requirements 5.1, 5.2**
+    """Read-probe failure aborts before any write activity.
 
     For every service literal, when the read probe raises:
 
@@ -582,7 +575,7 @@ def test_read_failure_skips_all_write_side_calls(
     * ``ProbeResult.read_ok is False`` and ``write_ok is False``.
     * **No** create / delete write-side method ever runs.
     * The sanitised ``error_message`` carries only the exception class
-      name — never the raw ``str(exc)`` (R5.10 hygiene).
+      name — never the raw ``str(exc)``.
     """
 
     client = _FakeAtlassianClient(fail_read=service)
@@ -617,7 +610,7 @@ def test_read_failure_skips_all_write_side_calls(
 
 
 # ---------------------------------------------------------------------------
-# Property 8c — Confluence delete failure yields ``partial_orphan``
+# Confluence delete failure yields ``partial_orphan``
 # ---------------------------------------------------------------------------
 
 
@@ -634,9 +627,7 @@ def test_confluence_delete_failure_yields_partial_orphan(
     dept_id: str,
     ts: int,
 ) -> None:
-    """Property 8c — Confluence delete failure surfaces ``partial_orphan``.
-
-    **Validates: Requirements 5.3, 5.5, 5.10**
+    """Confluence delete failure surfaces ``partial_orphan``.
 
     When the Confluence draft create succeeds but the delete fails:
 
@@ -648,7 +639,7 @@ def test_confluence_delete_failure_yields_partial_orphan(
     * ``artifact.title_or_name`` matches the canonical sentinel format
       ``_AI_PROBE_<unix_ts>_DELETE_ME``.
     * Neither the artifact's ``title_or_name`` nor ``external_id`` nor
-      ``error_message`` carries the plain-text token (R5.10).
+      ``error_message`` carries the plain-text token.
     """
 
     client = _FakeAtlassianClient(fail_write_delete="confluence")
@@ -680,7 +671,7 @@ def test_confluence_delete_failure_yields_partial_orphan(
     ]
     assert middle == str(ts)
 
-    # R5.10 — no plain-text credential anywhere on the artifact or in
+    # No plain-text credential anywhere on the artifact or in
     # the error message.
     assert _TOKEN_SENTINEL not in artifact.title_or_name
     assert _TOKEN_SENTINEL not in artifact.external_id
@@ -688,7 +679,7 @@ def test_confluence_delete_failure_yields_partial_orphan(
 
 
 # ---------------------------------------------------------------------------
-# Property 8d — auto-fetched account_id is exposed on the result
+# Auto-fetched account_id is exposed on the result
 # ---------------------------------------------------------------------------
 
 
@@ -726,13 +717,11 @@ def test_auto_fetched_account_id_is_passthrough(
     ts: int,
     fetched_account_id: str,
 ) -> None:
-    """Property 8d — Read-probe ``accountId`` is exposed verbatim.
-
-    **Validates: Requirements 5.6**
+    """Read-probe ``accountId`` is exposed verbatim.
 
     The runner forwards the value returned by the read probe to
-    :attr:`ProbeResult.auto_fetched_account_id` so the caller (task
-    6.2) can decide whether to update ``departments.json`` / DB
+    :attr:`ProbeResult.auto_fetched_account_id` so the caller can
+    decide whether to update ``departments.json`` / DB
     records. This property generates random account-id strings and
     asserts byte-for-byte equality on the result.
     """
@@ -754,7 +743,7 @@ def test_auto_fetched_account_id_is_passthrough(
 
 
 # ---------------------------------------------------------------------------
-# Property 8e — Mismatch detection primitive (manual vs auto-fetched)
+# Mismatch detection primitive (manual vs auto-fetched)
 # ---------------------------------------------------------------------------
 
 
@@ -777,9 +766,7 @@ def test_manual_vs_auto_fetched_account_id_is_observable(
     manual_account_id: str,
     fetched_account_id: str,
 ) -> None:
-    """Property 8e — Manual vs auto-fetched account_id mismatch is observable.
-
-    **Validates: Requirements 5.7**
+    """Manual vs auto-fetched account_id mismatch is observable.
 
     The runner exposes the auto-fetched ``accountId`` on
     :attr:`ProbeResult.auto_fetched_account_id`. The caller compares
@@ -791,10 +778,9 @@ def test_manual_vs_auto_fetched_account_id_is_observable(
     * When ``manual == fetched``: the comparison agrees, no fail-fast
       message needed.
     * When ``manual != fetched``: a constructed fail-fast error message
-      contains **both** values verbatim, satisfying R5.7's "hata
-      mesajında her iki değer de gösterilir" requirement.
+      contains **both** values verbatim.
 
-    The runner itself does not raise on mismatch (that's task 6.2);
+    The runner itself does not raise on mismatch;
     this test verifies the building block the caller wires up.
     """
 
@@ -817,7 +803,7 @@ def test_manual_vs_auto_fetched_account_id_is_observable(
     assert auto == fetched_account_id
 
     # Caller-side mismatch detection primitive — the building block
-    # ``CredentialResolver`` / boot validation will use (task 6.2).
+    # ``CredentialResolver`` / boot validation will use.
     is_mismatch = manual_account_id != auto
 
     if not is_mismatch:
@@ -847,7 +833,7 @@ def test_manual_vs_auto_fetched_account_id_is_observable(
 
 
 # ---------------------------------------------------------------------------
-# Property 8f — Plain-text credential never reaches the call log or artifacts
+# Plain-text credential never reaches the call log or artifacts
 # ---------------------------------------------------------------------------
 
 
@@ -866,9 +852,7 @@ def test_plain_text_token_never_appears_in_artifact_payloads(
     service: ProbeService,
     ts: int,
 ) -> None:
-    """Property 8f — Probe artifact payloads never carry the plain-text token.
-
-    **Validates: Requirements 5.10**
+    """Probe artifact payloads never carry the plain-text token.
 
     The probe runner sends only the canonical sentinel string into
     artifact bodies / branch names / comment markers. The

@@ -1,11 +1,11 @@
 -- 007_audit_log_external_provider_actions.sql
--- Spec: platform-real-usage-gaps — Task 10.4 (R10 — External Provider Downtime Widget audit)
+-- External provider downtime audit actions.
 --
 -- Widens the ``shared.audit_log.action`` CHECK constraint to include
 -- ``external_provider_probe_failed`` (emitted on every failed probe)
 -- and ``external_provider_streak_alert`` (emitted once when a provider
 -- accumulates 3 consecutive failures, mirroring the existing
--- ``health_streak_alert`` pattern from Requirement 12.5).
+-- ``health_streak_alert`` pattern).
 --
 -- Builds on top of migration ``005_audit_log_vault_purge_actions.sql``
 -- which introduced ``audit_log_action_check_v4``. We drop v4 if

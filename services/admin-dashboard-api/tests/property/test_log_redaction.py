@@ -1,14 +1,9 @@
-"""Property 13 — log redaction matches every documented LLM key pattern.
-
-# Feature: llm-provider-management, Property 13: Log redaction matches every documented LLM key pattern across CRUD, test, and exception paths
-
-Validates Requirements 13.1, 13.2, 13.3, 13.4, 13.5 of the
-``llm-provider-management`` spec: the six regex patterns added to
+"""— log redaction matches every documented LLM key pattern.
+the project spec: the six regex patterns added to
 :data:`http_shared.redaction.REDACTION_PATTERNS` cover every LLM
 credential shape this feature supports (Anthropic ``sk-ant-``,
 OpenAI ``sk-proj/live/test-``, OpenAI generic ``sk-``, Google
-Gemini ``AIza...``).
-"""
+Gemini ``AIza...``)."""
 
 from __future__ import annotations
 
@@ -31,7 +26,7 @@ from http_shared.redaction import REDACTION_PLACEHOLDER, redact_text  # noqa: E4
 #: plus ``_-``. The redaction regexes are ASCII-only (``[A-Za-z0-9_\-]``)
 #: so the strategy stays inside that alphabet; Unicode "Nd"/"Ll" code
 #: points produce characters the regex does not match, which is fine in
-#: production but useless for *this* property (Property 13 only pins the
+# : production but useless for *this* property ( only pins the
 #: documented patterns, not Unicode-extension behaviour).
 #: 30+ chars covers every documented prefix's minimum length
 #: (sk- patterns need ≥ 20, AIza needs ≥ 30 — 30 satisfies both).

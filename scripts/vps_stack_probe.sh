@@ -2,8 +2,8 @@
 # =============================================================================
 # platform/scripts/vps_stack_probe.sh — Full stack health & shape verification
 # =============================================================================
-# Runs on VPS_Host at /opt/yeni_atlassian/platform.
-# Implements Requirement 9 (R9.1–R9.5):
+# Runs on VPS_Host at /opt/atlassian-ai-workflow-platform.
+# Full stack probe checks:
 #
 #   1. Assert 13 services are running + healthy via docker compose ps  (R9.1)
 #   2. Run pytest test_compose_healthcheck_shape.py, assert exit 0     (R9.2)
@@ -25,7 +25,7 @@
 # =============================================================================
 set -uo pipefail
 
-PLATFORM_DIR="/opt/yeni_atlassian/platform"
+PLATFORM_DIR="/opt/atlassian-ai-workflow-platform"
 COMPOSE_FILE="$PLATFORM_DIR/infra/docker-compose.yml"
 COMPOSE_DEV="$PLATFORM_DIR/infra/docker-compose.dev.yml"
 EVIDENCE_FILE="/tmp/09-stack.txt"

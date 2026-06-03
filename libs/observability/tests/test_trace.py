@@ -1,9 +1,7 @@
-"""Unit tests for the trace_id propagator (platform-gap-fill task 7.1).
+"""Unit tests for the trace_id propagator.
 
-Validates:
-* Requirement 8.1 (platform-gap-fill) — UUIDv7 trace_id generation.
-* Requirement 8.7 (platform-gap-fill) — preservation of inbound
-  ``X-Trace-Id`` header across hops.
+Checks UUIDv7 trace_id generation and preservation of inbound
+``X-Trace-Id`` headers across hops.
 
 The tests cover the three pieces of the public API:
 
@@ -284,7 +282,7 @@ def test_middleware_generates_trace_id_when_header_absent() -> None:
 
 
 def test_middleware_preserves_valid_inbound_trace_id() -> None:
-    """Validates: Requirement 8.7 (preserve trace_id on retry)."""
+    """Preserve trace_id on retry."""
 
     inbound = "018f7d4d-5f8c-7c4d-92ab-1f6f5a4d9b34"
     middleware = TraceMiddleware(_identity_app)
@@ -445,15 +443,14 @@ def test_middleware_preserves_uuid_regardless_of_version(inbound: str) -> None:
 
 
 # ---------------------------------------------------------------------------
-# TraceLogFilter — log-record enrichment (platform-gap-fill task 7.2)
+# TraceLogFilter — log-record enrichment
 # ---------------------------------------------------------------------------
 
 
 def test_trace_log_filter_sets_trace_id_attribute_on_record() -> None:
     """Filter must populate ``record.trace_id`` from the contextvars value.
 
-    Validates platform-gap-fill Requirement 8.3 (worker activities
-    surface trace_id on every log line) — the filter is the bridge
+    Worker activities surface trace_id on every log line; the filter is the bridge
     between the contextvars-bound trace_id and the structured-log
     record.
     """

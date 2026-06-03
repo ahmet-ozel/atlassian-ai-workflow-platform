@@ -1,21 +1,17 @@
-"""Task 1.2 — Migration smoke test for ``010_llm_providers.sql``.
-
+"""Migration smoke test for ``010_llm_providers.sql``.
 Parses the migration file as text and asserts the spec-mandated
 invariants:
-
 * ``automation.llm_providers`` has NO column named ``api_key``,
   ``apikey``, ``secret``, ``token``, ``credential``, or ``org_id``
-  (Requirement 3.2 — credentials live in Vault only).
+  .
 * ``status`` default is ``'active'`` and the CHECK constraint
   enumerates the four supported provider types.
 * ``dept_llm_provider_overrides.provider_id`` foreign key uses
   ``ON DELETE RESTRICT``.
-
 Parsing is intentionally regex-based: standing up a real Postgres for
 a single migration smoke test would balloon CI runtime, and the
 invariants we care about are textual (column presence / CHECK
-clauses / FK actions), not behavioural.
-"""
+clauses / FK actions), not behavioural."""
 
 from __future__ import annotations
 
@@ -59,7 +55,7 @@ def _extract_table_block(sql: str, table_name: str) -> str:
 
 
 class TestNoCredentialColumns:
-    """Requirement 3.2 — no credential material in Postgres."""
+    """"""
 
     @pytest.mark.parametrize(
         "forbidden",
@@ -83,7 +79,7 @@ class TestNoCredentialColumns:
 
 
 class TestStatusAndProviderTypeConstraints:
-    """Requirement 2.6 / 9.1 — status default + CHECK enums."""
+    """"""
 
     def test_status_default_is_active(self, migration_sql: str) -> None:
         block = _extract_table_block(
@@ -136,7 +132,7 @@ class TestStatusAndProviderTypeConstraints:
 
 
 class TestDeptOverrideForeignKey:
-    """Requirement 1.7 — provider FK uses ON DELETE RESTRICT."""
+    """"""
 
     def test_provider_id_fk_on_delete_restrict(
         self, migration_sql: str

@@ -1,24 +1,22 @@
-"""Property test 15 — LLM hash dedup family.
+"""invariant 15 — LLM hash dedup family.
 
-**Validates: Requirements 7.6, 10.6**
 
-Property statement (design.md §"Property 15", tasks.md §6.7)
+
+Invariant statement
 ------------------------------------------------------------
 
-The ``pr_review`` body of :class:`AgentRunnerWorkflow` consults the
+The ``pr_review`` body of:class:`AgentRunnerWorkflow` consults the
 workflow-local ``previous_findings`` set before posting comments to a
 PR so the same finding is never re-posted across iterations
-(R7.6 — MIMARI §16.14 G13). The orphan-branches / commit-only flow
+( — §16.14 G13). The orphan-branches / commit-only flow
 also caches per-diff-hash LLM summaries on
 ``self._diff_summary_cache`` so a follow-up ``[fix]`` against an
 unchanged diff hits the cache and skips the LLM round-trip
-(R10.6 — MIMARI §16.14.7 V7).
+( — §16.14.7 V7).
 
-The pure helper under test is
-:func:`agent_runner.workflows.agent_runner_workflow._dedup_findings`,
+The pure helper under test is:func:`agent_runner.workflows.agent_runner_workflow._dedup_findings`,
 which is the placeholder mirror of
-``temporal_shared.llm_dedup.dedup_findings`` (the latter lands with
-task 6.2). When the real module is missing the placeholder is the
+``temporal_shared.llm_dedup.dedup_findings`` (the latter lands with. When the real module is missing the placeholder is the
 production code path, so the invariants verified here are the
 contract end users observe today.
 
@@ -26,74 +24,71 @@ For any hypothesis-generated pair ``(previous_hashes,
 current_findings)`` the helper SHALL satisfy:
 
 (P1) **Subset** — every entry in the returned list is also present
-     in ``current_findings`` (no new findings are fabricated). The
-     comparison is by *identity* (``is``) since the helper must not
-     copy / mutate the entries it forwards.
+ in ``current_findings`` (no new findings are fabricated). The
+ comparison is by *identity* (``is``) since the helper must not
+ copy / mutate the entries it forwards.
 
 (P2) **No previous hashes** — for every finding ``f`` in the output,
-     ``f["hash"] not in previous_hashes``. Combined with P1 this is
-     the set-difference invariant ``output ⊆ current_findings``
-     minus ``{f : f["hash"] ∈ previous_hashes}``.
+ ``f["hash"] not in previous_hashes``. Combined with P1 this is
+ the set-difference invariant ``output ⊆ current_findings``
+ minus ``{f: f["hash"] ∈ previous_hashes}``.
 
 (P3) **Order preserved (first-seen-wins)** — the relative order of
-     surviving findings matches their order in ``current_findings``.
-     We deliberately do *not* deduplicate by hash *within* the
-     current batch: the helper trusts the caller to have produced a
-     canonical batch, and the unit-test layer covers the
-     in-batch-duplicate edge case directly.
+ surviving findings matches their order in ``current_findings``.
+ We deliberately do *not* deduplicate by hash *within* the
+ current batch: the helper trusts the caller to have produced a
+ canonical batch, and the unit-test layer covers the
+ in-batch-duplicate edge case directly.
 
 (P4) **Idempotence** — ``dedup(prev, dedup(prev, current)) ==
-     dedup(prev, current)``. A second pass through the same filter
-     never drops further entries because everything that survived
-     the first call had ``hash ∉ prev`` already.
+ dedup(prev, current)``. A second pass through the same filter
+ never drops further entries because everything that survived
+ the first call had ``hash ∉ prev`` already.
 
 (P5) **No mutation** — neither ``previous_hashes`` nor
-     ``current_findings`` is modified by the call. The helper
-     receives both as borrowed references; mutating either would
-     break Temporal replay determinism (R5.7 / Property 2).
+ ``current_findings`` is modified by the call. The helper
+ receives both as borrowed references; mutating either would
+ break Temporal replay determinism ( / invariant).
 
 (P6) **Empty / falsy hash** — a finding whose ``hash`` field is
-     missing, ``None``, or the empty string is dropped. The set
-     ``{None, ""}`` is treated as "no stable identity" — without a
-     hash the dedup contract cannot be satisfied so the entry is
-     suppressed by design (mirrors the placeholder body).
+ missing, ``None``, or the empty string is dropped. The set
+ ``{None, ""}`` is treated as "no stable identity" — without a
+ hash the dedup contract cannot be satisfied so the entry is
+ suppressed by design (mirrors the placeholder body).
 
-For the per-workflow ``_diff_summary_cache`` instance attribute on
-:class:`AgentRunnerWorkflow` — a plain ``dict[str, str]`` LRU
-placeholder until task 6.2 lands the bounded variant
-:func:`temporal_shared.llm_dedup.diff_summary_cache_get` — the
+For the per-workflow ``_diff_summary_cache`` instance attribute on:class:`AgentRunnerWorkflow` — a plain ``dict[str, str]`` LRU
+placeholder until lands the bounded variant:func:`temporal_shared.llm_dedup.diff_summary_cache_get` — the
 following invariants hold:
 
 (P7) **Cache hit determinism** — once ``cache[h] = s`` is written,
-     ``cache.get(h)`` returns ``s`` verbatim on every subsequent
-     read until the entry is overwritten. Two separate workflow
-     instances each maintain their own cache (no cross-instance
-     leakage), preserving per-workflow isolation.
+ ``cache.get(h)`` returns ``s`` verbatim on every subsequent
+ read until the entry is overwritten. Two separate workflow
+ instances each maintain their own cache (no cross-instance
+ leakage), preserving per-workflow isolation.
 
 (P8) **Cache miss → ``None``** — ``cache.get(h)`` returns ``None``
-     for any hash that was never written. This is the signal the
-     ``code_change_commit_only`` body uses to decide whether to
-     invoke the LLM-summarisation activity (cache miss) or reuse a
-     prior summary (cache hit) — see
-     ``test_diff_summary_cached_across_iterations`` in
-     ``platform/workers/agent-runner-worker/tests/unit/test_agent_runner_code_change.py``.
+ for any hash that was never written. This is the signal the
+ ``code_change_commit_only`` body uses to decide whether to
+ invoke the LLM-summarisation activity (cache miss) or reuse a
+ prior summary (cache hit) — see
+ ``test_diff_summary_cached_across_iterations`` in
+ ``platform/workers/agent-runner-worker/tests/unit/test_agent_runner_code_change.py``.
 
 Not in scope
 ------------
 
-* The bounded-LRU eviction semantics scheduled for
-  :mod:`temporal_shared.llm_dedup` (task 6.2). Until that module
-  ships the workflow uses an unbounded ``dict``; an eviction
-  property would have nothing to assert against. When the module
-  appears the existing :func:`_LLM_DEDUP_MODULE_AVAILABLE` flag in
-  the workflow file flips ``True`` and the placeholder is no longer
-  exercised — a follow-up extension of this file (task 6.2) will
-  add the eviction property.
+* The bounded-LRU eviction semantics scheduled for:mod:`temporal_shared.llm_dedup`. Until that module
+ ships the workflow uses an unbounded ``dict``; an eviction
+ property would have nothing to assert against. When the module
+ appears the existing:func:`_LLM_DEDUP_MODULE_AVAILABLE` flag in
+ the workflow file flips ``True`` and the placeholder is no longer
+ exercised — a follow-up extension of this file will
+ add the eviction property.
 * The actual LLM-summarisation activity (``llm_summarize_diff`` or
-  similar) — owned by the activity layer and exercised by the
-  worker's unit tests.
+ similar) — owned by the activity layer and exercised by the
+ worker's unit tests.
 * The ``pr_review`` body's posting / partial-failure path — owned
-  by the activity tests and ``test_multi_iter_po_review.py``.
+ by the activity tests and ``test_multi_iter_po_review.py``.
 """
 
 from __future__ import annotations
@@ -156,9 +151,9 @@ def _hash_strategy() -> st.SearchStrategy[str]:
 def _previous_hashes_strategy() -> st.SearchStrategy[set[str]]:
     """Strategy emitting a ``previous_hashes`` set.
 
-    Capped at the alphabet length so hypothesis cannot generate
-    states the workflow could not reach in practice.
-    """
+ Capped at the alphabet length so hypothesis cannot generate
+ states the workflow could not reach in practice.
+ """
 
     return st.sets(
         elements=_hash_strategy(),
@@ -169,13 +164,13 @@ def _previous_hashes_strategy() -> st.SearchStrategy[set[str]]:
 def _finding_strategy() -> st.SearchStrategy[dict]:
     """Strategy emitting a single finding dict.
 
-    The ``hash`` field is mandatory and drawn from the small
-    alphabet; the ``body`` field is an arbitrary short text payload
-    so we never pin the helper's behaviour to a particular shape of
-    finding body. A small ``severity`` token rounds out the
-    structure so the dict mirrors the real PR-review payload
-    (``hash``, ``body``, ``severity``).
-    """
+ The ``hash`` field is mandatory and drawn from the small
+ alphabet; the ``body`` field is an arbitrary short text payload
+ so we never pin the helper's behaviour to a particular shape of
+ finding body. A small ``severity`` token rounds out the
+ structure so the dict mirrors the real PR-review payload
+ (``hash``, ``body``, ``severity``).
+ """
 
     return st.fixed_dictionaries({
         "hash": _hash_strategy(),
@@ -193,9 +188,9 @@ def _findings_list_strategy() -> st.SearchStrategy[list[dict]]:
 def _hashless_finding_strategy() -> st.SearchStrategy[dict]:
     """Strategy emitting a finding with a missing / empty / None hash.
 
-    Exercises the P6 branch in :func:`_dedup_findings` where the
-    helper drops entries lacking a stable identity.
-    """
+ Exercises the P6 branch in:func:`_dedup_findings` where the
+ helper drops entries lacking a stable identity.
+ """
 
     return st.one_of(
         # Missing key entirely.
@@ -229,10 +224,10 @@ def test_output_is_subset_of_current_findings(
 ) -> None:
     """P1 — every returned finding is *the same object* from the input list.
 
-    The helper is forbidden from fabricating new entries: each
-    output element must be one of the borrowed inputs (identity
-    comparison), preserving any reference semantics callers rely on.
-    """
+ The helper is forbidden from fabricating new entries: each
+ output element must be one of the borrowed inputs (identity
+ comparison), preserving any reference semantics callers rely on.
+ """
 
     output = _dedup_findings(previous_hashes, current_findings)
 
@@ -274,9 +269,9 @@ def test_relative_order_is_preserved(
 ) -> None:
     """P3 — surviving findings appear in their original order.
 
-    First-seen-wins: if ``current_findings = [a, b, c]`` and ``b``
-    is dropped, the output is ``[a, c]`` — never ``[c, a]``.
-    """
+ First-seen-wins: if ``current_findings = [a, b, c]`` and ``b``
+ is dropped, the output is ``[a, c]`` — never ``[c, a]``.
+ """
 
     output = _dedup_findings(previous_hashes, current_findings)
 
@@ -353,11 +348,11 @@ def test_findings_without_hash_are_dropped(
 ) -> None:
     """P6 — entries lacking a stable hash are suppressed.
 
-    Combined with the well-formed batch we also confirm that the
-    presence of hash-less entries does not corrupt the surviving
-    output: every retained entry has a non-empty hash that is *not*
-    in ``previous_hashes``.
-    """
+ Combined with the well-formed batch we also confirm that the
+ presence of hash-less entries does not corrupt the surviving
+ output: every retained entry has a non-empty hash that is *not*
+ in ``previous_hashes``.
+ """
 
     # Interleave the two lists so the dedup walk encounters mixed
     # entries — exercises the per-element guard, not just a
@@ -402,11 +397,11 @@ def test_diff_summary_cache_hit_returns_value_verbatim(
 ) -> None:
     """P7 — once written the cache returns the same summary verbatim.
 
-    The ``code_change_commit_only`` body relies on this identity
-    contract to skip a redundant LLM call when the diff hash matches
-    a prior iteration. A second read returns the *same* string —
-    no copy, no transformation.
-    """
+ The ``code_change_commit_only`` body relies on this identity
+ contract to skip a redundant LLM call when the diff hash matches
+ a prior iteration. A second read returns the *same* string —
+ no copy, no transformation.
+ """
 
     wf = AgentRunnerWorkflow()
 
@@ -423,7 +418,7 @@ def test_diff_summary_cache_hit_returns_value_verbatim(
     assert wf._diff_summary_cache.get(diff_hash) == summary
 
     # A second workflow instance has its own empty cache — no
-    # cross-instance leakage. R10.6 demands per-workflow isolation
+    # cross-instance leakage. demands per-workflow isolation
     # so two concurrent workflows never serve each other's
     # summaries.
     other = AgentRunnerWorkflow()
@@ -439,12 +434,12 @@ def test_diff_summary_cache_miss_returns_none(
 ) -> None:
     """P8 — an unwritten hash yields ``None`` so the body invokes the LLM.
 
-    The workflow body checks ``cache.get(h) is None`` (see
-    ``_handle_code_change_commit_only`` in
-    ``agent_runner_workflow.py``) to decide whether to fall back to
-    the synthesised default summary. Any other miss sentinel would
-    silently bypass the fallback path.
-    """
+ The workflow body checks ``cache.get(h) is None`` (see
+ ``_handle_code_change_commit_only`` in
+ ``agent_runner_workflow.py``) to decide whether to fall back to
+ the synthesised default summary. Any other miss sentinel would
+ silently bypass the fallback path.
+ """
 
     wf = AgentRunnerWorkflow()
 

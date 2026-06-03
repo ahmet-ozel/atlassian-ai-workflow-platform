@@ -1,7 +1,7 @@
 {
   "name": "@yeni-atlassian/admin-dashboard",
   "version": "0.0.0",
-  "description": "Admin dashboard UI (Next.js 14, App Router) for the multi-service scaffold. See MIMARI.md §2.",
+  "description": "Admin dashboard UI built with Next.js 14 and the App Router.",
   "private": true,
   "scripts": {
     "dev": "next dev",

@@ -1,24 +1,24 @@
-"""Property test for `.env.example` secret hygiene.
+"""invariant for `.env.example` secret hygiene.
 
-Validates: Requirements 10.6, 11.5
-Property 7: No real secrets in any ``.env.example``.
 
-Per design §6.3 Property 7, every ``.env.example`` file (root +
+invariant: No real secrets in any ``.env.example``.
+
+Every ``.env.example`` file (root +
 component-level) MUST contain only placeholders, dev-only credentials
 or structurally-bounded values:
 
-For every ``.env.example`` file ``e`` in the scaffold output and for
+For every ``.env.example`` file ``e`` in the workspace and for
 every assignment line ``KEY=VALUE`` in ``e``, *at least one* of the
 following SHALL hold:
 
 1. ``VALUE`` is empty.
 2. ``VALUE`` matches a placeholder allowlist regex set
-   (placeholder tokens, URLs, booleans, integers, file paths,
-   kebab/snake identifiers, ``vault:`` references, ``host:port`` pairs,
-   or comment-only lines).
-3. ``VALUE`` is a known dev-only credential explicitly enumerated by
-   MIMARI §17 (``ai_dev_only``, ``miniosecret_dev_only``,
-   ``dev-token-not-for-prod``).
+ (placeholder tokens, URLs, booleans, integers, file paths,
+ kebab/snake identifiers, ``vault:`` references, ``host:port`` pairs,
+ or comment-only lines).
+3. ``VALUE`` is a known dev-only credential explicitly allowed by
+ this project (``ai_dev_only``, ``miniosecret_dev_only``,
+ ``dev-token-not-for-prod``).
 
 For every assignment line, ``VALUE`` SHALL NOT match any of the
 denylist patterns: a 32+ character base64-looking blob, a JWT-looking
@@ -53,27 +53,26 @@ from conftest import COMPONENT_MANIFEST, WORKSPACE_ROOT  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
-# Discovery: every ``.env.example`` shipped by the scaffold
+# Discovery: every ``.env.example`` shipped by the project
 # ---------------------------------------------------------------------------
 
 
 def _discover_env_example_files() -> tuple[Path, ...]:
     """Return the workspace's set of ``.env.example`` files.
 
-    The set is the union of:
+ The set is the union of:
 
-    * The workspace root ``.env.example`` (Requirement 11.1).
-    * Every Component's local ``.env.example`` (Requirement 10.1) as
-      declared in :data:`COMPONENT_MANIFEST`.
+ * The workspace root ``.env.example``.
+ * Every Component's local ``.env.example`` as
+ declared in:data:`COMPONENT_MANIFEST`.
 
-    The manifest is used (rather than a recursive glob) so the test
-    fails loudly when a Component's example file goes missing — that
-    failure mode is already covered by Property 1, but enumerating
-    via the manifest makes the secret-hygiene test resilient to
-    accidental new ``.env.example`` files appearing under, for
-    example, ``atlassian_unified/`` (an immutable subtree per
-    Requirement 17.1).
-    """
+ The manifest is used (rather than a recursive glob) so the test
+ fails loudly when a Component's example file goes missing — that
+ failure mode is already covered by invariant, but enumerating
+ via the manifest makes the secret-hygiene test resilient to
+ accidental new ``.env.example`` files appearing under, for
+ example, ``atlassian_mcp_bitbucket/``.
+ """
 
     files: list[Path] = []
     root_example = WORKSPACE_ROOT / ".env.example"
@@ -95,10 +94,10 @@ def _discover_env_example_files() -> tuple[Path, ...]:
 class EnvLine:
     """A single ``KEY=VALUE`` assignment line in an ``.env.example`` file.
 
-    Carries enough provenance to produce a clear pytest test ID and an
-    informative assertion message (path relative to workspace root,
-    1-based line number, key, raw value).
-    """
+ Carries enough provenance to produce a clear pytest test ID and an
+ informative assertion message (path relative to workspace root,
+ 1-based line number, key, raw value).
+ """
 
     file_relpath: str
     line_number: int
@@ -106,26 +105,26 @@ class EnvLine:
     value: str
 
 
-# ``KEY=VALUE`` matches the dotenv subset used by the scaffold:
+# ``KEY=VALUE`` matches the dotenv subset used by the project:
 # the key starts with a letter or underscore and may contain letters,
 # digits, underscores; everything after the first ``=`` is the value
 # (Compose's `.env` parser uses the same convention).
 _ASSIGNMENT_RE: re.Pattern[str] = re.compile(
-    r"^(?P<key>[A-Za-z_][A-Za-z0-9_]*)=(?P<value>.*)$"
+    r"^(sectionP<key>[A-Za-z_][A-Za-z0-9_]*)=(sectionP<value>.*)$"
 )
 
 
 def _parse_env_file(path: Path) -> tuple[EnvLine, ...]:
     """Yield every ``KEY=VALUE`` line in ``path``.
 
-    Blank lines and comment-only lines (those whose first non-whitespace
-    character is ``#``) are skipped — they cannot carry a secret.
-    Trailing newline characters are stripped from the raw value but no
-    inline-comment trimming is performed: the scaffold does not write
-    inline ``# ...`` after assignments, and stripping them here would
-    weaken the denylist (a real secret could otherwise hide behind a
-    fake comment).
-    """
+ Blank lines and comment-only lines (those whose first non-whitespace
+ character is ``#``) are skipped — they cannot carry a secret.
+ Trailing newline characters are stripped from the raw value but no
+ inline-comment trimming is performed: the project does not write
+ inline ``#...`` after assignments, and stripping them here would
+ weaken the denylist (a real secret could otherwise hide behind a
+ fake comment).
+ """
 
     rel = str(path.relative_to(WORKSPACE_ROOT)).replace("\\", "/")
     text = path.read_text(encoding="utf-8")
@@ -155,11 +154,11 @@ def _parse_env_file(path: Path) -> tuple[EnvLine, ...]:
 
 
 # ---------------------------------------------------------------------------
-# Allowlist + denylist (mirrors design §6.3 Property 7)
+# Allowlist + denylist for example-file secret hygiene
 # ---------------------------------------------------------------------------
 
 
-#: Dev-only credentials explicitly enumerated by MIMARI §17. These are
+#: Dev-only credentials explicitly allowed for local examples. These are
 #: literal string matches (not regex) so every appearance is a known,
 #: reviewed value rather than a structural pattern.
 _KNOWN_DEV_CREDENTIALS: frozenset[str] = frozenset(
@@ -176,11 +175,11 @@ _KNOWN_DEV_CREDENTIALS: frozenset[str] = frozenset(
 # The patterns are bounded (no ``.*``) so they cannot be padded with a
 # real secret and still match.
 _ALLOWLIST_PATTERNS: tuple[re.Pattern[str], ...] = (
-    # Placeholder tokens (design §6.3 + MIMARI §17 placeholder vocab).
-    re.compile(r"^change-me(-[A-Za-z0-9_-]+)?$"),
+    # Placeholder tokens used in example configuration.
+    re.compile(r"^change-me(-[A-Za-z0-9_-]+)section$"),
     re.compile(r"^<set-by-vault>$"),
     re.compile(r"^dev-token-not-for-prod$"),
-    # ``vault:`` reference path (design §6.3).
+    # ``vault:`` reference path.
     re.compile(r"^vault:[A-Za-z0-9_/.\-]+$"),
     # URL with any scheme (http, https, postgresql, redis, etc.).
     # Bounded to a reasonable URL character set so it cannot swallow
@@ -188,7 +187,7 @@ _ALLOWLIST_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(r"^[a-zA-Z][a-zA-Z0-9+.\-]*://[A-Za-z0-9_:./%@\-]+$"),
     # Booleans (case-insensitive — both ``true``/``false`` and
     # ``True``/``False`` styles are accepted by Compose).
-    re.compile(r"^(?i:true|false)$"),
+    re.compile(r"^(sectioni:true|false)$"),
     # Pure integers (ports, retry counts, timeouts).
     re.compile(r"^[0-9]+$"),
     # Absolute POSIX file paths (e.g. ``/var/lib/...``).
@@ -239,8 +238,8 @@ _DENYLIST_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
 
 def _matches_allowlist(value: str) -> bool:
     """Return True iff ``value`` is empty, a known dev cred, or matches
-    one of the allowlist regexes.
-    """
+ one of the allowlist regexes.
+ """
 
     if value == "":
         return True
@@ -251,8 +250,8 @@ def _matches_allowlist(value: str) -> bool:
 
 def _denylist_violation(value: str) -> str | None:
     """Return the human-readable name of the denylist pattern that
-    ``value`` matches, or ``None`` if the value is clean.
-    """
+ ``value`` matches, or ``None`` if the value is clean.
+ """
 
     for label, pattern in _DENYLIST_PATTERNS:
         if pattern.match(value):
@@ -268,9 +267,9 @@ def _denylist_violation(value: str) -> str | None:
 def _collect_all_env_lines() -> tuple[EnvLine, ...]:
     """Flatten every assignment line across every discovered file.
 
-    Performed at import time so pytest's collection phase can present
-    one test case per assignment with a stable, descriptive ID.
-    """
+ Performed at import time so pytest's collection phase can present
+ one test case per assignment with a stable, descriptive ID.
+ """
 
     out: list[EnvLine] = []
     for path in _discover_env_example_files():
@@ -284,9 +283,9 @@ _ALL_ENV_LINES: tuple[EnvLine, ...] = _collect_all_env_lines()
 def _line_id(line: EnvLine) -> str:
     """Produce a deterministic, humane pytest test ID for an assignment.
 
-    Format: ``<rel/path>:<line>:<KEY>``. The path is workspace-relative
-    so the failing test ID points directly at the offending file.
-    """
+ Format: ``<rel/path>:<line>:<KEY>``. The path is workspace-relative
+ so the failing test ID points directly at the offending file.
+ """
 
     return f"{line.file_relpath}:{line.line_number}:{line.key}"
 
@@ -299,17 +298,17 @@ def _line_id(line: EnvLine) -> str:
 def test_env_example_discovery_covers_root_and_components() -> None:
     """The discovery walks the workspace as expected.
 
-    The scaffold ships exactly nine ``.env.example`` files (one root +
-    one per Component in the manifest). If a Component's example file
-    goes missing this surfaces here as a count mismatch with a precise
-    error message; Property 1 (path coverage) catches the same case
-    from a different angle.
-    """
+ The project ships exactly nine ``.env.example`` files (one root +
+ one per Component in the manifest). If a Component's example file
+ goes missing this surfaces here as a count mismatch with a precise
+ error message; invariant (path coverage) catches the same case
+ from a different angle.
+ """
 
     discovered = _discover_env_example_files()
     expected_count = 1 + len(COMPONENT_MANIFEST)
     assert len(discovered) == expected_count, (
-        f"Expected {expected_count} .env.example files (root + "
+        f"Expected {expected_count}.env.example files (root + "
         f"{len(COMPONENT_MANIFEST)} components); discovered "
         f"{len(discovered)}: "
         f"{[str(p.relative_to(WORKSPACE_ROOT)) for p in discovered]}"
@@ -319,10 +318,10 @@ def test_env_example_discovery_covers_root_and_components() -> None:
 def test_every_env_example_has_at_least_one_assignment() -> None:
     """Every discovered ``.env.example`` parses to ≥1 ``KEY=VALUE`` line.
 
-    Empty or comment-only example files would silently pass the
-    per-line parametrise (zero cases generated), so we guard against
-    that pathological shape here.
-    """
+ Empty or comment-only example files would silently pass the
+ per-line parametrise (zero cases generated), so we guard against
+ that pathological shape here.
+ """
 
     by_file: dict[str, int] = {}
     for line in _ALL_ENV_LINES:
@@ -340,7 +339,7 @@ def test_every_env_example_has_at_least_one_assignment() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Property 7 — secret hygiene per assignment
+# invariant — secret hygiene per assignment
 # ---------------------------------------------------------------------------
 
 
@@ -350,18 +349,18 @@ def test_every_env_example_has_at_least_one_assignment() -> None:
     ids=[_line_id(line) for line in _ALL_ENV_LINES],
 )
 def test_env_example_value_is_placeholder_not_secret(line: EnvLine) -> None:
-    """Property 7 — every ``KEY=VALUE`` value is a placeholder, not a secret.
+    """invariant — every ``KEY=VALUE`` value is a placeholder, not a secret.
 
-    Validates: Requirements 10.6, 11.5.
 
-    Each assignment line must:
 
-    1. Parse cleanly into ``KEY=VALUE`` form.
-    2. Have a value that is empty, a known dev credential, or matches
-       at least one allowlist regex.
-    3. Not match any denylist regex (base64 blob, JWT, ``sk-``,
-       ``glpat-`` or UUID).
-    """
+ Each assignment line must:
+
+ 1. Parse cleanly into ``KEY=VALUE`` form.
+ 2. Have a value that is empty, a known dev credential, or matches
+ at least one allowlist regex.
+ 3. Not match any denylist regex (base64 blob, JWT, ``sk-``,
+ ``glpat-`` or UUID).
+ """
 
     # Catch any lines the parser flagged as malformed during collection.
     assert line.key != "<UNPARSEABLE>", (
@@ -373,7 +372,7 @@ def test_env_example_value_is_placeholder_not_secret(line: EnvLine) -> None:
         f"Value for {line.key} in {line.file_relpath}:{line.line_number} "
         f"does not match any allowlist pattern and is not a known "
         f"dev-only credential: {line.value!r}. "
-        f"Per Requirement 10.6 / 11.5, ``.env.example`` values must be "
+        f"Per the operational rule, ``.env.example`` values must be "
         f"placeholders (e.g. ``change-me``, ``<set-by-vault>``, empty), "
         f"a structurally-bounded value (URL, integer, kebab identifier, "
         f"host:port), or one of the known dev credentials "
@@ -384,31 +383,30 @@ def test_env_example_value_is_placeholder_not_secret(line: EnvLine) -> None:
     assert violation is None, (
         f"Value for {line.key} in {line.file_relpath}:{line.line_number} "
         f"matches denylist pattern '{violation}': {line.value!r}. "
-        f"Per Requirement 10.6 / 11.5, ``.env.example`` MUST NOT carry "
+        f"Per the operational rule, ``.env.example`` MUST NOT carry "
         f"real secrets — replace this value with a placeholder before "
         f"committing."
     )
 
 
 # ---------------------------------------------------------------------------
-# Property 9 — platform-mimari-foundation (task 9.2)
+# invariant — 
 # ---------------------------------------------------------------------------
 #
-# Validates: Requirements 6.2, 6.3, 6.10, 9.6, 9.7
 #
 # The parametrised file-level tests above pin the static contract:
 # every shipped ``.env.example`` line is structurally a placeholder.
-# Property 9 below complements that with a *generative* check on the
+# invariant below complements that with a *generative* check on the
 # allowlist / denylist regex pair itself: for an arbitrary
 # ``KEY=VALUE`` line drawn from the credential-bearing patterns
-# enumerated by Requirement 6.10 (``api_token``, ``password``,
-# ``secret``, plus the ``Authorization: Basic`` and ``Bearer ...``
+# enumerated by (``api_token``, ``password``,
+# ``secret``, plus the ``Authorization: Basic`` and ``Bearer...``
 # header echoes), the value SHALL trip at least one denylist pattern
 # *or* fail the allowlist outright. Symmetrically, for an arbitrary
 # placeholder-shaped value the line SHALL pass.
 #
-# Why this matters: a regression in :data:`_ALLOWLIST_PATTERNS` /
-# :data:`_DENYLIST_PATTERNS` (e.g. someone tightening the kebab
+# Why this matters: a regression in:data:`_ALLOWLIST_PATTERNS` /
+#:data:`_DENYLIST_PATTERNS` (e.g. someone tightening the kebab
 # identifier regex and accidentally accepting an OpenAI key prefix)
 # would only surface here if a real secret happened to land in a
 # committed ``.env.example``. Hypothesis fuzzes the regex pair
@@ -418,7 +416,7 @@ def test_env_example_value_is_placeholder_not_secret(line: EnvLine) -> None:
 from hypothesis import HealthCheck, given, settings  # noqa: E402
 from hypothesis import strategies as st  # noqa: E402
 
-import string  # noqa: E402  -- placed near use site for locality
+import string  # noqa: E402 -- placed near use site for locality
 
 
 # Strategies for generating values that must trip the denylist. Each
@@ -510,35 +508,35 @@ _property9_placeholder_value = st.one_of(
     suppress_health_check=[HealthCheck.too_slow],
 )
 def test_property9_denylist_rejects_known_secret_shapes(value: str) -> None:
-    """Property 9 — every plausible secret shape is rejected.
+    """invariant — every plausible secret shape is rejected.
 
-    Validates: Requirements 6.2, 6.3, 6.10, 9.6, 9.7
 
-    For an arbitrary value drawn from one of the five known
-    secret-shape strategies (base64 blob, JWT, OpenAI key, GitLab
-    PAT, UUID), the env-secret-hygiene gate SHALL reject the line:
 
-    * either ``_matches_allowlist(value)`` returns ``False``;
-    * or ``_denylist_violation(value)`` returns a non-``None`` label.
+ For an arbitrary value drawn from one of the five known
+ secret-shape strategies (base64 blob, JWT, OpenAI key, GitLab
+ PAT, UUID), the env-secret-hygiene gate SHALL reject the line:
 
-    The disjunction is what enforces the contract — a value can pass
-    the allowlist (e.g. a UUID looks like a kebab identifier under a
-    permissive regex) yet still fail because it hits the denylist.
-    Either way, the line is flagged for the operator with a precise
-    reason (Requirement 9.6 — failed test reports the file/line/key,
-    here generalised to value/reason).
-    """
+ * either ``_matches_allowlist(value)`` returns ``False``;
+ * or ``_denylist_violation(value)`` returns a non-``None`` label.
+
+ The disjunction is what enforces the contract — a value can pass
+ the allowlist (e.g. a UUID looks like a kebab identifier under a
+ permissive regex) yet still fail because it hits the denylist.
+ Either way, the line is flagged for the operator with a precise
+ reason — failed test reports the file/line/key,
+ here generalised to value/reason).
+ """
 
     # The "secret shapes" cover the credential family from
-    # Requirement 6.10 plus high-entropy blob shapes that commonly
+    # plus high-entropy blob shapes that commonly
     # appear in production credentials.
     matches_allowlist = _matches_allowlist(value)
     violation = _denylist_violation(value)
 
     assert (not matches_allowlist) or (violation is not None), (
-        f"Property 9 violated: secret-shaped value passed both gates. "
+        f"invariant violated: secret-shaped value passed both gates. "
         f"value={value!r}, matches_allowlist={matches_allowlist}, "
-        f"denylist_violation={violation!r}. Per Requirement 6.2 / 6.3 "
+        f"denylist_violation={violation!r}. Per the operational rule "
         f"a real-looking credential MUST be rejected by the env "
         f"secret-hygiene gate."
     )
@@ -551,29 +549,29 @@ def test_property9_denylist_rejects_known_secret_shapes(value: str) -> None:
     suppress_health_check=[HealthCheck.too_slow],
 )
 def test_property9_allowlist_accepts_placeholder_shapes(value: str) -> None:
-    """Property 9 — every placeholder shape passes the gate.
+    """invariant — every placeholder shape passes the gate.
 
-    Validates: Requirements 6.2, 6.10
 
-    The complement of the rejection invariant: an arbitrary
-    placeholder-shaped value (empty, known dev credential,
-    ``vault:`` ref, boolean, integer, kebab identifier, host:port)
-    MUST pass the allowlist *and* miss the denylist. This guards
-    against a future tightening of the regex pair from accidentally
-    rejecting legitimate placeholder shapes shipped by the scaffold.
-    """
+
+ The complement of the rejection invariant: an arbitrary
+ placeholder-shaped value (empty, known dev credential,
+ ``vault:`` ref, boolean, integer, kebab identifier, host:port)
+ MUST pass the allowlist *and* miss the denylist. This guards
+ against a future tightening of the regex pair from accidentally
+ rejecting legitimate placeholder shapes shipped by the project.
+ """
 
     matches_allowlist = _matches_allowlist(value)
     violation = _denylist_violation(value)
 
     assert matches_allowlist, (
-        f"Property 9 violated: placeholder-shaped value rejected by "
-        f"allowlist. value={value!r}. Per Requirement 6.2 the env "
+        f"invariant violated: placeholder-shaped value rejected by "
+        f"allowlist. value={value!r}. Per the operational rule the env "
         f"secret-hygiene gate MUST accept legitimate placeholders."
     )
     assert violation is None, (
-        f"Property 9 violated: placeholder-shaped value tripped "
-        f"denylist {violation!r}. value={value!r}. Per Requirement "
+        f"invariant violated: placeholder-shaped value tripped "
+        f"denylist {violation!r}. value={value!r}. Per the operational rule "
         f"6.2 the env secret-hygiene gate MUST NOT mistake a "
         f"placeholder for a real secret."
     )

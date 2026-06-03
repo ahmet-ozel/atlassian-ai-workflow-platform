@@ -1,31 +1,31 @@
-"""Property test 17 — Jira Issue Template fiziksel deploy idempotency.
+"""invariant 17 — Jira Issue Template fiziksel deploy idempotency.
 
-**Validates: Requirements 10.2**
 
-Property 17 (design.md §"Property 17"):
 
-    *For all* aynı şablon konfigürasyonu için ardışık iki
-    ``deploy_jira_issue_template.py`` çağrısı, ilkinin sonrasındaki
-    Jira durumu ile ikincisinin sonrasındaki durumu (issue type,
-    fields, screen scheme) **eşit** bırakır; ikinci çağrı net
-    değişiklik yapmaz ve başarılı sonlanır.
+invariant (design.md §"invariant"):
+
+ *For all* aynı şablon konfigürasyonu için ardışık iki
+ ``deploy_jira_issue_template.py`` çağrısı, ilkinin sonrasındaki
+ Jira durumu ile ikincisinin sonrasındaki durumu (issue type,
+ fields, screen scheme) **eşit** bırakır; ikinci çağrı net
+ değişiklik yapmaz ve başarılı sonlanır.
 
 The deploy script (``platform/scripts/deploy_jira_issue_template.py``,
-task 12.2) is the unit under test. When that script is present this
+ is the unit under test. When that script is present this
 test imports its public ``deploy(client, template)`` entrypoint. While
-the script is still being implemented (task 12.2 may be partial), the
+the script is still being implemented may be partial), the
 test falls back to a *reference* idempotent implementation that
 encodes the documented contract:
 
-    1. Read current Jira state for ``issue_type``, ``fields``,
-       ``screen_scheme`` of the configured template name.
-    2. If absent, ``create_*`` it with the desired payload.
-    3. If present and equal to the desired payload, **no call** is
-       made (idempotent no-op).
-    4. If present but differing, ``update_*`` is called once with the
-       diff so that subsequent reads return the desired payload.
+ 1. Read current Jira state for ``issue_type``, ``fields``,
+ ``screen_scheme`` of the configured template name.
+ 2. If absent, ``create_*`` it with the desired payload.
+ 3. If present and equal to the desired payload, **no call** is
+ made (idempotent no-op).
+ 4. If present but differing, ``update_*`` is called once with the
+ diff so that subsequent reads return the desired payload.
 
-The fallback exists so this property test (12.7) can land before the
+The fallback exists so this invariant (12.7) can land before the
 script (12.2) and still exercise the documented contract — the
 property holds for every correct implementation of that contract.
 
@@ -33,17 +33,17 @@ Test strategy
 -------------
 
 * Hypothesis generates random template configurations (issue type
-  shape, field set with each field's type, screen scheme tab layout).
+ shape, field set with each field's type, screen scheme tab layout).
 * The mock Atlassian client tracks every ``create_*`` / ``update_*``
-  / ``delete_*`` call and exposes a ``mutations`` counter.
+ / ``delete_*`` call and exposes a ``mutations`` counter.
 * The property runs ``deploy`` twice against the same client with the
-  same template and asserts:
+ same template and asserts:
 
-    * Mock state after run #1 equals mock state after run #2
-      (issue type, fields, screen scheme dictionaries identical).
-    * Run #2 produces **zero** mutating calls (no ``create_*``,
-      ``update_*``, ``delete_*``).
-    * Run #2 returns success (does not raise).
+ * Mock state after run #1 equals mock state after run #2
+ (issue type, fields, screen scheme dictionaries identical).
+ * Run #2 produces **zero** mutating calls (no ``create_*``,
+ ``update_*``, ``delete_*``).
+ * Run #2 returns success (does not raise).
 """
 
 from __future__ import annotations
@@ -66,17 +66,16 @@ from hypothesis import strategies as st
 class MockJiraClient:
     """In-memory Jira admin client used by the deploy script under test.
 
-    The client intentionally exposes only the surface the deploy
-    contract needs: ``get_*`` reads return the current shape (or
-    ``None`` when absent), and ``create_*`` / ``update_*`` mutate the
-    in-memory state. Every mutating call is counted in
-    :attr:`mutations` so the property can assert the second deploy is
-    a strict no-op.
+ The client intentionally exposes only the surface the deploy
+ contract needs: ``get_*`` reads return the current shape (or
+ ``None`` when absent), and ``create_*`` / ``update_*`` mutate the
+ in-memory state. Every mutating call is counted in:attr:`mutations` so the property can assert the second deploy is
+ a strict no-op.
 
-    The shape of each entity is treated as a plain ``dict[str, Any]``
-    so the property test can drive Hypothesis-generated payloads
-    without coupling to a Jira REST DTO library.
-    """
+ The shape of each entity is treated as a plain ``dict[str, Any]``
+ so the invariant can drive Hypothesis-generated payloads
+ without coupling to a Jira REST DTO library.
+ """
 
     issue_types: dict[str, dict[str, Any]] = field(default_factory=dict)
     fields: dict[str, dict[str, Any]] = field(default_factory=dict)
@@ -152,21 +151,21 @@ class MockJiraClient:
 def _reference_deploy(client: MockJiraClient, template: dict[str, Any]) -> None:
     """Reference implementation of the documented idempotent contract.
 
-    The deploy script that lands in task 12.2 must implement the same
-    contract; this property test only relies on the *documented*
-    behaviour (read → diff → no-op or single mutation), so any correct
-    implementation will satisfy the property.
+ The deploy script that lands in must implement the same
+ contract; this invariant only relies on the *documented*
+ behaviour (read → diff → no-op or single mutation), so any correct
+ implementation will satisfy the property.
 
-    The contract is:
+ The contract is:
 
-    1. For each entity (issue type, every field, screen scheme) read
-       the current state from Jira via the corresponding ``get_*``.
-    2. If absent, call the corresponding ``create_*`` once with the
-       desired payload.
-    3. If present and **equal** to the desired payload, do nothing.
-    4. If present but differing, call the corresponding ``update_*``
-       once.
-    """
+ 1. For each entity (issue type, every field, screen scheme) read
+ the current state from Jira via the corresponding ``get_*``.
+ 2. If absent, call the corresponding ``create_*`` once with the
+ desired payload.
+ 3. If present and **equal** to the desired payload, do nothing.
+ 4. If present but differing, call the corresponding ``update_*``
+ once.
+ """
     # 1. issue type
     name = template["issue_type"]["name"]
     desired = template["issue_type"]
@@ -177,7 +176,7 @@ def _reference_deploy(client: MockJiraClient, template: dict[str, Any]) -> None:
         client.update_issue_type(name, desired)
 
     # 2. fields (the template carries an ordered list; we treat the
-    #    field's ``name`` as the natural key the way Jira does).
+    # field's ``name`` as the natural key the way Jira does).
     for field_payload in template["fields"]:
         fname = field_payload["name"]
         current_field = client.get_field(fname)
@@ -199,13 +198,13 @@ def _reference_deploy(client: MockJiraClient, template: dict[str, Any]) -> None:
 def _resolve_deploy_callable() -> Callable[[Any, dict[str, Any]], Any]:
     """Return the deploy entrypoint: production script if present, else fallback.
 
-    The production script lives at
-    ``platform/scripts/deploy_jira_issue_template.py`` (task 12.2).
-    When that script ships and exposes a ``deploy(client, template)``
-    function, this test exercises *it* directly. While task 12.2 is
-    partial or missing the function, we exercise the reference
-    contract so the property is still validated end-to-end.
-    """
+ The production script lives at
+ ``platform/scripts/deploy_jira_issue_template.py``.
+ When that script ships and exposes a ``deploy(client, template)``
+ function, this test exercises *it* directly. While is
+ partial or missing the function, we exercise the reference
+ contract so the property is still validated end-to-end.
+ """
     try:
         mod = importlib.import_module("scripts.deploy_jira_issue_template")
     except ModuleNotFoundError:
@@ -304,7 +303,7 @@ def _template_strategy() -> st.SearchStrategy[dict[str, Any]]:
 
 
 # ---------------------------------------------------------------------------
-# Property: ardışık iki deploy çağrısı — ikincisi net değişiklik yapmaz
+# invariant: ardışık iki deploy çağrısı — ikincisi net değişiklik yapmaz
 # ---------------------------------------------------------------------------
 
 
@@ -317,17 +316,17 @@ def _template_strategy() -> st.SearchStrategy[dict[str, Any]]:
 def test_deploy_jira_issue_template_is_idempotent(template: dict[str, Any]) -> None:
     """Two consecutive deploys leave the mock client in the same state.
 
-    Property 17:
+ invariant:
 
-    * State after the first deploy equals state after the second deploy.
-    * The second deploy issues **zero** mutating calls
-      (``create_*`` / ``update_*`` / ``delete_*``).
-    * The second deploy completes successfully (no exception).
+ * State after the first deploy equals state after the second deploy.
+ * The second deploy issues **zero** mutating calls
+ (``create_*`` / ``update_*`` / ``delete_*``).
+ * The second deploy completes successfully (no exception).
 
-    The test exercises the production deploy script when present and
-    a reference contract implementation otherwise; the property holds
-    for any correct deploy implementation.
-    """
+ The test exercises the production deploy script when present and
+ a reference contract implementation otherwise; the property holds
+ for any correct deploy implementation.
+ """
     deploy = _resolve_deploy_callable()
     client = MockJiraClient()
 
@@ -343,20 +342,20 @@ def test_deploy_jira_issue_template_is_idempotent(template: dict[str, Any]) -> N
 
     # 1. State equality — the second deploy must not drift the state.
     assert state_after_first == state_after_second, (
-        "Property 17 violation: second deploy mutated Jira state.\n"
-        f"  After run #1: {state_after_first}\n"
-        f"  After run #2: {state_after_second}\n"
-        f"  Mutating calls during run #2: "
+        "invariant violation: second deploy mutated Jira state.\n"
+        f" After run #1: {state_after_first}\n"
+        f" After run #2: {state_after_second}\n"
+        f" Mutating calls during run #2: "
         f"{client.call_log[mutations_after_first:]}"
     )
 
     # 2. Zero net mutations on the second run — the most direct
-    #    expression of the documented "no net change" contract.
+    # expression of the documented "no net change" contract.
     second_run_mutations = mutations_after_second - mutations_after_first
     assert second_run_mutations == 0, (
-        "Property 17 violation: second deploy issued "
+        "invariant violation: second deploy issued "
         f"{second_run_mutations} mutating call(s); expected 0.\n"
-        f"  Calls during run #2: {client.call_log[mutations_after_first:]}"
+        f" Calls during run #2: {client.call_log[mutations_after_first:]}"
     )
 
 
@@ -376,11 +375,11 @@ def test_first_deploy_populates_all_template_entities(
 ) -> None:
     """Against a fresh Jira, deploy creates every entity exactly once.
 
-    This is a precondition for Property 17: if the first deploy did
-    nothing the idempotency invariant would hold trivially. Asserting
-    the first deploy actually populates the mock guarantees the
-    idempotency check above is not vacuous.
-    """
+ This is a precondition for invariant: if the first deploy did
+ nothing the idempotency invariant would hold trivially. Asserting
+ the first deploy actually populates the mock guarantees the
+ idempotency check above is not vacuous.
+ """
     deploy = _resolve_deploy_callable()
     client = MockJiraClient()
 
@@ -415,12 +414,12 @@ def test_deploy_corrects_drift_and_then_stabilises(
 ) -> None:
     """Drift between runs is corrected; subsequent run is a no-op.
 
-    Property 17 only requires *successive* deploys with the same
-    template to be no-ops. If an operator edits Jira between runs,
-    the next deploy must heal the drift and the run after that must
-    again be a no-op. This guards against an implementation that
-    would oscillate or repeatedly re-apply the diff.
-    """
+ invariant only requires *successive* deploys with the same
+ template to be no-ops. If an operator edits Jira between runs,
+ the next deploy must heal the drift and the run after that must
+ again be a no-op. This guards against an implementation that
+ would oscillate or repeatedly re-apply the diff.
+ """
     deploy = _resolve_deploy_callable()
     client = MockJiraClient()
 
@@ -456,5 +455,5 @@ def test_deploy_corrects_drift_and_then_stabilises(
     assert state_after_run_2 == state_after_run_3
     assert mutations_during_run_3 == 0, (
         "After drift correction the system did not stabilise.\n"
-        f"  Calls during run #3: {client.call_log[mutations_before_run_3:]}"
+        f" Calls during run #3: {client.call_log[mutations_before_run_3:]}"
     )

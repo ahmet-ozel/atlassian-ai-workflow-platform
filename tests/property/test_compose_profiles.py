@@ -1,54 +1,52 @@
-"""Property C2 — Compose profile labels structural consistency.
+"""invariant — Compose profile labels structural consistency.
 
-**Validates: Requirements 2.1, 2.2, 2.4** (with backward-compat anchor
-on Requirement 2.6 for ``task-intake-service``).
 
-Property statement
+on for ``task-intake-service``).
+
+Invariant statement
 ------------------
 The parsed ``infra/docker-compose.yml`` document MUST satisfy *all* of
 the following invariants jointly:
 
-1. **Boot_Bundle absence-of-profiles** (Requirement 2.4) — for every
-   service in the Boot_Bundle (``admin-dashboard-ui``,
-   ``admin-dashboard-api``, ``postgres``, ``vault``) the ``profiles:``
-   directive is either **absent** OR an explicitly empty list. Either
-   shape causes Compose to include the service in the default
-   profile-less ``up -d`` invocation, which is what Boot_Bundle
-   semantics require.
-2. **Managed_Service self-naming** (Requirements 2.1, 2.2) — for every
-   ``ManagedServiceEntry`` ``S`` declared in
-   ``config/services.manifest.json``, the Compose service named
-   ``S.compose_service_name`` MUST declare a non-empty ``profiles:``
-   list, and that list MUST contain at least one value that is
-   **byte-for-byte equal** to ``S.name``. This is the property that
-   ``docker compose --profile <S.name> up -d <S.compose_service_name>``
-   deterministically targets exactly one service (Requirement 2.2).
-3. **task-intake backward-compat** (Requirement 2.6) — *if*
-   ``task-intake-service`` is listed in the manifest, its Compose
-   ``profiles:`` list MUST contain BOTH the legacy ``"task-intake"``
-   label (preserved from the multi-service-scaffold spec Requirement
-   16.2) AND the new ``"task-intake-service"`` label (added by
-   admin-dashboard-control-plane task 1.1). Removing the legacy label
-   would break the existing ``docker compose --profile task-intake``
-   invocation path, which Requirement 2.6 explicitly forbids.
+1. **Boot_Bundle absence-of-profiles** — for every
+ service in the Boot_Bundle (``admin-dashboard-ui``,
+ ``admin-dashboard-api``, ``postgres``, ``vault``) the ``profiles:``
+ directive is either **absent** OR an explicitly empty list. Either
+ shape causes Compose to include the service in the default
+ profile-less ``up -d`` invocation, which is what Boot_Bundle
+ semantics require.
+2. **Managed_Service self-naming** — for every
+ ``ManagedServiceEntry`` ``S`` declared in
+ ``config/services.manifest.json``, the Compose service named
+ ``S.compose_service_name`` MUST declare a non-empty ``profiles:``
+ list, and that list MUST contain at least one value that is
+ **byte-for-byte equal** to ``S.name``. This is the property that
+ ``docker compose --profile <S.name> up -d <S.compose_service_name>``
+ deterministically targets exactly one service.
+3. **task-intake backward-compat** — *if*
+ ``task-intake-service`` is listed in the manifest, its Compose
+ ``profiles:`` list MUST contain BOTH the legacy ``"task-intake"``
+ label and the new ``"task-intake-service"`` label. Removing the legacy label
+ would break the existing ``docker compose --profile task-intake``
+ invocation path, which explicitly forbids.
 
 Strategy
 --------
 * Hypothesis runs ``st.sampled_from(_MANAGED_SERVICES)`` to pick a
-  Managed_Service entry per example. ``@settings(deadline=None,
-  max_examples=20)`` keeps the test budget bounded; the manifest only
-  declares a handful of entries so ``max_examples=20`` lets Hypothesis
-  cover every entry multiple times.
+ Managed_Service entry per example. ``@settings(deadline=None,
+ max_examples=20)`` keeps the test budget bounded; the manifest only
+ declares a handful of entries so ``max_examples=20`` lets Hypothesis
+ cover every entry multiple times.
 * The Compose document is parsed once at import time via
-  ``yaml.safe_load`` (Compose anchor / merge keys are flattened into
-  plain dicts). Re-reading on every Hypothesis example would make the
-  test I/O-bound for no semantic gain.
+ ``yaml.safe_load`` (Compose anchor / merge keys are flattened into
+ plain dicts). Re-reading on every Hypothesis example would make the
+ test I/O-bound for no semantic gain.
 * Concrete regression anchors are added via ``pytest.mark.parametrize``
-  for both Boot_Bundle services and every manifest-driven service, so a
-  bug in the property-test wiring (e.g. the manifest accidentally
-  becoming empty) cannot silently green-out the suite.
+ for both Boot_Bundle services and every manifest-driven service, so a
+ bug in the property-test wiring (e.g. the manifest accidentally
+ becoming empty) cannot silently green-out the suite.
 
-Module layout mirrors :mod:`tests.property.test_form_schema_lhs_match`:
+Module layout mirrors:mod:`tests.property.test_form_schema_lhs_match`:
 ``tests/`` and ``services/admin-dashboard-api`` are added to
 ``sys.path`` defensively so the file imports cleanly under direct
 ``python -m pytest tests/property`` invocations.
@@ -68,7 +66,7 @@ from hypothesis import strategies as st
 # ``conftest.py`` lives one directory up; pytest auto-loads it but we
 # add ``tests/`` to ``sys.path`` defensively so this module also imports
 # cleanly under a direct ``python -m pytest tests/property`` invocation
-# (mirrors the pattern used by every other property test in this folder).
+# (mirrors the pattern used by every other invariant in this folder).
 _TESTS_DIR = Path(__file__).resolve().parent.parent
 if str(_TESTS_DIR) not in sys.path:
     sys.path.insert(0, str(_TESTS_DIR))
@@ -89,27 +87,23 @@ from src.manifest import (  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
-# Boot_Bundle definition — Requirement 2.4 / Glossary
+# Boot_Bundle definition — / Glossary
 # ---------------------------------------------------------------------------
 
 #: Infrastructure + control-plane services that ``docker compose -f
 #: infra/docker-compose.yml up -d`` (no ``--profile`` flag) MUST start.
-#: Per Requirement 2.4 each of these services MUST either omit the
+#: Per each of these services MUST either omit the
 #: ``profiles:`` directive entirely or declare it as an empty list.
 #:
-#: Note (platform-mimari-foundation task 10.1): ``admin-dashboard-api``
-#: and ``admin-dashboard-ui`` were briefly removed from this set by
-#: the foundation spec's Requirement 2.1, which mandated that *every*
-#: Managed_Service declare ``profiles:`` containing its
-#: ``compose_service_name``.
+#: Note: ``admin-dashboard-api`` and ``admin-dashboard-ui`` are included
+#: here even though Managed_Service entries normally declare
+#: ``profiles:`` containing their ``compose_service_name``.
 #:
-#: Note (platform-gap-fill task 5.3, Requirement 7.1, Property 20):
-#: the foundation removal was reversed. The platform-gap-fill spec
-#: ratified later and supersedes the foundation spec on this point —
+#: The bootstrap behavior takes precedence for these services:
 #: a fresh ``docker compose up -d`` MUST start exactly the four
 #: Boot_Bundle services (admin-dashboard-ui, admin-dashboard-api,
 #: postgres, vault) so that the dashboard's Setup Wizard
-#: (Compose_Manager, Requirements 7.2-7.6) can drive activation of
+#: can drive activation of
 #: every other service. The two admin-dashboard entries therefore no
 #: longer carry ``profiles:`` in ``infra/docker-compose.yml`` (see the
 #: header comment block of that file). The ordering here is purely
@@ -132,11 +126,11 @@ _COMPOSE_PATH: Path = _WORKSPACE_ROOT / "infra" / "docker-compose.yml"
 def _load_compose() -> dict[str, Any]:
     """Parse ``infra/docker-compose.yml`` with ``yaml.safe_load``.
 
-    YAML anchor / merge keys (``<<: *http-healthcheck``) are resolved
-    into plain dicts by ``safe_load``; this is identical to the parse
-    done by ``test_compose_structure.py`` so both property suites see
-    the same logical document.
-    """
+ YAML anchor / merge keys (``<<: *http-healthcheck``) are resolved
+ into plain dicts by ``safe_load``; this is identical to the parse
+ done by ``test_compose_structure.py`` so both property suites see
+ the same logical document.
+ """
 
     assert _COMPOSE_PATH.is_file(), (
         f"docker-compose.yml missing at "
@@ -174,19 +168,18 @@ _COMPOSE_SERVICES: dict[str, dict[str, Any]] = _COMPOSE_DOC["services"]
 _MANAGED_SERVICES: tuple[ManagedServiceEntry, ...] = load_manifest(_WORKSPACE_ROOT)
 assert _MANAGED_SERVICES, (
     "config/services.manifest.json must declare at least one Managed_Service "
-    "for Property C2 to be meaningful"
+    "for invariant to be meaningful"
 )
 MANAGED_SERVICES_FROM_MANIFEST: tuple[ManagedServiceEntry, ...] = _MANAGED_SERVICES
 
 #: Manifest entries that are NOT in the Boot_Bundle. The
-#: profile-presence invariants (Property C2 (b), Property 1 (compose-side
+#: profile-presence invariants (invariant (b), invariant (compose-side
 #: profile membership)) only apply to non-Boot_Bundle services because
-#: platform-gap-fill Requirement 7.1 / Property 20 explicitly mandates
-#: that admin-dashboard-ui and admin-dashboard-api carry NO ``profiles:``
+#: admin-dashboard-ui and admin-dashboard-api must carry NO ``profiles:``
 #: directive (they are part of the default-profile-set Boot_Bundle).
 #: The manifest still lists them so the dashboard can manage their
 #: lifecycle metadata uniformly, but the Compose-side profile checks
-#: would otherwise be invalidated by the supersession.
+#: would otherwise conflict with the bootstrap behavior.
 _BOOT_BUNDLE_SET: frozenset[str] = frozenset(_BOOT_BUNDLE_SERVICES)
 _NON_BOOT_BUNDLE_MANAGED_SERVICES: tuple[ManagedServiceEntry, ...] = tuple(
     entry
@@ -195,7 +188,7 @@ _NON_BOOT_BUNDLE_MANAGED_SERVICES: tuple[ManagedServiceEntry, ...] = tuple(
 )
 assert _NON_BOOT_BUNDLE_MANAGED_SERVICES, (
     "after filtering Boot_Bundle entries, services.manifest.json must "
-    "still declare at least one Managed_Service for Property C2(b) to "
+    "still declare at least one Managed_Service for invariant(b) to "
     "be meaningful"
 )
 
@@ -208,20 +201,20 @@ assert _NON_BOOT_BUNDLE_MANAGED_SERVICES, (
 def _profiles_of(service_name: str) -> list[str] | None:
     """Return the ``profiles:`` list for ``service_name``, or ``None`` if absent.
 
-    Compose YAML lets ``profiles`` be:
+ Compose YAML lets ``profiles`` be:
 
-    * **Absent** — the service is included in the default ``up -d``.
-    * **An explicit empty list** (``profiles: []``) — semantically
-      identical to absent for the default-profile-set inclusion check.
-    * **A non-empty list of strings** — the service is *only* included
-      when one of those profile names is activated.
+ * **Absent** — the service is included in the default ``up -d``.
+ * **An explicit empty list** (``profiles: []``) — semantically
+ identical to absent for the default-profile-set inclusion check.
+ * **A non-empty list of strings** — the service is *only* included
+ when one of those profile names is activated.
 
-    We return ``None`` for the absent case and a list (possibly empty)
-    otherwise, so the caller can distinguish "no directive" from
-    "directive present but empty" in error messages without losing the
-    Boot_Bundle equivalence (Requirement 2.4 collapses both into
-    "default-profile-set membership").
-    """
+ We return ``None`` for the absent case and a list (possibly empty)
+ otherwise, so the caller can distinguish "no directive" from
+ "directive present but empty" in error messages without losing the
+ Boot_Bundle equivalence collapses both into
+ "default-profile-set membership").
+ """
 
     service = _COMPOSE_SERVICES.get(service_name)
     assert service is not None, (
@@ -250,7 +243,7 @@ def _profiles_of(service_name: str) -> list[str] | None:
 
 
 # ---------------------------------------------------------------------------
-# Property C2 (a) — Boot_Bundle services declare no profile gating
+# invariant (a) — Boot_Bundle services declare no profile gating
 # ---------------------------------------------------------------------------
 
 
@@ -261,28 +254,28 @@ def _profiles_of(service_name: str) -> list[str] | None:
     suppress_health_check=[HealthCheck.function_scoped_fixture],
 )
 def test_boot_bundle_services_have_no_profile_gating(boot_service: str) -> None:
-    """Property C2 (a) — Boot_Bundle services have absent or empty ``profiles:``.
+    """invariant (a) — Boot_Bundle services have absent or empty ``profiles:``.
 
-    Validates: Requirement 2.4
 
-    Boot_Bundle semantics demand that ``docker compose -f
-    infra/docker-compose.yml up -d`` (no ``--profile`` flag) start
-    exactly the four Boot_Bundle services. Compose includes a service
-    in the default profile-less invocation iff its ``profiles:`` field
-    is absent OR empty — any non-empty value gates the service behind
-    a profile flag. This property pins both shapes as acceptable and
-    rejects any non-empty list for the Boot_Bundle members.
-    """
+
+ Boot_Bundle semantics demand that ``docker compose -f
+ infra/docker-compose.yml up -d`` (no ``--profile`` flag) start
+ exactly the four Boot_Bundle services. Compose includes a service
+ in the default profile-less invocation iff its ``profiles:`` field
+ is absent OR empty — any non-empty value gates the service behind
+ a profile flag. This property pins both shapes as acceptable and
+ rejects any non-empty list for the Boot_Bundle members.
+ """
 
     profiles = _profiles_of(boot_service)
     assert profiles is None or profiles == [], (
         f"Boot_Bundle service {boot_service!r} MUST have an absent or "
-        f"empty 'profiles:' directive (Requirement 2.4); got {profiles!r}"
+        f"empty 'profiles:' directive (the operational rule); got {profiles!r}"
     )
 
 
 # ---------------------------------------------------------------------------
-# Property C2 (b) — every Managed_Service is self-named in profiles
+# invariant (b) — every Managed_Service is self-named in profiles
 # ---------------------------------------------------------------------------
 
 
@@ -295,45 +288,44 @@ def test_boot_bundle_services_have_no_profile_gating(boot_service: str) -> None:
 def test_managed_service_profiles_contain_self_name(
     entry: ManagedServiceEntry,
 ) -> None:
-    """Property C2 (b) — non-Boot_Bundle Managed_Service ``profiles:`` contains its own name.
+    """invariant (b) — non-Boot_Bundle Managed_Service ``profiles:`` contains its own name.
 
-    Validates: Requirements 2.1, 2.2 (with platform-gap-fill R7.1
-    Boot_Bundle exemption)
 
-    For every non-Boot_Bundle Managed_Service ``S`` in the manifest, the
-    Compose service ``S.compose_service_name`` MUST declare a non-empty
-    ``profiles:`` list (Requirement 2.1) and that list MUST contain at
-    least one entry that is byte-for-byte equal to ``S.name``
-    (Requirement 2.2). The latter is the invariant that
-    ``docker compose --profile <S.name> up -d <S.compose_service_name>``
-    deterministically resolves to a single service.
+ Boot_Bundle exemption)
 
-    Boot_Bundle services (admin-dashboard-ui, admin-dashboard-api,
-    postgres, vault) are intentionally exempt: platform-gap-fill
-    Requirement 7.1 / Property 20 mandates they carry NO ``profiles:``
-    so a bare ``docker compose up -d`` starts only those four. They
-    are pinned by the separate Boot_Bundle properties above.
-    """
+ For every non-Boot_Bundle Managed_Service ``S`` in the manifest, the
+ Compose service ``S.compose_service_name`` MUST declare a non-empty
+ ``profiles:`` list and that list MUST contain at
+ least one entry that is byte-for-byte equal to ``S.name``. The latter is the invariant that
+ ``docker compose --profile <S.name> up -d <S.compose_service_name>``
+ deterministically resolves to a single service.
+
+ Boot_Bundle services (admin-dashboard-ui, admin-dashboard-api,
+ postgres, vault) are intentionally exempt:
+ the bootstrap behavior mandates they carry NO ``profiles:``
+ so a bare ``docker compose up -d`` starts only those four. They
+ are pinned by the separate Boot_Bundle properties above.
+ """
 
     profiles = _profiles_of(entry.compose_service_name)
 
-    # Requirement 2.1 — directive present and non-empty.
+    # — directive present and non-empty.
     assert profiles is not None, (
         f"Managed_Service {entry.name!r} maps to Compose service "
         f"{entry.compose_service_name!r} which MUST declare a 'profiles:' "
-        f"directive (Requirement 2.1); none found"
+        f"directive (the operational rule); none found"
     )
     assert profiles, (
         f"Managed_Service {entry.name!r} maps to Compose service "
         f"{entry.compose_service_name!r} which MUST declare a non-empty "
-        f"'profiles:' list (Requirement 2.1); got an empty list"
+        f"'profiles:' list (the operational rule); got an empty list"
     )
 
-    # Requirement 2.2 — list contains the manifest ``name`` verbatim.
+    # — list contains the manifest ``name`` verbatim.
     assert entry.name in profiles, (
         f"Managed_Service {entry.name!r} maps to Compose service "
         f"{entry.compose_service_name!r} whose 'profiles:' list MUST "
-        f"contain the manifest name {entry.name!r} (Requirement 2.2); "
+        f"contain the manifest name {entry.name!r} (the operational rule); "
         f"got profiles={profiles!r}"
     )
 
@@ -351,18 +343,18 @@ def test_managed_service_profiles_contain_self_name(
 def test_boot_bundle_anchor_no_profiles(boot_service: str) -> None:
     """Concrete anchor — every Boot_Bundle service is profile-free.
 
-    The Hypothesis-driven property above samples from the same set,
-    but a wiring bug that accidentally narrowed
-    ``_BOOT_BUNDLE_SERVICES`` would still pass. This pytest-level
-    parametrize pins each of the four named services individually so
-    a regression that drops one is caught with a fully readable test
-    id (``test_boot_bundle_anchor_no_profiles[postgres]``).
-    """
+ The Hypothesis-driven property above samples from the same set,
+ but a wiring bug that accidentally narrowed
+ ``_BOOT_BUNDLE_SERVICES`` would still pass. This pytest-level
+ parametrize pins each of the four named services individually so
+ a regression that drops one is caught with a fully readable test
+ id (``test_boot_bundle_anchor_no_profiles[postgres]``).
+ """
 
     profiles = _profiles_of(boot_service)
     assert profiles is None or profiles == [], (
         f"Boot_Bundle service {boot_service!r}: 'profiles:' MUST be "
-        f"absent or empty (Requirement 2.4); got {profiles!r}"
+        f"absent or empty (the operational rule); got {profiles!r}"
     )
 
 
@@ -381,23 +373,23 @@ def test_managed_service_anchor_profiles_contains_own_name(
 ) -> None:
     """Concrete anchor — every non-Boot_Bundle service's profile list includes its name.
 
-    Mirrors :func:`test_managed_service_profiles_contain_self_name`
-    but as an exhaustive parametrize over the real manifest minus
-    Boot_Bundle entries (platform-gap-fill R7.1 / Property 20). This
-    catches the case where Hypothesis's shrinking might otherwise hide
-    a single-service regression behind successful samples of the rest.
-    """
+ Mirrors:func:`test_managed_service_profiles_contain_self_name`
+ but as an exhaustive parametrize over the real manifest minus
+ Boot_Bundle entries. This
+ catches the case where Hypothesis's shrinking might otherwise hide
+ a single-service regression behind successful samples of the rest.
+ """
 
     profiles = _profiles_of(entry.compose_service_name)
     assert profiles is not None and profiles, (
         f"Managed_Service {entry.name!r} (compose_service_name="
         f"{entry.compose_service_name!r}) MUST declare a non-empty "
-        f"'profiles:' list (Requirement 2.1); got {profiles!r}"
+        f"'profiles:' list (the operational rule); got {profiles!r}"
     )
     assert entry.name in profiles, (
         f"Managed_Service {entry.name!r} (compose_service_name="
         f"{entry.compose_service_name!r}): 'profiles:' MUST contain "
-        f"{entry.name!r} (Requirement 2.2); got {profiles!r}"
+        f"{entry.name!r} (the operational rule); got {profiles!r}"
     )
 
 
@@ -407,7 +399,7 @@ def test_managed_service_anchor_profiles_contains_own_name(
 
 
 # Resolve the manifest entry (if any) for ``task-intake-service``.
-# Requirement 2.6 only fires when the service is actually managed; if
+# This only fires when the service is actually managed; if
 # the manifest were ever to drop it the legacy-label preservation
 # concern becomes moot.
 _TASK_INTAKE_ENTRY: ManagedServiceEntry | None = next(
@@ -423,60 +415,54 @@ _TASK_INTAKE_ENTRY: ManagedServiceEntry | None = next(
 def test_task_intake_service_keeps_legacy_profile_label() -> None:
     """Concrete anchor — ``task-intake-service`` keeps both labels.
 
-    Validates: Requirement 2.6 (backward compatibility with the
-    multi-service-scaffold spec Requirement 16.2).
 
-    The scaffold spec assigned ``profiles: ["task-intake"]`` to
-    ``task-intake-service``. Admin-dashboard-control-plane task 1.1
-    augments the list with the canonical
-    ``"task-intake-service"`` label so the manifest-driven invocation
-    pattern works, but Requirement 2.6 explicitly forbids removing the
-    legacy ``"task-intake"`` entry — operators with existing
-    ``docker compose --profile task-intake`` workflows MUST continue
-    to work. This anchor pins both labels.
-    """
+ The project keeps the original ``profiles: ["task-intake"]`` value for
+ ``task-intake-service``. The dashboard activation flow also uses the canonical
+ ``"task-intake-service"`` label so the manifest-driven invocation
+ pattern works, while preserving the
+ legacy ``"task-intake"`` entry so operators with existing
+ ``docker compose --profile task-intake`` workflows MUST continue
+ to work. This anchor pins both labels.
+ """
 
     assert _TASK_INTAKE_ENTRY is not None  # for type narrowing
     profiles = _profiles_of(_TASK_INTAKE_ENTRY.compose_service_name)
     assert profiles is not None and profiles, (
         "task-intake-service: 'profiles:' MUST be present and non-empty "
-        f"(Requirements 2.1, 2.6); got {profiles!r}"
+        f"(the operational rule); got {profiles!r}"
     )
     assert "task-intake" in profiles, (
         "task-intake-service: 'profiles:' MUST preserve the legacy "
-        f"'task-intake' label from the multi-service-scaffold spec "
-        f"Requirement 16.2 (Requirement 2.6); got {profiles!r}"
+        f"'task-intake' label for existing operator workflows; "
+        f"got {profiles!r}"
     )
     assert "task-intake-service" in profiles, (
         "task-intake-service: 'profiles:' MUST contain the canonical "
-        f"'task-intake-service' label (Requirements 2.2, 2.6); "
+        f"'task-intake-service' label (the operational rule); "
         f"got {profiles!r}"
     )
 
 
 # ===========================================================================
-# Property 1 (platform-mimari-foundation): Servis topolojisi ve compose-manifest
+# invariant: Servis topolojisi ve compose-manifest
 # shape tutarlılığı — profile-side invariants.
 #
-# **Validates: Requirements 1.1, 1.10, 2.1, 2.3, 2.5, 2.7, 2.9, 9.4, 9.9**
 #
-# This block extends the multi-service-scaffold Property C2 with the
-# foundation spec's stricter contract on profile membership:
+# This block extends the invariant with the
+# stricter contract on profile membership:
 #
 # 1. The ``profiles:`` list of every Managed_Service MUST contain its
-#    own ``compose_service_name`` (Requirement 2.1, design §10.1 —
-#    "Tüm servisler ``profiles`` listesi ``compose_service_name``'i
-#    içerir"). The pre-existing Property C2(b) only required the list
-#    to contain the manifest ``name``; in the current manifest those
-#    two fields happen to coincide, but the foundation spec pins this
-#    explicitly so a future schema split would still satisfy the
-#    invariant.
+# own ``compose_service_name``. The pre-existing invariant(b) only required the list
+# to contain the manifest ``name``; in the current manifest those
+# two fields happen to coincide, but this check pins the
+# ``compose_service_name`` form so a future schema split would still satisfy the
+# invariant.
 #
-# 2. Every entry in the foundation 10-list (regardless of whether it
-#    is also profile-gated) MUST be present in the parsed Compose
-#    document. This catches manifest entries whose Compose service was
-#    never wired up (a class of bug Property C2 alone cannot detect
-#    because its sample space is the manifest, not the Compose stack).
+# 2. Every entry in the required service list (regardless of whether it
+# is also profile-gated) MUST be present in the parsed Compose
+# document. This catches manifest entries whose Compose service was
+# never wired up (a class of bug invariant alone cannot detect
+# because its sample space is the manifest, not the Compose stack).
 # ===========================================================================
 
 
@@ -484,8 +470,7 @@ def test_task_intake_service_keeps_legacy_profile_label() -> None:
 # Foundation 10-entry topology — required Compose service set
 # ---------------------------------------------------------------------------
 
-#: Compose service names mandated by the foundation 10-entry topology
-#: (design §"services.manifest.json (10 giriş)" table). The set MUST
+#: Compose service names mandated by the required service topology. The set MUST
 #: be a subset of the parsed Compose ``services:`` mapping;
 #: ``task-intake-service`` and other carryovers from prior specs are
 #: tolerated as additional entries.
@@ -506,28 +491,28 @@ _FOUNDATION_REQUIRED_COMPOSE_SERVICES: frozenset[str] = frozenset(
 
 
 def test_foundation_compose_declares_all_canonical_services() -> None:
-    """Property 1 (compose-side) — every foundation service is in Compose.
+    """invariant (compose-side) — every foundation service is in Compose.
 
-    Validates: Requirements 1.1, 2.1.
 
-    The foundation 10-entry topology must round-trip from manifest to
-    ``infra/docker-compose.yml``. A missing service here means
-    ``docker compose --profile <name> up -d <compose_service_name>``
-    has nothing to start, regardless of whether the manifest is
-    well-formed.
-    """
+
+ The foundation 10-entry topology must round-trip from manifest to
+ ``infra/docker-compose.yml``. A missing service here means
+ ``docker compose --profile <name> up -d <compose_service_name>``
+ has nothing to start, regardless of whether the manifest is
+ well-formed.
+ """
 
     declared = frozenset(_COMPOSE_SERVICES.keys())
     missing = _FOUNDATION_REQUIRED_COMPOSE_SERVICES - declared
     assert not missing, (
-        "infra/docker-compose.yml must declare every foundation "
-        f"service (Requirement 1.1, Property 1); missing: "
+        "infra/docker-compose.yml must declare every required "
+        f"service (the operational rule, invariant); missing: "
         f"{sorted(missing)!r}; declared: {sorted(declared)!r}"
     )
 
 
 # ---------------------------------------------------------------------------
-# Property 1 — Managed_Service profiles contain compose_service_name
+# invariant — Managed_Service profiles contain compose_service_name
 # ---------------------------------------------------------------------------
 
 
@@ -540,33 +525,31 @@ def test_foundation_compose_declares_all_canonical_services() -> None:
 def test_foundation_profiles_contain_compose_service_name(
     entry: ManagedServiceEntry,
 ) -> None:
-    """Property 1 — non-Boot_Bundle ``profiles:`` MUST contain ``compose_service_name``.
+    """invariant — non-Boot_Bundle ``profiles:`` MUST contain ``compose_service_name``.
 
-    Validates: Requirement 2.1 (with platform-gap-fill R7.1 Boot_Bundle
-    exemption — Property 20).
 
-    Design §10.1 mandates that "Tüm servisler ``profiles`` listesi
-    ``compose_service_name``'i içerir". The pre-existing Property
-    C2(b) checks that ``profiles`` contains ``entry.name``; this
-    additional check pins the ``compose_service_name`` form so the
-    invariant survives a future schema split where the two fields no
-    longer coincide.
+ exemption — invariant).
 
-    Boot_Bundle services (admin-dashboard-ui, admin-dashboard-api,
-    postgres, vault) are exempt because platform-gap-fill Requirement
-    7.1 / Property 20 mandates they carry no ``profiles:`` directive
-    so a bare ``docker compose up -d`` starts only the bootstrap set.
-    """
+ Managed services expose their ``compose_service_name`` in the ``profiles`` list.
+ The pre-existing invariant(b) checks that ``profiles`` contains ``entry.name``; this
+ additional check pins the ``compose_service_name`` form so the
+ invariant survives a future schema split where the two fields no
+ longer coincide.
+
+ Boot_Bundle services (admin-dashboard-ui, admin-dashboard-api,
+ postgres, vault) are exempt because the bootstrap behavior mandates they carry no ``profiles:`` directive
+ so a bare ``docker compose up -d`` starts only the bootstrap set.
+ """
 
     profiles = _profiles_of(entry.compose_service_name)
     assert profiles is not None and profiles, (
         f"Managed_Service {entry.name!r} (compose_service_name="
         f"{entry.compose_service_name!r}) MUST declare a non-empty "
-        f"'profiles:' list (Requirement 2.1, Property 1); "
+        f"'profiles:' list (the operational rule, invariant); "
         f"got {profiles!r}"
     )
     assert entry.compose_service_name in profiles, (
         f"Managed_Service {entry.name!r}: 'profiles:' MUST contain "
         f"the compose_service_name {entry.compose_service_name!r} "
-        f"(Requirement 2.1, Property 1); got {profiles!r}"
+        f"(the operational rule, invariant); got {profiles!r}"
     )

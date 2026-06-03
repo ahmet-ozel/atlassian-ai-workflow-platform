@@ -1,6 +1,5 @@
-"""``CostsRouter`` (`platform-mimari-ops` task 11.4).
+"""``CostsRouter`` (`operations surface` cost router wiring).
 
-**Validates: Requirements 4.1, 5.9**
 
 Surfaces the dept / model / trend cost views that the admin
 dashboard ``/costs`` page renders. Reads from the
@@ -18,7 +17,7 @@ Three endpoints:
 * ``GET /admin/costs/trend`` — daily series for the last 30 days.
 
 Every aggregate filters on ``cost_tag = 'production'`` so sandbox /
-probe rows never inflate the numbers (Property 7 / R5.5).
+probe rows never inflate the numbers (invariant 7 / rule 5.5).
 """
 
 from __future__ import annotations
@@ -369,7 +368,7 @@ async def check_budget_threshold_after_insert(
 # ---------------------------------------------------------------------------
 # Feature 13.2: Budget Alarm Threshold Endpoints (DB-backed, per-dept matrix)
 # ---------------------------------------------------------------------------
-# Validates: Requirements 13.2, 13.3
+# Covers 13.2, 13.3
 #
 # These endpoints operate on the ``automation.budget_alarm_thresholds``
 # Postgres table (migration 008). They provide a per-department matrix

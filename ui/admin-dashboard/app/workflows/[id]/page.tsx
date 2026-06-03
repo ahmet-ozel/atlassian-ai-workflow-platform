@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Workflow detail page — `platform-mimari-uyumluluk` task 12.2 (R8 / Q9).
+ * Workflow detail page.
  *
  * Dynamic route `/workflows/[id]` — renders the full drill-down view for a
  * single Temporal workflow: header, event history timeline, activity list,

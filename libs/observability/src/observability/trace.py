@@ -1,8 +1,6 @@
-"""End-to-end trace ID propagation primitives (platform-gap-fill §7).
+"""End-to-end trace ID propagation primitives.
 
-This module implements the :class:`Trace_Propagator` component described
-in ``.kiro/specs/platform-gap-fill/design.md`` (Components and
-Interfaces, §6) and satisfies the acceptance criteria of
+This module implements the :class:`Trace_Propagator` component:
 :requirement:`8.1` and :requirement:`8.7`:
 
 * :func:`generate_trace_id` produces a fresh **UUID v7** string. The
@@ -47,7 +45,6 @@ Usage::
     async def example():
         return {"trace_id": get_trace_id()}
 
-Validates: Requirements 8.1, 8.7 (platform-gap-fill).
 """
 
 from __future__ import annotations
@@ -373,8 +370,7 @@ class TraceMiddleware:
 class TraceLogFilter(logging.Filter):
     """Logging filter that stamps the current ``trace_id`` onto records.
 
-    Designed for Temporal worker activities (platform-gap-fill task 7.2,
-    Requirement 8.3): the worker process installs this filter on the
+    Designed for Temporal worker activities: the worker process installs this filter on the
     root logger once during startup, then each activity calls
     :func:`set_trace_id(input.trace_id)` at entry.  Every log record
     emitted between the ``set_trace_id`` call and the activity return
@@ -388,7 +384,7 @@ class TraceLogFilter(logging.Filter):
 
     * ``record.trace_id`` — the canonical attribute name used across
       the platform (mirrors the ``trace_id`` field consumed by the
-      Admin Dashboard log filter, Requirement 8.6).
+      Admin Dashboard log filter).
     * ``record.traceId`` — camelCase alias for OpenTelemetry-style
       log emitters that prefer JSON-friendly keys.
 

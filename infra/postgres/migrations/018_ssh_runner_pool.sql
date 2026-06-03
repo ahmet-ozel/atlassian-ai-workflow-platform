@@ -1,8 +1,8 @@
 -- 013_ssh_runner_pool.sql
--- Spec: platform-quick-fixes — Task 7.1 (SSH Runner Pool Migration)
+-- SSH runner pool migration.
 --
 -- Creates the infrastructure schema and tables required by the multi-SSH
--- host pool feature (R4 / G5):
+-- host pool feature:
 --   1. infrastructure schema (new)
 --   2. infrastructure.ssh_runners — SSH runner host definitions
 --   3. infrastructure.dept_ssh_assignments — Department ↔ Runner many-to-many
@@ -16,7 +16,6 @@
 -- Idempotent — uses IF NOT EXISTS guards so re-running on an already-migrated
 -- database is a no-op.
 --
--- Requirements: 4.1, 4.2
 
 -- =============================================================================
 -- 1. Schema: infrastructure

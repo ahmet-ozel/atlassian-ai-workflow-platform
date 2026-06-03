@@ -1,13 +1,11 @@
-"""Property test: Description override validation.
+"""Invariant test: Description override validation.
 
-**Validates: Requirements 11.8**
-
-Property 19: Description override validation
+**: Description override validation
 --------------------------------------------
 *For any* invalid value supplied to a recognised YAML front-matter
 field (``workflow_type``, ``cleanup``, ``timeout_seconds``, the
 boolean flags, or entries / top-level shape of the ``output`` list),
-the :func:`parse_description_frontmatter` activity SHALL drop that
+the:func:`parse_description_frontmatter` activity SHALL drop that
 field to ``None`` and record a corresponding entry in
 ``parse_errors``, while preserving the values of every sibling field
 that was supplied with a *valid* value.
@@ -16,24 +14,23 @@ Strategy
 --------
 For each recognised field the test draws one of three branches:
 
-    0. omit the field entirely
-    1. supply a *valid* value drawn from the allowed vocabulary
-    2. supply an *invalid* value drawn from a complementary strategy
+ 0. omit the field entirely
+ 1. supply a *valid* value drawn from the allowed vocabulary
+ 2. supply an *invalid* value drawn from a complementary strategy
 
 The chosen ``ai-bot`` mapping is then serialised through
 ``yaml.safe_dump`` so the input to the parser is always well-formed
 YAML — only the **field-level** values are invalid. After parsing we
-assert the post-conditions per field:
+assert the post-conditions field:
 
 * valid → ``result.<field>`` equals what we supplied AND the field
-  name does not appear in any ``parse_errors`` entry.
+ name does not appear in any ``parse_errors`` entry.
 * invalid → ``result.<field>`` is ``None`` AND at least one
-  ``parse_errors`` entry mentions the field name.
+ ``parse_errors`` entry mentions the field name.
 
 The ``output`` field is exercised at the *top level* (a non-list
 shape forces the whole field to ``None`` with a single error). The
-unit-test suite already covers per-entry validation; the property
-test focuses on the field-level invariant required by R11.8.
+unit-test suite already covers per-entry validation; the Invariant test focuses on the field-level invariant required by.
 """
 
 from __future__ import annotations
@@ -47,7 +44,7 @@ from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — match the convention used by sibling property tests.
+# sys.path bootstrap — match the convention used by sibling Invariant tests.
 # ---------------------------------------------------------------------------
 
 _WORKER_ROOT: Path = Path(__file__).resolve().parents[2]
@@ -219,11 +216,11 @@ def _override_block(
 ) -> tuple[dict[str, Any], dict[str, tuple[str, Any]]]:
     """Generate an ``ai-bot`` mapping and the per-field verdicts.
 
-    Returns ``(ai_bot, expectations)`` where ``expectations`` maps each
-    *included* field name to ``("valid", expected_value)`` or
-    ``("invalid", None)``. Omitted fields do not appear in
-    ``expectations``.
-    """
+ Returns ``(ai_bot, expectations)`` where ``expectations`` maps each
+ *included* field name to ``("valid", expected_value)`` or
+ ``("invalid", None)``. Omitted fields do not appear in
+ ``expectations``.
+ """
     ai_bot: dict[str, Any] = {}
     expectations: dict[str, tuple[str, Any]] = {}
 
@@ -247,7 +244,7 @@ def _override_block(
     if output_choice == 1:
         entries = draw(_valid_output())
         ai_bot["output"] = entries
-        # The parser normalises every entry to ``{"type": ..., "params": ...}``
+        # The parser normalises every entry to ``{"type":..., "params":...}``
         # and wraps a missing ``params`` in an empty dict. Our valid
         # generator always supplies ``params`` so the round-trip is a
         # straightforward shallow copy.
@@ -285,14 +282,14 @@ def _render_description(ai_bot: dict[str, Any]) -> str:
 
 def _error_blames_field(error: str, field_name: str) -> bool:
     """Best-effort match: every ``parse_errors`` entry leads with the field
-    name, so a substring check is sufficient and stays decoupled from
-    the exact wording the parser uses.
-    """
+ name, so a substring check is sufficient and stays decoupled from
+ the exact wording the parser uses.
+ """
     return field_name in error
 
 
 # ---------------------------------------------------------------------------
-# Property
+# invariant
 # ---------------------------------------------------------------------------
 
 
@@ -305,11 +302,10 @@ def _error_blames_field(error: str, field_name: str) -> bool:
 def test_invalid_yaml_field_dropped_with_warning_entry(
     block: tuple[dict[str, Any], dict[str, tuple[str, Any]]],
 ) -> None:
-    """Property 19: invalid YAML field → ``None`` + ``parse_errors``
-    entry, while valid sibling fields are preserved verbatim.
+    """: invalid YAML field → ``None`` + ``parse_errors``
+ entry, while valid sibling fields are preserved verbatim.
 
-    **Validates: Requirements 11.8**
-    """
+ **"""
     ai_bot, expectations = block
 
     description = _render_description(ai_bot)

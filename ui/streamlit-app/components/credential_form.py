@@ -1,21 +1,18 @@
-"""Per-user Atlassian credential form (`platform-mimari-ops` task 9.7).
+"""Per-user Atlassian credential form.
 
-Validates Requirements:
-    * R3.4 — credential is collected through the UI and POSTed to
-      assistant-service, which writes to
-      ``vault:atlassian/_user_session/<session_id>/<service>``.
-    * R8.4 — plain credential value never leaves the form's local
-      scope: ``clear_on_submit=True`` scrubs the DOM, the function
-      returns only the Vault reference (path), and PIN-encrypted
-      persistence (Z7) is **opt-in** behind a checkbox.
-    * Property 4 — credential session isolation: two distinct
-      ``session_id`` values map to two distinct Vault paths so
-      dept-A's user cannot read dept-B's user's session credential.
+The credential is collected through the UI and POSTed to
+assistant-service, which writes to
+``vault:atlassian/_user_session/<session_id>/<service>``.
+The plain credential value never leaves the form's local scope:
+``clear_on_submit=True`` scrubs the DOM, the function returns only the
+Vault reference path, and PIN-encrypted persistence is opt-in behind a
+checkbox. Two distinct ``session_id`` values map to two distinct Vault
+paths so dept-A's user cannot read dept-B's user's session credential.
 
 The form is small on purpose: heavy lifting (HTTP POST, Vault write,
 PIN-derived encryption) lives behind a callable injected through
 ``st.session_state["_credential_api"]``. The seam keeps unit tests
-hermetic and matches the scaffold pattern used by the dept switcher.
+hermetic and matches the component pattern used by the dept switcher.
 """
 
 from __future__ import annotations
@@ -64,8 +61,7 @@ def render_credential_form(
 
     The form uses ``clear_on_submit=True`` so the input fields are
     scrubbed from the DOM as soon as the user clicks the submit
-    button — this is the technical mechanism that delivers R8.4 in
-    Streamlit. The plain values flow into the injected
+    button. The plain values flow into the injected
     ``_credential_api.post`` callable and never bind to a
     ``session_state`` key.
 

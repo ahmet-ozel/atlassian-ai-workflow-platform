@@ -1,13 +1,8 @@
-"""Property 3 — schema validation rejects malformed payloads.
-
-# Feature: llm-provider-management, Property 3: Schema validation rejects malformed payloads with the documented body shape
-
-Validates Requirements 2.1 — 2.8 of the ``llm-provider-management``
+"""— schema validation rejects malformed payloads.
 spec: every malformed ``ProviderCreate`` body the operator could
 submit is rejected with HTTP 422 carrying one of four documented
 shapes — ``validation_failed`` (missing field or single reason),
-``unsupported_provider_type``, or ``extra_fields_not_allowed``.
-"""
+``unsupported_provider_type``, or ``extra_fields_not_allowed``."""
 
 from __future__ import annotations
 
@@ -27,15 +22,13 @@ if str(_API_ROOT) not in sys.path:
 
 def _build_test_app() -> TestClient:
     """Mount a minimal app that exercises the create-validation surface.
-
-    Property 3 enumerates per-``provider_type`` payloads. The route
+    ``provider_type`` payloads. The route
     accepts a raw ``dict`` body, then hand-validates with a
     :class:`pydantic.TypeAdapter` over the discriminated-union alias
     so any :class:`ValidationError` flows through the project's
     custom 422 handler verbatim. This sidesteps FastAPI's body-
     resolution corner cases with discriminated unions exposed as
-    top-level parameter types.
-    """
+    top-level parameter types."""
 
     from fastapi import APIRouter, status
     from fastapi.exceptions import RequestValidationError

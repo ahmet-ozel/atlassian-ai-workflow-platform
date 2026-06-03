@@ -1,8 +1,27 @@
-﻿# Platform
+﻿# Atlassian AI Workflow Platform
 
-An Atlassian-based, multi-department AI workflow automation platform. Webhook
-gateway, Temporal workers, MCP integration, an admin dashboard and a Streamlit
-front end, all in a single Docker Compose stack.
+A multi-department AI workflow automation platform built around Atlassian
+(Jira, Confluence, Bitbucket). A webhook gateway, Temporal workers, a stateless
+MCP integration layer, an admin dashboard and a Streamlit front end run together
+in a single Docker Compose stack.
+
+## Highlights
+
+- **Stateless, multi-tenant MCP gateway** - every request carries its own
+  Atlassian credentials in headers, so a single gateway serves many users and
+  departments without server-side sessions.
+- **Secrets in Vault** - department credentials and tokens are stored in
+  HashiCorp Vault and referenced by handle; raw tokens never live in config or
+  source.
+- **Admin dashboard** - governance surface for departments, services,
+  capabilities, workflows and pull-request review.
+- **Streamlit front end** - the end-user surface for credentials, chat and task
+  creation.
+- **Temporal automation** - durable workflows turn a Jira event into an LLM
+  decision, code changes on a runner, a draft pull request, a Confluence page
+  and a Jira update.
+- **Env-driven host ports** - every published port comes from `infra/.env`, so a
+  deployment can avoid clashes without touching Compose or source.
 
 ## Quick Start
 
@@ -104,6 +123,46 @@ For day-to-day use you only need **`33000`** (dashboard) and **`38501`**
 | `tests/` | Cross-service property/integration tests (each service also has its own `tests/`). |
 | `scripts/` | `up.sh`, `up.ps1` wrappers + maintenance scripts. |
 
+## Architecture
+
+The stack is a set of small services around a shared MCP gateway:
+
+- **Atlassian MCP gateway** (`services/atlassian_mcp_bitbucket/`) - a stateless
+  HTTP surface that exposes Jira, Confluence and Bitbucket tools. Credentials
+  arrive per-request as `X-Atlassian-*` headers.
+- **task-intake-service** - receives Jira webhooks and starts workflows.
+- **automation-service** - governance APIs (departments, credentials, PR review,
+  branch scans) used by the admin dashboard.
+- **assistant-service** - chat/assist APIs backed by the MCP gateway and an LLM.
+- **admin-dashboard** (Next.js + API) - the operator/governance UI.
+- **streamlit-app** - the end-user UI (credentials, chat, task creation).
+- **Temporal workers** (`workers/`) - durable execution for long-running
+  automation and runner/SSH steps.
+
+A typical automation flow:
+
+1. A Jira issue is assigned to the bot - Jira fires a webhook to
+   `task-intake-service`.
+2. A Temporal workflow starts and asks the LLM what the task needs (code change,
+   docs, a runner, etc.).
+3. The workflow drives the MCP gateway and, when needed, a remote runner over
+   SSH to make changes.
+4. It opens a draft pull request on Bitbucket, publishes a Confluence page, and
+   comments back on the Jira issue.
+
+## Built on
+
+- **Atlassian MCP gateway** - `services/atlassian_mcp_bitbucket/` builds the
+  [`jellythomas/mcp-atlassian-with-bitbucket`](https://github.com/jellythomas/mcp-atlassian-with-bitbucket)
+  fork at a pinned commit. It extends the `mcp-atlassian` server with Bitbucket
+  support so Jira, Confluence and Bitbucket share one stateless HTTP MCP surface.
+- **[Temporal](https://temporal.io/)** - durable workflow execution for the
+  automation tier.
+- **[HashiCorp Vault](https://www.vaultproject.io/)** - secret storage for
+  department credentials and tokens.
+- **[Firecrawl](https://www.firecrawl.dev/)** - web content retrieval used by
+  research/automation steps.
+
 ## Next steps
 
 - **First-boot flow:** [`docs/runbooks/getting-started.md`](docs/runbooks/getting-started.md).
@@ -112,7 +171,7 @@ For day-to-day use you only need **`33000`** (dashboard) and **`38501`**
 - **Environment variables:** [`docs/env-reference.md`](docs/env-reference.md).
 - **End-user task-creation guide:** [`docs/user-guide/`](docs/user-guide/).
 
-## License / Contributing
+## License
 
-This repository is for private use. For the development workflow, read the spec
-documents under and the architecture decisions in.
+This repository is for private use. The bundled Atlassian MCP gateway is built
+from an upstream fork and retains its original upstream license.

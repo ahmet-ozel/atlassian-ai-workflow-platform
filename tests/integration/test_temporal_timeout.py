@@ -1,7 +1,5 @@
 """Integration test: AutomationWorkflow ``needs_info`` 7-day timeout.
 
-**Validates: Requirements 5.5, 5.7, 11.5**
-
 Scenario
 --------
 
@@ -44,9 +42,7 @@ ensure_worker_on_sys_path()
 @pytest.mark.asyncio
 @pytest.mark.integration
 async def test_needs_info_timeout_after_seven_days_marks_workflow_failed() -> None:
-    """**Validates: Requirements 5.5, 5.7, 11.5**
-
-    The workflow parks on a low-confidence analysis; advancing virtual
+    """The workflow parks on a low-confidence analysis; advancing virtual
     time past 7 days fires the ``wait_condition`` timeout, posts the
     Turkish timeout comment, and terminates with
     ``failure_reason="needs_info_timeout"``.

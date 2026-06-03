@@ -8,22 +8,21 @@ workflow types need web search or page scraping.
 Responsibilities
 ----------------
 
-The wrapper enforces three platform invariants documented in
-``platform-mimari-workflows`` Requirements 9.1 / 9.2 / 9.3 / 9.6:
+The wrapper enforces three platform invariants:
 
-1. **Egress allowlist with dept overrides** (R9.1, R9.2). Every
+1. **Egress allowlist with dept overrides**. Every
    outbound host is checked against the *effective* allowlist computed
    from the global tuple and the per-department overrides. The pure
    helper :func:`effective_allowlist` is the single source of truth
    used by both this client and the property tests.
-2. **Graceful degradation** (R9.3). When the target host is **not**
+2. **Graceful degradation**. When the target host is **not**
    in the allowlist or when the underlying service replies with HTTP
    403, the call **returns** an :class:`EgressBlocked` outcome instead
    of raising. The caller (``AgentRunnerWorkflow``) translates that
    outcome into a Jira-comment ("``🤖 {url} domain'i araştırma için
    izinli değil; admin'den eklenmesini isteyin.``") and continues —
    the workflow does **not** fail.
-3. **Output size cap with MinIO offload** (R9.6, R5.9). When a
+3. **Output size cap with MinIO offload**. When a
    response payload exceeds ``max_bytes`` the wrapper writes the full
    body to MinIO via an injected writer and returns a
    :class:`PayloadOverflow` outcome carrying a short summary plus the
@@ -35,7 +34,7 @@ Why "return, do not raise"
 
 The ``research_publish_confluence`` and ``research_summary_jira``
 workflows treat egress denial and oversized payloads as *expected*
-operational outcomes (R9.3 — graceful degradation). Raising would
+operational outcomes. Raising would
 turn a routine "this domain isn't on the allowlist yet" event into a
 workflow failure with compensation chain side-effects. We surface the
 outcome as a value the caller can pattern-match on instead.
@@ -53,15 +52,12 @@ async callables. Keeping I/O at the seams means:
 - the workflow code stays replay-deterministic — the client itself
   is a pure decision layer that delegates I/O to the activity host.
 
-Design context
---------------
+Implementation notes
+--------------------
 
-- Task 9.1 of ``.kiro/specs/platform-mimari-workflows/tasks.md``.
-- Validates Requirements 9.1, 9.2, 9.3, 9.6 of
-  ``.kiro/specs/platform-mimari-workflows/requirements.md``.
-- Sibling modules in this lib follow the same "pure helper +
-  optional injected I/O" shape: see :mod:`mcp_client.pr_draft` (R1.9)
-  and :mod:`mcp_client.tool_filter` (R1.8).
+Sibling modules in this lib follow the same "pure helper + optional
+injected I/O" shape: see :mod:`mcp_client.pr_draft` and
+:mod:`mcp_client.tool_filter`.
 """
 
 from __future__ import annotations
@@ -112,7 +108,7 @@ def effective_allowlist(
         global_: Platform-wide allowlist. Any iterable of hostname
             strings; entries are stripped, lower-cased, and empty
             entries dropped. ``None`` is accepted and treated as the
-            empty set (closed-by-default posture, R9.1).
+            empty set (closed-by-default posture).
         dept_override: Optional per-department override mapping with
             ``allow`` and ``deny`` keys. Either key may be missing or
             empty. ``None`` means "no overrides", in which case the
@@ -196,10 +192,9 @@ class EgressBlocked:
     Two cases produce this outcome:
 
     1. The target host is outside the effective allowlist computed
-       via :func:`effective_allowlist` (pre-flight denial — R9.1 /
-       R9.2).
+       via :func:`effective_allowlist` (pre-flight denial).
     2. The firecrawl service itself returned HTTP 403 (post-flight
-       denial — R9.3, e.g. the upstream egress proxy refused).
+       denial, e.g. the upstream egress proxy refused).
 
     Attributes:
         kind: Always ``"egress_blocked"`` — discriminator for the
@@ -218,7 +213,7 @@ class EgressBlocked:
 
     Notes:
         Workflows should translate this outcome into a Jira comment
-        (R9.3 wording) and continue. They MUST NOT raise on receipt.
+        and continue. They MUST NOT raise on receipt.
     """
 
     url: str
@@ -282,7 +277,7 @@ class _Transport(Protocol):
 
     The response is a :class:`_TransportResponse` describing both the
     HTTP status code and the decoded JSON body. We carry the status
-    explicitly so the wrapper can detect upstream 403 (R9.3) without
+    explicitly so the wrapper can detect upstream 403 without
     re-parsing exception types from the underlying client.
     """
 
@@ -331,12 +326,12 @@ class _MinioWriter(Protocol):
 
 
 #: Default per-call cap. The platform-wide ``MAX_OUTPUT_BYTES`` is
-#: 1 MB (R5.9) and we mirror that here so callers that omit
+#: 1 MB and we mirror that here so callers that omit
 #: ``max_bytes`` get the same behaviour as ``output_actions``.
 _DEFAULT_MAX_BYTES: Final[int] = 1_048_576
 
 #: Maximum length of the human-readable summary on
-#: :class:`PayloadOverflow`. Mirrors R9.5 ("max 500 kelime") translated
+#: :class:`PayloadOverflow`. Mirrors the 500-word summary limit translated
 #: to characters with a generous margin.
 _SUMMARY_MAX_CHARS: Final[int] = 500
 
@@ -344,8 +339,7 @@ _SUMMARY_MAX_CHARS: Final[int] = 500
 class FirecrawlClient:
     """Caller-side wrapper around the firecrawl service.
 
-    The wrapper owns three concerns documented in R9.1 / R9.2 / R9.3 /
-    R9.6:
+    The wrapper owns three concerns:
 
     1. **Allowlist enforcement** — the effective allowlist for each
        call is computed from the global allowlist (constructor) and
@@ -445,7 +439,7 @@ class FirecrawlClient:
             dept_id: The requesting department's id. Used to resolve
                 the effective allowlist.
             max_bytes: Per-call payload cap. Defaults to 1 MB
-                (mirrors ``MAX_OUTPUT_BYTES`` from R5.9). When the
+                (mirrors ``MAX_OUTPUT_BYTES``). When the
                 response body exceeds this cap the wrapper returns
                 a :class:`PayloadOverflow` outcome.
 
@@ -475,7 +469,7 @@ class FirecrawlClient:
         synthetic_url = f"firecrawl-search:{query}"
         response = await self._transport("search", {"query": query})
 
-        # Upstream 403 → graceful EgressBlocked (R9.3).
+        # Upstream 403 → graceful EgressBlocked.
         if response.status == 403:
             return EgressBlocked(
                 url=synthetic_url,
@@ -801,8 +795,7 @@ def _build_summary(body: Any, *, bytes_len: int, max_bytes: int) -> str:
     """Build a short human-readable summary for :class:`PayloadOverflow`.
 
     The summary is what ends up in the LLM context / Jira comment;
-    we trim aggressively to stay within R5.9's "Jira yorumuna kısa
-    özet" guidance.
+    we trim aggressively to keep the Jira comment summary short.
     """
 
     if isinstance(body, list):

@@ -11,10 +11,6 @@ form that is
   (``Mapping[str, Callable]``) so unit/property tests can pass mocks
   without spinning up a Temporal worker or any external service.
 
-Design reference: ``.kiro/specs/p0-critical-path/design.md`` §"AgentRunnerWorkflow"
-and Property 10 ("Saga compensation determinism and idempotence").
-Validates Requirement 6.8.
-
 Compensation contract
 ---------------------
 
@@ -39,7 +35,7 @@ the following invariants:
 Compensation P0 inverse table
 -----------------------------
 
-Per design.md, the P0 saga compensation table is::
+The saga compensation table is::
 
     bitbucket_create_branch -> bitbucket_delete_branch
     artifact_upload         -> artifact_delete

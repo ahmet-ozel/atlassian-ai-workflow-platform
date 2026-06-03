@@ -1,10 +1,4 @@
-"""Property test for directory tree completeness.
-
-Validates: Requirements 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 2.6, 2.7, 2.8,
-2.9, 3.4, 3.5, 3.6, 4.2, 4.3, 4.5, 4.6, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8,
-5.9, 6.1, 6.2, 6.3, 6.4, 6.5, 16.1, 18.4
-
-Property 1: Directory tree completeness.
+"""Directory tree completeness checks.
 
 Every Component declared in :data:`COMPONENT_MANIFEST` must ship the
 type-level baseline of files (``src/main.py``, ``Dockerfile``,
@@ -84,7 +78,7 @@ _COMPONENT_PATH_PAIRS: tuple[tuple[ComponentSpec, str], ...] = tuple(
 )
 @given(component=st.sampled_from(COMPONENT_MANIFEST))
 def test_every_component_has_required_type_paths(component: ComponentSpec) -> None:
-    """Property 1a — type-level baseline files exist for every Component.
+    """Type-level baseline files exist for every Component.
 
     For every Component, every relative path listed under
     ``REQUIRED_PATHS[component.type]`` must resolve to an existing
@@ -112,7 +106,7 @@ def test_every_component_has_required_type_paths(component: ComponentSpec) -> No
 def test_every_component_has_required_name_specific_paths(
     component: ComponentSpec,
 ) -> None:
-    """Property 1b — Component-specific extras also exist.
+    """Component-specific extras also exist.
 
     Layered on top of the type baseline, every entry in
     ``REQUIRED_PATHS_BY_NAME[component.name]`` (e.g. the Streamlit
@@ -140,10 +134,9 @@ def test_every_component_has_required_name_specific_paths(
 )
 @given(pair=st.sampled_from(_COMPONENT_PATH_PAIRS))
 def test_sampled_component_path_exists(pair: tuple[ComponentSpec, str]) -> None:
-    """Property 1c — single ``(component, path)`` pair exists.
+    """A single sampled ``(component, path)`` pair exists.
 
-    Mirrors the cross-product strategy from design §6.3 by sampling
-    one Component × one required relative path at a time. This makes
+    Samples one Component × one required relative path at a time. This makes
     Hypothesis shrink down to the single missing artefact when a
     regression occurs, which is more actionable than the per-Component
     aggregations above.
@@ -164,13 +157,13 @@ def test_sampled_component_path_exists(pair: tuple[ComponentSpec, str]) -> None:
 
 @pytest.mark.parametrize("relative_path", INFRA_AND_LIB_REQUIRED_PATHS)
 def test_infra_and_lib_required_path_exists(relative_path: str) -> None:
-    """Property 1d — every infra / lib / config / root path exists.
+    """Every infra / lib / config / root path exists.
 
     Each entry in :data:`INFRA_AND_LIB_REQUIRED_PATHS` is a workspace-
     relative path that must resolve under :data:`WORKSPACE_ROOT`.
     Parametrising (instead of looping inside a single test) gives a
     distinct test ID per missing artefact, which is the diagnostic
-    signal Property 1 is designed to surface.
+    signal these checks are designed to surface.
     """
 
     candidate: Path = WORKSPACE_ROOT / relative_path
@@ -180,14 +173,12 @@ def test_infra_and_lib_required_path_exists(relative_path: str) -> None:
 
 
 # ===========================================================================
-# Property 2: Hassas çağrı path whitelist'i
+# Hassas çağrı path whitelist'i
 #
-# **Validates: Requirements 1.2, 1.3, 1.4, 1.5**
-#
-# Property 2 (design §Correctness Properties): repository altındaki her
+# Repository altındaki her
 # ``.py`` kaynak dosyası için (a) Jira/Bitbucket/Confluence host'larına
 # yönelik ``httpx``/``requests``/``aiohttp`` çağrıları yalnızca
-# ``services/atlassian_unified/`` ağacında bulunur, (b) ``paramiko``/
+# ``services/atlassian_mcp_bitbucket/`` ağacında bulunur, (b) ``paramiko``/
 # ``asyncssh``/``subprocess`` ile başlatılan SSH komutları ve Docker
 # socket erişimi yalnızca ``workers/execution-runner-worker/``
 # ağacında bulunur, (c) LLM kütüphane çağrıları yalnızca
@@ -195,8 +186,7 @@ def test_infra_and_lib_required_path_exists(relative_path: str) -> None:
 # ağaçlarında bulunur, (d) ``workers/*/activities/`` altındaki dosyalar
 # ``client.start_workflow`` veya eşdeğer çağrı içermez.
 #
-# This block extends ``test_path_coverage.py`` (per design §6.3 Property
-# → Test mapping) with:
+# This block extends ``test_path_coverage.py`` with:
 #
 # * an aggregated full-scan assertion that every scanner returns zero
 #   findings against the live source tree,
@@ -207,13 +197,13 @@ def test_infra_and_lib_required_path_exists(relative_path: str) -> None:
 #   detection logic itself is exercised even when the production
 #   source is invariant-clean.
 #
-# The LLM-specific subset (Requirement 1.4) lives in a sibling module
-# ``test_llm_call_paths.py`` per task 11.4 (file split). That module
+# The LLM-specific subset lives in a sibling module
+# ``test_llm_call_paths.py``. That module
 # imports the same helper and adds LLM-focused synthetic-source self
 # tests to keep the scanners' detection logic locked in.
 # ===========================================================================
 
-import ast as _ast  # noqa: E402  -- imported here so the Property 1 block above stays untouched
+import ast as _ast  # noqa: E402  -- imported here so the path checks above stay untouched
 
 from _path_whitelist import (  # noqa: E402
     ATLASSIAN_HTTP_WHITELIST,
@@ -237,7 +227,7 @@ from _path_whitelist import (  # noqa: E402
 # Each scanner is run against the platform root with the default
 # whitelist plus the shared-test-fixture whitelist (so e.g. unit tests
 # for ``libs/llm-orchestrator`` itself can import the package by name
-# without violating Requirement 1.4 — the orchestrator library is the
+# without violating the LLM path boundary — the orchestrator library is the
 # single source of truth and its tests legitimately exercise it).
 #
 # Scanner-level findings are aggregated into a list and the assertion
@@ -246,10 +236,10 @@ from _path_whitelist import (  # noqa: E402
 
 
 def test_property2_no_atlassian_http_outside_whitelist() -> None:
-    """**Validates: Requirement 1.2**
+    """Atlassian HTTP calls stay inside the approved gateway paths.
 
     Atlassian host'larına yönelik ``httpx``/``requests``/``aiohttp``
-    çağrıları yalnızca ``services/atlassian_unified/``,
+    çağrıları yalnızca ``services/atlassian_mcp_bitbucket/``,
     ``libs/http-shared/`` ve ``libs/mcp_client/`` ağaçlarında
     bulunabilir. Diğer her path violation sayılır.
     """
@@ -258,15 +248,15 @@ def test_property2_no_atlassian_http_outside_whitelist() -> None:
         whitelist=tuple(ATLASSIAN_HTTP_WHITELIST) + SHARED_TEST_FIXTURE_WHITELIST,
     )
     assert not findings, (
-        "Property 2 (Requirement 1.2) violation — Atlassian HTTP call "
-        "found outside the atlassian_unified MCP whitelist. Route every "
+        "Atlassian HTTP call violation — call "
+        "found outside the atlassian_mcp_bitbucket MCP whitelist. Route every "
         "Jira/Bitbucket/Confluence call through the MCP.\n"
         + format_findings(findings)
     )
 
 
 def test_property2_no_ssh_docker_outside_execution_runner() -> None:
-    """**Validates: Requirement 1.3**
+    """SSH and Docker access stay inside the execution runner.
 
     SSH istemcileri (``paramiko``/``asyncssh``) ve ``subprocess`` ile
     başlatılan ``ssh``/``scp`` komutları ile Docker SDK kullanımı
@@ -277,14 +267,14 @@ def test_property2_no_ssh_docker_outside_execution_runner() -> None:
         whitelist=tuple(SSH_DOCKER_WHITELIST) + SHARED_TEST_FIXTURE_WHITELIST,
     )
     assert not findings, (
-        "Property 2 (Requirement 1.3) violation — SSH or Docker access "
+        "SSH or Docker access violation — access "
         "found outside execution-runner-worker.\n"
         + format_findings(findings)
     )
 
 
 def test_property2_no_activity_start_workflow_calls() -> None:
-    """**Validates: Requirement 1.5**
+    """Activity modules do not start workflows directly.
 
     ``workers/*/activities/`` altındaki dosyalar
     ``client.start_workflow`` veya ``execute_workflow`` /
@@ -294,7 +284,7 @@ def test_property2_no_activity_start_workflow_calls() -> None:
 
     findings = scan_activities_start_workflow()
     assert not findings, (
-        "Property 2 (Requirement 1.5) violation — workflow-start call "
+        "Workflow-start violation — call "
         "inside activity module. Move workflow-decision logic to "
         "workers/*/workflows/.\n"
         + format_findings(findings)
@@ -315,7 +305,7 @@ _SOURCE_FILES: tuple[Path, ...] = tuple(iter_source_files())
 
 
 def _findings_for_file(path: Path) -> list[Finding]:
-    """Return every Property 2 finding produced by *path*.
+    """Return every whitelist finding produced by *path*.
 
     Runs each scanner against the live tree and filters its results
     to those originating from *path*. Filtering is preferred over
@@ -366,10 +356,10 @@ _PLATFORM_ROOT_FOR_PROP2: Path = Path(__file__).resolve().parents[2]
 )
 @given(path=st.sampled_from(_SOURCE_FILES) if _SOURCE_FILES else st.nothing())
 def test_property2_per_file_no_findings(path: Path) -> None:
-    """**Validates: Requirements 1.2, 1.3, 1.4, 1.5**
+    """Sampled source files have no whitelist findings.
 
     Hypothesis property: rastgele örneklenen herhangi bir ``.py``
-    kaynak dosyası için Property 2 scanner'ları boş döner.
+    kaynak dosyası için whitelist scanner'ları boş döner.
 
     Sampling rather than enumerating gives Hypothesis a chance to
     minimise the failing example to a single file when a regression
@@ -381,7 +371,7 @@ def test_property2_per_file_no_findings(path: Path) -> None:
     findings = _findings_for_file(path)
     rel = path.relative_to(_PLATFORM_ROOT_FOR_PROP2).as_posix()
     assert not findings, (
-        f"Property 2 violation in {rel}:\n"
+        f"Path whitelist violation in {rel}:\n"
         + format_findings(findings)
     )
 
@@ -407,13 +397,13 @@ def _write(tmp: Path, rel: str, src: str) -> Path:
 
 
 class TestProperty2ScannerSelfChecks:
-    """Self-tests guaranteeing the Property 2 scanners actually flag
+    """Self-tests guaranteeing the path whitelist scanners actually flag
     violations on synthetic source — without this layer the production
     tests above could pass vacuously after a scanner regression.
     """
 
     def test_atlassian_http_call_outside_mcp_is_flagged(self, tmp_path: Path) -> None:
-        """**Validates: Requirement 1.2**"""
+        """Direct Atlassian HTTP calls outside the gateway are flagged."""
 
         src = (
             "import httpx\n"
@@ -431,12 +421,12 @@ class TestProperty2ScannerSelfChecks:
         ), findings
 
     def test_atlassian_http_inside_mcp_is_allowed(self, tmp_path: Path) -> None:
-        """**Validates: Requirement 1.2**
+        """Direct Atlassian HTTP calls inside approved paths are allowed.
 
-        Aynı kod ``services/atlassian_unified/`` altında (whitelist'in
+        Aynı kod ``services/atlassian_mcp_bitbucket/`` altında (whitelist'in
         kendisi excluded_dirs içinde) bulunduğunda finding üretmez —
         bu zaten varsayılan exclude'lu yürüyüşle örtülür ve
-        immutability invariant'ı (Property 14) ayrı testle korunur.
+        gateway subtree'i ayrı tutulur.
         ``libs/http-shared/`` whitelist içinde olduğundan benzer şekilde
         izin verilir.
         """
@@ -454,10 +444,10 @@ class TestProperty2ScannerSelfChecks:
     def test_atlassian_host_without_http_client_is_not_flagged(
         self, tmp_path: Path
     ) -> None:
-        """**Validates: Requirement 1.2**
+        """Host literals without HTTP client calls are ignored.
 
         Salt host literal'i (docstring, sabit URL, log mesajı)
-        flag'lenmez — Requirement 1.2 yalnızca **HTTP çağrısı + host**
+        flag'lenmez — yalnızca **HTTP çağrısı + host**
         kombinasyonunu yasaklar.
         """
 
@@ -472,10 +462,10 @@ class TestProperty2ScannerSelfChecks:
     def test_http_client_without_atlassian_host_is_not_flagged(
         self, tmp_path: Path
     ) -> None:
-        """**Validates: Requirement 1.2**
+        """Generic HTTP clients without Atlassian hosts are ignored.
 
         Genel ``httpx`` kullanımı (Atlassian host'u referansı
-        olmadan) flag'lenmez — Requirement 1.2 hedefli host'lara
+        olmadan) flag'lenmez — hedefli host'lara
         çağrıyı yasaklar, generic HTTP istemcisini değil.
         """
 
@@ -492,7 +482,7 @@ class TestProperty2ScannerSelfChecks:
     def test_paramiko_outside_execution_runner_is_flagged(
         self, tmp_path: Path
     ) -> None:
-        """**Validates: Requirement 1.3**"""
+        """Paramiko outside the execution runner is flagged."""
 
         src = (
             "import paramiko\n"
@@ -508,7 +498,7 @@ class TestProperty2ScannerSelfChecks:
     def test_paramiko_inside_execution_runner_is_allowed(
         self, tmp_path: Path
     ) -> None:
-        """**Validates: Requirement 1.3**"""
+        """Paramiko inside the execution runner is allowed."""
 
         src = (
             "import paramiko\n"
@@ -524,7 +514,7 @@ class TestProperty2ScannerSelfChecks:
         assert findings == [], findings
 
     def test_subprocess_ssh_string_is_flagged(self, tmp_path: Path) -> None:
-        """**Validates: Requirement 1.3**"""
+        """SSH shell commands are flagged."""
 
         src = (
             "import subprocess\n"
@@ -539,7 +529,7 @@ class TestProperty2ScannerSelfChecks:
         ), findings
 
     def test_subprocess_scp_list_is_flagged(self, tmp_path: Path) -> None:
-        """**Validates: Requirement 1.3**"""
+        """SCP shell commands are flagged."""
 
         src = (
             "import subprocess\n"
@@ -556,10 +546,10 @@ class TestProperty2ScannerSelfChecks:
     def test_subprocess_non_ssh_command_is_not_flagged(
         self, tmp_path: Path
     ) -> None:
-        """**Validates: Requirement 1.3**
+        """Non-SSH subprocess commands are ignored.
 
         ``subprocess.run(['ls', '-la'])`` gibi normal shell-out'lar
-        Requirement 1.3 kapsamında değildir.
+        bu scanner kapsamında değildir.
         """
 
         src = (
@@ -574,7 +564,7 @@ class TestProperty2ScannerSelfChecks:
     def test_docker_sdk_outside_execution_runner_is_flagged(
         self, tmp_path: Path
     ) -> None:
-        """**Validates: Requirement 1.3**"""
+        """Docker SDK use outside the execution runner is flagged."""
 
         src = (
             "import docker\n"
@@ -586,7 +576,7 @@ class TestProperty2ScannerSelfChecks:
         assert any(f.category == "docker" for f in findings), findings
 
     def test_activity_start_workflow_is_flagged(self, tmp_path: Path) -> None:
-        """**Validates: Requirement 1.5**"""
+        """Activity modules that start workflows are flagged."""
 
         src = (
             "from temporalio import activity\n"
@@ -609,7 +599,7 @@ class TestProperty2ScannerSelfChecks:
         ), findings
 
     def test_activity_execute_workflow_is_flagged(self, tmp_path: Path) -> None:
-        """**Validates: Requirement 1.5**
+        """Activity modules using ``execute_workflow`` are flagged.
 
         ``execute_workflow`` (wait-for-result variant) ve
         ``start_child_workflow`` da activity dosyalarında yasaktır.
@@ -632,7 +622,7 @@ class TestProperty2ScannerSelfChecks:
     def test_workflow_start_in_workflow_dir_is_not_flagged_by_activity_scan(
         self, tmp_path: Path
     ) -> None:
-        """**Validates: Requirement 1.5**
+        """Workflow-start calls inside workflow directories are ignored.
 
         ``workers/*/workflows/`` altında ``start_workflow``
         çağrılarına bu scanner dokunmaz — workflow karar mantığının
@@ -654,7 +644,7 @@ class TestProperty2ScannerSelfChecks:
     def test_method_named_start_workflow_in_random_path_is_not_flagged(
         self, tmp_path: Path
     ) -> None:
-        """**Validates: Requirement 1.5**
+        """Workflow-start method names outside activity paths are ignored.
 
         Activity dışı yollarda ``start_workflow`` adı flag'lenmez —
         scanner yalnız ``/activities/`` fragment içeren path'leri
@@ -676,7 +666,7 @@ class TestProperty2ScannerSelfChecks:
     def test_scanner_skips_files_with_syntax_errors(
         self, tmp_path: Path
     ) -> None:
-        """**Validates: Requirements 1.2, 1.3, 1.5**
+        """Syntax-broken files do not crash the scanners.
 
         Syntax-broken bir dosya scan'i çökertmez — scanner bu dosyayı
         sessizce atlar; production `test_workflow_file_parses` gibi
@@ -694,9 +684,9 @@ class TestProperty2ScannerSelfChecks:
         assert scan_activities_start_workflow(tmp_path) == []
 
     def test_excluded_dirs_are_pruned_from_scan(self, tmp_path: Path) -> None:
-        """**Validates: Requirements 1.2, 1.3, 1.4, 1.5**
+        """Excluded directories are pruned from scans.
 
-        ``__pycache__`` / ``.venv`` / ``atlassian_unified`` gibi
+        ``__pycache__`` / ``.venv`` / ``atlassian_mcp_bitbucket`` gibi
         dizinler ``SCAN_EXCLUDED_DIRS`` ile baştan budanır; içlerinde
         oluşturulan yapay ihlaller scanner tarafından raporlanmaz.
         """
@@ -716,11 +706,11 @@ class TestProperty2ScannerSelfChecks:
     def test_findings_contain_relative_path_and_lineno(
         self, tmp_path: Path
     ) -> None:
-        """**Validates: Requirements 1.2, 1.3, 1.5**
+        """Findings include relative path and line number.
 
         Finding objesinin ``path`` alanı forward-slash workspace-
         relative formattadır ve ``lineno`` 1-indexed kaynak satırına
-        işaret eder. Bu sözleşme Property 2 hata mesajlarının
+        işaret eder. Bu sözleşme whitelist hata mesajlarının
         ``format_findings`` çıktısının okunabilir olması için
         gereklidir.
         """
@@ -755,14 +745,14 @@ class TestProperty2ScannerSelfChecks:
 
 
 def test_property2_source_corpus_is_non_empty() -> None:
-    """**Validates: Requirements 1.2, 1.3, 1.4, 1.5**
+    """The source corpus is non-empty.
 
     The Hypothesis sample-from-corpus strategy is only meaningful if
     the corpus has at least one ``.py`` file under the platform root.
     """
 
     assert _SOURCE_FILES, (
-        "Property 2 source corpus is empty; iter_source_files() must "
+        "Path whitelist source corpus is empty; iter_source_files() must "
         "return at least one file under the platform root"
     )
 

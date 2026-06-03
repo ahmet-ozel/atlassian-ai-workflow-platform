@@ -1,51 +1,50 @@
-"""Property test C5 — Log redaction Sensitive_Env_Key değerlerini sızdırmaz.
+"""invariant C5 — Log redaction Sensitive_Env_Key değerlerini sızdırmaz.
 
-**Validates: Requirement 7.7**
 
-Property
+
+invariant
 --------
 For any (a) set of ``Sensitive_Env_Key → value`` pairs, (b) set of
 non-sensitive ``KEY → value`` pairs, and (c) freeform plain-text log
-noise, the lines returned by :meth:`LifecycleService.logs` SHALL
+noise, the lines returned by:meth:`LifecycleService.logs` SHALL
 satisfy three invariants simultaneously:
 
 1. **No leak.** No sensitive value string appears anywhere in the
-   redacted output (substring check across the joined output).
+ redacted output (substring check across the joined output).
 2. **Key visibility.** Each sensitive ``KEY=value`` token in the input
-   becomes ``KEY=<redacted>`` in the output, so operators can see
-   *which* variable was masked even though its value is gone.
+ becomes ``KEY=<redacted>`` in the output, so operators can see
+ *which* variable was masked even though its value is gone.
 3. **Pass-through.** Each non-sensitive ``KEY=value`` token survives
-   the redactor unchanged.
+ the redactor unchanged.
 
-These three invariants together encode design §3.6's "log redaction"
-clause and Requirement 7.7's contract that the log endpoint must
-``<redacted>``-ify every Sensitive_Env_Key value before responding.
+These three invariants together encode the lifecycle log endpoint
+contract: every Sensitive_Env_Key value must be ``<redacted>``-ified
+before responding.
 
 Strategy
 --------
 * ``sensitive_pairs`` and ``non_sensitive_pairs`` are
-  ``st.dictionaries`` over disjoint key pools and a constrained
-  ``st.text`` value alphabet (``[a-z0-9-]``, length 4..32). The pools
-  are validated against
-  :func:`src.lifecycle.sensitive.is_sensitive_env_key` at import time
-  so a future change to the matcher fails the test fast rather than
-  producing a confusing counterexample.
+ ``st.dictionaries`` over disjoint key pools and a constrained
+ ``st.text`` value alphabet (``[a-z0-9-]``, length 4..32). The pools
+ are validated against:func:`src.lifecycle.sensitive.is_sensitive_env_key` at import time
+ so a future change to the matcher fails the test fast rather than
+ producing a confusing counterexample.
 * ``extra_log_lines`` is ``st.text`` over ``[a-z ]`` to inject
-  freeform plain-text log noise without ``KEY=`` tokens.
+ freeform plain-text log noise without ``KEY=`` tokens.
 * ``hypothesis.assume(...)`` filters the small number of pathological
-  cases where (i) a sensitive value coincidentally appears as a
-  substring of a non-sensitive value, (ii) a sensitive value is a
-  substring of the literal sentinel ``<redacted>``, or (iii) a
-  sensitive value is a substring of an injected noise line. Those
-  cases are not bugs in the redactor — they would fail the assertion
-  for trivial reasons unrelated to the property under test.
+ cases where (i) a sensitive value coincidentally appears as a
+ substring of a non-sensitive value, (ii) a sensitive value is a
+ substring of the literal sentinel ``<redacted>``, or (iii) a
+ sensitive value is a substring of an injected noise line. Those
+ cases are not bugs in the redactor — they would fail the assertion
+ for trivial reasons unrelated to the property under test.
 
 Stub fakes
 ----------
 ``_FakeAuditWriter``, ``_FakeVaultClient``, ``_FakeComposeRunner``,
 and ``_FakeHealthProbe`` mirror the patterns established by
 ``services/admin-dashboard-api/tests/unit/test_lifecycle_service.py``
-and ``tests/property/test_stop_idempotent.py`` (Property P3). The
+and ``tests/property/test_stop_idempotent.py`` (invariant). The
 Compose runner stub returns a programmable ``logs_stdout`` payload
 from ``logs(...)`` so the property exercises the orchestrator's
 redaction surface against arbitrary log content.
@@ -69,7 +68,7 @@ from hypothesis import strategies as st
 # ``conftest.py`` lives one directory up; pytest auto-loads it but we
 # add ``tests/`` to ``sys.path`` defensively so this module also imports
 # cleanly under a direct ``python -m pytest tests/property`` invocation
-# (mirrors the pattern used by the other property tests in this folder).
+# (mirrors the pattern used by the other invariant in this folder).
 _TESTS_DIR = Path(__file__).resolve().parent.parent
 if str(_TESTS_DIR) not in sys.path:
     sys.path.insert(0, str(_TESTS_DIR))
@@ -145,15 +144,15 @@ class _FakeVaultClient:
 class _FakeComposeRunner:
     """Returns a programmable ``logs_stdout`` from ``logs(follow=False)``.
 
-    The lifecycle service splits this stdout into lines and runs each
-    line through its sensitive-key redactor — exactly the surface the
-    property under test wants to exercise.
-    """
+ The lifecycle service splits this stdout into lines and runs each
+ line through its sensitive-key redactor — exactly the surface the
+ property under test wants to exercise.
+ """
 
     logs_stdout: str = ""
     logs_calls: list[dict[str, Any]] = field(default_factory=list)
 
-    async def up(  # pragma: no cover - unused by Property C5
+    async def up(  # pragma: no cover - unused by invariant
         self,
         *,
         profile: str,
@@ -167,7 +166,7 @@ class _FakeComposeRunner:
             argv=("docker", "compose", "up", "-d", service_name),
         )
 
-    async def stop(  # pragma: no cover - unused by Property C5
+    async def stop(  # pragma: no cover - unused by invariant
         self, *, service_name: str, remove_volumes: bool = False
     ) -> ComposeResult:
         return ComposeResult(
@@ -190,7 +189,7 @@ class _FakeComposeRunner:
             argv=("docker", "compose", "logs", service_name),
         )
 
-    async def exec_test(  # pragma: no cover - unused by Property C5
+    async def exec_test(  # pragma: no cover - unused by invariant
         self,
         *,
         service_name: str,
@@ -204,7 +203,7 @@ class _FakeComposeRunner:
 class _FakeHealthProbe:
     """Stable ``healthy`` snapshot; ``logs(...)`` never invokes it."""
 
-    async def probe(  # pragma: no cover - unused by Property C5
+    async def probe(  # pragma: no cover - unused by invariant
         self, entry: ManagedServiceEntry
     ) -> HealthSnapshot:
         return HealthSnapshot(
@@ -223,7 +222,7 @@ class _FakeHealthProbe:
 
 
 # Each member of this pool is *known* to match
-# :func:`is_sensitive_env_key` — covers every documented suffix
+#:func:`is_sensitive_env_key` — covers every documented suffix
 # (``_TOKEN``/``_KEY``/``_SECRET``/``_PASSWORD``/``_DSN``/``_CREDENTIAL``)
 # plus the ``_PRIVATE_`` infix. The static ``assert`` block below
 # pins the pool to the matcher so a future change to either side
@@ -258,7 +257,7 @@ _NON_SENSITIVE_KEYS: tuple[str, ...] = (
 for _k in _SENSITIVE_KEYS:
     assert is_sensitive_env_key(_k), (
         f"_SENSITIVE_KEYS member {_k!r} is not flagged sensitive by "
-        f"is_sensitive_env_key — refresh the pool to match design §3.11."
+        f"is_sensitive_env_key — refresh the pool to match the matcher."
     )
 for _k in _NON_SENSITIVE_KEYS:
     assert not is_sensitive_env_key(_k), (
@@ -271,14 +270,14 @@ for _k in _NON_SENSITIVE_KEYS:
 # motivations:
 #
 # * No whitespace → each value is a single ``\S+`` token, which is
-#   exactly what the redaction regex matches against.
+# exactly what the redaction regex matches against.
 # * No uppercase → values cannot accidentally collide with KEY
-#   identifiers (the redaction pattern is anchored on uppercase
-#   word boundaries, so a lowercase value is structurally distinct).
+# identifiers (the redaction pattern is anchored on uppercase
+# word boundaries, so a lowercase value is structurally distinct).
 # * ``min_size=4`` → keeps generated values long enough to be
-#   meaningful substrings; ``max_size=32`` keeps Hypothesis examples
-#   short enough that the property runs in well under the
-#   ``deadline=None`` budget.
+# meaningful substrings; ``max_size=32`` keeps Hypothesis examples
+# short enough that the property runs in well under the
+# ``deadline=None`` budget.
 _VALUE_ALPHABET: str = string.ascii_lowercase + string.digits + "-"
 
 _value_strategy: st.SearchStrategy[str] = st.text(
@@ -305,20 +304,20 @@ def _build_workspace(
 ) -> Path:
     """Materialise a synthetic workspace whose ``.env.example`` lists every key.
 
-    The ``LifecycleService`` builds its redaction pattern from the
-    ``Sensitive_Env_Key`` subset of the LHS keys parsed out of this
-    file (see :meth:`LifecycleService.build_log_redaction_pattern`).
-    Non-sensitive keys are written with their generated default
-    values; sensitive keys carry an empty default because the
-    operator is expected to supply them at form time
-    (Requirement 5.7) — the actual default value does not affect
-    redaction since the redactor only looks at LHS key names.
-    """
+ The ``LifecycleService`` builds its redaction pattern from the
+ ``Sensitive_Env_Key`` subset of the LHS keys parsed out of this
+ file (see:meth:`LifecycleService.build_log_redaction_pattern`).
+ Non-sensitive keys are written with their generated default
+ values; sensitive keys carry an empty default because the
+ operator is expected to supply them at form time
+ — the actual default value does not affect
+ redaction since the redactor only looks at LHS key names.
+ """
 
     svc_dir = tmp_path / "services" / _MANIFEST_NAME
     svc_dir.mkdir(parents=True)
 
-    lines: list[str] = ["# Synthetic env example for Property C5 (log redaction)"]
+    lines: list[str] = ["# Synthetic env example for invariant (log redaction)"]
     for key in sensitive_pairs:
         lines.append(f"# {key} (sensitive — masked in logs)")
         lines.append(f'{key}=""')
@@ -350,10 +349,10 @@ def _make_service(
 ) -> LifecycleService:
     """Wire a ``LifecycleService`` against the no-op fakes + the given Compose stub.
 
-    ``sleep`` is replaced with an immediate-return coroutine so the
-    health-poll loop in ``start`` (unused here) never burns wall-clock
-    time inside Hypothesis examples.
-    """
+ ``sleep`` is replaced with an immediate-return coroutine so the
+ health-poll loop in ``start`` (unused here) never burns wall-clock
+ time inside Hypothesis examples.
+ """
 
     audit = _FakeAuditWriter()
     vault = _FakeVaultClient()
@@ -376,7 +375,7 @@ def _make_service(
 
 
 # ---------------------------------------------------------------------------
-# Property C5
+# invariant
 # ---------------------------------------------------------------------------
 
 
@@ -414,39 +413,39 @@ def test_logs_redact_only_sensitive_values(
     extra_log_lines: list[str],
     tmp_path_factory: pytest.TempPathFactory,
 ) -> None:
-    """Property C5 — ``LifecycleService.logs`` masks every Sensitive_Env_Key value.
+    """invariant — ``LifecycleService.logs`` masks every Sensitive_Env_Key value.
 
-    Validates: Requirement 7.7
 
-    Three simultaneous invariants over the redacted output:
 
-    1. No sensitive value substring survives anywhere.
-    2. Each sensitive ``KEY=value`` token becomes ``KEY=<redacted>``.
-    3. Each non-sensitive ``KEY=value`` token passes through unchanged.
-    """
+ Three simultaneous invariants over the redacted output:
+
+ 1. No sensitive value substring survives anywhere.
+ 2. Each sensitive ``KEY=value`` token becomes ``KEY=<redacted>``.
+ 3. Each non-sensitive ``KEY=value`` token passes through unchanged.
+ """
 
     sensitive_values = set(sensitive_pairs.values())
     non_sensitive_values = set(non_sensitive_pairs.values())
 
-    # ``assume()`` filters: discard pathological cases where a
+    # ``assume`` filters: discard pathological cases where a
     # sensitive value happens to appear *outside* a redacted token,
     # which would fail invariant 1 for a reason unrelated to the
     # redactor's correctness.
     #
     # 1) A sensitive value must not be a substring of any
-    #    non-sensitive value (the non-sensitive line is intentionally
-    #    NOT redacted, so it would carry the sensitive bytes through).
+    # non-sensitive value (the non-sensitive line is intentionally
+    # NOT redacted, so it would carry the sensitive bytes through).
     for sv in sensitive_values:
         for nsv in non_sensitive_values:
             assume(sv not in nsv)
     # 2) A sensitive value must not be a substring of the literal
-    #    sentinel ``<redacted>`` (else the post-redaction line itself
-    #    would trivially contain the value bytes).
+    # sentinel ``<redacted>`` (else the post-redaction line itself
+    # would trivially contain the value bytes).
     for sv in sensitive_values:
         assume(sv not in "<redacted>")
     # 3) A sensitive value must not be a substring of any
-    #    plain-text noise line — those lines never had a ``KEY=``
-    #    prefix, so the redactor (correctly) leaves them alone.
+    # plain-text noise line — those lines never had a ``KEY=``
+    # prefix, so the redactor (correctly) leaves them alone.
     for sv in sensitive_values:
         for noise_line in extra_log_lines:
             assume(sv not in noise_line)
@@ -520,12 +519,12 @@ def test_logs_redact_only_sensitive_values(
 def test_logs_redact_concrete_mixed_pair_set(tmp_path: Path) -> None:
     """Concrete anchor: hand-picked sensitive + non-sensitive pair set.
 
-    Pins the *KEY=<redacted>* shape and the pass-through behaviour for
-    a fixed input so a regression in the redaction regex (e.g. losing
-    the key name from the replacement, or mangling non-sensitive
-    values) fails this test deterministically — independent of the
-    Hypothesis search order.
-    """
+ Pins the *KEY=<redacted>* shape and the pass-through behaviour for
+ a fixed input so a regression in the redaction regex (e.g. losing
+ the key name from the replacement, or mangling non-sensitive
+ values) fails this test deterministically — independent of the
+ Hypothesis search order.
+ """
 
     sensitive_pairs = {
         "API_TOKEN": "super-secret-abc",
@@ -570,37 +569,35 @@ def test_logs_redact_concrete_mixed_pair_set(tmp_path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Property 9 — platform-mimari-foundation (task 9.2)
+# invariant —
 # ---------------------------------------------------------------------------
 #
-# Validates: Requirements 6.2, 6.3, 6.10, 9.6, 9.7
 #
-# This property complements Property C5 above (which exercises the
-# admin-dashboard-control-plane lifecycle redactor over its
-# ``Sensitive_Env_Key`` set) by covering the *platform-wide*
-# :class:`http_shared.redaction.RedactionFilter` against the five
-# fixed patterns enumerated in Requirement 6.10:
+# This property complements the invariant above (which exercises the
+# dashboard lifecycle redactor over its ``Sensitive_Env_Key`` set) by covering the *platform-wide*
+#:class:`http_shared.redaction.RedactionFilter` against the five
+# fixed patterns enumerated in:
 #
-#   1. ``Authorization: Basic <base64-blob>``
-#   2. ``Bearer <token>``
-#   3. ``api_token=<value>``
-#   4. ``password=<value>``
-#   5. ``secret=<value>``
+# 1. ``Authorization: Basic <base64-blob>``
+# 2. ``Bearer <token>``
+# 3. ``api_token=<value>``
+# 4. ``password=<value>``
+# 5. ``secret=<value>``
 #
 # For an arbitrary log line built from any mixture of these
 # credential-bearing tokens plus arbitrary surrounding noise, the
 # redacted output MUST satisfy:
 #
 # * **No-leak:** every randomly-generated secret value is absent
-#   from the redacted text (Requirement 6.10, 9.6).
+# from the redacted text.
 # * **Operator-visible key:** for the ``KEY=value`` family
-#   (``api_token=``, ``password=``, ``secret=``), the key name
-#   survives so operators can still grep for which credential was
-#   masked (Requirement 6.10 redaction shape).
+# (``api_token=``, ``password=``, ``secret=``), the key name
+# survives so operators can still grep for which credential was
+# masked redaction shape).
 # * **Bearer / Basic mask:** the ``Authorization: Basic …`` and
-#   ``Bearer …`` runs collapse to the ``***REDACTED***`` sentinel.
+# ``Bearer …`` runs collapse to the ``***REDACTED***`` sentinel.
 # * **Idempotency:** running the redactor a second time produces
-#   the same output (the sentinel is opaque to every pattern).
+# the same output (the sentinel is opaque to every pattern).
 #
 # Strategy notes
 # --------------
@@ -612,16 +609,16 @@ def test_logs_redact_concrete_mixed_pair_set(tmp_path: Path) -> None:
 #
 # To stay independent of the redactor's regex set we re-derive
 # detector regexes from the same five-pattern alphabet, but the
-# ``assume()`` filters guarantee that randomly-generated noise words
+# ``assume`` filters guarantee that randomly-generated noise words
 # never accidentally form one of the five secret-bearing shapes
 # (e.g. a noise word that happens to match ``api_token=...``). This
 # keeps the no-leak invariant strict without producing pathological
 # false-positives.
 
-import logging  # noqa: E402  -- placed near use site for locality
-import re  # noqa: E402  -- placed near use site for locality
+import logging  # noqa: E402 -- placed near use site for locality
+import re  # noqa: E402 -- placed near use site for locality
 
-from http_shared.redaction import (  # noqa: E402  -- module-level imports OK
+from http_shared.redaction import (  # noqa: E402 -- module-level imports OK
     REDACTION_PLACEHOLDER,
     RedactionFilter as _PlatformRedactionFilter,
     redact_text as _platform_redact_text,
@@ -653,13 +650,13 @@ _PROPERTY9_NOISE_ALPHABET: str = string.ascii_lowercase + string.digits
 # The value alphabets explicitly EXCLUDE ``*`` so a successful
 # redaction (``KEY=***REDACTED***`` or the bare ``***REDACTED***``
 # sentinel) is *not* flagged as a surviving secret. This matches the
-# invariant in :data:`REDACTION_PLACEHOLDER` — the sentinel is
+# invariant in:data:`REDACTION_PLACEHOLDER` — the sentinel is
 # deliberately built from characters that cannot appear inside a real
 # Atlassian PAT, OAuth token, base64 blob or URL-encoded password.
 _PROPERTY9_DETECTORS: tuple[tuple[str, "re.Pattern[str]"], ...] = (
     (
         "Authorization: Basic <blob>",
-        # The redactor replaces the entire ``Authorization: Basic ...``
+        # The redactor replaces the entire ``Authorization: Basic...``
         # run with the bare ``***REDACTED***`` sentinel, so the
         # ``Authorization:`` prefix vanishes and this detector cannot
         # match. The negative lookahead is defensive in case the
@@ -667,7 +664,7 @@ _PROPERTY9_DETECTORS: tuple[tuple[str, "re.Pattern[str]"], ...] = (
         # shape — the placeholder starts with ``*`` which is not in
         # our blob alphabet anyway, but the lookahead keeps the
         # invariant explicit.
-        re.compile(r"(?i)Authorization:\s*Basic\s+(?!\*)[A-Za-z0-9+/=._\-]{4,}"),
+        re.compile(r"(sectioni)Authorization:\s*Basic\s+(section!\*)[A-Za-z0-9+/=._\-]{4,}"),
     ),
     (
         "Bearer <token>",
@@ -677,19 +674,19 @@ _PROPERTY9_DETECTORS: tuple[tuple[str, "re.Pattern[str]"], ...] = (
         # whitespace + nothing — which the ``{4,}`` quantifier rejects.
         # The lookahead is belt-and-braces so a future placeholder
         # change cannot regress the property.).
-        re.compile(r"(?i)Bearer\s+(?!\*)[A-Za-z0-9+/=._\-]{4,}"),
+        re.compile(r"(sectioni)Bearer\s+(section!\*)[A-Za-z0-9+/=._\-]{4,}"),
     ),
     (
         "api_token=<value>",
-        re.compile(r"(?i)api_token=(?!\*)[A-Za-z0-9+/=._\-]{4,}"),
+        re.compile(r"(sectioni)api_token=(section!\*)[A-Za-z0-9+/=._\-]{4,}"),
     ),
     (
         "password=<value>",
-        re.compile(r"(?i)password=(?!\*)[A-Za-z0-9+/=._\-]{4,}"),
+        re.compile(r"(sectioni)password=(section!\*)[A-Za-z0-9+/=._\-]{4,}"),
     ),
     (
         "secret=<value>",
-        re.compile(r"(?i)secret=(?!\*)[A-Za-z0-9+/=._\-]{4,}"),
+        re.compile(r"(sectioni)secret=(section!\*)[A-Za-z0-9+/=._\-]{4,}"),
     ),
 )
 
@@ -716,20 +713,20 @@ _noise_word_strategy: st.SearchStrategy[str] = st.text(
 def _credential_token(draw: st.DrawFn) -> tuple[str, str, str]:
     """Draw one credential-bearing token.
 
-    Returns a ``(family, value, rendered_token)`` triple where:
+ Returns a ``(family, value, rendered_token)`` triple where:
 
-    * ``family`` is one of ``"basic"``, ``"bearer"``, ``"api_token"``,
-      ``"password"``, ``"secret"`` — used by assertions to look up
-      the expected post-redaction shape.
-    * ``value`` is the random secret blob the token carries.
-    * ``rendered_token`` is the literal string that will be embedded
-      into the log line.
+ * ``family`` is one of ``"basic"``, ``"bearer"``, ``"api_token"``,
+ ``"password"``, ``"secret"`` — used by assertions to look up
+ the expected post-redaction shape.
+ * ``value`` is the random secret blob the token carries.
+ * ``rendered_token`` is the literal string that will be embedded
+ into the log line.
 
-    The ``KEY=`` families are rendered with case variations
-    (lowercase / uppercase / mixed) drawn from a small finite set so
-    the redactor's case-insensitivity is exercised without exploding
-    the search space.
-    """
+ The ``KEY=`` families are rendered with case variations
+ (lowercase / uppercase / mixed) drawn from a small finite set so
+ the redactor's case-insensitivity is exercised without exploding
+ the search space.
+ """
 
     family = draw(
         st.sampled_from(
@@ -747,7 +744,7 @@ def _credential_token(draw: st.DrawFn) -> tuple[str, str, str]:
                 (
                     "Authorization: Basic ",
                     "authorization: basic ",
-                    "Authorization:  Basic ",  # double space
+                    "Authorization: Basic ",  # double space
                     "AUTHORIZATION: BASIC ",
                 )
             )
@@ -776,18 +773,18 @@ def _credential_token(draw: st.DrawFn) -> tuple[str, str, str]:
 def _log_line(draw: st.DrawFn) -> tuple[str, list[tuple[str, str, str]], list[str]]:
     """Draw a full log line composed of credential tokens + noise.
 
-    Returns ``(rendered_line, credentials, noise_words)`` where:
+ Returns ``(rendered_line, credentials, noise_words)`` where:
 
-    * ``credentials`` is the list of ``(family, value, token)``
-      triples actually inserted into the line;
-    * ``noise_words`` is the list of plain noise words inserted
-      alongside the credentials (kept separate so the property can
-      distinguish "secret value leaked" from "noise word coincides
-      with a secret value").
+ * ``credentials`` is the list of ``(family, value, token)``
+ triples actually inserted into the line;
+ * ``noise_words`` is the list of plain noise words inserted
+ alongside the credentials (kept separate so the property can
+ distinguish "secret value leaked" from "noise word coincides
+ with a secret value").
 
-    The rendered line is the space-joined concatenation of credential
-    tokens and noise words in a randomly-chosen interleaving.
-    """
+ The rendered line is the space-joined concatenation of credential
+ tokens and noise words in a randomly-chosen interleaving.
+ """
 
     creds: list[tuple[str, str, str]] = draw(
         st.lists(_credential_token(), min_size=1, max_size=4)
@@ -804,7 +801,7 @@ def _log_line(draw: st.DrawFn) -> tuple[str, list[tuple[str, str, str]], list[st
     return (line, creds, noise)
 
 
-# Property 9 — randomised log line redaction
+# invariant — randomised log line redaction
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -817,33 +814,33 @@ def _log_line(draw: st.DrawFn) -> tuple[str, list[tuple[str, str, str]], list[st
 def test_property9_redaction_drops_all_credential_patterns(
     generated: tuple[str, list[tuple[str, str, str]], list[str]],
 ) -> None:
-    """Property 9 — known credential desenleri redaction sonrası kalmaz.
+    """invariant — known credential desenleri redaction sonrası kalmaz.
 
-    Validates: Requirements 6.2, 6.3, 6.10, 9.6, 9.7
 
-    For an arbitrary log line composed of ``Authorization: Basic …``,
-    ``Bearer …``, ``api_token=…``, ``password=…``, ``secret=…`` tokens
-    plus noise:
 
-    1. Each generated secret value is absent from the redacted output
-       (no-leak; Requirement 6.10).
-    2. No detector regex matches anywhere in the redacted output —
-       i.e. *no* credential-bearing shape survives, even one whose
-       value happens to coincide with a noise word
-       (Requirement 9.6 — failed test reports the surviving pattern).
-    3. ``KEY=`` families render as ``KEY=***REDACTED***`` so operators
-       can still see *which* credential was masked.
-    4. ``Authorization: Basic …`` and ``Bearer …`` runs collapse to
-       the bare ``***REDACTED***`` sentinel (no key prefix, since
-       these are header echoes, not key/value pairs).
-    5. The redactor is idempotent — applying it twice gives the same
-       string as applying it once (Requirement 6.10 — sentinel is
-       opaque to every pattern).
-    """
+ For an arbitrary log line composed of ``Authorization: Basic …``,
+ ``Bearer …``, ``api_token=…``, ``password=…``, ``secret=…`` tokens
+ plus noise:
+
+ 1. Each generated secret value is absent from the redacted output
+ (no-leak;.
+ 2. No detector regex matches anywhere in the redacted output —
+ i.e. *no* credential-bearing shape survives, even one whose
+ value happens to coincide with a noise word
+ — failed test reports the surviving pattern).
+ 3. ``KEY=`` families render as ``KEY=***REDACTED***`` so operators
+ can still see *which* credential was masked.
+ 4. ``Authorization: Basic …`` and ``Bearer …`` runs collapse to
+ the bare ``***REDACTED***`` sentinel (no key prefix, since
+ these are header echoes, not key/value pairs).
+ 5. The redactor is idempotent — applying it twice gives the same
+ string as applying it once — sentinel is
+ opaque to every pattern).
+ """
 
     line, creds, noise = generated
 
-    # ``assume()`` filters: discard pathological draws where a
+    # ``assume`` filters: discard pathological draws where a
     # generated secret value happens to coincide with — or appear as
     # a substring of — an unrelated noise word or another credential
     # token. Those cases would fail the no-leak invariant for a
@@ -868,7 +865,7 @@ def test_property9_redaction_drops_all_credential_patterns(
     # is defensive — it should never trigger).
     for family, value, token in creds:
         assert value not in redacted, (
-            f"Property 9 violated: secret value from family "
+            f"invariant violated: secret value from family "
             f"{family!r} (token={token!r}, value={value!r}) leaked "
             f"into redacted output: {redacted!r}. "
             f"Original line: {line!r}."
@@ -882,7 +879,7 @@ def test_property9_redaction_drops_all_credential_patterns(
     for label, detector in _PROPERTY9_DETECTORS:
         match = detector.search(redacted)
         assert match is None, (
-            f"Property 9 violated: detector {label!r} matched "
+            f"invariant violated: detector {label!r} matched "
             f"{match.group(0)!r} in redacted output: {redacted!r}. "
             f"Original line: {line!r}."
         )
@@ -895,7 +892,7 @@ def test_property9_redaction_drops_all_credential_patterns(
             key = token.split("=", 1)[0]
             expected = f"{key}={REDACTION_PLACEHOLDER}"
             assert expected in redacted, (
-                f"Property 9 violated: expected ``{expected}`` in "
+                f"invariant violated: expected ``{expected}`` in "
                 f"redacted output but it is missing. "
                 f"Family={family!r}, token={token!r}, "
                 f"redacted output: {redacted!r}, "
@@ -907,7 +904,7 @@ def test_property9_redaction_drops_all_credential_patterns(
     for family, _value, _token in creds:
         if family in ("basic", "bearer"):
             assert REDACTION_PLACEHOLDER in redacted, (
-                f"Property 9 violated: expected sentinel "
+                f"invariant violated: expected sentinel "
                 f"``{REDACTION_PLACEHOLDER}`` after redacting a "
                 f"{family!r} token, but redacted output is "
                 f"{redacted!r}. Original line: {line!r}."
@@ -917,7 +914,7 @@ def test_property9_redaction_drops_all_credential_patterns(
     # must not change the output.
     redacted_twice = _platform_redact_text(redacted)
     assert redacted_twice == redacted, (
-        f"Property 9 violated: redactor is not idempotent. "
+        f"invariant violated: redactor is not idempotent. "
         f"first pass: {redacted!r}, second pass: {redacted_twice!r}, "
         f"original line: {line!r}."
     )
@@ -932,22 +929,21 @@ def test_property9_redaction_drops_all_credential_patterns(
 def test_property9_logging_filter_drops_credentials_through_handlers(
     generated: tuple[str, list[tuple[str, str, str]], list[str]],
 ) -> None:
-    """Property 9 — :class:`RedactionFilter` masks credentials at the handler.
+    """invariant —:class:`RedactionFilter` masks credentials at the handler.
 
-    Validates: Requirements 6.10, 9.6
 
-    Asserts the same no-leak invariant for the integrated logging
-    path: a :class:`RedactionFilter` attached to a real
-    :class:`logging.Handler` rewrites every record so the formatter
-    only ever sees redacted content. This complements the
-    pure-string :func:`redact_text` check above by exercising the
-    ``logging.LogRecord`` mutation path (``record.msg`` /
-    ``record.args``).
-    """
+
+ Asserts the same no-leak invariant for the integrated logging
+ path: a:class:`RedactionFilter` attached to a real:class:`logging.Handler` rewrites every record so the formatter
+ only ever sees redacted content. This complements the
+ pure-string:func:`redact_text` check above by exercising the
+ ``logging.LogRecord`` mutation path (``record.msg`` /
+ ``record.args``).
+ """
 
     line, creds, noise = generated
 
-    # Same ``assume()`` filter as the pure-string property — a
+    # Same ``assume`` filter as the pure-string property — a
     # generated secret value must not coincide with (or be a
     # substring of) any noise word, otherwise the no-leak check
     # fails for a reason unrelated to the redactor.
@@ -979,7 +975,7 @@ def test_property9_logging_filter_drops_credentials_through_handlers(
         #
         # * ``logger.info(line)`` — secret arrives via ``record.msg``;
         # * ``logger.info("got %s", line)`` — secret arrives via
-        #   ``record.args``.
+        # ``record.args``.
         logger.info(line)
         logger.info("got %s", line)
         emitted = buf.getvalue()
@@ -987,7 +983,7 @@ def test_property9_logging_filter_drops_credentials_through_handlers(
         # Invariant 1 — every generated secret value is absent.
         for family, value, token in creds:
             assert value not in emitted, (
-                f"Property 9 violated (handler path): secret value "
+                f"invariant violated (handler path): secret value "
                 f"from family {family!r} (token={token!r}, "
                 f"value={value!r}) leaked through "
                 f"RedactionFilter into emitted output: "
@@ -998,7 +994,7 @@ def test_property9_logging_filter_drops_credentials_through_handlers(
         for label, detector in _PROPERTY9_DETECTORS:
             match = detector.search(emitted)
             assert match is None, (
-                f"Property 9 violated (handler path): detector "
+                f"invariant violated (handler path): detector "
                 f"{label!r} matched {match.group(0)!r} in emitted "
                 f"output: {emitted!r}. Original line: {line!r}."
             )
@@ -1008,30 +1004,28 @@ def test_property9_logging_filter_drops_credentials_through_handlers(
 
 
 # ---------------------------------------------------------------------------
-# Feature: vps-e2e-deployment-test, Property 6: Log redaction invariant
 # ---------------------------------------------------------------------------
 #
-# Validates: Requirements 17.4
 #
 # This property verifies that captured container logs do NOT contain
 # sensitive substrings that would indicate credential leakage. It
 # operates in two modes:
 #
 # 1. **Evidence-file mode:** If ``vps-test-evidence/17-logs-*.txt``
-#    files exist (produced by the VPS E2E observability step), every
-#    line in every file is scanned for the forbidden literal
-#    substrings: ``Bearer ATCTT3x``, ``Bearer ATATT3x``,
-#    ``sk-proj-``, ``password=ai_dev_only``, ``ATATT3x``, ``ATCTT3x``.
+# files exist (produced by the VPS E2E observability step), every
+# line in every file is scanned for the forbidden literal
+# substrings: ``Bearer ATCTT3x``, ``Bearer ATATT3x``,
+# ``sk-proj-``, ``password=ai_dev_only``, ``ATATT3x``, ``ATCTT3x``.
 #
 # 2. **Hypothesis-driven mode:** Random log lines are generated by
-#    concatenating noise text with seeded sensitive patterns. The
-#    platform :func:`redact_text` function is applied and the output
-#    is verified to be free of the sensitive substrings.
+# concatenating noise text with seeded sensitive patterns. The
+# platform:func:`redact_text` function is applied and the output
+# is verified to be free of the sensitive substrings.
 #
 # Together these two modes ensure that:
 # - Real VPS deployment logs (when available) contain no leaked secrets.
 # - The redaction layer correctly sterilizes any log line that
-#   accidentally includes credential-bearing patterns.
+# accidentally includes credential-bearing patterns.
 
 import glob  # noqa: E402 -- placed near use site for locality
 from pathlib import Path as _P6Path  # noqa: E402 -- avoid shadowing earlier Path
@@ -1059,15 +1053,15 @@ _P6_EVIDENCE_GLOB = str(_P6_WORKSPACE_ROOT / "vps-test-evidence" / "17-logs-*.tx
 
 
 def test_property6_evidence_logs_contain_no_secrets() -> None:
-    """Property 6 — captured VPS log files contain no sensitive substrings.
+    """invariant — captured VPS log files contain no sensitive substrings.
 
-    **Validates: Requirements 17.4**
 
-    Scans all ``vps-test-evidence/17-logs-*.txt`` files (if they exist)
-    and asserts that no line contains any of the forbidden sensitive
-    substrings. If no evidence files exist (test not yet run on VPS),
-    the test is skipped with a clear message.
-    """
+
+ Scans all ``vps-test-evidence/17-logs-*.txt`` files (if they exist)
+ and asserts that no line contains any of the forbidden sensitive
+ substrings. If no evidence files exist (test not yet run on VPS),
+ the test is skipped with a clear message.
+ """
 
     log_files = glob.glob(_P6_EVIDENCE_GLOB)
 
@@ -1100,10 +1094,10 @@ def test_property6_evidence_logs_contain_no_secrets() -> None:
                     )
 
     assert not violations, (
-        f"Property 6 violated: {len(violations)} sensitive substring(s) "
-        f"found in captured log files (R17.4):\n"
-        + "\n".join(f"  - {v}" for v in violations[:20])
-        + ("\n  ... (truncated)" if len(violations) > 20 else "")
+        f"invariant violated: {len(violations)} sensitive substring(s) "
+        f"found in captured log files (the operational rule):\n"
+        + "\n".join(f" - {v}" for v in violations[:20])
+        + ("\n... (truncated)" if len(violations) > 20 else "")
     )
 
 
@@ -1140,7 +1134,7 @@ _P6_REDACTABLE_TEMPLATES: tuple[tuple[str, str], ...] = (
 # Noise alphabet for surrounding log context — lowercase + digits +
 # common log punctuation. Excludes characters that could accidentally
 # form one of the forbidden patterns.
-_P6_NOISE_ALPHABET: str = string.ascii_lowercase + string.digits + " .:/-_[]"
+_P6_NOISE_ALPHABET: str = string.ascii_lowercase + string.digits + ".:/-_[]"
 
 _p6_noise_strategy: st.SearchStrategy[str] = st.text(
     alphabet=_P6_NOISE_ALPHABET,
@@ -1159,11 +1153,11 @@ _p6_suffix_strategy: st.SearchStrategy[str] = st.text(
 def _p6_log_line_with_secrets(draw: st.DrawFn) -> tuple[str, list[str]]:
     """Generate a log line containing one or more seeded sensitive patterns.
 
-    Returns ``(log_line, expected_forbidden_substrings)`` where:
-    - ``log_line`` is a realistic log line with embedded secrets
-    - ``expected_forbidden_substrings`` lists the patterns that should
-      be absent after redaction (only patterns the redactor handles)
-    """
+ Returns ``(log_line, expected_forbidden_substrings)`` where:
+ - ``log_line`` is a realistic log line with embedded secrets
+ - ``expected_forbidden_substrings`` lists the patterns that should
+ be absent after redaction (only patterns the redactor handles)
+ """
     # Pick 1-3 sensitive patterns to embed
     num_secrets = draw(st.integers(min_value=1, max_value=3))
     chosen_templates = draw(
@@ -1205,19 +1199,19 @@ def _p6_log_line_with_secrets(draw: st.DrawFn) -> tuple[str, list[str]]:
 def test_property6_redactor_removes_sensitive_patterns(
     generated: tuple[str, list[str]],
 ) -> None:
-    """Property 6 — platform redactor sterilizes VPS credential patterns.
+    """invariant — platform redactor sterilizes VPS credential patterns.
 
-    **Validates: Requirements 17.4**
 
-    For any log line containing seeded sensitive patterns that the
-    platform redactor is designed to handle (Bearer tokens, password=
-    values), the :func:`redact_text` function MUST produce output
-    where none of the forbidden substrings survive.
 
-    This exercises the redaction layer against the specific credential
-    patterns used in the VPS E2E deployment test that fall within the
-    redactor's documented pattern set (Requirement 6.10).
-    """
+ For any log line containing seeded sensitive patterns that the
+ platform redactor is designed to handle (Bearer tokens, password=
+ values), the:func:`redact_text` function MUST produce output
+ where none of the forbidden substrings survive.
+
+ This exercises the redaction layer against the specific credential
+ patterns used in the VPS E2E deployment test that fall within the
+ redactor's documented pattern set.
+ """
 
     log_line, forbidden_patterns = generated
 
@@ -1227,7 +1221,7 @@ def test_property6_redactor_removes_sensitive_patterns(
     # Verify: no forbidden substring survives in the redacted output
     for pattern in forbidden_patterns:
         assert pattern not in redacted, (
-            f"Property 6 violated (R17.4): sensitive pattern "
+            f"invariant violated (the operational rule): sensitive pattern "
             f"'{pattern[:8]}...' survived redaction. "
             f"Redacted output: {redacted!r}. "
             f"Original line: {log_line!r}."
@@ -1243,14 +1237,14 @@ def test_property6_redactor_removes_sensitive_patterns(
 def test_property6_redaction_idempotent_for_vps_patterns(
     generated: tuple[str, list[str]],
 ) -> None:
-    """Property 6 — redaction is idempotent for VPS credential patterns.
+    """invariant — redaction is idempotent for VPS credential patterns.
 
-    **Validates: Requirements 17.4**
 
-    Applying the redactor twice produces the same result as applying
-    it once. This ensures that the redaction sentinel itself does not
-    trigger further redaction passes.
-    """
+
+ Applying the redactor twice produces the same result as applying
+ it once. This ensures that the redaction sentinel itself does not
+ trigger further redaction passes.
+ """
 
     log_line, _forbidden = generated
 
@@ -1258,7 +1252,7 @@ def test_property6_redaction_idempotent_for_vps_patterns(
     redacted_twice = _platform_redact_text(redacted_once)
 
     assert redacted_twice == redacted_once, (
-        f"Property 6 violated: redaction is not idempotent for VPS "
+        f"invariant violated: redaction is not idempotent for VPS "
         f"credential patterns. First pass: {redacted_once!r}, "
         f"second pass: {redacted_twice!r}, "
         f"original: {log_line!r}."

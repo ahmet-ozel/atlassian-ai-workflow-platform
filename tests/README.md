@@ -1,9 +1,9 @@
-# Multi-Service Scaffold — Test Suite
+# Platform Test Suite
 
 This directory hosts the workspace-level property, unit, and integration
-tests for the `multi-service-scaffold` spec. Each in-scope Component
-under `services/`, `workers/`, `libs/`, and `ui/` ships its own
-component-level tests; this suite focuses on **structural invariants**
+tests for the platform. Each in-scope component under `services/`,
+`workers/`, `libs/`, and `ui/` ships its own component-level tests; this
+suite focuses on **structural invariants**
 (directory tree, port uniqueness, Compose DAG, env coverage, Dockerfile
 shape, schema validation) and on the small amount of cross-component
 behavior that needs to be exercised end-to-end.
@@ -13,10 +13,10 @@ behavior that needs to be exercised end-to-end.
 ```
 tests/
 ├── conftest.py            # shared fixtures + sys.path wiring for libs/
-├── property/              # Hypothesis property tests (Properties 1–12)
+├── property/              # Hypothesis property tests
 ├── unit/                  # focused unit tests (PBT-free)
 ├── integration/           # Docker Compose smoke tests (--run-docker gated)
-├── fixtures/              # baselines (e.g. atlassian_unified snapshot)
+├── fixtures/              # shared baselines and sample payloads
 ├── pyproject.toml         # test-package dependency manifest
 └── requirements.txt       # pip-installable mirror of the manifest
 ```
@@ -43,9 +43,7 @@ be installed with:
 pip install -e tests/
 ```
 
-The two manifests are kept in lock-step; either is sufficient. The
-authoritative dependency list lives in design §6.8 of
-`.kiro/specs/multi-service-scaffold/design.md`.
+The two manifests are kept in lock-step; either is sufficient.
 
 ## Run
 
@@ -87,5 +85,5 @@ directory is `.gitignore`'d.
 2. If the dependency is only needed for integration / Docker tests,
    add it to `[project.optional-dependencies].docker` instead so the
    default install footprint stays minimal.
-3. Update design §6.8 if the dependency reflects a new structural
-   property rather than a one-off fixture concern.
+3. Keep both dependency manifests aligned if the dependency reflects a
+   new structural test rather than a one-off fixture concern.

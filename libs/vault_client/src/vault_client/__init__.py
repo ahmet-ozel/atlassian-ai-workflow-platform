@@ -1,4 +1,4 @@
-"""vault_client — pluggable Vault KV / rotation client (MIMARI §13, R6).
+"""vault_client — pluggable Vault KV / rotation client.
 
 Re-exports the public API so callers can simply do::
 
@@ -7,7 +7,7 @@ Re-exports the public API so callers can simply do::
 Concrete backends (:class:`HashicorpBackend`, :class:`LocalDevBackend`)
 are exported as well for direct construction in tests; production
 code should go through :func:`make_client` so backend selection stays
-driven by ``VAULT_BACKEND`` (R6.6).
+driven by ``VAULT_BACKEND``.
 """
 
 from .client import (

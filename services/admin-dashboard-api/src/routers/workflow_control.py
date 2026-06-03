@@ -1,6 +1,4 @@
-"""``WorkflowControlRouter`` (`platform-gap-fill` task 4.1).
-
-**Validates: Requirements 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7**
+"""``WorkflowControlRouter``.
 
 Admin-only Temporal workflow control surface. Lets a platform admin
 cancel a running workflow, retry a failed workflow with the same input,
@@ -21,11 +19,11 @@ Endpoints
   / ``status`` filters and a ``page`` cursor; capped at 50 entries per
   page.
 
-All endpoints are gated by :func:`require_admin` (Requirement 6.6).
+All endpoints are gated by :func:`require_admin`.
 
 Every mutating action emits one ``workflow_control`` audit event
-through the app's audit sink **before** the action is executed
-(Requirement 6.4). Audit failures are swallowed so a Postgres hiccup
+through the app's audit sink **before** the action is executed.
+Audit failures are swallowed so a Postgres hiccup
 cannot block a legitimate cancel / retry / signal — but the event
 shape mirrors the ``automation.audit_events`` row layout so the
 foundation audit pipeline can ingest the same envelope.
@@ -64,7 +62,7 @@ in-memory stub without depending on the ``temporalio`` SDK.
 The cancel / retry / signal endpoints map :class:`WorkflowNotFoundError`
 (raised by the implementation when Temporal returns ``NOT_FOUND``) to
 ``HTTP 404`` with body ``{"detail": "workflow_not_found"}``
-(Requirement 6.5). Any other :class:`WorkflowControlError` is mapped
+Any other :class:`WorkflowControlError` is mapped
 to ``HTTP 502`` so a Temporal RPC failure does not look like a missing
 workflow to the FE.
 """
@@ -102,15 +100,14 @@ logger = logging.getLogger(__name__)
 # Constants
 # ---------------------------------------------------------------------------
 
-#: Maximum number of workflow rows returned per page (Requirement 6.7 —
-#: "her sayfa max 50 kayıt").
+#: Maximum number of workflow rows returned per page.
 _MAX_PAGE_SIZE: int = 50
 
 #: Default page size when the caller does not supply ``page_size``.
 _DEFAULT_PAGE_SIZE: int = 50
 
 #: Audit event action label written for every mutating action
-#: (Requirement 6.4 — ``workflow_control``).
+#: (``workflow_control``).
 _AUDIT_ACTION: str = "workflow_control"
 
 
@@ -133,7 +130,7 @@ class WorkflowNotFoundError(WorkflowControlError):
     """Raised by the implementation when Temporal reports ``NOT_FOUND``.
 
     The router maps this to ``HTTP 404`` with body
-    ``{"detail": "workflow_not_found"}`` (Requirement 6.5). Implementations
+    ``{"detail": "workflow_not_found"}``. Implementations
     should wrap the underlying ``RPCError(NOT_FOUND)`` from the
     ``temporalio`` SDK with this exception so the router stays
     SDK-agnostic.
@@ -363,9 +360,7 @@ async def _emit_audit(
     """Write a single ``workflow_control`` audit event.
 
     Failures are swallowed — audit hiccups must not block the
-    underlying control action (Requirement 6.4 only mandates that the
-    log entry **be written**, not that the action be aborted on
-    audit failure). The envelope shape mirrors the
+    underlying control action. The envelope shape mirrors the
     ``automation.audit_events`` row layout so the foundation audit
     pipeline can ingest it directly.
     """
@@ -448,8 +443,6 @@ async def cancel_workflow(
 ) -> dict[str, Any]:
     """Send a Temporal cancel signal to ``workflow_id``.
 
-    **Validates: Requirements 6.1, 6.4, 6.5, 6.6**
-
     Audit log: a single ``workflow_control`` event is emitted
     **before** the cancel is dispatched. The event records
     ``action_kind="cancel"`` and the ``workflow_id``. When Temporal
@@ -485,8 +478,8 @@ async def cancel_workflow(
         )
         raise _map_control_exception(exc, workflow_id) from exc
 
-    # Property 18 (Requirement 6.4): the audit row must reflect the
-    # actual outcome of the mutation, so write it *after* the RPC
+    # The audit row must reflect the actual outcome of the mutation,
+    # so write it *after* the RPC
     # returns (or raises). Writing before would leave a permanent
     # ``result="ok"`` row even when the cancel RPC fails and the
     # request returns HTTP 502.
@@ -542,8 +535,6 @@ async def retry_workflow(
 ) -> dict[str, Any]:
     """Restart ``workflow_id`` using its original input.
 
-    **Validates: Requirements 6.2, 6.4, 6.5, 6.6**
-
     The implementation reads ``workflow_type``, ``task_queue``, and
     the original args from the workflow's first history event, then
     calls ``client.start_workflow`` with ``ALLOW_DUPLICATE`` so a
@@ -577,8 +568,8 @@ async def retry_workflow(
         )
         raise _map_control_exception(exc, workflow_id) from exc
 
-    # Property 18 (Requirement 6.4): emit the audit row *after* the
-    # restart RPC returns so ``result`` reflects the actual outcome.
+    # Emit the audit row *after* the restart RPC returns so ``result``
+    # reflects the actual outcome.
     try:
         restarted = await client.restart_workflow(workflow_id)
     except WorkflowNotFoundError as exc:
@@ -632,8 +623,6 @@ async def signal_workflow(
 ) -> dict[str, Any]:
     """Deliver an arbitrary signal to ``workflow_id``.
 
-    **Validates: Requirements 6.3, 6.4, 6.5, 6.6**
-
     Body shape: ``{"signal_name": str, "payload": <any JSON value>}``.
     The audit event records ``action_kind="signal"`` and includes the
     signal name in the payload (the body itself is **not** logged so
@@ -672,8 +661,8 @@ async def signal_workflow(
         )
         raise _map_control_exception(exc, workflow_id) from exc
 
-    # Property 18 (Requirement 6.4): emit the audit row *after* the
-    # signal RPC returns so ``result`` reflects the actual outcome.
+    # Emit the audit row *after* the signal RPC returns so ``result``
+    # reflects the actual outcome.
     # The signal name is logged but the body itself is **not**, so a
     # sensitive payload doesn't end up in the audit row by accident.
     try:
@@ -757,10 +746,8 @@ async def list_workflows(
 ) -> dict[str, Any]:
     """Return one page of workflows visible to the admin.
 
-    **Validates: Requirements 6.6, 6.7**
-
     Pagination is capped at 50 entries per page server-side
-    (Requirement 6.7) so a malicious or curious caller cannot dump
+    so a malicious or curious caller cannot dump
     the entire workflow history in a single request. The server
     returns ``next_page_token`` when more pages exist; callers who
     prefer numeric pagination can keep incrementing ``page`` and

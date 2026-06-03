@@ -1,9 +1,8 @@
 """Prompt loader / renderer exception hierarchy.
 
 These exceptions are raised by :mod:`prompts.loader`,
-:mod:`prompts.validate` (task 2.3) and the prompt-git router
-(task 6.1) when a prompt body or render call violates the contract
-in Requirements 2.5 / 2.7 / 2.9.
+:mod:`prompts.validate` and the prompt-git router when a prompt body
+or render call violates the prompt contract.
 
 The base class :class:`PromptError` is provided so callers that only
 care about prompt-related failures (eg. the assistant-service chat
@@ -32,7 +31,7 @@ class PromptNotFoundError(PromptError, FileNotFoundError):
 class PromptTemplateError(PromptError, ValueError):
     """Raised when a prompt template is malformed.
 
-    Triggers (Requirement 2.9):
+    Triggers:
 
     * ``body.format(**vars)`` raises :class:`KeyError` — the prompt
       references a placeholder that is not part of the

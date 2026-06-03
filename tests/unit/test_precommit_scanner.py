@@ -1,7 +1,6 @@
-"""Unit tests for the ``precommit_scanner`` activity (task 7.4, R7.10).
+"""Unit tests for the ``precommit_scanner`` activity.
 
-Validates the four invariants enumerated by the task specification at
-``.kiro/specs/platform-mimari-workflows/tasks.md`` task 7.4:
+Validates four scanner invariants:
 
 1. **Clean diff → pass** — a diff with no secret patterns returns
    ``ScanResult(decision="pass", matched_patterns=())``.
@@ -13,8 +12,7 @@ Validates the four invariants enumerated by the task specification at
    ``"atlassian_api_token"`` in ``matched_patterns``.
 4. **Determinism** — ``precommit_scanner(diff) == precommit_scanner(diff)``
    for any diff: the same input always yields the same
-   :class:`ScanResult` (Property 16 oracle, design.md §"Property 16:
-   Pre-commit secret scan (T2)").
+   :class:`ScanResult`.
 
 The activity itself lives under
 ``platform/workers/agent-runner-worker/src/activities/precommit_scan.py``.
@@ -208,7 +206,7 @@ class TestScanIsDeterministic:
         )
         result = scan_diff(diff)
         assert result.decision == "block"
-        # Alphabetical order is the design.md §"Property 16" invariant.
+        # Alphabetical order keeps multi-pattern results stable.
         assert result.matched_patterns == (
             "atlassian_api_token",
             "aws_access_key",

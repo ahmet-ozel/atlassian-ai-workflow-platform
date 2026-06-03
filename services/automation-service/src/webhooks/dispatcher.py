@@ -13,7 +13,6 @@ in Postgres). Applies routing rules:
 
 Cache refresh: 5-minute interval + instant Vault query on cache miss.
 
-Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7
 """
 
 from __future__ import annotations
@@ -235,14 +234,13 @@ class DepartmentConfig:
         Department mode: ``"active"``, ``"shadow"``, or ``"disabled"``.
     approvers:
         Tuple of authorized Jira account IDs who can issue ``[iterate]``
-        commands (Requirement 12.6). Sourced from ``config_json.approvers``
-        in ``automation.departments``.
+        commands. Sourced from ``config_json.approvers`` in
+        ``automation.departments``.
     max_concurrent_workflows:
         Optional hard cap on simultaneously running
-        ``AutomationWorkflow`` executions for this department
-        (Requirement 19.1). Sourced from
-        ``config_json.max_concurrent_workflows``. ``None`` disables
-        the per-dept cap (R19.3) — the global license-tier cap in
+        ``AutomationWorkflow`` executions for this department. Sourced
+        from ``config_json.max_concurrent_workflows``. ``None``
+        disables the per-dept cap; the global license-tier cap in
         :mod:`middleware.license_cap` still applies.
     """
 
@@ -392,7 +390,7 @@ class WebhookDispatcher:
         DispatchResult
             The routing decision with action and metadata.
         """
-        # R1.6: Unassign event (assignee null) → DROP
+        # Unassign event (assignee null) → DROP
         if payload.assignee_account_id is None:
             await self._audit(
                 action="dispatch_unassigned",
@@ -404,10 +402,10 @@ class WebhookDispatcher:
         # Ensure cache is fresh
         await self._maybe_refresh_cache()
 
-        # R1.1: Resolve assignee.accountId → dept_id
+        # Resolve assignee.accountId → dept_id
         dept_id = await self._resolve_dept(payload.assignee_account_id)
 
-        # R1.2: Not in bot identity table → DROP
+        # Not in bot identity table → DROP
         if dept_id is None:
             await self._audit(
                 action="dispatch_not_bot",
@@ -417,7 +415,7 @@ class WebhookDispatcher:
             )
             return DispatchResult(action="drop", reason="not_bot")
 
-        # R1.3: Department mode check
+        # Department mode check
         dept_config = await self._get_dept_config(dept_id)
         if dept_config is not None and dept_config.mode == "disabled":
             await self._audit(
@@ -430,18 +428,18 @@ class WebhookDispatcher:
                 action="drop", reason="dept_disabled", dept_id=dept_id
             )
 
-        # R1.7: Comment on needs_info issue → signal existing workflow
+        # Comment on needs_info issue → signal existing workflow
         # Order matters: iterate → needs_info → approval → workflow
         # start. The three are mutually exclusive — at most one
         # branch fires per comment.
 
-        # [iterate] comment → Iteration Manager (R12.1, R12.6)
+        # [iterate] comment → Iteration Manager
         if (
             payload.event_type == "comment_created"
             and payload.comment_body is not None
             and self._is_iterate_command(payload.comment_body)
         ):
-            # R12.6: only approvers OR the issue reporter may iterate
+            # Only approvers OR the issue reporter may iterate.
             if not self._is_iterate_authorized(payload, dept_config):
                 await self._audit(
                     action="dispatch_iteration_unauthorized",
@@ -456,7 +454,7 @@ class WebhookDispatcher:
                     dept_id=dept_id,
                 )
 
-            # R5.5/R10.x: Budget enforcement runtime guard. Check before
+            # Budget enforcement runtime guard. Check before
             # starting the iteration workflow so we never issue an RPC
             # we'd immediately cancel. ``check_budget`` writes the
             # ``budget_exceeded`` audit row (via the policy) and posts
@@ -475,7 +473,7 @@ class WebhookDispatcher:
             )
             return DispatchResult(action="iteration_started", dept_id=dept_id)
 
-        # R1.7: Comment on needs_info issue → signal existing workflow
+        # Comment on needs_info issue → signal existing workflow
         if (
             payload.event_type == "comment_created"
             and await self._is_needs_info(payload.issue_key)
@@ -492,7 +490,7 @@ class WebhookDispatcher:
             )
             return DispatchResult(action="signaled", dept_id=dept_id)
 
-        # Approval Gate forwarding (R11.3/R11.4): a ``[approve]`` or
+        # Approval Gate forwarding: a ``[approve]`` or
         # ``[reject]`` comment on an issue with a running
         # :class:`ApprovalGateWorkflow` child must be forwarded as an
         # ``approval_received`` signal so the child resumes (or
@@ -515,8 +513,8 @@ class WebhookDispatcher:
                 action="approval_forwarded", dept_id=dept_id
             )
 
-        # R1.4: Normal assign/update → workflow start
-        # R19.1/R19.2: Per-dept concurrency cap. Run before the
+        # Normal assign/update → workflow start
+        # Per-dept concurrency cap. Run before the
         # workflow start so we never issue an RPC we'd immediately
         # cancel. ``check_dept_concurrency`` is None when the
         # ``concurrency`` module failed to import; in that case we
@@ -545,7 +543,7 @@ class WebhookDispatcher:
                     dept_id=dept_id,
                 )
 
-        # R5.5/R10.x: Budget enforcement runtime guard. Run after the
+        # Budget enforcement runtime guard. Run after the
         # concurrency cap and before the workflow start RPC so we
         # never burn a Temporal start when the dept is over budget.
         # ``check_budget`` is the high-level helper that wraps
@@ -572,7 +570,7 @@ class WebhookDispatcher:
         )
 
     # ------------------------------------------------------------------
-    # Cache management (R1.5)
+    # Cache management
     # ------------------------------------------------------------------
 
     async def _maybe_refresh_cache(self) -> None:
@@ -645,7 +643,7 @@ class WebhookDispatcher:
         """Resolve an assignee account_id to a department_id.
 
         First checks the in-memory cache. On cache miss, performs an
-        instant DB query (R1.5: cache miss → instant Vault/DB query).
+        instant DB query.
 
         Parameters
         ----------
@@ -663,7 +661,7 @@ class WebhookDispatcher:
         if entry is not None:
             return entry.department_id
 
-        # Cache miss: query DB directly (R1.5)
+        # Cache miss: query DB directly
         try:
             async with self._db.acquire() as conn:
                 row = await conn.fetchrow(
@@ -933,7 +931,7 @@ class WebhookDispatcher:
         return bool(_ITERATE_PATTERN.search(comment_body))
 
     # ------------------------------------------------------------------
-    # Approval Gate detection & forwarding (R11.3, R11.4)
+    # Approval Gate detection & forwarding
     # ------------------------------------------------------------------
 
     @staticmethod
@@ -1038,11 +1036,8 @@ class WebhookDispatcher:
     ) -> bool:
         """Check if the comment author is allowed to issue ``[iterate]``.
 
-        Implements Requirement 12.6:
-
-            ``[iterate]`` MUST be processed only when the comment author
-            is in the department's ``approvers`` list OR is the issue
-            reporter.
+        ``[iterate]`` is processed only when the comment author is in
+        the department's ``approvers`` list OR is the issue reporter.
 
         Parameters
         ----------
@@ -1072,7 +1067,7 @@ class WebhookDispatcher:
         return actor in approvers
 
     # ------------------------------------------------------------------
-    # Concurrency rejection (R19.2)
+    # Concurrency rejection
     # ------------------------------------------------------------------
 
     async def _handle_concurrency_rejection(
@@ -1135,7 +1130,7 @@ class WebhookDispatcher:
                 )
 
     # ------------------------------------------------------------------
-    # Budget enforcement runtime guard (R5.5 / R10.x)
+    # Budget enforcement runtime guard
     # ------------------------------------------------------------------
 
     async def _check_budget_pre_start(
@@ -1214,7 +1209,7 @@ class WebhookDispatcher:
             # propagating would 500 the webhook; log + audit and
             # let the workflow start (the policy itself fails
             # closed at the LLM activity, which is the second
-            # gate per Requirement 10.4).
+            # gate at the LLM activity).
             logger.exception(
                 "budget_pre_start_check_failed: dept_id=%s issue_key=%s",
                 dept_id,

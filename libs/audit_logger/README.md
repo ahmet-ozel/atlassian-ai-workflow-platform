@@ -1,7 +1,6 @@
 # audit_logger
 
-Audit event dataclass + writer for the platform-mimari-foundation spec
-(`MIMARI.md` §15, `design.md` §`libs/audit_logger`). The package
+Audit event dataclass + writer. The package
 captures every state-changing action — capability gating decisions,
 RBAC denials, webhook drops, credential rotations, and the like — so
 operators can trace every effect back to a concrete actor, role, and
@@ -29,8 +28,7 @@ await AuditLogger(session=tenant_aware_session).write(event)
 
 `AuditEvent` is `frozen=True` and uses `Literal` types for
 `actor_role` and `result`, which mirror the Postgres `CHECK` columns
-declared in `infra/postgres/init/10_automation.sql` (see task group 4
-of `platform-mimari-foundation/tasks.md`).
+declared in `infra/postgres/init/10_automation.sql`.
 
 ## Invariant: `actor_role` is mandatory
 
@@ -39,7 +37,7 @@ of `platform-mimari-foundation/tasks.md`).
 `CHECK (actor_role IS NOT NULL ...)` constraint — the application
 check exists so callers fail fast with a clear message *before* the
 round-trip to Postgres. This is the same defence-in-depth pattern
-captured by Property 13 (`test_audit_one_to_one.py`,
+covered by `test_audit_one_to_one.py` in
 `tests/property/`).
 
 ## DB integration
@@ -47,7 +45,7 @@ captured by Property 13 (`test_audit_one_to_one.py`,
 Writes go through `db-shared`'s tenant-aware session so the row lands
 in `audit_events` with `app.current_dept_id` and `app.current_role`
 set by the caller's RLS context. The actual `INSERT` SQL is emitted
-in task group 4 alongside the schema migration; the scaffold here
+alongside the schema migration; this package
 only validates inputs and delegates to a session-like writer
 interface.
 

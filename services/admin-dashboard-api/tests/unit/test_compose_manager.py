@@ -1,23 +1,20 @@
-"""Unit tests for ``src.lifecycle.compose_manager`` (task 5.2).
-
+"""Unit tests for ``src.lifecycle.compose_manager`` .
 These tests exercise :class:`ComposeManager` as a black box with
 :func:`asyncio.create_subprocess_exec` and :class:`httpx.AsyncClient`
 patched out. Production behaviour we need to confirm:
-
 * ``start_service`` / ``stop_service`` build the documented argv
   (``--profile {p} up -d`` and ``--profile {p} down``) and surface
   non-zero exits as :class:`ComposeManagerError`.
 * The subprocess env is scrubbed to the allow-list (``PATH``,
   ``HOME``, ``DOCKER_HOST``) — host-side secrets must not leak
-  (Requirement 8.3 parity with :class:`ComposeRunner`).
+  .
 * ``check_health`` polls until 200 lands or the budget elapses.
 * ``get_running_services`` parses both the array and NDJSON layouts
   Compose ships across versions.
 * ``StartedProfileStore`` is updated on success / cleared on stop.
 * ``auto_start_persisted`` re-activates persisted profiles and
   tolerates per-profile failures.
-* Profile names are validated and reject malformed inputs.
-"""
+* Profile names are validated and reject malformed inputs."""
 
 from __future__ import annotations
 
@@ -386,7 +383,7 @@ def test_stop_service_clears_persistence_row_on_success() -> None:
 
 
 # ---------------------------------------------------------------------------
-# auto_start_persisted (Requirement 7.6)
+# auto_start_persisted
 # ---------------------------------------------------------------------------
 
 

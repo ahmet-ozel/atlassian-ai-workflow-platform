@@ -1,13 +1,11 @@
-"""Property test 12 — Streamlit dept switcher full session reset.
-
-**Validates: Requirements 7.2, 3.11, 3.12**
+"""Property-based test for Streamlit dept switcher full session reset.
 
 Hypothesis-driven exercise of
 ``components.dept_switcher.clear_session_except_user``: for any
 randomly-generated initial ``session_state`` dict (must contain
 ``user`` + ``auth_token`` plus arbitrary extra keys), the helper
 MUST keep ``user`` and ``auth_token`` and drop **every** other
-key. Property 12's full handler-level invariant (cookie write +
+key. The full handler-level invariant (cookie write +
 probe rerun) is exercised by the integration test
 ``tests/integration/test_streamlit_dept_switcher_reset.py``; the
 pure-state-machine slice is what we pin here.
@@ -45,8 +43,8 @@ else:
 pytestmark = pytest.mark.skipif(
     clear_session_except_user is None,
     reason=(
-        "components.dept_switcher not yet importable "
-        f"(task 9.6 still in flight); error: {_IMPORT_ERROR!r}"
+        "components.dept_switcher not yet importable; "
+        f"error: {_IMPORT_ERROR!r}"
     ),
 )
 

@@ -1,6 +1,4 @@
-"""Unit tests for ``src.routers.workflow_control`` (platform-gap-fill task 4.1).
-
-**Validates: Requirements 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7**
+"""Unit tests for ``src.routers.workflow_control``.
 
 The router exposes admin-only Temporal control endpoints:
 
@@ -306,8 +304,8 @@ def test_cancel_workflow_returns_503_when_temporal_not_wired() -> None:
 def test_cancel_workflow_audit_failure_does_not_block_request() -> None:
     """Audit sink raising must not turn a 200 into a 500.
 
-    Requirement 6.4 only mandates that an audit row be **written** —
-    it does not mandate that the cancel be aborted on audit failure.
+    The endpoint only requires that an audit row be **written**; it
+    does not abort the cancel on audit failure.
     """
 
     temporal = _FakeTemporalControl()
@@ -502,7 +500,7 @@ def test_list_workflows_returns_serialised_summaries() -> None:
 
 
 def test_list_workflows_caps_page_size_at_50() -> None:
-    """Requirement 6.7: max 50 entries per page."""
+    """Max 50 entries per page."""
 
     temporal = _FakeTemporalControl()
     app = _build_app(temporal=temporal, audit_sink=_RecordingAuditSink())
@@ -539,7 +537,7 @@ def test_list_workflows_returns_503_when_temporal_missing() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Admin role enforcement (Requirement 6.6)
+# Admin role enforcement
 # ---------------------------------------------------------------------------
 
 

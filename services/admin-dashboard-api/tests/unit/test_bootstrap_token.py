@@ -1,13 +1,9 @@
 """Unit tests for the BootstrapTokenService class.
-
-Validates Requirements 2.1, 2.2, 2.3, 2.4, 2.5 from the production-hardening spec:
-
-* Requirement 2.1: Token generation when no admin exists (stdout output).
-* Requirement 2.2: Token has 1-hour TTL; expired tokens are invalid.
-* Requirement 2.3: Valid token → consumed successfully.
-* Requirement 2.4: Expired/used token → validation fails.
-* Requirement 2.5: OIDC configured → bootstrap mechanism disabled.
-"""
+* : Token generation when no admin exists (stdout output).
+* : Token has 1-hour TTL; expired tokens are invalid.
+* : Valid token → consumed successfully.
+* : Expired/used token → validation fails.
+* : OIDC configured → bootstrap mechanism disabled."""
 
 from __future__ import annotations
 
@@ -73,7 +69,7 @@ def _make_mock_pool(
 
 
 # ---------------------------------------------------------------------------
-# Token Generation (Requirement 2.1)
+# Token Generation
 # ---------------------------------------------------------------------------
 
 
@@ -82,7 +78,7 @@ class TestGenerateIfNeeded:
 
     @pytest.mark.asyncio
     async def test_generates_token_when_no_admin_exists(self) -> None:
-        """Requirement 2.1: First boot with no admin → generates token."""
+        """First boot with no admin → generates token."""
         service = BootstrapTokenService()
         pool = _make_mock_pool(admin_exists=False, valid_token_exists=False)
 
@@ -95,7 +91,7 @@ class TestGenerateIfNeeded:
 
     @pytest.mark.asyncio
     async def test_returns_none_when_admin_already_exists(self) -> None:
-        """Requirement 2.1: Admin already bootstrapped → no new token."""
+        """Admin already bootstrapped → no new token."""
         service = BootstrapTokenService()
         pool = _make_mock_pool(admin_exists=True)
 
@@ -136,7 +132,7 @@ class TestGenerateIfNeeded:
 
     @pytest.mark.asyncio
     async def test_prints_token_to_stdout(self, capsys) -> None:
-        """Requirement 2.1: Token is printed to stdout for operator."""
+        """Token is printed to stdout for operator."""
         service = BootstrapTokenService()
         pool = _make_mock_pool(admin_exists=False, valid_token_exists=False)
 
@@ -148,7 +144,7 @@ class TestGenerateIfNeeded:
 
     @pytest.mark.asyncio
     async def test_token_expires_in_one_hour(self) -> None:
-        """Requirement 2.2: Token TTL is 1 hour."""
+        """Token TTL is 1 hour."""
         service = BootstrapTokenService()
         pool = _make_mock_pool(admin_exists=False, valid_token_exists=False)
 
@@ -169,7 +165,7 @@ class TestGenerateIfNeeded:
 
 
 # ---------------------------------------------------------------------------
-# Token Validation and Consumption (Requirements 2.3, 2.4)
+# Token Validation and Consumption
 # ---------------------------------------------------------------------------
 
 
@@ -178,7 +174,7 @@ class TestValidateAndConsume:
 
     @pytest.mark.asyncio
     async def test_valid_token_is_consumed_successfully(self) -> None:
-        """Requirement 2.3: Valid token → consumed, returns True."""
+        """Valid token → consumed, returns True."""
         service = BootstrapTokenService()
         pool = _make_mock_pool(consume_returns_row=True)
 
@@ -188,7 +184,7 @@ class TestValidateAndConsume:
 
     @pytest.mark.asyncio
     async def test_invalid_token_returns_false(self) -> None:
-        """Requirement 2.4: Invalid/expired/used token → returns False."""
+        """Invalid/expired/used token → returns False."""
         service = BootstrapTokenService()
         pool = _make_mock_pool(consume_returns_row=False)
 
@@ -218,7 +214,7 @@ class TestValidateAndConsume:
 
     @pytest.mark.asyncio
     async def test_consumed_token_cannot_be_reused(self) -> None:
-        """Requirement 2.4: Already consumed token → returns False."""
+        """Already consumed token → returns False."""
         service = BootstrapTokenService()
 
         # First call succeeds (row returned)
@@ -233,7 +229,7 @@ class TestValidateAndConsume:
 
 
 # ---------------------------------------------------------------------------
-# TTL Expiry Behavior (Requirement 2.2)
+# TTL Expiry Behavior
 # ---------------------------------------------------------------------------
 
 
@@ -241,17 +237,15 @@ class TestTTLExpiry:
     """Test token TTL expiry behavior."""
 
     def test_token_ttl_is_one_hour(self) -> None:
-        """Requirement 2.2: TOKEN_TTL is exactly 1 hour."""
+        """TOKEN_TTL is exactly 1 hour."""
         service = BootstrapTokenService()
         assert service.TOKEN_TTL == timedelta(hours=1)
 
     @pytest.mark.asyncio
     async def test_expired_token_validation_fails(self) -> None:
-        """Requirement 2.2/2.4: Expired token → validation returns False.
-
+        """Expired token → validation returns False.
         The DB query includes `expires_at > now()` so expired tokens
-        won't match, resulting in fetchrow returning None.
-        """
+        won't match, resulting in fetchrow returning None."""
         service = BootstrapTokenService()
         # Simulate expired token: DB returns None (no matching row)
         pool = _make_mock_pool(consume_returns_row=False)
@@ -276,7 +270,7 @@ class TestTTLExpiry:
 
 
 # ---------------------------------------------------------------------------
-# OIDC Disables Bootstrap (Requirement 2.5)
+# OIDC Disables Bootstrap
 # ---------------------------------------------------------------------------
 
 
@@ -287,7 +281,7 @@ class TestOIDCConfiguration:
     async def test_oidc_configured_when_all_vars_set_and_production_mode(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Requirement 2.5: OIDC fully configured → returns True."""
+        """OIDC fully configured → returns True."""
         monkeypatch.setenv("AUTH_MODE", "production")
         monkeypatch.setenv("OIDC_ISSUER", "https://accounts.google.com")
         monkeypatch.setenv("OIDC_AUDIENCE", "my-app-client-id")
@@ -302,7 +296,7 @@ class TestOIDCConfiguration:
     async def test_oidc_not_configured_when_auth_mode_is_dev(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Requirement 2.5: AUTH_MODE=dev → OIDC not configured."""
+        """AUTH_MODE=dev → OIDC not configured."""
         monkeypatch.setenv("AUTH_MODE", "dev")
         monkeypatch.setenv("OIDC_ISSUER", "https://accounts.google.com")
         monkeypatch.setenv("OIDC_AUDIENCE", "my-app-client-id")

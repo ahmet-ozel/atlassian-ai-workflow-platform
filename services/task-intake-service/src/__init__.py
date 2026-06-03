@@ -1,1 +1,1 @@
-"""task-intake-service package (scaffold)."""
+"""task-intake-service package."""

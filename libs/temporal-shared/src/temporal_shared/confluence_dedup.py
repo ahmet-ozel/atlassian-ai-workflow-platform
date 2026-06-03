@@ -2,25 +2,22 @@
 
 This module hosts three **pure** decision helpers used by the
 ``AgentRunnerWorkflow`` before it invokes a ``confluence_update_page``
-MCP tool call (see ``platform-mimari-workflows`` requirements.md
-§R8.2 / §R8.3 / §R8.7, design.md §"Components and Interfaces" and
-Property 9):
+MCP tool call:
 
 * :func:`should_skip_section_update` — returns a :class:`SkipDecision`
   reporting whether the four-tuple
   ``(workflow_id, page_id, section_path, content_hash)`` is already
-  present in an in-memory hash table (R8.2, MIMARI §16.14.10 V10).
+  present in an in-memory hash table.
 * :func:`should_skip_overwrite` — returns a :class:`SkipDecision`
   reporting whether a Confluence page was edited in the recent
-  freshness window by a non-bot user (R8.7, MIMARI §16.11 — Confluence
-  overwrite koruması).
+  freshness window by a non-bot user.
 * :func:`is_probe_page` — predicate matching the canonical
   ``_AI_PROBE_*`` sentinel title format produced by the foundation
-  ``ProbeRunner`` (R8.3, MIMARI §16.14.6 V6 / foundation R5).
+  ``ProbeRunner``.
 
 Why a separate module?
 ----------------------
-``temporal_shared.confluence`` (task 8.1) owns the **string composition**
+``temporal_shared.confluence`` owns the **string composition**
 contract for Confluence page titles and the provenance footer.  This
 module owns the **skip-decision** contract for the update path.  The
 two concerns share a domain (Confluence) but have unrelated input /
@@ -45,18 +42,17 @@ Every public function in this module is **pure**:
 * No randomness, no UUIDs, no globals.
 
 This makes the helpers safe to call directly from inside Temporal
-workflow code (design.md §"Tasarım Kararları" — replay determinism)
+workflow code
 without tripping the AST-based replay-determinism property test
-(``platform/tests/property/test_workflow_determinism_static.py``,
-task 2.7).
+(``platform/tests/property/test_workflow_determinism_static.py``).
 
 Returning :class:`SkipDecision` instead of a bare ``bool``
 ----------------------------------------------------------
 
 The skip predicate alone is not enough for the call site: when a write
 is skipped, the caller must also emit a specific audit row
-(``confluence_section_dedup_skip`` for R8.2,
-``confluence_overwrite_protected`` for R8.7).  Returning
+(``confluence_section_dedup_skip`` or
+``confluence_overwrite_protected``). Returning
 :class:`SkipDecision` keeps the audit-action name colocated with the
 decision so the call-site cannot drift out of sync with the
 requirement text:
@@ -71,7 +67,6 @@ The audit emission still lives in the caller (an
 :class:`audit_logger.AuditLogger` write is I/O); this module never
 imports :mod:`audit_logger`.
 
-Validates: Requirements 8.2, 8.3, 8.7.
 """
 
 from __future__ import annotations
@@ -101,18 +96,17 @@ __all__ = [
 # Audit action constants
 # ---------------------------------------------------------------------------
 #
-# The audit action strings are pinned by Requirement 8.2 and 8.7
-# verbatim.  We expose them as module constants (rather than embedding
+# The audit action strings are exposed as module constants (rather than embedding
 # the literals inside each helper) so the call site can also reference
 # them when matching audit rows in tests, and so a typo in the
 # audit emission can be caught by the type checker.
 
 #: Audit action emitted when :func:`should_skip_section_update` returns
-#: ``skip=True`` (R8.2, MIMARI §16.14.10 V10).
+#: ``skip=True``.
 AUDIT_CONFLUENCE_SECTION_DEDUP_SKIP: Final[str] = "confluence_section_dedup_skip"
 
 #: Audit action emitted when :func:`should_skip_overwrite` returns
-#: ``skip=True`` (R8.7, MIMARI §16.11 — Confluence overwrite koruması).
+#: ``skip=True``.
 AUDIT_CONFLUENCE_OVERWRITE_PROTECTED: Final[str] = "confluence_overwrite_protected"
 
 
@@ -121,14 +115,14 @@ AUDIT_CONFLUENCE_OVERWRITE_PROTECTED: Final[str] = "confluence_overwrite_protect
 # ---------------------------------------------------------------------------
 
 #: Default freshness window for the overwrite-protection check
-#: (Requirement 8.7).  A page edited by a non-bot user within this
+#: A page edited by a non-bot user within this
 #: window blocks the bot's update.  Pinned to 5 minutes per the
 #: requirement; exposed as a constant so tests can assert the default
 #: without re-reading the requirement text.
 DEFAULT_OVERWRITE_FRESHNESS: Final[timedelta] = timedelta(minutes=5)
 
 #: Title prefix used by the foundation ``ProbeRunner`` for write-probe
-#: artifacts (foundation R5, MIMARI §16.14.6 V6).  Mirrors
+#: artifacts. Mirrors
 #: :data:`automation_service.probe.PROBE_ARTIFACT_PREFIX` — duplicated
 #: here as a string literal so :mod:`temporal_shared` does not depend
 #: on :mod:`automation_service` (the dependency direction is the
@@ -189,7 +183,7 @@ _PROCEED: Final[SkipDecision] = SkipDecision(skip=False, audit_event=None)
 
 
 # ---------------------------------------------------------------------------
-# should_skip_section_update  (Requirement 8.2, Property 9.b)
+# should_skip_section_update
 # ---------------------------------------------------------------------------
 
 
@@ -214,7 +208,7 @@ def should_skip_section_update(
     — that helper performs an idempotent ``INSERT ... ON CONFLICT``.
     This pure helper is for the workflow path: the workflow holds
     the hash table in :class:`temporal_shared.IterationState`-adjacent
-    state (design.md §"Konfigürasyon ve State Sahipliği"), passes it
+    state, passes it
     in, and the DB layer is consulted by an activity that uses this
     same predicate as part of its decision.
 
@@ -304,7 +298,7 @@ def should_skip_section_update(
 
 
 # ---------------------------------------------------------------------------
-# should_skip_overwrite  (Requirement 8.7, Property 9.d)
+# should_skip_overwrite
 # ---------------------------------------------------------------------------
 
 
@@ -318,7 +312,7 @@ def should_skip_overwrite(
     """Decide whether a recent non-bot edit should block the bot's update.
 
     Returns a "skip" decision when **all** of the following hold (per
-    Requirement 8.7, MIMARI §16.11 Confluence overwrite koruması):
+    the overwrite-protection rule):
 
     * ``last_editor_account_id`` is **not** in the bot account-id set
       (i.e. a human edited the page since the last bot write); and
@@ -355,7 +349,7 @@ def should_skip_overwrite(
     freshness:
         Window during which a non-bot edit blocks the bot update.
         Defaults to :data:`DEFAULT_OVERWRITE_FRESHNESS` (5 minutes,
-        per R8.7).  Must be **positive** — a zero or negative window
+        by default). Must be **positive** — a zero or negative window
         would either always-block or never-block, both of which are
         contract violations.
 
@@ -464,7 +458,7 @@ def should_skip_overwrite(
     # if the editor's clock is ahead of the workflow's clock the
     # delta would be negative, which the strict-less-than check
     # below correctly resolves to ``False`` (no skip).  This matches
-    # Requirement 8.7's intent — only edits in the past 5 minutes
+    # Only edits in the past 5 minutes
     # block the bot update.
     if delta < freshness and delta >= timedelta(0):
         return SkipDecision(
@@ -475,18 +469,18 @@ def should_skip_overwrite(
 
 
 # ---------------------------------------------------------------------------
-# is_probe_page  (Requirement 8.3, Property 9.e)
+# is_probe_page
 # ---------------------------------------------------------------------------
 
 
 def is_probe_page(page_title: str) -> bool:
     """Return whether *page_title* matches the foundation probe sentinel.
 
-    Foundation R5 / MIMARI §16.14.6 V6 documents the canonical probe
-    title format ``_AI_PROBE_<unix_ts>_DELETE_ME`` produced by
+    The canonical probe title format
+    ``_AI_PROBE_<unix_ts>_DELETE_ME`` is produced by
     :class:`automation_service.probe.ProbeRunner`.  The
     ``confluence_doc_update`` flow must filter these pages out of its
-    update queue (R8.3) so the bot never overwrites or amends a
+    update queue so the bot never overwrites or amends a
     write-probe artifact left behind by a credential probe.
 
     The check is deliberately **prefix-only** so it stays robust

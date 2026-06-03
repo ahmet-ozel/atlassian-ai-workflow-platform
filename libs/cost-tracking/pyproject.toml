@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "cost-tracking"
 version = "0.1.0"
-description = "Idempotent cost insert + dept-vs-global cost predictor (platform-mimari-ops tasks 7.1/7.2)."
+description = "Idempotent cost insert and dept-vs-global cost predictor."
 requires-python = ">=3.11"
 dependencies = []
 

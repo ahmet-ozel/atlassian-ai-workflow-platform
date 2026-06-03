@@ -1,6 +1,4 @@
-"""Property test 3 — UI banned tool list filtering parite.
-
-**Validates: Requirements 1.2, 3.3**
+"""UI banned tool list filtering parity.
 
 The Streamlit Explorer page (read-only direct MCP) and the chat
 page (proxy through assistant-service) MUST never expose a tool
@@ -28,7 +26,7 @@ _STREAMLIT_PAGES = (
 )
 
 #: Tools the foundation forbids. Mirrors
-#: ``libs/mcp_client/src/mcp_client/banned.py`` (Spec 1 R7.2).
+#: ``libs/mcp_client/src/mcp_client/banned.py``.
 _BANNED_TOOLS = (
     "bitbucket_merge_pr",
     "confluence_delete_page",

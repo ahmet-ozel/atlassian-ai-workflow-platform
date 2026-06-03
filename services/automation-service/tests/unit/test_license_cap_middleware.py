@@ -1,6 +1,4 @@
-"""Unit tests for ``src.middleware.license_cap`` (R16 / Q20).
-
-Validates: Requirements 16.3, 16.4, 16.5 (uyumluluk spec).
+"""Unit tests for ``src.middleware.license_cap``.
 
 Covers the workflow-start guard contract:
 
@@ -10,8 +8,7 @@ Covers the workflow-start guard contract:
   itself does not exist.
 * ``enforce_license_cap`` short-circuits on the *first* exceeded
   limit in the deterministic order ``concurrent`` → ``daily`` →
-  ``monthly_token`` (Property 17), writes a
-  ``bot_license_cap_exceeded`` audit row and raises
+  ``monthly_token``, writes a ``bot_license_cap_exceeded`` audit row and raises
   :class:`BotLicenseCapExceededError`.
 * The success path (every cap below threshold) returns ``None`` and
   writes **no** audit row.
@@ -159,7 +156,7 @@ def _no_license_row() -> dict[str, Any]:
 
 
 class TestFetchCapForDept:
-    """Resolves dept → :class:`LicenseCap` (R16.1, R16.2, default cap)."""
+    """Resolves dept → :class:`LicenseCap`, including the default cap."""
 
     @pytest.mark.asyncio
     async def test_returns_default_cap_when_dept_missing(self) -> None:

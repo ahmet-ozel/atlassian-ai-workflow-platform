@@ -1,8 +1,5 @@
 """Property test: Worker Vault TTL Cache + Drift Detection.
 
-**Property 16: Worker Vault TTL Cache + Drift Detection (Q17)**
-**Validates: Requirements 15.1, 15.2, 15.5**
-
 For any clock advance sequence ``dt = (t0, t1, ..., tN)`` and Vault
 change event sequence, ``CredentialResolver.get(...)`` behaviour:
 
@@ -304,15 +301,12 @@ _session_id_st = st.sampled_from(_SESSION_IDS)
 _scope_st = st.sampled_from(["org", "user"])
 
 # ---------------------------------------------------------------------------
-# Property 16a — TTL cache invariant (no Vault hit within TTL)
+# TTL cache invariant (no Vault hit within TTL)
 # ---------------------------------------------------------------------------
 
 
 class TestTTLCacheInvariant:
-    """**Property 16: TTL cache invariant — no Vault read within TTL window.**
-
-    **Validates: Requirements 15.1, 15.5**
-    """
+    """TTL cache invariant: no Vault read within the TTL window."""
 
     @_PROFILE
     @given(
@@ -426,15 +420,12 @@ class TestTTLCacheInvariant:
         assert first.personal_token == entry.personal_token
 
 # ---------------------------------------------------------------------------
-# Property 16b — TTL expiration triggers exactly one Vault read
+# TTL expiration triggers exactly one Vault read
 # ---------------------------------------------------------------------------
 
 
 class TestTTLExpiration:
-    """**Property 16: TTL expiration — Vault is re-read after TTL expires.**
-
-    **Validates: Requirements 15.1**
-    """
+    """TTL expiration: Vault is re-read after TTL expires."""
 
     @_PROFILE
     @given(
@@ -547,15 +538,12 @@ class TestTTLExpiration:
         )
 
 # ---------------------------------------------------------------------------
-# Property 16c — Drift detection: audit emitted when created_time advances
+# Drift detection: audit emitted when created_time advances
 # ---------------------------------------------------------------------------
 
 
 class TestDriftDetection:
-    """**Property 16: Drift detection — audit emitted on credential rotation.**
-
-    **Validates: Requirements 15.2**
-    """
+    """Drift detection: audit emitted on credential rotation."""
 
     @_PROFILE
     @given(
@@ -731,15 +719,12 @@ class TestDriftDetection:
         assert refreshed[0].payload["service"] == service
 
 # ---------------------------------------------------------------------------
-# Property 16d — Cache key isolation: different keys don't interfere
+# Cache key isolation: different keys don't interfere
 # ---------------------------------------------------------------------------
 
 
 class TestCacheKeyIsolation:
-    """**Property 16: Cache key isolation — different (scope, id, service) are independent.**
-
-    **Validates: Requirements 15.1, 15.5**
-    """
+    """Cache key isolation: different (scope, id, service) are independent."""
 
     @_PROFILE
     @given(
@@ -833,15 +818,12 @@ class TestCacheKeyIsolation:
         assert vault.total_reads(path_a) == 1
 
 # ---------------------------------------------------------------------------
-# Property 16e — TTL boundary: exactly at TTL boundary
+# TTL boundary: exactly at TTL boundary
 # ---------------------------------------------------------------------------
 
 
 class TestTTLBoundary:
-    """**Property 16: TTL boundary — behaviour at exactly TTL seconds.**
-
-    **Validates: Requirements 15.1**
-    """
+    """TTL boundary: behavior at exactly TTL seconds."""
 
     @pytest.mark.asyncio
     async def test_at_exactly_ttl_boundary_triggers_refresh(self) -> None:
@@ -911,15 +893,12 @@ class TestTTLBoundary:
             clock.advance(_TTL_SECONDS + 1)
 
 # ---------------------------------------------------------------------------
-# Property 16f — Drift audit payload completeness
+# Drift audit payload completeness
 # ---------------------------------------------------------------------------
 
 
 class TestDriftAuditPayload:
-    """**Property 16: Drift audit payload — all required fields present.**
-
-    **Validates: Requirements 15.2**
-    """
+    """Drift audit payload includes all required fields."""
 
     @_PROFILE
     @given(
@@ -963,7 +942,7 @@ class TestDriftAuditPayload:
         assert len(events) == 1
         payload = events[0].payload
 
-        # Required fields per R15.2
+        # Required drift audit fields
         required_fields = {"scope", "dept_id", "service", "prev_created_time", "new_created_time"}
         missing = required_fields - set(payload.keys())
         assert not missing, f"Drift audit payload missing fields: {missing}"

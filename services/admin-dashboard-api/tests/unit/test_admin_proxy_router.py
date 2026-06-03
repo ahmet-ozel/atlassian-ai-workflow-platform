@@ -1,10 +1,8 @@
-"""FastAPI router tests for ``src.routers.admin_proxy`` (task 8.2).
-
+"""FastAPI router tests for ``src.routers.admin_proxy`` .
 These tests wire :class:`AdminProxy` and :func:`require_auth_context`
 into a throwaway FastAPI app via dependency overrides — no real
 OIDC validator, no asyncpg pool, no upstream automation-service. The
 goal is to verify the router-level glue:
-
 * The catch-all path matcher covers every ``/admin/{departments,
   probe-artifacts, ssh-runners, prompts/global}/...`` shape.
 * Missing / invalid bearer tokens are rejected at the auth boundary
@@ -12,8 +10,7 @@ goal is to verify the router-level glue:
 * Forwarded responses bubble back through the router unchanged.
 * Non-proxied paths under ``/admin`` (specifically ``/admin/services``)
   remain claimable by other routers — i.e. the catch-all does not
-  swallow them.
-"""
+  swallow them."""
 
 from __future__ import annotations
 
@@ -128,7 +125,7 @@ def _build_app(
 
 
 class TestAuthBoundary:
-    """Requirement 7.9 — missing / invalid token returns 401 / 403."""
+    """"""
 
     def test_missing_authorization_returns_401(self) -> None:
         validator = _StubValidator()

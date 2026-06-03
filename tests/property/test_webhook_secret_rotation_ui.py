@@ -1,8 +1,4 @@
-"""Property test 10 — Webhook Secret Rotation Overlap Window.
-
-Spec: ``platform-real-usage-gaps`` — Property 10.
-
-**Validates: Requirements 9.2, 9.3, 9.6, 9.8**
+"""Webhook Secret Rotation Overlap Window.
 
 Background
 ----------
@@ -260,12 +256,12 @@ _body_strategy = st.binary(min_size=10, max_size=500)
 
 
 # ---------------------------------------------------------------------------
-# Property 10a: Overlap Window — Both Secrets Accepted After Rotation
+# Overlap Window — Both Secrets Accepted After Rotation
 # ---------------------------------------------------------------------------
 
 
 class TestOverlapWindowBothSecretsAccepted:
-    """**Validates: Requirements 9.2, 9.6, 9.8**
+    """Both secrets are accepted during the overlap window.
 
     After a rotation but before finalize, requests signed with either
     the current or previous secret are accepted. This ensures
@@ -286,7 +282,7 @@ class TestOverlapWindowBothSecretsAccepted:
     def test_current_secret_accepted_after_rotation(
         self, dept_id: str, provider: str, body: bytes
     ) -> None:
-        """R9.2, R9.6: After rotation, a request signed with the NEW
+        """After rotation, a request signed with the NEW
         (current) secret is accepted."""
 
         vault = FakeWebhookVault()
@@ -322,7 +318,7 @@ class TestOverlapWindowBothSecretsAccepted:
     def test_previous_secret_accepted_during_overlap(
         self, dept_id: str, provider: str, body: bytes
     ) -> None:
-        """R9.2, R9.6: After rotation, a request signed with the OLD
+        """After rotation, a request signed with the OLD
         (previous) secret is accepted during the overlap window."""
 
         vault = FakeWebhookVault()
@@ -358,7 +354,7 @@ class TestOverlapWindowBothSecretsAccepted:
     def test_invalid_secret_rejected_during_overlap(
         self, dept_id: str, provider: str, body: bytes
     ) -> None:
-        """R9.6: A request signed with a completely unrelated secret
+        """A request signed with a completely unrelated secret
         is rejected even during the overlap window."""
 
         vault = FakeWebhookVault()
@@ -394,7 +390,7 @@ class TestOverlapWindowBothSecretsAccepted:
     def test_multiple_rotations_only_last_two_accepted(
         self, dept_id: str, provider: str, body: bytes, num_rotations: int
     ) -> None:
-        """R9.2: After multiple rotations, only the current and
+        """After multiple rotations, only the current and
         immediately previous secrets are accepted — older secrets
         are discarded."""
 
@@ -438,12 +434,12 @@ class TestOverlapWindowBothSecretsAccepted:
 
 
 # ---------------------------------------------------------------------------
-# Property 10b: Finalize Restricts to Current Only
+# Finalize Restricts to Current Only
 # ---------------------------------------------------------------------------
 
 
 class TestFinalizeRestrictsToCurrentOnly:
-    """**Validates: Requirements 9.3, 9.8**
+    """Finalize restricts verification to the current secret.
 
     After ``finalize`` is called, the previous secret slot is cleared.
     Only requests signed with the current secret are accepted.
@@ -462,7 +458,7 @@ class TestFinalizeRestrictsToCurrentOnly:
     def test_finalize_clears_previous_slot(
         self, dept_id: str, provider: str, body: bytes
     ) -> None:
-        """R9.3: After finalize, the previous secret slot is empty."""
+        """After finalize, the previous secret slot is empty."""
 
         vault = FakeWebhookVault()
 
@@ -497,7 +493,7 @@ class TestFinalizeRestrictsToCurrentOnly:
     def test_only_current_accepted_after_finalize(
         self, dept_id: str, provider: str, body: bytes
     ) -> None:
-        """R9.3, R9.8: After finalize, only the current secret is
+        """After finalize, only the current secret is
         accepted; the previous secret is rejected."""
 
         vault = FakeWebhookVault()
@@ -537,7 +533,7 @@ class TestFinalizeRestrictsToCurrentOnly:
     def test_finalize_is_idempotent(
         self, dept_id: str, provider: str
     ) -> None:
-        """R9.3: Calling finalize multiple times is safe (idempotent).
+        """Calling finalize multiple times is safe (idempotent).
         The second call is a no-op."""
 
         vault = FakeWebhookVault()
@@ -557,12 +553,12 @@ class TestFinalizeRestrictsToCurrentOnly:
 
 
 # ---------------------------------------------------------------------------
-# Property 10c: Auto-Finalize on Overlap Expiry
+# Auto-Finalize on Overlap Expiry
 # ---------------------------------------------------------------------------
 
 
 class TestAutoFinalizeOnOverlapExpiry:
-    """**Validates: Requirements 9.2, 9.8**
+    """Auto-finalize clears previous secrets after overlap expiry.
 
     When the overlap window (``WEBHOOK_ROTATION_OVERLAP_S``, default
     3600s) expires, the ``WebhookRotationFinalizeWorkflow`` clears the
@@ -583,7 +579,7 @@ class TestAutoFinalizeOnOverlapExpiry:
     def test_previous_rejected_after_overlap_expires(
         self, dept_id: str, provider: str, body: bytes
     ) -> None:
-        """R9.2, R9.8: After the overlap window expires, the previous
+        """After the overlap window expires, the previous
         secret is no longer accepted even without explicit finalize —
         the verify function checks overlap_until."""
 
@@ -629,7 +625,7 @@ class TestAutoFinalizeOnOverlapExpiry:
     def test_auto_finalize_clears_previous_on_expiry(
         self, dept_id: str, provider: str, body: bytes
     ) -> None:
-        """R9.2, R9.8: The auto-finalize workflow clears the previous
+        """The auto-finalize workflow clears the previous
         slot when overlap_until has passed, after which only current
         is accepted."""
 
@@ -687,7 +683,7 @@ class TestAutoFinalizeOnOverlapExpiry:
         body: bytes,
         elapsed_fraction: float,
     ) -> None:
-        """R9.2: Auto-finalize does NOT trigger while the overlap
+        """Auto-finalize does NOT trigger while the overlap
         window is still active. Both secrets remain accepted."""
 
         vault = FakeWebhookVault()
@@ -737,7 +733,7 @@ class TestAutoFinalizeOnOverlapExpiry:
     def test_auto_finalize_is_idempotent(
         self, dept_id: str, provider: str
     ) -> None:
-        """R9.8: Running auto-finalize multiple times after expiry is
+        """Running auto-finalize multiple times after expiry is
         safe — subsequent calls are no-ops."""
 
         vault = FakeWebhookVault()
@@ -773,7 +769,7 @@ class TestAutoFinalizeOnOverlapExpiry:
     def test_full_lifecycle_rotate_overlap_autofinalize(
         self, dept_id: str, provider: str, body: bytes
     ) -> None:
-        """R9.2, R9.3, R9.8: Full lifecycle — rotate → overlap window
+        """Full lifecycle — rotate → overlap window
         (both accepted) → auto-finalize → only current accepted."""
 
         vault = FakeWebhookVault()

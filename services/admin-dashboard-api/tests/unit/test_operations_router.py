@@ -1,13 +1,8 @@
-"""Unit tests for ``src.routers.operations`` (task 16.3).
-
-**Validates: Requirements 16.6** (``platform-mimari-uyumluluk`` R16 / Q20)
-
+"""Unit tests for ``src.routers.operations`` .
 The router is exercised through :class:`fastapi.testclient.TestClient`
 against an in-memory stub asyncpg pool. The ``require_admin`` dependency
 is overridden with a permissive stub for the happy paths.
-
 Coverage matrix:
-
 * ``GET /admin/operations/license`` → 200 + correct usage objects when
   the pool is wired and license data exists.
 * ``GET`` → 200 + empty list when no license tiers exist.
@@ -17,8 +12,7 @@ Coverage matrix:
   ``None``.
 * ``percent_used`` is ``max(concurrent%, daily%, monthly%)`` rounded to
   one decimal place.
-* Response is sorted: named licenses first, ``__default__`` last.
-"""
+* Response is sorted: named licenses first, ``__default__`` last."""
 
 from __future__ import annotations
 

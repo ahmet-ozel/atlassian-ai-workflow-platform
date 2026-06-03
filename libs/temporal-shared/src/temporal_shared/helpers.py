@@ -1,14 +1,13 @@
 """Pure helper functions for infrastructural decisions.
 
 All functions in this module are **pure** — they perform no I/O and have
-no side effects.  They encode simple truth tables and coercion rules
-documented in MIMARI.md and design.md.
+no side effects. They encode simple truth tables and coercion rules.
 
 Functions:
     should_cleanup: Determines whether workspace cleanup should occur
         based on the cleanup policy and the process exit code.
     coerce_draft_true: Coerces any truthy/falsy value to boolean True,
-        enforcing the "always draft" PR rule (MIMARI §1 Kural 10).
+        enforcing the "always draft" PR rule.
 """
 
 from __future__ import annotations
@@ -27,7 +26,7 @@ CleanupPolicy = Literal["always", "on_success", "never"]
 def should_cleanup(policy: CleanupPolicy, exit_code: int) -> bool:
     """Determine whether workspace cleanup should be performed.
 
-    Truth table (design.md §Property 12.4):
+    Truth table:
 
     +--------------+----------------+----------------+
     | policy       | exit_code == 0 | exit_code != 0 |
@@ -79,8 +78,8 @@ def should_cleanup(policy: CleanupPolicy, exit_code: int) -> bool:
 def coerce_draft_true(value: object) -> bool:
     """Coerce any input value to ``True``.
 
-    This function enforces MIMARI §1 Kural 10: all PRs opened by the bot
-    MUST be draft PRs.  Regardless of what the caller or LLM output
+    This function enforces that all PRs opened by the bot MUST be draft
+    PRs. Regardless of what the caller or LLM output
     specifies for the ``draft`` field, this function always returns True.
 
     The function exists as a named, testable unit so that the invariant

@@ -5,11 +5,11 @@ build-backend = "hatchling.build"
 [project]
 name = "prompts"
 version = "0.0.0"
-description = "Hybrid file/DB prompt loader (scaffold) shared across services and workers."
+description = "Hybrid file/DB prompt loader shared across services and workers."
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 license = { text = "Proprietary" }
-authors = [{ name = "Multi-Service Scaffold" }]
+authors = [{ name = "Platform" }]
 dependencies = []
 
 [tool.hatch.build.targets.wheel]

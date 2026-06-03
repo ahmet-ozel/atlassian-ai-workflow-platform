@@ -91,7 +91,7 @@
       "kind": "infra",
       "compose_service_name": "atlassian-mcp",
       "compose_profile": "atlassian-mcp",
-      "env_example_path": "services/atlassian_unified/.env",
+      "env_example_path": "services/atlassian_mcp_bitbucket/.env",
       "health_endpoint": "/healthz",
       "test_command": "docker compose -f infra/docker-compose.yml exec atlassian-mcp python -c \"import urllib.request,sys; r=urllib.request.urlopen('http://localhost:8090/healthz', timeout=3); print(r.read().decode()); sys.exit(0 if 200 <= r.status < 300 else 1)\"",
       "smoke_test_command": "wget -q -O - --timeout=5 http://atlassian-mcp:8090/healthz",

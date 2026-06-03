@@ -19,10 +19,10 @@ settings = Settings()
 
 app = FastAPI(
     title="task-intake-service",
-    version="0.0.0-scaffold",
+    version="0.0.0-dev",
     description=(
         "Multi-channel task intake (email, Slack, web form). Profile-gated "
-        "scaffold; business logic not yet implemented."
+        "service; business logic not yet implemented."
     ),
 )
 
@@ -38,10 +38,10 @@ async def healthz() -> dict[str, str]:
 async def readyz(response: Response) -> dict[str, str]:
     """Readiness probe. Returns 503 when dependencies are not reachable.
 
-    The 503 response body is intentionally minimal (≤64 bytes) so it can be
-    consumed by Compose / Kubernetes probes without leaking diagnostic
-    detail. Detailed errors should be written to application logs.
-    """
+ The 503 response body is intentionally minimal (≤64 bytes) so it can be
+ consumed by Compose / Kubernetes probes without leaking diagnostic
+ detail. Detailed errors should be written to application logs.
+ """
 
     if not settings.dependencies_reachable():
         response.status_code = 503

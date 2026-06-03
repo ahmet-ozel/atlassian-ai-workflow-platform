@@ -1,11 +1,7 @@
-"""Property test for credential cleanup guarantee.
-
-**Validates: Requirements 2.3**
-
-Property 4: Credential cleanup guarantee
+"""Credential cleanup guarantee.
 
 *For any* git push operation result (success or failure), the
-Credential_Injector SHALL remove temporary credential configuration
+Credential_Injector removes temporary credential configuration
 from SSH_Runner within 5 seconds of operation completion.
 
 This module verifies two invariants:
@@ -51,15 +47,13 @@ _PROFILE = settings(
 
 
 # ===========================================================================
-# Property 4 — Credential cleanup guarantee
+# Credential cleanup guarantee
 # ===========================================================================
 
 
 class TestCredentialCleanupGuarantee:
     """cleanup_git_credentials is called regardless of push result and
     completes within the 5-second timeout budget.
-
-    **Validates: Requirements 2.3**
     """
 
     @_PROFILE
@@ -68,9 +62,7 @@ class TestCredentialCleanupGuarantee:
     async def test_cleanup_called_regardless_of_push_result(
         self, push_success: bool
     ) -> None:
-        """**Validates: Requirements 2.3**
-
-        For any git push result (success or failure), cleanup_git_credentials
+        """For any git push result (success or failure), cleanup_git_credentials
         is invoked and executes the SSH cleanup command.
         """
         workflow_id = f"wf-test-{'success' if push_success else 'failure'}"
@@ -110,15 +102,13 @@ class TestCredentialCleanupGuarantee:
     async def test_cleanup_timeout_within_5_seconds(
         self, push_success: bool
     ) -> None:
-        """**Validates: Requirements 2.3**
-
-        The CLEANUP_TIMEOUT_SECONDS constant is at most 5.0, ensuring
+        """The CLEANUP_TIMEOUT_SECONDS constant is at most 5.0, ensuring
         the credential removal completes within the required window.
         """
-        # The constant itself must satisfy the requirement
+        # The constant itself must stay within the timeout budget.
         assert CLEANUP_TIMEOUT_SECONDS <= 5.0, (
             f"CLEANUP_TIMEOUT_SECONDS={CLEANUP_TIMEOUT_SECONDS} exceeds "
-            f"the 5-second requirement from Requirement 2.3"
+            f"the 5-second cleanup window"
         )
 
         workflow_id = f"wf-push-{'ok' if push_success else 'fail'}"
@@ -151,9 +141,7 @@ class TestCredentialCleanupGuarantee:
     async def test_cleanup_executes_even_when_ssh_fails(
         self, push_success: bool
     ) -> None:
-        """**Validates: Requirements 2.3**
-
-        Even if the SSH execution raises an error during cleanup,
+        """Even if the SSH execution raises an error during cleanup,
         the function handles it gracefully (best-effort) without
         propagating the exception — ensuring the cleanup attempt
         was made regardless of push outcome.

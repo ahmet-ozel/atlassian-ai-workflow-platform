@@ -1,11 +1,9 @@
-"""Unit tests for ``src.prompts.audit_writer`` (platform-mimari-ops 6.3).
-
+"""Unit tests for ``src.prompts.audit_writer`` (the project 6.3).
 Exercises the asyncpg-backed audit sink that the PromptsGitRouter
 writes through. The tests do not stand up a real Postgres instance —
 they inject a fake pool whose ``acquire`` context manager yields a
 fake connection that records every ``execute`` call. That keeps the
 test suite hermetic while still validating:
-
 * The exact INSERT statement targets ``automation.audit_events`` with
   the expected column ordering (mirrors
   ``infra/postgres/init/10_automation.sql``).
@@ -13,7 +11,7 @@ test suite hermetic while still validating:
 * The application-layer ``actor_role`` invariant from
   :class:`audit_logger.AuditLogger` raises ``ValueError`` *before*
   any SQL round-trip when ``actor_role`` is ``None`` / empty
-  (Requirement 7.7).
+  .
 * Connection-level errors (``OSError``,
   ``ConnectionRefusedError``, ``asyncio.TimeoutError``) are
   swallowed at WARNING — the audit write must never mask the
@@ -23,8 +21,7 @@ test suite hermetic while still validating:
 * All four prompt mutation event actions
   (``prompt_draft_created``, ``prompt_pr_opened``,
   ``prompt_render_failed``, ``prompt_pr_conflict``) round-trip
-  cleanly — the writer is not action-aware.
-"""
+  cleanly — the writer is not action-aware."""
 
 from __future__ import annotations
 
@@ -328,7 +325,7 @@ class TestConnectionErrorClassifier:
 
 
 # ---------------------------------------------------------------------------
-# AsyncpgAuditSink — application-layer guard (Requirement 7.7)
+# AsyncpgAuditSink — application-layer guard
 # ---------------------------------------------------------------------------
 
 
@@ -338,12 +335,10 @@ class TestAsyncpgAuditSinkGuards:
         self, event_factory
     ) -> None:
         """``AuditLogger.write`` rejects None ``actor_role`` upfront.
-
-        This is Requirement 7.7's application-layer guard — the
+        This is 's application-layer guard — the
         Postgres CHECK constraint enforces the same at the database
         layer, but the application guard means we never even open a
-        connection for a malformed event.
-        """
+        connection for a malformed event."""
 
         pool = _FakePool()
         sink = AsyncpgAuditSink(pool=pool)

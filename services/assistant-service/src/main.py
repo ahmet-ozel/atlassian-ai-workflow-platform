@@ -2,18 +2,16 @@
 
 Listens on port 8081 and exposes:
 
-* ``GET /healthz`` / ``GET /readyz`` — multi-service-scaffold contract
-  (Requirement 12).
+* ``GET /healthz`` / ``GET /readyz`` — service health endpoints.
 * ``POST /api/chat/stream`` — SSE chat endpoint owned by
-  :class:`src.chat.handler.ChatHandler` (Requirement 1.1, design.md
-  §"ChatHandler"). Every request flows through the deterministic
+  :class:`src.chat.handler.ChatHandler`. Every request flows through the deterministic
   six-step pipeline (PII mask → sliding window → system prompt
   render → tool filter → LLM tool-call loop → audit) before the
   first SSE byte is yielded.
 * ``POST /api/session-credentials/...`` — per-user session
-  credential relay (task 12.4 / R10.6).
+  credential relay.
 
-Lifespan wiring (platform-mimari-ops §3.1):
+Lifespan wiring:
 
 * :class:`prompts.PromptLoader` is constructed from the
   ``service-local prompts/`` + ``platform/prompts/`` roots and its
@@ -54,7 +52,7 @@ from http_shared import SecurityHeadersMiddleware, install_redaction_filter
 # per-request :mod:`contextvars` context so MCP calls issued by the
 # chat handler's tool-dispatcher (and SSE error replies) carry the
 # same trace_id as the originating webhook
-# (platform-gap-fill task 7.2 / Requirement 8.2).
+# for the originating request.
 from observability import TraceMiddleware
 
 from .config import Settings
@@ -65,8 +63,7 @@ settings = Settings()
 logger = logging.getLogger(__name__)
 
 # Wire the secret-hygiene log redaction filter onto the root logger
-# before FastAPI / uvicorn build their handler chain (Requirement
-# 6.10, task 9.1).
+# before FastAPI / uvicorn build their handler chain.
 install_redaction_filter(loggers=[logging.getLogger()], attach_to_root=True)
 
 
@@ -136,7 +133,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     # ---- 2. Provider credential validation (fail-fast) ---------------
     #
-    # Requirement 1.2/1.3/1.4: If the configured LLM provider requires
+    # If the configured LLM provider requires
     # credentials that are missing or invalid, the service MUST fail at
     # boot time with a clear ConfigurationError. This prevents a
     # half-wired deployment from accepting traffic.
@@ -220,7 +217,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         from .mcp_tool_dispatch import McpToolDispatch
 
         # Instantiate the MCP client with the mandatory client_source
-        # identifier (G6 / Requirement 1.10). This client is used for
+        # identifier. This client is used for
         # read calls within the chat handler's tool-call loop.
         mcp_client = AtlassianClient(
             client_source=settings.client_source,
@@ -236,9 +233,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             # The list_tools callable returns the MCP tool catalog
             # pre-filtered through the AtlassianClient's banned-tool
             # filter. The handler applies capability-gate filtering on
-            # top. Until the full MCP HTTP wiring lands (Spec 2), the
-            # catalog is empty — the handler gracefully handles an
-            # empty tool set.
+            # top. Until the full MCP HTTP wiring is available, the
+            # catalog is empty and the handler gracefully handles that
+            # state.
             tool_dispatch = McpToolDispatch(
                 mcp_base_url=settings.mcp_base_url,
                 session_deps=app.state.session_creds,
@@ -303,8 +300,8 @@ def _default_summariser(messages):
 def _passthrough_capability_gate(tools, *, capabilities):
     """Pass-through capability gate.
 
-    The foundation gate lives in :mod:`mcp_client` (task 8.4 of
-    foundation). Until it's wired here we surface every banned-tool-
+    The foundation gate lives in :mod:`mcp_client`. Until it's wired
+    here we surface every banned-tool-
     filtered tool — the chat handler still applies the foundation
     banned-tool list before reaching this gate.
     """
@@ -325,7 +322,7 @@ app = FastAPI(
 )
 
 
-# platform-gap-fill task 7.2 — mount :class:`TraceMiddleware` so every
+# Mount :class:`TraceMiddleware` so every
 # inbound HTTP request (``/api/chat/stream`` and the session-credential
 # relay) extracts the inbound ``X-Trace-Id`` (or generates a fresh
 # UUIDv7) and exposes it to the chat handler via
@@ -335,19 +332,18 @@ app = FastAPI(
 # originating trace_id.
 app.add_middleware(TraceMiddleware)
 
-# production-hardening task 7.2 — mount :class:`SecurityHeadersMiddleware`
+# Mount :class:`SecurityHeadersMiddleware`
 # so every HTTP response carries X-Frame-Options, X-Content-Type-Options
-# and X-XSS-Protection headers regardless of status code or content type
-# (Requirements 13.1, 13.2, 13.3).
+# and X-XSS-Protection headers regardless of status code or content type.
 app.add_middleware(SecurityHeadersMiddleware)
 
 
-# Mount the per-user session credential relay (task 12.4 / R10.6).
+# Mount the per-user session credential relay.
 from .session_credentials import router as session_credentials_router  # noqa: E402
 
 app.include_router(session_credentials_router)
 
-# Mount the bot-info endpoint (R7.6 — Task Creator assignee card).
+# Mount the bot-info endpoint for the Task Creator assignee card.
 from .bot_info import router as bot_info_router  # noqa: E402
 
 app.include_router(bot_info_router)
@@ -377,8 +373,7 @@ async def healthz(request: Request) -> Response:
     Returns 200 when the service process is alive AND the LLM provider
     has been successfully wired at boot. If ``app.state.llm_client`` is
     None (provider wiring failed or credentials were invalid), returns
-    503 ``not_ready`` so load-balancers stop routing traffic here
-    (Requirement 1.5).
+    503 ``not_ready`` so load-balancers stop routing traffic here.
     """
     llm_client = getattr(request.app.state, "llm_client", None)
     if llm_client is None:
@@ -394,8 +389,7 @@ async def readyz(response: Response) -> JSONResponse:
     """Readiness probe with real dependency checks.
 
     Probes PostgreSQL (``SELECT 1``), Redis (``PING``), and MCP
-    (``/healthz``) in parallel with a 3-second per-probe timeout
-    (Requirements 11.2, 11.4, 11.5, 11.6).
+    (``/healthz``) in parallel with a 3-second per-probe timeout.
 
     Returns 200 ``{"status": "ready"}`` when all dependencies are
     reachable. Returns 503 ``{"status": "not_ready",
@@ -430,7 +424,7 @@ async def readyz(response: Response) -> JSONResponse:
 
 @app.post("/api/chat/stream")
 async def chat_stream(request: Request) -> StreamingResponse:
-    """SSE chat endpoint (Requirement 1.1, design.md §ChatHandler).
+    """SSE chat endpoint.
 
     Body shape (JSON):
         {

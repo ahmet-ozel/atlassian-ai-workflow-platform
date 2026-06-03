@@ -1,9 +1,6 @@
 # Atlassian Forge Add-On manifest — "AI Bot Task" issue type with mandatory
 # custom fields for the AI bot pipeline.
 #
-# Spec: platform-mimari-uyumluluk Requirement 6 (R6 / Q3 forge-app branch).
-# Acceptance criteria reference: 6.1, 6.2.
-#
 # This skeleton ships with placeholder values; fill `app.id` after running
 # `forge register` against the target Atlassian developer account. The
 # add-on stays opt-in behind `FEATURE_FLAG_FORGE_ADDON_ENABLED` (default

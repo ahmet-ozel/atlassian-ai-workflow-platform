@@ -1,4 +1,4 @@
-"""Unit tests for ``src.routers.services_lifecycle`` (task 6.2).
+"""Unit tests for ``src.routers.services_lifecycle``.
 
 The router is exercised through :class:`fastapi.testclient.TestClient`
 against a stub :class:`LifecycleService` that records every call. The
@@ -6,7 +6,7 @@ against a stub :class:`LifecycleService` that records every call. The
 for the happy paths and a 401-raising stub for the auth failure case
 so we can verify the gate without instantiating a real OIDC validator.
 
-Coverage matrix (design §3.3):
+Coverage matrix:
 
 * Each of the eight endpoints — ``GET /admin/services``,
   ``GET /admin/services/{name}``,
@@ -16,12 +16,12 @@ Coverage matrix (design §3.3):
   ``POST /admin/services/{name}/test``,
   ``GET /admin/services/{name}/logs``,
   ``GET /admin/services/{name}/health``.
-* 401 when ``require_admin`` raises (Requirement 10.1).
+* 401 when ``require_admin`` raises.
 * 404 when :class:`UnknownServiceError` propagates.
 * 422 when :class:`FormSchemaMismatchError` propagates.
 * 502 + ``correlation_id`` UUID for Vault / Audit / Compose failures
-  (Requirement 6.7, 11.8).
-* 409 for :class:`TestPreconditionError` (Requirement 8.2 / 8.6).
+  with a correlation id.
+* 409 for :class:`TestPreconditionError`.
 * Happy-path 200 / 202 status codes and shapes for every endpoint.
 """
 
@@ -159,7 +159,7 @@ class _StubLifecycleService:
     health_calls: list[str] = field(default_factory=list)
     start_plan_calls: list[str] = field(default_factory=list)
     probe_calls: list[dict[str, Any]] = field(default_factory=list)
-    # platform-mimari-uyumluluk R14 / Q16 — record calls to
+    # Record calls to
     # ``record_purge_vault_blocked`` so the unit tests can assert that
     # the production guard wrote an audit row before returning 403.
     purge_vault_blocked_calls: list[dict[str, Any]] = field(default_factory=list)
@@ -333,8 +333,8 @@ def _build_app(
     ``actor_sub=None`` causes ``require_admin`` to raise 401 — used to
     cover the auth-gate path without instantiating an OIDC validator.
 
-    ``deployment_profile`` drives the platform-mimari-uyumluluk R14 /
-    Q16 stop guard. Default ``"dev"`` keeps every existing test on the
+    ``deployment_profile`` drives the stop guard. Default ``"dev"``
+    keeps every existing test on the
     permissive path; the production-guard tests pass ``"production"``
     to exercise the 403 + audit-row branch.
     """
@@ -357,7 +357,7 @@ def _build_app(
 
     app.dependency_overrides[get_lifecycle_service] = lambda: stub
 
-    # platform-mimari-uyumluluk R14 / Q16 — feed the deployment profile
+    # Feed the deployment profile
     # via a Settings stub so the stop endpoint's production guard
     # picks the right branch without us having to mutate process env.
     class _StubSettings:
@@ -370,12 +370,12 @@ def _build_app(
 
 
 # ---------------------------------------------------------------------------
-# 401 — auth gate (Requirement 10.1)
+# 401 — auth gate
 # ---------------------------------------------------------------------------
 
 
 def test_list_services_returns_401_when_require_admin_fails() -> None:
-    """Every endpoint MUST be gated on ``require_admin`` (Requirement 10.1).
+    """Every endpoint MUST be gated on ``require_admin``.
 
     A failing dependency produces a 401 *before* the lifecycle stub is
     consulted; the stub records zero calls.
@@ -402,7 +402,7 @@ def test_list_services_returns_401_when_require_admin_fails() -> None:
 
 
 def test_list_services_returns_summary_array() -> None:
-    """Requirement 6.1 — one row per Managed_Service."""
+    """One row per Managed_Service."""
 
     stub = _StubLifecycleService(
         summaries=[
@@ -443,7 +443,7 @@ def test_list_services_returns_summary_array() -> None:
 
 
 def test_get_service_detail_returns_form_schema_and_snapshot() -> None:
-    """Requirement 6.2 — manifest entry + cached snapshot + form_schema."""
+    """Manifest entry + cached snapshot + form_schema."""
 
     entry = _entry()
     stub = _StubLifecycleService(
@@ -493,17 +493,17 @@ def test_get_service_detail_404_when_unknown() -> None:
 
 
 # ---------------------------------------------------------------------------
-# GET /admin/services/{name}/start-plan  (R5.6 / Q11)
+# GET /admin/services/{name}/start-plan
 # ---------------------------------------------------------------------------
 
 
 def test_start_plan_returns_topological_will_start_and_already_running() -> None:
-    """R5.6 — preview the dependency-chain plan before pressing Start.
+    """Preview the dependency-chain plan before pressing Start.
 
     The router adapts the orchestrator's :class:`StartPlan` dataclass
     into the JSON shape ``{target_service, will_start[],
     already_running[]}``. Order is preserved verbatim so the UI can
-    render the dependencies in the same sequence Step 1.6 will visit
+    render the dependencies in the same sequence the lifecycle service will visit
     them.
     """
 
@@ -546,7 +546,7 @@ def test_start_plan_404_when_unknown_service() -> None:
 
 
 def test_start_plan_returns_401_when_require_admin_fails() -> None:
-    """The endpoint MUST be gated on ``require_admin`` (Requirement 10.1)."""
+    """The endpoint MUST be gated on ``require_admin``."""
 
     stub = _StubLifecycleService()
     client = TestClient(_build_app(stub, actor_sub=None))
@@ -563,7 +563,7 @@ def test_start_plan_returns_401_when_require_admin_fails() -> None:
 
 
 def test_start_returns_202_with_correlation_id() -> None:
-    """Requirement 6.3 — 202 + ``{state, correlation_id}``."""
+    """202 + ``{state, correlation_id}``."""
 
     entry = _entry()
     cid = uuid4()
@@ -604,7 +604,7 @@ def test_start_404_on_unknown_service() -> None:
 
 
 def test_start_422_on_form_schema_mismatch() -> None:
-    """Requirement 5.6 → router 422 (design §3.3 mapping)."""
+    """Invalid lifecycle state maps to router 422."""
 
     from src.lifecycle.service import FormSchemaMismatchError
 
@@ -625,13 +625,13 @@ def test_start_422_on_form_schema_mismatch() -> None:
 
 
 def test_start_409_on_feature_flag_disabled_carries_blocking_flag() -> None:
-    """Requirement 10.1 / 10.2 (Q12) → router 409 with structured envelope.
+    """Credential precondition failure maps to router 409 with structured envelope.
 
-    The ``FeatureFlagDisabledError`` raised by Step 1.5 of the
-    lifecycle handler maps to ``409 Conflict`` and carries an envelope
+    The ``FeatureFlagDisabledError`` raised by the lifecycle handler
+    maps to ``409 Conflict`` and carries an envelope
     of the shape ``{"error": "feature_flag_disabled", "blocking_flag":
     <name>, "detail": "..."}`` so the UI can render the targeted
-    Feature Flags page link (Requirement 10.3).
+    Feature Flags page link.
     """
 
     from src.lifecycle.service import FeatureFlagDisabledError
@@ -658,7 +658,7 @@ def test_start_409_on_feature_flag_disabled_carries_blocking_flag() -> None:
 
 
 def test_restart_409_on_feature_flag_disabled_carries_blocking_flag() -> None:
-    """``restart`` re-enters Step 1.5 → same 409 envelope (Requirement 10.1)."""
+    """``restart`` re-enters the feature-flag gate and returns the same 409 envelope."""
 
     from src.lifecycle.service import FeatureFlagDisabledError
 
@@ -678,7 +678,7 @@ def test_restart_409_on_feature_flag_disabled_carries_blocking_flag() -> None:
 
 
 def test_start_502_on_vault_failure_carries_correlation_id() -> None:
-    """Requirement 9.5 → 502 with ``correlation_id`` (Requirement 6.7)."""
+    """Vault write failures map to 502 with ``correlation_id``."""
 
     stub = _StubLifecycleService(
         raise_on_start=VaultWriteError(
@@ -704,7 +704,7 @@ def test_start_502_on_vault_failure_carries_correlation_id() -> None:
 
 
 def test_start_502_on_audit_unreachable_carries_correlation_id() -> None:
-    """Requirement 11.6 → 502 with ``correlation_id``."""
+    """Audit write failures map to 502 with ``correlation_id``."""
 
     stub = _StubLifecycleService(
         raise_on_start=AuditUnreachableError("postgres is down"),
@@ -721,7 +721,7 @@ def test_start_502_on_audit_unreachable_carries_correlation_id() -> None:
 
 
 def test_start_502_on_compose_failure_carries_correlation_id() -> None:
-    """Requirement 6.7 — Compose non-zero exit → 502 + correlation_id."""
+    """Compose non-zero exit → 502 + correlation_id."""
 
     failing_result = ComposeResult(
         exit_code=1, stdout="", stderr="boom", argv=("docker", "compose", "up")
@@ -751,10 +751,10 @@ def test_start_502_on_compose_failure_carries_correlation_id() -> None:
 
 
 def test_stop_returns_200_with_state_and_noop() -> None:
-    """Requirement 6.4 / 6.5 — 200 + ``{state, [noop]}``.
+    """200 + ``{state, [noop]}``.
 
     ``remove_volumes`` defaults to ``false`` when the body is omitted
-    (Requirement 6.4 explicit clause).
+    already stopped.
     """
 
     cid = uuid4()
@@ -776,7 +776,7 @@ def test_stop_returns_200_with_state_and_noop() -> None:
 
 
 def test_stop_idempotent_returns_noop_true() -> None:
-    """Requirement 6.5 — already-stopped → ``noop=True``."""
+    """Already-stopped → ``noop=True``."""
 
     cid = uuid4()
     stub = _StubLifecycleService(
@@ -812,13 +812,13 @@ def test_stop_502_on_compose_failure() -> None:
 
 
 # ---------------------------------------------------------------------------
-# POST /admin/services/{name}/stop — purge_vault production guard (R14 / Q16)
+# POST /admin/services/{name}/stop — purge_vault production guard
 # ---------------------------------------------------------------------------
 
 
 def test_stop_purge_vault_default_false_does_not_invoke_guard() -> None:
     """``purge_vault`` defaults to ``False`` — production profile is
-    irrelevant on this path (Requirement 14.1).
+    irrelevant on this path.
 
     The body explicitly omits ``purge_vault`` so the guard cannot fire
     even when ``deployment_profile == "production"``. The router must
@@ -853,7 +853,7 @@ def test_stop_purge_vault_default_false_does_not_invoke_guard() -> None:
 
 
 def test_stop_purge_vault_true_in_production_returns_403() -> None:
-    """Requirement 14.2 — ``purge_vault=true`` is forbidden on the
+    """``purge_vault=true`` is forbidden on the
     production deployment profile.
 
     The endpoint must:
@@ -897,7 +897,7 @@ def test_stop_purge_vault_true_in_production_returns_403() -> None:
 def test_stop_purge_vault_production_match_is_case_insensitive(
     profile: str,
 ) -> None:
-    """Requirement 14.2 — ``deployment_profile`` matching is case
+    """``deployment_profile`` matching is case
     insensitive.
 
     Operators commonly normalise the env var via shell exports
@@ -928,11 +928,11 @@ def test_stop_purge_vault_production_match_is_case_insensitive(
 def test_stop_purge_vault_true_allowed_outside_production(
     profile: str,
 ) -> None:
-    """Requirement 14.1 — non-production profiles let ``purge_vault``
+    """Non-production profiles let ``purge_vault``
     through.
 
     The body's ``purge_vault=true`` flag is accepted but the actual
-    Vault-purge behaviour lands in task 15.2; for now the router only
+    Vault-purge behaviour is handled separately; for now the router only
     delegates to ``LifecycleService.stop`` with the existing
     ``remove_volumes`` plumbing. The guard MUST NOT fire on dev /
     staging.
@@ -957,12 +957,12 @@ def test_stop_purge_vault_true_allowed_outside_production(
     assert response.json()["state"] == "stopped"
     # Guard MUST NOT fire on non-production profiles.
     assert stub.purge_vault_blocked_calls == []
-    # Stop was invoked once (the actual purge wiring is task 15.2).
+    # Stop was invoked once.
     assert len(stub.stop_calls) == 1
 
 
 def test_stop_purge_vault_true_unknown_service_returns_404() -> None:
-    """Requirement 6.4 / 14.2 — unknown service surfaces 404 even
+    """Unknown service surfaces 404 even
     when ``purge_vault=true`` is passed in production.
 
     The 404 takes precedence over the production guard because an
@@ -988,7 +988,7 @@ def test_stop_purge_vault_true_unknown_service_returns_404() -> None:
 
 
 def test_stop_purge_vault_true_audit_unreachable_still_returns_403() -> None:
-    """Requirement 14.2 + 11.7 — audit write is best-effort.
+    """Audit write is best-effort.
 
     A transient audit-DB outage MUST NOT escalate the 403 into a 502
     — the guard still has to refuse the destructive request. The
@@ -1022,7 +1022,7 @@ def test_stop_purge_vault_true_audit_unreachable_still_returns_403() -> None:
 
 
 def test_stop_request_schema_accepts_purge_vault_field() -> None:
-    """Requirement 14.1 — ``StopRequest`` schema accepts the
+    """``StopRequest`` schema accepts the
     ``purge_vault`` field with default ``False``.
 
     Direct schema-level test (no FastAPI involved) that documents the
@@ -1057,7 +1057,7 @@ def test_stop_request_schema_accepts_purge_vault_field() -> None:
 
 
 def test_restart_returns_202() -> None:
-    """Requirement 6.6 — 202 + ``{state, correlation_id}``."""
+    """202 + ``{state, correlation_id}``."""
 
     cid = uuid4()
     stub = _StubLifecycleService(
@@ -1099,7 +1099,7 @@ def test_restart_404_on_unknown_service() -> None:
 
 
 def test_run_tests_returns_summary_when_present() -> None:
-    """Requirement 8.4 — ``{output, exit_code, summary}`` on success."""
+    """``{output, exit_code, summary}`` on success."""
 
     cid = uuid4()
     stub = _StubLifecycleService(
@@ -1122,7 +1122,7 @@ def test_run_tests_returns_summary_when_present() -> None:
 
 
 def test_run_tests_409_when_service_not_running() -> None:
-    """Requirement 8.6 — 409 ``service must be running before tests``."""
+    """409 ``service must be running before tests``."""
 
     stub = _StubLifecycleService(
         raise_on_test=TestPreconditionError("service must be running before tests"),
@@ -1136,7 +1136,7 @@ def test_run_tests_409_when_service_not_running() -> None:
 
 
 def test_run_tests_409_when_no_test_command_in_manifest() -> None:
-    """Requirement 8.2 — 409 ``service has no test_command in manifest``."""
+    """409 ``service has no test_command in manifest``."""
 
     stub = _StubLifecycleService(
         raise_on_test=TestPreconditionError(
@@ -1152,7 +1152,7 @@ def test_run_tests_409_when_no_test_command_in_manifest() -> None:
 
 
 def test_run_tests_sse_when_stream_query_param() -> None:
-    """Requirement 8.5 — ``?stream=true`` returns ``text/event-stream``."""
+    """``?stream=true`` returns ``text/event-stream``."""
 
     stub = _StubLifecycleService(
         test_response=RunTestsResponse(
@@ -1182,7 +1182,7 @@ def test_run_tests_sse_when_stream_query_param() -> None:
 
 
 def test_get_logs_returns_lines_array_by_default() -> None:
-    """Requirement 7.1 / 7.2 — JSON body ``{lines: [...]}``."""
+    """JSON body ``{lines: [...]}``."""
 
     stub = _StubLifecycleService(
         logs_lines=["redis connected", "ready"],
@@ -1199,7 +1199,7 @@ def test_get_logs_returns_lines_array_by_default() -> None:
 
 
 def test_get_logs_validates_tail_range() -> None:
-    """Requirement 7.1 — ``tail`` ∈ [1, 1000]; out-of-range → 422."""
+    """``tail`` ∈ [1, 1000]; out-of-range → 422."""
 
     stub = _StubLifecycleService()
     client = TestClient(_build_app(stub))
@@ -1212,7 +1212,7 @@ def test_get_logs_validates_tail_range() -> None:
 
 
 def test_get_logs_streaming_returns_sse() -> None:
-    """Requirement 7.3 — ``follow=true`` returns ``text/event-stream``."""
+    """``follow=true`` returns ``text/event-stream``."""
 
     entry = _entry()
     stub = _StubLifecycleService(by_name={entry.name: entry})
@@ -1251,7 +1251,7 @@ def test_get_logs_404_on_unknown_service_streaming_path() -> None:
 
 
 def test_get_health_returns_snapshot() -> None:
-    """Requirement 7.4 — returns the fresh :class:`HealthSnapshot`."""
+    """Returns the fresh :class:`HealthSnapshot`."""
 
     entry = _entry()
     stub = _StubLifecycleService(
@@ -1270,7 +1270,7 @@ def test_get_health_returns_snapshot() -> None:
 
 
 def test_get_health_returns_unhealthy_snapshot_with_body() -> None:
-    """Requirement 7.6 — non-200 status → ``unhealthy``; body surfaced."""
+    """Non-200 status → ``unhealthy``; body surfaced."""
 
     entry = _entry()
     stub = _StubLifecycleService(
@@ -1297,12 +1297,12 @@ def test_get_health_404_on_unknown_service() -> None:
 
 
 # ---------------------------------------------------------------------------
-# POST /admin/services/{name}/probe  (R9.6 / Q10 — manual re-run)
+# POST /admin/services/{name}/probe
 # ---------------------------------------------------------------------------
 
 
 def test_probe_returns_200_with_credentials_status() -> None:
-    """R9.6 — 200 + ``{service_name, credentials_status, ...}`` on success."""
+    """200 + ``{service_name, credentials_status, ...}`` on success."""
 
     from datetime import datetime, timezone
 
@@ -1333,7 +1333,7 @@ def test_probe_returns_200_with_credentials_status() -> None:
 
 
 def test_probe_returns_200_with_failed_credentials_status() -> None:
-    """R9.6 — failed probe surfaces ``credentials_status='failed'`` + detail."""
+    """Failed probe surfaces ``credentials_status='failed'`` + detail."""
 
     from datetime import datetime, timezone
 
@@ -1360,7 +1360,7 @@ def test_probe_returns_200_with_failed_credentials_status() -> None:
 
 
 def test_probe_404_on_unknown_service() -> None:
-    """R9.6 — unknown service → 404 Not Found."""
+    """Unknown service → 404 Not Found."""
 
     stub = _StubLifecycleService()
     client = TestClient(_build_app(stub))
@@ -1371,7 +1371,7 @@ def test_probe_404_on_unknown_service() -> None:
 
 
 def test_probe_502_on_audit_unreachable() -> None:
-    """R9.6 — AuditUnreachableError → 502 + correlation_id."""
+    """AuditUnreachableError → 502 + correlation_id."""
 
     entry = _entry(name="automation-service")
     slot = LifecycleStateCache(name="automation-service")
@@ -1390,7 +1390,7 @@ def test_probe_502_on_audit_unreachable() -> None:
 
 
 def test_probe_returns_401_when_require_admin_fails() -> None:
-    """R9.6 — endpoint MUST be gated on ``require_admin`` (Requirement 10.1)."""
+    """Endpoint MUST be gated on ``require_admin``."""
 
     stub = _StubLifecycleService()
     client = TestClient(_build_app(stub, actor_sub=None))

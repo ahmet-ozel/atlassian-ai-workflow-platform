@@ -1,23 +1,21 @@
 """Unit tests for ``prompts.types`` — :class:`PromptVars` + helper.
 
-These tests pin the contract task 2.2 establishes for the prompt
-rendering layer:
+These tests pin the contract for the prompt rendering layer:
 
-1. :class:`PromptVars` ships exactly the five mandatory fields named
-   in Requirement 2.7 (``department_id``, ``department_repos``,
+1. :class:`PromptVars` ships exactly the five mandatory fields
+   (``department_id``, ``department_repos``,
    ``capabilities``, ``default_language``, ``bot_username``) and is
    frozen + slotted.
 2. The collection fields use immutable types (``tuple``,
    ``frozenset``) so the whole value is hashable.
 3. ``inject_template_vars`` substitutes every placeholder with the
    matching attribute and propagates ``KeyError`` when a body
-   references an unknown placeholder (the loader in task 2.1 catches
+   references an unknown placeholder (the loader catches
    this and converts it to ``PromptTemplateError``).
 4. ``TEMPLATE_VARIABLE_NAMES`` mirrors the dataclass' field set so
-   the upcoming ``validate_template_format`` pass (task 2.3) shares
+   ``validate_template_format`` shares
    one source of truth with the renderer.
 
-Validates: Requirements 2.7
 """
 
 from __future__ import annotations
@@ -64,7 +62,7 @@ def _make_vars(
 
 
 def test_prompt_vars_is_frozen_dataclass() -> None:
-    """``PromptVars`` must be a frozen dataclass (Requirement 2.7)."""
+    """``PromptVars`` must be a frozen dataclass."""
 
     assert is_dataclass(PromptVars)
     assert PromptVars.__dataclass_params__.frozen is True
@@ -79,7 +77,7 @@ def test_prompt_vars_uses_slots() -> None:
 
 
 def test_prompt_vars_field_set_matches_requirement() -> None:
-    """The five mandatory fields named in Requirement 2.7 — no more, no fewer."""
+    """The five mandatory fields are present, no more and no fewer."""
 
     expected = {
         "department_id",
@@ -113,7 +111,7 @@ def test_prompt_vars_is_hashable() -> None:
 
 
 def test_default_language_literal_is_tr_or_en() -> None:
-    """Requirement 2.7 pins the language vocabulary to ``{"tr", "en"}``."""
+    """The language vocabulary is pinned to ``{"tr", "en"}``."""
 
     hints = get_type_hints(PromptVars)
     assert set(get_args(hints["default_language"])) == {"tr", "en"}
@@ -158,7 +156,7 @@ def test_inject_template_vars_is_no_op_without_placeholders() -> None:
 def test_inject_template_vars_supports_curly_brace_escape() -> None:
     """``{{`` / ``}}`` literals survive the format pass intact.
 
-    Task 2.3's ``validate_template_format`` will reject unbalanced
+    ``validate_template_format`` rejects unbalanced
     single braces, but escaped braces must round-trip cleanly so
     prompt authors can show JSON examples to the LLM.
     """
@@ -171,8 +169,8 @@ def test_inject_template_vars_supports_curly_brace_escape() -> None:
 def test_inject_template_vars_raises_keyerror_on_unknown_placeholder() -> None:
     """An unknown placeholder propagates ``KeyError`` to the loader.
 
-    Task 2.1's ``PromptLoader.render`` catches this and converts it to
-    ``PromptTemplateError`` so the CI gate (task 2.6) fails fast.
+    ``PromptLoader.render`` catches this and converts it to
+    ``PromptTemplateError`` so the CI gate fails fast.
     """
 
     body = "dept={department_id}, mystery={unknown_var}"

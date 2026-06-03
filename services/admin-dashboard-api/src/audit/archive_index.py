@@ -1,10 +1,9 @@
 """MinIO-backed archive index for audit logs.
 
-platform-mimari-ops task 13.4 — surface archived audit-log objects to
+Surfaces archived audit-log objects to
 the admin-dashboard ``/admin/audit/search`` endpoint when a query's
 time range extends beyond Loki's hot retention window.
 
-Validates: Requirements 6.3, 6.5, 6.9 (design §"LokiSearchProxy").
 
 Layout
 ------
@@ -17,11 +16,11 @@ where ``{MM}`` and ``{DD}`` are zero-padded. The full S3 URI returned
 to callers in :class:`ArchivedAuditHit.archive_uri` therefore looks
 like ``s3://audit-archive/2024/03/05/audit-0.jsonl.gz``.
 
-Design contract
----------------
+Behavior
+--------
 
 This index is *read-only*: writes are performed by
-``automation-worker.archive_audit_to_minio`` (task 13.2). The index's
+``automation-worker.archive_audit_to_minio``. The index's
 :meth:`MinIOArchiveIndex.search` method:
 
 1. Computes the set of date-prefixes covered by the query's
@@ -31,13 +30,13 @@ This index is *read-only*: writes are performed by
    :class:`ArchivedAuditHit` per object key.
 3. Returns the hits as a tuple in **deterministic** ascending order
    (by ``archive_uri``) so the caller's audit panel renders a stable
-   list and Hypothesis-driven property tests can assert exact
+   list and Hypothesis-driven invariant tests can assert exact
    equality.
 
 The index does NOT open or parse the gzipped JSON-lines payloads;
 content-level filtering (matching ``actor_id`` / ``dept_id`` /
 ``action`` against the rows inside an archive object) is the
-restore-API's job (``POST /admin/audit/archive/restore``, task 11.x).
+restore-API's job (``POST /admin/audit/archive/restore``).
 The index's job is to surface the relevant **archive objects**, with
 a one-line ``summary`` derived from the key, and let the operator
 either drill into the restore endpoint or hand the URI to a
@@ -83,9 +82,9 @@ __all__ = [
 ]
 
 
-#: Default bucket name (matches ``infra/minio/init.sh`` and
-#: ``automation-worker.archive_audit_to_minio`` per design §"MinIO
-#: arşiv yapısı"). Overridable via :class:`ArchiveIndexConfig`.
+#: Default bucket name used by ``infra/minio/init.sh`` and
+#: ``automation-worker.archive_audit_to_minio``. Overridable via
+#: :class:`ArchiveIndexConfig`.
 DEFAULT_BUCKET: str = "audit-archive"
 
 #: AWS region used when signing S3 requests against MinIO. MinIO

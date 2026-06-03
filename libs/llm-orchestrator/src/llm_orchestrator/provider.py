@@ -1,10 +1,8 @@
 """LLM Provider implementations: vLLM, OpenAI, and Anthropic.
 
-Implements task 4.3 of ``platform-mimari-ops``. Provides concrete
+Provides concrete
 provider classes that can be used by the :class:`LlmOrchestrator` for
 the tool-call loop with retry + fallback.
-
-Validates: Requirements 5.1, 5.2, 1.9, 1.10.
 
 Provider Selection:
     - ``vllm`` — Self-hosted vLLM (OpenAI-compatible API).

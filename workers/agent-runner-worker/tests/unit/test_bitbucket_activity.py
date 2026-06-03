@@ -112,7 +112,7 @@ class TestPRInfo:
             info.pr_id = 99  # type: ignore[misc]
 
     def test_draft_always_true_by_default(self) -> None:
-        """PRInfo.draft defaults to True (MIMARI §1 Kural 10)."""
+        """PRInfo.draft defaults to True."""
         info = PRInfo(pr_id=1, title="test", url="")
         assert info.draft is True
 

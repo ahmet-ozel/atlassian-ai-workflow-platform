@@ -1,6 +1,5 @@
 """Unit tests for the optional Bitbucket git-push sub-flow on
-:class:`LegacyExecutionRunWorkflow` (Requirements 2.1-2.7,
-Property 4 — credential cleanup guarantee).
+:class:`LegacyExecutionRunWorkflow`.
 
 The workflow body is exercised against a real
 ``WorkflowEnvironment.start_time_skipping()`` cluster with mocked
@@ -18,7 +17,7 @@ Scenarios covered
 * ``git_push_required=True`` + push fails (non-zero exit code) →
   inject runs, push runs, cleanup **still** runs from the
   ``finally`` block, and the workflow surfaces ``ApplicationError``
-  (Property 4).
+  while preserving the cleanup guarantee.
 * ``git_push_required=True`` + push fails (SSH activity raises) →
   same cleanup guarantee.
 * ``inject_git_credentials`` returns ``success=False`` →
@@ -122,7 +121,7 @@ def _make_ssh_cred() -> dict[str, Any]:
 
 @pytest.mark.asyncio
 async def test_git_push_disabled_skips_inject_and_cleanup() -> None:
-    """**Validates: Requirements 2.1, 2.2, 2.3 (legacy contract)**
+    """Legacy contract: disabled git push skips inject and cleanup.
 
     When ``git_push_required=False`` (the default for every existing
     call site) the workflow must not call ``inject_git_credentials``,
@@ -220,7 +219,7 @@ async def test_git_push_disabled_skips_inject_and_cleanup() -> None:
 
 @pytest.mark.asyncio
 async def test_git_push_success_runs_inject_push_cleanup_in_order() -> None:
-    """**Validates: Requirements 2.1, 2.2, 2.3, 2.5, Property 4**
+    """Happy path runs inject, push, and cleanup in order.
 
     On the happy path the activity sequence is:
     inject → push (ssh_connect_and_run #2) → cleanup, with the
@@ -358,7 +357,7 @@ async def test_git_push_success_runs_inject_push_cleanup_in_order() -> None:
 
 @pytest.mark.asyncio
 async def test_git_push_failure_still_runs_cleanup() -> None:
-    """**Validates: Property 4 — credential cleanup guarantee**
+    """Credential cleanup runs after git push failure.
 
     When ``git push`` exits non-zero the workflow body raises
     ``ApplicationError(GitPushFailed)`` from inside the ``try``
@@ -462,7 +461,7 @@ async def test_git_push_failure_still_runs_cleanup() -> None:
     # The push was attempted exactly once.
     assert push_attempts == 1
     # Inject ran before the failed push, and cleanup ran *after* the
-    # failed push.  This is the Property 4 invariant:
+    # failed push. This is the cleanup invariant:
     #   cleanup runs whether the push succeeded or not.
     assert "inject_git_credentials" in names, names
     assert "cleanup_git_credentials" in names, names
@@ -492,7 +491,7 @@ async def test_git_push_failure_still_runs_cleanup() -> None:
 
 @pytest.mark.asyncio
 async def test_git_push_ssh_error_still_runs_cleanup() -> None:
-    """**Validates: Property 4 — credential cleanup guarantee (raise path)**
+    """Credential cleanup runs after git push raises.
 
     A different failure mode: instead of returning a non-zero exit code
     the push activity raises (e.g. SSH connection drops mid-push).
@@ -585,8 +584,8 @@ async def test_git_push_ssh_error_still_runs_cleanup() -> None:
                 )
 
     names = log.names()
-    # Property 4 holds: cleanup ran even though the push activity
-    # raised.  Inject ran first, the (failing) push ran next, then
+    # Cleanup ran even though the push activity raised. Inject ran first,
+    # the failing push ran next, then
     # cleanup.
     assert names.count("cleanup_git_credentials") == 1, names
     inject_idx = names.index("inject_git_credentials")
@@ -601,7 +600,7 @@ async def test_git_push_ssh_error_still_runs_cleanup() -> None:
 
 @pytest.mark.asyncio
 async def test_inject_failure_raises_and_still_cleans_up() -> None:
-    """**Validates: Requirements 2.1, 2.4, Property 4**
+    """Inject failure raises and still cleans up.
 
     When the credential-inject activity reports ``success=False`` the
     workflow surfaces an ``ApplicationError`` (so the parent workflow
@@ -698,7 +697,7 @@ async def test_inject_failure_raises_and_still_cleans_up() -> None:
     assert push_calls == [], names
     # But cleanup still ran.
     assert "cleanup_git_credentials" in names, names
-    # And the order respects Property 4:
+    # And the order preserves the cleanup guarantee:
     #   inject → (no push) → cleanup
     inject_idx = names.index("inject_git_credentials")
     cleanup_idx = names.index("cleanup_git_credentials")
@@ -711,12 +710,12 @@ async def test_inject_failure_raises_and_still_cleans_up() -> None:
 
 
 class TestExecutionRunInputBackwardsCompat:
-    """The new fields must default to ``False`` / ``None`` so every
+    """Optional push fields default to ``False`` / ``None`` so every
     existing call site that constructs :class:`ExecutionRunInput`
     without them keeps its current behaviour verbatim."""
 
     def test_defaults_preserve_legacy_contract(self) -> None:
-        """**Validates: Backwards compatibility — task pin**"""
+        """Default input values preserve the legacy contract."""
 
         inp = ExecutionRunInput(
             workflow_id="exec-1",
@@ -728,7 +727,7 @@ class TestExecutionRunInputBackwardsCompat:
         assert inp.dept_id is None
 
     def test_explicit_push_fields_round_trip(self) -> None:
-        """**Validates: Inputs flow through to workflow body**"""
+        """Explicit push inputs are retained on the workflow input."""
 
         inp = ExecutionRunInput(
             workflow_id="exec-1",

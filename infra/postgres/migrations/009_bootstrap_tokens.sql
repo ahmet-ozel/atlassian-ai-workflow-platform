@@ -1,5 +1,5 @@
 -- 009_bootstrap_tokens.sql
--- Spec: production-hardening — Task 2.1 (R2.1, R2.2 — Bootstrap Admin Token)
+-- Bootstrap admin token migration.
 --
 -- Adds:
 --   auth.bootstrap_tokens — one-time bootstrap token storage for initial admin
@@ -8,7 +8,6 @@
 --
 -- Idempotent — uses IF NOT EXISTS guards so re-running on an already-migrated
 -- database is a no-op.
--- Requirements: 2.1, 2.2
 
 -- pgcrypto provides gen_random_uuid(); already created by 10_automation.sql,
 -- but we re-declare for migration self-sufficiency.

@@ -1,11 +1,11 @@
 """Targeted minimal patches to config/departments.schema.json.
 
-Per task 9.1 (multi-service-scaffold spec) and design sec 3.6 *Karar*:
+Operational schema updates:
 - Add $schema = JSON Schema 2020-12 URL
 - Department id pattern -> kebab-case only: ^[a-z][a-z0-9-]{1,30}$
 - bot already has minProperties: 1 + anyOf; description+context note added
-- BotEntry preserves existing 'credential_ref' (MIMARI sec 2.5.2) and adds
-  'email' + 'api_token_ref' as alternate (Requirement 7.5); anyOf enforces
+- BotEntry preserves existing 'credential_ref' and adds
+  'email' + 'api_token_ref' as alternate; anyOf enforces
   one of {credential_ref} or {email, api_token_ref}.
 
 Idempotent: running twice is a no-op.
@@ -60,8 +60,8 @@ def main() -> None:
         )
         changed.append("bot.description added")
 
-    # 4. BotEntry: keep credential_ref (MIMARI sec 2.5.2), add email + api_token_ref
-    #    as Requirement 7.5 alternate. Use anyOf so consumers can choose either form.
+    # 4. BotEntry: keep credential_ref, add email + api_token_ref as
+    #    an alternate. Use anyOf so consumers can choose either form.
     bot_entry = data["$defs"]["BotEntry"]
     props = bot_entry.setdefault("properties", OrderedDict())
 
@@ -101,8 +101,8 @@ def main() -> None:
 
     if not bot_entry.get("description"):
         bot_entry["description"] = (
-            "Bot servis kimligi. Vault tabanli kimlik icin 'credential_ref' (MIMARI sec 2.5.2) ya da "
-            "inline kimlik icin 'email' + 'api_token_ref' (Requirement 7.5). En az biri zorunludur."
+            "Bot servis kimligi. Vault tabanli kimlik icin 'credential_ref' ya da "
+            "inline kimlik icin 'email' + 'api_token_ref'. En az biri zorunludur."
         )
         changed.append("BotEntry.description added")
 

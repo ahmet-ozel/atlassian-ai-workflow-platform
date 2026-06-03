@@ -1,14 +1,13 @@
-"""Unit tests for :mod:`src.chat.write_action` (task 4.2, R1.3).
+"""Unit tests for :mod:`src.chat.write_action`.
 
 These tests cover the deterministic decision table of
 :func:`src.chat.write_action.is_write_intent` and the structural
 invariants of the :data:`WRITE_ACTION_TOOLS` frozen set.
 
 The exhaustive property-based test of the same predicate lives in
-``platform/tests/property/test_write_action_intercept.py`` (task 4.9 /
-Property 13). The unit tests here focus on tabular spot checks and
-immutability so a regression in the catalogue or the predicate is
-caught quickly during local iteration.
+``platform/tests/property/test_write_action_intercept.py``. The unit
+tests here focus on tabular spot checks and immutability so a regression
+in the catalogue or the predicate is caught quickly during local iteration.
 """
 
 from __future__ import annotations
@@ -35,7 +34,7 @@ class TestWriteActionToolsCatalogue:
         assert isinstance(WRITE_ACTION_TOOLS, frozenset)
 
     def test_exact_membership_matches_design(self) -> None:
-        """The seven entries match design.md §"WriteActionIntercept" verbatim."""
+        """The seven entries match the write-action catalogue."""
         assert WRITE_ACTION_TOOLS == frozenset(
             {
                 "bitbucket_create_pull_request_cloud",
@@ -54,7 +53,7 @@ class TestWriteActionToolsCatalogue:
 
     def test_excludes_banned_tools(self) -> None:
         """``bitbucket_merge_pr`` and ``confluence_delete_page`` are blocked
-        upstream by the foundation banned-tool list (Spec 1) and must not
+        upstream by the foundation banned-tool list and must not
         appear here --- including them would be redundant *and* would
         suggest the chat handler is the final gate, which it is not."""
         assert "bitbucket_merge_pr" not in WRITE_ACTION_TOOLS

@@ -1,4 +1,4 @@
-"""Task 1.4 — Unit tests for the new ``VaultClient`` LLM-credential methods.
+"""Unit tests for the ``VaultClient`` LLM-credential methods.
 
 Covers:
 * Successful write / read / delete round-trip against an in-memory

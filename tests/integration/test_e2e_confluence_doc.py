@@ -1,19 +1,18 @@
 """End-to-end integration test for the ``confluence_doc_update`` flow.
 
-**Validates: Requirements 6.4, 11.1, 11.3**
 
 This test exercises the parent → child workflow boundary using
-``WorkflowEnvironment.start_time_skipping()`` and Temporal's deterministic
+``WorkflowEnvironment.start_time_skipping`` and Temporal's deterministic
 test server. The flow under test:
 
-    AutomationWorkflow (jira_get_issue → llm_analyze_task[confluence_doc_update])
-        → execute_child_workflow("AgentRunnerWorkflow", ...)
-        → AgentRunnerWorkflow (confluence branch)
-            → confluence_search
-            → confluence_get_page
-            → llm_generate_doc
-            → confluence_update_page
-        → completion comment + Done transition
+ AutomationWorkflow (jira_get_issue → llm_analyze_task[confluence_doc_update])
+ → execute_child_workflow("AgentRunnerWorkflow", ...)
+ → AgentRunnerWorkflow (confluence branch)
+ → confluence_search
+ → confluence_get_page
+ → llm_generate_doc
+ → confluence_update_page
+ → completion comment + Done transition
 
 Test scope decision (option (a) — minimal AgentRunnerWorkflow stub)
 -------------------------------------------------------------------
@@ -30,7 +29,7 @@ The test-local stub lives in
 ``tests/integration/_e2e_workflow_stubs.py`` (a side-effect-free module
 so the Temporal sandbox can validate it). It implements only the
 ``confluence_doc_update`` branch needed for this scenario. When the
-production workflow body lands in spec task 10.1, the test will
+production workflow body lands in spec the implementation, the test will
 transparently start exercising the production class instead — both
 register under ``name="AgentRunnerWorkflow"`` and the activity-call
 contract is identical.
@@ -96,11 +95,11 @@ class _ActivityCallLog:
 async def test_confluence_doc_update_e2e_flow() -> None:
     """End-to-end: webhook payload → AutomationWorkflow → AgentRunnerWorkflow.
 
-    Drives the parent + child workflow against the time-skipping test
-    server with mocked activities. Asserts the full activity sequence
-    runs in the expected order and that the workflow completes with
-    ``status="completed"`` and ``workflow_type="confluence_doc_update"``.
-    """
+ Drives the parent + child workflow against the time-skipping test
+ server with mocked activities. Asserts the full activity sequence
+ runs in the expected order and that the workflow completes with
+ ``status="completed"`` and ``workflow_type="confluence_doc_update"``.
+ """
 
     log = _ActivityCallLog()
 

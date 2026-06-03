@@ -1,12 +1,8 @@
-"""Property test: Task analyzer confidence threshold gate.
-
-Feature: platform-gap-fill, Property 8.
+"""Task analyzer confidence threshold gate.
 
 *For any* LLM analysis result with confidence < 0.7, the workflow
-SHALL enter ``needs_info`` state and SHALL NOT proceed to execution.
-Conversely, any confidence ≥ 0.7 SHALL produce ``status == "ready"``.
-
-**Validates: Requirements 5.5, 5.6**
+enters ``needs_info`` state and does not proceed to execution.
+Conversely, any confidence ≥ 0.7 produces ``status == "ready"``.
 
 Strategy
 --------
@@ -15,7 +11,7 @@ them to ``analyze_task`` via a fake LLM caller that returns a
 syntactically valid analysis payload with the generated confidence.
 The other LLM fields (workflow_type, repo, branch, ...) are kept
 constant and valid so the only branch under test is the confidence
-gate (Step 5 of the activity — Requirements 5.5, 5.6).
+gate.
 
 The threshold is exposed as
 ``task_analyzer.CONFIDENCE_THRESHOLD`` and the test compares against
@@ -168,15 +164,12 @@ def _llm_payload(confidence: float) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Property test
+# Confidence threshold behavior
 # ---------------------------------------------------------------------------
 
 
 class TestConfidenceThresholdProperty:
-    """**Property 8** — ``confidence`` decides ``needs_info`` vs ``ready``.
-
-    **Validates: Requirements 5.5, 5.6**
-    """
+    """``confidence`` decides ``needs_info`` vs ``ready``."""
 
     @given(
         confidence=st.floats(
@@ -205,7 +198,6 @@ class TestConfidenceThresholdProperty:
     ) -> None:
         """For all c in [0,1]: c < 0.7 ⇒ needs_info; c ≥ 0.7 ⇒ ready.
 
-        **Validates: Requirements 5.5, 5.6**
         """
         # Reset call/comment history for this example so a single
         # run does not see state from a previous example.
@@ -217,7 +209,7 @@ class TestConfidenceThresholdProperty:
 
         # The clamped confidence must round-trip: the LLM returned a
         # value in [0,1] and the analyzer leaves it untouched in that
-        # range (Requirement 5.5 — confidence is the gate).
+        # range; confidence is the gate.
         assert 0.0 <= result.confidence <= 1.0
         assert result.confidence == pytest.approx(confidence)
 
@@ -226,20 +218,20 @@ class TestConfidenceThresholdProperty:
         assert result.workflow_type == "code_change_with_test"
 
         if confidence < CONFIDENCE_THRESHOLD:
-            # Requirement 5.5 — below threshold ⇒ needs_info, not ready.
+            # Below threshold ⇒ needs_info, not ready.
             assert result.status == "needs_info", (
                 f"confidence={confidence!r} should route to needs_info "
                 f"(threshold={CONFIDENCE_THRESHOLD}), got {result.status!r}"
             )
             assert result.accepted is False
             # The activity must post the needs_info comment so the
-            # user can supply the missing fields (Requirement 4.1).
+            # user can supply the missing fields.
             assert len(fake_commenter.comments) == 1
             issue_key, _body, dept_id = fake_commenter.comments[0]
             assert issue_key == "PAY-42"
             assert dept_id == "payments"
         else:
-            # Requirement 5.6 — at/above threshold ⇒ ready.
+            # At or above threshold ⇒ ready.
             assert result.status == "ready", (
                 f"confidence={confidence!r} should proceed (ready) "
                 f"(threshold={CONFIDENCE_THRESHOLD}), got {result.status!r}"

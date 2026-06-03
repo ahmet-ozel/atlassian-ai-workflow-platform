@@ -1,8 +1,6 @@
 """Property test: Webhook pipeline ordering guarantee.
 
-**Validates: Requirements 2.5, 3.1**
-
-Property 1: Stages her zaman dedup → loop_guard → dispatcher sırasında çalışır.
+Stages always execute in dedup → loop_guard → dispatcher order.
 
 For ANY webhook payload (generated via Hypothesis strategies), the pipeline
 stages ALWAYS execute in strict order:
@@ -186,7 +184,7 @@ def webhook_payloads(draw: st.DrawFn) -> WebhookPayload:
 
 
 # ---------------------------------------------------------------------------
-# Property 1: Pipeline ordering guarantee
+# Pipeline ordering guarantee
 # ---------------------------------------------------------------------------
 
 
@@ -202,9 +200,7 @@ class TestPipelineOrderingGuarantee:
     def test_all_stages_execute_in_order_when_all_pass(
         self, payload: WebhookPayload
     ) -> None:
-        """**Validates: Requirements 2.5, 3.1**
-
-        When all stages return PASS, all three stages execute in the
+        """When all stages return PASS, all three stages execute in the
         exact order: event_dedup → loop_guard → dispatcher.
         """
         execution_log: list[str] = []
@@ -226,9 +222,7 @@ class TestPipelineOrderingGuarantee:
     def test_dedup_drop_stops_pipeline_after_first_stage(
         self, payload: WebhookPayload
     ) -> None:
-        """**Validates: Requirements 2.5, 3.1**
-
-        When dedup drops the event, only dedup executes. Loop_guard
+        """When dedup drops the event, only dedup executes. Loop_guard
         and dispatcher are never reached — but the ordering of what
         DID execute is still correct (dedup is first).
         """
@@ -254,9 +248,7 @@ class TestPipelineOrderingGuarantee:
     def test_loop_guard_drop_stops_after_second_stage(
         self, payload: WebhookPayload
     ) -> None:
-        """**Validates: Requirements 2.5, 3.1**
-
-        When loop_guard drops the event, dedup and loop_guard execute
+        """When loop_guard drops the event, dedup and loop_guard execute
         in order. Dispatcher is never reached.
         """
         execution_log: list[str] = []
@@ -282,9 +274,7 @@ class TestPipelineOrderingGuarantee:
     def test_dispatcher_terminal_action_completes_full_pipeline(
         self, payload: WebhookPayload
     ) -> None:
-        """**Validates: Requirements 2.5, 3.1**
-
-        When dispatcher returns a terminal action (WORKFLOW_STARTED),
+        """When dispatcher returns a terminal action (WORKFLOW_STARTED),
         all three stages execute in strict order before the pipeline
         terminates.
         """
@@ -310,9 +300,7 @@ class TestPipelineOrderingGuarantee:
     def test_no_stage_is_skipped_regardless_of_payload(
         self, payload: WebhookPayload
     ) -> None:
-        """**Validates: Requirements 2.5, 3.1**
-
-        The pipeline never skips a stage based on payload content.
+        """The pipeline never skips a stage based on payload content.
         When all stages pass, all three are always invoked regardless
         of what the payload contains.
         """
@@ -346,9 +334,7 @@ class TestPipelineOrderingGuarantee:
     def test_ordering_preserved_for_all_terminal_actions(
         self, payload: WebhookPayload, terminal_action: StageAction
     ) -> None:
-        """**Validates: Requirements 2.5, 3.1**
-
-        Regardless of which terminal action the dispatcher returns,
+        """Regardless of which terminal action the dispatcher returns,
         the execution order is always dedup → loop_guard → dispatcher.
         """
         execution_log: list[str] = []

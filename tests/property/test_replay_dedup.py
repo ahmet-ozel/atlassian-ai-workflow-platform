@@ -1,48 +1,38 @@
-"""Property tests for replay-dedup idempotence.
-
-**Validates: Requirements 2.3, 2.4, 10.5 (Property 3, foundation)
-              Requirements 1.8, 2.4, 2.5, 2.6 (Property 18, workflows
-              spec extension — HTTP-layer ``ProcessedEventsRepo``)**
-
-Property 3: SHA-256 replay-dedup idempotence (foundation spec).
+"""Behavioral tests for replay-dedup idempotence.
 
 Invariants tested:
-  3a. compute_payload_hash is deterministic — same input always yields
+  1. compute_payload_hash is deterministic — same input always yields
       the same SHA-256 hex digest (idempotence).
-  3b. Distinct payloads produce distinct hashes (injectivity for
+  2. Distinct payloads produce distinct hashes (injectivity for
       semantically different JSON objects).
-  3c. check_and_insert returns True on first insert and False on all
+  3. check_and_insert returns True on first insert and False on all
       subsequent inserts of the same hash (dedup idempotence).
-  3d. cleanup_expired removes only entries where expires_at < now;
+  4. cleanup_expired removes only entries where expires_at < now;
       entries with expires_at >= now survive (post-state invariant).
-  3e. cleanup_expired is idempotent — calling it twice with the same
+  5. cleanup_expired is idempotent — calling it twice with the same
       timestamp produces the same post-state.
 
-Property 18: ``processed_events`` idempotent dedup at HTTP layer
-(platform-mimari-workflows spec, task 3.5).
+The HTTP-layer checks cover the ``delivery_id`` / ``provider`` schema
+introduced by ``11_workflows.sql`` and consumed by
+:class:`automation_service.processed_events.ProcessedEventsRepo`.
+The two property families coexist in this file: one covers the SHA-256
+canonicalization layer; the other covers the HTTP-layer rollback semantics
+expressed by ``claim`` / ``is_processed`` / ``release``.
 
-Extends the foundation Property 3 with the new ``delivery_id`` /
-``provider`` schema introduced by ``11_workflows.sql`` and consumed
-by :class:`automation_service.processed_events.ProcessedEventsRepo`.
-The two property families coexist in this file: foundation
-properties cover the SHA-256 canonicalization layer; Property 18
-covers the HTTP-layer rollback semantics expressed by
-``claim`` / ``is_processed`` / ``release``.
-
-Invariants tested (Property 18):
- 18a. ``claim(delivery_id, provider)`` returns True on first call
+HTTP-layer invariants tested:
+ 1. ``claim(delivery_id, provider)`` returns True on first call
       and False on every subsequent call with the same id; the
-      table contains exactly one row per delivery id (R1.8, R2.5).
- 18b. After a successful ``claim``, ``is_processed(delivery_id)``
-      returns True for all subsequent reads (R2.5).
- 18c. ``signalWithStart`` HTTP 503 rollback path: ``release`` after a
+      table contains exactly one row per delivery id.
+ 2. After a successful ``claim``, ``is_processed(delivery_id)``
+      returns True for all subsequent reads.
+ 3. ``signalWithStart`` HTTP 503 rollback path: ``release`` after a
       successful ``claim`` removes the row, so the next ``claim``
       with the same id returns True again (retry-safe). Combined
-      ``claim → release → claim → True`` round-trip (R2.4).
- 18d. Composite invariant with foundation Property 3: dispatching
+      ``claim → release → claim → True`` round-trip.
+ 4. Composite invariant: dispatching
       the same payload N times yields exactly one Temporal
       ``signalWithStart`` execution because the replay-dedup gate
-      drops every replay before it reaches the dispatcher (R2.6).
+      drops every replay before it reaches the dispatcher.
 """
 
 from __future__ import annotations
@@ -186,7 +176,7 @@ class FakeAcquireContext:
 
 
 # ---------------------------------------------------------------------------
-# Property 3a: compute_payload_hash is deterministic (idempotent)
+# compute_payload_hash is deterministic (idempotent)
 # ---------------------------------------------------------------------------
 
 
@@ -197,7 +187,7 @@ class FakeAcquireContext:
 )
 @given(payload=_payloads)
 def test_compute_payload_hash_deterministic(payload: bytes) -> None:
-    """Property 3a — same payload always produces the same hash.
+    """The same payload always produces the same hash.
 
     compute_payload_hash is a pure function; calling it multiple times
     with the same input must yield identical results.
@@ -208,7 +198,7 @@ def test_compute_payload_hash_deterministic(payload: bytes) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Property 3a (extended): hash output is valid SHA-256 hex
+# Hash output is valid SHA-256 hex
 # ---------------------------------------------------------------------------
 
 
@@ -219,14 +209,14 @@ def test_compute_payload_hash_deterministic(payload: bytes) -> None:
 )
 @given(payload=_payloads)
 def test_compute_payload_hash_valid_sha256_format(payload: bytes) -> None:
-    """Property 3a (format) — output is always a 64-char lowercase hex string."""
+    """Output is always a 64-char lowercase hex string."""
     h = compute_payload_hash(payload)
     assert len(h) == 64
     assert all(c in "0123456789abcdef" for c in h)
 
 
 # ---------------------------------------------------------------------------
-# Property 3b: Distinct payloads produce distinct hashes
+# Distinct payloads produce distinct hashes
 # ---------------------------------------------------------------------------
 
 
@@ -237,7 +227,7 @@ def test_compute_payload_hash_valid_sha256_format(payload: bytes) -> None:
 )
 @given(payload_a=_payloads, payload_b=_payloads)
 def test_distinct_payloads_distinct_hashes(payload_a: bytes, payload_b: bytes) -> None:
-    """Property 3b — semantically different payloads produce different hashes.
+    """Semantically different payloads produce different hashes.
 
     Two JSON payloads that parse to different canonical forms must
     produce different SHA-256 digests (collision resistance).
@@ -257,7 +247,7 @@ def test_distinct_payloads_distinct_hashes(payload_a: bytes, payload_b: bytes) -
 
 
 # ---------------------------------------------------------------------------
-# Property 3b (extended): Key-order independence
+# Key-order independence
 # ---------------------------------------------------------------------------
 
 
@@ -268,7 +258,7 @@ def test_distinct_payloads_distinct_hashes(payload_a: bytes, payload_b: bytes) -
 )
 @given(obj=_json_objects)
 def test_key_order_independence(obj: dict) -> None:
-    """Property 3b (canonicalization) — different key orderings yield same hash.
+    """Different key orderings yield the same hash.
 
     The canonical JSON normalization (sorted keys) ensures that
     semantically identical payloads with different key orderings
@@ -284,7 +274,7 @@ def test_key_order_independence(obj: dict) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Property 3c: check_and_insert first True, subsequent False
+# check_and_insert first True, subsequent False
 # ---------------------------------------------------------------------------
 
 
@@ -301,7 +291,7 @@ def test_key_order_independence(obj: dict) -> None:
 async def test_check_and_insert_first_true_then_false(
     hashes: list[str], ttl: timedelta
 ) -> None:
-    """Property 3c — first insert returns True, all subsequent inserts return False.
+    """First insert returns True, all subsequent inserts return False.
 
     For each unique hash, the first call to check_and_insert must return
     True (newly inserted). Any subsequent call with the same hash must
@@ -324,7 +314,7 @@ async def test_check_and_insert_first_true_then_false(
 
 
 # ---------------------------------------------------------------------------
-# Property 3c (extended): Interleaved inserts maintain correct state
+# Interleaved inserts maintain correct state
 # ---------------------------------------------------------------------------
 
 
@@ -341,7 +331,7 @@ async def test_check_and_insert_first_true_then_false(
 async def test_check_and_insert_interleaved_state(
     hashes: list[str], ttl: timedelta
 ) -> None:
-    """Property 3c (interleaved) — inserting multiple distinct hashes maintains
+    """Inserting multiple distinct hashes maintains
     independent dedup state for each.
 
     After inserting all hashes once, re-inserting any of them returns False,
@@ -364,7 +354,7 @@ async def test_check_and_insert_interleaved_state(
 
 
 # ---------------------------------------------------------------------------
-# Property 3d: cleanup_expired removes only expired entries
+# cleanup_expired removes only expired entries
 # ---------------------------------------------------------------------------
 
 
@@ -386,7 +376,7 @@ async def test_check_and_insert_interleaved_state(
 async def test_cleanup_expired_post_state(
     entries: list[tuple[str, datetime]], now: datetime
 ) -> None:
-    """Property 3d — after cleanup_expired(now), only entries with expires_at >= now remain.
+    """After cleanup_expired(now), only entries with expires_at >= now remain.
 
     The post-state invariant: {(h, ea) : ea >= now} is exactly the set
     of entries remaining in the store after cleanup.
@@ -409,7 +399,7 @@ async def test_cleanup_expired_post_state(
 
 
 # ---------------------------------------------------------------------------
-# Property 3e: cleanup_expired is idempotent
+# cleanup_expired is idempotent
 # ---------------------------------------------------------------------------
 
 
@@ -431,7 +421,7 @@ async def test_cleanup_expired_post_state(
 async def test_cleanup_expired_idempotent(
     entries: list[tuple[str, datetime]], now: datetime
 ) -> None:
-    """Property 3e — calling cleanup_expired twice with the same timestamp
+    """Calling cleanup_expired twice with the same timestamp
     produces the same post-state (second call deletes 0 rows).
 
     cleanup_expired(now); cleanup_expired(now) ≡ cleanup_expired(now)
@@ -456,21 +446,15 @@ async def test_cleanup_expired_idempotent(
 
 
 # ===========================================================================
-# Property 18: processed_events idempotent dedup at HTTP layer
-# (platform-mimari-workflows spec, task 3.5)
+# processed_events idempotent dedup at HTTP layer
 # ===========================================================================
 #
-# Below this banner the file extends the foundation Property 3 surface
-# with Property 18: the HTTP-layer ``ProcessedEventsRepo`` contract
-# introduced by ``11_workflows.sql`` and consumed by the webhook
-# filter chain's ``replay_dedup`` stage. The new properties never
-# touch the foundation ``check_and_insert`` / ``cleanup_expired`` /
-# ``compute_payload_hash`` surface — they coexist in the same file
-# because design.md groups them under the same "replay-dedup
-# idempotence" umbrella (foundation Property 3 invariant + workflows
-# Property 18 HTTP rollback path = a single composite invariant on
-# how the same payload N times yields exactly one Temporal
-# execution).
+# Below this banner the file covers the HTTP-layer
+# ``ProcessedEventsRepo`` contract introduced by ``11_workflows.sql``
+# and consumed by the webhook filter chain's ``replay_dedup`` stage.
+# These checks never touch the ``check_and_insert`` / ``cleanup_expired`` /
+# ``compute_payload_hash`` surface; they coexist in the same file because
+# both layers protect the same replay-dedup idempotence behavior.
 # ---------------------------------------------------------------------------
 
 # Import the system-under-test as a standalone module to avoid the
@@ -508,7 +492,7 @@ ProcessedEventsRepo = _processed_events_module.ProcessedEventsRepo
 
 
 # ---------------------------------------------------------------------------
-# Strategies — Property 18
+# Strategies — processed_events HTTP layer
 # ---------------------------------------------------------------------------
 
 # Webhook delivery ids are opaque provider-assigned tokens. Jira sends
@@ -544,7 +528,7 @@ _claim_inputs = st.tuples(_delivery_ids, _providers)
 # repo emits (claim INSERT, is_processed SELECT, release DELETE) and
 # an ``execute`` for the DELETE return-status. This keeps the
 # property test self-contained — no real Postgres in the loop — while
-# still enforcing the unique PK constraint that Property 18 (a)
+# still enforcing the unique PK constraint that the claim invariant
 # relies on.
 
 
@@ -554,7 +538,7 @@ class _ProcessedEventsFakeConnection:
     The store is a plain ``dict[str, str]`` mapping ``delivery_id`` →
     ``provider``, which is the minimal projection of the
     ``automation.processed_events`` row needed to validate the
-    Property 18 invariants. ``received_at`` is intentionally not
+    processed-events invariants. ``received_at`` is intentionally not
     modelled — neither the repo nor the property reads it back.
     """
 
@@ -619,7 +603,7 @@ class _ProcessedEventsFakeAcquireContext:
 
 
 class _ProcessedEventsFakePool:
-    """In-memory ``asyncpg.Pool`` substitute for Property 18.
+    """In-memory ``asyncpg.Pool`` substitute for processed-events checks.
 
     Each ``acquire()`` yields a connection bound to the same shared
     store, which is the behaviour ``ProcessedEventsRepo`` assumes
@@ -640,7 +624,7 @@ class _ProcessedEventsFakePool:
 
 
 # ---------------------------------------------------------------------------
-# Property 18 (a): claim() first True, subsequent False; exactly one row
+# claim() first True, subsequent False; exactly one row
 # ---------------------------------------------------------------------------
 
 
@@ -658,9 +642,7 @@ class _ProcessedEventsFakePool:
 async def test_claim_first_true_then_false_exactly_one_row(
     delivery_id: str, provider: str, extra_attempts: int
 ) -> None:
-    """Property 18 (a) — ``claim()`` first call True, all replays False; exactly one row.
-
-    **Validates: Requirements 1.8, 2.5**
+    """``claim()`` first call True, all replays False; exactly one row.
 
     For any ``(delivery_id, provider)`` pair, the first call to
     :meth:`ProcessedEventsRepo.claim` returns True and inserts
@@ -691,7 +673,7 @@ async def test_claim_first_true_then_false_exactly_one_row(
 
 
 # ---------------------------------------------------------------------------
-# Property 18 (a-extended): independent dedup state across distinct ids
+# Independent dedup state across distinct ids
 # ---------------------------------------------------------------------------
 
 
@@ -712,9 +694,7 @@ async def test_claim_first_true_then_false_exactly_one_row(
 async def test_claim_independent_state_across_delivery_ids(
     inputs: list[tuple[str, str]],
 ) -> None:
-    """Property 18 (a-ext) — distinct delivery ids maintain independent dedup state.
-
-    **Validates: Requirements 1.8, 2.5**
+    """Distinct delivery ids maintain independent dedup state.
 
     After claiming each id once, the store contains exactly one row
     per id with the matching provider. A second pass over the same
@@ -741,7 +721,7 @@ async def test_claim_independent_state_across_delivery_ids(
 
 
 # ---------------------------------------------------------------------------
-# Property 18 (b): is_processed True after claim; stays True
+# is_processed True after claim; stays True
 # ---------------------------------------------------------------------------
 
 
@@ -759,9 +739,7 @@ async def test_claim_independent_state_across_delivery_ids(
 async def test_is_processed_true_after_claim_and_stable(
     delivery_id: str, provider: str, read_attempts: int
 ) -> None:
-    """Property 18 (b) — ``is_processed`` True after claim; stable across reads.
-
-    **Validates: Requirements 2.5**
+    """``is_processed`` is True after claim and stable across reads.
 
     Pre-claim the predicate is False; immediately after a
     successful claim it transitions to True and stays True for any
@@ -784,7 +762,7 @@ async def test_is_processed_true_after_claim_and_stable(
 
 
 # ---------------------------------------------------------------------------
-# Property 18 (c): signalWithStart 503 rollback — claim → release → claim → True
+# signalWithStart 503 rollback — claim → release → claim → True
 # ---------------------------------------------------------------------------
 
 
@@ -802,9 +780,7 @@ async def test_is_processed_true_after_claim_and_stable(
 async def test_claim_release_claim_round_trip_after_503(
     delivery_id: str, provider: str, rollback_cycles: int
 ) -> None:
-    """Property 18 (c) — ``release`` after ``claim`` lets the retry re-claim.
-
-    **Validates: Requirements 2.4**
+    """``release`` after ``claim`` lets the retry re-claim.
 
     Models the ``signalWithStart`` HTTP 503 rollback path: when the
     Temporal dispatcher fails after a successful ``claim``, the
@@ -840,7 +816,7 @@ async def test_claim_release_claim_round_trip_after_503(
 
 
 # ---------------------------------------------------------------------------
-# Property 18 (c-extended): release without prior claim is a no-op
+# release without prior claim is a no-op
 # ---------------------------------------------------------------------------
 
 
@@ -852,9 +828,7 @@ async def test_claim_release_claim_round_trip_after_503(
 @given(delivery_id=_delivery_ids)
 @pytest.mark.asyncio
 async def test_release_without_prior_claim_is_noop(delivery_id: str) -> None:
-    """Property 18 (c-ext) — ``release`` is a safe no-op when no row exists.
-
-    **Validates: Requirements 2.4**
+    """``release`` is a safe no-op when no row exists.
 
     Releasing a ``delivery_id`` that was never claimed (or already
     released) returns False and leaves the store untouched. This is
@@ -875,7 +849,7 @@ async def test_release_without_prior_claim_is_noop(delivery_id: str) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Property 18 (d): composite invariant — N webhook replays → 1 dispatch
+# Composite invariant — N webhook replays → 1 dispatch
 # ---------------------------------------------------------------------------
 
 
@@ -893,20 +867,13 @@ async def test_release_without_prior_claim_is_noop(delivery_id: str) -> None:
 async def test_n_replays_yield_exactly_one_dispatch(
     delivery_id: str, provider: str, replay_count: int
 ) -> None:
-    """Property 18 (d) — composite invariant: N replays → exactly one dispatch.
-
-    **Validates: Requirements 2.6** (composite with foundation
-    Property 3 — same payload SHA-256 + same delivery id ⇒ one
-    Temporal execution)
+    """N replays produce exactly one dispatch.
 
     Models the full webhook dispatcher loop without invoking
     Temporal: every webhook delivery first consults
     :meth:`ProcessedEventsRepo.claim`; only the call that observes
     True proceeds to the dispatcher. Across N replays of the same
-    delivery id the dispatcher counter reaches exactly one. This
-    closes the loop on R2.6 (``test_temporal_idempotency.py`` —
-    aynı event payload'ı 1, 5, 100 kez peş peşe gönderildiğinde tek
-    bir Temporal execution oluşur).
+    delivery id the dispatcher counter reaches exactly one.
     """
 
     pool = _ProcessedEventsFakePool()
@@ -929,7 +896,7 @@ async def test_n_replays_yield_exactly_one_dispatch(
 
 
 # ---------------------------------------------------------------------------
-# Property 18 (d-extended): N replays interleaved with rollback
+# N replays interleaved with rollback
 # ---------------------------------------------------------------------------
 
 
@@ -956,11 +923,9 @@ async def test_n_replays_with_503_rollback_yield_exactly_one_success(
     provider: str,
     dispatch_outcomes: list[bool],
 ) -> None:
-    """Property 18 (d-ext) — replays + 503 rollback → at most one successful dispatch.
+    """Replays plus 503 rollback produce at most one successful dispatch.
 
-    **Validates: Requirements 2.4, 2.6**
-
-    Composite of (c) and (d): each delivery either succeeds (counter
+    Each delivery either succeeds (counter
     advances, row stays) or fails with 503 (row is rolled back). The
     invariant: the total number of successful dispatches across the
     whole sequence is at most one — once a dispatch succeeds, every

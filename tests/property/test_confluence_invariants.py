@@ -1,104 +1,98 @@
-"""Property test 9 — Confluence write invariants.
+"""invariant 9 — Confluence write invariants.
 
-**Validates: Requirements 8.1, 8.2, 8.3, 8.6, 8.7**
+
 
 Hypothesis-driven verification of the five pure helpers used by the
 ``confluence_doc_create`` / ``confluence_doc_update`` flow of the
-``AgentRunnerWorkflow`` in ``platform-mimari-workflows``:
+``AgentRunnerWorkflow`` in ````:
 
-* :func:`temporal_shared.confluence_dedup.is_probe_page` —
-  ``_AI_PROBE_*`` prefix detection (R8.3,
-  MIMARI §16.14.6 V6 / foundation R5).
-* :func:`temporal_shared.confluence_dedup.should_skip_overwrite` —
-  non-bot edited within freshness window → skip (R8.7,
-  MIMARI §16.11 — Confluence overwrite koruması).
-* :func:`temporal_shared.confluence_dedup.should_skip_section_update` —
-  ``(workflow_id, page_id, section_path, content_hash)`` already in
-  the hash table → skip (R8.2, MIMARI §16.14.10 V10).
-* :func:`temporal_shared.confluence.compute_provenance_footer` —
-  non-empty Jira link → footer that contains the link verbatim
-  (R8.6, MIMARI §16.13 S6 / §16.12 B7). Empty / invalid link inputs
-  raise :class:`InvalidJiraIssueLinkError` (a :class:`ValueError`
-  subclass) so the caller cannot accidentally render a malformed
-  page; the property suite pins this fail-fast behaviour.
-* :func:`temporal_shared.confluence.format_page_title` —
-  ``{topic} - {YYYY-MM-DD}`` shape (R8.1). Empty / whitespace-only
-  topics raise :class:`InvalidTopicError` (a :class:`ValueError`
-  subclass).
+*:func:`temporal_shared.confluence_dedup.is_probe_page` —
+ ``_AI_PROBE_*`` prefix detection (,
+ §16.14.6 V6 / foundation).
+*:func:`temporal_shared.confluence_dedup.should_skip_overwrite` —
+ non-bot edited within freshness window → skip (,
+ §16.11 — Confluence overwrite koruması).
+*:func:`temporal_shared.confluence_dedup.should_skip_section_update` —
+ ``(workflow_id, page_id, section_path, content_hash)`` already in
+ the hash table → skip (, §16.14.10 V10).
+*:func:`temporal_shared.confluence.compute_provenance_footer` —
+ non-empty Jira link → footer that contains the link verbatim
+ (, §16.13 S6 / §16.12 B7). Empty / invalid link inputs
+ raise:class:`InvalidJiraIssueLinkError` (a:class:`ValueError`
+ subclass) so the caller cannot accidentally render a malformed
+ page; the invariant pins this fail-fast behaviour.
+*:func:`temporal_shared.confluence.format_page_title` —
+ ``{topic} - {YYYY-MM-DD}`` shape. Empty / whitespace-only
+ topics raise:class:`InvalidTopicError` (a:class:`ValueError`
+ subclass).
 
 All five helpers are **pure deterministic** — calling each one twice
 with the same inputs must return the same value (or raise the same
 exception). The final ``TestDeterminism`` class pins this end-to-end.
 
-Property statements (mirror design.md §"Property 9")
+Invariant statements (mirror design.md §"invariant")
 ----------------------------------------------------
 
-(P-probe-1) ``is_probe_page("_AI_PROBE_X")`` is :data:`True` for any
-            suffix ``X`` (including the empty string).
-(P-probe-2) ``is_probe_page(title)`` is :data:`False` for any title
-            whose first ``len("_AI_PROBE_")`` characters do not match
-            the prefix.
+(P-probe-1) ``is_probe_page("_AI_PROBE_X")`` is:data:`True` for any
+ suffix ``X`` (including the empty string).
+(P-probe-2) ``is_probe_page(title)`` is:data:`False` for any title
+ whose first ``len("_AI_PROBE_")`` characters do not match
+ the prefix.
 (P-probe-3) ``is_probe_page`` is deterministic — two consecutive calls
-            on the same input return the same boolean.
+ on the same input return the same boolean.
 
 (P-overwrite-1) ``should_skip_overwrite`` returns ``skip=True`` **iff**
-                ``last_editor_account_id is not None`` AND
-                ``last_edit_at is not None`` AND
-                ``last_editor_account_id ∉ bot_ids`` AND
-                ``timedelta(0) <= now - last_edit_at < freshness``.
-                A future-dated edit (negative delta) does **not** block.
-(P-overwrite-2) When ``skip=True``, the audit event is exactly
-                :data:`AUDIT_CONFLUENCE_OVERWRITE_PROTECTED`; when
-                ``skip=False``, ``audit_event is None``.
+ ``last_editor_account_id is not None`` AND
+ ``last_edit_at is not None`` AND
+ ``last_editor_account_id ∉ bot_ids`` AND
+ ``timedelta(0) <= now - last_edit_at < freshness``.
+ A future-dated edit (negative delta) does **not** block.
+(P-overwrite-2) When ``skip=True``, the audit event is exactly:data:`AUDIT_CONFLUENCE_OVERWRITE_PROTECTED`; when
+ ``skip=False``, ``audit_event is None``.
 (P-overwrite-3) ``should_skip_overwrite`` is deterministic.
 
 (P-section-1) ``should_skip_section_update`` returns ``skip=True``
-              **iff** the four-tuple ``(workflow_id, page_id,
-              section_path, content_hash)`` is in ``hash_table``.
-(P-section-2) When ``skip=True``, the audit event is exactly
-              :data:`AUDIT_CONFLUENCE_SECTION_DEDUP_SKIP`; when
-              ``skip=False``, ``audit_event is None``.
+ **iff** the four-tuple ``(workflow_id, page_id,
+ section_path, content_hash)`` is in ``hash_table``.
+(P-section-2) When ``skip=True``, the audit event is exactly:data:`AUDIT_CONFLUENCE_SECTION_DEDUP_SKIP`; when
+ ``skip=False``, ``audit_event is None``.
 (P-section-3) ``should_skip_section_update`` is deterministic.
 
 (P-footer-1) For any non-empty, structurally-valid Jira issue link the
-             returned footer **contains the link verbatim**
-             (substring check — the activity layer relies on this so
-             readers can click through to the source issue).
+ returned footer **contains the link verbatim**
+ (substring check — the activity layer relies on this so
+ readers can click through to the source issue).
 (P-footer-2) The footer is non-empty and contains the canonical
-             provenance prefix ``"🤖"`` so tests / readers can locate
-             the AI-attribution block.
+ provenance prefix ``"🤖"`` so tests / readers can locate
+ the AI-attribution block.
 (P-footer-3) Empty / whitespace-only / structurally-invalid link
-             inputs raise :class:`InvalidJiraIssueLinkError`
-             (a :class:`ValueError` subclass).
+ inputs raise:class:`InvalidJiraIssueLinkError`
+ (a:class:`ValueError` subclass).
 
 (P-title-1) For any non-empty topic and a calendar date,
-            ``format_page_title`` returns a string matching
-            ``r"^.+ - \\d{4}-\\d{2}-\\d{2}$"`` (the canonical R8.1
-            shape).
+ ``format_page_title`` returns a string matching
+ ``r"^.+ - \\d{4}-\\d{2}-\\d{2}$"`` (the canonical 
+ shape).
 (P-title-2) The returned title contains the topic verbatim and the
-            ISO-8601 date suffix exactly as ``current_date.strftime(
-            "%Y-%m-%d")``.
-(P-title-3) Empty / whitespace-only topics raise
-            :class:`InvalidTopicError` (a :class:`ValueError`
-            subclass).
+ ISO-8601 date suffix exactly as ``current_date.strftime(
+ "%Y-%m-%d")``.
+(P-title-3) Empty / whitespace-only topics raise:class:`InvalidTopicError` (a:class:`ValueError`
+ subclass).
 
 Hypothesis configuration
 ------------------------
 
 Every property runs at ``max_examples=100`` with ``deadline=None`` per
-the task brief, matching the existing property suite cadence (see
+the task brief, matching the existing invariant cadence (see
 ``test_explain_keyword.py``, ``test_code_change_formatters.py``).
 
 Deviation note (task brief vs implementation)
 ---------------------------------------------
 
-The task brief for Property 9 states "empty → empty string" for
-:func:`compute_provenance_footer`. The production implementation in
-:mod:`temporal_shared.confluence` (task 8.1) raises
-:class:`InvalidJiraIssueLinkError` instead, on the basis that the
+The task brief for invariant states "empty → empty string" for:func:`compute_provenance_footer`. The production implementation in:mod:`temporal_shared.confluence` raises:class:`InvalidJiraIssueLinkError` instead, on the basis that the
 footer is rendered verbatim into Confluence storage format and a
-silently-empty footer would strip the AI-attribution required by R8.6
-(MIMARI §16.12 B7 — bot output attribution). The property suite tests
+silently-empty footer would strip the AI-attribution required by 
+( §16.12 B7 — bot output attribution). The invariant tests
 the **as-implemented** contract (raise on empty) since that module's
 docstring and unit tests in
 ``platform/libs/temporal-shared/tests/test_confluence.py`` are the
@@ -171,8 +165,8 @@ _NOW_ANCHOR: Final[datetime] = datetime(
     2026, 5, 14, 12, 0, 0, tzinfo=timezone.utc
 )
 
-#: Default freshness window (5 minutes per R8.7). Pulled from the
-#: production module so a future widening of the requirement only has
+#: Default freshness window (5 minutes per). Pulled from the
+#: production module so a future widening of the the operational rule only has
 #: to be made in one place.
 _FRESHNESS: Final[timedelta] = DEFAULT_OVERWRITE_FRESHNESS
 
@@ -206,7 +200,7 @@ _TITLE_SHAPE_RE: Final[re.Pattern[str]] = re.compile(
 
 # Probe-shape titles: the canonical foundation form is
 # ``_AI_PROBE_<unix_ts>_DELETE_ME`` but the prefix check is
-# deliberately loose (R8.3 / module docstring), so we generate the
+# deliberately loose ( / module docstring), so we generate the
 # prefix + an arbitrary printable-ASCII tail.
 _PROBE_TAIL: Final[st.SearchStrategy[str]] = st.text(
     alphabet=st.characters(
@@ -358,7 +352,7 @@ def _jira_issue_links(draw: st.DrawFn) -> str:
 
 # Empty / whitespace-only inputs that the helper must reject.
 _EMPTY_OR_WS_LINKS: Final[st.SearchStrategy[str]] = st.sampled_from(
-    ("", " ", "   ", "\t", "\n", " \t \n ")
+    ("", " ", " ", "\t", "\n", " \t \n ")
 )
 
 
@@ -400,25 +394,25 @@ _DATES: Final[st.SearchStrategy[date]] = st.dates(
 
 # Empty / whitespace-only topics that must raise ``InvalidTopicError``.
 _EMPTY_OR_WS_TOPICS: Final[st.SearchStrategy[str]] = st.sampled_from(
-    ("", " ", "   ", "\t", "\n", " \t \n ")
+    ("", " ", " ", "\t", "\n", " \t \n ")
 )
 
 
 # ---------------------------------------------------------------------------
-# is_probe_page  (Requirement 8.3, Property 9.e)
+# is_probe_page, invariant.e)
 # ---------------------------------------------------------------------------
 
 
 class TestIsProbePage:
-    """Property 9 — ``_AI_PROBE_*`` prefix detection."""
+    """invariant — ``_AI_PROBE_*`` prefix detection."""
 
     @settings(max_examples=100, deadline=None)
     @given(title=_probe_titles())
     def test_probe_titles_are_detected(self, title: str) -> None:
         """P-probe-1: every ``_AI_PROBE_`` prefixed title is a probe.
 
-        Validates: Requirements 8.3.
-        """
+
+ """
         assert title.startswith(PROBE_PAGE_TITLE_PREFIX)
         assert is_probe_page(title) is True
 
@@ -427,8 +421,8 @@ class TestIsProbePage:
     def test_non_probe_titles_are_rejected(self, title: str) -> None:
         """P-probe-2: titles that do not start with the prefix return False.
 
-        Validates: Requirements 8.3.
-        """
+
+ """
         assert not title.startswith(PROBE_PAGE_TITLE_PREFIX)
         assert is_probe_page(title) is False
 
@@ -437,32 +431,32 @@ class TestIsProbePage:
     def test_is_probe_page_is_deterministic(self, title: str) -> None:
         """P-probe-3: same input → same output across two calls.
 
-        Validates: Requirements 8.3.
-        """
+
+ """
         assert is_probe_page(title) == is_probe_page(title)
 
     def test_concrete_example_canonical_probe(self) -> None:
         """Concrete regression for the documented foundation shape.
 
-        Validates: Requirements 8.3.
-        """
+
+ """
         assert is_probe_page("_AI_PROBE_1700000000_DELETE_ME") is True
 
     def test_concrete_example_non_probe(self) -> None:
         """Concrete regression for a normal-looking page title.
 
-        Validates: Requirements 8.3.
-        """
+
+ """
         assert is_probe_page("Quarterly Review - 2026-05-14") is False
 
 
 # ---------------------------------------------------------------------------
-# should_skip_overwrite  (Requirement 8.7, Property 9.d)
+# should_skip_overwrite, invariant.d)
 # ---------------------------------------------------------------------------
 
 
 class TestShouldSkipOverwrite:
-    """Property 9 — non-bot edit within freshness window blocks update."""
+    """invariant — non-bot edit within freshness window blocks update."""
 
     @settings(max_examples=100, deadline=None)
     @given(
@@ -478,19 +472,19 @@ class TestShouldSkipOverwrite:
     ) -> None:
         """P-overwrite-1: skip iff non-bot edited within the freshness window.
 
-        The full predicate (per R8.7 + module docstring):
+ The full predicate (per + module docstring):
 
-            skip ⇔ last_editor is not None
-                  AND last_edit_at is not None
-                  AND last_editor ∉ bot_ids
-                  AND timedelta(0) <= now - last_edit_at < freshness
+ skip ⇔ last_editor is not None
+ AND last_edit_at is not None
+ AND last_editor ∉ bot_ids
+ AND timedelta(0) <= now - last_edit_at < freshness
 
-        A future-dated edit (negative delta) does not block — the
-        helper treats clock skew as "not recent enough to block"
-        rather than always-blocking.
+ A future-dated edit (negative delta) does not block — the
+ helper treats clock skew as "not recent enough to block"
+ rather than always-blocking.
 
-        Validates: Requirements 8.7.
-        """
+
+ """
         decision = should_skip_overwrite(
             last_editor_account_id=last_editor,
             last_edit_at=last_edit_at,
@@ -526,10 +520,10 @@ class TestShouldSkipOverwrite:
         last_edit_at: datetime | None,
         bot_ids: frozenset[str],
     ) -> None:
-        """P-overwrite-2: audit event is the requirement-pinned literal.
+        """P-overwrite-2: audit event is the the operational rule-pinned literal.
 
-        Validates: Requirements 8.7.
-        """
+
+ """
         decision = should_skip_overwrite(
             last_editor_account_id=last_editor,
             last_edit_at=last_edit_at,
@@ -556,8 +550,8 @@ class TestShouldSkipOverwrite:
     ) -> None:
         """P-overwrite-3: same input → same decision across two calls.
 
-        Validates: Requirements 8.7.
-        """
+
+ """
         first = should_skip_overwrite(
             last_editor_account_id=last_editor,
             last_edit_at=last_edit_at,
@@ -574,12 +568,12 @@ class TestShouldSkipOverwrite:
 
 
 # ---------------------------------------------------------------------------
-# should_skip_section_update  (Requirement 8.2, Property 9.b)
+# should_skip_section_update, invariant.b)
 # ---------------------------------------------------------------------------
 
 
 class TestShouldSkipSectionUpdate:
-    """Property 9 — section dedup by content hash."""
+    """invariant — section dedup by content hash."""
 
     @settings(max_examples=100, deadline=None)
     @given(
@@ -599,8 +593,8 @@ class TestShouldSkipSectionUpdate:
     ) -> None:
         """P-section-1: skip ⇔ ``(wf, page, section, hash) ∈ hash_table``.
 
-        Validates: Requirements 8.2.
-        """
+
+ """
         key = (workflow_id, page_id, section_path, content_hash)
         decision = should_skip_section_update(
             workflow_id, page_id, section_path, content_hash, hash_table
@@ -623,10 +617,10 @@ class TestShouldSkipSectionUpdate:
         content_hash: str,
         hash_table: frozenset[tuple[str, str, str, str]],
     ) -> None:
-        """P-section-2: audit event is the requirement-pinned literal.
+        """P-section-2: audit event is the the operational rule-pinned literal.
 
-        Validates: Requirements 8.2.
-        """
+
+ """
         decision = should_skip_section_update(
             workflow_id, page_id, section_path, content_hash, hash_table
         )
@@ -653,8 +647,8 @@ class TestShouldSkipSectionUpdate:
     ) -> None:
         """P-section-3: same input → same decision across two calls.
 
-        Validates: Requirements 8.2.
-        """
+
+ """
         first = should_skip_section_update(
             workflow_id, page_id, section_path, content_hash, hash_table
         )
@@ -681,12 +675,12 @@ class TestShouldSkipSectionUpdate:
     ) -> None:
         """Round-trip: insert the key into the table → next call skips.
 
-        This is the natural cache-population path the workflow follows
-        after a successful Confluence update (see the
-        ``ConfluenceSectionHashRepo`` design notes).
+ This is the natural cache-population path the workflow follows
+ after a successful Confluence update (see the
+ ``ConfluenceSectionHashRepo`` design notes).
 
-        Validates: Requirements 8.2.
-        """
+
+ """
         key = (workflow_id, page_id, section_path, content_hash)
         # Start with a table that does NOT contain ``key`` so the first
         # call lands on the proceed branch.
@@ -707,12 +701,12 @@ class TestShouldSkipSectionUpdate:
 
 
 # ---------------------------------------------------------------------------
-# compute_provenance_footer  (Requirement 8.6, Property 9.c)
+# compute_provenance_footer, invariant.c)
 # ---------------------------------------------------------------------------
 
 
 class TestComputeProvenanceFooter:
-    """Property 9 — provenance footer contains the Jira link verbatim."""
+    """invariant — provenance footer contains the Jira link verbatim."""
 
     @settings(max_examples=100, deadline=None)
     @given(jira_issue_link=_jira_issue_links())
@@ -721,12 +715,12 @@ class TestComputeProvenanceFooter:
     ) -> None:
         """P-footer-1: the link appears verbatim in the rendered footer.
 
-        The activity layer relies on the verbatim embedding so readers
-        can click through to the source issue from the rendered
-        Confluence page.
+ The activity layer relies on the verbatim embedding so readers
+ can click through to the source issue from the rendered
+ Confluence page.
 
-        Validates: Requirements 8.6.
-        """
+
+ """
         footer = compute_provenance_footer(jira_issue_link)
         assert jira_issue_link in footer
 
@@ -737,11 +731,11 @@ class TestComputeProvenanceFooter:
     ) -> None:
         """P-footer-2: footer is non-empty and carries the AI marker.
 
-        Validates: Requirements 8.6.
-        """
+
+ """
         footer = compute_provenance_footer(jira_issue_link)
         assert footer  # non-empty
-        # The 🤖 emoji is the canonical AI-attribution marker (R8.6 / B7).
+        # The 🤖 emoji is the canonical AI-attribution marker ( / B7).
         assert "🤖" in footer
 
     @settings(max_examples=100, deadline=None)
@@ -751,16 +745,15 @@ class TestComputeProvenanceFooter:
     ) -> None:
         """P-footer-3: empty / whitespace-only inputs raise ``ValueError``.
 
-        Note (deviation): the task brief states "empty → empty
-        string", but the production helper raises
-        :class:`InvalidJiraIssueLinkError` (a ``ValueError`` subclass)
-        so a silently-empty footer cannot strip the AI-attribution
-        required by R8.6 / MIMARI §16.12 B7. The property suite
-        validates the as-implemented contract; see the module
-        docstring for the rationale.
+ Note (deviation): the task brief states "empty → empty
+ string", but the production helper raises:class:`InvalidJiraIssueLinkError` (a ``ValueError`` subclass)
+ so a silently-empty footer cannot strip the AI-attribution
+ required by / §16.12 B7. The invariant
+ validates the as-implemented contract; see the module
+ docstring for the rationale.
 
-        Validates: Requirements 8.6.
-        """
+
+ """
         with pytest.raises(InvalidJiraIssueLinkError):
             compute_provenance_footer(empty_link)
         # The exception class is explicitly a ``ValueError`` subclass so
@@ -775,20 +768,20 @@ class TestComputeProvenanceFooter:
     ) -> None:
         """Same input → same footer across two calls.
 
-        Validates: Requirements 8.6.
-        """
+
+ """
         first = compute_provenance_footer(jira_issue_link)
         second = compute_provenance_footer(jira_issue_link)
         assert first == second
 
 
 # ---------------------------------------------------------------------------
-# format_page_title  (Requirement 8.1, Property 9.a)
+# format_page_title, invariant.a)
 # ---------------------------------------------------------------------------
 
 
 class TestFormatPageTitle:
-    """Property 9 — page-title shape + empty-topic rejection."""
+    """invariant — page-title shape + empty-topic rejection."""
 
     @settings(max_examples=100, deadline=None)
     @given(topic=_topics(), current_date=_DATES)
@@ -797,8 +790,8 @@ class TestFormatPageTitle:
     ) -> None:
         """P-title-1: output matches ``r"^.+ - \\d{4}-\\d{2}-\\d{2}$"``.
 
-        Validates: Requirements 8.1.
-        """
+
+ """
         title = format_page_title(topic, "tr", current_date)
         assert _TITLE_SHAPE_RE.match(title) is not None, (
             f"Title {title!r} does not match the canonical shape"
@@ -811,12 +804,12 @@ class TestFormatPageTitle:
     ) -> None:
         """P-title-2: title carries the topic and the ``YYYY-MM-DD`` suffix.
 
-        The validator strips outer whitespace before composing, so the
-        topic substring assertion uses ``topic.strip()`` to mirror the
-        documented contract.
+ The validator strips outer whitespace before composing, so the
+ topic substring assertion uses ``topic.strip`` to mirror the
+ documented contract.
 
-        Validates: Requirements 8.1.
-        """
+
+ """
         title = format_page_title(topic, "tr", current_date)
         cleaned_topic = topic.strip()
 
@@ -834,13 +827,11 @@ class TestFormatPageTitle:
     def test_p_title_3_empty_topic_raises_value_error(
         self, empty_topic: str, current_date: date
     ) -> None:
-        """P-title-3: empty / whitespace-only topics raise ``ValueError``.
+        """P-title-3: empty / whitespace-only topics raise ``ValueError``.:class:`InvalidTopicError` is a:class:`ValueError` subclass so
+ callers using ``except ValueError`` catch it.
 
-        :class:`InvalidTopicError` is a :class:`ValueError` subclass so
-        callers using ``except ValueError`` catch it.
 
-        Validates: Requirements 8.1.
-        """
+ """
         with pytest.raises(InvalidTopicError):
             format_page_title(empty_topic, "tr", current_date)
         assert issubclass(InvalidTopicError, ValueError)
@@ -852,8 +843,8 @@ class TestFormatPageTitle:
     ) -> None:
         """Same input → same title across two calls.
 
-        Validates: Requirements 8.1.
-        """
+
+ """
         first = format_page_title(topic, "tr", current_date)
         second = format_page_title(topic, "tr", current_date)
         assert first == second
@@ -867,12 +858,12 @@ class TestFormatPageTitle:
 class TestDeterminism:
     """All five helpers are pure deterministic — same input → same output.
 
-    The per-helper test classes already pin the contract for each
-    function individually; this class exists as a single, easy-to-grep
-    anchor for the "all helpers pure deterministic" line of the task
-    brief so a future reader can confirm the property is covered
-    without scrolling through five separate test classes.
-    """
+ The per-helper test classes already pin the contract for each
+ function individually; this class exists as a single, easy-to-grep
+ anchor for the "all helpers pure deterministic" line of the task
+ brief so a future reader can confirm the property is covered
+ without scrolling through five separate test classes.
+ """
 
     @settings(max_examples=100, deadline=None)
     @given(
@@ -906,8 +897,8 @@ class TestDeterminism:
     ) -> None:
         """End-to-end determinism: every helper agrees with itself.
 
-        Validates: Requirements 8.1, 8.2, 8.3, 8.6, 8.7.
-        """
+
+ """
         assert is_probe_page(title) == is_probe_page(title)
 
         assert should_skip_overwrite(

@@ -1,24 +1,22 @@
-"""Property test — Firecrawl egress allowlist (Property 16 / Requirement 10.3).
+"""Firecrawl egress allowlist behavior.
 
-# Feature: platform-mimari-foundation, Property 16: Firecrawl egress allowlist
 
-**Property 16: Firecrawl egress allowlist**
 
-**Validates: Requirements 10.3**
+Firecrawl egress allowlist
+
+
 
 Universal property
 ------------------
 
-For every ``(target_host, allowlist)`` pair the firecrawl wrapper inspects:
+For every ``(target_host, allowlist)`` pair the firecrawl wrapper inspects:.. code-block:: text
 
-.. code-block:: text
-
-    ∀ host, allowlist:
-        host ∈ allowlist  ⇒ verdict = "allowed"   ∧  audit_action ≠ "egress_denied"
-        host ∉ allowlist  ⇒ verdict = "denied"    ∧  audit_action = "egress_denied"
-                                              ∧  HTTP 403 returned
-                                              ∧  structured log carries "egress_denied"
-                                              ∧  ``firecrawl_egress_denied_total`` counter advanced
+ ∀ host, allowlist:
+ host ∈ allowlist ⇒ verdict = "allowed" ∧ audit_action ≠ "egress_denied"
+ host ∉ allowlist ⇒ verdict = "denied" ∧ audit_action = "egress_denied"
+ ∧ HTTP 403 returned
+ ∧ structured log carries "egress_denied"
+ ∧ ``firecrawl_egress_denied_total`` counter advanced
 
 The Hypothesis strategies build random hosts and random allowlists and
 deliberately steer half the examples into the *allowed* branch and the
@@ -29,13 +27,11 @@ matching predicate or the side-effect emission shows up here.
 Why this file talks to multiple layers
 --------------------------------------
 
-The requirement names two enforcement surfaces — the pure-Python allowlist
+The the operational rule names two enforcement surfaces — the pure-Python allowlist
 helper *and* the FastAPI 403 / log / metric triple. We exercise both: the
 fast pure-function class drives Hypothesis at high iteration counts to
 shake out boundary conditions, and a smaller TestClient class samples the
-HTTP path to confirm the side-effects are wired up. This mirrors the
-"both unit and property" guidance in the platform's design § Testing
-Strategy.
+HTTP path to confirm the side-effects are wired up.
 """
 
 from __future__ import annotations
@@ -84,8 +80,8 @@ from firecrawl.metrics import metrics  # noqa: E402
 # ---------------------------------------------------------------------------
 
 #: A DNS label: lowercase ASCII letters / digits / single hyphen, 1–20 chars.
-#: Hyphens are allowed but never leading or trailing (RFC 1035 §2.3.1).
-_dns_label = st.from_regex(r"\A[a-z0-9](?:[a-z0-9-]{0,18}[a-z0-9])?\Z", fullmatch=True)
+#: Hyphens are allowed but never leading or trailing.
+_dns_label = st.from_regex(r"\A[a-z0-9](section:[a-z0-9-]{0,18}[a-z0-9])section\Z", fullmatch=True)
 
 
 @st.composite
@@ -116,10 +112,10 @@ def _allowlists(draw: st.DrawFn) -> tuple[str, ...]:
 def _allowed_pairs(draw: st.DrawFn) -> tuple[str, tuple[str, ...]]:
     """Pick an allowlist and a target host that the matcher MUST allow.
 
-    Half the time the host is taken verbatim from the allowlist (exact
-    match) and half the time we prepend a random subdomain so we exercise
-    the label-boundary branch of :func:`is_host_allowed` too.
-    """
+ Half the time the host is taken verbatim from the allowlist (exact
+ match) and half the time we prepend a random subdomain so we exercise
+ the label-boundary branch of:func:`is_host_allowed` too.
+ """
 
     allowlist = draw(_allowlists())
     base = draw(st.sampled_from(allowlist))
@@ -133,11 +129,11 @@ def _allowed_pairs(draw: st.DrawFn) -> tuple[str, tuple[str, ...]]:
 def _denied_pairs(draw: st.DrawFn) -> tuple[str, tuple[str, ...]]:
     """Pick an allowlist and a target host that the matcher MUST deny.
 
-    The host is sampled until it matches none of the allowlist suffixes
-    under the label-boundary rule. Hypothesis ``assume`` filters out the
-    rare draws where the random host happens to land inside the allowlist
-    (e.g. ``a`` drawn under an allowlist of ``a``).
-    """
+ The host is sampled until it matches none of the allowlist suffixes
+ under the label-boundary rule. Hypothesis ``assume`` filters out the
+ rare draws where the random host happens to land inside the allowlist
+ (e.g. ``a`` drawn under an allowlist of ``a``).
+ """
 
     allowlist = draw(_allowlists())
     host = draw(_hostnames())
@@ -152,15 +148,15 @@ def _denied_pairs(draw: st.DrawFn) -> tuple[str, tuple[str, ...]]:
 
 
 # ---------------------------------------------------------------------------
-# Property 16 — pure-function allowlist matcher
+# pure-function allowlist matcher behavior
 # ---------------------------------------------------------------------------
 
 
 class TestPureAllowlistMatcher:
     """``decide_egress`` returns the right verdict for every (host, allowlist).
 
-    **Validates: Requirement 10.3**
-    """
+
+ """
 
     @settings(
         max_examples=200,
@@ -171,13 +167,13 @@ class TestPureAllowlistMatcher:
     def test_host_in_allowlist_is_allowed(
         self, pair: tuple[str, tuple[str, ...]]
     ) -> None:
-        """**Validates: Requirement 10.3**
+        """Matched hosts are allowed by the egress decision.
 
-        For any ``(host, allowlist)`` pair where ``host`` matches one of
-        the allowlist suffixes under the label-boundary rule, the
-        decision is ``"allowed"`` and the audit token is **not**
-        ``egress_denied``.
-        """
+ For any ``(host, allowlist)`` pair where ``host`` matches one of
+ the allowlist suffixes under the label-boundary rule, the
+ decision is ``"allowed"`` and the audit token is **not**
+ ``egress_denied``.
+ """
 
         host, allowlist = pair
         url = f"https://{host}/path"
@@ -197,15 +193,15 @@ class TestPureAllowlistMatcher:
     def test_host_not_in_allowlist_emits_egress_denied(
         self, pair: tuple[str, tuple[str, ...]]
     ) -> None:
-        """**Validates: Requirement 10.3**
+        """Unmatched hosts are denied with the egress audit token.
 
-        For any ``(host, allowlist)`` pair where ``host`` is outside the
-        allowlist, the decision is ``"denied"`` and the audit token is
-        the canonical ``egress_denied`` string. This is the
-        observable-record half of the property: callers downstream
-        (FastAPI handler, audit writer) can pivot off this exact
-        constant.
-        """
+ For any ``(host, allowlist)`` pair where ``host`` is outside the
+ allowlist, the decision is ``"denied"`` and the audit token is
+ the canonical ``egress_denied`` string. This is the
+ observable-record half of the property: callers downstream
+ (FastAPI handler, audit writer) can pivot off this exact
+ constant.
+ """
 
         host, allowlist = pair
         url = f"https://{host}/path"
@@ -218,12 +214,12 @@ class TestPureAllowlistMatcher:
     @settings(max_examples=100, deadline=2000)
     @given(host=_hostnames())
     def test_empty_allowlist_denies_every_host(self, host: str) -> None:
-        """**Validates: Requirement 10.3**
+        """An empty allowlist denies every external host.
 
-        The closed-by-default posture (Y3): an empty
-        ``FIRECRAWL_EGRESS_ALLOWLIST`` denies every external host, with
-        the canonical ``egress_denied`` audit action.
-        """
+ The closed-by-default posture: an empty
+ ``FIRECRAWL_EGRESS_ALLOWLIST`` denies every external host, with
+ the canonical ``egress_denied`` audit action.
+ """
 
         decision = decide_egress(f"https://{host}/", ())
         assert decision.verdict == "denied"
@@ -235,14 +231,14 @@ class TestPureAllowlistMatcher:
     def test_allow_decision_round_trips_through_parse_allowlist(
         self, pair: tuple[str, tuple[str, ...]]
     ) -> None:
-        """**Validates: Requirement 10.3**
+        """Parsing the allowlist preserves allow decisions.
 
-        Going through the env-string parser (the real production path)
-        does not change the verdict: a host that matches the typed
-        tuple also matches the parsed comma-separated string built from
-        the same tuple. This guards against drift between the parser
-        and the matcher.
-        """
+ Going through the env-string parser (the real production path)
+ does not change the verdict: a host that matches the typed
+ tuple also matches the parsed comma-separated string built from
+ the same tuple. This guards against drift between the parser
+ and the matcher.
+ """
 
         host, allowlist = pair
         raw = ",".join(allowlist)
@@ -255,7 +251,7 @@ class TestPureAllowlistMatcher:
 
 
 # ---------------------------------------------------------------------------
-# Property 16 — observable HTTP / log / metric record
+# observable HTTP / log / metric record behavior
 # ---------------------------------------------------------------------------
 
 
@@ -263,10 +259,10 @@ class TestPureAllowlistMatcher:
 def _reset_metrics() -> Iterator[None]:
     """Each property example starts with fresh counters.
 
-    The fixture is module-local rather than session-scoped so the metric
-    assertions inside the property tests are deterministic regardless of
-    which Hypothesis example runs first.
-    """
+ The fixture is module-local rather than session-scoped so the metric
+ assertions inside the invariant are deterministic regardless of
+ which Hypothesis example runs first.
+ """
 
     metrics.reset()
     yield
@@ -276,14 +272,14 @@ def _reset_metrics() -> Iterator[None]:
 class TestObservableEgressDeniedRecord:
     """Allowlist-failing requests produce an observable ``egress_denied`` record.
 
-    **Validates: Requirement 10.3**
 
-    These tests exercise the FastAPI surface so the property captures
-    the *observable* part of R10.3: HTTP 403 response, ``egress_denied``
-    in the structured log, and a bumped Prometheus counter. We use a
-    single TestClient per example (cheap — no network) and rely on
-    Hypothesis to drive the matrix of allowlists and target hosts.
-    """
+
+ These tests exercise the FastAPI surface so the property captures
+ the *observable* part of: HTTP 403 response, ``egress_denied``
+ in the structured log, and a bumped Prometheus counter. We use a
+ single TestClient per example (cheap — no network) and rely on
+ Hypothesis to drive the matrix of allowlists and target hosts.
+ """
 
     @settings(
         max_examples=50,
@@ -300,14 +296,14 @@ class TestObservableEgressDeniedRecord:
         caplog: pytest.LogCaptureFixture,
         pair: tuple[str, tuple[str, ...]],
     ) -> None:
-        """**Validates: Requirement 10.3**
+        """Denied hosts return 403 and emit observable records.
 
-        The observable contract: a request to a non-allowlisted host
-        SHALL return HTTP 403 with the ``egress_denied`` error code and
-        emit a structured log record carrying the same token. The
-        counter ``firecrawl_egress_denied_total`` advances by exactly
-        one per request.
-        """
+ The observable contract: a request to a non-allowlisted host
+ SHALL return HTTP 403 with the ``egress_denied`` error code and
+ emit a structured log record carrying the same token. The
+ counter ``firecrawl_egress_denied_total`` advances by exactly
+ one per request.
+ """
 
         from fastapi.testclient import TestClient
 
@@ -349,7 +345,7 @@ class TestObservableEgressDeniedRecord:
         )
 
         # 3. Metric counter advanced by exactly one and the allowed
-        #    counter did not move.
+        # counter did not move.
         assert metrics.denied == 1
         assert metrics.allowed == 0
 
@@ -368,15 +364,15 @@ class TestObservableEgressDeniedRecord:
         caplog: pytest.LogCaptureFixture,
         pair: tuple[str, tuple[str, ...]],
     ) -> None:
-        """**Validates: Requirement 10.3**
+        """Allowed hosts do not emit denied-egress records.
 
-        The complementary property: a request to an allow-listed host
-        SHALL **not** produce an ``egress_denied`` log record and the
-        denial counter SHALL **not** advance. We do not assert on the
-        forwarded HTTP status (the built-in fetcher would attempt a
-        real network call) — instead we install a metrics-and-log
-        check that is invariant to the upstream branch.
-        """
+ The complementary property: a request to an allow-listed host
+ SHALL **not** produce an ``egress_denied`` log record and the
+ denial counter SHALL **not** advance. We do not assert on the
+ forwarded HTTP status (the built-in fetcher would attempt a
+ real network call) — instead we install a metrics-and-log
+ check that is invariant to the upstream branch.
+ """
 
         from unittest.mock import patch
 

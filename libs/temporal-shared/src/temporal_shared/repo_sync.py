@@ -1,11 +1,8 @@
-"""Pure repo-mapping diff helper for the auto-sync admin endpoint (N7).
+"""Pure repo-mapping diff helper for the auto-sync admin endpoint.
 
 This module is the **single source of truth** for the
 ``compute_repo_mapping_diff`` set-algebra computation used by the
-``POST /admin/departments/{id}/repo-mappings/sync`` endpoint defined in
-``platform-mimari-workflows`` design.md
-§"Components and Interfaces — repo_mapping_sync API" and Requirement
-10.7 (R10.7 — repo mapping auto-sync, MIMARI §16.16 N7).
+``POST /admin/departments/{id}/repo-mappings/sync`` endpoint.
 
 The helper splits a Bitbucket workspace scan against the dept's current
 ``departments.json`` ``repo_mappings`` array into three disjoint sets:
@@ -26,16 +23,14 @@ no random / uuid, no Temporal calls) we get four wins at once:
    (``added ∩ removed == ∅``;
     ``added ∪ unchanged == scanned``;
     ``removed ∪ unchanged == current.set()``)
-   can be exercised with Hypothesis as a single property suite — see
-   ``platform/tests/property/test_repo_mapping_diff.py`` (Property test
-   for task 14.3).
+   can be exercised with Hypothesis as a single property suite.
 3. Idempotence on equal inputs (``scanned == current.set()`` =>
    both ``added`` and ``removed`` are empty and ``unchanged ==
    scanned``) is enforced by construction; running the diff twice in a
    row over the same workspace is a no-op.
-4. The function is safe to call from inside Temporal workflow code if a
-   later spec wants to schedule the auto-sync as a cron workflow
-   (replay-safe by virtue of being pure).
+4. The function is safe to call from inside Temporal workflow code if
+   auto-sync is later scheduled as a cron workflow (replay-safe by
+   virtue of being pure).
 
 Public API
 ----------
@@ -48,8 +43,6 @@ Public API
 * :class:`RepoMappingDiff` — frozen dataclass holding the three
   ``frozenset[str]`` partitions. Hashable and replay-safe.
 * :func:`compute_repo_mapping_diff` — pure set-algebra computation.
-
-Validates: Requirement 10.7 (R10.7 — repo mapping auto-sync N7).
 """
 
 from __future__ import annotations
@@ -179,8 +172,8 @@ def compute_repo_mapping_diff(
         removed       = current_slugs - scanned_repos
         unchanged     = scanned_repos & current_slugs
 
-    Idempotence on equal inputs (Property invariant) follows by
-    construction: when ``scanned_repos == current_slugs`` the set
+    Idempotence on equal inputs follows by construction: when
+    ``scanned_repos == current_slugs`` the set
     difference operators yield the empty set in both directions and
     the intersection equals the input.
 

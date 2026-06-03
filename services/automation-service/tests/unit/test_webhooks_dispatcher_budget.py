@@ -1,6 +1,6 @@
 """Unit tests for the dispatcher's Budget Enforcement runtime guard.
 
-Validates that :class:`webhooks.dispatcher.WebhookDispatcher` invokes
+Ensures :class:`webhooks.dispatcher.WebhookDispatcher` invokes
 :func:`automation_service.budget.policy.check_budget` **before** any
 workflow start (both the normal Jira assign/update path and the
 ``[iterate]`` comment path), and that:
@@ -18,7 +18,6 @@ workflow start (both the normal Jira assign/update path and the
 * An undefined ``dept_id`` (missing from ``budget_caps`` config)
   yields a configuration-error response.
 
-Validates: Requirements 5.5, 10.1, 10.2, 10.3, 10.6.
 """
 
 from __future__ import annotations

@@ -1,9 +1,7 @@
-"""Property test 19 — Streamlit per-user session credential lifecycle.
-
-**Validates: Requirements 10.7**
+"""Property-based tests for Streamlit per-user session credential lifecycle.
 
 Hypothesis-driven verification of the Streamlit per-user credential
-lifecycle described in design.md §"Property 19" and tasks.md §12.10:
+lifecycle:
 
 > *For all* Streamlit oturumları ve session'da girilen Atlassian
 > credential'ları için: (a) credential
@@ -16,20 +14,16 @@ lifecycle described in design.md §"Property 19" and tasks.md §12.10:
 Scope and surface under test
 ----------------------------
 
-Task 12.4 (Streamlit per-user form) and the assistant-service
-write/delete glue are still ``[-]`` (not started) at the time this
-property is authored. The task brief therefore directs the test at the
-canonical Vault path layer that any future implementation MUST funnel
-through:
+The test targets the canonical Vault path layer that the UI and service
+relay use:
 
 * :func:`automation_service.credentials.build_user_session_path` —
   returns ``vault:atlassian/_user_session/<session_id>/<service>``
   exactly. This is the **single source of truth** for the path layout
   shared by the Streamlit form, the assistant-service relay and the
-  :class:`automation_service.credentials.CredentialResolver`
-  (Property 15 / R10.8).
-* :class:`vault_client.LocalDevBackend` — the production-equivalent
-  pluggable backend (R6.6) chosen here over an ad-hoc dict because it
+  :class:`automation_service.credentials.CredentialResolver`.
+* :class:`vault_client.LocalDevBackend` — the pluggable backend chosen
+  here over an ad-hoc dict because it
   exercises the on-disk encryption path and the ``KeyError``
   semantics that ``CredentialResolver`` already relies on. Property
   test 11 (``test_vault_backends.py``) shows the Hashicorp backend
@@ -61,7 +55,7 @@ from hypothesis import strategies as st
 # Path bootstrap — make ``automation_service.credentials`` importable.
 #
 # The ``automation-service`` source tree co-exists with the
-# multi-service-scaffold legacy ``src/main.py`` + ``src/config.py`` layer;
+# legacy ``src/main.py`` + ``src/config.py`` layer;
 # importing the ``automation_service`` package eagerly executes
 # ``automation_service/__init__.py`` which in turn loads
 # ``automation_service.app`` whose top-of-module imports reach for
@@ -228,13 +222,13 @@ def test_write_lands_at_user_session_path(
     service: AtlassianService,
     credential: Mapping[str, str],
 ) -> None:
-    """**Validates: Requirements 10.7** — clause (a).
+    """Credentials are persisted at the expected session-scoped path.
 
     For every (session_id, service, credential) triple the
     Hypothesis can generate, ``write_credential`` MUST persist the
     payload at ``vault:atlassian/_user_session/<session_id>/<service>``
-    exactly — same canonical path shape consumed by the resolver in
-    Property 15, so a per-user override is never observable at any
+    exactly — same canonical path shape consumed by the resolver,
+    so a per-user override is never observable at any
     other path.
     """
 
@@ -266,7 +260,7 @@ def test_read_after_session_end_returns_not_found(
     service: AtlassianService,
     credential: Mapping[str, str],
 ) -> None:
-    """**Validates: Requirements 10.7** — clauses (b) + (d).
+    """Explicit session end removes the credential path.
 
     After explicit session end, the path is removed and any subsequent
     ``read`` call raises :class:`KeyError` — the canonical
@@ -299,7 +293,7 @@ def test_read_after_ttl_expiry_returns_not_found(
     service: AtlassianService,
     credential: Mapping[str, str],
 ) -> None:
-    """**Validates: Requirements 10.7** — clauses (b) + (d) via the TTL path.
+    """TTL expiry converges on the same state as explicit logout.
 
     Sessions that expire because the TTL elapsed (rather than an
     explicit logout) MUST converge on the same end-state: the
@@ -340,7 +334,7 @@ def test_session_id_uniqueness_path_isolation(
     first_credential: Mapping[str, str],
     second_credential: Mapping[str, str],
 ) -> None:
-    """**Validates: Requirements 10.7** — clause (c) (uniqueness invariant).
+    """Sessions sharing the same ``session_id`` cannot coexist independently.
 
     Two sessions sharing the same ``session_id`` cannot independently
     coexist: the path layout
@@ -357,8 +351,7 @@ def test_session_id_uniqueness_path_isolation(
     *second* session's credential (not a stale first-session value).
     A regression where the first session's payload "sticks" past
     ``end_session`` would let an unrelated second session observe
-    foreign credential material — exactly the invariant R10.7
-    forbids.
+    foreign credential material.
     """
 
     store = _SessionCredentialStore(_make_backend(tmp_path))
@@ -405,7 +398,7 @@ def test_distinct_sessions_are_isolated(
     credential_a: Mapping[str, str],
     credential_b: Mapping[str, str],
 ) -> None:
-    """**Validates: Requirements 10.7** — clause (c) (distinct-session isolation).
+    """Distinct sessions are isolated from each other.
 
     The dual of the uniqueness clause: two *different* ``session_id``
     values address two *different* Vault paths, so ending one MUST

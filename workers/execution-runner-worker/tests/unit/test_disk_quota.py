@@ -1,15 +1,13 @@
 """Unit tests for the disk_quota activity module.
 
 Tests cover:
-- Quota skip when quota_mb is None (Requirement 16.5)
-- Quota exceeded rejection (Requirement 16.2)
-- 80% warning threshold detection (Requirement 16.3)
-- Warning deduplication (Requirement 16.3)
-- Cleanup candidates listing (Requirement 16.4)
+- Quota skip when quota_mb is None
+- Quota exceeded rejection
+- 80% warning threshold detection
+- Warning deduplication
+- Cleanup candidates listing
 - SSH command failure handling
 - DiskQuotaInput/DiskQuotaResult dataclass behavior
-
-Requirements: 16.1, 16.2, 16.3, 16.4, 16.5
 """
 
 from __future__ import annotations
@@ -160,7 +158,7 @@ class TestCheckDiskQuota:
 
     @pytest.mark.asyncio
     async def test_skip_when_quota_is_none(self) -> None:
-        """Requirement 16.5: Skip check when quota_mb is None."""
+        """Skip check when quota_mb is None."""
         with patch("src.activities.disk_quota.activity"):
             inp = DiskQuotaInput(
                 dept_id="payment",
@@ -178,7 +176,7 @@ class TestCheckDiskQuota:
 
     @pytest.mark.asyncio
     async def test_quota_exceeded_rejects(self) -> None:
-        """Requirement 16.2: Reject when usage exceeds quota."""
+        """Reject when usage exceeds quota."""
         with (
             patch("src.activities.disk_quota.activity"),
             patch(
@@ -225,7 +223,7 @@ class TestCheckDiskQuota:
 
     @pytest.mark.asyncio
     async def test_at_80_percent_sends_warning(self) -> None:
-        """Requirement 16.3: Send warning at 80% threshold."""
+        """Send warning at 80% threshold."""
         # 80% of 10240 = 8192
         with (
             patch("src.activities.disk_quota.activity"),
@@ -264,7 +262,7 @@ class TestCheckDiskQuota:
 
     @pytest.mark.asyncio
     async def test_warning_deduplicated(self) -> None:
-        """Requirement 16.3: No duplicate warning within 60 minutes."""
+        """No duplicate warning within 60 minutes."""
         # 80% of 10240 = 8192
         with (
             patch("src.activities.disk_quota.activity"),

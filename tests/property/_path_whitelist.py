@@ -1,52 +1,49 @@
 """Helper module: AST-based path-whitelist scanner.
 
-Validates: Requirements 1.2, 1.3, 1.4, 1.5
 
-This module is a *reusable* scanning library consumed by other property
-tests in this directory:
 
-* :mod:`test_path_coverage` (Property 2 — sensitive call path whitelist)
-* :mod:`test_llm_call_paths` (LLM-specific subset)
-* :mod:`test_atlassian_unified_immutable` (immutability checks layered on top)
-* :mod:`test_workflow_determinism_static` (already in-tree; this module
-  augments it with the ``client.start_workflow`` activity check)
+This module is a *reusable* scanning library consumed by other invariant in this directory:
+
+*:mod:`test_path_coverage` (invariant — sensitive call path whitelist)
+*:mod:`test_llm_call_paths` (LLM-specific subset)
+*:mod:`test_workflow_determinism_static` (already in-tree; this module
+ augments it with the ``client.start_workflow`` activity check)
 
 The module exports four public scan functions plus the underlying data
 classes. Each scan walks a Python source tree (anchored on the platform
-root by default), parses every ``*.py`` file with :func:`ast.parse`, and
-returns a list of :class:`Finding` instances reporting the offending
+root by default), parses every ``*.py`` file with:func:`ast.parse`, and
+returns a list of:class:`Finding` instances reporting the offending
 file path, line number, and a short symbolic key naming the violation.
 
 Scanners
 --------
 
-* :func:`scan_atlassian_http_calls` — Jira / Bitbucket / Confluence
-  hosts reached via ``httpx`` / ``requests`` / ``aiohttp`` outside the
-  ``atlassian_unified`` MCP and the ``http-shared`` lib (Requirement
-  1.2 — single-source enforcement). The scan recognises both module-
-  level imports (``import httpx`` / ``from httpx import ...``) and
-  attribute call targets (``httpx.AsyncClient(...)``,
-  ``requests.get(...)``, ``aiohttp.ClientSession(...)``) inside files
-  whose source mentions an Atlassian host (``atlassian.net``,
-  ``atlassian-mcp``, ``bitbucket.org``, ``api.bitbucket.org``,
-  ``confluence``) — the host literal is the second hop that
-  distinguishes a generic HTTP client from an Atlassian-specific call.
+*:func:`scan_atlassian_http_calls` — Jira / Bitbucket / Confluence
+ hosts reached via ``httpx`` / ``requests`` / ``aiohttp`` outside the
+ ``atlassian_mcp_bitbucket`` MCP and the ``http-shared`` lib. The scan
+ recognises both module-level imports (``import httpx`` /
+ ``from httpx import...``) and attribute call targets (``httpx.AsyncClient(...)``,
+ ``requests.get(...)``, ``aiohttp.ClientSession(...)``) inside files
+ whose source mentions an Atlassian host (``atlassian.net``,
+ ``atlassian-mcp``, ``bitbucket.org``, ``api.bitbucket.org``,
+ ``confluence``) — the host literal is the second hop that
+ distinguishes a generic HTTP client from an Atlassian-specific call.
 
-* :func:`scan_ssh_docker_calls` — ``paramiko`` / ``asyncssh`` imports
-  and ``subprocess`` calls whose first positional argument starts with
-  ``ssh`` or ``scp`` (Requirement 1.3 — SSH only inside
-  ``execution-runner-worker``).
+*:func:`scan_ssh_docker_calls` — ``paramiko`` / ``asyncssh`` imports
+ and ``subprocess`` calls whose first positional argument starts with
+ ``ssh`` or ``scp`` — SSH only inside
+ ``execution-runner-worker``).
 
-* :func:`scan_llm_calls` — ``openai`` / ``anthropic`` imports and
-  imports of the ``llm_orchestrator`` library (Requirement 1.4 — LLM
-  only inside ``assistant-service`` and ``agent-runner-worker``).
+*:func:`scan_llm_calls` — ``openai`` / ``anthropic`` imports and
+ imports of the ``llm_orchestrator`` library — LLM
+ only inside ``assistant-service`` and ``agent-runner-worker``).
 
-* :func:`scan_activities_start_workflow` — searches files under
-  ``workers/*/activities/`` for ``client.start_workflow``-shaped calls
-  (Requirement 1.5 — workflow decisions live in workflow modules only).
+*:func:`scan_activities_start_workflow` — searches files under
+ ``workers/*/activities/`` for ``client.start_workflow``-shaped calls
+ — workflow decisions live in workflow modules only).
 
 Each scanner accepts a tuple of *whitelist roots* (workspace-relative
-path prefixes) and returns only :class:`Finding` instances whose file
+path prefixes) and returns only:class:`Finding` instances whose file
 path is **outside** every whitelisted root. Files inside a whitelisted
 root are inspected but never reported.
 
@@ -54,21 +51,20 @@ Design notes
 ------------
 
 * The scanner is *static* — it never imports the inspected modules,
-  so a missing transitive dependency in the workspace does not skew
-  results. The same approach is used by
-  :mod:`test_workflow_determinism_static` and is documented in design
-  §6.3 (Property → Test mapping).
+ so a missing transitive dependency in the workspace does not skew
+ results. The same approach is used by:mod:`test_workflow_determinism_static` and is documented in design
+ §6.3 (invariant → Test mapping).
 * Files under standard exclusion roots (``__pycache__``, ``.venv``,
-  ``.pytest_cache``, ``.hypothesis``, ``.mypy_cache``, ``.ruff_cache``,
-  ``node_modules``, ``dist``, ``build``, ``.git``, ``.next``) and the
-  ``services/atlassian_unified/`` immutable subtree are skipped at the
-  walk level. The :data:`SCAN_EXCLUDED_DIRS` constant is exported so
-  downstream tests can extend it.
+ ``.pytest_cache``, ``.hypothesis``, ``.mypy_cache``, ``.ruff_cache``,
+ ``node_modules``, ``dist``, ``build``, ``.git``, ``.next``) and the
+ ``services/atlassian_mcp_bitbucket/`` gateway subtree are skipped at the
+ walk level. The:data:`SCAN_EXCLUDED_DIRS` constant is exported so
+ downstream tests can extend it.
 * A file's *own tests* (``tests/`` subtree under any component path)
-  is included by default because the same invariants must hold in
-  test source as in production source — for example, an integration
-  test that smuggles ``import paramiko`` outside the execution-runner
-  worker would defeat the property.
+ is included by default because the same invariants must hold in
+ test source as in production source — for example, an integration
+ test that smuggles ``import paramiko`` outside the execution-runner
+ worker would defeat the property.
 
 This module ships *no* test functions; importing it has no side
 effects beyond resolving the platform root path.
@@ -92,9 +88,8 @@ PLATFORM_ROOT: Path = Path(__file__).resolve().parents[2]
 
 # Directory names pruned from every os.walk used by the scanners. Tooling
 # caches and vendored trees are excluded so the scan stays bounded to
-# the workspace's own source. ``services/atlassian_unified`` is excluded
-# globally — it is treated as immutable input by Property 14 and
-# legitimately contains every Atlassian HTTP call in the repo.
+# the workspace's own source. ``services/atlassian_mcp_bitbucket`` is
+# excluded globally because it legitimately contains Atlassian HTTP calls.
 SCAN_EXCLUDED_DIRS: frozenset[str] = frozenset(
     {
         "__pycache__",
@@ -109,7 +104,7 @@ SCAN_EXCLUDED_DIRS: frozenset[str] = frozenset(
         "node_modules",
         "dist",
         "build",
-        "atlassian_unified",  # immutable subtree — Property 14
+        "atlassian_mcp_bitbucket",
     }
 )
 
@@ -123,25 +118,25 @@ SCAN_EXCLUDED_DIRS: frozenset[str] = frozenset(
 class Finding:
     """A single violation reported by one of the scanners.
 
-    Attributes
-    ----------
-    path:
-        Workspace-relative file path (forward-slash normalised) where
-        the offending node was discovered.
-    lineno:
-        1-indexed source line of the offending AST node.
-    category:
-        One of ``"atlassian_http"``, ``"ssh"``, ``"docker"``, ``"llm"``,
-        ``"activity_start_workflow"`` — names the scan that produced
-        the finding.
-    symbol:
-        Dotted symbol or short tag describing the violation
-        (e.g. ``"httpx.AsyncClient"``, ``"paramiko"``,
-        ``"openai"``, ``"client.start_workflow"``).
-    detail:
-        Free-form human description used in error messages by the
-        consuming property test.
-    """
+ Attributes
+ ----------
+ path:
+ Workspace-relative file path (forward-slash normalised) where
+ the offending node was discovered.
+ lineno:
+ 1-indexed source line of the offending AST node.
+ category:
+ One of ``"atlassian_http"``, ``"ssh"``, ``"docker"``, ``"llm"``,
+ ``"activity_start_workflow"`` - names the scan that produced
+ the finding.
+ symbol:
+ Dotted symbol or short tag describing the violation
+ (e.g. ``"httpx.AsyncClient"``, ``"paramiko"``,
+ ``"openai"``, ``"client.start_workflow"``).
+ detail:
+ Free-form human description used in error messages by the
+ consuming invariant.
+ """
 
     path: str
     lineno: int
@@ -151,28 +146,28 @@ class Finding:
 
 
 # ---------------------------------------------------------------------------
-# Default whitelist roots (per Requirement)
+# Default whitelist roots (per the operational rule)
 # ---------------------------------------------------------------------------
 
 # Workspace-relative path prefixes (forward-slash). A finding is
 # suppressed if its file path begins with any of these prefixes.
 #
-# The defaults below mirror the Requirement language verbatim:
+# The defaults below mirror the the operational rule language verbatim:
 #
-# * ATLASSIAN_HTTP_WHITELIST — Requirement 1.2: Atlassian HTTP only
-#   through the ``atlassian_unified`` MCP. The MCP itself is excluded
-#   at the walk level via SCAN_EXCLUDED_DIRS, but the ``http-shared``
-#   library is the legitimate transport for callers (it builds the
-#   ``httpx`` client wired to the MCP) and the ``mcp_client`` lib (when
-#   it lands in spec 1 task 2.5) is the future single source.
-# * SSH_DOCKER_WHITELIST — Requirement 1.3: SSH and Docker only in the
-#   ``execution-runner-worker``.
-# * LLM_WHITELIST — Requirement 1.4: LLM calls only in the
-#   ``assistant-service`` and ``agent-runner-worker`` (and the
-#   ``llm-orchestrator`` library that defines them).
+# * ATLASSIAN_HTTP_WHITELIST — Atlassian HTTP only
+# through the ``atlassian_mcp_bitbucket`` MCP. The MCP itself is excluded
+# at the walk level via SCAN_EXCLUDED_DIRS, but the ``http-shared``
+# library is the legitimate transport for callers (it builds the
+# ``httpx`` client wired to the MCP) and the ``mcp_client`` lib (when
+# it is wired) is the shared caller-side source.
+# * SSH_DOCKER_WHITELIST —: SSH and Docker only in the
+# ``execution-runner-worker``.
+# * LLM_WHITELIST —: LLM calls only in the
+# ``assistant-service`` and ``agent-runner-worker`` (and the
+# ``llm-orchestrator`` library that defines them).
 
 ATLASSIAN_HTTP_WHITELIST: tuple[str, ...] = (
-    "services/atlassian_unified/",
+    "services/atlassian_mcp_bitbucket/",
     "libs/http-shared/",
     "libs/mcp_client/",
 )
@@ -187,10 +182,10 @@ LLM_WHITELIST: tuple[str, ...] = (
     "libs/llm-orchestrator/",
 )
 
-# Roots that always permit *test fixtures* — these are pure test scaffolds
+# Roots that always permit *test fixtures* — these are pure test projects
 # and never run in production. We allow violations in shared
 # ``tests/property/`` _scanners_ themselves (this module + sibling
-# property tests) because they reference the symbols by name in
+# invariant) because they reference the symbols by name in
 # strings/AST literals, not as live calls. The scan still excludes
 # files by path; we do *not* exclude any worker/service ``tests/``
 # subtrees because those reflect production import-graph correctness.
@@ -221,10 +216,10 @@ def iter_source_files(
 ) -> Iterator[Path]:
     """Yield every ``*.py`` file under *root*, pruning excluded dirs.
 
-    The walk mutates the ``dirnames`` list returned by :func:`os.walk`
-    so excluded subtrees are not descended into. Yields absolute paths
-    in deterministic (sorted) order per directory.
-    """
+ The walk mutates the ``dirnames`` list returned by:func:`os.walk`
+ so excluded subtrees are not descended into. Yields absolute paths
+ in deterministic (sorted) order per directory.
+ """
 
     excluded = frozenset(excluded_dirs)
     for dirpath, dirnames, filenames in os.walk(str(root)):
@@ -237,10 +232,10 @@ def iter_source_files(
 def _is_under(rel_posix: str, prefixes: Sequence[str]) -> bool:
     """Return True if *rel_posix* starts with any prefix in *prefixes*.
 
-    *rel_posix* is expected to be forward-slash-normalised. Prefixes
-    are compared with a trailing slash so ``services/foo`` does not
-    match ``services/foo-bar/``.
-    """
+ *rel_posix* is expected to be forward-slash-normalised. Prefixes
+ are compared with a trailing slash so ``services/foo`` does not
+ match ``services/foo-bar/``.
+ """
 
     for prefix in prefixes:
         normalised = prefix if prefix.endswith("/") else prefix + "/"
@@ -255,10 +250,10 @@ def _is_under(rel_posix: str, prefixes: Sequence[str]) -> bool:
 def _parse(path: Path) -> ast.Module | None:
     """Parse *path* into an AST module, returning None on syntax error.
 
-    A syntax error in a non-whitelisted file should not crash the
-    scanner — the file is simply skipped and the caller can choose to
-    surface it via a separate parse-validation test.
-    """
+ A syntax error in a non-whitelisted file should not crash the
+ scanner — the file is simply skipped and the caller can choose to
+ surface it via a separate parse-validation test.
+ """
 
     try:
         source = path.read_text(encoding="utf-8")
@@ -278,9 +273,9 @@ def _parse(path: Path) -> ast.Module | None:
 def _dotted_name(node: ast.expr) -> str | None:
     """Return the dotted attribute chain rooted at a Name, or None.
 
-    Mirrors the helper used by ``test_workflow_determinism_static`` so
-    behaviour stays consistent across scanners.
-    """
+ Mirrors the helper used by ``test_workflow_determinism_static`` so
+ behaviour stays consistent across scanners.
+ """
 
     parts: list[str] = []
     current: ast.expr = node
@@ -296,10 +291,10 @@ def _dotted_name(node: ast.expr) -> str | None:
 def _imported_modules(tree: ast.Module) -> set[str]:
     """Return the set of top-level module names imported by *tree*.
 
-    Captures both ``import x.y`` (yields ``"x"``) and ``from x.y import
-    z`` (yields ``"x"``). Relative imports (``from . import ...``) are
-    ignored — they cannot reach a third-party package by definition.
-    """
+ Captures both ``import x.y`` (yields ``"x"``) and ``from x.y import
+ z`` (yields ``"x"``). Relative imports (``from. import...``) are
+ ignored — they cannot reach a third-party package by definition.
+ """
 
     modules: set[str] = set()
     for node in ast.walk(tree):
@@ -326,7 +321,7 @@ def _imported_modules(tree: ast.Module) -> set[str]:
 #
 # Important: ``atlassian-mcp`` (the MCP proxy hostname Compose service
 # at ``http://atlassian-mcp:8090``) is **NOT** on this list. The MCP is
-# the *allowed* path for every Atlassian call — Requirement 1.2 forbids
+# the *allowed* path for every Atlassian call — forbids
 # only direct upstream calls that bypass the MCP. Files that use
 # ``httpx`` to talk to ``atlassian-mcp`` are therefore not flagged.
 #
@@ -350,18 +345,18 @@ ATLASSIAN_HOST_PATTERNS: tuple[str, ...] = (
 )
 
 # HTTP client modules whose use against an Atlassian host is the target
-# of Requirement 1.2.
+# of.
 ATLASSIAN_HTTP_MODULES: frozenset[str] = frozenset({"httpx", "requests", "aiohttp"})
 
 
 def _file_mentions_atlassian_host(tree: ast.Module) -> bool:
     """Return True if any string literal in *tree* references an Atlassian host.
 
-    The check runs over :class:`ast.Constant` nodes whose value is a
-    string — this catches both bare URL literals and f-string fragments
-    (Python lowers f-strings into ``JoinedStr`` containing ``Constant``
-    leaves).
-    """
+ The check runs over:class:`ast.Constant` nodes whose value is a
+ string — this catches both bare URL literals and f-string fragments
+ (Python lowers f-strings into ``JoinedStr`` containing ``Constant``
+ leaves).
+ """
 
     for node in ast.walk(tree):
         if isinstance(node, ast.Constant) and isinstance(node.value, str):
@@ -384,27 +379,26 @@ def scan_atlassian_http_calls(
 ) -> list[Finding]:
     """Find files reaching Atlassian hosts outside the MCP whitelist.
 
-    Validates: Requirement 1.2.
 
-    A finding is reported when, in a single ``.py`` file outside the
-    whitelist, **both** of the following hold:
 
-    1. the file imports at least one of ``httpx`` / ``requests`` /
-       ``aiohttp`` (or accesses one of those modules as a dotted call
-       target), and
-    2. the same file's source contains a string literal that matches
-       any of :data:`ATLASSIAN_HOST_PATTERNS`.
+ A finding is reported when, in a single ``.py`` file outside the
+ whitelist, **both** of the following hold:
 
-    The two-condition gate is critical — generic HTTP clients are
-    permitted everywhere, and Atlassian host literals appear in
-    docstrings and tests. The conjunction (HTTP client + Atlassian
-    host literal in the *same* file) is the signal that Requirement
-    1.2 is being violated.
+ 1. the file imports at least one of ``httpx`` / ``requests`` /
+ ``aiohttp`` (or accesses one of those modules as a dotted call
+ target), and
+ 2. the same file's source contains a string literal that matches
+ any of:data:`ATLASSIAN_HOST_PATTERNS`.
 
-    For each matching file the scanner reports the line of the *first*
-    HTTP-client call site (or the ``import`` line if no call site is
-    found) so error messages point at actionable code.
-    """
+ The two-condition gate is critical — generic HTTP clients are
+ permitted everywhere, and Atlassian host literals appear in
+ docstrings and tests. The conjunction (HTTP client + Atlassian
+ host literal in the *same* file) is the signal that the operational rule is being violated.
+
+ For each matching file the scanner reports the line of the *first*
+ HTTP-client call site (or the ``import`` line if no call site is
+ found) so error messages point at actionable code.
+ """
 
     findings: list[Finding] = []
     for path in iter_source_files(root):
@@ -445,7 +439,7 @@ def scan_atlassian_http_calls(
                 symbol=offending_symbol,
                 detail=(
                     "Atlassian host accessed via direct HTTP client outside "
-                    "the atlassian_unified MCP. Requirement 1.2: route every "
+                    "the atlassian_mcp_bitbucket MCP. Route every "
                     "Jira/Bitbucket/Confluence call through the MCP."
                 ),
             )
@@ -457,11 +451,11 @@ def scan_atlassian_http_calls(
 def _find_first_http_call_node(
     tree: ast.Module, modules: frozenset[str]
 ) -> ast.Call | None:
-    """Return the first :class:`ast.Call` whose target is rooted at one
-    of *modules* (e.g. ``httpx.X(...)``, ``requests.get(...)``).
+    """Return the first:class:`ast.Call` whose target is rooted at one
+ of *modules* (e.g. ``httpx.X(...)``, ``requests.get(...)``).
 
-    Returns None if no such call exists in *tree*.
-    """
+ Returns None if no such call exists in *tree*.
+ """
 
     for node in ast.walk(tree):
         if isinstance(node, ast.Call):
@@ -483,7 +477,7 @@ SSH_MODULES: frozenset[str] = frozenset({"paramiko", "asyncssh"})
 DOCKER_MODULES: frozenset[str] = frozenset({"docker"})
 
 # subprocess invocations whose first positional arg matches this regex
-# are treated as SSH/SCP shell-out calls (Requirement 1.3, second
+# are treated as SSH/SCP shell-out calls, second
 # clause). The regex is anchored at the start of the literal so
 # substrings like ``"my-ssh-helper"`` do not false-positive.
 _SSH_LITERAL_RE = re.compile(r"^(ssh|scp)(\s|$)")
@@ -496,17 +490,17 @@ def scan_ssh_docker_calls(
 ) -> list[Finding]:
     """Find SSH / Docker usage outside ``execution-runner-worker``.
 
-    Validates: Requirement 1.3.
 
-    Three signal sources are considered:
 
-    1. ``import paramiko`` / ``import asyncssh`` (or ``from`` variants)
-       — reported as ``category="ssh"``, ``symbol="paramiko"`` etc.
-    2. ``import docker`` (the Docker SDK) — reported as
-       ``category="docker"``, ``symbol="docker"``.
-    3. ``subprocess.run("ssh ...")`` / ``subprocess.Popen(["scp", ...])``
-       — reported as ``category="ssh"``, ``symbol="subprocess+ssh"``.
-    """
+ Three signal sources are considered:
+
+ 1. ``import paramiko`` / ``import asyncssh`` (or ``from`` variants)
+ — reported as ``category="ssh"``, ``symbol="paramiko"`` etc.
+ 2. ``import docker`` (the Docker SDK) — reported as
+ ``category="docker"``, ``symbol="docker"``.
+ 3. ``subprocess.run("ssh...")`` / ``subprocess.Popen(["scp",...])``
+ — reported as ``category="ssh"``, ``symbol="subprocess+ssh"``.
+ """
 
     findings: list[Finding] = []
     for path in iter_source_files(root):
@@ -533,7 +527,7 @@ def scan_ssh_docker_calls(
                                 detail=(
                                     f"SSH library {root_mod!r} imported "
                                     "outside execution-runner-worker. "
-                                    "Requirement 1.3."
+                                    "the operational rule."
                                 ),
                             )
                         )
@@ -547,7 +541,7 @@ def scan_ssh_docker_calls(
                                 detail=(
                                     "Docker SDK imported outside "
                                     "execution-runner-worker. "
-                                    "Requirement 1.3."
+                                    "the operational rule."
                                 ),
                             )
                         )
@@ -564,7 +558,7 @@ def scan_ssh_docker_calls(
                                 detail=(
                                     f"SSH library {root_mod!r} imported "
                                     "outside execution-runner-worker. "
-                                    "Requirement 1.3."
+                                    "the operational rule."
                                 ),
                             )
                         )
@@ -578,7 +572,7 @@ def scan_ssh_docker_calls(
                                 detail=(
                                     "Docker SDK imported outside "
                                     "execution-runner-worker. "
-                                    "Requirement 1.3."
+                                    "the operational rule."
                                 ),
                             )
                         )
@@ -606,7 +600,7 @@ def scan_ssh_docker_calls(
                             symbol=f"subprocess+{_subprocess_command_name(node)}",
                             detail=(
                                 "subprocess shell-out to ssh/scp outside "
-                                "execution-runner-worker. Requirement 1.3."
+                                "execution-runner-worker. the operational rule."
                             ),
                         )
                     )
@@ -624,7 +618,7 @@ def _subprocess_first_arg(call: ast.Call) -> ast.expr | None:
 
 def _string_literal(node: ast.expr) -> str | None:
     """Return the literal string value of *node*, or None if it is not
-    a constant string."""
+ a constant string."""
 
     if isinstance(node, ast.Constant) and isinstance(node.value, str):
         return node.value
@@ -633,20 +627,20 @@ def _string_literal(node: ast.expr) -> str | None:
 
 def _subprocess_first_arg_is_ssh(call: ast.Call) -> bool:
     """Return True if the first positional arg of *call* is an
-    ``ssh``/``scp`` invocation.
+ ``ssh``/``scp`` invocation.
 
-    Two shapes are recognised:
+ Two shapes are recognised:
 
-    * ``subprocess.run("ssh user@host echo hi")`` — string literal
-      whose first whitespace-separated token is ``ssh`` or ``scp``.
-    * ``subprocess.run(["ssh", "user@host", ...])`` — list literal
-      whose first element is the string ``"ssh"`` or ``"scp"``.
+ * ``subprocess.run("ssh user@host echo hi")`` — string literal
+ whose first whitespace-separated token is ``ssh`` or ``scp``.
+ * ``subprocess.run(["ssh", "user@host",...])`` — list literal
+ whose first element is the string ``"ssh"`` or ``"scp"``.
 
-    Anything dynamic (variables, ``shlex.split(...)``, formatted
-    strings whose static prefix is not ``ssh``/``scp``) is treated as
-    *not* an SSH call so the scan stays specific. Tests can extend
-    coverage if needed.
-    """
+ Anything dynamic (variables, ``shlex.split(...)``, formatted
+ strings whose static prefix is not ``ssh``/``scp``) is treated as
+ *not* an SSH call so the scan stays specific. Tests can extend
+ coverage if needed.
+ """
 
     arg = _subprocess_first_arg(call)
     if arg is None:
@@ -704,13 +698,13 @@ def scan_llm_calls(
 ) -> list[Finding]:
     """Find LLM client usage outside the LLM-allowed components.
 
-    Validates: Requirement 1.4.
 
-    The scanner reports any file outside *whitelist* that imports
-    ``openai``, ``anthropic``, or ``llm_orchestrator`` (the public
-    distribution name of ``libs/llm-orchestrator``). Both ``import``
-    and ``from`` forms are recognised.
-    """
+
+ The scanner reports any file outside *whitelist* that imports
+ ``openai``, ``anthropic``, or ``llm_orchestrator`` (the public
+ distribution name of ``libs/llm-orchestrator``). Both ``import``
+ and ``from`` forms are recognised.
+ """
 
     findings: list[Finding] = []
     for path in iter_source_files(root):
@@ -736,7 +730,7 @@ def scan_llm_calls(
                                 detail=(
                                     f"LLM library {root_mod!r} imported "
                                     "outside assistant-service / "
-                                    "agent-runner-worker. Requirement 1.4."
+                                    "agent-runner-worker. the operational rule."
                                 ),
                             )
                         )
@@ -753,7 +747,7 @@ def scan_llm_calls(
                                 detail=(
                                     f"LLM library {root_mod!r} imported "
                                     "outside assistant-service / "
-                                    "agent-runner-worker. Requirement 1.4."
+                                    "agent-runner-worker. the operational rule."
                                 ),
                             )
                         )
@@ -793,21 +787,20 @@ def scan_activities_start_workflow(
 ) -> list[Finding]:
     """Find ``client.start_workflow``-shaped calls inside activity files.
 
-    Validates: Requirement 1.5.
 
-    For every ``.py`` file whose workspace-relative path contains
-    ``/activities/``, the scanner walks the AST and reports any
-    :class:`ast.Call` whose target is a method named ``start_workflow``,
-    ``execute_workflow``, or ``start_child_workflow`` (regardless of
-    receiver — ``client.start_workflow``, ``self.client.start_workflow``,
-    ``temporal_client.start_workflow``, etc.). The ``Await`` wrapper
-    around the call is not relevant — the scan inspects the call node
-    directly.
 
-    Workflow-decision mantığı yalnız workflow modüllerinde olmalıdır;
-    activity dosyalarında bu çağrıların bulunmaması Requirement 1.5'in
-    statik karşılığıdır.
-    """
+ For every ``.py`` file whose workspace-relative path contains
+ ``/activities/``, the scanner walks the AST and reports any:class:`ast.Call` whose target is a method named ``start_workflow``,
+ ``execute_workflow``, or ``start_child_workflow`` (regardless of
+ receiver — ``client.start_workflow``, ``self.client.start_workflow``,
+ ``temporal_client.start_workflow``, etc.). The ``Await`` wrapper
+ around the call is not relevant — the scan inspects the call node
+ directly.
+
+ Workflow-decision mantığı yalnız workflow modüllerinde olmalıdır;
+ activity dosyalarında bu çağrıların bulunmaması'in
+ statik karşılığıdır.
+ """
 
     findings: list[Finding] = []
     for path in iter_source_files(root):
@@ -834,7 +827,7 @@ def scan_activities_start_workflow(
                     symbol=dotted,
                     detail=(
                         "Workflow-start call inside activity module. "
-                        "Requirement 1.5: workflow decision logic must "
+                        "the operational rule: workflow decision logic must "
                         "live in workers/*/workflows/, not activities/."
                     ),
                 )
@@ -844,15 +837,15 @@ def scan_activities_start_workflow(
 
 def _attribute_tail(node: ast.expr) -> str | None:
     """Return the trailing ``.attr`` of *node* if it is an ``Attribute``,
-    else None.
+ else None.
 
-    Examples
-    --------
-    * ``client.start_workflow`` → ``"start_workflow"``
-    * ``self.tx.client.start_workflow`` → ``"start_workflow"``
-    * ``foo()`` → None (Call, not Attribute)
-    * ``open`` → None (Name, not Attribute)
-    """
+ Examples
+ --------
+ * ``client.start_workflow`` → ``"start_workflow"``
+ * ``self.tx.client.start_workflow`` → ``"start_workflow"``
+ * ``foo`` → None (Call, not Attribute)
+ * ``open`` → None (Name, not Attribute)
+ """
 
     if isinstance(node, ast.Attribute):
         return node.attr
@@ -868,11 +861,11 @@ def _attribute_tail(node: ast.expr) -> str | None:
 class ScanReport:
     """Aggregated results from running every scanner once.
 
-    Each list contains :class:`Finding` instances filtered by the
-    scanner's whitelist. The aggregator is intentionally lightweight —
-    callers in property tests typically inspect the list lengths and
-    surface the findings via ``assert not findings, format_findings(findings)``.
-    """
+ Each list contains:class:`Finding` instances filtered by the
+ scanner's whitelist. The aggregator is intentionally lightweight —
+ callers in invariant typically inspect the list lengths and
+ surface the findings via ``assert not findings, format_findings(findings)``.
+ """
 
     atlassian_http: list[Finding] = field(default_factory=list)
     ssh_docker: list[Finding] = field(default_factory=list)
@@ -892,12 +885,12 @@ class ScanReport:
 
 
 def run_full_scan(root: Path = PLATFORM_ROOT) -> ScanReport:
-    """Run every scanner against *root* and return a :class:`ScanReport`.
+    """Run every scanner against *root* and return a:class:`ScanReport`.
 
-    Convenience wrapper used by Property 2 (Requirement 1.2-1.5)
-    aggregate tests. The individual scanners remain available for
-    fine-grained tests that wish to assert one Requirement at a time.
-    """
+ Convenience wrapper used by invariant-1.5)
+ aggregate tests. The individual scanners remain available for
+ fine-grained tests that wish to assert one the operational rule at a time.
+ """
 
     return ScanReport(
         atlassian_http=scan_atlassian_http_calls(root),
@@ -910,15 +903,15 @@ def run_full_scan(root: Path = PLATFORM_ROOT) -> ScanReport:
 def format_findings(findings: Sequence[Finding]) -> str:
     """Render *findings* as a multi-line bulleted string for assert messages.
 
-    Each line follows the format
-    ``<path>:<lineno> [<category>] <symbol> — <detail>``
-    so a failing property test surfaces every offending file at once.
-    """
+ Each line follows the format
+ ``<path>:<lineno> [<category>] <symbol> — <detail>``
+ so a failing invariant surfaces every offending file at once.
+ """
 
     if not findings:
         return ""
     lines = [
-        f"  - {f.path}:{f.lineno} [{f.category}] {f.symbol} — {f.detail}"
+        f" - {f.path}:{f.lineno} [{f.category}] {f.symbol} — {f.detail}"
         for f in findings
     ]
     return "\n".join(lines)

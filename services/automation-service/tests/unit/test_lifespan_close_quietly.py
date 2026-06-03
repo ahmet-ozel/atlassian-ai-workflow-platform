@@ -1,14 +1,12 @@
 """Unit tests for ``automation_service.app._close_quietly``.
 
-Covers Requirement 4.3 of the ``automation-service-wiring`` spec:
-during lifespan shutdown the helper must close every owned resource
-on a best-effort basis. A failing close on one resource MUST NOT
-block the next one from running, MUST NOT propagate out of the
-lifespan ``__aexit__``, and SHALL be observable via a single WARNING
-log line that names the resource and carries the full traceback.
+During lifespan shutdown the helper must close every owned resource on
+a best-effort basis. A failing close on one resource MUST NOT block the
+next one from running, MUST NOT propagate out of the lifespan
+``__aexit__``, and SHALL be observable via a single WARNING log line
+that names the resource and carries the full traceback.
 
-Three branches are exercised here, mapped one-to-one to task 1.3 in
-``.kiro/specs/automation-service-wiring/tasks.md``:
+Three branches are exercised here:
 
 * **Success** — ``coro_factory()`` returns an awaitable that completes
   normally. The helper awaits it, returns ``None`` and emits no log
@@ -110,12 +108,11 @@ class TestCloseQuietlyAwaitableRaises:
     ) -> None:
         """A RuntimeError from ``await`` is captured, logged, never raised.
 
-        Pins Requirement 4.3: "IF a single resource raises an
-        exception during shutdown, THEN THE Automation_Service SHALL
-        continue closing the remaining resources before re-raising or
-        logging the error." Combined with the lifespan handler's
-        sequential calls to ``_close_quietly`` in reverse construction
-        order, swallow-and-log here is what lets the next closer run.
+        If a single resource raises during shutdown, the service still
+        continues closing the remaining resources. Combined with the
+        lifespan handler's sequential calls to ``_close_quietly`` in
+        reverse construction order, swallow-and-log here is what lets
+        the next closer run.
         """
 
         async def _broken_close() -> None:

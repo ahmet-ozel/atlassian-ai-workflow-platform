@@ -2,8 +2,7 @@
 
 Five logical surfaces share this module:
 
-* ``GET /admin/security/probe-artifacts`` (`platform-mimari-ops` task
-  11.7) — proxies to ``automation-service`` (foundation Q1/Q4 surface)
+* ``GET /admin/security/probe-artifacts`` — proxies to ``automation-service``
   so the admin can audit dept connectivity probe history without a
   separate Vault read.
 * ``GET /admin/security/credential-rotate-banner`` — local lookup of
@@ -12,35 +11,32 @@ Five logical surfaces share this module:
   window threshold.
 * ``POST /api/v1/security/rotate/webhook_secret`` /
   ``POST /api/v1/security/rotate/bot_credential`` /
-  ``POST /api/v1/security/rotate/llm_api_key``
-  (`platform-gap-fill` task 15.1, **Validates: Requirements
-  15.1–15.5**) — admin-only secret rotation surface. Each endpoint
+  ``POST /api/v1/security/rotate/llm_api_key`` — admin-only secret
+  rotation surface. Each endpoint
   writes the new secret material into Vault (KV-v2 retains version
   history), emits a hot-reload signal so dependents invalidate their
   credential caches, and writes one ``secret_rotated`` audit row to
   ``shared.audit_events`` carrying ``{kind, target_id_if_any,
-  rotated_by, vault_version, timestamp}`` (R15.4).
+  rotated_by, vault_version, timestamp}``.
 * ``GET /admin/security/ssh-runners`` /
   ``POST /admin/security/ssh-runners/{runner_id}/rotate-key`` /
   ``POST /admin/security/ssh-runners/{runner_id}/rotate-known-hosts`` /
-  ``POST /admin/security/ssh-runners/{runner_id}/finalize-rotation``
-  (`platform-real-usage-gaps` task 8.2, **Validates: Requirements
-  8.1, 8.2, 8.3, 8.4**) — SSH key dual-slot rotation endpoints.
+  ``POST /admin/security/ssh-runners/{runner_id}/finalize-rotation`` —
+  SSH key dual-slot rotation endpoints.
   Admin-only. Generates Ed25519 keypairs, manages active/previous
   Vault slots, runs ``ssh-keyscan`` for known_hosts refresh, and
   emits audit events for each operation.
 * ``GET /admin/security/webhooks`` /
   ``POST /admin/security/webhooks/{dept_id}/{provider}/rotate`` /
-  ``POST /admin/security/webhooks/{dept_id}/{provider}/finalize``
-  (`platform-real-usage-gaps` task 9.2, **Validates: Requirements
-  9.1, 9.2, 9.3**) — Webhook secret dual-slot rotation endpoints.
+  ``POST /admin/security/webhooks/{dept_id}/{provider}/finalize`` —
+  Webhook secret dual-slot rotation endpoints.
   Admin-only. Manages ``secret_current`` / ``secret_previous`` slots
   with a 1-hour overlap window for zero-downtime rotation.
 
 The two read-only banner endpoints share a single :data:`router`
 mounted under ``/admin/security``. The three rotation endpoints sit
 on a separate :data:`rotation_router` under ``/api/v1/security`` to
-match the contract documented in ``requirements.md`` R15.1.
+match the public API contract.
 """
 
 from __future__ import annotations
@@ -90,7 +86,7 @@ logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# Read-only banner router (existing surfaces — task 11.7)
+# Read-only banner router
 # ---------------------------------------------------------------------------
 
 
@@ -157,19 +153,18 @@ async def credential_rotate_banner(request: Request) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Rotation router (`platform-gap-fill` task 15.1)
+# Rotation router
 # ---------------------------------------------------------------------------
 
 
 #: The three secret kinds the rotation endpoints emit on the audit row
-#: (R15.4 — ``payload.kind``).
+#: (``payload.kind``).
 SecretKind = Literal["webhook_secret", "bot_credential", "llm_api_key"]
 
-#: Audit action label written for every rotation (R15.4).
+#: Audit action label written for every rotation.
 _AUDIT_ACTION_SECRET_ROTATED: str = "secret_rotated"
 
-#: Allow-lists used to reject malformed input early (R15.1 — 400 on
-#: invalid kind / payload). Keeping these tight prevents callers from
+#: Allow-lists used to reject malformed input early. Keeping these tight prevents callers from
 #: coercing the rotator into writing to arbitrary Vault paths via
 #: creative ``service`` / ``provider`` values.
 _ALLOWED_BOT_SERVICES: frozenset[str] = frozenset(
@@ -187,8 +182,8 @@ class SecretRotationError(Exception):
 
     The router maps this to ``HTTP 502`` so a transient Vault outage
     does not look like a malformed request to the FE. The exception
-    message MUST NOT include the secret value (R15 implementation
-    note); the error is constructed with metadata only.
+    message MUST NOT include the secret value; the error is constructed
+    with metadata only.
     """
 
 
@@ -207,12 +202,11 @@ class SupportsSecretRotator(Protocol):
     * Write the new secret material to the appropriate Vault KV-v2
       path (the actual path layout is the implementation's concern).
     * Preserve the previous version through Vault's KV-v2 version
-      history (R15.2).
+      history.
     * Return the new ``version`` number so the audit row can record
-      it (R15.4 — ``payload.vault_version``; metadata only, never
-      the value).
+      it (metadata only, never the value).
     * Raise :class:`SecretRotationError` on any non-recoverable
-      backend failure (R15 — 502 + no partial commit).
+      backend failure.
     """
 
     async def rotate_webhook_secret(
@@ -245,7 +239,7 @@ class SupportsSecretRotator(Protocol):
 
 @runtime_checkable
 class SupportsHotReloadPublisher(Protocol):
-    """Hot-reload signalling surface (R15.3).
+    """Hot-reload signalling surface.
 
     Production wires this against a Redis pub/sub publisher (default
     channel ``secrets:reload``) or a fan-out HTTP client that calls
@@ -268,7 +262,7 @@ class SupportsHotReloadPublisher(Protocol):
 
 
 # ---------------------------------------------------------------------------
-# Pydantic request models — one per rotation endpoint (R15.1)
+# Pydantic request models — one per rotation endpoint
 # ---------------------------------------------------------------------------
 
 
@@ -413,8 +407,8 @@ def _get_rotator(request: Request) -> SupportsSecretRotator:
 def _get_reload_publisher(request: Request) -> SupportsHotReloadPublisher | None:
     """Return the hot-reload publisher, or ``None`` when not wired.
 
-    R15.3 mandates that consumers receive a hot-reload signal after
-    a successful rotation. When no publisher is configured we log a
+    Consumers receive a hot-reload signal after a successful rotation.
+    When no publisher is configured we log a
     structured ``secret_reload_pending`` warning so operators can
     page consumers manually — the rotation itself still succeeds.
     """
@@ -445,7 +439,7 @@ def _get_audit_sink(request: Request) -> Any | None:
 
 
 def _generate_token() -> str:
-    """Return a fresh URL-safe random token (R15 implementation note).
+    """Return a fresh URL-safe random token.
 
     Wraps :func:`secrets.token_urlsafe` so tests can monkey-patch a
     single module-level symbol when they need deterministic values.
@@ -465,11 +459,11 @@ def _emit_secret_rotated_audit(
     vault_version: int,
     rotated_at: datetime,
 ) -> Any:
-    """Write a single ``secret_rotated`` audit event (R15.4).
+    """Write a single ``secret_rotated`` audit event.
 
     The payload carries ``{kind, target_id_if_any, rotated_by,
-    vault_version, timestamp}`` per the task spec — metadata only,
-    never the secret value. The function returns the awaitable produced
+    vault_version, timestamp}`` — metadata only, never the secret value.
+    The function returns the awaitable produced
     by ``sink.write(...)`` so the caller can await it directly; this
     lets the endpoint propagate audit-write failures (the rotation
     itself has already succeeded by this point so a hard failure here
@@ -560,7 +554,7 @@ async def _publish_reload(
     kind: SecretKind,
     target: str | None,
 ) -> None:
-    """Send the hot-reload signal (R15.3); never raises.
+    """Send the hot-reload signal; never raises.
 
     When no publisher is wired we emit a structured operator log so
     the rotation is still observable as "reload pending — page
@@ -575,8 +569,7 @@ async def _publish_reload(
         # mirrors the JSON envelope a real publisher would emit on
         # ``secrets:reload`` so log-to-alert pipelines see the same
         # ``kind`` / ``target`` keys regardless of wiring state.
-        # TODO(platform-gap-fill 15.1): wire a real Redis pub/sub
-        # publisher (or per-service cache-invalidation HTTP fan-out)
+        # TODO: wire a real Redis pub/sub publisher (or per-service cache-invalidation HTTP fan-out)
         # so consumers refresh credentials without operator action.
         logger.warning(
             "secret_reload_pending channel=%s kind=%s target=%s "
@@ -601,8 +594,8 @@ async def _publish_reload(
 def _vault_502(*, kind: SecretKind, target: str | None, exc: Exception) -> HTTPException:
     """Build the canonical ``HTTP 502`` returned on Vault write failure.
 
-    Per the task spec the audit row is **only** written on a
-    successful rotation (no partial-commit), so this helper does not
+    The audit row is **only** written on a successful rotation
+    (no partial-commit), so this helper does not
     touch the audit sink. It just shapes a stable error envelope so
     the FE can surface the failure consistently.
     """
@@ -637,8 +630,6 @@ async def rotate_webhook_secret(
 ) -> dict[str, Any]:
     """Rotate the (optionally per-dept) webhook HMAC secret.
 
-    **Validates: Requirements 15.1, 15.2, 15.3, 15.4, 15.5**
-
     Body shape (all fields optional):
 
     .. code-block:: json
@@ -648,15 +639,15 @@ async def rotate_webhook_secret(
     Behaviour:
 
     1. If ``new_secret`` is omitted, generate a fresh URL-safe token
-       (R15 implementation note).
+       on the server.
     2. Write to Vault via the wired :class:`SupportsSecretRotator`;
-       Vault KV-v2 retains the previous version automatically (R15.2).
+       Vault KV-v2 retains the previous version automatically.
     3. Publish a hot-reload signal so consumers invalidate their
-       credential caches (R15.3) — best-effort, a missing publisher
-       only emits a log warning.
+       credential caches — best-effort, a missing publisher only emits
+       a log warning.
     4. Write one ``secret_rotated`` audit row carrying
        ``{kind, target_id_if_any, rotated_by, vault_version,
-       timestamp}`` (R15.4).
+       timestamp}``.
     5. Return ``{kind, target, vault_version, generated, rotated_at}``.
        The new secret material is **not** returned — operators that
        need the value read it back from Vault via the RBAC-gated
@@ -716,8 +707,6 @@ async def rotate_bot_credential(
     """Rotate a per-department bot credential under
     ``vault:atlassian/<dept>/<service>``.
 
-    **Validates: Requirements 15.1, 15.2, 15.3, 15.4, 15.5**
-
     Body shape (all fields required):
 
     .. code-block:: json
@@ -728,13 +717,12 @@ async def rotate_bot_credential(
 
     ``service`` is restricted to ``jira`` / ``bitbucket`` /
     ``confluence`` at parse time (Pydantic ``Literal``); other values
-    surface as ``HTTP 422`` (FastAPI validation envelope) per R15.1
-    (400-class on invalid payload). On Vault write failure the
+    surface as ``HTTP 422`` (FastAPI validation envelope). On Vault write failure the
     endpoint returns ``HTTP 502`` and **no** audit row is written
     (no partial commit). On success a single ``secret_rotated``
     audit row carries ``{kind="bot_credential",
     target_id_if_any="<dept>/<service>", rotated_by, vault_version,
-    timestamp}`` (R15.4).
+    timestamp}``.
     """
 
     # ``service`` is constrained by Pydantic ``Literal``; this is a
@@ -795,8 +783,6 @@ async def rotate_llm_api_key(
 ) -> dict[str, Any]:
     """Rotate an LLM provider API key.
 
-    **Validates: Requirements 15.1, 15.2, 15.3, 15.4, 15.5**
-
     Body shape (all fields required):
 
     .. code-block:: json
@@ -807,7 +793,7 @@ async def rotate_llm_api_key(
     **no** audit row is written (no partial commit). On success a
     single ``secret_rotated`` audit row carries ``{kind="llm_api_key",
     target_id_if_any="<provider>", rotated_by, vault_version,
-    timestamp}`` (R15.4).
+    timestamp}``.
     """
 
     rotator = _get_rotator(request)
@@ -844,10 +830,8 @@ async def rotate_llm_api_key(
 
 
 # ---------------------------------------------------------------------------
-# SSH Runners endpoints (platform-real-usage-gaps task 8.2)
+# SSH Runners endpoints
 # ---------------------------------------------------------------------------
-# Validates: Requirements 8.1, 8.2, 8.3, 8.4
-#
 # These endpoints manage SSH key dual-slot rotation for execution
 # runners. The rotation lifecycle is:
 #
@@ -1109,8 +1093,6 @@ async def list_ssh_runners(
 ) -> SshRunnerListResponse:
     """Return the list of configured SSH runners with their current state.
 
-    **Validates: Requirement 8.1**
-
     Each runner entry includes:
     - ``runner_id``, ``host``, ``port`` — identity.
     - ``last_rotated_at`` — UTC ISO timestamp of last key rotation.
@@ -1193,8 +1175,6 @@ async def rotate_ssh_key(
     actor: AuthClaims = Depends(require_admin),
 ) -> RotateKeyResponse:
     """Generate a new Ed25519 keypair and rotate the SSH key for a runner.
-
-    **Validates: Requirements 8.2**
 
     The rotation lifecycle:
     1. Generate a fresh Ed25519 keypair.
@@ -1282,8 +1262,6 @@ async def rotate_known_hosts(
     ),
 ) -> RotateKnownHostsResponse:
     """Run ``ssh-keyscan`` against the runner host and update fingerprint.
-
-    **Validates: Requirement 8.3**
 
     Two-phase operation:
     1. First call (``accept_new_fingerprint=false``): scans the host
@@ -1441,8 +1419,6 @@ async def finalize_ssh_rotation(
 ) -> FinalizeRotationResponse:
     """Finalize the SSH key rotation by clearing the previous slot.
 
-    **Validates: Requirement 8.4**
-
     Called after the operator has verified that the new key works
     against the target host (i.e., the new public key has been added
     to ``~/.ssh/authorized_keys`` on the remote). After this call,
@@ -1518,10 +1494,8 @@ async def finalize_ssh_rotation(
 
 
 # ---------------------------------------------------------------------------
-# Webhook Secret Rotation endpoints (platform-real-usage-gaps task 9.2)
+# Webhook Secret Rotation endpoints
 # ---------------------------------------------------------------------------
-# Validates: Requirements 9.1, 9.2, 9.3
-#
 # These endpoints manage webhook HMAC secret dual-slot rotation for
 # the dept × provider matrix. The rotation lifecycle is:
 #
@@ -1774,8 +1748,6 @@ async def list_webhooks(
 ) -> WebhookListResponse:
     """Return the dept × provider webhook secret matrix with rotation status.
 
-    **Validates: Requirement 9.1**
-
     Each entry includes:
     - ``dept_id`` — department identifier.
     - ``provider`` — one of ``jira``, ``bitbucket``, ``confluence``.
@@ -1838,8 +1810,6 @@ async def rotate_webhook(
     actor: AuthClaims = Depends(require_admin),
 ) -> WebhookRotateResponse:
     """Rotate the webhook HMAC secret for a department × provider pair.
-
-    **Validates: Requirements 9.2**
 
     The rotation lifecycle:
     1. Generate a fresh 32-byte random secret.
@@ -1944,8 +1914,6 @@ async def finalize_webhook(
     actor: AuthClaims = Depends(require_admin),
 ) -> WebhookFinalizeResponse:
     """Finalize the webhook secret rotation by clearing the previous slot.
-
-    **Validates: Requirement 9.3**
 
     Called after the operator has updated the provider-side webhook
     configuration with the new secret. After this call, only the

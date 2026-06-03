@@ -1,34 +1,30 @@
-"""``output_actions`` partition + ApplyResult shape (task 12.1 minimal cut).
+"""``output_actions`` partition + ApplyResult shape.
 
 This module ships the *pure* part of the output-actions pipeline that
 the :class:`AgentRunnerWorkflow` needs to wire its ``_execute_output_actions``
-step (task 12.3): the deterministic partition between critical and
-best-effort actions plus the :class:`ApplyResult` shape that records
-per-action success / failure.
+step: the deterministic partition between critical and best-effort
+actions plus the :class:`ApplyResult` shape that records per-action
+success / failure.
 
-The full ``apply()`` orchestrator (task 12.1) lands separately because
-it needs to invoke activities — that decision belongs to the calling
-workflow, not a shared helper. Keeping :func:`partition` and
+The full ``apply()`` orchestrator lives separately because it needs to
+invoke activities — that decision belongs to the calling workflow, not
+a shared helper. Keeping :func:`partition` and
 :class:`ApplyResult` here gives the workflow body a single import
 surface and a stable wire shape that property tests / unit tests can
 assert against without mocking activity dispatch.
 
-Design references:
+Classification:
 
-* design.md §"temporal_shared.output_actions" — the long-form contract
-  this module implements.
 * :data:`temporal_shared.messages.CRITICAL_OUTPUT_ACTION_KINDS` and
   :data:`temporal_shared.messages.BEST_EFFORT_OUTPUT_ACTION_KINDS` —
   the single-source-of-truth classification table.  ``partition``
   consults the kind, not the carried ``severity`` field, so a
   malformed action whose ``severity`` disagrees with the kind cannot
-  bypass the policy (Property 10 invariant: kind classification wins).
+  bypass the policy; kind classification wins.
 
 Replay safety: all helpers here are pure — no clocks, no randomness,
 no globals.  They are safe to call from a Temporal workflow body or a
 plain ``@dataclass``-only test.
-
-Validates Requirements: 12.1, 12.2, 12.3.
 """
 
 from __future__ import annotations
@@ -64,9 +60,7 @@ UNCLASSIFIED_OUTPUT_ACTION_KIND_MESSAGE: Final[str] = (
 class ApplyResult:
     """Per-action success / failure record returned by the apply step.
 
-    The shape mirrors design.md §"temporal_shared.output_actions" with
-    one ergonomic change relative to the design sketch: the four
-    bookkeeping lists are typed as ``list[str]`` /
+    The four bookkeeping lists are typed as ``list[str]`` /
     ``list[tuple[str, str]]`` rather than ``list[OutputAction]`` so
     callers can render the lists into the final Jira comment via
     :func:`temporal_shared.output_size_cap.format_final_jira_comment`
@@ -81,13 +75,13 @@ class ApplyResult:
     failed_critical:
         ``(name, reason)`` tuples for critical actions that failed.
         A non-empty list aborts the run and triggers the compensation
-        chain (R12.2).
+        chain.
     successful_best_effort:
         Stable names of best-effort actions that succeeded.
     failed_best_effort:
         ``(name, reason)`` tuples for best-effort actions that failed.
-        Surfaced verbatim in the final Jira comment (R12.3) but does
-        NOT abort the run.
+        Surfaced verbatim in the final Jira comment but does NOT abort
+        the run.
 
     The dataclass is mutable (``slots=True`` only — no ``frozen``) so
     the workflow body can append to the lists during a run without
@@ -104,12 +98,12 @@ class ApplyResult:
     failed_best_effort: list[tuple[str, str]] = field(default_factory=list)
 
     def has_critical_failure(self) -> bool:
-        """True iff at least one critical action failed (R12.2)."""
+        """True iff at least one critical action failed."""
 
         return bool(self.failed_critical)
 
     def has_best_effort_failure(self) -> bool:
-        """True iff at least one best-effort action failed (R12.3)."""
+        """True iff at least one best-effort action failed."""
 
         return bool(self.failed_best_effort)
 
@@ -123,7 +117,7 @@ def partition(
     — so a deliberately mis-labelled action (severity ``"critical"``
     on a kind that lives in :data:`BEST_EFFORT_OUTPUT_ACTION_KINDS`)
     cannot bypass the partition by setting its severity field
-    independently.  This mirrors the invariant pinned by Property 10:
+    independently.  This mirrors the classification invariant:
     ``CRITICAL_OUTPUT_ACTION_KINDS ∩ BEST_EFFORT_OUTPUT_ACTION_KINDS == ∅``
     and the workflow MUST trust the kind.
 

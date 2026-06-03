@@ -12,11 +12,11 @@ depend on a live Postgres / Vault / probe client:
   ``app.state.<key>`` contracts used by sibling routers).
 * Roles below ``dept_admin`` are denied on mutating endpoints
   before any orchestrator collaborator is touched (RBAC defence-
-  in-depth — Requirement 1.7).
+  in-depth).
 
 The full CRUD + probe behaviour is covered by the property tests
-under ``tests/property/test_dept_credential_crud.py`` (task 3.4)
-and ``tests/property/test_dept_credential_rbac.py`` (task 3.5).
+under ``tests/property/test_dept_credential_crud.py`` and
+``tests/property/test_dept_credential_rbac.py``.
 """
 
 from __future__ import annotations
@@ -129,7 +129,7 @@ def _build_client(*, with_deps: bool = True) -> tuple[TestClient, _FakeService, 
             audit_logger=audit,  # type: ignore[arg-type]
             clock=lambda: datetime(2025, 1, 1, tzinfo=timezone.utc),
         )
-    # ``create_app()`` (task 3.3) already mounts ``dept_credentials_router``,
+    # ``create_app()`` already mounts ``dept_credentials_router``,
     # so we do not call ``app.include_router`` again here — duplicate
     # registration would shadow the canonical wiring contract this
     # suite exercises.

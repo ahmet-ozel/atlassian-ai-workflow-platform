@@ -37,7 +37,7 @@ from automation_worker.workflows.bot_branch_retention import (
     BranchRetentionDecision,
     should_delete_branch,
 )
-# platform-gap-fill task 22.3 — IterationWorkflow is the Temporal-side
+# — IterationWorkflow is the Temporal-side
 # entry point for ``[iterate]`` re-runs dispatched by the webhook
 # layer. Registering it alongside ``AutomationWorkflow`` keeps the
 # automation-tq queue self-contained (no extra worker process).
@@ -46,7 +46,7 @@ from automation_worker.workflows.iteration_workflow import (
     IterationWorkflowInput,
     IterationWorkflowOutput,
 )
-# platform-completion task 26.3 — register the multi-step orchestrator
+# — register the multi-step orchestrator
 # alongside the existing workflows so the boot script picks it up.
 from automation_worker.workflows.multi_step_workflow import (
     MAX_STEPS,
@@ -62,8 +62,8 @@ from automation_worker.workflows.multi_step_workflow import (
     StepDefinition,
     StepResult,
 )
-# platform-real-usage-gaps task 9.3 — periodic webhook secret rotation
-# auto-finalize workflow (R9.2).
+# — periodic webhook secret rotation
+# auto-finalize workflow.
 from automation_worker.workflows.webhook_rotation_finalize import (
     WEBHOOK_ROTATION_FINALIZE_CRON_SCHEDULE,
     WEBHOOK_ROTATION_FINALIZE_WORKFLOW_ID,
@@ -110,11 +110,11 @@ __all__: tuple[str, ...] = (
     "match_approval_paths",
     "parse_approval_decision",
     "should_delete_branch",
-    # platform-gap-fill task 22.3 — IterationWorkflow + I/O envelopes.
+    # — IterationWorkflow + I/O envelopes.
     "IterationWorkflow",
     "IterationWorkflowInput",
     "IterationWorkflowOutput",
-    # MultiStep (platform-completion R5.1–5.10)
+    # MultiStep (–5.10)
     "MAX_STEPS",
     "MIN_STEPS",
     "MultiStepInput",
@@ -122,13 +122,13 @@ __all__: tuple[str, ...] = (
     "MultiStepWorkflow",
     "StepDefinition",
     "StepResult",
-    # Epic subtask orchestration (platform-real-usage-gaps R12.3, R12.4)
+    # Epic subtask orchestration (,)
     "EpicSubtaskDefinition",
     "EpicSubtaskInput",
     "EpicSubtaskResult",
     "EpicSubtaskStepResult",
     "EpicSubtaskWorkflow",
-    # Webhook rotation auto-finalize (platform-real-usage-gaps R9.2)
+    # Webhook rotation auto-finalize 
     "WEBHOOK_ROTATION_FINALIZE_CRON_SCHEDULE",
     "WEBHOOK_ROTATION_FINALIZE_WORKFLOW_ID",
     "WebhookFinalizeError",

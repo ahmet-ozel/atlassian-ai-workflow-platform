@@ -1,7 +1,7 @@
 """Service Test Results API endpoints.
 
 Provides structured test result parsing and **persistent** history
-tracking (``gereksinim.txt`` G9 / Requirement 7.x — E4 iyileştirmesi).
+tracking.
 
 Run results are written to ``automation.test_runs`` (migration
 ``011_test_runs.sql``) so the admin dashboard's "Servis testleri"
@@ -9,7 +9,6 @@ panel keeps a durable pass/fail trend across admin-dashboard-api
 restarts. When the Postgres pool is unavailable the module degrades
 to an in-memory ring buffer so the panel still renders.
 
-Requirements: 7.1, 7.2, 7.3, 7.4, 7.5
 """
 from __future__ import annotations
 

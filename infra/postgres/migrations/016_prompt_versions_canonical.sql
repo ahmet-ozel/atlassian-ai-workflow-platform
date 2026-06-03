@@ -1,5 +1,5 @@
 -- 011_prompt_versions.sql
--- Spec: platform-gap-fill — Task 14.3 (Prompt Versioning Schema)
+-- Canonical prompt versioning schema migration.
 --
 -- Defines the canonical schema for the prompt versioning audit trail:
 --   1. shared.prompt_versions — Append-only history of prompt file changes
@@ -10,7 +10,7 @@
 -- the SHA-256 of the new content, the admin user who made the change,
 -- and the URL of the Bitbucket draft PR that carries the commit.
 --
--- The table is the source of the `prompt_updated` audit event (R14.4) and
+-- The table is the source of the `prompt_updated` audit event and
 -- backs the prompt history view in the Admin Dashboard. Two access patterns
 -- are supported:
 --   * Newest-first version list for a single prompt
@@ -23,7 +23,6 @@
 -- a no-op for the table/index and simply ensures the UNIQUE constraint is
 -- present.
 --
--- Requirements: 14.4
 
 -- =============================================================================
 -- 1. prompt_versions — Prompt change audit trail

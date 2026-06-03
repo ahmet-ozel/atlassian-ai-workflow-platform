@@ -2,7 +2,7 @@
 
 /**
  * CredentialServiceTab — single-service tab body inside the dept
- * credential modal (uyumluluk task 4.1, R1.8 / R1.9).
+ * credential modal.
  *
  * Rendered three times by :file:`CredentialModal.tsx` (one per
  * Atlassian service: ``jira``, ``confluence``, ``bitbucket``). The
@@ -21,14 +21,14 @@
  * * ``account_id`` — read-only; populated by a successful probe.
  * * ``deployment`` — optional dropdown rendered only for bitbucket.
  *
- * Buttons (R1.8):
+ * Buttons:
  *
  * * ``Test (Probe)`` — calls
  *   ``POST /admin/departments/{id}/probe?service={service}`` and
  *   updates the green ✅ / red ❌ badge from the response.
  * * ``Kaydet``      — calls
  *   ``POST /admin/departments/{id}/credentials/{service}`` and, on
- *   success, asks the modal to close + refetch (R1.9).
+ *   success, asks the modal to close + refetch.
  * * ``Sil``         — calls
  *   ``DELETE /admin/departments/{id}/credentials/{service}`` after
  *   a confirm prompt; refetches on success.
@@ -102,7 +102,7 @@ export type CredentialServiceTabProps = {
   /**
    * Called after a successful save (POST credentials). The parent
    * refetches the dept detail so the badge / form reflects the new
-   * vault path + account_id. The modal also closes per R1.9.
+   * vault path + account_id. The modal also closes.
    */
   onSaved: () => void;
   /**

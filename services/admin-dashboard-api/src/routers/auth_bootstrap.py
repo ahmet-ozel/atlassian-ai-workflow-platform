@@ -1,7 +1,7 @@
 """``POST /auth/bootstrap`` — one-time admin user creation endpoint.
 
 This router exposes the bootstrap token consumption flow described in
-Requirement 2. The endpoint is intentionally **unauthenticated** because
+behavior 2. The endpoint is intentionally **unauthenticated** because
 it exists to create the very first admin user before any OIDC provider
 is configured.
 
@@ -18,7 +18,6 @@ Security considerations:
 - Once OIDC is configured, the endpoint is permanently disabled (410).
 - The token is single-use and has a 1-hour TTL.
 
-Requirements: 2.3, 2.4, 2.5
 """
 
 from __future__ import annotations
@@ -133,14 +132,13 @@ async def bootstrap_admin(
     This endpoint is unauthenticated by design — it exists to bootstrap
     the very first admin before OIDC is configured.
 
-    **Validates: Requirements 2.3, 2.4, 2.5**
     """
 
     from ..auth.bootstrap import BootstrapTokenService
 
     bootstrap_service = BootstrapTokenService()
 
-    # ---- 1. Check if OIDC is configured (Requirement 2.5) ----
+    # ---- 1. Check if OIDC is configured (behavior 2.5) ----
     if await bootstrap_service.is_oidc_configured():
         logger.info(
             "bootstrap attempt rejected — OIDC provider is active"
@@ -150,7 +148,7 @@ async def bootstrap_admin(
             detail={"error": "bootstrap_disabled_oidc_active"},
         )
 
-    # ---- 2. Validate token format (Requirement 2.3) ----
+    # ---- 2. Validate token format (behavior 2.3) ----
     if not _is_valid_token_format(body.token):
         logger.warning(
             "bootstrap attempt rejected — invalid token format"
@@ -160,7 +158,7 @@ async def bootstrap_admin(
             detail={"error": "invalid_token_format"},
         )
 
-    # ---- 3. Validate and consume the token (Requirements 2.3, 2.4) ----
+    # ---- 3. Validate and consume the token (behaviors 2.3, 2.4) ----
     db_pool = _get_db_pool(request)
 
     consumed = await bootstrap_service.validate_and_consume(
@@ -177,7 +175,7 @@ async def bootstrap_admin(
             detail={"error": "bootstrap_token_expired_or_used"},
         )
 
-    # ---- 4. Create the admin user (Requirement 2.3) ----
+    # ---- 4. Create the admin user (behavior 2.3) ----
     user_id = str(uuid.uuid4())
 
     async with db_pool.acquire() as conn:

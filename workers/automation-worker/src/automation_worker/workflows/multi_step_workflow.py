@@ -5,33 +5,32 @@ child workflows. Each step runs as an independent child workflow;
 the output of step N is passed as input to step N+1.
 
 Responsibilities (design.md §5 "Multi-Step Orchestrator" and
-Requirements 5.1–5.10):
+–5.10):
 
 1. Validate step count (2–20 inclusive).
 2. Execute steps sequentially as child workflows.
 3. Pass output from step N to step N+1.
 4. Apply retry policy with exponential backoff (5s, 10s, 20s) on
-   failure, max 3 retries per step.
+ failure, max 3 retries step.
 5. Track timing metadata (start_time, end_time, duration_seconds,
-   output_summary capped at 500 chars) for each step.
+ output_summary capped at 500 chars) for each step.
 6. Enforce per-step timeout (default 300s).
 7. On all steps complete, execute output_actions via the
-   ``execute_output_actions`` activity.
+ ``execute_output_actions`` activity.
 8. On failure after retries exhausted, post error report to Jira.
 
 Additionally provides ``EpicSubtaskWorkflow`` — an Epic-aware
 orchestrator that iterates an Epic's subtask list, starts a child
 ``AutomationWorkflow`` for each subtask, posts progress comments
-to the parent Epic, and stops on first failure (Requirements 12.3,
-12.4).
+to the parent Epic, and stops on first failure.
 
 Determinism contract: The workflow body uses only Temporal-deterministic
-primitives — ``workflow.now()``, ``workflow.execute_activity``,
+primitives — ``workflow.now``, ``workflow.execute_activity``,
 ``workflow.start_child_workflow``. No ``random`` / ``uuid.uuid4`` /
 ``os.environ`` / direct I/O.
 
-Validates Requirements: **5.1** (2–20 step plan), **5.2** (independent
-child workflow per step), **5.3** (step state tracking), **5.4** (output
+(2–20 step plan), **5.2** (independent
+child workflow step), **5.3** (step state tracking), **5.4** (output
 passing), **5.5** (retry with exponential backoff), **5.6** (error
 report on exhausted retries), **5.7** (timing metadata), **5.8** (output
 actions on completion), **5.9** (output passing failure → retry),
@@ -58,10 +57,10 @@ MIN_STEPS: Final[int] = 2
 #: Maximum number of steps allowed in a multi-step plan.
 MAX_STEPS: Final[int] = 20
 
-#: Default timeout per step in seconds.
+#: Default timeout step in seconds.
 DEFAULT_STEP_TIMEOUT_SECONDS: Final[int] = 300
 
-#: Maximum retries per step.
+#: Maximum retries step.
 MAX_RETRIES_PER_STEP: Final[int] = 3
 
 #: Exponential backoff intervals (seconds) for step retries.
@@ -97,13 +96,13 @@ _DEFAULT_RETRY: Final[RetryPolicy] = RetryPolicy(
 class StepDefinition:
     """Definition of a single step in a multi-step workflow.
 
-    Attributes:
-        name: Human-readable step name.
-        workflow_type: The child workflow type to execute for this step.
-        input_data: Input parameters for the child workflow.
-        timeout_seconds: Maximum execution time for this step (default 300s).
-        max_retries: Maximum retry attempts for this step (default 3).
-    """
+ Attributes:
+ name: Human-readable step name.
+ workflow_type: The child workflow type to execute for this step.
+ input_data: Input parameters for the child workflow.
+ timeout_seconds: Maximum execution time for this step (default 300s).
+ max_retries: Maximum retry attempts for this step (default 3).
+ """
 
     name: str
     workflow_type: str
@@ -116,16 +115,16 @@ class StepDefinition:
 class StepResult:
     """Result of executing a single step.
 
-    Attributes:
-        step_name: Name of the step.
-        status: Current state of the step.
-        start_time: When the step started executing (ISO format string).
-        end_time: When the step finished (ISO format string).
-        duration_seconds: Total execution time in seconds.
-        output_summary: Summary of step output (max 500 chars).
-        error: Error message if the step failed.
-        retry_count: Number of retry attempts made.
-    """
+ Attributes:
+ step_name: Name of the step.
+ status: Current state of the step.
+ start_time: When the step started executing (ISO format string).
+ end_time: When the step finished (ISO format string).
+ duration_seconds: Total execution time in seconds.
+ output_summary: Summary of step output (max 500 chars).
+ error: Error message if the step failed.
+ retry_count: Number of retry attempts made.
+ """
 
     step_name: str
     status: Literal["pending", "running", "completed", "failed"]
@@ -141,14 +140,14 @@ class StepResult:
 class MultiStepInput:
     """Input for the MultiStepWorkflow.
 
-    Attributes:
-        issue_key: The Jira issue key for context and error reporting.
-        dept_id: Department identifier for credential resolution.
-        steps: List of step definitions (2–20 steps).
-        workflow_id: Parent workflow identifier for tracing.
-        output_actions: Optional list of output actions to execute
-            after all steps complete.
-    """
+ Attributes:
+ issue_key: The Jira issue key for context and error reporting.
+ dept_id: Department identifier for credential resolution.
+ steps: List of step definitions (2–20 steps).
+ workflow_id: Parent workflow identifier for tracing.
+ output_actions: Optional list of output actions to execute
+ after all steps complete.
+ """
 
     issue_key: str
     dept_id: str
@@ -161,13 +160,13 @@ class MultiStepInput:
 class MultiStepResult:
     """Result of the MultiStepWorkflow.
 
-    Attributes:
-        success: Whether all steps completed successfully.
-        step_results: Results for each step in execution order.
-        failed_step: Name of the step that caused failure (if any).
-        error: Overall error message (if workflow failed).
-        total_duration_seconds: Total workflow execution time.
-    """
+ Attributes:
+ success: Whether all steps completed successfully.
+ step_results: Results for each step in execution order.
+ failed_step: Name of the step that caused failure (if any).
+ error: Overall error message (if workflow failed).
+ total_duration_seconds: Total workflow execution time.
+ """
 
     success: bool
     step_results: list[StepResult]
@@ -185,21 +184,18 @@ class MultiStepResult:
 class MultiStepWorkflow:
     """Sequential multi-step orchestrator workflow.
 
-    Executes 2–20 steps sequentially as child workflows, passing
-    output from each step to the next. Applies retry policy with
-    exponential backoff on failure. Tracks timing metadata for each
-    step. On completion, executes output_actions. On failure, posts
-    error report to Jira.
-
-    Validates Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7,
-    5.8, 5.9, 5.10.
-    """
+ Executes 2–20 steps sequentially as child workflows, passing
+ output from each step to the next. Applies retry policy with
+ exponential backoff on failure. Tracks timing metadata for each
+ step. On completion, executes output_actions. On failure, posts
+ error report to Jira..
+ """
 
     @workflow.run
     async def run(self, inp: MultiStepInput) -> MultiStepResult:
         """Execute the multi-step workflow."""
 
-        # 1. Validate step count (Requirement 5.1)
+        # 1. Validate step count 
         step_count = len(inp.steps)
         if step_count < MIN_STEPS or step_count > MAX_STEPS:
             error_msg = (
@@ -222,7 +218,7 @@ class MultiStepWorkflow:
                 error=error_msg,
             )
 
-        # Initialize step results (Requirement 5.3 — pending state)
+        # Initialize step results (— pending state)
         step_results: list[StepResult] = [
             StepResult(step_name=step.name, status="pending")
             for step in inp.steps
@@ -231,7 +227,7 @@ class MultiStepWorkflow:
         workflow_start = workflow.now()
         previous_output: dict[str, Any] = {}
 
-        # 2. Execute steps sequentially (Requirements 5.2, 5.4)
+        # 2. Execute steps sequentially 
         for idx, step_def in enumerate(inp.steps):
             step_result = await self._execute_step_with_retries(
                 step_def=step_def,
@@ -248,7 +244,7 @@ class MultiStepWorkflow:
                     workflow_end - workflow_start
                 ).total_seconds()
 
-                # Post error report to Jira (Requirement 5.6)
+                # Post error report to Jira 
                 await self._post_error_report(
                     inp=inp,
                     step_result=step_result,
@@ -262,7 +258,7 @@ class MultiStepWorkflow:
                     total_duration_seconds=total_duration,
                 )
 
-            # Pass output to next step (Requirement 5.4)
+            # Pass output to next step 
             previous_output = self._extract_output(step_result)
 
         # 3. All steps completed — execute output_actions (Req 5.8)
@@ -292,22 +288,22 @@ class MultiStepWorkflow:
     ) -> StepResult:
         """Execute a single step with retry policy.
 
-        Applies exponential backoff (5s, 10s, 20s) on failure,
-        up to max_retries attempts (Requirement 5.5).
-        Enforces per-step timeout (Requirement 5.10).
-        Records timing metadata (Requirement 5.7).
-        """
+ Applies exponential backoff (5s, 10s, 20s) on failure,
+ up to max_retries attempts.
+ Enforces per-step timeout.
+ Records timing metadata.
+ """
 
         retry_count = 0
         last_error: str | None = None
 
         while retry_count <= step_def.max_retries:
-            # Mark step as running (Requirement 5.3)
+            # Mark step as running 
             start_time = workflow.now()
 
             try:
                 # Build child workflow input by merging step input_data
-                # with previous step output (Requirement 5.4, 5.9)
+                # with previous step output 
                 child_input = {
                     **step_def.input_data,
                     "previous_step_output": previous_output,
@@ -333,7 +329,7 @@ class MultiStepWorkflow:
                     ),
                 )
 
-                # Step completed successfully (Requirement 5.3, 5.7)
+                # Step completed successfully 
                 end_time = workflow.now()
                 duration = (end_time - start_time).total_seconds()
 
@@ -367,7 +363,7 @@ class MultiStepWorkflow:
                 )
 
                 # If we have retries left, apply exponential backoff
-                # (Requirement 5.5)
+                # 
                 if retry_count < step_def.max_retries:
                     backoff_idx = min(
                         retry_count, len(RETRY_BACKOFF_INTERVALS) - 1
@@ -376,7 +372,7 @@ class MultiStepWorkflow:
                     await workflow.sleep(timedelta(seconds=backoff_seconds))
                     retry_count += 1
                 else:
-                    # All retries exhausted (Requirement 5.6)
+                    # All retries exhausted 
                     return StepResult(
                         step_name=step_def.name,
                         status="failed",
@@ -404,9 +400,9 @@ class MultiStepWorkflow:
     ) -> None:
         """Post error report to Jira when a step fails after retries.
 
-        Includes: failed step name, error reason, retry count, and
-        last error output (Requirement 5.6).
-        """
+ Includes: failed step name, error reason, retry count, and
+ last error output.
+ """
 
         error_report = (
             f"❌ Multi-step iş akışı başarısız oldu.\n\n"
@@ -424,8 +420,8 @@ class MultiStepWorkflow:
     async def _execute_output_actions(self, inp: MultiStepInput) -> None:
         """Execute output_actions via the Output_Action_Executor activity.
 
-        Called when all steps complete successfully (Requirement 5.8).
-        """
+ Called when all steps complete successfully.
+ """
 
         try:
             await workflow.execute_activity(
@@ -470,10 +466,8 @@ class MultiStepWorkflow:
 
     @staticmethod
     def _truncate_output_summary(text: str) -> str:
-        """Truncate output summary to MAX_OUTPUT_SUMMARY_LENGTH chars.
-
-        Requirement 5.7: output_summary max 500 characters.
-        """
+        """Truncate output summary to MAX_OUTPUT_SUMMARY_LENGTH chars.: output_summary max 500 characters.
+ """
 
         if len(text) <= MAX_OUTPUT_SUMMARY_LENGTH:
             return text
@@ -481,10 +475,8 @@ class MultiStepWorkflow:
 
     @staticmethod
     def _extract_output(step_result: StepResult) -> dict[str, Any]:
-        """Extract output from a completed step for passing to next step.
-
-        Requirement 5.4: pass output from step N to step N+1.
-        """
+        """Extract output from a completed step for passing to next step.: pass output from step N to step N+1.
+ """
 
         return {
             "step_name": step_result.step_name,
@@ -494,7 +486,7 @@ class MultiStepWorkflow:
 
 
 # ---------------------------------------------------------------------------
-# Epic Subtask Orchestration (Requirements 12.3, 12.4)
+# Epic Subtask Orchestration 
 # ---------------------------------------------------------------------------
 
 #: Default timeout for each subtask child workflow execution.
@@ -508,10 +500,10 @@ _ACT_WRITE_AUDIT: Final[str] = "write_audit_event"
 class EpicSubtaskDefinition:
     """A single subtask extracted from a Jira Epic.
 
-    Attributes:
-        issue_key: The Jira issue key of the subtask (e.g. ``PROJ-42``).
-        summary: Human-readable summary/title of the subtask.
-    """
+ Attributes:
+ issue_key: The Jira issue key of the subtask (e.g. ``PROJ-42``).
+ summary: Human-readable summary/title of the subtask.
+ """
 
     issue_key: str
     summary: str
@@ -521,21 +513,21 @@ class EpicSubtaskDefinition:
 class EpicSubtaskInput:
     """Input for the ``EpicSubtaskWorkflow``.
 
-    Attributes:
-        epic_issue_key: The parent Epic's Jira issue key.
-        dept_id: Department identifier for credential resolution.
-        subtasks: List of subtask definitions to process sequentially.
-        available_capabilities: Capabilities available for child workflows.
-        available_repos: Repos available for child workflows.
-        available_spaces: Confluence spaces available for child workflows.
-        default_language: ISO-639-1 language code.
-        trigger_event: Original trigger event type.
-        trace_id: End-to-end correlation identifier.
-        notify_on_success: Whether to notify on success.
-        notify_channels: Notification channels.
-        slack_webhook: Slack webhook URL (if configured).
-        notify_email: Email address (if configured).
-    """
+ Attributes:
+ epic_issue_key: The parent Epic's Jira issue key.
+ dept_id: Department identifier for credential resolution.
+ subtasks: List of subtask definitions to process sequentially.
+ available_capabilities: Capabilities available for child workflows.
+ available_repos: Repos available for child workflows.
+ available_spaces: Confluence spaces available for child workflows.
+ default_language: ISO-639-1 language code.
+ trigger_event: Original trigger event type.
+ trace_id: End-to-end correlation identifier.
+ notify_on_success: Whether to notify on success.
+ notify_channels: Notification channels.
+ slack_webhook: Slack webhook URL (if configured).
+ notify_email: Email address (if configured).
+ """
 
     epic_issue_key: str
     dept_id: str
@@ -556,12 +548,12 @@ class EpicSubtaskInput:
 class EpicSubtaskStepResult:
     """Result of processing a single Epic subtask.
 
-    Attributes:
-        issue_key: The subtask's Jira issue key.
-        summary: The subtask's summary.
-        status: Outcome of the subtask processing.
-        error: Error message if the subtask failed.
-    """
+ Attributes:
+ issue_key: The subtask's Jira issue key.
+ summary: The subtask's summary.
+ status: Outcome of the subtask processing.
+ error: Error message if the subtask failed.
+ """
 
     issue_key: str
     summary: str
@@ -573,14 +565,14 @@ class EpicSubtaskStepResult:
 class EpicSubtaskResult:
     """Result of the ``EpicSubtaskWorkflow``.
 
-    Attributes:
-        success: Whether all subtasks completed successfully.
-        completed_count: Number of subtasks that completed.
-        total_count: Total number of subtasks.
-        step_results: Results for each subtask in execution order.
-        failed_subtask_key: Issue key of the subtask that caused failure.
-        error: Overall error message (if workflow failed).
-    """
+ Attributes:
+ success: Whether all subtasks completed successfully.
+ completed_count: Number of subtasks that completed.
+ total_count: Total number of subtasks.
+ step_results: Results for each subtask in execution order.
+ failed_subtask_key: Issue key of the subtask that caused failure.
+ error: Overall error message (if workflow failed).
+ """
 
     success: bool
     completed_count: int
@@ -594,14 +586,14 @@ class EpicSubtaskResult:
 class EpicSubtaskWorkflow:
     """Epic subtask orchestrator — iterates subtasks sequentially.
 
-    For each subtask in the Epic, starts a child ``AutomationWorkflow``
-    and posts progress comments to the parent Epic. On first subtask
-    failure, posts a failure comment and stops processing remaining
-    subtasks.
+ For each subtask in the Epic, starts a child ``AutomationWorkflow``
+ and posts progress comments to the parent Epic. On first subtask
+ failure, posts a failure comment and stops processing remaining
+ subtasks.
 
-    Validates Requirements: 12.3 (Epic subtask iteration with progress
-    comments), 12.4 (stop on subtask failure with fail comment).
-    """
+ (Epic subtask iteration with progress
+ comments), 12.4 (stop on subtask failure with fail comment).
+ """
 
     @workflow.run
     async def run(self, inp: EpicSubtaskInput) -> EpicSubtaskResult:
@@ -669,7 +661,7 @@ class EpicSubtaskWorkflow:
                     )
                 )
 
-                # Post progress comment to parent Epic (Requirement 12.3).
+                # Post progress comment to parent Epic.
                 progress_comment = (
                     f"🤖 {completed_count}/{total} subtask tamamlandı"
                 )
@@ -679,7 +671,7 @@ class EpicSubtaskWorkflow:
 
             except Exception as exc:  # noqa: BLE001
                 # Subtask failed — post failure comment and stop
-                # (Requirement 12.4).
+                #.
                 error_msg = str(exc)
                 step_results.append(
                     EpicSubtaskStepResult(

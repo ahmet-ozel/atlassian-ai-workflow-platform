@@ -1,6 +1,4 @@
-"""Property test 8 — PromptLoader lifecycle.
-
-**Validates: Requirements 2.5, 2.6, 2.7, 2.9**
+"""PromptLoader lifecycle property tests.
 
 Hypothesis-driven exercise of :class:`prompts.loader.PromptLoader`:
 

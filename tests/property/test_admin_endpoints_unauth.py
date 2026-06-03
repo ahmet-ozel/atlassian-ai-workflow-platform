@@ -1,44 +1,43 @@
-"""Property P5 — admin endpoints reject unauthenticated/non-admin calls.
+"""Admin endpoints reject unauthenticated and non-admin calls.
 
-Validates: Requirement 10.5
 
-Property statement
+
+Behavior statement
 ------------------
 For *every* Managed_Service in ``config/services.manifest.json`` and
 *every* admin lifecycle endpoint exposed by
 ``services/admin-dashboard-api/src/routers/services_lifecycle.py``:
 
 * A request **without** an ``Authorization`` header MUST receive
-  ``401 Unauthorized``.
+ ``401 Unauthorized``.
 * A request carrying a *valid* token whose claims do **not** include
-  ``"admin"`` (e.g. ``groups=["user"]``) MUST receive ``403 Forbidden``.
+ ``"admin"`` (e.g. ``groups=["user"]``) MUST receive ``403 Forbidden``.
 
-This is the property-level proof that no anonymous probe can flip the
-state of any Managed_Service and that ordinary authenticated users
-cannot cross over into the admin surface (Requirement 10.2 / 10.3 /
-10.5).
+These checks ensure no anonymous probe can flip the state of any
+Managed_Service and that ordinary authenticated users cannot cross
+over into the admin surface.
 
 Implementation notes
 --------------------
 * The FastAPI app is constructed *once* per test session by mounting
-  the lifecycle router onto a bare :class:`fastapi.FastAPI` instance.
-  We do not run the real ``src/main.py`` lifespan because it expects
-  Postgres, Vault and Temporal to be reachable; instead we override
-  ``get_lifecycle_service`` to return ``None`` so any code path that
-  bypassed auth (none should, but defence in depth) would crash
-  loudly rather than silently 200.
-* The dev-mode :class:`OIDCValidator` returns canned admin claims for
-  *any* non-empty token, so it cannot exercise the 403 branch. We
-  override ``get_validator`` with a stub that returns
-  ``{"sub": "user-1", "groups": ["user"]}`` so the bearer token
-  validates but ``require_admin`` raises 403.
+ the lifecycle router onto a bare:class:`fastapi.FastAPI` instance.
+ We do not run the real ``src/main.py`` lifespan because it expects
+ Postgres, Vault and Temporal to be reachable; instead we override
+ ``get_lifecycle_service`` to return ``None`` so any code path that
+ bypassed auth (none should, but defence in depth) would crash
+ loudly rather than silently 200.
+* The dev-mode:class:`OIDCValidator` returns canned admin claims for
+ *any* non-empty token, so it cannot exercise the 403 branch. We
+ override ``get_validator`` with a stub that returns
+ ``{"sub": "user-1", "groups": ["user"]}`` so the bearer token
+ validates but ``require_admin`` raises 403.
 * Modern ``httpx`` (≥0.28) removed ``AsyncClient(app=...)``; we use
-  the documented :class:`httpx.ASGITransport` shim instead.
-* Endpoint coverage is enforced by :func:`pytest.mark.parametrize`
-  over the eight router endpoints, while Hypothesis ``sampled_from``
-  picks the manifest service name within each parametrized run.
-  This guarantees every endpoint is exercised on every CI run while
-  still letting Hypothesis search the service-name dimension.
+ the documented:class:`httpx.ASGITransport` shim instead.
+* Endpoint coverage is enforced by:func:`pytest.mark.parametrize`
+ over the eight router endpoints, while Hypothesis ``sampled_from``
+ picks the manifest service name within each parametrized run.
+ This guarantees every endpoint is exercised on every CI run while
+ still letting Hypothesis search the service-name dimension.
 """
 
 from __future__ import annotations
@@ -79,7 +78,7 @@ if str(_AUTH_SHARED_SRC) not in sys.path:
 # Module loader — admin-dashboard-api isn't a shared library and cannot
 # share the literal ``src`` package name with sibling services. Load it
 # under a unique alias so the relative imports inside the package
-# (``from ..config import Settings``, ``from .dependencies import ...``)
+# (``from..config import Settings``, ``from.dependencies import...``)
 # resolve against this module rather than another service's ``src/``.
 # Pattern mirrors ``tests/property/test_health_contract.py`` and
 # ``tests/unit/test_sensitive_env_key.py``.
@@ -91,11 +90,11 @@ _API_PKG_ALIAS = "_msf_admin_dashboard_api"
 def _load_admin_api_submodule(submodule: str) -> ModuleType:
     """Import ``services/admin-dashboard-api/src.<submodule>`` lazily.
 
-    Registers the ``src`` package under :data:`_API_PKG_ALIAS` once,
-    then defers to :func:`importlib.import_module` so nested submodule
-    imports inside the package (``from ..config import Settings``)
-    are routed through the same alias namespace.
-    """
+ Registers the ``src`` package under:data:`_API_PKG_ALIAS` once,
+ then defers to:func:`importlib.import_module` so nested submodule
+ imports inside the package (``from..config import Settings``)
+ are routed through the same alias namespace.
+ """
 
     src_dir = _WORKSPACE_ROOT / "services" / "admin-dashboard-api" / "src"
     if _API_PKG_ALIAS not in sys.modules:
@@ -120,7 +119,7 @@ _auth_mod = _load_admin_api_submodule("auth.dependencies")
 
 
 # ---------------------------------------------------------------------------
-# Manifest discovery — drives the ``service_name`` axis of the property.
+# Manifest discovery — drives the ``service_name`` axis of the test.
 # ---------------------------------------------------------------------------
 
 _MANIFEST_PATH: Path = _WORKSPACE_ROOT / "config" / "services.manifest.json"
@@ -128,12 +127,12 @@ _MANIFEST_DOC: dict[str, Any] = json.loads(_MANIFEST_PATH.read_text(encoding="ut
 _SERVICE_NAMES: tuple[str, ...] = tuple(s["name"] for s in _MANIFEST_DOC["services"])
 assert _SERVICE_NAMES, (
     "config/services.manifest.json must declare at least one Managed_Service "
-    "for Property P5 to be meaningful"
+    "for endpoint coverage to be meaningful"
 )
 
 
 # ---------------------------------------------------------------------------
-# Endpoint matrix — design §3.3 / Requirement 10.1
+# Endpoint matrix
 # ---------------------------------------------------------------------------
 
 
@@ -141,12 +140,12 @@ assert _SERVICE_NAMES, (
 class _Endpoint:
     """One row of the lifecycle endpoint matrix.
 
-    ``template`` is appended to the ``/admin/services`` prefix and may
-    contain a ``{name}`` placeholder. ``body`` is the JSON payload
-    (or ``None`` to skip). Bodies are picked so the request would
-    otherwise validate cleanly — auth is the only failure path being
-    exercised.
-    """
+ ``template`` is appended to the ``/admin/services`` prefix and may
+ contain a ``{name}`` placeholder. ``body`` is the JSON payload
+ (or ``None`` to skip). Bodies are picked so the request would
+ otherwise validate cleanly — auth is the only failure path being
+ exercised.
+ """
 
     method: str
     template: str  # appended to /admin/services
@@ -154,22 +153,21 @@ class _Endpoint:
 
 
 #: All eight admin endpoints declared by ``services_lifecycle.router``
-#: (Requirement 10.1, design §3.3 endpoint matrix).
 #:
-#: * ``GET /``                → list summaries (Requirement 6.1).
-#: * ``GET /{name}``          → service detail (Requirement 6.2).
-#: * ``POST /{name}/start``   → start (Requirement 6.3) — body has the
-#:   ``env_overrides`` key set to ``{}`` so the Pydantic model
-#:   validates regardless of when body parsing runs relative to
-#:   :func:`require_admin`.
-#: * ``POST /{name}/stop``    → stop (Requirement 6.4) — body optional;
-#:   we still send ``{}`` so the StopRequest path matches its
-#:   ``remove_volumes`` default.
-#: * ``POST /{name}/restart`` → restart (Requirement 6.6) — no body.
-#: * ``POST /{name}/test``    → run tests (Requirement 8.1) — no body
-#:   (only the ``?stream=`` query parameter, defaulted).
-#: * ``GET /{name}/logs``     → tail logs (Requirement 7.1).
-#: * ``GET /{name}/health``   → health snapshot (Requirement 7.4).
+#: * ``GET /`` → list summaries.
+#: * ``GET /{name}`` → service detail.
+#: * ``POST /{name}/start`` → start — body has the
+#: ``env_overrides`` key set to ``{}`` so the Pydantic model
+#: validates regardless of when body parsing runs relative to
+#::func:`require_admin`.
+#: * ``POST /{name}/stop`` → stop — body optional;
+#: we still send ``{}`` so the StopRequest path matches its
+#: ``remove_volumes`` default.
+#: * ``POST /{name}/restart`` → restart — no body.
+#: * ``POST /{name}/test`` → run tests — no body
+#: (only the ``sectionstream=`` query parameter, defaulted).
+#: * ``GET /{name}/logs`` → tail logs.
+#: * ``GET /{name}/health`` → health snapshot.
 _ENDPOINTS: tuple[_Endpoint, ...] = (
     _Endpoint("GET", "", None),
     _Endpoint("GET", "/{name}", None),
@@ -200,17 +198,17 @@ def _resolve_path(template: str, name: str) -> str:
 
 
 class _NonAdminValidator:
-    """Stand-in :class:`OIDCValidator` that emits non-admin claims.
+    """Stand-in:class:`OIDCValidator` that emits non-admin claims.
 
-    The dev-mode validator that ships in
-    ``libs/auth-shared/src/auth_shared/oidc.py`` returns canned admin
-    claims for any non-empty token, so it can only ever exercise the
-    401-then-200 path through :func:`require_admin`. To prove the
-    403 branch (Requirement 10.3 / 10.5) we override ``get_validator``
-    with this class, which validates the token (anything non-empty
-    succeeds) but returns ``groups=["user"]`` — explicitly *not* an
-    admin claim — so :func:`require_admin` rejects with 403.
-    """
+ The dev-mode validator that ships in
+ ``libs/auth-shared/src/auth_shared/oidc.py`` returns canned admin
+ claims for any non-empty token, so it can only ever exercise the
+ 401-then-200 path through:func:`require_admin`. To prove the
+ 403 branch we override ``get_validator``
+ with this class, which validates the token (anything non-empty
+ succeeds) but returns ``groups=["user"]`` — explicitly *not* an
+ admin claim — so:func:`require_admin` rejects with 403.
+ """
 
     def validate(self, token: str) -> dict[str, Any]:
         if not token:
@@ -232,18 +230,17 @@ class _NonAdminValidator:
 def _build_app(*, with_user_validator: bool) -> FastAPI:
     """Construct a minimal FastAPI app exposing only the lifecycle router.
 
-    The bare app skips the real ``src.main`` lifespan (which requires
-    Postgres / Vault / Temporal), and the only dependencies it needs
-    to override are:
+ The bare app skips the real ``src.main`` lifespan (which requires
+ Postgres / Vault / Temporal), and the only dependencies it needs
+ to override are:
 
-    * ``get_lifecycle_service`` — return ``None``. Auth always runs
-      first and short-circuits with 401 / 403, so this dependency
-      should never produce a value the path operation actually
-      consumes. Returning ``None`` makes any accidental fall-through
-      crash loudly via ``AttributeError`` rather than silently 200.
-    * ``get_validator`` (optional) — replace with
-      :class:`_NonAdminValidator` so the 403 branch can be reached.
-    """
+ * ``get_lifecycle_service`` — return ``None``. Auth always runs
+ first and short-circuits with 401 / 403, so this dependency
+ should never produce a value the path operation actually
+ consumes. Returning ``None`` makes any accidental fall-through
+ crash loudly via ``AttributeError`` rather than silently 200.
+ * ``get_validator`` (optional) — replace with:class:`_NonAdminValidator` so the 403 branch can be reached.
+ """
 
     app = FastAPI()
     app.include_router(_router_mod.router)
@@ -275,11 +272,11 @@ async def _async_request(
 ) -> int:
     """Issue a single request through the ASGI transport, return status code.
 
-    Uses :class:`httpx.ASGITransport` because modern ``httpx`` (≥0.28)
-    removed the deprecated ``AsyncClient(app=...)`` constructor. The
-    base URL is a synthetic ``http://testserver`` which the transport
-    short-circuits — no real socket is opened.
-    """
+ Uses:class:`httpx.ASGITransport` because modern ``httpx`` (≥0.28)
+ removed the deprecated ``AsyncClient(app=...)`` constructor. The
+ base URL is a synthetic ``http://testserver`` which the transport
+ short-circuits — no real socket is opened.
+ """
 
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(
@@ -302,13 +299,13 @@ def _call(
     body: dict[str, Any] | None,
     headers: dict[str, str] | None,
 ) -> int:
-    """Synchronous wrapper around :func:`_async_request`.
+    """Synchronous wrapper around:func:`_async_request`.
 
-    Hypothesis test functions are sync; we drive the async ASGI
-    request through a fresh event loop per example. The overhead is
-    negligible compared to the actual handler execution and keeps
-    Hypothesis's shrinker happy (no leaked task state across runs).
-    """
+ Hypothesis test functions are sync; we drive the async ASGI
+ request through a fresh event loop per example. The overhead is
+ negligible compared to the actual handler execution and keeps
+ Hypothesis's shrinker happy (no leaked task state across runs).
+ """
 
     return asyncio.run(
         _async_request(app, method=method, path=path, body=body, headers=headers)
@@ -316,7 +313,7 @@ def _call(
 
 
 # ---------------------------------------------------------------------------
-# Property test — anonymous request rejection (Requirement 10.5, 10.2)
+# Anonymous request rejection
 # ---------------------------------------------------------------------------
 
 
@@ -331,13 +328,11 @@ def test_admin_endpoints_reject_anonymous(
     endpoint: _Endpoint,
     name: str,
 ) -> None:
-    """Validates: Requirement 10.5
-
-    For every (Managed_Service × admin endpoint) combination, an
-    HTTP request that omits the ``Authorization`` header MUST be
-    rejected with ``401 Unauthorized`` *before* any claim inspection
-    or business logic runs (Requirement 10.2).
-    """
+    """For every (Managed_Service × admin endpoint) combination, an
+ HTTP request that omits the ``Authorization`` header MUST be
+ rejected with ``401 Unauthorized`` *before* any claim inspection
+ or business logic runs.
+ """
 
     path = _resolve_path(endpoint.template, name)
     status_code = _call(
@@ -355,7 +350,7 @@ def test_admin_endpoints_reject_anonymous(
 
 
 # ---------------------------------------------------------------------------
-# Property test — non-admin token rejection (Requirement 10.3, 10.5)
+# Non-admin token rejection
 # ---------------------------------------------------------------------------
 
 
@@ -370,14 +365,12 @@ def test_admin_endpoints_reject_non_admin_token(
     endpoint: _Endpoint,
     name: str,
 ) -> None:
-    """Validates: Requirement 10.5 (non-admin branch — Requirement 10.3)
-
-    For every (Managed_Service × admin endpoint) combination, a
-    *valid* bearer token whose claims carry ``groups=["user"]``
-    instead of ``["admin"]`` MUST be rejected with
-    ``403 Forbidden``. Read-only access is **not** granted to
-    authenticated non-admin users (Requirement 10.3).
-    """
+    """For every (Managed_Service × admin endpoint) combination, a
+ *valid* bearer token whose claims carry ``groups=["user"]``
+ instead of ``["admin"]`` MUST be rejected with
+ ``403 Forbidden``. Read-only access is **not** granted to
+ authenticated non-admin users.
+ """
 
     path = _resolve_path(endpoint.template, name)
     headers = {"Authorization": "Bearer non-admin-token"}
@@ -396,42 +389,41 @@ def test_admin_endpoints_reject_non_admin_token(
 
 
 # ===========================================================================
-# Property 13 — RBAC izolasyonu (platform-mimari-foundation spec)
+# RBAC isolation
 # ===========================================================================
 #
-# Validates: Requirements 7.3, 7.5, 7.7 (surface), 7.8, 7.9
 #
-# Property statement (design.md §"Property 13"):
+# Behavior statement:
 #
-#   For all (actor_role ∈ {viewer, lead, admin, dept_admin}, dept_id_target,
-#   endpoint) triples:
-#     (a) A dept_admin actor accessing a resource outside its own
-#         dept_ids set MUST be denied (HTTP 403 surface; here:
-#         PermissionDenied) and the failure carries actor_role=
-#         "dept_admin".  (Requirement 7.3)
-#     (b) Global actions (new department, global prompt change, SSH
-#         runner config) admit ONLY the "admin" role; viewer / lead /
-#         dept_admin all receive 403.  (Requirement 7.5)
-#     (c) Every admin endpoint call without an Authorization header or
-#         with an invalid token returns 401 or 403; missing
-#         AuthContext (None actor) is treated as PermissionDenied via
-#         MissingActorError.  (Requirement 7.8, 7.9)
-#     (d) A dept_admin acting on its OWN dept_id is admitted; viewer /
-#         lead WITH dept_id membership are admitted on dept-scoped
-#         viewer/lead checks (the standard role precedence).
+# For all (actor_role ∈ {viewer, lead, admin, dept_admin}, dept_id_target,
+# endpoint) triples:
+# (a) A dept_admin actor accessing a resource outside its own
+# dept_ids set MUST be denied (HTTP 403 surface; here:
+# PermissionDenied) and the failure carries actor_role=
+# "dept_admin".
+# (b) Global actions (new department, global prompt change, SSH
+# runner config) admit ONLY the "admin" role; viewer / lead /
+# dept_admin all receive 403.
+# (c) Every admin endpoint call without an Authorization header or
+# with an invalid token returns 401 or 403; missing
+# AuthContext (None actor) is treated as PermissionDenied via
+# MissingActorError.
+# (d) A dept_admin acting on its OWN dept_id is admitted; viewer /
+# lead WITH dept_id membership are admitted on dept-scoped
+# viewer/lead checks (the standard role precedence).
 #
 # These properties are validated against ``auth_shared.policy.check``
-# — the single source of truth for RBAC decisions in the platform
-# (design.md §"libs/auth-shared"). The HTTP layer ``require_admin``
-# in ``services/admin-dashboard-api/src/auth/dependencies.py`` is the
+# — the single source of truth for RBAC decisions in the platform.
+# The HTTP layer ``require_admin`` in
+# ``services/admin-dashboard-api/src/auth/dependencies.py`` is the
 # admin-only specialisation of the same matrix; the existing test
 # functions above pin the HTTP 401/403 surface for the admin-dashboard
-# lifecycle endpoints. The Property 13 tests below cover the **role
+# lifecycle endpoints. The tests below cover the **role
 # matrix** (4 roles × dept-scope combinations) that ``check`` enforces
 # and that future ``automation-service`` /admin/* endpoints will
-# delegate to (task 5.x and 8.2 of platform-mimari-foundation).
+# delegate to.
 
-from auth_shared import (  # noqa: E402  — module-level imports above are heavy
+from auth_shared import (  # noqa: E402 — module-level imports above are heavy
     AuthContext,
     MissingActorError,
     PermissionDenied,
@@ -447,19 +439,18 @@ from auth_shared import (  # noqa: E402  — module-level imports above are heav
 # ---------------------------------------------------------------------------
 
 
-# The four RBAC roles enumerated in Requirement 7.1. Sourced from the
-# runtime mirror so a future spec change that adds / removes a role
-# automatically propagates here.
+# The four RBAC roles come from the runtime mirror so future role
+# changes automatically propagate here.
 _ROLE_LIST: tuple[str, ...] = tuple(sorted(ROLES))
 assert _ROLE_LIST == ("admin", "dept_admin", "lead", "viewer"), (
-    "Requirement 7.1 pins the four-role enumeration; if this assertion "
+    "the operational rule pins the four-role enumeration; if this assertion "
     "fires, audit_logger.AuditRole and auth_shared.AuthRole drifted out "
     "of sync. Update both before relaxing this check."
 )
 
 # Synthetic dept-id alphabet — kept short so Hypothesis explores the
 # membership matrix densely. Values are lowercase + hyphen to match
-# the Department.id regex called out in design.md (^[a-z][a-z0-9-]{1,30}$).
+# the Department.id shape used by the API (^[a-z][a-z0-9-]{1,30}$).
 _DEPT_IDS: tuple[str, ...] = (
     "payments",
     "risk",
@@ -469,17 +460,17 @@ _DEPT_IDS: tuple[str, ...] = (
 )
 
 
-# Endpoint matrix for Property 13. Each entry mirrors a future
+# Endpoint matrix for authorization behavior. Each entry mirrors a future
 # automation-service /admin/* route or an existing lifecycle route;
-# the ``required_role`` column encodes the design intent so the
-# property test is independent of any specific HTTP framework wiring.
+# the ``required_role`` column encodes the authorization rule so the
+# behavior is independent of any specific HTTP framework wiring.
 #
-# ``required_role="admin"`` rows are GLOBAL actions per Requirement
-# 7.5 — only ``admin`` may pass, every other role receives 403.
+# ``required_role="admin"`` rows are global actions: only ``admin`` may
+# pass, every other role receives 403.
 # Rows with ``required_role="dept_admin"`` and ``dept_scoped=True``
-# are dept-scoped self-service actions per Requirement 7.6 —
+# are dept-scoped self-service actions:
 # ``dept_admin`` of the matching dept passes, ``dept_admin`` of any
-# other dept is denied (Requirement 7.3).
+# other dept is denied.
 @dataclass(frozen=True)
 class _RbacEndpoint:
     """One row of the (endpoint, required_role, dept_scoped) matrix."""
@@ -487,49 +478,49 @@ class _RbacEndpoint:
     label: str
     required_role: str  # "viewer" | "lead" | "admin" | "dept_admin"
     dept_scoped: bool   # True ⇒ dept_id check applies
-    rationale: str      # which Requirement clause the row pins
+    rationale: str      # which the operational rule clause the row pins
 
 
 _RBAC_ENDPOINTS: tuple[_RbacEndpoint, ...] = (
-    # ---- Global-only (Requirement 7.5) --------------------------------
+    # ---- Global-only --------------------------------
     _RbacEndpoint(
         label="POST /admin/departments",
         required_role="admin",
         dept_scoped=False,
-        rationale="Requirement 7.5: new department creation is admin-only",
+        rationale="the operational rule: new department creation is admin-only",
     ),
     _RbacEndpoint(
         label="POST /admin/global-prompt",
         required_role="admin",
         dept_scoped=False,
-        rationale="Requirement 7.5: global prompt change is admin-only",
+        rationale="the operational rule: global prompt change is admin-only",
     ),
     _RbacEndpoint(
         label="POST /admin/ssh-runners",
         required_role="admin",
         dept_scoped=False,
-        rationale="Requirement 7.5: SSH runner config is admin-only",
+        rationale="the operational rule: SSH runner config is admin-only",
     ),
-    # ---- Dept-scoped self-service (Requirement 7.3, 7.6) --------------
+    # ---- Dept-scoped self-service --------------
     _RbacEndpoint(
         label="POST /admin/departments/{dept_id}/credentials/rotate",
         required_role="dept_admin",
         dept_scoped=True,
-        rationale="Requirement 7.6: dept_admin rotates own dept's credentials",
+        rationale="the operational rule: dept_admin rotates own dept's credentials",
     ),
     _RbacEndpoint(
         label="GET /admin/departments/{dept_id}/audit-events",
         required_role="dept_admin",
         dept_scoped=True,
-        rationale="Requirement 7.3: dept_admin sees only own dept rows",
+        rationale="the operational rule: dept_admin sees only own dept rows",
     ),
-    # ---- Dept-scoped read access (Requirement 7.3) --------------------
+    # ---- Dept-scoped read access --------------------
     _RbacEndpoint(
         label="GET /admin/departments/{dept_id}/probe-artifacts",
         required_role="viewer",
         dept_scoped=True,
         rationale=(
-            "Requirement 7.3: viewer/lead/dept_admin/admin can read "
+            "the operational rule: viewer/lead/dept_admin/admin can read "
             "their own dept's probe artifacts; cross-dept access by "
             "non-admin is denied"
         ),
@@ -538,7 +529,7 @@ _RBAC_ENDPOINTS: tuple[_RbacEndpoint, ...] = (
         label="GET /admin/departments/{dept_id}/workflows",
         required_role="lead",
         dept_scoped=True,
-        rationale="Requirement 7.3: lead+ may inspect own dept workflows",
+        rationale="the operational rule: lead+ may inspect own dept workflows",
     ),
 )
 
@@ -549,23 +540,23 @@ _RBAC_ENDPOINTS: tuple[_RbacEndpoint, ...] = (
 
 
 def _ctx(role: str, *dept_ids: str, actor_id: str = "user-rbac") -> AuthContext:
-    """Build a minimal :class:`AuthContext` with the given role + depts.
+    """Build a minimal:class:`AuthContext` with the given role + depts.
 
-    Mirrors the helper in ``libs/auth-shared/tests/test_policy.py`` so
-    behaviour stays in lock-step with the policy unit tests. Kept
-    private to this module so the property tests own their fixtures.
-    """
+ Mirrors the helper in ``libs/auth-shared/tests/test_policy.py`` so
+ behaviour stays in lock-step with the policy unit tests. Kept
+ private to this module so the tests own their fixtures.
+ """
 
     return AuthContext(
         actor_id=actor_id,
-        actor_role=role,  # type: ignore[arg-type]  # Literal erased at runtime
+        actor_role=role,  # type: ignore[arg-type] # Literal erased at runtime
         dept_ids=frozenset(dept_ids),
         raw_claims={"sub": actor_id, "role": role},
     )
 
 
 # ---------------------------------------------------------------------------
-# Property 13 (a) — global admin-only endpoints (Requirement 7.5)
+# Global admin-only endpoints
 # ---------------------------------------------------------------------------
 
 
@@ -593,19 +584,16 @@ def test_global_admin_endpoint_admits_only_admin_role(
     actor_role: str,
     actor_dept_ids: frozenset[str],
 ) -> None:
-    """Validates: Requirement 7.5
+    """For every global admin endpoint and every (role, dept_ids)
+ combination, ``check(actor, "admin")`` admits the call IFF the
+ actor's role is exactly ``"admin"``. Any other role — including
+ ``dept_admin`` even when its ``dept_ids`` is non-empty — is
+ rejected with:class:`PermissionDenied` (HTTP 403 surface).
 
-    For every global admin endpoint and every (role, dept_ids)
-    combination, ``check(actor, "admin")`` admits the call IFF the
-    actor's role is exactly ``"admin"``. Any other role — including
-    ``dept_admin`` even when its ``dept_ids`` is non-empty — is
-    rejected with :class:`PermissionDenied` (HTTP 403 surface).
-
-    Cross-references: The :func:`auth_shared.policy.check` decision
-    matrix (design.md §"libs/auth-shared/policy.py") encodes this
-    rule via ``_ROLES_THAT_SATISFY["admin"] = frozenset({"admin"})``;
-    this property test pins the externally-observable behaviour.
-    """
+ The:func:`auth_shared.policy.check` decision matrix encodes this
+ rule via ``_ROLES_THAT_SATISFY["admin"] = frozenset({"admin"})``.
+ This test pins the externally-observable behaviour.
+ """
 
     actor = _ctx(actor_role, *actor_dept_ids)
 
@@ -623,9 +611,8 @@ def test_global_admin_endpoint_admits_only_admin_role(
         with pytest.raises(PermissionDenied) as exc_info:
             check(actor, "admin")
         # The exception must carry the rejected role so the audit log
-        # row records ``actor_role=<rejected_role>`` (Requirement
-        # 7.7 — every audit row carries actor_role; the rejected
-        # request is itself an audit-worthy event).
+        # row records ``actor_role=<rejected_role>``; the rejected
+        # request is itself audit-worthy.
         assert exc_info.value.actor_role == actor_role, (
             f"PermissionDenied.actor_role={exc_info.value.actor_role!r} "
             f"does not match the rejected actor's role={actor_role!r}; "
@@ -635,7 +622,7 @@ def test_global_admin_endpoint_admits_only_admin_role(
 
 
 # ---------------------------------------------------------------------------
-# Property 13 (b) — dept_admin cross-dept isolation (Requirement 7.3)
+# Dept-admin cross-dept isolation
 # ---------------------------------------------------------------------------
 
 
@@ -665,20 +652,17 @@ def test_dept_admin_isolated_from_other_depts(
     actor_dept_ids: frozenset[str],
     target_dept_id: str,
 ) -> None:
-    """Validates: Requirement 7.3
+    """A ``dept_admin`` actor accessing a dept-scoped endpoint passes
+ IFF ``target_dept_id ∈ actor.dept_ids``; cross-dept access is
+ rejected with:class:`PermissionDenied` even when the role-class
+ check would otherwise admit (i.e. ``dept_admin`` is in
+ ``_ROLES_THAT_SATISFY[required_role]``).
 
-    A ``dept_admin`` actor accessing a dept-scoped endpoint passes
-    IFF ``target_dept_id ∈ actor.dept_ids``; cross-dept access is
-    rejected with :class:`PermissionDenied` even when the role-class
-    check would otherwise admit (i.e. ``dept_admin`` is in
-    ``_ROLES_THAT_SATISFY[required_role]``).
-
-    The exception preserves ``actor_role="dept_admin"`` and
-    ``dept_id=<target_dept_id>`` so the audit row written by the
-    proxy layer carries the rejected dept (Requirement 7.7 +
-    design.md §"AdminProxy" — ``audit_logger.write(action='proxy',
-    result='rbac_denied', dept_id=target)``).
-    """
+ The exception preserves ``actor_role="dept_admin"`` and
+ ``dept_id=<target_dept_id>`` so the audit row written by the
+ proxy layer carries the rejected dept via ``audit_logger.write(action='proxy',
+ result='rbac_denied', dept_id=target)``).
+ """
 
     actor = _ctx("dept_admin", *actor_dept_ids)
 
@@ -692,7 +676,7 @@ def test_dept_admin_isolated_from_other_depts(
         assert exc_info.value.actor_role == "dept_admin", (
             f"PermissionDenied.actor_role={exc_info.value.actor_role!r}, "
             "expected 'dept_admin' so the audit row carries the rejected "
-            "actor's role (Requirement 7.7)"
+            "actor's role (the operational rule)"
         )
         assert exc_info.value.dept_id == target_dept_id, (
             f"PermissionDenied.dept_id={exc_info.value.dept_id!r}, "
@@ -702,7 +686,7 @@ def test_dept_admin_isolated_from_other_depts(
 
 
 # ---------------------------------------------------------------------------
-# Property 13 (c) — admin always passes any dept-scoped check (Requirement 7.5)
+# Admin always passes any dept-scoped check
 # ---------------------------------------------------------------------------
 
 
@@ -728,14 +712,11 @@ def test_admin_passes_every_dept_scoped_endpoint(
     target_dept_id: str,
     actor_dept_ids: frozenset[str],
 ) -> None:
-    """Validates: Requirement 7.5
-
-    The ``admin`` role bypasses dept-scope membership: regardless of
-    ``actor.dept_ids`` and ``target_dept_id``, an ``admin`` actor
-    passes every dept-scoped endpoint. This pins the design rule
-    that admin sees every department (Requirement 7.5) without
-    requiring explicit dept membership.
-    """
+    """The ``admin`` role bypasses dept-scope membership: regardless of
+ ``actor.dept_ids`` and ``target_dept_id``, an ``admin`` actor
+ passes every dept-scoped endpoint. Admin sees every department
+ without requiring explicit dept membership.
+ """
 
     actor = _ctx("admin", *actor_dept_ids)
     # No exception expected — admin passes unconditionally.
@@ -744,7 +725,7 @@ def test_admin_passes_every_dept_scoped_endpoint(
 
 
 # ---------------------------------------------------------------------------
-# Property 13 (d) — missing/invalid actor → 401/403 surface (Requirement 7.8, 7.9)
+# Missing or invalid actor rejection surface
 # ---------------------------------------------------------------------------
 
 
@@ -765,18 +746,13 @@ def test_missing_actor_is_denied_for_every_endpoint(
     endpoint: _RbacEndpoint,
     target_dept_id: str,
 ) -> None:
-    """Validates: Requirement 7.8, 7.9
-
-    For every (endpoint, dept_id) pair, calling ``check`` with
-    ``actor=None`` MUST raise :class:`MissingActorError` (a
-    :class:`PermissionDenied` subclass). The FastAPI middleware in
-    ``admin-dashboard-api`` converts a missing token to an
-    :class:`auth_shared.InvalidTokenError` upstream, which becomes
-    HTTP 401; once a token is decoded but lacks claims (Requirement
-    7.9), :func:`extract_auth_context` raises and the request also
-    gets 401. A None actor reaching ``check`` is the safety-net and
-    surfaces as PermissionDenied → 403.
-    """
+    """For every (endpoint, dept_id) pair, calling ``check`` with
+ ``actor=None`` MUST raise:class:`MissingActorError` (a:class:`PermissionDenied` subclass). The FastAPI middleware in
+ ``admin-dashboard-api`` converts a missing token to an:class:`auth_shared.InvalidTokenError` upstream, which becomes
+ HTTP 401; once a token is decoded but lacks claims (the operational rule),:func:`extract_auth_context` raises and the request also
+ gets 401. A None actor reaching ``check`` is the safety-net and
+ surfaces as PermissionDenied → 403.
+ """
 
     target = target_dept_id if endpoint.dept_scoped else None
     with pytest.raises(PermissionDenied) as exc_info:
@@ -795,14 +771,14 @@ def test_missing_actor_is_denied_for_every_endpoint(
 
 
 # ---------------------------------------------------------------------------
-# Property 13 (e) — extract_auth_context surfaces missing claims (Requirement 7.9)
+# Missing claims from extract_auth_context
 # ---------------------------------------------------------------------------
 
 
 # A claim dict that omits ``sub`` or carries no recognised role MUST
-# raise :class:`MissingClaimError` — a subclass of
-# :class:`InvalidTokenError` so the FastAPI dependency translates it
-# into HTTP 401 (Requirement 7.9 "eksik bilgi → HTTP 401").
+# raise:class:`MissingClaimError` — a subclass of
+#:class:`InvalidTokenError` so the FastAPI dependency translates it
+# into HTTP 401 "eksik bilgi → HTTP 401").
 @hyp_settings(
     deadline=None,
     max_examples=30,
@@ -821,20 +797,16 @@ def test_extract_auth_context_rejects_malformed_claims(
     drop_role: bool,
     bogus_role: str,
 ) -> None:
-    """Validates: Requirement 7.9
-
-    For every (drop_sub, drop_role, bogus_role) combination of the
-    OIDC claim dict, :func:`extract_auth_context` MUST raise
-    :class:`MissingClaimError` whenever ``sub`` is absent OR no
-    recognised role is present. The error is a subclass of
-    :class:`InvalidTokenError`, which the
-    ``admin-dashboard-api`` ``require_admin`` dependency catches
-    and converts into HTTP 401 (Requirement 7.9).
-    """
+    """For every (drop_sub, drop_role, bogus_role) combination of the
+ OIDC claim dict,:func:`extract_auth_context` MUST raise:class:`MissingClaimError` whenever ``sub`` is absent OR no
+ recognised role is present. The error is a subclass of:class:`InvalidTokenError`, which the
+ ``admin-dashboard-api`` ``require_admin`` dependency catches
+ and converts into HTTP 401.
+ """
 
     # Import locally so the module-level import block stays tightly
-    # focused on the existing test surface; this lets the Property 13
-    # block be deleted as one unit if the spec evolves.
+    # focused on the existing test surface; this lets the authorization
+    # block be deleted as one unit if the policy changes.
     from auth_shared import InvalidTokenError, MissingClaimError
 
     claims: dict[str, Any] = {
@@ -863,19 +835,18 @@ def test_extract_auth_context_rejects_malformed_claims(
 
 
 # ---------------------------------------------------------------------------
-# Concrete regression anchor — design.md sequence diagram for AdminProxy
+# Concrete regression anchor for AdminProxy authorization
 # ---------------------------------------------------------------------------
 
 
 def test_dept_admin_self_service_rotation_is_admitted() -> None:
-    """Concrete anchor for Requirement 7.6.
+    """Concrete anchor for dept-admin self-service.
 
-    A ``dept_admin`` actor rotating its OWN dept's credentials is
-    admitted by ``check``. Pins the AdminProxy sequence diagram in
-    design.md §"AdminProxy": when ``actor.actor_role == 'dept_admin'``
-    and ``request_dept_id ∈ actor.dept_ids``, the proxy forwards
-    the request to automation-service (no 403).
-    """
+ A ``dept_admin`` actor rotating its OWN dept's credentials is
+ admitted by ``check``. When ``actor.actor_role == 'dept_admin'``
+ and ``request_dept_id ∈ actor.dept_ids``, the proxy forwards
+ the request to automation-service (no 403).
+ """
 
     actor = _ctx("dept_admin", "payments")
     # Should not raise.
@@ -884,12 +855,12 @@ def test_dept_admin_self_service_rotation_is_admitted() -> None:
 
 
 def test_dept_admin_global_action_is_denied() -> None:
-    """Concrete anchor for Requirement 7.5.
+    """Concrete anchor for global admin-only actions.
 
-    Even a ``dept_admin`` of the affected dept is denied for the
-    GLOBAL ``POST /admin/departments`` action — the spec is explicit
-    that creating a new department is admin-only.
-    """
+ Even a ``dept_admin`` of the affected dept is denied for the
+ GLOBAL ``POST /admin/departments`` action because creating a new
+ department is admin-only.
+ """
 
     actor = _ctx("dept_admin", "payments")
     with pytest.raises(PermissionDenied) as exc_info:

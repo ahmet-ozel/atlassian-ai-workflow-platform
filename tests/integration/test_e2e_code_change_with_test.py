@@ -1,8 +1,5 @@
 """End-to-end integration test for the ``code_change_with_test`` flow.
 
-**Validates: Requirements 7.1, 7.3, 7.4** (spec
-``platform-mimari-workflows`` task 15.5).
-
 Scenario
 --------
 
@@ -11,21 +8,21 @@ The :class:`agent_runner.workflows.agent_runner_workflow.AgentRunnerWorkflow`
 LLM-driven code changes. The handler walks through six side-effecting
 steps before exiting:
 
-    1. ``set_assignee_to_bot`` — claim the Jira issue for the bot.
-    2. ``precommit_scanner`` — gitleaks/bandit gate on the proposed
-       diff (R7.10). A "block" decision aborts the run.
-    3. ``bitbucket_create_commit`` — push the change to the
-       ``ai/{issue_key}`` branch (R7.1, R7.2).
-    4. Child :class:`ExecutionRunWorkflow` — run the dept-configured
-       smoke test against the commit hash (R7.3). A non-``"passed"``
-       result short-circuits the run with
-       ``failure_reason="execution_run_failed"``; no PR is opened.
-    5. PR-create tool (cloud or DC, picked by
-       :func:`mcp_client.deployment_router.select_pr_create_tool`) —
-       open the draft PR (R7.4 plus the PR-draft enforcement carried
-       by the foundation MCP filter).
-    6. ``jira_add_comment`` — post the "✅ Draft PR açıldı: …"
-       completion line on the original Jira issue.
+ 1. ``set_assignee_to_bot`` — claim the Jira issue for the bot.
+ 2. ``precommit_scanner`` — gitleaks/bandit gate on the proposed
+ diff. A "block" decision aborts the run.
+ 3. ``bitbucket_create_commit`` — push the change to the
+ ``ai/{issue_key}`` branch.
+ 4. Child :class:`ExecutionRunWorkflow` — run the dept-configured
+ smoke test against the commit hash. A non-``"passed"``
+ result short-circuits the run with
+ ``failure_reason="execution_run_failed"``; no PR is opened.
+ 5. PR-create tool (cloud or DC, picked by
+ :func:`mcp_client.deployment_router.select_pr_create_tool`) —
+ open the draft PR with PR-draft enforcement carried by the
+ foundation MCP filter.
+ 6. ``jira_add_comment`` — post the "✅ Draft PR açıldı: …"
+ completion line on the original Jira issue.
 
 This file pins the activity-call sequence end-to-end against the
 real Temporal time-skipping ``WorkflowEnvironment`` so signal
@@ -33,13 +30,13 @@ dispatch, sandbox enforcement, and replay determinism all
 participate. Two scenarios are covered:
 
 * ``test_code_change_with_test_happy_path`` — every step succeeds;
-  the workflow exits ``status="completed"`` with ``iter_count==1``
-  and the activity sequence matches the design contract above.
+ the workflow exits ``status="completed"`` with ``iter_count==1``
+ and the activity sequence matches the expected flow above.
 
 * ``test_code_change_with_test_test_failure_no_pr`` — the child
-  :class:`ExecutionRunWorkflow` returns ``status="failed"``; the PR
-  step MUST NOT fire and the failure summary MUST land in Jira. The
-  workflow exits with ``failure_reason="execution_run_failed"``.
+ :class:`ExecutionRunWorkflow` returns ``status="failed"``; the PR
+ step MUST NOT fire and the failure summary MUST land in Jira. The
+ workflow exits with ``failure_reason="execution_run_failed"``.
 
 Activity stubs and the child workflow stub are registered through
 ``@activity.defn(name=...)`` / ``@workflow.defn(name=...)``
@@ -48,7 +45,7 @@ workflow body finds them via the worker's registry exactly as it
 would in production.
 
 Hosts without the embedded ``temporal-test-server`` skip cleanly
-via the same module-level gate the existing spec-extension tests
+via the same module-level gate the existing Temporal tests
 in ``test_temporal_signal.py`` / ``test_temporal_loop_cap.py``
 use — see :func:`_temporal_test_env_available` and
 :func:`_start_time_skipping_or_skip`.
@@ -106,10 +103,10 @@ for _candidate in (
 def _temporal_test_env_available() -> bool:
     """Return ``True`` when the Temporal time-skipping env imports cleanly.
 
-    Any import failure is treated as "skip cleanly" so hosts without
-    the embedded ``temporal-test-server`` (sandboxed CI, missing
-    native deps) skip rather than erroring at collection time.
-    """
+ Any import failure is treated as "skip cleanly" so hosts without
+ the embedded ``temporal-test-server`` (sandboxed CI, missing
+ native deps) skip rather than erroring at collection time.
+ """
 
     try:
         from temporalio.testing import WorkflowEnvironment  # noqa: F401
@@ -128,11 +125,11 @@ pytestmark = pytest.mark.skipif(
 async def _start_time_skipping_or_skip() -> Any:
     """Start the time-skipping env, ``pytest.skip``ing on failure.
 
-    The embedded ``temporal-test-server`` may fail to start on hosts
-    where the binary is not bundled. Surface that cleanly as a
-    skip — the integration suite stays green on machines that
-    cannot host Temporal locally.
-    """
+ The embedded ``temporal-test-server`` may fail to start on hosts
+ where the binary is not bundled. Surface that cleanly as a
+ skip — the integration suite stays green on machines that
+ cannot host Temporal locally.
+ """
 
     from temporalio.testing import WorkflowEnvironment
 
@@ -195,7 +192,7 @@ class ActivityCallLog:
 # else executes at module-import time.
 # ---------------------------------------------------------------------------
 
-from temporalio import workflow as _wf  # noqa: E402 - module-level by design
+from temporalio import workflow as _wf  # noqa: E402 - module-level intentionally
 
 with _wf.unsafe.imports_passed_through():
     from temporal_shared.messages import (  # noqa: E402
@@ -207,11 +204,11 @@ with _wf.unsafe.imports_passed_through():
 class _ExecutionRunWorkflowPassedStub:
     """Module-level stub returning a passed test run.
 
-    Registered on the happy-path test's child-stub worker. The
-    ``status="passed"`` field flips the parent workflow's
-    ``test_passed`` flag to True, so the body proceeds to the
-    PR-create / Jira-completion-comment leg.
-    """
+ Registered on the happy-path test's child-stub worker. The
+ ``status="passed"`` field flips the parent workflow's
+ ``test_passed`` flag to True, so the body proceeds to the
+ PR-create / Jira-completion-comment leg.
+ """
 
     @_wf.run
     async def run(self, _input: Any) -> ExecutionRunWorkflowOutput:
@@ -230,13 +227,13 @@ class _ExecutionRunWorkflowPassedStub:
 class _ExecutionRunWorkflowFailedStub:
     """Module-level stub returning a failed test run.
 
-    Registered on the test-failure scenario's child-stub worker. The
-    ``status="failed"`` field flips the parent workflow's
-    ``test_passed`` flag to False, so the body posts the failure
-    summary comment, sets ``failure_reason="execution_run_failed"``,
-    and returns early — no PR-create activity, no
-    ``iter_advance_pr_supersede``.
-    """
+ Registered on the test-failure scenario's child-stub worker. The
+ ``status="failed"`` field flips the parent workflow's
+ ``test_passed`` flag to False, so the body posts the failure
+ summary comment, sets ``failure_reason="execution_run_failed"``,
+ and returns early — no PR-create activity, no
+ ``iter_advance_pr_supersede``.
+ """
 
     @_wf.run
     async def run(self, _input: Any) -> ExecutionRunWorkflowOutput:
@@ -253,23 +250,23 @@ class _ExecutionRunWorkflowFailedStub:
 
 # ---------------------------------------------------------------------------
 # Activity stub factory — every activity the ``code_change_with_test``
-# handler invokes is registered with a thin recording stub. The brief
-# from spec task 15.5 enumerates the full activity set:
+# handler invokes is registered with a thin recording stub. The
+# implementation uses the full activity set:
 #
-#   * ``set_assignee_to_bot``
-#   * ``precommit_scanner`` (returns ``{"decision": "pass"}``)
-#   * ``bitbucket_create_commit`` (returns ``{"commit_hash": "abc123"}``)
-#   * ``bitbucket_create_pull_request_cloud`` (returns
-#     ``{"pr_id": 42, "url": "..."}``)
-#   * ``iter_advance_pr_supersede`` — only fires when the previous
-#     iteration's PR id is set; for ``iteration=1`` the workflow
-#     skips this branch entirely. The stub is registered defensively
-#     so a regression that fires it on the first iteration shows up
-#     as a recorded call instead of an "activity not found" failure.
-#   * ``jira_add_comment`` (best-effort)
-#   * ``jira_build_issue_link`` (best-effort; not called by the
-#     ``code_change_with_test`` body today, registered for future
-#     compatibility per the task brief).
+# * ``set_assignee_to_bot``
+# * ``precommit_scanner`` (returns ``{"decision": "pass"}``)
+# * ``bitbucket_create_commit`` (returns ``{"commit_hash": "abc123"}``)
+# * ``bitbucket_create_pull_request_cloud`` (returns
+# ``{"pr_id": 42, "url": "..."}``)
+# * ``iter_advance_pr_supersede`` — only fires when the previous
+# iteration's PR id is set; for ``iteration=1`` the workflow
+# skips this branch entirely. The stub is registered defensively
+# so a regression that fires it on the first iteration shows up
+# as a recorded call instead of an "activity not found" failure.
+# * ``jira_add_comment`` (best-effort)
+# * ``jira_build_issue_link`` (best-effort; not called by the
+# ``code_change_with_test`` body today, registered for future
+# compatibility).
 #
 # Failures inside best-effort activities are swallowed by the
 # workflow body (``# noqa: BLE001 - best effort``); the stubs below
@@ -397,14 +394,13 @@ def _make_code_change_input(
 ) -> Any:
     """Build a :class:`AgentRunnerWorkflowInput` for the happy path.
 
-    The :class:`LlmAnalysisResult` carries ``workflow_type``,
-    ``confidence``, ``target_repo`` and ``target_branch`` populated;
-    ``output_actions`` is left empty so the body's
-    :meth:`_maybe_execute_llm_output_actions` call is a cheap no-op
-    (the spec brief explicitly says "no output_actions"). The
-    invariants tested here focus on the activity sequence the
-    handler invokes irrespective of any LLM-emitted side effects.
-    """
+ The :class:`LlmAnalysisResult` carries ``workflow_type``,
+ ``confidence``, ``target_repo`` and ``target_branch`` populated;
+ ``output_actions`` is left empty so the body's
+ :meth:`_maybe_execute_llm_output_actions` call is a cheap no-op.
+ The invariants tested here focus on the activity sequence the
+ handler invokes irrespective of any LLM-emitted side effects.
+ """
 
     from temporal_shared.messages import (
         AgentRunnerWorkflowInput,
@@ -443,12 +439,12 @@ def _make_code_change_input(
 def _output_to_dict(result: Any) -> dict[str, Any]:
     """Coerce the workflow result to a dict for assertion ergonomics.
 
-    ``AgentRunnerWorkflowOutput`` is a frozen dataclass; depending on
-    the SDK's data converter the result either round-trips back into
-    the dataclass or surfaces as a plain dict. We normalise both
-    shapes to a single mapping so the assertions stay robust across
-    SDK versions.
-    """
+ ``AgentRunnerWorkflowOutput`` is a frozen dataclass; depending on
+ the SDK's data converter the result either round-trips back into
+ the dataclass or surfaces as a plain dict. We normalise both
+ shapes to a single mapping so the assertions stay robust across
+ SDK versions.
+ """
 
     fields = (
         "status",
@@ -477,39 +473,39 @@ def _output_to_dict(result: Any) -> dict[str, Any]:
 @pytest.mark.asyncio
 @pytest.mark.integration
 async def test_code_change_with_test_happy_path() -> None:
-    """**Validates: Requirements 7.1, 7.3, 7.4**
+    """Drive AgentRunnerWorkflow through the full happy path.
 
-    Drive :class:`AgentRunnerWorkflow` through the full
-    ``code_change_with_test`` happy path:
+ Drive :class:`AgentRunnerWorkflow` through the full
+ ``code_change_with_test`` happy path:
 
-    1. ``set_assignee_to_bot`` succeeds.
-    2. ``precommit_scanner`` returns ``{"decision": "pass"}``.
-    3. ``bitbucket_create_commit`` returns a stable commit hash.
-    4. The child :class:`ExecutionRunWorkflow` returns
-       ``status="passed"``.
-    5. ``bitbucket_create_pull_request_cloud`` returns a draft PR
-       descriptor with ``pr_id=42``.
-    6. ``jira_add_comment`` posts the "✅ Draft PR açıldı: …"
-       completion line.
+ 1. ``set_assignee_to_bot`` succeeds.
+ 2. ``precommit_scanner`` returns ``{"decision": "pass"}``.
+ 3. ``bitbucket_create_commit`` returns a stable commit hash.
+ 4. The child :class:`ExecutionRunWorkflow` returns
+ ``status="passed"``.
+ 5. ``bitbucket_create_pull_request_cloud`` returns a draft PR
+ descriptor with ``pr_id=42``.
+ 6. ``jira_add_comment`` posts the "✅ Draft PR açıldı: …"
+ completion line.
 
-    Assertions
-    ----------
-    * Activity call sequence matches the design contract (R7.1, R7.3,
-      R7.4): ``set_assignee_to_bot`` → ``precommit_scanner`` →
-      ``bitbucket_create_commit`` → child workflow → PR-create tool
-      → ``jira_add_comment``.
-    * Branch name follows the ``ai/{issue_key}`` convention
-      (R7.1 — :func:`temporal_shared.code_change.compute_branch_name`).
-    * The PR-create activity ran exactly once (no double-fire).
-    * ``iter_advance_pr_supersede`` MUST NOT fire on the first
-      iteration (no previous PR to supersede).
-    * The Jira comment carries the PR URL stub injected by the
-      activity.
-    * Final status is ``"completed"``; ``iter_count`` is ``1`` —
-      the run-body's initial advance lifts the counter from 0 to 1
-      and no further signals are dispatched in this scenario.
-    * ``failure_reason`` is ``None``.
-    """
+ Assertions
+ ----------
+ * Activity call sequence matches the expected flow:
+ ``set_assignee_to_bot`` → ``precommit_scanner`` →
+ ``bitbucket_create_commit`` → child workflow → PR-create tool
+ → ``jira_add_comment``.
+ * Branch name follows the ``ai/{issue_key}`` convention
+ from :func:`temporal_shared.code_change.compute_branch_name`.
+ * The PR-create activity ran exactly once (no double-fire).
+ * ``iter_advance_pr_supersede`` MUST NOT fire on the first
+ iteration (no previous PR to supersede).
+ * The Jira comment carries the PR URL stub injected by the
+ activity.
+ * Final status is ``"completed"``; ``iter_count`` is ``1`` —
+ the run-body's initial advance lifts the counter from 0 to 1
+ and no further signals are dispatched in this scenario.
+ * ``failure_reason`` is ``None``.
+ """
 
     from temporalio.worker import Worker
 
@@ -588,7 +584,7 @@ async def test_code_change_with_test_happy_path() -> None:
         f"full call log: {log.names()!r}"
     )
 
-    # ----- Branch name (R7.1) ---------------------------------------
+    # ----- Branch name ---------------------------------------
 
     commit_args_list = log.args_for("bitbucket_create_commit")
     assert len(commit_args_list) == 1, (
@@ -602,7 +598,7 @@ async def test_code_change_with_test_happy_path() -> None:
         f"on iteration=1; got {branch_name!r}"
     )
 
-    # ----- PR-create activity (R7.4) --------------------------------
+    # ----- PR-create activity --------------------------------
 
     pr_calls = log.count("bitbucket_create_pull_request_cloud")
     assert pr_calls == 1, (
@@ -616,7 +612,7 @@ async def test_code_change_with_test_happy_path() -> None:
         f"call log: {log.names()!r}"
     )
 
-    # ----- iter_advance_pr_supersede (R7.6 / R10.1) -----------------
+    # ----- iter_advance_pr_supersede -----------------
 
     # Iteration 1 has no previous PR; the supersede branch must be
     # skipped entirely. A spurious call here would mean the
@@ -627,7 +623,7 @@ async def test_code_change_with_test_happy_path() -> None:
         f"call log: {log.names()!r}"
     )
 
-    # ----- Jira completion comment (R7.4) --------------------------
+    # ----- Jira completion comment --------------------------
 
     comment_args_list = log.args_for("jira_add_comment")
     assert len(comment_args_list) == 1, (
@@ -673,41 +669,40 @@ async def test_code_change_with_test_happy_path() -> None:
 @pytest.mark.asyncio
 @pytest.mark.integration
 async def test_code_change_with_test_test_failure_no_pr() -> None:
-    """**Validates: Requirements 7.1, 7.3, 7.4**
+    """Verify a failed smoke test prevents PR creation.
 
-    When the child :class:`ExecutionRunWorkflow` returns
-    ``status="failed"`` the ``code_change_with_test`` body MUST:
+ When the child :class:`ExecutionRunWorkflow` returns
+ ``status="failed"`` the ``code_change_with_test`` body MUST:
 
-    1. NOT call the PR-create tool (R7.4 — PR opens only when the
-       smoke test passes).
-    2. Post a Jira comment summarising the failure (best-effort).
-    3. Set ``failure_reason="execution_run_failed"`` so the parent
-       :class:`AutomationWorkflow` (and any audit consumer) can
-       discriminate between "tests failed" and a generic activity
-       error.
+ 1. NOT call the PR-create tool; PR opens only when the smoke
+ test passes.
+ 2. Post a Jira comment summarising the failure (best-effort).
+ 3. Set ``failure_reason="execution_run_failed"`` so the parent
+ :class:`AutomationWorkflow` (and any audit consumer) can
+ discriminate between "tests failed" and a generic activity
+ error.
 
-    Trace
-    -----
+ Trace
+ -----
 
-    * ``set_assignee_to_bot`` succeeds.
-    * ``precommit_scanner`` returns ``{"decision": "pass"}``.
-    * ``bitbucket_create_commit`` returns ``{"commit_hash": "abc123"}``.
-    * The child workflow returns
-      ``ExecutionRunWorkflowOutput(status="failed", ...)``.
-    * The body's ``if not test_passed`` branch posts the
-      "❌ Testler başarısız" comment via ``jira_add_comment``,
-      sets ``self._failure_reason = "execution_run_failed"`` and
-      returns early — no PR-create activity, no
-      ``iter_advance_pr_supersede``.
-    * The outer ``run`` body computes the final summary; with
-      ``output_actions=()`` and no partial failures the formatter
-      returns the empty string, so the body falls back to the
-      legacy "✅ Tamamlandı." one-liner. The terminal status is
-      therefore ``"completed"``, but ``failure_reason`` carries
-      the stable category — the spec brief pins the assertion on
-      ``failure_reason``, not ``status``, precisely so this
-      asymmetry is detected.
-    """
+ * ``set_assignee_to_bot`` succeeds.
+ * ``precommit_scanner`` returns ``{"decision": "pass"}``.
+ * ``bitbucket_create_commit`` returns ``{"commit_hash": "abc123"}``.
+ * The child workflow returns
+ ``ExecutionRunWorkflowOutput(status="failed", ...)``.
+ * The body's ``if not test_passed`` branch posts the
+ "❌ Testler başarısız" comment via ``jira_add_comment``,
+ sets ``self._failure_reason = "execution_run_failed"`` and
+ returns early — no PR-create activity, no
+ ``iter_advance_pr_supersede``.
+ * The outer ``run`` body computes the final summary; with
+ ``output_actions=()`` and no partial failures the formatter
+ returns the empty string, so the body falls back to the
+ legacy "✅ Tamamlandı." one-liner. The terminal status is
+ therefore ``"completed"``, but ``failure_reason`` carries
+ the stable category. The assertion checks ``failure_reason``,
+ not ``status``, so this asymmetry is detected.
+ """
 
     from temporalio.worker import Worker
 
@@ -753,7 +748,7 @@ async def test_code_change_with_test_test_failure_no_pr() -> None:
 
     result = _output_to_dict(result_raw)
 
-    # ----- No PR-create activity (R7.4) -----------------------------
+    # ----- No PR-create activity -----------------------------
 
     assert log.count("bitbucket_create_pull_request_cloud") == 0, (
         f"PR-create tool must NOT fire when the smoke test fails; "
@@ -778,7 +773,7 @@ async def test_code_change_with_test_test_failure_no_pr() -> None:
     issue_key, body, dept_id = comment_args_list[0]
     assert issue_key == "PAY-7511"
     assert dept_id == "payments"
-    # Turkish failure prefix mandated by the spec text.
+    # Expected Turkish failure prefix.
     assert "Testler başarısız" in body or "❌" in body, (
         f"failure comment must surface the test-failure prose; "
         f"got {body!r}"

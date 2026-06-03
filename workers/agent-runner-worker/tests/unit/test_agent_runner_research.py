@@ -1,6 +1,6 @@
-"""Unit tests for ``AgentRunnerWorkflow`` ``research_*`` flows (task 9.3).
+"""Unit tests for ``AgentRunnerWorkflow`` ``research_*`` flows.
 
-Covers the four behaviour requirements pinned by task 9.3 / R9.1-R9.6:
+Covers the main research behaviors:
 
     1. ``research_publish_confluence`` happy path — verifies the
        activity sequence (``set_assignee_to_bot`` → ``firecrawl_search``
@@ -8,29 +8,28 @@ Covers the four behaviour requirements pinned by task 9.3 / R9.1-R9.6:
        ``jira_add_comment`` carrying the page link) and that the
        rendered body picks up the
        :func:`format_research_publish_confluence_body` Kaynaklar
-       block (R9.4).
+       block.
     2. ``research_publish_confluence`` 403 graceful path — a blocked
        URL produces the canonical
        ``🤖 {url} domain'i araştırma için izinli değil`` Jira comment,
        a ``research_minio_offload`` / ``firecrawl_blocked:{url}``
        partial-failure marker, and the workflow continues with the
-       remaining URLs without raising (R9.3).
+       remaining URLs without raising.
     3. ``research_summary_jira`` short-content path — when the
        summary fits within ``max_words`` *and* the source list fits
        within ``max_sources`` the comment carries no MinIO link and
-       the offload activity is NOT invoked (R9.5).
+       the offload activity is NOT invoked.
     4. ``research_summary_jira`` long-content path — when the
        summary overflows the comment carries the MinIO URI returned
        by ``minio_put_research_summary`` and the comment text embeds
-       it via the ``🔗 Tam içerik:`` line (R9.5).
+       it via the ``🔗 Tam içerik:`` line.
 
 The tests drive the body methods directly (i.e.
 ``_handle_research_publish_confluence`` /
 ``_handle_research_summary_jira``) without spinning up a Temporal
 worker — mirroring the approach already used by
-``test_agent_runner_confluence.py`` (task 8.4).
+``test_agent_runner_confluence.py``.
 
-Validates Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6.
 """
 
 from __future__ import annotations
@@ -222,7 +221,7 @@ def _patch_runtime(
 
 
 class TestResearchPublishConfluenceHappyPath:
-    """Two allowed URLs → Confluence page + completion comment (R9.4)."""
+    """Two allowed URLs produce a Confluence page and completion comment."""
 
     def test_happy_path_invokes_full_activity_sequence(
         self, make_wf, patched_workflow_now
@@ -354,7 +353,7 @@ class TestResearchPublishConfluenceHappyPath:
 
 
 class TestResearchPublishConfluenceBlockedDomain:
-    """A blocked URL emits the canonical Jira comment + continues (R9.3)."""
+    """A blocked URL emits the canonical Jira comment and continues."""
 
     def test_blocked_url_yields_jira_comment_no_fail(
         self, make_wf, patched_workflow_now

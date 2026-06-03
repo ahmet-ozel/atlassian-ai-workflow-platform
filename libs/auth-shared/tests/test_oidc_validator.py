@@ -1,6 +1,6 @@
 """Unit tests for :class:`auth_shared.OIDCValidator`.
 
-Covers the four behaviours called out in tasks.md §4.1:
+Covers the four validator behaviours:
 
 1. ``auth_mode="dev"`` rejects empty tokens with ``InvalidTokenError``
    and returns the canned admin claims for any non-empty token.
@@ -162,8 +162,7 @@ class TestDevMode:
 
         # Dev-mode returns the canned admin claim dict. ``role`` is
         # carried alongside the legacy ``groups`` list so that the
-        # ``extract_auth_context`` helper introduced in task 8.1
-        # (Requirement 7.9) can map ``AUTH_PROVIDER=local`` tokens
+        # ``extract_auth_context`` can map ``AUTH_PROVIDER=local`` tokens
         # straight to an :class:`AuthContext` without any plumbing
         # changes downstream.
         assert claims == {
@@ -416,7 +415,7 @@ class TestJWKSCache:
     def test_jwks_cache_ttl_is_clamped_to_at_least_five_minutes(
         self, jwks_document: dict[str, Any]
     ) -> None:
-        """Spec: ``JWKS cache TTL min 5 dk``."""
+        """The JWKS cache TTL is clamped to at least five minutes."""
 
         validator = OIDCValidator(
             OIDCConfig(
@@ -429,6 +428,6 @@ class TestJWKSCache:
             http_client=_make_jwks_client(jwks_document),
         )
 
-        # Internal attribute is intentional — the spec encodes a hard
+        # Internal attribute is intentional — this setting enforces a hard
         # lower bound that callers must not be able to weaken.
         assert validator._jwks_cache_ttl_seconds >= 300

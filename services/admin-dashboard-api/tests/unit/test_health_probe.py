@@ -1,8 +1,5 @@
 """Unit tests for ``src.lifecycle.health_probe``.
 
-Validates the kind-aware probe contract from design §3.6 and tasks.md
-task 5.3 — Requirements 4.7, 7.4, 7.5, 7.6.
-
 Strategy
 --------
 * HTTP probe paths exercise a real :class:`httpx.AsyncClient` wired to
@@ -15,8 +12,7 @@ Strategy
   module's lazy ``from temporalio.client import Client`` import picks
   it up.
 * No fixtures from the wider workspace are needed; each test is
-  independent and side-effect free.
-"""
+  independent and side-effect free."""
 
 from __future__ import annotations
 
@@ -145,7 +141,7 @@ def _stub_running_worker_container(
 
 
 # ---------------------------------------------------------------------------
-# HTTP probe (Requirement 7.6, 4.7)
+# HTTP probe
 # ---------------------------------------------------------------------------
 
 
@@ -186,7 +182,7 @@ async def test_http_probe_healthy_when_both_endpoints_return_200() -> None:
 
 @pytest.mark.asyncio
 async def test_http_probe_uses_default_port_80_when_unmapped() -> None:
-    """Unknown ``compose_service_name`` falls back to port 80 (task contract)."""
+    """Unknown ``compose_service_name`` falls back to port 80."""
 
     seen_ports: list[int | None] = []
     seen_hosts: list[str] = []
@@ -237,7 +233,7 @@ async def test_http_probe_unhealthy_when_healthz_non_200() -> None:
 
 @pytest.mark.asyncio
 async def test_http_probe_unhealthy_when_readyz_non_200() -> None:
-    """``/readyz`` failure surfaces the body verbatim (Requirement 7.6)."""
+    """``/readyz`` failure surfaces the body verbatim."""
 
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/readyz":
@@ -394,7 +390,7 @@ async def test_http_probe_falls_back_when_docker_health_is_unavailable(
 
 @pytest.mark.asyncio
 async def test_http_probe_truncates_body_to_200_chars() -> None:
-    """Bodies > 200 chars are truncated (Requirement 4.7)."""
+    """Bodies > 200 chars are truncated."""
 
     big = "x" * 1000
 
@@ -434,7 +430,7 @@ async def test_http_probe_connection_failure_yields_status_minus_one() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Worker probe (Requirement 7.5)
+# Worker probe
 # ---------------------------------------------------------------------------
 
 
@@ -540,7 +536,7 @@ async def test_worker_probe_unhealthy_when_container_not_running(
 
 
 # ---------------------------------------------------------------------------
-# Assume-running probe (kind in {infra, ui} with no endpoint) — R12 / Q14
+#  Assume-running probe (kind in {infra, ui} with no endpoint)
 # ---------------------------------------------------------------------------
 
 
@@ -549,12 +545,10 @@ async def test_assume_running_probe_running_unmonitored_when_docker_missing(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """No ``docker`` binary on PATH → ``state == "running_unmonitored"``.
-
-    R12 / Q14 contract: subprocess failures (FileNotFoundError on
+    subprocess failures (FileNotFoundError on
     spawn) must be classified as ``running_unmonitored`` rather than
     raising — the lifecycle state cache needs a deterministic reading
-    per cycle.
-    """
+    per cycle."""
 
     async def _raise_file_not_found(*args, **kwargs):  # noqa: ANN001, ANN002, ANN003
         raise FileNotFoundError(2, "No such file or directory: 'docker'")
@@ -598,13 +592,11 @@ async def test_assume_running_probe_maps_docker_inspect_status(
 ) -> None:
     """Map every ``docker inspect`` ``.State.Health.Status`` deterministically.
 
-    R12 / Q14 — the contract is:
-
+    Expected mappings:
     * ``"healthy"`` → ``state="healthy"``
     * ``"unhealthy"`` → ``state="unhealthy"``
     * ``"starting"`` → ``state="starting"``
-    * ``""`` / ``"<no value>"`` / unknown → ``state="running_unmonitored"``
-    """
+    * ``""`` / ``"<no value>"`` / unknown → ``state="running_unmonitored"``"""
 
     captured_cmd: list[tuple] = []
 
@@ -648,7 +640,7 @@ async def test_assume_running_probe_maps_docker_inspect_status(
     assert snap.readyz_status is None
     assert snap.readyz_body is None
 
-    # The command shape must match the design contract:
+    # The command shape must match the runtime Docker inspection call:
     # ``docker inspect <container_name> --format '{{.State.Health.Status}}'``
     assert captured_cmd, "docker inspect was never invoked"
     assert captured_cmd[0] == (
@@ -750,7 +742,7 @@ async def test_assume_running_probe_running_unmonitored_on_nonzero_exit(
 
 
 # ---------------------------------------------------------------------------
-# Snapshot shape (design §4.4)
+# Snapshot shape
 # ---------------------------------------------------------------------------
 
 

@@ -1,7 +1,7 @@
 """LLM provider management feature package.
 
 This package realises the ``llm-provider-management`` spec in
-``.kiro/specs/llm-provider-management``: a FastAPI router under
+``llm-provider-management``: a FastAPI router under
 ``/admin/llm-providers`` (sibling at
 ``/admin/departments/{dept_id}/llm-provider``) backed by an asyncpg
 repository pair, a Vault KV-v2 credential store and a per-provider

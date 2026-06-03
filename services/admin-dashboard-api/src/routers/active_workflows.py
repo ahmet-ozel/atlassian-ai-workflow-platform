@@ -1,6 +1,6 @@
-"""``ActiveWorkflowsRouter`` (`platform-gap-fill` task 19.1).
+"""``ActiveWorkflowsRouter`` (`platform gap-fill work` active workflow wiring).
 
-**Validates: Requirement 19.4** (and exposes data backing R19.1, R19.2).
+**Covers 19.4** (and exposes data backing rule 19.1, rule 19.2).
 
 Read-only endpoint that returns the active (``status='running'``)
 workflow count for a single department, plus the configured cap.
@@ -28,7 +28,7 @@ Response (HTTP 200)::
 * ``max_concurrent_workflows`` — the cap from
   ``departments.json``-mirrored ``config_json.max_concurrent_workflows``.
   ``null`` when the dept has no per-dept cap (the global license-tier
-  cap from R16 still applies; this endpoint does not surface that).
+  cap from rule 16 still applies; this endpoint does not surface that).
 * ``saturation`` — ``active / max_concurrent_workflows`` as a float
   in ``[0, 1]``, or ``null`` when the cap is unset. Rounded to 2
   decimals.
@@ -228,7 +228,7 @@ async def get_active_workflows(
     """Return ``{active, max_concurrent_workflows, saturation}``.
 
     The dashboard polls this endpoint to render the per-dept
-    concurrency badge (Requirement 19.4).
+    concurrency badge (behavior 19.4).
     """
 
     pool = _get_pool(request)

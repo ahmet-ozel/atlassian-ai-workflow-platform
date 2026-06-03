@@ -1,10 +1,8 @@
-"""Bot license hard-cap enforcement middleware (R16 / Q20).
+"""Bot license hard-cap enforcement middleware.
 
 This module owns the workflow-start guard that rejects new
 ``AutomationWorkflow`` executions when a dept's license tier limit is
-already saturated. It implements the contract described in
-``.kiro/specs/platform-mimari-uyumluluk/design.md`` §R16 — *Bot
-License Hard-Cap*.
+already saturated.
 
 Behaviour
 =========
@@ -15,22 +13,20 @@ For a given ``dept_id`` and a fresh workflow start request, the
 1. Fetches the cap row for the dept from
    ``automation.bot_license_caps`` (joined via
    ``automation.departments.license_id``). When the dept has no
-   ``license_id`` (NULL / department was created before R16), the
+   ``license_id`` (NULL / department predates license assignment), the
    helper falls back to the *default cap* baked into
    :class:`LicenseCap` — ``max_concurrent_workflows=10``,
    ``max_workflows_per_day=100``,
-   ``max_token_usd_per_month=Decimal("1000.00")``. This mirrors the
-   default-cap backfill note in design.md §R16.
+   ``max_token_usd_per_month=Decimal("1000.00")``.
 2. Reads three usage counters in a deterministic order — **concurrent
    → daily → monthly_token** — short-circuiting on the *first*
-   exceeded limit. The order matches Property 17 in design.md and the
-   property test in task 16.5.
+   exceeded limit.
 3. If a limit is exceeded, writes a ``bot_license_cap_exceeded``
    audit row (``actor_role="system"``, ``result="denied"``) with
    payload ``{license_id, limit_type, current_value, max_value,
    dept_id, issue_key}`` and raises
-   :class:`BotLicenseCapExceededError`. The caller (the workflow
-   start path — task 16.2) translates the exception into HTTP
+   :class:`BotLicenseCapExceededError`. The caller translates the
+   exception into HTTP
    429 Too Many Requests with a structured body and a best-effort
    Jira acknowledgement comment.
 4. If every limit is below its cap, returns ``None`` — no audit row
@@ -61,7 +57,6 @@ license-level usage by joining ``automation.departments.license_id``.
 For NULL-license dept rows, the queries fall back to a per-dept
 filter so the default-cap path is still usage-bounded.
 
-Validates: Requirements 16.3, 16.4, 16.5 (uyumluluk spec).
 """
 
 from __future__ import annotations
@@ -91,15 +86,14 @@ logger = logging.getLogger(__name__)
 
 
 #: Limit identifiers in the deterministic check order. The literal
-#: ordering is part of the public contract — Property 17 in
-#: ``design.md`` asserts that the *first* exceeded limit wins, and
-#: the workflow-start path surfaces the value verbatim in the 429
+#: ordering is part of the public contract: the *first* exceeded limit
+#: wins, and the workflow-start path surfaces the value verbatim in the 429
 #: response body.
 LimitType = Literal["concurrent", "daily", "monthly_token"]
 
 #: Default cap applied when ``automation.departments.license_id`` is
 #: NULL (no license assigned). Numbers come from migration ``002``
-#: design defaults (R16.1) so config and code agree on a single
+#: design defaults so config and code agree on a single
 #: source of truth.
 _DEFAULT_MAX_CONCURRENT: Final[int] = 10
 _DEFAULT_MAX_DAILY: Final[int] = 100
@@ -166,7 +160,7 @@ DEFAULT_LICENSE_CAP: Final[LicenseCap] = LicenseCap(
 class BotLicenseCapExceededError(RuntimeError):
     """Raised when a workflow start would exceed a license hard cap.
 
-    The workflow-start path (task 16.2) maps this to HTTP 429 Too
+    The workflow-start path maps this to HTTP 429 Too
     Many Requests with a structured body
     ``{"error": "bot_license_cap_exceeded", "limit": <type>,
     "current": <int|float>, "max": <int|float>}`` and posts a

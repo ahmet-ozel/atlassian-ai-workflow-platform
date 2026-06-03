@@ -5,8 +5,7 @@ dependency yet. Counters are exposed via ``GET /metrics`` in plain text so
 they are scrape-able by any monitoring stack (Prometheus, OTel collector,
 or a simple cron job).
 
-The two named counters are part of the public observability contract for
-Requirement 10.3:
+The two named counters are part of the public observability contract:
 
 * ``firecrawl_egress_allowed_total`` — number of requests whose host
   passed the allowlist.
@@ -26,8 +25,8 @@ class EgressMetrics:
 
     The lock is uncontended on the FastAPI default worker (single-threaded
     asyncio) but kept for future-proofing against multi-thread test fixtures
-    and for the platform property test that asserts the count after each
-    Hypothesis example.
+    and for property tests that assert the count after each Hypothesis
+    example.
     """
 
     def __init__(self) -> None:

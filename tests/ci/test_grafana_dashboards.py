@@ -1,6 +1,5 @@
-"""CI gate — Grafana dashboard JSON catalog (`platform-mimari-ops` task 14.5).
+"""CI gate — Grafana dashboard JSON catalog (ops work).
 
-**Validates: Requirements 6.6, 6.7**
 
 Every JSON file under
 ``platform/infra/observability/grafana-dashboards/`` MUST:
@@ -8,10 +7,10 @@ Every JSON file under
 * parse as valid JSON,
 * declare a non-empty ``title`` and ``uid``,
 * reference only metric names from the canonical
-  :data:`observability.METRIC_NAMES` catalog (task 14.1) — a panel
-  that queries ``foo_total`` while no such collector exists is a
-  silent monitoring outage waiting to happen, so we fail the build
-  here.
+ :data:`observability.METRIC_NAMES` catalog (the implementation) — a panel
+ that queries ``foo_total`` while no such collector exists is a
+ silent monitoring outage waiting to happen, so we fail the build
+ here.
 
 The check is intentionally string-based: PromQL parsing belongs in
 the upstream Grafana CI, not here. Walking the dashboard JSON looking
@@ -38,11 +37,10 @@ _DASHBOARDS_DIR = _PLATFORM_ROOT / "infra" / "observability" / "grafana-dashboar
 def _dashboard_files() -> list[Path]:
     """Return every ``*.json`` under the dashboards directory.
 
-    The directory MUST exist and contain at least one file — task
-    14.2 ships three (``llm-cost``, ``platform-health``,
-    ``workflows-overview``); a future deletion that drops the
-    catalog is caught here.
-    """
+ The directory MUST exist and contain at least one file — the implementation ships three (``llm-cost``, ``platform-health``,
+ ``workflows-overview``); a future deletion that drops the
+ catalog is caught here.
+ """
 
     if not _DASHBOARDS_DIR.is_dir():
         return []
@@ -52,12 +50,12 @@ def _dashboard_files() -> list[Path]:
 def _extract_metric_references(text: str) -> set[str]:
     """Return the set of metric tokens referenced by the dashboard text.
 
-    A metric reference is any identifier matching ``[a-z_]+_total`` /
-    ``[a-z_]+_seconds`` / ``[a-z_]+_(bucket|count|sum|status|depth)``
-    or a bare match of one of the canonical catalog names. The regex
-    is deliberately permissive — we only need to find candidates and
-    cross-check them against the canonical list.
-    """
+ A metric reference is any identifier matching ``[a-z_]+_total`` /
+ ``[a-z_]+_seconds`` / ``[a-z_]+_(bucket|count|sum|status|depth)``
+ or a bare match of one of the canonical catalog names. The regex
+ is deliberately permissive — we only need to find candidates and
+ cross-check them against the canonical list.
+ """
 
     tokens: set[str] = set()
     for match in re.finditer(r"[a-z_][a-z0-9_]+(?:_total|_seconds|_bucket|_count|_sum|_status|_depth)?", text):
@@ -74,7 +72,7 @@ def test_dashboards_directory_is_populated() -> None:
     files = _dashboard_files()
     names = {p.stem for p in files}
     assert "llm-cost" in names, (
-        "Missing dashboard llm-cost.json — task 14.2 ships this as part "
+        "Missing dashboard llm-cost.json — the implementation ships this as part "
         "of the canonical catalog."
     )
     assert "platform-health" in names
@@ -104,14 +102,14 @@ def test_dashboard_is_valid_json(dashboard_path: Path) -> None:
 def test_dashboard_metrics_are_registered(dashboard_path: Path) -> None:
     """Every metric token referenced by the dashboard must be in the catalog.
 
-    The catalog (:data:`observability.METRIC_NAMES`) is the single
-    source of truth for metric names; a dashboard panel that queries
-    ``foo_total`` while ``foo_total`` is not registered would render
-    an empty graph in production. We collect every recognised metric
-    token in the dashboard text and assert each one matches an entry
-    in the canonical list (after stripping the histogram suffixes
-    Prometheus appends automatically).
-    """
+ The catalog (:data:`observability.METRIC_NAMES`) is the single
+ source of truth for metric names; a dashboard panel that queries
+ ``foo_total`` while ``foo_total`` is not registered would render
+ an empty graph in production. We collect every recognised metric
+ token in the dashboard text and assert each one matches an entry
+ in the canonical list (after stripping the histogram suffixes
+ Prometheus appends automatically).
+ """
 
     text = dashboard_path.read_text(encoding="utf-8")
     referenced = _extract_metric_references(text)

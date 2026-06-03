@@ -1,14 +1,9 @@
-"""Property test — banned MCP tool list (Property 4 / Requirement 1.8).
+"""Property-based tests for the banned MCP tool list.
 
-**Property 4: Loop guard, banned tool list ve PR draft enforcement**
+This file owns the **banned tool list** behavior. Related policy tests are:
 
-**Validates: Requirements 1.7, 1.8, 1.9**
-
-This file owns the **banned tool list** half of Property 4. The
-companion files for the same property are:
-
-- ``test_pr_draft_enforcement.py`` — R1.9 / MIMARI §1 Kural 10
-- ``test_webhook_predicates.py`` (extended) — R1.7 / MIMARI §1 Kural 7
+- ``test_pr_draft_enforcement.py`` — PR draft enforcement
+- ``test_webhook_predicates.py`` (extended) — webhook loop guard behavior
 
 Universal property
 ------------------
@@ -23,9 +18,9 @@ object) — :func:`mcp_client.filter_tools` returns a list whose
     ∀ T:  names(filter_tools(T)) ∩ BANNED_TOOLS == ∅
 
 The Hypothesis strategies in this file deliberately mix banned and
-allowed names across all three supported shapes (Property 4 / R1.8
-spans the entire LLM tool-catalog surface; the strategy reflects
-that). Any drift in :data:`BANNED_TOOLS` or in :func:`filter_tools`'s
+allowed names across all three supported shapes so the generated inputs
+span the entire LLM tool-catalog surface. Any drift in
+:data:`BANNED_TOOLS` or in :func:`filter_tools`'s
 shape handling shows up as a counter-example here before reaching
 the integration suite.
 """
@@ -136,14 +131,13 @@ def _name_of(tool: Any) -> str | None:
 
 
 # ---------------------------------------------------------------------------
-# Property 4 — banned tool list invariants
+# Banned tool list invariants
 # ---------------------------------------------------------------------------
 
 
 class TestFilterToolsBannedTools:
     """``filter_tools`` strips banned tools across all catalog shapes.
 
-    **Validates: Requirement 1.8**
     """
 
     @settings(
@@ -155,12 +149,10 @@ class TestFilterToolsBannedTools:
     def test_output_names_are_disjoint_from_banned_tools(
         self, catalog: list[Any]
     ) -> None:
-        """**Validates: Requirement 1.8**
-
-        The core property: for any catalog, the set of names in
+        """For any catalog, the set of names in
         :func:`filter_tools`'s output has empty intersection with
         :data:`BANNED_TOOLS`. This is the universally quantified
-        statement of MIMARI §1 Kural 9.
+        banned-tool policy statement.
         """
 
         result = filter_tools(catalog)
@@ -170,9 +162,7 @@ class TestFilterToolsBannedTools:
     @settings(max_examples=200, deadline=2000)
     @given(catalog=_tool_catalogs())
     def test_filter_tools_is_idempotent(self, catalog: list[Any]) -> None:
-        """**Validates: Requirement 1.8**
-
-        Filtering an already-filtered catalog is a no-op: the
+        """Filtering an already-filtered catalog is a no-op: the
         operation reaches a fixed point in one step, so chaining
         through multiple LLM call sites is safe.
         """
@@ -186,9 +176,7 @@ class TestFilterToolsBannedTools:
     def test_filter_tools_preserves_relative_order(
         self, catalog: list[Any]
     ) -> None:
-        """**Validates: Requirement 1.8**
-
-        Allowed tools appear in the output in the same order they
+        """Allowed tools appear in the output in the same order they
         appeared in the input. Order matters for UI rendering — the
         LLM tool catalog is often shown to operators in the original
         listing order.
@@ -202,9 +190,7 @@ class TestFilterToolsBannedTools:
     def test_filter_tools_output_is_subset_of_input(
         self, catalog: list[Any]
     ) -> None:
-        """**Validates: Requirement 1.8**
-
-        Every entry in the filtered output came from the input —
+        """Every entry in the filtered output came from the input —
         :func:`filter_tools` never *adds* a tool. The check uses
         ``id``-based identity for shape #3 (objects) and value
         equality for shapes #1 / #2.
@@ -221,9 +207,7 @@ class TestFilterToolsBannedTools:
     def test_filter_tools_size_never_exceeds_input(
         self, catalog: list[Any]
     ) -> None:
-        """**Validates: Requirement 1.8**
-
-        :func:`filter_tools` is a *strip* operation; it can never
+        """:func:`filter_tools` is a *strip* operation; it can never
         produce more entries than it received. Combined with the
         subset-of-input property this rules out duplication.
         """
@@ -239,9 +223,7 @@ class TestFilterToolsBannedTools:
     def test_inserting_a_banned_tool_does_not_increase_filtered_size(
         self, catalog: list[Any], banned: str, shape: int
     ) -> None:
-        """**Validates: Requirement 1.8**
-
-        Inserting a banned tool anywhere into the catalog cannot
+        """Inserting a banned tool anywhere into the catalog cannot
         increase the size of the filtered output — the inserted
         entry is, by definition, dropped. This is a stronger version
         of the "banned ∩ output == ∅" property: it ties the act of
@@ -263,9 +245,7 @@ class TestFilterToolsBannedTools:
     def test_singleton_allowed_tool_passes_through(
         self, name: str, shape: int
     ) -> None:
-        """**Validates: Requirement 1.8**
-
-        A singleton catalog containing only an allowed tool is
+        """A singleton catalog containing only an allowed tool is
         returned unchanged. This pins the "no false positives" branch
         of the property.
         """
@@ -280,9 +260,7 @@ class TestFilterToolsBannedTools:
     def test_singleton_banned_tool_is_dropped(
         self, name: str, shape: int
     ) -> None:
-        """**Validates: Requirement 1.8**
-
-        A singleton catalog containing only a banned tool is filtered
+        """A singleton catalog containing only a banned tool is filtered
         to an empty list — the "no false negatives" pin for the
         property. Combined with the previous test it covers both
         sides of the predicate completely.
@@ -296,9 +274,7 @@ class TestFilterToolsBannedTools:
     def test_filter_tools_returns_a_new_list(
         self, catalog: list[Any]
     ) -> None:
-        """**Validates: Requirement 1.8**
-
-        :func:`filter_tools` always returns a freshly constructed list
+        """:func:`filter_tools` always returns a freshly constructed list
         so callers can mutate the result without aliasing the input.
         Defensive copy semantics protect concurrent LLM call paths.
         """
@@ -311,25 +287,20 @@ class TestFilterToolsBannedTools:
 class TestBannedToolsConstant:
     """Static invariants on :data:`BANNED_TOOLS` itself.
 
-    **Validates: Requirement 1.8**
     """
 
     def test_banned_tools_has_canonical_members(self) -> None:
-        """**Validates: Requirement 1.8**
+        """``bitbucket_merge_pr`` and ``confluence_delete_page`` are the canonical pair.
 
-        MIMARI §1 Kural 9 names ``bitbucket_merge_pr`` and
-        ``confluence_delete_page`` as the canonical pair. The
-        property test pins this so a future PR cannot quietly
-        shrink the set without updating the spec.
+        This test pins them so a future PR cannot quietly
+        shrink the set without updating the policy.
         """
 
         assert "bitbucket_merge_pr" in BANNED_TOOLS
         assert "confluence_delete_page" in BANNED_TOOLS
 
     def test_banned_tools_is_frozenset(self) -> None:
-        """**Validates: Requirement 1.8**
-
-        ``frozenset`` keeps the constant immutable and hashable —
+        """``frozenset`` keeps the constant immutable and hashable —
         prerequisites for using it as the single source of truth
         across multiple LLM call sites.
         """

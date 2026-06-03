@@ -1,30 +1,27 @@
 """Integration smoke test 9.1 — Boot_Bundle açılış davranışı.
 
-Validates: Requirements 1.1, 1.2, 1.3, 1.4, 1.5
-Spec: ``.kiro/specs/admin-dashboard-control-plane`` (task 9.1).
 
 What it checks
 --------------
 * ``docker compose -f infra/docker-compose.yml up -d --wait`` (no
-  ``--profile`` flag) brings up **only** the four Boot_Bundle services
-  defined in Requirement 1.1: ``admin-dashboard-ui``,
-  ``admin-dashboard-api``, ``postgres``, ``vault``.
+ ``--profile`` flag) brings up **only** the four Boot_Bundle services
+ defined in : ``admin-dashboard-ui``,
+ ``admin-dashboard-api``, ``postgres``, ``vault``.
 * No Managed_Service (``redis``, ``minio``, ``temporal``,
-  ``temporal-ui``, ``firecrawl``, ``atlassian-mcp``,
-  ``opencode-sidecar``, ``automation-service``, ``assistant-service``,
-  ``streamlit-app``, ``task-intake-service``,
-  ``agent-runner-worker``, ``execution-runner-worker``) appears in
-  ``docker compose ps`` output (Requirement 1.2 — profile-gated start).
+ ``temporal-ui``, ``firecrawl``, ``atlassian-mcp``,
+ ``opencode-sidecar``, ``automation-service``, ``assistant-service``,
+ ``streamlit-app``, ``task-intake-service``,
+ ``agent-runner-worker``, ``execution-runner-worker``) appears in
+ ``docker compose ps`` output profile-gated start).
 * ``admin-dashboard-ui`` publishes host port ``3000`` and
-  ``admin-dashboard-api`` publishes host port ``8082`` (Requirement
-  1.3).
+ ``admin-dashboard-api`` publishes host port ``8082`` .
 * ``admin-dashboard-api`` ``/healthz`` returns ``200`` and ``/readyz``
-  returns ``200`` — confirms that the Service_Manifest loaded cleanly
-  (Requirement 1.4 + Requirement 3.3 happy path).
+ returns ``200`` — confirms that the Service_Manifest loaded cleanly
+ + happy path).
 * The Next.js UI on ``http://localhost:3000`` answers with HTTP ``200``
-  (Requirement 1.5).
+ .
 * ``docker compose down -v`` runs in a teardown ``finally`` block so
-  the host is left clean even when an assertion fails.
+ the host is left clean even when an assertion fails.
 
 Gating
 ------
@@ -55,7 +52,7 @@ import pytest
 COMPOSE_FILE_REL: str = "infra/docker-compose.yml"
 
 #: The exact set of services that MUST be running under the default
-#: (no-profile) ``docker compose up`` invocation per Requirement 1.1.
+#: (no-profile) ``docker compose up`` invocation per 
 BOOT_BUNDLE_SERVICES: frozenset[str] = frozenset(
     {
         "admin-dashboard-ui",
@@ -123,9 +120,9 @@ def _docker_available() -> bool:
 def _require_docker_or_skip(request: pytest.FixtureRequest) -> None:
     """Skip the test when ``--run-docker`` is absent or the daemon is down.
 
-    Centralised so the body of the test reads top-down without
-    interleaving skip checks.
-    """
+ Centralised so the body of the test reads top-down without
+ interleaving skip checks.
+ """
 
     if not request.config.getoption("--run-docker", default=False):
         pytest.skip(
@@ -182,11 +179,11 @@ def _compose_down(repo_root: Path) -> None:
 def _compose_ps_services(repo_root: Path) -> set[str]:
     """Return the set of Compose service names currently running.
 
-    Uses ``--format json`` so we can parse the output deterministically
-    regardless of column ordering. Newer Compose versions emit one JSON
-    object per line (NDJSON); older versions emit a single JSON array.
-    Both shapes are handled.
-    """
+ Uses ``--format json`` so we can parse the output deterministically
+ regardless of column ordering. Newer Compose versions emit one JSON
+ object line (NDJSON); older versions emit a single JSON array.
+ Both shapes are handled.
+ """
 
     result = subprocess.run(
         ["docker", "compose", "-f", COMPOSE_FILE_REL, "ps", "--format", "json"],
@@ -208,7 +205,7 @@ def _compose_ps_services(repo_root: Path) -> set[str]:
         return set()
 
     services: set[str] = set()
-    # Try NDJSON first (one object per line).
+    # Try NDJSON first (one object line).
     try:
         for line in out.splitlines():
             line = line.strip()
@@ -245,13 +242,13 @@ def _compose_ps_services(repo_root: Path) -> set[str]:
 def _compose_published_ports(repo_root: Path, service: str) -> set[int]:
     """Return the host-side TCP ports published by ``service``.
 
-    Uses ``docker compose port`` per published container port; we
-    enumerate the Boot_Bundle's known ports rather than parsing the
-    full ``ps`` output to keep this robust across Compose versions.
-    """
+ Uses ``docker compose port`` published container port; we
+ enumerate the Boot_Bundle's known ports rather than parsing the
+ full ``ps`` output to keep this robust across Compose versions.
+ """
 
     ports: set[int] = set()
-    # The two service ports we care about for Requirement 1.3.
+    # The two service ports we care about for 
     candidates = {
         "admin-dashboard-ui": (3000,),
         "admin-dashboard-api": (8082,),
@@ -292,10 +289,10 @@ def _wait_for_endpoint(
 ) -> str | None:
     """Poll ``endpoint`` until it returns the expected status or times out.
 
-    Returns ``None`` on success and a human-readable error message on
-    failure. We accept any 2xx for the UI root, but require an exact
-    ``200`` for the API health probes.
-    """
+ Returns ``None`` on success and a human-readable error message on
+ failure. We accept any 2xx for the UI root, but require an exact
+ ``200`` for the API health probes.
+ """
 
     import httpx  # local import keeps module import cheap when skipped
 
@@ -327,8 +324,7 @@ def test_boot_bundle_only_brings_up_four_services_and_they_are_healthy(
 ) -> None:
     """Default ``compose up`` brings up exactly the Boot_Bundle and it's healthy.
 
-    Validates: Requirements 1.1, 1.2, 1.3, 1.4, 1.5.
-    """
+ """
 
     _require_docker_or_skip(request)
 
@@ -345,28 +341,28 @@ def test_boot_bundle_only_brings_up_four_services_and_they_are_healthy(
             f"  stderr: {up.stderr}"
         )
 
-        # ---- Requirement 1.1 / 1.2 — only Boot_Bundle services running ----
+        # ---- — only Boot_Bundle services running ----
         running = _compose_ps_services(repo_root)
         assert running == BOOT_BUNDLE_SERVICES, (
             "Boot_Bundle invariant violated. `docker compose ps` should "
             f"list exactly {sorted(BOOT_BUNDLE_SERVICES)} but listed "
             f"{sorted(running)}. Extra services indicate a profile-gating "
-            "regression (Requirement 1.2)."
+            "regression ."
         )
 
-        # ---- Requirement 1.3 — host ports published ----
+        # ---- host ports published ----
         ui_ports = _compose_published_ports(repo_root, "admin-dashboard-ui")
         api_ports = _compose_published_ports(repo_root, "admin-dashboard-api")
         assert 3000 in ui_ports, (
             f"admin-dashboard-ui must publish host port 3000 "
-            f"(Requirement 1.3); saw {sorted(ui_ports)}"
+            f"; saw {sorted(ui_ports)}"
         )
         assert 8082 in api_ports, (
             f"admin-dashboard-api must publish host port 8082 "
-            f"(Requirement 1.3); saw {sorted(api_ports)}"
+            f"; saw {sorted(api_ports)}"
         )
 
-        # ---- Requirement 1.4 / 1.5 — HTTP probes ----
+        # ---- — HTTP probes ----
         # ``compose up --wait`` already gates on healthchecks, but a few
         # services (notably the Next.js UI) accept connections slightly
         # before they finish their first compile. The bounded poll

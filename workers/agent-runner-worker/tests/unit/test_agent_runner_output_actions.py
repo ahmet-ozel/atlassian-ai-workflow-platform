@@ -1,4 +1,4 @@
-"""Unit tests for ``AgentRunnerWorkflow`` output_actions execution (task 12.3).
+"""Unit tests for ``AgentRunnerWorkflow`` output_actions execution.
 
 Covers the four execution paths plumbed into ``_execute_output_actions``:
 
@@ -22,7 +22,6 @@ Activities are mocked by patching
 ``temporalio.workflow.execute_activity``; ``workflow.now`` /
 ``workflow.info`` are stubbed so the body methods stay deterministic.
 
-Validates Requirements: 12.1, 12.2, 12.3.
 """
 
 from __future__ import annotations
@@ -125,7 +124,7 @@ def _make_input(
         target_repo="payment-callbacks",
         target_branch="ai/PAY-1",
         title="Apply LLM-emitted output actions",
-        rationale="cover task 12.3",
+        rationale="cover output action execution",
         output_actions=output_actions,
         token_usage=10,
     )

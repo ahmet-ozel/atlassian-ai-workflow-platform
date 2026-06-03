@@ -1,10 +1,8 @@
-"""Property tests for the ``automation.work_items`` status state machine.
+"""Tests for the ``automation.work_items`` status state machine.
 
-**Property 9: work_item state-machine allowed edges**
+Work item state-machine allowed edges.
 
-**Validates: Requirements 5.10, 5.11, 11.5**
-
-Per ``.kiro/specs/p0-critical-path/design.md`` §"Property 9", the
+The
 ``automation.work_items.status`` column SHALL only ever transition along
 edges of the directed graph ``G_status`` with vertex set
 ``{pending, running, completed, failed}`` and edge set:
@@ -85,7 +83,7 @@ from activities.work_item import (  # noqa: E402  — sys.path bootstrap above
 
 
 # ---------------------------------------------------------------------------
-# Specification: the *exact* allowed-edge set from design.md §"Property 9"
+# Specification: the exact allowed-edge set
 # ---------------------------------------------------------------------------
 
 #: Forward edges (excluding self-loops) — the four allowed non-trivial
@@ -153,7 +151,7 @@ def test_all_status_pairs_covers_full_4x4_space() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Property 9.1 — every documented forward edge is accepted
+# Every documented forward edge is accepted
 # ---------------------------------------------------------------------------
 
 
@@ -164,7 +162,7 @@ def test_all_status_pairs_covers_full_4x4_space() -> None:
 def test_documented_forward_edges_are_accepted(
     from_status: str, to_status: str
 ) -> None:
-    """Every edge enumerated in design §"Property 9" is accepted.
+    """Every documented edge is accepted.
 
     The validator must not raise for any of:
         pending → running, pending → failed,
@@ -178,7 +176,7 @@ def test_documented_forward_edges_are_accepted(
 
 
 # ---------------------------------------------------------------------------
-# Property 9.2 — every status accepts a self-loop (idempotent write)
+# Every status accepts a self-loop (idempotent write)
 # ---------------------------------------------------------------------------
 
 
@@ -196,7 +194,7 @@ def test_self_loop_is_accepted_for_every_status(status: str) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Property 9.3 — every other pair over the canonical status set is rejected
+# Every other pair over the canonical status set is rejected
 # ---------------------------------------------------------------------------
 
 
@@ -246,7 +244,7 @@ def test_forbidden_pairs_raise_invalid_work_item_transition(
 
 
 # ---------------------------------------------------------------------------
-# Property 9.4 — Hypothesis-driven sequence test over the 4×4 status grid
+# Hypothesis-driven sequence test over the 4×4 status grid
 # ---------------------------------------------------------------------------
 
 #: Hypothesis strategy that draws statuses from the canonical four-value
@@ -301,7 +299,7 @@ def test_validator_agrees_with_spec_oracle_on_random_sequences(
 
 
 # ---------------------------------------------------------------------------
-# Property 9.5 — out-of-vocabulary inputs are rejected
+# Out-of-vocabulary inputs are rejected
 # ---------------------------------------------------------------------------
 
 
@@ -371,7 +369,7 @@ def test_unknown_source_status_is_always_rejected(
 def test_canonical_lifecycle_pending_running_completed_is_accepted() -> None:
     """The happy-path sequence ``pending → running → completed`` is allowed.
 
-    Mirrors Requirement 11.5: "The Platform SHALL maintain the work_item
+    Mirrors the rule that the platform maintains the work_item
     record with accurate status transitions: pending → running →
     completed/failed."
     """
@@ -390,7 +388,7 @@ def test_canonical_failure_lifecycle_pending_running_failed_is_accepted() -> Non
 def test_pending_to_completed_shortcut_is_rejected() -> None:
     """``pending → completed`` MUST be rejected (must transit ``running``).
 
-    Anchor example for Property 9 — the most common temptation when a
+    Anchor example for the most common temptation when a
     workflow short-circuits a no-op task. The state machine forbids this
     so the operator audit log always shows a ``running`` interval.
     """

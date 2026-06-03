@@ -1,20 +1,13 @@
-"""Property 2 — CRUD round-trip preserves metadata and never leaks credentials.
-
-# Feature: llm-provider-management, Property 2: CRUD round-trip preserves non-credential metadata and never leaks credentials
-
-Validates Requirements 1.1, 1.2, 1.3, 1.5, 1.6, 1.8, 3.1, 3.3, 3.4,
-9.2, 9.3.  A :class:`RuleBasedStateMachine` issues legal sequences of
+"""— CRUD round-trip preserves metadata and never leaks credentials.
+9.2, 9.3. A :class:`RuleBasedStateMachine` issues legal sequences of
 create / update / get / list / delete against the
 :class:`ProviderService` with the in-memory ``VaultClient`` fake.
-
 After every step the property asserts:
-
 * every returned DTO carries the masked credential field
   (``api_key_masked``) — never the raw ``api_key``;
 * every persisted Vault payload's ``api_key`` matches the most-recent
   written value (no stale credential survives an update);
-* no DTO serialisation contains an unredacted credential marker.
-"""
+* no DTO serialisation contains an unredacted credential marker."""
 
 from __future__ import annotations
 

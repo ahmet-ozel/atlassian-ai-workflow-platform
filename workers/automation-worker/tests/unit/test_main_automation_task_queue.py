@@ -1,7 +1,7 @@
 """Unit tests for ``automation_worker.main`` boot script.
 
 Validates the **single-queue-per-worker** invariant of
-workflows-spec Requirements 1.1 and 1.2:
+the worker boot path:
 
     * The boot script's ``Worker(...)`` constructor receives **exactly
       one** ``task_queue`` keyword argument.
@@ -13,8 +13,8 @@ workflows-spec Requirements 1.1 and 1.2:
     * The ``Worker(...)`` call registers the canonical workflow set
       for this worker (``AutomationWorkflow``, ``BotBranchRetention``,
       ``AuditPruneWorkflow``) — note ``AuditPruneWorkflow`` is the
-      preserved registration from the ops-spec; this test asserts it
-      is **not lost** when the workflows-spec extends the worker.
+      preserved registration; this test asserts it is **not lost** when
+      the worker registration changes.
 
 The tests exercise both the **import-time module shape** (the
 ``AUTOMATION_TASK_QUEUE`` constant materialised at import) and the
@@ -22,7 +22,6 @@ The tests exercise both the **import-time module shape** (the
 future refactor cannot trivially hide a queue-string drift behind a
 helper variable.
 
-Validates Requirements: 1.1, 1.2.
 """
 
 from __future__ import annotations
@@ -57,7 +56,7 @@ class TestModuleLevelTaskQueueConstant:
     boot path and tests share a single, registry-derived value."""
 
     def test_constant_resolves_via_registry(self) -> None:
-        """**Validates: Requirements 1.1, 1.2**"""
+        """The constant resolves via the workflow registry."""
 
         from automation_worker import main as main_mod
         from temporal_shared.workflow_registry import task_queue_for
@@ -67,7 +66,7 @@ class TestModuleLevelTaskQueueConstant:
         )
 
     def test_constant_value_is_automation_tq(self) -> None:
-        """**Validates: Requirement 1.1**"""
+        """The constant value is automation-tq."""
 
         from automation_worker import main as main_mod
 
@@ -116,7 +115,7 @@ class TestWorkerConstructorCallSite:
     rather than a literal queue string."""
 
     def test_exactly_one_worker_constructor_call(self) -> None:
-        """**Validates: Requirement 1.2**"""
+        """The boot script constructs exactly one Worker."""
 
         worker_calls = _find_worker_calls(_parse_main_module())
         assert len(worker_calls) == 1, (
@@ -126,15 +125,13 @@ class TestWorkerConstructorCallSite:
         )
 
     def test_task_queue_kwarg_is_present(self) -> None:
-        """**Validates: Requirement 1.2**"""
+        """The Worker call has a task_queue kwarg."""
 
         (call,) = _find_worker_calls(_parse_main_module())
         assert _kwarg(call, "task_queue") is not None
 
     def test_task_queue_kwarg_resolves_via_registry(self) -> None:
-        """**Validates: Requirements 1.1, 1.2**
-
-        The ``task_queue=`` keyword must resolve through
+        """The ``task_queue=`` keyword must resolve through
         ``task_queue_for("AutomationWorkflow")`` — either directly
         or via a module-level constant whose RHS is the same call.
         """
@@ -205,9 +202,7 @@ class TestWorkerConstructorCallSite:
         )
 
     def test_no_hardcoded_queue_string_in_worker_call(self) -> None:
-        """**Validates: Requirement 1.2**
-
-        The ``task_queue=`` kwarg must not be a string literal — that
+        """The ``task_queue=`` kwarg must not be a string literal — that
         would bypass the registry and break the single-source-of-truth
         invariant.
         """
@@ -224,15 +219,14 @@ class TestWorkerWorkflowsRegistration:
     """The ``Worker(workflows=[...])`` list must register the
     canonical workflow set for the automation-tq queue.
 
-    Both ``AutomationWorkflow`` (workflows-spec task 2.1) and
-    ``BotBranchRetention`` (task 2.4) ride this queue alongside the
-    pre-existing ``AuditPruneWorkflow`` (ops-spec task 13). This
-    test guards against a refactor that accidentally drops one of
-    them when wiring the others.
+    ``AutomationWorkflow`` and ``BotBranchRetention`` ride this queue
+    alongside the pre-existing ``AuditPruneWorkflow``. This test guards
+    against a refactor that accidentally drops one of them when wiring
+    the others.
     """
 
     def test_workflows_kwarg_registers_three_workflows(self) -> None:
-        """**Validates: Requirement 1.1**"""
+        """The workflows kwarg registers the expected workflow set."""
 
         (call,) = _find_worker_calls(_parse_main_module())
         value = _kwarg(call, "workflows")

@@ -1,10 +1,10 @@
 "use client";
 
 /**
- * Costs panel — `platform-mimari-ops` task 12.6 (R4.1 / R5.9).
+ * Costs panel.
  *
  * Three cards (dept totals, by model, trend) + "Bütçe Alarmları" tab
- * for configuring per-dept alarm thresholds (R13.5, R13.6).
+ * for configuring per-dept alarm thresholds.
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -279,7 +279,7 @@ function CostsOverviewTab(): JSX.Element {
 }
 
 // ---------------------------------------------------------------------------
-// Budget Alarms Tab (R13.5, R13.6)
+// Budget Alarms Tab
 // ---------------------------------------------------------------------------
 
 const PERIODS: AlarmThreshold["period"][] = ["weekly", "monthly"];

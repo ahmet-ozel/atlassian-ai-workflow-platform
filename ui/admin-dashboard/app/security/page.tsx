@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Security panel — `platform-mimari-ops` task 12.8 (R4.7 / Q17).
+ * Security panel.
  *
  * Cards: dept connectivity probe artifacts, bot credential rotation
  * banner (TTL countdown per dept), SSH runners, webhook secrets.

@@ -1,13 +1,10 @@
 """End-to-end integration test for the ``multi_step`` graceful-skip flow.
 
-**Validates: Requirements 6.3** (spec ``platform-mimari-workflows`` task
-15.9).
-
 Scenario
 --------
 
 The ``multi_step`` workflow type orchestrates *N* child workflows on
-behalf of a single Jira issue. Per Requirement 6.3 the parent must
+behalf of a single Jira issue. The parent must
 **not** fail-fast when any individual child lacks a capability — it
 must mark that child ``out_of_scope`` and continue dispatching the
 remaining children. The pure decision helper for that contract lives
@@ -16,8 +13,7 @@ in :mod:`temporal_shared.multi_step` (:func:`multi_step_dispatch`,
 
 At the time of writing, neither :class:`AutomationWorkflow` nor
 :class:`AgentRunnerWorkflow` carry a dedicated ``_handle_multi_step``
-body — task 10.3's third bullet ("``AgentRunnerWorkflow`` multi_step
-branch") is still pending and the ``multi_step`` workflow type therefore
+body. That parent branch is still pending and the ``multi_step`` workflow type therefore
 falls through to the legacy signal-wait dispatcher when routed through
 the production workflows. The end-to-end Temporal *dispatch* of a
 ``multi_step`` parent is consequently not yet wired.
@@ -26,34 +22,34 @@ This test exercises the pieces that **are** wired today, end-to-end,
 through a real Temporal time-skipping :class:`WorkflowEnvironment`:
 
 1. Construct a list of :class:`ChildProposal` objects with mixed
-   capability requirements.
+ capability requirements.
 2. Call :func:`multi_step_dispatch` against a department capability set
-   that satisfies some children and is missing capabilities for others.
+ that satisfies some children and is missing capabilities for others.
 3. For every plan whose ``action == "start"`` start a stub child
-   workflow on a Temporal worker, exactly as the production
-   ``AgentRunnerWorkflow.multi_step`` body will once task 10.3 lands.
+ workflow on a Temporal worker, exactly as the production parent
+ body is expected to do once it is wired.
 4. Collect a :class:`ChildOutcome` for every input child (started or
-   skipped) and feed the list to :func:`aggregated_output`.
+ skipped) and feed the list to :func:`aggregated_output`.
 5. Assert the graceful-skip contract:
 
-   * ``len(plans) == len(children)`` (no child silently dropped).
-   * The missing-capability child is marked ``out_of_scope`` with the
-     exact missing-capability set.
-   * ``aggregated_output`` reports ``started + skipped == total ==
-     len(children)`` and the original outcome order is preserved.
+ * ``len(plans) == len(children)`` (no child silently dropped).
+ * The missing-capability child is marked ``out_of_scope`` with the
+ exact missing-capability set.
+ * ``aggregated_output`` reports ``started + skipped == total ==
+ len(children)`` and the original outcome order is preserved.
 
 The test mirrors the worker-bootstrap pattern used by
-``test_e2e_code_change_with_test.py`` (15.5) — ``sys.path`` bootstrap
+``test_e2e_code_change_with_test.py`` — ``sys.path`` bootstrap
 for the platform's ``temporal-shared`` library, the
 ``_temporal_test_env_available`` import gate so hosts without the
 embedded ``temporal-test-server`` skip cleanly, and a single Temporal
 worker registered with a stub child workflow that the dispatcher
 points at.
 
-Once task 10.3's ``multi_step`` parent body lands, this test gains a
+Once the ``multi_step`` parent body lands, this test gains a
 companion that drives the parent through ``start_workflow`` instead of
 calling :func:`multi_step_dispatch` directly. Until then, the property
-test ``test_multi_step_aggregator.py`` (task 10.7) covers the pure
+test ``test_multi_step_aggregator.py`` covers the pure
 contract under hypothesis-generated inputs and this integration test
 pins the dispatch-and-aggregate sequence end-to-end against a real
 Temporal cluster.
@@ -100,11 +96,11 @@ for _candidate in (_TEMPORAL_SHARED_SRC,):
 def _temporal_test_env_available() -> bool:
     """Return ``True`` when the Temporal time-skipping env imports cleanly.
 
-    Any import failure is treated as "skip cleanly" so hosts without
-    the embedded ``temporal-test-server`` (sandboxed CI, missing
-    native deps) skip rather than erroring at collection time. The
-    same gate is used by ``test_e2e_code_change_with_test.py``.
-    """
+ Any import failure is treated as "skip cleanly" so hosts without
+ the embedded ``temporal-test-server`` (sandboxed CI, missing
+ native deps) skip rather than erroring at collection time. The
+ same gate is used by ``test_e2e_code_change_with_test.py``.
+ """
 
     try:
         from temporalio.testing import WorkflowEnvironment  # noqa: F401
@@ -123,11 +119,11 @@ pytestmark = pytest.mark.skipif(
 async def _start_time_skipping_or_skip() -> Any:
     """Start the time-skipping env, ``pytest.skip``-ing on failure.
 
-    The embedded ``temporal-test-server`` may fail to start on hosts
-    where the binary is not bundled. Surface that cleanly as a skip
-    so the integration suite stays green on machines that cannot host
-    Temporal locally.
-    """
+ The embedded ``temporal-test-server`` may fail to start on hosts
+ where the binary is not bundled. Surface that cleanly as a skip
+ so the integration suite stays green on machines that cannot host
+ Temporal locally.
+ """
 
     from temporalio.testing import WorkflowEnvironment
 
@@ -164,13 +160,13 @@ from temporalio import workflow as _wf  # noqa: E402 — module-level by design
 class _MultiStepChildStub:
     """Module-level stub registered as the children's workflow target.
 
-    Returns ``{"id": <workflow.id>, "status": "completed"}`` so the
-    test driver can verify the Temporal cluster actually executed the
-    stub. The dispatch / capability gate decisions are made *before*
-    Temporal sees the child, so the stub does no work — its sole
-    purpose is to confirm that ``multi_step_dispatch``'s ``"start"``
-    plans translate cleanly into real ``start_workflow`` calls.
-    """
+ Returns ``{"id": <workflow.id>, "status": "completed"}`` so the
+ test driver can verify the Temporal cluster actually executed the
+ stub. The dispatch / capability gate decisions are made *before*
+ Temporal sees the child, so the stub does no work — its sole
+ purpose is to confirm that ``multi_step_dispatch``'s ``"start"``
+ plans translate cleanly into real ``start_workflow`` calls.
+ """
 
     @_wf.run
     async def run(self, _payload: Any = None) -> dict[str, Any]:
@@ -186,8 +182,7 @@ class _MultiStepChildStub:
 # The multi_step path is dispatch-only — no activities fire on the
 # parent's behalf in this test — but keeping a call log around mirrors
 # the reference test's structure and gives future contributors a
-# place to record audit emissions when the parent body lands (task
-# 10.3 third bullet).
+# place to record audit emissions when the parent body lands.
 # ---------------------------------------------------------------------------
 
 
@@ -245,49 +240,46 @@ def _make_proposal(
 @pytest.mark.asyncio
 @pytest.mark.integration
 async def test_multi_step_dispatch_with_one_skip_via_real_temporal() -> None:
-    """**Validates: Requirements 6.3**
+    """Three child proposals exercise the three relevant decision
+ branches of :func:`multi_step_dispatch` against a department whose
+ capability set deliberately misses ``confluence``:
 
-    Three child proposals exercise the three relevant decision
-    branches of :func:`multi_step_dispatch` against a department whose
-    capability set deliberately misses ``confluence``:
+ * ``code_change_with_test`` requires ``{jira, bitbucket, execution}``
+ — present in the dept caps, so the dispatcher emits a
+ ``"start"`` plan with reason ``"dispatched"``.
+ * ``pr_review`` requires ``{jira, bitbucket}`` — also present, so
+ another ``"start"`` plan.
+ * ``confluence_doc_create`` requires ``{jira, confluence}`` —
+ ``confluence`` is **missing** from the dept caps, so the
+ dispatcher emits a ``"skip"`` plan with reason ``"out_of_scope"``
+ and ``missing_capabilities == frozenset({"confluence"})``.
 
-    * ``code_change_with_test`` requires ``{jira, bitbucket, execution}``
-      — present in the dept caps, so the dispatcher emits a
-      ``"start"`` plan with reason ``"dispatched"``.
-    * ``pr_review`` requires ``{jira, bitbucket}`` — also present, so
-      another ``"start"`` plan.
-    * ``confluence_doc_create`` requires ``{jira, confluence}`` —
-      ``confluence`` is **missing** from the dept caps, so the
-      dispatcher emits a ``"skip"`` plan with reason ``"out_of_scope"``
-      and ``missing_capabilities == frozenset({"confluence"})``.
+ Each ``"start"`` plan is then handed to a real Temporal time-
+ skipping :class:`WorkflowEnvironment` via ``start_workflow``; the
+ stub :class:`_MultiStepChildStub` echoes the child id back. The
+ test collects a :class:`ChildOutcome` for every input child
+ (whether started or skipped) and feeds the list to
+ :func:`aggregated_output`.
 
-    Each ``"start"`` plan is then handed to a real Temporal time-
-    skipping :class:`WorkflowEnvironment` via ``start_workflow``; the
-    stub :class:`_MultiStepChildStub` echoes the child id back. The
-    test collects a :class:`ChildOutcome` for every input child
-    (whether started or skipped) and feeds the list to
-    :func:`aggregated_output`.
-
-    Assertions
-    ----------
-    * Plan list length equals the input length (R6.3, Property 17 P1
-      — graceful skip).
-    * The two satisfied children produce ``"start"`` plans with
-      reason ``"dispatched"`` and an empty ``missing_capabilities``
-      set.
-    * The unsatisfied child produces a ``"skip"`` plan with reason
-      ``"out_of_scope"`` and ``missing_capabilities ==
-      frozenset({"confluence"})``.
-    * Every started child's stub workflow returns
-      ``status="completed"`` (the real cluster routed the dispatch
-      correctly).
-    * :func:`aggregated_output` reports ``started == 2``,
-      ``skipped == 1``, ``total == 3``, and ``started + skipped ==
-      total == len(children)``.
-    * The aggregator preserves the original child order — the
-      missing-capability child still occupies index 2 in
-      ``agg.child_outcomes`` (R6.3, Property 17 P9).
-    """
+ Assertions
+ ----------
+ * Plan list length equals the input length, preserving graceful skip behavior.
+ * The two satisfied children produce ``"start"`` plans with
+ reason ``"dispatched"`` and an empty ``missing_capabilities``
+ set.
+ * The unsatisfied child produces a ``"skip"`` plan with reason
+ ``"out_of_scope"`` and ``missing_capabilities ==
+ frozenset({"confluence"})``.
+ * Every started child's stub workflow returns
+ ``status="completed"`` (the real cluster routed the dispatch
+ correctly).
+ * :func:`aggregated_output` reports ``started == 2``,
+ ``skipped == 1``, ``total == 3``, and ``started + skipped ==
+ total == len(children)``.
+ * The aggregator preserves the original child order — the
+ missing-capability child still occupies index 2 in
+ ``agg.child_outcomes``.
+ """
 
     from temporalio.worker import Worker
 
@@ -326,7 +318,7 @@ async def test_multi_step_dispatch_with_one_skip_via_real_temporal() -> None:
     # ----- 1. Pure dispatch decision --------------------------------
     #
     # ``multi_step_dispatch`` is replay-safe and pure; it makes no
-    # Temporal calls.  Calling it before the env spins up keeps the
+    # Temporal calls. Calling it before the env spins up keeps the
     # test isolated from any cluster state.
 
     plans = multi_step_dispatch(children, dept_capabilities)
@@ -365,7 +357,7 @@ async def test_multi_step_dispatch_with_one_skip_via_real_temporal() -> None:
             for plan in plans:
                 if plan.action == "start":
                     # Walk the same path the production parent body
-                    # will once task 10.3 lands: start the child via
+                    # will use once it is wired: start the child via
                     # the ``ChildWorkflowSpec`` pinned on the plan.
                     handle = await env.client.start_workflow(
                         plan.child_spec.workflow_name,
@@ -412,7 +404,7 @@ async def test_multi_step_dispatch_with_one_skip_via_real_temporal() -> None:
 
     agg = aggregated_output(outcomes)
 
-    # Counter invariant — Property 17 P8 / R6.3.
+    # Counter invariant for the graceful-skip aggregate.
     assert agg.started == 2, f"expected started=2, got {agg.started}"
     assert agg.skipped == 1, f"expected skipped=1, got {agg.skipped}"
     assert agg.total == 3, f"expected total=3, got {agg.total}"
@@ -423,7 +415,7 @@ async def test_multi_step_dispatch_with_one_skip_via_real_temporal() -> None:
         f"len(children) ({len(children)})"
     )
 
-    # Order preservation — Property 17 P9 / R6.3. The
+    # Order preservation. The
     # missing-capability child must still occupy its original index.
     assert [o.child_spec.workflow_id for o in agg.child_outcomes] == [
         "multi-step-child-code-1",
@@ -463,31 +455,29 @@ async def test_multi_step_dispatch_with_one_skip_via_real_temporal() -> None:
 @pytest.mark.asyncio
 @pytest.mark.integration
 async def test_multi_step_aggregator_preserves_order() -> None:
-    """**Validates: Requirements 6.3**
+    """The :func:`aggregated_output` aggregator is a counter, not a
+ sorter — for every input it returns ``child_outcomes`` in the
+ original input order regardless of which children were started or
+ skipped. This order-preservation behavior is pinned here
+ against a concrete mixed input so the example shows up in the
+ integration suite alongside the property-test coverage.
 
-    The :func:`aggregated_output` aggregator is a counter, not a
-    sorter — for every input it returns ``child_outcomes`` in the
-    original input order regardless of which children were started or
-    skipped. This is Property 17 P9 (order preservation), pinned here
-    against a *concrete* mixed input so the example shows up in the
-    integration suite alongside the property-test coverage.
+ The test alternates ``"started"`` and ``"skipped"`` outcomes and
+ asserts:
 
-    The test alternates ``"started"`` and ``"skipped"`` outcomes and
-    asserts:
+ * Each outcome lands at its original index in
+ :attr:`AggregatedOutput.child_outcomes`.
+ * ``started == 2``, ``skipped == 2``, ``total == 4``.
+ * ``started + skipped == total == len(outcomes)`` ( graceful-
+ skip count invariant).
+ * Re-running the aggregator over the same outcome list returns an
+ equal aggregate.
 
-    * Each outcome lands at its original index in
-      :attr:`AggregatedOutput.child_outcomes`.
-    * ``started == 2``, ``skipped == 2``, ``total == 4``.
-    * ``started + skipped == total == len(outcomes)`` (R6.3 graceful-
-      skip count invariant).
-    * Re-running the aggregator over the same outcome list returns an
-      equal aggregate (idempotence — Property 17 P10).
-
-    The aggregator is pure (no Temporal calls), but the test is
-    marked ``@pytest.mark.integration`` so it sits next to the
-    Temporal-driven dispatch test in the integration suite filter
-    (``pytest -m integration``).
-    """
+ The aggregator is pure (no Temporal calls), but the test is
+ marked ``@pytest.mark.integration`` so it sits next to the
+ Temporal-driven dispatch test in the integration suite filter
+ (``pytest -m integration``).
+ """
 
     from temporal_shared.messages import ChildWorkflowSpec
     from temporal_shared.multi_step import (
@@ -553,7 +543,7 @@ async def test_multi_step_aggregator_preserves_order() -> None:
     assert agg.started + agg.skipped == agg.total
     assert agg.started + agg.skipped == len(outcomes)
 
-    # Order preservation — Property 17 P9. Position 0 is the started
+    # Order preservation. Position 0 is the started
     # outcome, position 1 is the out_of_scope skip, position 2 is the
     # second started outcome, position 3 is the unknown-type skip.
     assert agg.child_outcomes == tuple(outcomes), (
@@ -582,7 +572,7 @@ async def test_multi_step_aggregator_preserves_order() -> None:
     assert agg.child_outcomes[3].action == "skipped"
     assert agg.child_outcomes[3].reason == REASON_UNKNOWN_WORKFLOW_TYPE
 
-    # Idempotence — Property 17 P10. Re-running the aggregator over
+    # Idempotence. Re-running the aggregator over
     # the same outcome list produces an equal aggregate; the helper
     # is pure and the result depends only on its argument.
     agg_again = aggregated_output(outcomes)
@@ -593,5 +583,5 @@ async def test_multi_step_aggregator_preserves_order() -> None:
     # The closed audit vocabulary keeps the ``REASON_NESTED_MULTI_STEP``
     # token in scope — referencing it here makes the import visible to
     # static analysers (lint / mypy) and documents the full vocabulary
-    # exercised by Property 17.
+    # exercised by the invariant.
     assert REASON_NESTED_MULTI_STEP == "nested_multi_step_forbidden"

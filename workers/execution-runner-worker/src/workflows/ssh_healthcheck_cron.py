@@ -1,14 +1,11 @@
 """SSHHealthcheckCronWorkflow — Temporal cron workflow for proactive SSH monitoring.
 
-Implements task 20.1 of ``.kiro/specs/platform-completion/tasks.md``.
 Runs every 5 minutes via Temporal cron schedule and monitors SSH runner
 health using the existing ``ssh_healthcheck`` activity.
 
-State Machine (Property 28):
+State machine:
     - 3 consecutive failures → mark "unhealthy", block new SSH tasks
     - 2 consecutive successes (while unhealthy) → restore "healthy", remove block
-
-Requirements: 14.1, 14.2, 14.3, 14.4, 14.5
 """
 
 from __future__ import annotations
@@ -30,7 +27,7 @@ UNHEALTHY_THRESHOLD: int = 3
 #: Number of consecutive successes (while unhealthy) to restore healthy.
 RECOVERY_THRESHOLD: int = 2
 
-#: Timeout for the ssh_healthcheck activity (10s per requirement 14.1).
+#: Timeout for the ssh_healthcheck activity.
 _HEALTHCHECK_ACTIVITY_TIMEOUT: timedelta = timedelta(seconds=10)
 
 #: Timeout for recording results to the database.
@@ -39,7 +36,7 @@ _RECORD_ACTIVITY_TIMEOUT: timedelta = timedelta(seconds=30)
 #: Timeout for sending notifications.
 _NOTIFY_ACTIVITY_TIMEOUT: timedelta = timedelta(seconds=60)
 
-#: Maximum delay before showing a warning (requirement 14.5).
+#: Maximum delay before showing a warning.
 _MAX_HEALTHCHECK_DELAY_SECONDS: float = 120.0
 
 #: Retry policy for the healthcheck activity — single attempt since
@@ -138,15 +135,15 @@ class SSHHealthcheckCronWorkflow:
             state.consecutive_successes,
         )
 
-        # Record the current time for delay detection (requirement 14.5)
+        # Record the current time for delay detection.
         current_time = workflow.now()
         current_time_iso = current_time.isoformat()
 
-        # Check for healthcheck delay (requirement 14.5)
+        # Check for healthcheck delay.
         if state.last_check_time is not None:
             await self._check_for_delay(state, current_time_iso)
 
-        # Execute the SSH healthcheck activity (requirement 14.1)
+        # Execute the SSH healthcheck activity.
         hc_result = await self._execute_healthcheck()
 
         # Update state based on result
@@ -155,7 +152,7 @@ class SSHHealthcheckCronWorkflow:
         port = hc_result.get("port", 22)
         error = hc_result.get("error")
 
-        # Record result to ssh_healthcheck_log (requirement 14.1)
+        # Record result to ssh_healthcheck_log.
         await self._record_healthcheck_result(
             host=host,
             port=port,
@@ -174,14 +171,14 @@ class SSHHealthcheckCronWorkflow:
         previous_healthy = state.is_healthy
 
         if not state.is_healthy and state.consecutive_successes >= RECOVERY_THRESHOLD:
-            # Restore to healthy (requirement 14.4)
+            # Restore to healthy.
             state.is_healthy = True
             state.consecutive_failures = 0
             state.consecutive_successes = 0
             await self._restore_healthy(host, port)
 
         elif state.is_healthy and state.consecutive_failures >= UNHEALTHY_THRESHOLD:
-            # Mark as unhealthy (requirement 14.3)
+            # Mark as unhealthy.
             state.is_healthy = False
             state.consecutive_successes = 0
             await self._mark_unhealthy(host, port)
@@ -286,7 +283,7 @@ class SSHHealthcheckCronWorkflow:
             state.consecutive_failures,
         )
 
-        # Requirement 14.2: Show alert in Admin Dashboard and send notification
+        # Show alert in Admin Dashboard and send notification.
         await self._send_failure_alert(
             host=host,
             port=port,
@@ -304,10 +301,7 @@ class SSHHealthcheckCronWorkflow:
         error: str,
         failure_time: str,
     ) -> None:
-        """Send failure alert to Admin Dashboard and notification channel.
-
-        Requirement 14.2: notification must be sent within 60s.
-        """
+        """Send failure alert to Admin Dashboard and notification channel."""
         try:
             await workflow.execute_activity(
                 "send_ssh_healthcheck_alert",
@@ -331,10 +325,7 @@ class SSHHealthcheckCronWorkflow:
             )
 
     async def _mark_unhealthy(self, host: str, port: int) -> None:
-        """Mark SSH runner as unhealthy and block new SSH tasks.
-
-        Requirement 14.3: 3 consecutive failures → unhealthy + block.
-        """
+        """Mark SSH runner as unhealthy and block new SSH tasks."""
         workflow.logger.error(
             "SSHHealthcheckCronWorkflow: marking runner as UNHEALTHY. "
             "host=%s port=%d — blocking new SSH tasks",
@@ -385,10 +376,7 @@ class SSHHealthcheckCronWorkflow:
             )
 
     async def _restore_healthy(self, host: str, port: int) -> None:
-        """Restore SSH runner to healthy and remove task block.
-
-        Requirement 14.4: 2 consecutive successes while unhealthy → healthy.
-        """
+        """Restore SSH runner to healthy and remove task block."""
         workflow.logger.info(
             "SSHHealthcheckCronWorkflow: restoring runner to HEALTHY. "
             "host=%s port=%d — removing task block",
@@ -470,11 +458,7 @@ class SSHHealthcheckCronWorkflow:
     async def _check_for_delay(
         self, state: HealthcheckState, current_time_iso: str
     ) -> None:
-        """Check if healthcheck is delayed and emit warning if needed.
-
-        Requirement 14.5: If healthcheck is delayed by 2+ minutes,
-        show warning in Admin Dashboard.
-        """
+        """Check if healthcheck is delayed and emit warning if needed."""
         # Parse last_check_time and compare with current time
         # Since we're in a workflow, we use workflow.now() for determinism
         # The delay detection is approximate — based on expected 5-min interval

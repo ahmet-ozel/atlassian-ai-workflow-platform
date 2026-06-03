@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * SSH Runners Admin Page — platform-quick-fixes task 7.7 (R4.10, R4.11, R4.14).
+ * SSH Runners Admin Page.
  *
  * Route: /admin/security/ssh-runners
  *

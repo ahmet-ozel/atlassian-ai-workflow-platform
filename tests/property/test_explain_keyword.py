@@ -1,74 +1,58 @@
-"""Property test 7 — ``[explain]`` keyword family: cooldown + TTL cache.
+"""invariant 7 — ``[explain]`` keyword family: cooldown + TTL cache.
 
-**Validates: Requirements 5.5, 7.7**
+
 
 Hypothesis-driven verification of the ``[explain]`` keyword cooldown
-and 5-minute LRU cache contract described in:
+and 5-minute LRU cache contract. A cache hit avoids advancing the
+iteration counter and queues an audit event; a cache miss advances the
+iteration and allows the LLM call to be queued.
 
-* ``platform-mimari-workflows`` requirements.md §R5.5 — ``[explain]``
-  cooldown + cache.
-* ``platform-mimari-workflows`` requirements.md §R7.7 — ``[explain]``
-  routes to a short answer (max 200 words) on the PR comment, with
-  Z10 cooldown + cache active.
-* ``platform-mimari-workflows`` design.md §"temporal_shared.iteration"
-  for the pure helper contract.
-* ``platform-mimari-workflows`` design.md §"AgentRunnerWorkflow modülü"
-  for the signal-handler wiring (cache hit ⇒ no iter advance + audit;
-  cache miss ⇒ iter advance + LLM call queued).
-* MIMARI v3.25 §16.11 Z10 — ``[explain]`` cooldown + cache.
-
-Property statements
+Invariant statements
 -------------------
 
 For any hypothesis-generated triple
 ``(state: IterationState, pr_diff_hash, now)`` and a default TTL of
-5 minutes, the pure helper
-:func:`agent_runner.workflows.agent_runner_workflow._explain_should_skip_llm`
+5 minutes, the pure helper:func:`agent_runner.workflows.agent_runner_workflow._explain_should_skip_llm`
 MUST satisfy:
 
-    (P1) ``True`` ⇔ ``pr_diff_hash in state.explain_cache`` AND
-         ``(now - cache_entry.issued_at) < EXPLAIN_CACHE_TTL``.
-    (P2) Empty / falsy ``pr_diff_hash`` ⇒ ``False`` (degenerate
-         cache lookup is never a hit).
-    (P3) Determinism: a second call with the same arguments returns
-         the same boolean.
+ (P1) ``True`` ⇔ ``pr_diff_hash in state.explain_cache`` AND
+ ``(now - cache_entry.issued_at) < EXPLAIN_CACHE_TTL``.
+ (P2) Empty / falsy ``pr_diff_hash`` ⇒ ``False`` (degenerate
+ cache lookup is never a hit).
+ (P3) Determinism: a second call with the same arguments returns
+ the same boolean.
 
-For the cache-write helper
-:func:`_state_record_explain_answer`:
+For the cache-write helper:func:`_state_record_explain_answer`:
 
-    (P4) The returned state has ``pr_diff_hash`` mapped to an
-         :class:`ExplainCacheEntry` with the supplied ``answer`` and
-         ``issued_at == now``.
-    (P5) Idempotence under repeated writes with the same arguments —
-         calling it twice in a row leaves the cache mapping the same
-         hash to the same entry value (no growth, no churn).
-    (P6) The input ``state`` is never mutated; the returned state is a
-         fresh value (functional update style — design.md
-         §"temporal_shared.messages").
+ (P4) The returned state has ``pr_diff_hash`` mapped to an:class:`ExplainCacheEntry` with the supplied ``answer`` and
+ ``issued_at == now``.
+ (P5) Idempotence under repeated writes with the same arguments —
+ calling it twice in a row leaves the cache mapping the same
+ hash to the same entry value (no growth, no churn).
+ (P6) The input ``state`` is never mutated; the returned state is a
+ fresh value (functional update style).
 
-For the signal handler
-:meth:`AgentRunnerWorkflow._apply_explain_signal`:
+For the signal handler:meth:`AgentRunnerWorkflow._apply_explain_signal`:
 
-    (P7) Cache hit branch: when ``_explain_should_skip_llm`` returns
-         ``True``, the handler sets ``_pending_explain_diff_hash``,
-         queues :data:`EXPLAIN_CACHE_HIT_AUDIT_ACTION`, and does NOT
-         advance ``iter_count``.
-    (P8) Cache miss branch (and below the iter cap): the handler
-         advances ``iter_count`` by exactly one, sets
-         ``_pending_explain_diff_hash``, and does NOT queue
-         ``explain_cache_hit``.
+ (P7) Cache hit branch: when ``_explain_should_skip_llm`` returns
+ ``True``, the handler sets ``_pending_explain_diff_hash``,
+ queues:data:`EXPLAIN_CACHE_HIT_AUDIT_ACTION`, and does NOT
+ advance ``iter_count``.
+ (P8) Cache miss branch (and below the iter cap): the handler
+ advances ``iter_count`` by exactly one, sets
+ ``_pending_explain_diff_hash``, and does NOT queue
+ ``explain_cache_hit``.
 
 LRU ``maxsize=32`` overflow
 ---------------------------
 
 The current ``IterationState.explain_cache`` is an unbounded
 ``Mapping[str, ExplainCacheEntry]``. The bounded LRU semantics
-(``maxsize=32``) referenced by the task brief are scheduled to land in
-:mod:`temporal_shared.iteration` (task 6.1 of
-``platform-mimari-workflows``). Until that module exists we cannot
-exercise the eviction property; :func:`test_lru_overflow_evicts_oldest`
+(``maxsize=32``) referenced by the task brief are scheduled to land in:mod:`temporal_shared.iteration` of
+````). Until that module exists we cannot
+exercise the eviction property;:func:`test_lru_overflow_evicts_oldest`
 is therefore guarded with a runtime check that skips the test when the
-module is absent. Once task 6.1 ships the test will run automatically
+module is absent. Once ships the test will run automatically
 — no rewrite required.
 """
 
@@ -95,9 +79,9 @@ from hypothesis import strategies as st
 #
 # 1. ``libs/temporal-shared/src`` for ``temporal_shared.messages``.
 # 2. ``libs/mcp_client/src`` because the workflow body imports
-#    ``mcp_client.deployment_router`` at module load time.
+# ``mcp_client.deployment_router`` at module load time.
 # 3. ``workers/agent-runner-worker/src`` for the workflow module that
-#    owns the pure helpers and signal-handler method under test.
+# owns the pure helpers and signal-handler method under test.
 # ---------------------------------------------------------------------------
 
 _REPO_ROOT: Path = Path(__file__).resolve().parents[2]
@@ -137,7 +121,7 @@ from temporal_shared.messages import (  # noqa: E402
 # ---------------------------------------------------------------------------
 
 #: UTC anchor for the deterministic ``workflow.now`` stub. Tests that
-#: vary ``now`` add a strategy-supplied :class:`timedelta` to this
+#: vary ``now`` add a strategy-supplied:class:`timedelta` to this
 #: value; the absolute base is irrelevant to the invariants — only the
 #: difference ``now - issued_at`` matters.
 _ANCHOR: datetime = datetime(2026, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
@@ -184,12 +168,12 @@ _deltas: st.SearchStrategy[timedelta] = st.integers(
 def _explain_cache_entries(
     draw: st.DrawFn,
 ) -> ExplainCacheEntry:
-    """Construct a single :class:`ExplainCacheEntry`.
+    """Construct a single:class:`ExplainCacheEntry`.
 
-    ``issued_at`` is anchored at :data:`_ANCHOR` plus a strategy delta
-    so the relative arithmetic against ``now`` covers both fresh and
-    expired regions.
-    """
+ ``issued_at`` is anchored at:data:`_ANCHOR` plus a strategy delta
+ so the relative arithmetic against ``now`` covers both fresh and
+ expired regions.
+ """
 
     answer = draw(_answers)
     delta = draw(_deltas)
@@ -200,13 +184,13 @@ def _explain_cache_entries(
 def _iteration_states_with_cache(
     draw: st.DrawFn,
 ) -> IterationState:
-    """Build an :class:`IterationState` whose ``explain_cache`` is non-trivial.
+    """Build an:class:`IterationState` whose ``explain_cache`` is non-trivial.
 
-    The cache is a finite mapping (0..6 entries) of distinct diff
-    hashes to entries with strategy-derived ``issued_at`` values.
-    Other state fields are left at their defaults — the helper under
-    test only inspects ``explain_cache``.
-    """
+ The cache is a finite mapping (0..6 entries) of distinct diff
+ hashes to entries with strategy-derived ``issued_at`` values.
+ Other state fields are left at their defaults — the helper under
+ test only inspects ``explain_cache``.
+ """
 
     pairs = draw(
         st.lists(
@@ -247,10 +231,10 @@ class TestExplainShouldSkipLlm:
         pr_diff_hash: str,
         now_delta: timedelta,
     ) -> None:
-        """Property 1: ``True`` ⇔ in cache AND age < TTL.
+        """invariant: ``True`` ⇔ in cache AND age < TTL.
 
-        Validates: Requirements 5.5, 7.7.
-        """
+
+ """
 
         now = _ANCHOR + now_delta
         result = _explain_should_skip_llm(state, pr_diff_hash, now)
@@ -282,16 +266,16 @@ class TestExplainShouldSkipLlm:
         state: IterationState,
         now_delta: timedelta,
     ) -> None:
-        """Property 2: empty ``pr_diff_hash`` ⇒ always ``False``.
+        """invariant: empty ``pr_diff_hash`` ⇒ always ``False``.
 
-        The signal handler guards against falsy hashes upstream, but
-        the pure helper is also expected to short-circuit: a cache
-        keyed on the empty string would never be looked up by the
-        production caller, so any return other than ``False`` would
-        leak an unintended hit semantic.
+ The signal handler guards against falsy hashes upstream, but
+ the pure helper is also expected to short-circuit: a cache
+ keyed on the empty string would never be looked up by the
+ production caller, so any return other than ``False`` would
+ leak an unintended hit semantic.
 
-        Validates: Requirements 5.5.
-        """
+
+ """
 
         now = _ANCHOR + now_delta
         assert _explain_should_skip_llm(state, "", now) is False
@@ -312,13 +296,13 @@ class TestExplainShouldSkipLlm:
         pr_diff_hash: str,
         now_delta: timedelta,
     ) -> None:
-        """Property 3: identical inputs ⇒ identical output.
+        """invariant: identical inputs ⇒ identical output.
 
-        Pure helper — no clock, no randomness — so two consecutive
-        calls with the same arguments must return the same value.
+ Pure helper — no clock, no randomness — so two consecutive
+ calls with the same arguments must return the same value.
 
-        Validates: Requirements 5.5.
-        """
+
+ """
 
         now = _ANCHOR + now_delta
         first = _explain_should_skip_llm(state, pr_diff_hash, now)
@@ -334,13 +318,13 @@ class TestExplainShouldSkipLlm:
     def test_exact_boundary_is_not_a_hit(self) -> None:
         """``now - issued_at == TTL`` is **not** fresh.
 
-        The implementation uses strict inequality (``< TTL``); a
-        regression that flips to ``<=`` would silently double the
-        effective freshness window of every cache entry on the
-        boundary.
+ The implementation uses strict inequality (``< TTL``); a
+ regression that flips to ``<=`` would silently double the
+ effective freshness window of every cache entry on the
+ boundary.
 
-        Validates: Requirements 5.5.
-        """
+
+ """
 
         issued_at = _ANCHOR
         state = IterationState(
@@ -354,8 +338,8 @@ class TestExplainShouldSkipLlm:
     def test_one_second_inside_ttl_is_a_hit(self) -> None:
         """One second before the TTL elapses must be a hit.
 
-        Validates: Requirements 5.5.
-        """
+
+ """
 
         issued_at = _ANCHOR
         state = IterationState(
@@ -369,14 +353,14 @@ class TestExplainShouldSkipLlm:
     def test_negative_age_is_a_hit(self) -> None:
         """``now`` before ``issued_at`` is a degenerate but valid hit.
 
-        The strict-less-than form ``(now - issued_at) < TTL``
-        accepts negative deltas as fresh; the production workflow
-        never produces a clock that runs backwards, but covering this
-        path in the property suite pins the contract for the
-        helper's pure semantics.
+ The strict-less-than form ``(now - issued_at) < TTL``
+ accepts negative deltas as fresh; the production workflow
+ never produces a clock that runs backwards, but covering this
+ path in the invariant pins the contract for the
+ helper's pure semantics.
 
-        Validates: Requirements 5.5.
-        """
+
+ """
 
         issued_at = _ANCHOR
         state = IterationState(
@@ -414,10 +398,10 @@ class TestStateRecordExplainAnswer:
         answer: str,
         now_delta: timedelta,
     ) -> None:
-        """Property 4: written entry has the supplied answer + ``now``.
+        """invariant: written entry has the supplied answer + ``now``.
 
-        Validates: Requirements 5.5, 7.7.
-        """
+
+ """
 
         now = _ANCHOR + now_delta
         new_state = _state_record_explain_answer(
@@ -445,15 +429,15 @@ class TestStateRecordExplainAnswer:
         answer: str,
         now_delta: timedelta,
     ) -> None:
-        """Property 5: writing the same triple twice is a no-op.
+        """invariant: writing the same triple twice is a no-op.
 
-        Two consecutive writes with identical arguments must produce
-        equivalent caches — the second write does not duplicate the
-        key, does not bump the entry, and does not grow the mapping
-        beyond the first write's footprint.
+ Two consecutive writes with identical arguments must produce
+ equivalent caches — the second write does not duplicate the
+ key, does not bump the entry, and does not grow the mapping
+ beyond the first write's footprint.
 
-        Validates: Requirements 5.5.
-        """
+
+ """
 
         now = _ANCHOR + now_delta
         once = _state_record_explain_answer(state, pr_diff_hash, answer, now)
@@ -482,16 +466,15 @@ class TestStateRecordExplainAnswer:
         answer: str,
         now_delta: timedelta,
     ) -> None:
-        """Property 6: the input state is never mutated in place.
+        """invariant: the input state is never mutated in place.
 
-        ``IterationState`` is a frozen dataclass; the helper must
-        return a freshly-constructed value via
-        :func:`dataclasses.replace`. We snapshot the input's
-        ``explain_cache`` before the call and reassert equality
-        after.
+ ``IterationState`` is a frozen dataclass; the helper must
+ return a freshly-constructed value via:func:`dataclasses.replace`. We snapshot the input's
+ ``explain_cache`` before the call and reassert equality
+ after.
 
-        Validates: Requirements 5.5.
-        """
+
+ """
 
         now = _ANCHOR + now_delta
         snapshot = dict(state.explain_cache)
@@ -517,13 +500,13 @@ class TestStateRecordExplainAnswer:
 def _build_workflow_with_state(
     state: IterationState,
 ) -> AgentRunnerWorkflow:
-    """Construct an :class:`AgentRunnerWorkflow` carrying ``state``.
+    """Construct an:class:`AgentRunnerWorkflow` carrying ``state``.
 
-    Mirrors the ``make_wf`` factory used by the unit-test suite under
-    ``workers/agent-runner-worker/tests/unit/``: instantiate the
-    workflow, then assign the supplied :class:`IterationState` so the
-    signal handler observes a deterministic starting point.
-    """
+ Mirrors the ``make_wf`` factory used by the unit-test suite under
+ ``workers/agent-runner-worker/tests/unit/``: instantiate the
+ workflow, then assign the supplied:class:`IterationState` so the
+ signal handler observes a deterministic starting point.
+ """
 
     wf = AgentRunnerWorkflow()
     wf._iteration_state = state
@@ -536,12 +519,11 @@ def _states_with_known_hash_below_cap(
 ) -> tuple[IterationState, str, datetime]:
     """Generate ``(state, hit_hash, now)`` triples that are cache hits.
 
-    The returned state has at least one cache entry whose ``issued_at``
-    is **inside** the TTL window relative to ``now`` and whose key is
-    returned as ``hit_hash``. ``iter_count`` is bounded below
-    :data:`MAX_ITER` so the iter-cap branch does not interfere with
-    the cache-hit assertion.
-    """
+ The returned state has at least one cache entry whose ``issued_at``
+ is **inside** the TTL window relative to ``now`` and whose key is
+ returned as ``hit_hash``. ``iter_count`` is bounded below:data:`MAX_ITER` so the iter-cap branch does not interfere with
+ the cache-hit assertion.
+ """
 
     fresh_age = draw(
         st.integers(
@@ -587,10 +569,10 @@ def _states_with_cache_miss_below_cap(
 ) -> tuple[IterationState, str, datetime]:
     """Generate ``(state, miss_hash, now)`` triples that are cache misses.
 
-    The returned state's cache does **not** contain ``miss_hash``; the
-    iter counter sits strictly below :data:`MAX_ITER` so the handler
-    is allowed to advance.
-    """
+ The returned state's cache does **not** contain ``miss_hash``; the
+ iter counter sits strictly below:data:`MAX_ITER` so the handler
+ is allowed to advance.
+ """
 
     miss_hash = draw(_diff_hashes)
     iter_count = draw(st.integers(min_value=1, max_value=MAX_ITER - 1))
@@ -627,10 +609,10 @@ class TestApplyExplainSignal:
         self,
         triple: tuple[IterationState, str, datetime],
     ) -> None:
-        """Property 7: cache hit ⇒ no iter advance, audit queued.
+        """invariant: cache hit ⇒ no iter advance, audit queued.
 
-        Validates: Requirements 5.5, 7.7.
-        """
+
+ """
 
         state, hit_hash, now = triple
         wf = _build_workflow_with_state(state)
@@ -642,7 +624,7 @@ class TestApplyExplainSignal:
         # iter_count untouched on a cache hit.
         assert wf._iteration_state.iter_count == before_iter, (
             f"Cache hit advanced iter_count from {before_iter} to "
-            f"{wf._iteration_state.iter_count}; Property 7 forbids it."
+            f"{wf._iteration_state.iter_count}; invariant forbids it."
         )
         # Audit action queued exactly once.
         assert (
@@ -667,10 +649,10 @@ class TestApplyExplainSignal:
         self,
         triple: tuple[IterationState, str, datetime],
     ) -> None:
-        """Property 8: cache miss ⇒ iter advances, audit not queued.
+        """invariant: cache miss ⇒ iter advances, audit not queued.
 
-        Validates: Requirements 5.5, 7.7.
-        """
+
+ """
 
         state, miss_hash, now = triple
         wf = _build_workflow_with_state(state)
@@ -686,14 +668,14 @@ class TestApplyExplainSignal:
         assert wf._iteration_state.iter_count == before_iter + 1, (
             f"Cache miss did not advance iter_count: "
             f"{before_iter} → {wf._iteration_state.iter_count}; "
-            f"Property 8 requires +1."
+            f"invariant requires +1."
         )
         # No cache-hit audit was queued.
         assert (
             EXPLAIN_CACHE_HIT_AUDIT_ACTION not in wf._pending_audit_actions
         ), (
             f"Cache miss queued {EXPLAIN_CACHE_HIT_AUDIT_ACTION!r}; "
-            f"Property 8 forbids it. audit={wf._pending_audit_actions!r}."
+            f"invariant forbids it. audit={wf._pending_audit_actions!r}."
         )
         # Pending fields populated for the body's LLM call.
         assert wf._pending_explain_diff_hash == miss_hash
@@ -707,30 +689,28 @@ class TestApplyExplainSignal:
 
 
 def test_lru_overflow_evicts_oldest_when_iteration_module_lands() -> None:
-    """LRU ``maxsize=32`` eviction property (gated on task 6.1).
+    """LRU ``maxsize=32`` eviction property (gated on.
 
-    The brief for task 6.6 references an LRU cache with
-    ``maxsize=32`` whose overflow behaviour evicts the least-recently
-    inserted entry. The current ``IterationState.explain_cache`` is a
-    plain ``Mapping`` without a bound — the bounded LRU helper is
-    scheduled to land in :mod:`temporal_shared.iteration` (task 6.1
-    of ``platform-mimari-workflows``). Until that module ships we
-    cannot exercise the eviction property; the test skips with a
-    precise reason so the property suite stays green and the
-    placeholder is unmistakeable in CI logs.
+ The brief for references an LRU cache with
+ ``maxsize=32`` whose overflow behaviour evicts the least-recently
+ inserted entry. The current ``IterationState.explain_cache`` is a
+ plain ``Mapping`` without a bound — the bounded LRU helper is
+ scheduled to land in:mod:`temporal_shared.iteration`). Until that module ships we
+ cannot exercise the eviction property; the test skips with a
+ precise reason so the invariant stays green and the
+ placeholder is unmistakeable in CI logs.
 
-    Once task 6.1 lands the import below succeeds, the skip drops
-    out, and the test exercises the eviction contract: writing 33
-    distinct entries leaves the cache size at 32 and the oldest
-    insertion is gone.
+ Once lands the import below succeeds, the skip drops
+ out, and the test exercises the eviction contract: writing 33
+ distinct entries leaves the cache size at 32 and the oldest
+ insertion is gone.
 
-    TODO(task 6.1): replace this skip-guarded body with the real
-    eviction assertion once :mod:`temporal_shared.iteration` exposes
-    the bounded LRU helper. Tracked under
-    ``platform-mimari-workflows`` tasks.md §6.1.
+ TODO: replace this skip-guarded body with the real
+ eviction assertion once:mod:`temporal_shared.iteration` exposes
+ the bounded LRU helper.
 
-    Validates: Requirements 5.5.
-    """
+
+ """
 
     try:
         from temporal_shared.iteration import (  # type: ignore[import-not-found]
@@ -741,13 +721,13 @@ def test_lru_overflow_evicts_oldest_when_iteration_module_lands() -> None:
     except ImportError as exc:
         pytest.skip(
             "temporal_shared.iteration is not yet implemented "
-            "(task 6.1 of platform-mimari-workflows is still ``[-]``); "
+            "(implementation milestone still ``[-]``); "
             f"import failed with: {exc!r}. The LRU ``maxsize=32`` "
-            "overflow property is fully specified by design.md and "
-            "will be exercised end-to-end as soon as task 6.1 ships."
+            "overflow property will be exercised end-to-end "
+            "as soon as implementation milestone ships."
         )
 
-    # Once task 6.1 lands the body below runs. The contract: writing
+    # Once lands the body below runs. The contract: writing
     # MAXSIZE+1 distinct entries leaves the cache at exactly MAXSIZE
     # and the first-inserted hash has been evicted.
     state = IterationState()
@@ -776,7 +756,7 @@ def test_lru_overflow_evicts_oldest_when_iteration_module_lands() -> None:
 # ---------------------------------------------------------------------------
 # Defensive: silence unused-import warnings for symbols imported solely
 # to enforce protocol parity (``dataclasses`` is referenced in the
-# docstring of :func:`test_p6_input_state_is_not_mutated`).
+# docstring of:func:`test_p6_input_state_is_not_mutated`).
 # ---------------------------------------------------------------------------
 
 _ = dataclasses

@@ -1,9 +1,9 @@
-"""Pydantic v2 settings for the automation-service scaffold.
+"""Pydantic v2 settings for the automation-service.
 
 Only the surface needed by the ``/healthz`` and ``/readyz`` skeleton is
 modelled here. The ``dependencies_reachable()`` method is a stub that
-always returns ``True`` so that ``/readyz`` returns 200 in the default
-scaffold; tests monkeypatch this method to exercise the 503 branch.
+always returns ``True`` so that ``/readyz`` returns 200 by default;
+tests monkeypatch this method to exercise the 503 branch.
 """
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    """Environment-driven settings for the automation-service scaffold."""
+    """Environment-driven settings for the automation-service."""
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     temporal_namespace: str = "default"
     mcp_base_url: str = "http://atlassian-mcp:8090"
 
-    # LLM block (real provider by default; see Requirement 10.4)
+    # LLM block (real provider by default)
     llm_provider: str = "openai"
     vllm_base_url: str = "http://host.docker.internal:8000/v1"
     vllm_api_key: str = ""
@@ -49,10 +49,10 @@ class Settings(BaseSettings):
     def dependencies_reachable(self) -> bool:
         """Stub readiness probe.
 
-        Returns ``True`` unconditionally in the scaffold. Real implementations
+        Returns ``True`` unconditionally by default. Real implementations
         will replace this with concrete TCP/HTTP checks against Postgres,
         Vault, Temporal, and the Atlassian MCP. Tests monkeypatch this method
-        to drive the ``/readyz`` 503 branch (see Property 9).
+        to drive the ``/readyz`` 503 branch.
         """
 
         return True

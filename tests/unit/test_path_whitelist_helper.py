@@ -1,9 +1,7 @@
 """Unit tests for the ``tests/property/_path_whitelist`` helper module.
 
-Validates: Requirements 1.2, 1.3, 1.4, 1.5
-
 The helper is a *reusable* AST scanner consumed by the property tests
-in :mod:`tests.property.test_path_coverage` (Property 2),
+in :mod:`tests.property.test_path_coverage`,
 :mod:`tests.property.test_llm_call_paths`, and
 :mod:`tests.property.test_workflow_determinism_static`. These unit
 tests pin down the behaviour of each scanner against synthetic source
@@ -57,13 +55,13 @@ def _write(root: Path, rel: str, source: str) -> Path:
 
 
 class TestAtlassianHttpScanner:
-    """Property 2 (Requirement 1.2): direct Atlassian HTTP calls
-    outside the ``atlassian_unified`` MCP must be detected."""
+    """Direct Atlassian HTTP calls
+    outside the ``atlassian_mcp_bitbucket`` MCP must be detected."""
 
     def test_direct_atlassian_call_via_httpx_is_flagged(
         self, tmp_path: Path
     ) -> None:
-        """**Validates: Requirement 1.2**"""
+        """Direct Atlassian calls via httpx are flagged."""
         _write(
             tmp_path,
             "services/some-service/src/client.py",
@@ -83,7 +81,7 @@ class TestAtlassianHttpScanner:
     def test_atlassian_call_inside_whitelist_is_not_flagged(
         self, tmp_path: Path
     ) -> None:
-        """**Validates: Requirement 1.2** — files inside the whitelist
+        """Files inside the whitelist
         (here, ``libs/http-shared/``) are inspected but never reported.
         """
         _write(
@@ -101,7 +99,7 @@ class TestAtlassianHttpScanner:
         assert findings == []
 
     def test_call_to_mcp_proxy_is_not_flagged(self, tmp_path: Path) -> None:
-        """**Validates: Requirement 1.2** — calls to ``atlassian-mcp:8090``
+        """Calls to ``atlassian-mcp:8090``
         (the proxy) are the *allowed* path; only direct upstream
         ``*.atlassian.net`` / ``bitbucket.org`` calls are forbidden.
         """
@@ -120,8 +118,8 @@ class TestAtlassianHttpScanner:
     def test_pure_httpx_without_atlassian_host_is_not_flagged(
         self, tmp_path: Path
     ) -> None:
-        """**Validates: Requirement 1.2** — generic HTTP clients used
-        for non-Atlassian hosts are out of scope of Requirement 1.2.
+        """Generic HTTP clients used
+        for non-Atlassian hosts are ignored.
         """
         _write(
             tmp_path,
@@ -138,9 +136,9 @@ class TestAtlassianHttpScanner:
     def test_pure_atlassian_string_without_http_client_is_not_flagged(
         self, tmp_path: Path
     ) -> None:
-        """**Validates: Requirement 1.2** — a docstring or constant
+        """A docstring or constant
         mentioning an Atlassian URL without importing httpx/requests/
-        aiohttp does not violate Requirement 1.2.
+        aiohttp is ignored.
         """
         _write(
             tmp_path,
@@ -154,8 +152,8 @@ class TestAtlassianHttpScanner:
         assert findings == []
 
     def test_requests_library_is_also_flagged(self, tmp_path: Path) -> None:
-        """**Validates: Requirement 1.2** — ``requests`` is on equal
-        footing with ``httpx`` for Requirement 1.2.
+        """``requests`` is on equal
+        footing with ``httpx``.
         """
         _write(
             tmp_path,
@@ -171,7 +169,7 @@ class TestAtlassianHttpScanner:
         assert findings[0].symbol.startswith("requests")
 
     def test_aiohttp_library_is_also_flagged(self, tmp_path: Path) -> None:
-        """**Validates: Requirement 1.2** — ``aiohttp`` completes the
+        """``aiohttp`` completes the
         triad of forbidden direct HTTP clients.
         """
         _write(
@@ -196,13 +194,13 @@ class TestAtlassianHttpScanner:
 
 
 class TestSshDockerScanner:
-    """Property 2 (Requirement 1.3): SSH and Docker usage outside
+    """SSH and Docker usage outside
     ``execution-runner-worker`` must be detected."""
 
     def test_paramiko_import_outside_whitelist_is_flagged(
         self, tmp_path: Path
     ) -> None:
-        """**Validates: Requirement 1.3**"""
+        """Paramiko outside the whitelist is flagged."""
         _write(
             tmp_path,
             "services/automation-service/src/runner.py",
@@ -221,7 +219,7 @@ class TestSshDockerScanner:
     def test_paramiko_inside_whitelist_is_not_flagged(
         self, tmp_path: Path
     ) -> None:
-        """**Validates: Requirement 1.3** — ``execution-runner-worker``
+        """``execution-runner-worker``
         is the legitimate home of paramiko."""
         _write(
             tmp_path,
@@ -236,7 +234,7 @@ class TestSshDockerScanner:
     def test_asyncssh_import_outside_whitelist_is_flagged(
         self, tmp_path: Path
     ) -> None:
-        """**Validates: Requirement 1.3** — ``asyncssh`` is on the same
+        """``asyncssh`` is on the same
         footing as ``paramiko``."""
         _write(
             tmp_path,
@@ -248,7 +246,7 @@ class TestSshDockerScanner:
         assert findings[0].symbol == "asyncssh"
 
     def test_subprocess_ssh_call_is_flagged(self, tmp_path: Path) -> None:
-        """**Validates: Requirement 1.3** — shell-out to ``ssh`` via
+        """Shell-out to ``ssh`` via
         subprocess is functionally equivalent to importing paramiko."""
         _write(
             tmp_path,
@@ -265,7 +263,7 @@ class TestSshDockerScanner:
         assert "subprocess" in findings[0].symbol
 
     def test_subprocess_scp_list_form_is_flagged(self, tmp_path: Path) -> None:
-        """**Validates: Requirement 1.3** — ``subprocess.run(["scp", ...])``
+        """``subprocess.run(["scp", ...])``
         is detected the same as the string form."""
         _write(
             tmp_path,
@@ -283,7 +281,7 @@ class TestSshDockerScanner:
     def test_subprocess_unrelated_call_is_not_flagged(
         self, tmp_path: Path
     ) -> None:
-        """**Validates: Requirement 1.3** — ``subprocess.run(["ls"])``
+        """``subprocess.run(["ls"])``
         and similar non-ssh shell-outs must not produce findings."""
         _write(
             tmp_path,
@@ -300,8 +298,8 @@ class TestSshDockerScanner:
     def test_docker_sdk_import_is_flagged_with_docker_category(
         self, tmp_path: Path
     ) -> None:
-        """**Validates: Requirement 1.3** — Docker SDK use outside
-        ``execution-runner-worker`` violates Requirement 1.3."""
+        """Docker SDK use outside
+        ``execution-runner-worker`` is flagged."""
         _write(
             tmp_path,
             "services/foo/src/main.py",
@@ -319,13 +317,13 @@ class TestSshDockerScanner:
 
 
 class TestLlmScanner:
-    """Property 2 (Requirement 1.4): LLM library use outside
+    """LLM library use outside
     ``assistant-service`` and ``agent-runner-worker``."""
 
     def test_openai_import_outside_whitelist_is_flagged(
         self, tmp_path: Path
     ) -> None:
-        """**Validates: Requirement 1.4**"""
+        """OpenAI imports outside the whitelist are flagged."""
         _write(
             tmp_path,
             "services/automation-service/src/llm.py",
@@ -339,7 +337,7 @@ class TestLlmScanner:
     def test_anthropic_import_outside_whitelist_is_flagged(
         self, tmp_path: Path
     ) -> None:
-        """**Validates: Requirement 1.4**"""
+        """Anthropic imports outside the whitelist are flagged."""
         _write(
             tmp_path,
             "services/foo/src/main.py",
@@ -352,7 +350,7 @@ class TestLlmScanner:
     def test_llm_orchestrator_import_outside_whitelist_is_flagged(
         self, tmp_path: Path
     ) -> None:
-        """**Validates: Requirement 1.4** — ``libs/llm-orchestrator`` is
+        """``libs/llm-orchestrator`` is
         the in-house LLM facade; importing it outside the LLM-allowed
         components is also a violation."""
         _write(
@@ -367,7 +365,7 @@ class TestLlmScanner:
     def test_assistant_service_import_is_not_flagged(
         self, tmp_path: Path
     ) -> None:
-        """**Validates: Requirement 1.4** — ``assistant-service`` is
+        """``assistant-service`` is
         explicitly allowed to call LLM providers."""
         _write(
             tmp_path,
@@ -382,7 +380,7 @@ class TestLlmScanner:
     def test_agent_runner_worker_import_is_not_flagged(
         self, tmp_path: Path
     ) -> None:
-        """**Validates: Requirement 1.4** — ``agent-runner-worker`` is
+        """``agent-runner-worker`` is
         explicitly allowed to call LLM providers."""
         _write(
             tmp_path,
@@ -401,13 +399,13 @@ class TestLlmScanner:
 
 
 class TestActivityStartWorkflowScanner:
-    """Property 2 (Requirement 1.5): activity files must not start
+    """Activity files must not start
     Temporal workflows directly."""
 
     def test_client_start_workflow_in_activity_is_flagged(
         self, tmp_path: Path
     ) -> None:
-        """**Validates: Requirement 1.5**"""
+        """``client.start_workflow`` in an activity is flagged."""
         _write(
             tmp_path,
             "workers/agent-runner-worker/src/activities/jira.py",
@@ -426,7 +424,7 @@ class TestActivityStartWorkflowScanner:
     def test_execute_workflow_in_activity_is_flagged(
         self, tmp_path: Path
     ) -> None:
-        """**Validates: Requirement 1.5** — ``execute_workflow`` is the
+        """``execute_workflow`` is the
         wait-for-result variant of ``start_workflow`` and is equally
         forbidden inside activity code."""
         _write(
@@ -444,7 +442,7 @@ class TestActivityStartWorkflowScanner:
     def test_start_child_workflow_in_activity_is_flagged(
         self, tmp_path: Path
     ) -> None:
-        """**Validates: Requirement 1.5** — child-workflow starts belong
+        """Child-workflow starts belong
         in the parent workflow, not in activities."""
         _write(
             tmp_path,
@@ -461,7 +459,7 @@ class TestActivityStartWorkflowScanner:
     def test_start_workflow_in_workflow_module_is_not_flagged(
         self, tmp_path: Path
     ) -> None:
-        """**Validates: Requirement 1.5** — calls inside
+        """Calls inside
         ``workers/<w>/src/workflows/`` are not the scanner's concern."""
         _write(
             tmp_path,
@@ -477,7 +475,7 @@ class TestActivityStartWorkflowScanner:
     def test_unrelated_method_in_activity_is_not_flagged(
         self, tmp_path: Path
     ) -> None:
-        """**Validates: Requirement 1.5** — only the three start_*
+        """Only the three start_*
         methods are flagged; ``client.get_workflow_handle`` etc. are
         permitted (they read state, not start new executions)."""
         _write(
@@ -502,7 +500,7 @@ class TestWalkAndAggregator:
     """Smoke tests for the file walker and ``run_full_scan``."""
 
     def test_iter_source_files_skips_excluded_dirs(self, tmp_path: Path) -> None:
-        """**Validates: Requirement 1.2-1.5** — ``__pycache__``,
+        """``__pycache__``,
         ``node_modules``, etc. are pruned at the walk level so they
         cannot contribute false positives."""
         _write(tmp_path, "src/main.py", "x = 1\n")
@@ -514,13 +512,13 @@ class TestWalkAndAggregator:
         rels = sorted(p.relative_to(tmp_path).as_posix() for p in files)
         assert rels == ["src/main.py"]
 
-    def test_iter_source_files_skips_atlassian_unified_subtree(
+    def test_iter_source_files_skips_atlassian_mcp_bitbucket_subtree(
         self, tmp_path: Path
     ) -> None:
-        """**Validates: Requirement 1.2** — the immutable
-        ``atlassian_unified`` subtree is the source of every legitimate
-        Atlassian HTTP call and must be pruned globally."""
-        _write(tmp_path, "services/atlassian_unified/src/jira/api.py", "import requests\n")
+        """The
+        ``atlassian_mcp_bitbucket`` subtree is the source of legitimate
+        Atlassian HTTP calls and must be pruned globally."""
+        _write(tmp_path, "services/atlassian_mcp_bitbucket/src/jira/api.py", "import requests\n")
         _write(tmp_path, "services/foo/src/main.py", "x = 1\n")
 
         files = list(pw.iter_source_files(tmp_path))
@@ -528,7 +526,7 @@ class TestWalkAndAggregator:
         assert rels == ["services/foo/src/main.py"]
 
     def test_run_full_scan_aggregates_categories(self, tmp_path: Path) -> None:
-        """**Validates: Requirements 1.2-1.5** — ``run_full_scan``
+        """``run_full_scan``
         wires every scanner together and exposes results via the
         :class:`ScanReport` dataclass."""
         _write(
@@ -566,7 +564,7 @@ class TestWalkAndAggregator:
         )
 
     def test_format_findings_renders_one_line_per_finding(self) -> None:
-        """**Validates: Requirements 1.2-1.5** — ``format_findings``
+        """``format_findings``
         produces a multi-line bullet list usable in assert messages."""
         findings = [
             pw.Finding(
@@ -591,7 +589,7 @@ class TestWalkAndAggregator:
         assert "services/bar/src/main.py:3" in lines[1]
 
     def test_format_findings_empty_list_returns_empty_string(self) -> None:
-        """**Validates: Requirements 1.2-1.5**"""
+        """Empty finding lists render as an empty string."""
         assert pw.format_findings([]) == ""
 
 
@@ -601,12 +599,10 @@ class TestWalkAndAggregator:
 
 
 def test_full_scan_against_workspace_runs_without_error() -> None:
-    """**Validates: Requirements 1.2-1.5**
-
-    Smoke test: invoking :func:`run_full_scan` against the live
+    """Smoke test: invoking :func:`run_full_scan` against the live
     platform tree must complete without raising. The test does not
     assert specific finding counts (those belong to property tests
-    11.3 / 11.4) — it only guards against scanner crashes triggered
+    dedicated property tests) — it only guards against scanner crashes triggered
     by real-world source shapes (multi-line strings, walrus operators,
     pattern matching, async comprehensions, etc.).
     """

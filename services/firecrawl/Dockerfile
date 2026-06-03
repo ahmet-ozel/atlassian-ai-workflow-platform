@@ -5,7 +5,7 @@
 # Stage 1 (builder): install the wrapper package + transitive deps into a
 # clean prefix so the runtime stage copies a single layer of artefacts.
 # Stage 2 (runtime): minimal python:3.12-slim with curl for HEALTHCHECK and
-# a non-root appuser (uid 10001) per Requirement 9.5.
+# a non-root appuser (uid 10001).
 #
 # Build context = this directory. No `COPY ..` directives — the wrapper is
 # self-contained and does NOT depend on the workspace ``libs/`` packages.
@@ -52,7 +52,7 @@ USER appuser
 EXPOSE 3002
 
 # Healthcheck shape matches the Compose-level invariant
-# (interval ∈ [5s, 30s], retries ≤ 3, timeout < interval — Property 4.4).
+# (interval ∈ [5s, 30s], retries ≤ 3, timeout < interval).
 HEALTHCHECK --interval=10s --timeout=3s --start-period=5s --retries=3 \
     CMD curl -fsS http://localhost:3002/healthz || exit 1
 

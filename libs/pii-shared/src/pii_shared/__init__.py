@@ -4,7 +4,7 @@ Re-exports the public API of the package so callers can simply do::
 
     from pii_shared import mask, PiiMatch, PII_PATTERNS
 
-Validates: Requirement 1.5 (platform-mimari-ops).
+Provides shared PII masking helpers.
 """
 
 from .filter import (

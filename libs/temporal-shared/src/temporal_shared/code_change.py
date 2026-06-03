@@ -11,13 +11,12 @@ when it produces commits and pushes branches on behalf of the bot:
 Both functions are deterministic, perform only string/regex manipulation,
 and never call ``datetime``, ``random``, ``uuid`` or any I/O. This keeps
 them safe to invoke directly from inside a Temporal workflow under the
-replay-determinism rule (design.md §"Tasarım Hedefleri", workflow scope).
+replay-determinism rule.
 
 Format references
 -----------------
 
-Branch names follow the schema documented in
-``platform-mimari-workflows`` requirements.md §R7.1 and tasks.md §7.1::
+Branch names follow this schema::
 
     iter == 1 and "ai/{ISSUE_KEY}" not in existing_branches
         → "ai/{ISSUE_KEY}"
@@ -29,16 +28,15 @@ This is intentionally distinct from the foundation
 emits ``ai/{issue_key}/iter-{N}``); the workflows-spec branch layout is
 flatter and more familiar to humans inspecting the Bitbucket UI.
 
-Commit messages follow requirements.md §R7.2::
+Commit messages follow this schema::
 
     [bot] {message}
     <blank line>
     Co-authored-by: ai-bot <{bot_email}>
 
-The provenance footer matches the bot output attribution standard
-(MIMARI §16.15 R7).
+The provenance footer matches the bot output attribution standard.
 
-Properties (design.md Property 13, "Code-change formatters ve routing")
+Formatter Properties
 -----------------------------------------------------------------------
 
 * ``compute_branch_name`` output never collides with a value already in
@@ -50,7 +48,6 @@ Properties (design.md Property 13, "Code-change formatters ve routing")
   contains ``Co-authored-by: ai-bot <{bot_email}>`` on a final line,
   separated from the body by a blank line.
 
-Validates: Requirements 7.1, 7.2.
 """
 
 from __future__ import annotations
@@ -73,7 +70,7 @@ __all__ = [
 # ---------------------------------------------------------------------------
 
 #: Prefix prepended to every bot-authored commit subject. Documented in
-#: requirements.md §R7.2 and pinned by Property 13(b).
+#: the commit subject format.
 BOT_COMMIT_PREFIX: str = "[bot]"
 
 # Issue keys must match the same shape used by
@@ -155,7 +152,7 @@ def _validate_bot_email(bot_email: object) -> str:
 
 
 # ---------------------------------------------------------------------------
-# compute_branch_name (R7.1, Property 13(a))
+# compute_branch_name
 # ---------------------------------------------------------------------------
 
 
@@ -166,7 +163,7 @@ def compute_branch_name(
 ) -> str:
     """Return the Git branch name for an iteration of a code change.
 
-    Decision rule (requirements.md §R7.1, design.md Property 13(a))::
+    Decision rule::
 
         if iteration == 1 and "ai/{issue_key}" not in existing_branches:
             return "ai/{issue_key}"
@@ -235,7 +232,7 @@ def compute_branch_name(
 
 
 # ---------------------------------------------------------------------------
-# format_commit_message (R7.2, Property 13(b))
+# format_commit_message
 # ---------------------------------------------------------------------------
 
 
@@ -247,7 +244,7 @@ def format_commit_message(
 ) -> str:
     """Wrap a commit message with bot provenance.
 
-    Output shape (requirements.md §R7.2, design.md Property 13(b))::
+    Output shape::
 
         [bot] {message}
 
@@ -280,7 +277,7 @@ def format_commit_message(
         The bot account's email address used in the ``Co-authored-by``
         trailer. Must be a parseable email (``foo@bar.tld``); the bot
         identity itself is hard-coded as ``ai-bot`` to match the
-        attribution standard in MIMARI §16.15 R7.
+        attribution standard.
 
     Returns
     -------

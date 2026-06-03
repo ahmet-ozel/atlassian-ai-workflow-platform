@@ -1,6 +1,4 @@
 """Unit tests for ``prompts.validate.validate_template_format``.
-
-Validates: Requirements 2.9
 """
 
 from __future__ import annotations
@@ -102,7 +100,7 @@ class TestRejectsPositionalPlaceholders:
 
 class TestKnownVarsContract:
     def test_known_vars_set_matches_requirement(self) -> None:
-        # R2.7 lists exactly these five names; guard against drift.
+        # The prompt contract lists exactly these five names; guard against drift.
         assert KNOWN_TEMPLATE_VARS == frozenset(
             {
                 "department_id",

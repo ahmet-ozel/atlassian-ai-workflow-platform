@@ -1,6 +1,4 @@
-"""``PromptsRouter`` (`platform-gap-fill` task 14.1).
-
-**Validates: Requirements 14.1, 14.2, 14.3, 14.4**
+"""``PromptsRouter``.
 
 Admin-only prompt CRUD + sandbox-test + PR commit surface for the
 files that live under ``platform/prompts/``. The router exposes four
@@ -8,17 +6,16 @@ endpoints under ``/api/v1/prompts``:
 
 * ``GET    /api/v1/prompts``                  — list every ``.md``
   file under the configured prompts directory with its filesystem
-  ``last_modified`` timestamp and a SHA-256 ``content_hash``
-  (R14.1).
+  ``last_modified`` timestamp and a SHA-256 ``content_hash``.
 * ``GET    /api/v1/prompts/{name}``           — return the current
-  content of one prompt (R14.1).
+  content of one prompt.
 * ``POST   /api/v1/prompts/{name}/sandbox``   — run a single,
   isolated LLM round-trip against a candidate body without
-  persisting the change (R14.2).
+  persisting the change.
 * ``POST   /api/v1/prompts/{name}/commit``    — create a draft
   branch, write the new body, push it, open a Bitbucket draft PR,
   and record the change in ``shared.prompt_versions`` plus
-  ``shared.audit_events`` (R14.3, R14.4).
+  ``shared.audit_events``.
 
 All endpoints are gated by :func:`require_admin` (mirrors the
 ``workflow_control`` / ``security`` routers in this service).
@@ -54,11 +51,11 @@ A successful commit writes:
 1. One row into ``shared.prompt_versions`` —
    ``(prompt_name, content_hash, changed_by, pr_url, created_at)``.
    The ``(prompt_name, content_hash)`` pair is UNIQUE so re-committing
-   identical content surfaces ``409 prompt_unchanged`` (R14.4 — no
-   duplicate audit chain).
+   identical content surfaces ``409 prompt_unchanged`` without
+   duplicating the audit chain.
 2. One ``prompt_updated`` audit event into ``shared.audit_events``
    carrying ``{action: "prompt_updated", prompt_name, content_hash,
-   admin, pr_url, timestamp}`` (R14.4).
+   admin, pr_url, timestamp}``.
 
 Audit-write failures never block the request — the version row is
 the canonical record; the audit event is best-effort.
@@ -106,7 +103,7 @@ logger = logging.getLogger(__name__)
 # Constants
 # ---------------------------------------------------------------------------
 
-#: Audit action emitted on every successful commit (R14.4).
+#: Audit action emitted on every successful commit.
 _AUDIT_ACTION_PROMPT_UPDATED: str = "prompt_updated"
 
 #: Hard cap on prompt body size — markdown system prompts comfortably
@@ -557,8 +554,8 @@ def _get_pg_pool(request: Request) -> Any:
     Raises:
         HTTPException(503): When ``app.state.pg_pool`` is missing.
             The commit endpoint cannot run without a database — the
-            audit chain mandated by R14.4 (``shared.prompt_versions``
-            row + ``shared.audit_events`` row) requires a live pool.
+            audit chain (``shared.prompt_versions`` row +
+            ``shared.audit_events`` row) requires a live pool.
     """
 
     pool = getattr(request.app.state, "pg_pool", None)
@@ -606,8 +603,6 @@ def _get_audit_sink(request: Request) -> Any | None:
 )
 async def list_prompts(request: Request) -> PromptListResponse:
     """Return every ``.md`` file under the configured prompts directory.
-
-    **Validates: Requirement 14.1**
 
     The list is computed off the local filesystem rather than via
     git so the response reflects on-disk reality (uncommitted edits
@@ -675,8 +670,6 @@ async def list_prompts(request: Request) -> PromptListResponse:
 )
 async def read_prompt(name: str, request: Request) -> PromptDetailResponse:
     """Return the current content of one prompt.
-
-    **Validates: Requirement 14.1**
     """
 
     safe_name = _safe_prompt_name(name)
@@ -723,8 +716,6 @@ async def sandbox_prompt(
     actor: AuthClaims = Depends(require_admin),
 ) -> PromptSandboxResponse:
     """Render a draft prompt body against the LLM without persisting.
-
-    **Validates: Requirement 14.2**
 
     The endpoint pairs a candidate prompt body with a sample user
     input, asks the wired :class:`SupportsLLMClient` to perform a
@@ -794,8 +785,6 @@ async def commit_prompt(
     actor: AuthClaims = Depends(require_admin),
 ) -> PromptCommitResponse:
     """Commit a prompt change and open a Bitbucket draft PR.
-
-    **Validates: Requirements 14.3, 14.4**
 
     Steps:
 
@@ -1006,7 +995,7 @@ async def _emit_prompt_updated_audit(
     pr_url: str,
     timestamp: datetime,
 ) -> None:
-    """Write a single ``prompt_updated`` audit event (R14.4).
+    """Write a single ``prompt_updated`` audit event.
 
     Failures are swallowed — the canonical record is the
     ``shared.prompt_versions`` row inserted in step 5 of

@@ -1,9 +1,7 @@
-"""Property test: Step state machine validity.
+"""Step state machine validity.
 
-Feature: platform-completion, Property 12: For any workflow step, its status SHALL only
-transition through valid states: pending -> running -> (completed | failed).
-
-Validates: Requirements 5.3
+For any workflow step, its status only transitions through valid states:
+pending -> running -> (completed | failed).
 """
 from __future__ import annotations
 import sys

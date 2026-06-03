@@ -1,8 +1,6 @@
 """Property tests for the Jira webhook → ``work_items`` post-condition.
 
-**Validates: Requirements 2.2, 2.4, 2.6, 2.8, 2.9, 2.10, 2.14, 3.3**
-
-Property 8 (design.md §"Property 8: Webhook → work_item post-condition"):
+Webhook → ``work_items`` post-condition:
 
 For any well-formed Jira webhook payload ``p`` whose six pre-conditions
 hold simultaneously —
@@ -311,7 +309,7 @@ class _FakeTemporalClient:
         workflow_id: str,
         signal_name: str,
         payload: Any = None,
-    ) -> None:  # pragma: no cover - not exercised by Property 8
+    ) -> None:  # pragma: no cover - not exercised by these tests
         self.signal_calls.append((workflow_id, signal_name, payload))
 
 
@@ -362,7 +360,7 @@ _PROJECT_KEYS_WITH_CAPABILITY: dict[str, str] = {
 }
 
 #: Project keys that have a department mapping but NO Jira credential —
-#: capability gate denies. (For Property 8 we don't strictly need this
+#: capability gate denies. (For these tests we don't strictly need this
 #: case to be distinct from "no mapping at all", but exercising both
 #: paths gives Hypothesis more shrinking surface.)
 _PROJECT_KEYS_DEPT_NO_CRED: dict[str, str] = {
@@ -487,7 +485,7 @@ def _happy_payload(draw: st.DrawFn) -> tuple[bytes, str, str, str]:
 
 # ---- Failure mode strategies ----------------------------------------------
 
-#: An enumeration of the pre-condition failures Property 8 must cover.
+#: An enumeration of the pre-condition failures covered here.
 _FAILURE_MODES: tuple[str, ...] = (
     "bad_signature",  # (1) HMAC fails → 401 unauthorized
     "duplicate",  # (2) hash already in processed_events → 200 duplicate
@@ -646,7 +644,7 @@ def _make_resolver() -> _FakeCredentialResolver:
 
 
 # ===========================================================================
-# Property 8.A — Happy-path post-condition
+# Happy-path post-condition
 # ===========================================================================
 
 
@@ -659,11 +657,8 @@ class TestWebhookHappyPathPostCondition:
     async def test_post_state_matches_specification(
         self, generated: tuple[bytes, str, str, str]
     ) -> None:
-        """**Validates: Requirements 2.10, 2.14, 3.3**
-
-        Every well-formed, fully-passing payload produces exactly the
-        four post-condition artefacts described in design.md §"Property
-        8".
+        """Every fully-passing payload produces exactly the four
+        post-condition artifacts.
         """
         raw_body, signature, workflow_id, expected_dept = generated
 
@@ -709,7 +704,7 @@ class TestWebhookHappyPathPostCondition:
 
 
 # ===========================================================================
-# Property 8.B — Failing pre-condition leaves work_items empty
+# Failing pre-condition leaves work_items empty
 # ===========================================================================
 
 
@@ -722,9 +717,7 @@ class TestWebhookFailingPreconditionPostCondition:
     async def test_no_work_item_on_precondition_failure(
         self, generated: tuple[bytes, str, str]
     ) -> None:
-        """**Validates: Requirements 2.2, 2.4, 2.6, 2.8, 2.9, 2.14**
-
-        For payloads that fail any of pre-conditions 1-6, the handler
+        """For payloads that fail any of pre-conditions 1-6, the handler
         returns one of the alternative outcomes and inserts *zero*
         ``work_items`` rows. (Note: ``processed_events`` may still have
         a row inserted for failures that occur *after* the replay
@@ -770,7 +763,7 @@ class TestWebhookFailingPreconditionPostCondition:
 
 
 # ===========================================================================
-# Property 8.C — Idempotence under exact replay
+# Idempotence under exact replay
 # ===========================================================================
 
 
@@ -783,9 +776,7 @@ class TestWebhookIdempotence:
     async def test_replay_does_not_double_insert(
         self, generated: tuple[bytes, str, str, str]
     ) -> None:
-        """**Validates: Requirements 2.4, 2.14**
-
-        After a happy-path 202, posting the same payload again returns
+        """After a happy-path 202, posting the same payload again returns
         ``200 status:duplicate`` and leaves the work_items table /
         Temporal start counter unchanged.
         """

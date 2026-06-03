@@ -6,7 +6,7 @@ paths = [
   '''(^|/)\.mypy_cache/''',
   '''(^|/)\.pytest_cache/''',
   '''(^|/)__pycache__/''',
-  '''(^|/)services/atlassian_unified/\.venv/''',
+  '''(^|/)services/atlassian_mcp_bitbucket/\.venv/''',
   '''(^|/)tests/e2e/results\.xml$''',
   '''(^|/)test-results/''',
   '''(^|/)playwright-report/''',

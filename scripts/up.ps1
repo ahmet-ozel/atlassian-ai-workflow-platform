@@ -1,9 +1,8 @@
 # =============================================================================
 # platform/scripts/up.ps1 — Windows/PowerShell equivalent of `make boot` / `make up-all`
 # =============================================================================
-# Implements platform-mimari-foundation task 10.3 / Requirement 2.8 for hosts
-# that do not have GNU make installed (the typical Windows developer setup)
-# AND platform-real-usage-gaps R2 (R2.1, R2.2, R2.4).
+# Compose lifecycle wrapper for hosts that do not have GNU make installed
+# (the typical Windows developer setup).
 #
 # Default semantics ("boot bundle"):
 #
@@ -194,7 +193,7 @@ switch ($Command) {
     }
     'help' {
         @'
-platform/scripts/up.ps1 — Compose lifecycle wrapper (requirement 2.8, R2)
+platform/scripts/up.ps1 — Compose lifecycle wrapper
 
 Commands:
   up             Default. Bootstrap-only: postgres, vault, admin-dashboard

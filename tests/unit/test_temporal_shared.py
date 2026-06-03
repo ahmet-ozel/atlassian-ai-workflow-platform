@@ -1,22 +1,19 @@
-# Surface 1 alignment direction (fix-pre-existing-test-failures task 7.1): update tests to assert the split vocabulary (jira_read/jira_write/bitbucket_read/bitbucket_write/confluence_read/confluence_write); production WORKFLOW_TYPE_CAPABILITIES in temporal_shared.capabilities emits split-only and the helper-side ALIASES fallback would require altering the canonical emission, so the test-side change is strictly smaller — see design § "Surface 1 — Specific Changes" step 1.
+# Alignment note: these tests assert the split vocabulary
+# (jira_read/jira_write/bitbucket_read/bitbucket_write/confluence_read/
+# confluence_write) emitted by production WORKFLOW_TYPE_CAPABILITIES.
 """Unit tests for ``WORKFLOW_TYPE_CAPABILITIES`` dictionary integrity.
 
 These tests pin the shape of the workflow-type → capability set mapping
-shipped by ``libs/temporal-shared``. The dictionary is the runtime
-projection of MIMARI.md §2.5.3 (the workflow type → capability table)
-and design.md §3.4 (the explicit Python literal). Both sources are
-authoritative; this test is the structural guardrail that prevents the
-two from drifting out of sync.
+shipped by ``libs/temporal-shared``. This test is the structural
+guardrail that prevents the production mapping from drifting unexpectedly.
 
-Validated invariants (see task 14.2 in
-``.kiro/specs/multi-service-scaffold/tasks.md``):
+Validated invariants:
 
 1. The dict has exactly the **10** workflow-type keys currently shipped
-   by ``temporal_shared.capabilities`` (the 9 enumerated in MIMARI
-   §2.5.3 plus ``multi_step``, which is now a static entry rather than
-   a runtime-computed union — see Surface 1 alignment note above).
+   by ``temporal_shared.capabilities``, including ``multi_step`` as a
+   static entry rather than a runtime-computed union.
 2. Every value is a ``frozenset`` so callers cannot mutate the shared
-   mapping at runtime (Requirement 5.4).
+   mapping at runtime.
 3. Every capability string is drawn from the closed split-vocabulary
    set ``{"jira_read", "jira_write", "bitbucket_read",
    "bitbucket_write", "confluence_read", "confluence_write",
@@ -50,8 +47,7 @@ from temporal_shared.messages import (
 # test catches accidental edits to the library's literal — a regression that
 # would otherwise hide if we used the same source on both sides.
 #
-# Vocabulary alignment: per Surface 1 (fix-pre-existing-test-failures task
-# 7.2), assertions use the split vocabulary
+# Vocabulary alignment: assertions use the split vocabulary
 # (``"jira_read"`` / ``"jira_write"`` / ``"bitbucket_read"`` /
 # ``"bitbucket_write"`` / ``"confluence_read"`` / ``"confluence_write"``)
 # emitted by production rather than the legacy single tokens
@@ -239,9 +235,8 @@ def test_agent_runner_input_with_output_actions_round_trips_temporal_converter()
 def test_dict_has_exactly_nine_keys() -> None:
     """The mapping must contain exactly the workflow-type keys shipped by production.
 
-    Function name preserved per fix-pre-existing-test-failures preservation
-    clause 3.6; the production mapping currently has 10 keys (the 9 from
-    MIMARI §2.5.3 plus ``multi_step``), so the assertion compares against
+    The production mapping currently includes ``multi_step``, so the
+    assertion compares against
     ``EXPECTED_KEYS`` rather than a hard-coded count.
     """
 
@@ -261,8 +256,7 @@ def test_dict_has_exactly_nine_keys() -> None:
 def test_multi_step_is_not_a_key() -> None:
     """``multi_step`` IS a key in the current production mapping.
 
-    Function name preserved per fix-pre-existing-test-failures preservation
-    clause 3.6. The historical assumption (that ``multi_step`` was computed
+    The historical assumption (that ``multi_step`` was computed
     at runtime as the union of its sub-workflows) no longer holds: the
     production literal in ``temporal_shared.capabilities`` ships
     ``multi_step`` as a static frozenset entry, so this test now asserts

@@ -1,9 +1,5 @@
 # Repo Resolution Order — Canonical Contract
 
-> **Spec:** `platform-quick-fixes` G9 — single source of truth for the
-> precedence rules the platform applies when figuring out **which Bitbucket
-> repository** a Jira task targets.
->
 > **Audience:** End users writing tasks (so they know where to put the repo
 > name), the LLM that runs `task_analysis.md` (so its prompt instructions
 > match the runtime), and contributors editing
@@ -30,7 +26,7 @@ stopping at the first match:
 | 3 | Description YAML front-matter `ai-bot.repo` | Task reporter | `repo: payment-callbacks` inside the `---` block |
 | 4 | Description body explicit "Repo:" line | Task reporter | `Repo: payment-callbacks` in markdown body |
 | 5 | Department single-repo fallback | `departments.json.repo_mappings` | dept has exactly one repo → auto-select |
-| 6 | LLM inference + structured-choice ambiguity guard (Y8) | `task_analysis.md` LLM | "callback retry" → asks the user A/B/C if multiple repos match |
+| 6 | LLM inference + structured-choice ambiguity guard | `task_analysis.md` LLM | "callback retry" → asks the user A/B/C if multiple repos match |
 | 7 | `needs_info` Jira comment | Bot | "🤖 Hangi repo üzerinde çalışılsın?" |
 
 **Rule of thumb for users:** Put the repo name in **one** of the first
@@ -140,7 +136,7 @@ without it.
 in-flight tasks' descriptions or labels to the explicit form (sources
 #2-4).
 
-### 6. LLM inference + Y8 structured-choice guard
+### 6. LLM inference + structured-choice guard
 
 When sources #1-5 do not yield a unique answer, the LLM running
 `task_analysis.md` (in `workers/agent-runner-worker/prompts/`) tries to
@@ -149,10 +145,10 @@ infer the repo from free-form description text:
 - **Single-repo confidence:** Substring match on the dept's
   `repo_mappings`. If exactly one repo's slug appears in the description,
   the LLM picks it.
-- **Multi-match (Y8):** When two or more repo slugs match (substring or
+- **Multi-match:** When two or more repo slugs match (substring or
   fuzzy similarity > 0.7), the LLM **does not guess**. Instead it returns
   `confidence: low` and a `needs_info_question` shaped as a
-  Y8-style structured choice:
+  structured choice:
 
   ```
   🤖 "callback retry" ifadesi birden fazla repo'ya uyabilir.

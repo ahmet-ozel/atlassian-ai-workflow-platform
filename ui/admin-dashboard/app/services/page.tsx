@@ -1,15 +1,15 @@
 "use client";
 
 /**
- * Servis Kataloğu sayfası — admin-dashboard-control-plane spec, design §3.10.
+ * Servis Kataloğu sayfası.
  *
  * Tablo halinde Service_Manifest'ten dönen tüm Managed_Service satırlarını
  * gösterir. Polling intervalinde state sütununu otomatik tazeler; manuel
- * "Refresh" düğmesi de sunar (Requirement 4.6, 12.1, 12.2, 12.3).
+ * "Refresh" düğmesi de sunar.
  *
  * Eylem düğmeleri (`Start`, `Stop`, `Restart`, `View Logs`, `Run Tests`)
  * mevcut state'e göre `disabled` durumunda render edilir; gizlenmez
- * (Requirement 4.3). `Start` modal `StartFormModal` ile,
+ * `Start` modal `StartFormModal` ile,
  * `View Logs` `LogsViewer` ile, `Run Tests` `TestRunnerPanel` ile
  * eşleşir.
  */

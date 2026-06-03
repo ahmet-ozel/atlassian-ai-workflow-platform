@@ -1,36 +1,35 @@
-# Feature: vps-e2e-deployment-test, Property 3: Boot bundle exclusivity
-"""Property test for Boot_Bundle exclusivity.
+"""invariant for Boot_Bundle exclusivity.
 
-**Validates: Requirements 7.1, 7.5**
 
-Property statement
+
+Invariant statement
 ------------------
 After ``make boot`` (or a bare ``docker compose up -d`` with no
 ``--profile`` flag), the set of running containers MUST equal exactly::
 
-    {postgres, vault, admin-dashboard-api, admin-dashboard-ui}
+ {postgres, vault, admin-dashboard-api, admin-dashboard-ui}
 
 Additionally, NO running container name may contain any of the
 forbidden substrings::
 
-    automation | assistant | streamlit | worker | temporal | mcp | firecrawl
+ automation | assistant | streamlit | worker | temporal | mcp | firecrawl
 
 This property is the runtime-side complement of
-``test_compose_bootstrap_minimal.py`` (Property 20) which checks the
-structural YAML. Property 3 here validates the *observed* running set
+``test_compose_bootstrap_minimal.py`` (invariant) which checks the
+structural YAML. invariant here validates the *observed* running set
 from a ``docker compose ps`` snapshot — either live or from the
 evidence file ``vps-test-evidence/07-boot.txt``.
 
 Strategy
 --------
 * The canonical Compose document is parsed at import time to derive the
-  expected Boot_Bundle set (services with absent or empty ``profiles:``).
+ expected Boot_Bundle set (services with absent or empty ``profiles:``).
 * Hypothesis generates random subsets of the forbidden substrings and
-  random synthetic container names to verify the exclusivity predicate
-  holds: any name containing a forbidden substring MUST NOT appear in
-  the running set after boot.
+ random synthetic container names to verify the exclusivity predicate
+ holds: any name containing a forbidden substring MUST NOT appear in
+ the running set after boot.
 * Concrete regression anchors pin each Boot_Bundle member and each
-  forbidden substring individually.
+ forbidden substring individually.
 """
 
 from __future__ import annotations
@@ -51,10 +50,10 @@ if str(_TESTS_DIR) not in sys.path:
 
 
 # ---------------------------------------------------------------------------
-# Boot_Bundle definition — vps-e2e-deployment-test Requirements 7.1, 7.5
+# Boot_Bundle definition — vps-e2e-deployment-test
 # ---------------------------------------------------------------------------
 
-#: Exact set of services that ``make boot`` MUST start per R7.1.
+#: Exact set of services that ``make boot`` MUST start per.
 #: The four core Boot_Bundle services are postgres, vault,
 #: admin-dashboard-api, and admin-dashboard-ui. Additionally,
 #: ``traefik`` is the infrastructure reverse proxy that starts
@@ -72,7 +71,7 @@ BOOT_BUNDLE: frozenset[str] = frozenset(
     }
 )
 
-#: Forbidden substrings — per R7.5, NO running container name after boot
+#: Forbidden substrings — per, NO running container name after boot
 #: may contain any of these substrings.
 FORBIDDEN_SUBSTRINGS: tuple[str, ...] = (
     "automation",
@@ -118,9 +117,9 @@ _COMPOSE_SERVICES: dict[str, dict[str, Any]] = _load_compose_services()
 def _is_in_default_profile_set(service: dict[str, Any]) -> bool:
     """Return True if Compose includes ``service`` in the profile-less ``up``.
 
-    A service is started by the default ``up -d`` invocation iff its
-    ``profiles:`` field is absent or empty.
-    """
+ A service is started by the default ``up -d`` invocation iff its
+ ``profiles:`` field is absent or empty.
+ """
     profiles = service.get("profiles")
     if profiles is None:
         return True
@@ -143,19 +142,19 @@ _ACTUAL_DEFAULT_SET: frozenset[str] = _default_profile_set()
 
 
 # ---------------------------------------------------------------------------
-# Property 3a: Running set equals Boot_Bundle exactly
+# invariant: Running set equals Boot_Bundle exactly
 # ---------------------------------------------------------------------------
 
 
 def test_boot_bundle_running_set_equals_expected() -> None:
-    """Property 3 — running set after boot == {postgres, vault, admin-dashboard-api, admin-dashboard-ui}.
+    """invariant — running set after boot == {postgres, vault, admin-dashboard-api, admin-dashboard-ui}.
 
-    **Validates: Requirements 7.1, 7.5**
 
-    The default-profile set derived from the Compose document MUST
-    equal the Boot_Bundle exactly. This is the structural guarantee
-    that ``make boot`` starts only these four services.
-    """
+
+ The default-profile set derived from the Compose document MUST
+ equal the Boot_Bundle exactly. This is the structural guarantee
+ that ``make boot`` starts only these four services.
+ """
     actual = _ACTUAL_DEFAULT_SET
 
     missing = BOOT_BUNDLE - actual
@@ -163,40 +162,40 @@ def test_boot_bundle_running_set_equals_expected() -> None:
 
     assert not missing, (
         f"Boot_Bundle services missing from the default-profile set "
-        f"(Requirement 7.1); missing={sorted(missing)!r}; "
+        f"(the operational rule); missing={sorted(missing)!r}; "
         f"actual={sorted(actual)!r}"
     )
     assert not extra, (
         f"Extra services in the default-profile set beyond Boot_Bundle "
-        f"(Requirement 7.1); extra={sorted(extra)!r}; "
+        f"(the operational rule); extra={sorted(extra)!r}; "
         f"Boot_Bundle={sorted(BOOT_BUNDLE)!r}"
     )
 
     assert actual == BOOT_BUNDLE, (
-        f"Default-profile set MUST equal Boot_Bundle (Requirement 7.1); "
+        f"Default-profile set MUST equal Boot_Bundle (the operational rule); "
         f"actual={sorted(actual)!r}, expected={sorted(BOOT_BUNDLE)!r}"
     )
 
 
 # ---------------------------------------------------------------------------
-# Property 3b: No forbidden substring in running set names
+# invariant: No forbidden substring in running set names
 # ---------------------------------------------------------------------------
 
 
 def test_boot_bundle_no_forbidden_substrings() -> None:
-    """Property 3 — no Boot_Bundle service name contains a forbidden substring.
+    """invariant — no Boot_Bundle service name contains a forbidden substring.
 
-    **Validates: Requirements 7.1, 7.5**
 
-    After ``make boot``, ``docker compose ps --format '{{.Name}}'``
-    MUST list NO entries containing the substrings: automation,
-    assistant, streamlit, worker, temporal, mcp, or firecrawl.
-    """
+
+ After ``make boot``, ``docker compose ps --format '{{.Name}}'``
+ MUST list NO entries containing the substrings: automation,
+ assistant, streamlit, worker, temporal, mcp, or firecrawl.
+ """
     for service_name in _ACTUAL_DEFAULT_SET:
         for forbidden in FORBIDDEN_SUBSTRINGS:
             assert forbidden not in service_name, (
                 f"Boot_Bundle service {service_name!r} contains forbidden "
-                f"substring {forbidden!r} (Requirement 7.5). After "
+                f"substring {forbidden!r} (the operational rule). After "
                 f"'make boot' no running container name may contain "
                 f"any of {FORBIDDEN_SUBSTRINGS!r}."
             )
@@ -215,11 +214,11 @@ def test_boot_bundle_no_forbidden_substrings() -> None:
 def test_boot_bundle_member_in_default_set(boot_service: str) -> None:
     """Concrete anchor — each Boot_Bundle service is in the default-profile set.
 
-    **Validates: Requirements 7.1, 7.5**
-    """
+
+ """
     assert boot_service in _ACTUAL_DEFAULT_SET, (
         f"Boot_Bundle service {boot_service!r} MUST be in the "
-        f"default-profile set (Requirement 7.1); "
+        f"default-profile set (the operational rule); "
         f"actual={sorted(_ACTUAL_DEFAULT_SET)!r}"
     )
 
@@ -237,14 +236,14 @@ def test_boot_bundle_member_in_default_set(boot_service: str) -> None:
 def test_no_default_service_contains_forbidden_substring(forbidden: str) -> None:
     """Concrete anchor — no default-profile service contains a forbidden substring.
 
-    **Validates: Requirements 7.1, 7.5**
-    """
+
+ """
     violators = [
         name for name in _ACTUAL_DEFAULT_SET if forbidden in name
     ]
     assert not violators, (
         f"Default-profile services containing forbidden substring "
-        f"{forbidden!r}: {violators!r} (Requirement 7.5). "
+        f"{forbidden!r}: {violators!r} (the operational rule). "
         f"After 'make boot' no running container may contain "
         f"any of {FORBIDDEN_SUBSTRINGS!r}."
     )
@@ -271,20 +270,20 @@ def test_no_default_service_contains_forbidden_substring(forbidden: str) -> None
 def test_property3_random_forbidden_subset_exclusion(
     forbidden_subset: list[str],
 ) -> None:
-    """Property 3 (Hypothesis) — random subset of forbidden substrings excluded.
+    """invariant (Hypothesis) — random subset of forbidden substrings excluded.
 
-    **Validates: Requirements 7.1, 7.5**
 
-    For any random subset of the forbidden substrings, assert that
-    none of them appear in any running service name from the
-    default-profile set (Boot_Bundle).
-    """
+
+ For any random subset of the forbidden substrings, assert that
+ none of them appear in any running service name from the
+ default-profile set (Boot_Bundle).
+ """
     for service_name in _ACTUAL_DEFAULT_SET:
         for forbidden in forbidden_subset:
             assert forbidden not in service_name, (
                 f"Boot_Bundle service {service_name!r} contains "
                 f"forbidden substring {forbidden!r} from random "
-                f"subset {forbidden_subset!r} (Requirement 7.5)."
+                f"subset {forbidden_subset!r} (the operational rule)."
             )
 
 
@@ -315,22 +314,22 @@ def test_property3_random_forbidden_subset_exclusion(
 def test_property3_synthetic_forbidden_name_not_in_boot_bundle(
     prefix: str, forbidden: str, suffix: str
 ) -> None:
-    """Property 3 (Hypothesis) — any name containing a forbidden substring is NOT in Boot_Bundle.
+    """invariant (Hypothesis) — any name containing a forbidden substring is NOT in Boot_Bundle.
 
-    **Validates: Requirements 7.1, 7.5**
 
-    Generates synthetic container names that embed a forbidden
-    substring and asserts they are NOT members of the Boot_Bundle.
-    This codifies the invariant: if a name contains a forbidden
-    substring, it cannot be a boot-time service.
-    """
+
+ Generates synthetic container names that embed a forbidden
+ substring and asserts they are NOT members of the Boot_Bundle.
+ This codifies the invariant: if a name contains a forbidden
+ substring, it cannot be a boot-time service.
+ """
     synthetic_name = f"{prefix}{forbidden}{suffix}"
 
     # A name containing a forbidden substring must never be in Boot_Bundle
     assert synthetic_name not in BOOT_BUNDLE, (
         f"Synthetic name {synthetic_name!r} (containing forbidden "
         f"substring {forbidden!r}) was found in BOOT_BUNDLE "
-        f"{sorted(BOOT_BUNDLE)!r}. This violates Requirement 7.5: "
+        f"{sorted(BOOT_BUNDLE)!r}. This violates the operational rule: "
         f"no boot-time service may contain forbidden substrings."
     )
 
@@ -354,14 +353,14 @@ _NON_BOOT_BUNDLE_SERVICES: tuple[str, ...] = tuple(
     suppress_health_check=[HealthCheck.function_scoped_fixture],
 )
 def test_property3_non_boot_bundle_is_profile_gated(target_index: int) -> None:
-    """Property 3 — non-Boot_Bundle services are profile-gated (not running after boot).
+    """invariant — non-Boot_Bundle services are profile-gated (not running after boot).
 
-    **Validates: Requirements 7.1, 7.5**
 
-    Every service in the Compose document that is NOT in the
-    Boot_Bundle MUST have a non-empty ``profiles:`` list, ensuring
-    it does NOT start with a bare ``docker compose up -d``.
-    """
+
+ Every service in the Compose document that is NOT in the
+ Boot_Bundle MUST have a non-empty ``profiles:`` list, ensuring
+ it does NOT start with a bare ``docker compose up -d``.
+ """
     assume(len(_NON_BOOT_BUNDLE_SERVICES) > 0)
     service_name = _NON_BOOT_BUNDLE_SERVICES[target_index]
     service = _COMPOSE_SERVICES[service_name]
@@ -370,5 +369,5 @@ def test_property3_non_boot_bundle_is_profile_gated(target_index: int) -> None:
     assert profiles is not None and isinstance(profiles, list) and len(profiles) > 0, (
         f"Non-Boot_Bundle service {service_name!r} MUST declare a "
         f"non-empty 'profiles:' list so it does NOT start with "
-        f"'make boot' (Requirements 7.1, 7.5); got profiles={profiles!r}"
+        f"'make boot' (the operational rule); got profiles={profiles!r}"
     )

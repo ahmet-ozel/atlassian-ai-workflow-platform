@@ -5,10 +5,6 @@ with a 3-second per-probe timeout. The :func:`check_readiness`
 aggregation function runs all probes in parallel and returns a
 summary suitable for the ``/readyz`` endpoint.
 
-Design references
------------------
-* design.md §Component 6 — Readiness Probe.
-* Requirements 11.2, 11.4, 11.5, 11.6.
 """
 
 from __future__ import annotations
@@ -82,7 +78,7 @@ async def probe_redis(url: str) -> DependencyProbeResult:
     """Probe Redis by executing ``PING`` with a 3s timeout.
 
     Uses a raw asyncio TCP connection to send the RESP PING command
-    and verify the PONG response (Requirement 11.2).
+    and verify the PONG response.
     """
     start = time.monotonic()
     try:
@@ -134,7 +130,6 @@ async def probe_mcp(base_url: str) -> DependencyProbeResult:
 
     Attempts to reach the MCP server's ``/healthz`` endpoint.
     Any successful HTTP response confirms the service is reachable
-    (Requirement 11.2).
     """
     start = time.monotonic()
     try:

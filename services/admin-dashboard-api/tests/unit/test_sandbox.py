@@ -1,4 +1,4 @@
-"""Unit tests for :mod:`src.sandbox` (task 6.2 — Requirement 2.4).
+"""Unit tests for :mod:`src.sandbox`.
 
 The tests focus on the deterministic invariants of the
 :class:`PromptSandbox`:
@@ -109,7 +109,7 @@ class TestModuleConstants:
     def test_cost_tag_sandbox_is_pinned(self) -> None:
         # The literal must match the CHECK constraint on
         # ``shared.cost_tracking.cost_tag`` and the exclusion clause
-        # in BudgetCapPolicy. Drift here breaks Requirement 5.5.
+        # in BudgetCapPolicy. Drift here breaks budget cap handling.
         assert COST_TAG_SANDBOX == "sandbox"
 
     def test_protocols_are_runtime_checkable(self) -> None:
@@ -342,7 +342,7 @@ class TestSyntheticLlmInvoker:
 
 
 # ---------------------------------------------------------------------------
-# NullCostTracker — scaffold default
+# NullCostTracker — default implementation
 # ---------------------------------------------------------------------------
 
 

@@ -1,11 +1,10 @@
 -- 004_audit_log_purge_vault_action.sql
--- Spec: platform-mimari-uyumluluk — Task 15.1 (R14 / Q16 — stop + purge_vault profile guard)
+-- Stop purge-vault production guard audit action.
 --
 -- Widens the ``shared.audit_log.action`` CHECK constraint to include
 -- ``purge_vault_blocked_in_production`` so the lifecycle stop endpoint
 -- can record an attempt to pass ``purge_vault=true`` while the runtime
--- ``DEPLOYMENT_PROFILE`` resolves to ``"production"`` (Requirement
--- 14.2).
+-- ``DEPLOYMENT_PROFILE`` resolves to ``"production"``.
 --
 -- Builds on top of migration ``003_audit_log_feature_flag_action.sql``
 -- which introduced the named constraint ``audit_log_action_check_v2``.

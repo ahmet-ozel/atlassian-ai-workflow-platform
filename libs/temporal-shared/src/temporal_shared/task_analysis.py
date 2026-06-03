@@ -1,14 +1,12 @@
 """Shared LLM task-analysis JSON parser.
 
 This module is the **single source of truth** for the LLM
-task-analysis JSON parser spelled out in
-``platform-mimari-workflows`` design.md §"temporal_shared.task_analysis"
-and tasks.md §10.1.  The parser validates the LLM-produced JSON
-into a :class:`temporal_shared.messages.LlmAnalysisResult` and
+task-analysis JSON parser.  The parser validates the LLM-produced
+JSON into a :class:`temporal_shared.messages.LlmAnalysisResult` and
 rejects payloads that violate the workflow-type-specific required
 fields.
 
-Validation contract (Requirement 6.7):
+Validation contract:
 
 * Universal required fields — every payload must carry
   ``{workflow_type, confidence, output_actions}``.
@@ -32,8 +30,6 @@ Public API:
 * :func:`parse_llm_analysis` — accepts either a parsed dict or a
   raw JSON string and returns a validated
   :class:`LlmAnalysisResult`.
-
-Validates: Requirement 6.7.
 """
 
 from __future__ import annotations
@@ -54,7 +50,7 @@ __all__ = [
 # Constants — closed vocabularies
 # ---------------------------------------------------------------------------
 
-#: Confidence vocabulary (R6.7).
+#: Confidence vocabulary.
 _VALID_CONFIDENCES: Final[frozenset[str]] = frozenset(
     {"high", "medium", "low"}
 )
@@ -83,7 +79,7 @@ _VALID_ACTION_TYPES: Final[frozenset[str]] = frozenset(
     }
 )
 
-#: Per-workflow-type required-field map (Requirement 6.7).
+#: Per-workflow-type required-field map.
 #:
 #: ``workflow_type``, ``confidence`` and ``output_actions`` are
 #: universal required fields; the entries below list the *additional*
@@ -158,8 +154,8 @@ class TaskAnalysisParseError(ValueError):
 def _coerce_draft_true(action_payload: dict[str, Any]) -> dict[str, Any]:
     """Coerce ``draft`` to ``True`` for ``bitbucket_pr`` actions.
 
-    Mirrors MIMARI §1 Kural 10: PR'lar her zaman draft olarak açılır.
-    Pure: returns a fresh dict; the input is left untouched.
+    PR actions are always opened as drafts. Pure: returns a fresh
+    dict; the input is left untouched.
     """
 
     coerced = dict(action_payload)
@@ -302,7 +298,7 @@ def parse_llm_analysis(payload: dict[str, Any] | str) -> LlmAnalysisResult:
         for idx, item in enumerate(raw_actions)
     )
 
-    # --- workflow-type-specific required fields (R6.7) ------------------
+    # --- workflow-type-specific required fields -------------------------
     extras = _TYPE_SPECIFIC_REQUIRED[workflow_type]
     for field_name in sorted(extras):
         if field_name not in data or data.get(field_name) is None:

@@ -1,7 +1,6 @@
 """Logging redaction filter for credential / secret hygiene.
 
-Implements the regex-based :class:`RedactionFilter` mandated by
-Requirement 6.10 of ``platform-mimari-foundation`` (task 9.1):
+Implements the regex-based :class:`RedactionFilter`:
 
     The Logging_Layer SHALL ``Authorization: Basic <...>``,
     ``Bearer <...>``, ``api_token=<...>``, ``password=<...>``,
@@ -35,8 +34,8 @@ Design principles
   in every process.
 
 The matching surface deliberately does *not* try to detect arbitrary
-high-entropy strings — Requirement 6.10 enumerates the exact patterns
-that matter and the property test ``test_log_redaction.py`` validates
+high-entropy strings — it enumerates the exact patterns that matter and
+the test ``test_log_redaction.py`` validates
 the ``KEY=<redacted>`` form for environment dumps. This filter
 complements that test by covering the *log-call site* surface (HTTP
 header echoes, OAuth bearer dumps, exception messages with literal
@@ -101,7 +100,7 @@ def _kv_pattern(key: str) -> re.Pattern[str]:
     return re.compile(rf"((?i:{re.escape(key)}))=[^\s&,;]+")
 
 
-#: Compiled regex patterns enumerated by Requirement 6.10. Ordering is
+#: Compiled regex patterns for credential redaction. Ordering is
 #: not significant — every pattern is applied in turn and replacements
 #: do not interact (the placeholder is opaque to every pattern).
 REDACTION_PATTERNS: Final[tuple[re.Pattern[str], ...]] = (
@@ -123,7 +122,7 @@ REDACTION_PATTERNS: Final[tuple[re.Pattern[str], ...]] = (
     # ``secret=<...>`` (HMAC payloads, generic config dumps).
     _kv_pattern("secret"),
     # ---------------------------------------------------------------
-    # LLM provider key patterns (llm-provider-management R13.1, R13.2)
+    # LLM provider key patterns.
     # ---------------------------------------------------------------
     # Anthropic keys: ``sk-ant-...`` — the public docs use the
     # ``sk-ant-`` prefix and a 95-char body for live keys; we match
@@ -163,8 +162,7 @@ def redact_text(text: str) -> str:
 
     For ``KEY=value`` patterns the original key (in its source case)
     is preserved as ``KEY=***REDACTED***`` so operators can still see
-    *which* credential was masked — this mirrors the design intent of
-    Property C5 (the existing ``test_log_redaction.py``).
+    *which* credential was masked.
     """
     if not text:
         return text

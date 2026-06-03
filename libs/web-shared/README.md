@@ -1,4 +1,4 @@
-# `@yeni-atlassian/web-shared`
+# `@platform/web-shared`
 
 Shared TypeScript helpers used by the web UIs in this monorepo
 (`ui/admin-dashboard` today, more later). Currently exports deeplink
@@ -38,7 +38,7 @@ node --input-type=module -e "import('./dist/index.js').then(m => console.log(m.w
 
 ```
 libs/web-shared/
-├── package.json        # name: @yeni-atlassian/web-shared, type: module
+├── package.json        # name: @platform/web-shared, type: module
 ├── tsconfig.json       # target ES2022, module ESNext, strict
 ├── src/
 │   ├── index.ts        # re-exports from ./deeplink

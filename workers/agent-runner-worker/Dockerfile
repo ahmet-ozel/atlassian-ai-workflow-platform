@@ -91,7 +91,7 @@ HEALTHCHECK CMD python -c "import asyncio,os; from temporalio.client import Clie
 
 # Use the production ``agent_runner.main`` entrypoint (which loads and
 # registers every activity from src.activities.*) rather than the legacy
-# scaffold ``src/main.py`` that ships ``activities=[]``. The console
+# ``src/main.py`` that ships ``activities=[]``. The console
 # script ``agent-runner-worker`` is installed by pyproject.toml and
 # resolves to ``agent_runner.main:run``.
 CMD ["agent-runner-worker"]

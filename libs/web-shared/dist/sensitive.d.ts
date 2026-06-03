@@ -6,11 +6,9 @@
  * of the admin-dashboard control plane. The Python twin lives at
  * `services/admin-dashboard-api/src/lifecycle/sensitive.py` and uses the
  * **identical** regex source strings in the **identical** order so
- * Property C4 (TS↔Python parity) holds character-for-character (see
- * `.kiro/specs/admin-dashboard-control-plane/tasks.md` task 7.8 and
- * design §3.11).
+ * TS/Python parity holds character-for-character.
  *
- * Definition (MIMARI v3.x — Sensitive_Env_Key):
+ * Sensitive_Env_Key definition:
  *
  *   Adı `*_TOKEN`, `*_KEY`, `*_SECRET`, `*_PASSWORD`, `*_DSN`,
  *   `*_CREDENTIAL`, `*_PRIVATE_*` örüntülerinden birine uyan ortam
@@ -23,17 +21,17 @@
  *
  * The module is intentionally **pure** (no side effects, no I/O) and
  * safe to import from React Server Components, client components and
- * Node test runners alike (Requirements 5.3, 7.7, 11.3).
+ * Node test runners alike.
  */
 /**
  * Regex patterns identifying a Sensitive_Env_Key, in the exact order
- * documented in design §3.11 / tasks.md 3.2.
+ * documented for the browser and API implementations.
  *
  * The source strings must remain **character-by-character identical**
  * to the Python literals in
- * `services/admin-dashboard-api/src/lifecycle/sensitive.py` so Property
+ * `services/admin-dashboard-api/src/lifecycle/sensitive.py` so parity checks
  * C4 (TS↔Python parity) can compare both sides on the same input set.
- *
+ * can compare both sides on the same input set.
  * `RegExp.prototype.test` is used (no leading `^`), aligning with the
  * Python helper which uses `re.search` semantics so the suffix anchors
  * `$` and the infix pattern `_PRIVATE_` behave identically on the

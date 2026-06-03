@@ -24,7 +24,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { isSensitiveEnvKey } from "@yeni-atlassian/web-shared";
+import { isSensitiveEnvKey } from "@platform/web-shared";
 
 import { apiFetch } from "../../../lib/api-client";
 

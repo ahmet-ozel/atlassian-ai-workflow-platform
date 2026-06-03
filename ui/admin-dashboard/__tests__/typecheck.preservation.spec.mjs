@@ -482,8 +482,8 @@ describe("PBT 2d — Compiler strictness flags unchanged", () => {
 // ---------------------------------------------------------------------------
 
 describe('PBT 2e — web-shared import site preservation', () => {
-  it('exactly one file imports web-shared (either bare "web-shared" pre-fix or "@yeni-atlassian/web-shared" post-fix) at StartFormModal.tsx', () => {
-    // Post-fix: the import is renamed from "web-shared" to "@yeni-atlassian/web-shared"
+  it('exactly one file imports web-shared (either bare "web-shared" pre-fix or "@platform/web-shared" post-fix) at StartFormModal.tsx', () => {
+    // Post-fix: the import is renamed from "web-shared" to "@platform/web-shared"
     // Pre-fix: the import is bare "web-shared"
     // In both cases, exactly one file (StartFormModal.tsx) imports from web-shared
 
@@ -505,7 +505,7 @@ describe('PBT 2e — web-shared import site preservation', () => {
     let scopedResult = "";
     try {
       scopedResult = execSync(
-        'findstr /S /N /C:"from \\"@yeni-atlassian/web-shared\\"" app\\*.ts app\\*.tsx lib\\*.ts lib\\*.tsx components\\*.ts components\\*.tsx 2>nul',
+        'findstr /S /N /C:"from \\"@platform/web-shared\\"" app\\*.ts app\\*.tsx lib\\*.ts lib\\*.tsx components\\*.ts components\\*.tsx 2>nul',
         {
           cwd: ADMIN_DASHBOARD_ROOT,
           encoding: "utf-8",
@@ -544,7 +544,7 @@ describe('PBT 2e — web-shared import site preservation', () => {
 
   it("property: zero files import the bare specifier post-fix; exactly one imports the scoped specifier", () => {
     // Post-fix: no file should import from bare "web-shared"
-    // Exactly one file should import from "@yeni-atlassian/web-shared"
+    // Exactly one file should import from "@platform/web-shared"
     let bareOutput = "";
     try {
       bareOutput = execSync(
@@ -566,7 +566,7 @@ describe('PBT 2e — web-shared import site preservation', () => {
           line.trim().length > 0 &&
           line.includes('from "web-shared"') &&
           !line.includes("node_modules") &&
-          !line.includes("@yeni-atlassian/web-shared"),
+          !line.includes("@platform/web-shared"),
       );
 
     // Post-fix: zero bare imports
@@ -580,7 +580,7 @@ describe('PBT 2e — web-shared import site preservation', () => {
     let scopedOutput = "";
     try {
       scopedOutput = execSync(
-        'findstr /S /R /C:"from \\"@yeni-atlassian/web-shared\\"" *.ts *.tsx 2>nul',
+        'findstr /S /R /C:"from \\"@platform/web-shared\\"" *.ts *.tsx 2>nul',
         {
           cwd: ADMIN_DASHBOARD_ROOT,
           encoding: "utf-8",
@@ -596,14 +596,14 @@ describe('PBT 2e — web-shared import site preservation', () => {
       .filter(
         (line) =>
           line.trim().length > 0 &&
-          line.includes('@yeni-atlassian/web-shared') &&
+          line.includes('@platform/web-shared') &&
           !line.includes("node_modules"),
       );
 
     assert.equal(
       scopedImportLines.length,
       1,
-      `Expected exactly 1 scoped "@yeni-atlassian/web-shared" import, found ${scopedImportLines.length}`,
+      `Expected exactly 1 scoped "@platform/web-shared" import, found ${scopedImportLines.length}`,
     );
 
     if (scopedImportLines.length === 1) {

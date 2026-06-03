@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "assistant-service"
 version = "0.0.0"
-description = "Assistant HTTP service (chat + LLM orchestration). Scaffold skeleton; business logic intentionally absent."
+description = "Assistant HTTP service (chat + LLM orchestration)."
 requires-python = ">=3.12,<3.13"
 readme = "README.md"
 license = { text = "Proprietary" }

@@ -1,10 +1,10 @@
 /**
  * Deep-link helpers for the admin dashboard and other web UIs.
  *
- * This module is part of the multi-service scaffold and currently exposes
- * stub builders only. Real URL conventions (base URL prefix, tenant scoping,
+ * This module currently exposes stub builders only. Real URL conventions
+ * (base URL prefix, tenant scoping,
  * fragment routing) will be filled in once the admin-dashboard routes are
- * finalised. See MIMARI.md §2 for the target URL scheme.
+ * finalised.
  */
 /**
  * Build a deep-link path for a workflow detail view.

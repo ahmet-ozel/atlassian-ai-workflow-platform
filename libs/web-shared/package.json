@@ -1,5 +1,5 @@
 {
-  "name": "@yeni-atlassian/web-shared",
+  "name": "@platform/web-shared",
   "version": "0.0.0",
   "description": "Shared TypeScript helpers for web UIs, including deeplink builders.",
   "private": true,

@@ -1,5 +1,5 @@
 {
-  "name": "@yeni-atlassian/admin-dashboard",
+  "name": "@platform/admin-dashboard",
   "version": "0.0.0",
   "description": "Admin dashboard UI built with Next.js 14 and the App Router.",
   "private": true,
@@ -18,7 +18,7 @@
     "next": "^14",
     "react": "^18",
     "react-dom": "^18",
-    "@yeni-atlassian/web-shared": "file:../../libs/web-shared"
+    "@platform/web-shared": "file:../../libs/web-shared"
   },
   "devDependencies": {
     "@types/node": "^20",

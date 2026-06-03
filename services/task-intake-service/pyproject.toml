@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "task-intake-service"
 version = "0.0.0"
-description = "Multi-channel task intake (email, Slack, web form) for the Atlassian automation platform. Scaffold only; profile-gated in Compose."
+description = "Multi-channel task intake (email, Slack, web form) for the Atlassian automation platform. Profile-gated in Compose."
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "fastapi",

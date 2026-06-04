@@ -56,9 +56,16 @@ class AtlassianProbeClient:
                 {},
                 service="jira",
             )
-        except RuntimeError as exc:
-            if "unknown tool" not in str(exc).lower():
-                raise
+        except RuntimeError:
+            # Older / minimal MCP images do not expose
+            # ``jira_get_current_user_profile`` and answer with an
+            # "unknown tool" error. The exact wording (and whether the
+            # body is echoed back at all) varies between image builds,
+            # so we fall back to ``jira_get_user_profile`` for any tool
+            # error here as long as we have an identifier to query with.
+            # The fallback authenticates against the same endpoint, so a
+            # genuine auth/connectivity failure still surfaces from the
+            # second call.
             identifier = str(getattr(cred, "username", "") or "").strip()
             if not identifier:
                 raise

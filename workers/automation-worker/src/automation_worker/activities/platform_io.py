@@ -70,6 +70,104 @@ class MCPJiraCommenter:
         )
 
 
+#: Built-in aliases from the platform's logical status vocabulary to the
+#: status names commonly configured on a Jira board. A department's own
+#: ``status_mapping`` config (logical -> exact Jira status name) always
+#: takes precedence; these are only a best-effort fallback so a default
+#: board still resolves without per-dept configuration. Matching against
+#: the live transition list is case-insensitive, so both English and the
+#: Turkish defaults shipped by Jira are covered here.
+_LOGICAL_STATUS_ALIASES: dict[str, tuple[str, ...]] = {
+    "todo": ("To Do", "Yapılacaklar", "Open", "Backlog"),
+    "in_progress": ("In Progress", "Devam Ediyor", "Başladı"),
+    "review": ("In Review", "Review", "İncelemede", "Code Review"),
+    "done": ("Done", "Tamam", "Tamamlandı", "Closed", "Resolved"),
+    "stale": ("Stale", "Bayat", "On Hold", "Beklemede"),
+    "needs_info": ("Needs Info", "Bilgi Bekleniyor", "Waiting for support"),
+}
+
+
+def _candidate_status_names(target_status: str) -> list[str]:
+    """Return the ordered list of Jira status names to try for a target.
+
+    The raw value is always tried first (so a caller that already passes
+    a real Jira status name still works), followed by the built-in
+    aliases for the matching logical status.
+    """
+
+    raw = (target_status or "").strip()
+    candidates: list[str] = []
+    if raw:
+        candidates.append(raw)
+    for alias in _LOGICAL_STATUS_ALIASES.get(raw.lower(), ()):  # noqa: E501
+        if alias not in candidates:
+            candidates.append(alias)
+    return candidates
+
+
+def _match_transition_id(
+    transitions: list[dict[str, Any]], target_status: str
+) -> str | None:
+    """Resolve *target_status* to a transition id from *transitions*.
+
+    ``transitions`` is the ``jira_get_transitions`` payload — a list of
+    ``{"id": ..., "name": <target status name>}`` entries. Matching is
+    case-insensitive against the transition ``name`` and walks the
+    candidate names (raw value first, then logical-status aliases).
+    Returns the transition id as a string, or ``None`` when no
+    transition matches.
+    """
+
+    by_name: dict[str, str] = {}
+    for entry in transitions:
+        if not isinstance(entry, dict):
+            continue
+        name = str(entry.get("name", "")).strip().lower()
+        tid = entry.get("id")
+        if name and tid is not None:
+            by_name[name] = str(tid)
+    for candidate in _candidate_status_names(target_status):
+        tid = by_name.get(candidate.strip().lower())
+        if tid is not None:
+            return tid
+    return None
+
+
+async def _resolve_transition_id(
+    caller: Any, issue_key: str, target_status: str, *, dept_id: str
+) -> str | None:
+    """Fetch the issue's transitions via MCP and resolve a transition id.
+
+    The MCP ``jira_transition_issue`` tool requires a numeric
+    ``transition_id`` (e.g. ``"31"``), not a status name. This helper
+    bridges the platform's logical status vocabulary
+    (``todo`` / ``in_progress`` / ``review`` / ``done`` / ``stale`` /
+    ``needs_info``) onto the live transition ids by first listing the
+    available transitions for the issue and matching by status name.
+    """
+
+    result = await caller.call_tool(
+        "jira_get_transitions",
+        {"issue_key": issue_key},
+        dept_id=dept_id,
+    )
+    transitions = _coerce_transitions(result)
+    return _match_transition_id(transitions, target_status)
+
+
+def _coerce_transitions(result: Any) -> list[dict[str, Any]]:
+    """Normalise the ``jira_get_transitions`` result into a list of dicts."""
+
+    if isinstance(result, list):
+        return [item for item in result if isinstance(item, dict)]
+    if isinstance(result, dict):
+        for key in ("transitions", "result", "values"):
+            value = result.get(key)
+            if isinstance(value, list):
+                return [item for item in value if isinstance(item, dict)]
+    return []
+
+
 class MCPJiraTransitioner:
     """Jira transition protocol backed by stateless MCP calls."""
 
@@ -79,9 +177,23 @@ class MCPJiraTransitioner:
     async def transition_issue(
         self, issue_key: str, target_status: str, *, dept_id: str
     ) -> None:
+        transition_id = await _resolve_transition_id(
+            self._caller, issue_key, target_status, dept_id=dept_id
+        )
+        if transition_id is None:
+            # No matching transition on this board (e.g. ``needs_info``
+            # has no dedicated column). Treat as a no-op so the caller's
+            # best-effort transition does not fail the workflow.
+            _LOG.info(
+                "jira transition skipped: no transition matches "
+                "target_status=%s for %s",
+                target_status,
+                issue_key,
+            )
+            return
         await self._caller.call_tool(
             "jira_transition_issue",
-            {"issue_key": issue_key, "target_status": target_status},
+            {"issue_key": issue_key, "transition_id": transition_id},
             dept_id=dept_id,
         )
 
@@ -301,9 +413,21 @@ async def jira_add_comment(issue_key: str, body: str, department_id: str) -> Non
 async def jira_transition_issue(
     issue_key: str, target_status: str, department_id: str
 ) -> None:
-    await get_mcp_caller().call_tool(
+    caller = get_mcp_caller()
+    transition_id = await _resolve_transition_id(
+        caller, issue_key, target_status, dept_id=department_id
+    )
+    if transition_id is None:
+        _LOG.info(
+            "jira transition skipped: no transition matches "
+            "target_status=%s for %s",
+            target_status,
+            issue_key,
+        )
+        return
+    await caller.call_tool(
         "jira_transition_issue",
-        {"issue_key": issue_key, "target_status": target_status},
+        {"issue_key": issue_key, "transition_id": transition_id},
         dept_id=department_id,
     )
 

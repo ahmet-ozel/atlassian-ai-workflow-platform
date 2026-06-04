@@ -40,8 +40,19 @@ def _account_id_from_profile(profile: object) -> str | None:
     return None
 
 
-async def _resolve_current_jira_account_id(dept_id: str, issue_key: str) -> str:
-    """Resolve the authenticated Jira bot account id from /myself."""
+async def _resolve_current_jira_account_id(
+    dept_id: str, issue_key: str
+) -> str | None:
+    """Resolve the authenticated Jira bot account id.
+
+    The canonical source is the ``/myself`` endpoint, but the mounted
+    MCP image does not expose a ``jira_get_myself`` tool on every build.
+    When the current-user lookup is unavailable (``Unknown tool`` /
+    transport error) we return ``None`` so the caller can treat the
+    assignee step as a best-effort no-op rather than failing the whole
+    workflow — claiming the issue for the bot is a convenience, not a
+    prerequisite for producing the task output.
+    """
 
     try:
         result = await call_mcp_tool(
@@ -51,20 +62,15 @@ async def _resolve_current_jira_account_id(dept_id: str, issue_key: str) -> str:
             service="jira",
         )
     except MCPToolError as exc:
-        raise AssigneeSetError(
-            issue_key=issue_key,
-            account_id="",
-            reason=f"bot_account_probe_failed_{exc.status_code}",
-        ) from exc
-
-    account_id = _account_id_from_profile(result_data(result))
-    if not account_id:
-        raise AssigneeSetError(
-            issue_key=issue_key,
-            account_id="",
-            reason="bot_account_id_missing",
+        _LOG.info(
+            "jira.assignee_probe_unavailable issue=%s dept=%s reason=%s",
+            issue_key,
+            dept_id,
+            f"bot_account_probe_failed_{exc.status_code}",
         )
-    return account_id
+        return None
+
+    return _account_id_from_profile(result_data(result))
 
 
 async def _assign_via_mcp(
@@ -129,10 +135,23 @@ async def set_assignee_to_bot(
 
     account_id = dept_bot_account_id
     if account_id == resolved_dept:
-        account_id = await _resolve_current_jira_account_id(
+        resolved = await _resolve_current_jira_account_id(
             resolved_dept,
             issue_key,
         )
+        if not resolved:
+            # The bot account id could not be resolved (current-user
+            # lookup unavailable on this MCP build). Assigning the bot
+            # is best-effort, so skip it and let the workflow proceed
+            # with the actual task work rather than aborting.
+            _LOG.info(
+                "jira.assignee_skipped issue=%s dept=%s "
+                "reason=account_id_unresolved",
+                issue_key,
+                resolved_dept,
+            )
+            return
+        account_id = resolved
 
     try:
         await _assign_via_mcp(

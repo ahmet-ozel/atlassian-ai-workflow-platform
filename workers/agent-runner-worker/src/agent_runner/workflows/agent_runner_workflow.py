@@ -1683,10 +1683,14 @@ class AgentRunnerWorkflow:
                 non_retryable=True,
             )
 
-        # 5. bitbucket_create_commit — push the change. The activity
-        #    expects a :class:`RepoRef` + file list; for the skeleton
-        #    path we forward the LLM-produced output_actions verbatim
-        #    via ``args`` so the activity layer can decode them.
+        # 5. Commit the change via Git-over-HTTPS. A single
+        #    ``bitbucket_commit_via_git`` activity clones the repo,
+        #    creates/updates the branch off the source branch, writes the
+        #    generated file set, commits and pushes. Git transport is
+        #    identical on Bitbucket Cloud and Server/DC, so this one path
+        #    is deployment-agnostic (no Cloud-only REST ``/src`` POST and
+        #    no MCP file-write tool, which does not exist for either
+        #    deployment). Branch creation is implicit in the push.
         repo_ref = {
             "workspace": "",
             "repo_slug": target_repo,
@@ -1699,28 +1703,12 @@ class AgentRunnerWorkflow:
             else target_branch
         )
         try:
-            await workflow.execute_activity(
-                "bitbucket_create_branch",
-                args=[repo_ref, source_branch, branch_name, inp.department_id],
-                start_to_close_timeout=_SHORT_TIMEOUT,
-                retry_policy=_DEFAULT_RETRY,
-            )
-        except Exception as exc:  # noqa: BLE001 - critical
-            self._failure_reason = "bitbucket_branch_create_failed"
-            workflow.logger.warning(
-                "bitbucket_create_branch failed for %s on %s: %s",
-                inp.issue_key,
-                branch_name,
-                exc,
-            )
-            raise
-
-        try:
             commit_info = await workflow.execute_activity(
-                "bitbucket_create_commit",
+                "bitbucket_commit_via_git",
                 args=[
                     repo_ref,
                     branch_name,
+                    source_branch,
                     commit_files,
                     format_commit_message(
                         message=inp.analysis.title or "AI-generated change",
@@ -1730,13 +1718,13 @@ class AgentRunnerWorkflow:
                     ),
                     inp.department_id,
                 ],
-                start_to_close_timeout=_SHORT_TIMEOUT,
+                start_to_close_timeout=_LLM_TIMEOUT,
                 retry_policy=_DEFAULT_RETRY,
             )
         except Exception as exc:  # noqa: BLE001 - critical
             self._failure_reason = "bitbucket_commit_failed"
             workflow.logger.warning(
-                "bitbucket_create_commit failed for %s on %s: %s",
+                "bitbucket_commit_via_git failed for %s on %s: %s",
                 inp.issue_key,
                 branch_name,
                 exc,

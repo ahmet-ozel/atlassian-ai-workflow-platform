@@ -105,7 +105,6 @@ def _load_activities() -> list[Any]:
         from src.activities.bitbucket import (  # type: ignore[import-not-found]
             bitbucket_add_pr_comment,
             bitbucket_create_branch,
-            bitbucket_create_commit,
             bitbucket_create_pull_request_cloud,
             bitbucket_delete_branch,
             bitbucket_fetch_pr_diff,
@@ -132,6 +131,9 @@ def _load_activities() -> list[Any]:
         from src.activities.opencode import (  # type: ignore[import-not-found]
             opencode_generate_code,
         )
+        from src.activities.git_commit import (  # type: ignore[import-not-found]
+            bitbucket_commit_via_git,
+        )
         from src.activities.precommit_scan import (  # type: ignore[import-not-found]
             precommit_scanner,
         )
@@ -154,7 +156,6 @@ def _load_activities() -> list[Any]:
                 confluence_update_page,
                 # Bitbucket
                 bitbucket_create_branch,
-                bitbucket_create_commit,
                 bitbucket_create_pull_request_cloud,
                 bitbucket_open_pr,
                 bitbucket_delete_branch,
@@ -178,6 +179,8 @@ def _load_activities() -> list[Any]:
                 upload_artifact_to_jira,
                 # OpenCode
                 opencode_generate_code,
+                # Git-based Bitbucket commit (Cloud + Server/DC)
+                bitbucket_commit_via_git,
                 # Pre-commit / work item
                 precommit_scanner,
                 update_work_item_status,

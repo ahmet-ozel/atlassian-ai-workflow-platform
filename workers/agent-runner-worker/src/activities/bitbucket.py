@@ -6,7 +6,6 @@ import json
 from dataclasses import dataclass, field
 from typing import Any
 
-import httpx
 from temporalio import activity
 
 from . import get_credential_resolver
@@ -97,53 +96,6 @@ async def _repo_parts(repo: RepoRef | dict[str, Any], dept_id: str) -> tuple[str
     return project_key, repo_slug
 
 
-def _cred_get(creds: Any, *names: str) -> str:
-    for name in names:
-        if isinstance(creds, dict):
-            value = creds.get(name)
-        else:
-            value = getattr(creds, name, None)
-        if isinstance(value, str) and value.strip():
-            return value.strip()
-    return ""
-
-
-async def _bitbucket_basic_auth(dept_id: str) -> tuple[str, str, str]:
-    """Resolve (base_url, username/email, token) for Bitbucket Cloud Basic auth.
-
-    Bitbucket Cloud authenticates the REST API with ``email:api_token``
-    (the same Atlassian API token used for Jira/Confluence). The token is
-    read from the department's org-scoped credential in Vault.
-    """
-    try:
-        creds = await get_credential_resolver().get(
-            dept_id, "bitbucket", scope="org"
-        )
-    except Exception as exc:  # noqa: BLE001
-        raise BitbucketActivityError(
-            f"could not resolve Bitbucket credential: {exc}"
-        ) from exc
-    base_url = _cred_get(creds, "url", "base_url") or "https://api.bitbucket.org"
-    username = _cred_get(creds, "username", "email", "user")
-    token = _cred_get(creds, "api_token", "app_password", "personal_token", "token")
-    if not username or not token:
-        raise BitbucketActivityError("incomplete Bitbucket credential")
-    return base_url, username, token
-
-
-def _bitbucket_api_root(base_url: str) -> str:
-    """Normalise a Bitbucket Cloud credential URL to the REST API root."""
-    root = (base_url or "").strip().rstrip("/")
-    if not root:
-        return "https://api.bitbucket.org/2.0"
-    # ``https://bitbucket.org`` -> ``https://api.bitbucket.org``
-    if "://bitbucket.org" in root:
-        root = root.replace("://bitbucket.org", "://api.bitbucket.org")
-    if not root.endswith("/2.0"):
-        root = f"{root}/2.0"
-    return root
-
-
 def _tool_data(result: dict[str, Any]) -> Any:
     data = result_data(result)
     if isinstance(data, dict):
@@ -227,93 +179,6 @@ async def bitbucket_create_branch(
         raise
     data = _tool_data(result)
     return BranchInfo(new_branch, _commit_hash(data), already_existed=False)
-
-
-@activity.defn(name="bitbucket_create_commit")
-async def bitbucket_create_commit(
-    repo: RepoRef | dict[str, Any],
-    branch: str,
-    files: list[FileChange | dict[str, Any]],
-    message: str,
-    dept_id: str,
-) -> CommitInfo:
-    workspace, repo_slug = await _repo_parts(repo, dept_id)
-    activity.heartbeat(f"creating commit on {branch} in {workspace}/{repo_slug}")
-
-    changes = [_file_change(raw) for raw in files]
-    changes = [c for c in changes if c.path]
-    if not changes:
-        return CommitInfo(commit_hash=branch, message=message)
-
-    # Bitbucket Cloud creates a commit from a multipart form posted to the
-    # repository ``/src`` endpoint: each form field keyed by the file path
-    # writes that file, and a ``files`` field lists paths to delete. A
-    # single POST yields one commit containing every change.
-    base_url, username, token = await _bitbucket_basic_auth(dept_id)
-    api_root = _bitbucket_api_root(base_url)
-    url = f"{api_root}/repositories/{workspace}/{repo_slug}/src"
-
-    form: dict[str, str] = {
-        "message": message,
-        "branch": branch,
-    }
-    delete_paths: list[str] = []
-    for change in changes:
-        if change.action == "delete":
-            delete_paths.append(change.path)
-        else:
-            form[change.path] = change.content
-
-    try:
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            # httpx encodes a dict body as application/x-www-form-urlencoded;
-            # repeated ``files`` keys (deletions) are appended via params on
-            # the URL so they survive the single-valued dict body.
-            params = [("files", path) for path in delete_paths]
-            resp = await client.post(
-                url, data=form, params=params or None, auth=(username, token)
-            )
-    except httpx.HTTPError as exc:
-        raise BitbucketActivityError(
-            f"bitbucket commit transport error: {exc}"
-        ) from exc
-
-    if resp.status_code >= 400:
-        raise BitbucketActivityError(
-            f"bitbucket commit failed (status={resp.status_code}): "
-            f"{resp.text[:300]}",
-            status_code=resp.status_code,
-        )
-
-    # The ``/src`` POST redirects to / returns the new commit; resolve the
-    # branch head so the PR step has a concrete hash for provenance.
-    commit_hash = await _resolve_branch_head(
-        api_root, workspace, repo_slug, branch, username, token
-    )
-    return CommitInfo(commit_hash=commit_hash or branch, message=message)
-
-
-async def _resolve_branch_head(
-    api_root: str,
-    workspace: str,
-    repo_slug: str,
-    branch: str,
-    username: str,
-    token: str,
-) -> str:
-    url = f"{api_root}/repositories/{workspace}/{repo_slug}/refs/branches/{branch}"
-    try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            resp = await client.get(url, auth=(username, token))
-        if resp.status_code >= 400:
-            return ""
-        data = resp.json()
-    except (httpx.HTTPError, ValueError):
-        return ""
-    target = data.get("target") if isinstance(data, dict) else None
-    if isinstance(target, dict):
-        return str(target.get("hash") or "")
-    return ""
 
 
 @activity.defn(name="bitbucket_open_pr")

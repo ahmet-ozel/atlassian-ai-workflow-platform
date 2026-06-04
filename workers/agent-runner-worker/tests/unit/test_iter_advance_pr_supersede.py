@@ -689,8 +689,8 @@ class TestWorkflowWiring:
                 return {"decision": "pass", "matched_patterns": []}
             if name == "bitbucket_create_branch":
                 return {"name": "ai/PAY-4211/iter-2"}
-            if name == "bitbucket_create_commit":
-                return {"commit_hash": "abc123", "message": "[bot]"}
+            if name == "bitbucket_commit_via_git":
+                return {"commit_hash": "abc123", "branch": "ai/PAY-4211", "message": "[bot]"}
             if name == "bitbucket_create_pull_request_cloud":
                 return {
                     "id": 200,
@@ -813,8 +813,8 @@ class TestWorkflowWiring:
                 return {"decision": "pass", "matched_patterns": []}
             if name == "bitbucket_create_branch":
                 return {"name": "ai/PAY-4211/iter-1"}
-            if name == "bitbucket_create_commit":
-                return {"commit_hash": "abc123", "message": "[bot]"}
+            if name == "bitbucket_commit_via_git":
+                return {"commit_hash": "abc123", "branch": "ai/PAY-4211", "message": "[bot]"}
             if name == "bitbucket_create_pull_request_cloud":
                 return {
                     "id": 100,

@@ -883,6 +883,11 @@ services:
       - agent_workspace:/tmp/workspace
     networks:
       - internal
+      # Bitbucket commits (file writes) post directly to Bitbucket Cloud,
+      # mirroring the execution-runner-worker's direct Jira attachment
+      # uploads. The MCP server exposes only read tools for repository
+      # source, so the commit step needs outbound reach to the Cloud API.
+      - default
     profiles: ["agent-runner-worker", "workers"]
     deploy:
       resources:

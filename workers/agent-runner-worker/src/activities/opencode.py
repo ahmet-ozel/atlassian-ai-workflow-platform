@@ -14,6 +14,7 @@ The caller workflow (AgentRunnerWorkflow) is responsible for setting the
 
 from __future__ import annotations
 
+import json
 import os
 import time
 from dataclasses import dataclass, field
@@ -191,7 +192,69 @@ def _message_entries(payload: object) -> list[dict]:
         files = item.get("files") or item.get("files_changed")
         if isinstance(files, list):
             return [entry for entry in files if isinstance(entry, dict)]
+    # Fall back to the assistant's text reply: the planner returns the
+    # file set as a JSON object (optionally inside a ```json fence``` ).
+    text = _assistant_text(payload)
+    if text:
+        return _files_from_text(text)
     return []
+
+
+def _assistant_text(payload: object) -> str:
+    """Concatenate the ``text`` parts of an assistant message reply."""
+    if not isinstance(payload, dict):
+        return ""
+    parts = payload.get("parts")
+    if not isinstance(parts, list):
+        return ""
+    chunks: list[str] = []
+    for part in parts:
+        if not isinstance(part, dict):
+            continue
+        if part.get("type") != "text":
+            continue
+        value = part.get("text")
+        if isinstance(value, str) and value:
+            chunks.append(value)
+    return "\n".join(chunks)
+
+
+def _files_from_text(text: str) -> list[dict]:
+    """Extract a ``files`` list from a JSON object embedded in free text.
+
+    The generator is asked to answer with ``{"files": [...]}``; the model
+    may wrap it in a Markdown code fence or surround it with prose, so the
+    payload is located by scanning for the outermost balanced ``{...}``
+    block and parsing it.
+    """
+    for blob in _json_candidates(text):
+        try:
+            parsed = json.loads(blob)
+        except (ValueError, TypeError):
+            continue
+        if isinstance(parsed, dict):
+            files = parsed.get("files") or parsed.get("files_changed")
+            if isinstance(files, list):
+                return [entry for entry in files if isinstance(entry, dict)]
+        if isinstance(parsed, list):
+            entries = [entry for entry in parsed if isinstance(entry, dict)]
+            if entries:
+                return entries
+    return []
+
+
+def _json_candidates(text: str) -> list[str]:
+    """Return candidate JSON substrings from ``text``, widest first."""
+    candidates: list[str] = []
+    stripped = text.strip()
+    if stripped:
+        candidates.append(stripped)
+    # Largest balanced object spanning the first '{' to the last '}'.
+    start = text.find("{")
+    end = text.rfind("}")
+    if start != -1 and end > start:
+        candidates.append(text[start : end + 1])
+    return candidates
 
 
 def _model_payload(model: str | None) -> dict[str, str] | None:
@@ -202,6 +265,23 @@ def _model_payload(model: str | None) -> dict[str, str] | None:
     if not provider_id or not model_id:
         return None
     return {"providerID": provider_id, "modelID": model_id}
+
+
+_JSON_CONTRACT = (
+    "You are a non-interactive code generator. Produce the complete file "
+    "contents for the requested change and reply with a SINGLE JSON object "
+    "ONLY — no prose, no explanation, no Markdown fences, no plan. The object "
+    'must have the exact shape: {"files": [{"path": "<repo-relative path>", '
+    '"content": "<full file content>", "action": "create|update|delete"}]}. '
+    "Include the entire file content for every create/update entry (never a "
+    "diff or a placeholder). If nothing should change, reply with "
+    '{"files": []}. Do not attempt to read or edit files on disk.'
+)
+
+
+def _wrap_prompt(prompt: str) -> str:
+    """Prefix the task prompt with the strict JSON-output contract."""
+    return f"{_JSON_CONTRACT}\n\n---\n\n{prompt}"
 
 
 # ---------------------------------------------------------------------------
@@ -281,11 +361,19 @@ async def opencode_generate_code(plan: CodePlan, workspace_path: str) -> CodeRes
             session_data = session_resp.json()
             session_id = session_data["id"]
 
-            # 2. Send the code generation message
+            # 2. Send the code generation message.
+            #
+            # The sidecar runs the model as a headless assistant: the
+            # workspace is empty (the platform commits the returned file
+            # set through the Bitbucket API rather than from a working
+            # tree), so the model must answer with the complete file
+            # contents as JSON instead of trying to edit files on disk.
+            # The ``general`` agent is a plain assistant — it does not
+            # enter the ``build`` agent's tool/permission loop, which
+            # would otherwise stall on the empty directory.
             message_payload: dict = {
-                "parts": [{"type": "text", "text": plan.prompt}],
-                "agent": "build",
-                "tools": {"write": True, "edit": True, "bash": True},
+                "parts": [{"type": "text", "text": _wrap_prompt(plan.prompt)}],
+                "agent": "general",
             }
             if model_payload:
                 message_payload["model"] = model_payload
@@ -336,6 +424,15 @@ async def opencode_generate_code(plan: CodePlan, workspace_path: str) -> CodeRes
             files_changed: list[FileChange] = []
             raw_entries: list[dict] = []
             message_entries = _message_entries(message_data)
+            try:
+                activity.logger.info(
+                    "opencode parse: msg_entries=%d assistant_text=%r diff_len=%d",
+                    len(message_entries),
+                    _assistant_text(message_data)[:400],
+                    len(diff_content or ""),
+                )
+            except Exception:  # noqa: BLE001
+                pass
             if message_entries:
                 raw_entries = message_entries
             elif diff_data and isinstance(diff_data, list):

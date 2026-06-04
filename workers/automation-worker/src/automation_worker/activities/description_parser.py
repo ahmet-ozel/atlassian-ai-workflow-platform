@@ -140,7 +140,7 @@ COMMAND_LENGTH_MAX: Final[int] = 8000
 #: ``---`` is always a YAML stream separator so this is the right
 #: behaviour anyway.
 _FRONT_MATTER_RE: Final[re.Pattern[str]] = re.compile(
-    r"\A\s*---\s*\n(?P<body>.*?)\n---\s*(?:\n|$)",
+    r"\A\s*-{3,}\s*\n(?P<body>.*?)\n-{3,}\s*(?:\n|$)",
     re.DOTALL,
 )
 

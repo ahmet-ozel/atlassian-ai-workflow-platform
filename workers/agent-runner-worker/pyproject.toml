@@ -23,11 +23,16 @@ dependencies = [
 agent-runner-worker = "agent_runner.main:run"
 
 [tool.hatch.build.targets.wheel]
-# Both packages ship in the wheel during the worker build
-# spec migration: the legacy ``src.*`` namespace (older tests still
-# import via ``from src.workflows...``) and the canonical
-# ``agent_runner.*`` namespace.
-packages = ["src", "src/agent_runner"]
+# The wheel ships the canonical ``agent_runner.*`` namespace so the
+# ``agent-runner-worker`` console script (``agent_runner.main:run``)
+# resolves after ``pip install``. The legacy ``src.*`` namespace that
+# older tests and the activity loader import is served at runtime from
+# the source tree copied to ``/app/src`` (with ``PYTHONPATH=/app`` —
+# see the Dockerfile), not from the wheel, so it must NOT be listed
+# here as a second package: doing so makes hatchling map
+# ``src/agent_runner/__init__.py`` to ``agent_runner/__init__.py``
+# twice and abort with a duplicate-archive-path error.
+packages = ["src/agent_runner"]
 
 [tool.hatch.build.targets.sdist]
 include = [

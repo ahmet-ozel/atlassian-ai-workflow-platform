@@ -29,10 +29,14 @@ allow-direct-references = true
 execution-runner-worker = "execution_runner.main:run"
 
 [tool.hatch.build.targets.wheel]
-# Both packages ship in the wheel: the legacy ``src.*`` namespace (older
-# tests still import via ``from src.workflows...``) and the canonical
-# ``execution_runner.*`` namespace.
-packages = ["src", "src/execution_runner"]
+# The wheel ships only the canonical ``execution_runner`` package so the
+# console script (``execution_runner.main:run``) resolves after install.
+# The legacy ``src.*`` namespace is served at runtime from the source
+# tree copied to ``/app/src`` and by the test tree — NOT from the wheel.
+# Listing ``src`` as a second package makes hatchling map
+# ``src/execution_runner/__init__.py`` to ``execution_runner/__init__.py``
+# twice and abort with a duplicate-archive-path error.
+packages = ["src/execution_runner"]
 
 [tool.hatch.build.targets.sdist]
 include = [

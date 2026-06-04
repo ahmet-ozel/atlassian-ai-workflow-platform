@@ -103,7 +103,7 @@ foreach ($key in $templateKeys.Keys) {
 
 # --- R4.2: LLM configuration ---
 $envValues["LLM_PROVIDER"]   = "openai"
-$envValues["LLM_MODEL_NAME"] = "gpt-4o-mini"
+$envValues["LLM_MODEL_NAME"] = "gpt-5.5"
 $envValues["OPENAI_API_KEY"] = $openaiApiKey
 
 # --- R4.3: Postgres credentials ---

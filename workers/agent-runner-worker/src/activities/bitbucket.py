@@ -433,12 +433,12 @@ async def bitbucket_add_pr_comment(
 ) -> None:
     project_key, repo_slug = await _repo_parts(repo, dept_id)
     await _bitbucket_tool(
-        "bitbucket_comment_pull_request",
+        "bitbucket_add_pull_request_comment",
         {
             "project_key": project_key,
             "repo_slug": repo_slug,
             "pr_id": pr_id,
-            "text": body,
+            "content": body,
         },
         dept_id,
     )

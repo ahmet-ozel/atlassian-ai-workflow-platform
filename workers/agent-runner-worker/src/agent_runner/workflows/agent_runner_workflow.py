@@ -1908,10 +1908,18 @@ class AgentRunnerWorkflow:
         # itself recomputes the count from the rendered prompt.
         estimated_tokens = max(1, len(diff_text) // 4)
 
+        issue_data = {
+            "issue_key": inp.issue_key,
+            "summary": inp.analysis.title or inp.issue_key,
+            "description": inp.analysis.rationale or "",
+            "issue_type": "Task",
+            "project_key": inp.issue_key.split("-")[0] if "-" in inp.issue_key else "",
+        }
+
         try:
             review = await self._execute_llm_activity(
                 "llm_review_code",
-                args=[diff, "pr_review.md"],
+                args=[diff, issue_data],
                 input_tokens=estimated_tokens,
                 inp=inp,
             )
@@ -3805,20 +3813,20 @@ class AgentRunnerWorkflow:
     def _extract_pr_id(inp: AgentRunnerWorkflowInput) -> int:
         """Best-effort PR id extraction for the ``pr_review`` flow.
 
-        Today the AutomationWorkflow does not surface ``pr_id`` as a
-        first-class field on :class:`AgentRunnerWorkflowInput`; task
-        10.1 will add the field and this helper will become a simple
-        attribute access. Until then we look for an integer in the
-        analysis ``rationale`` (the gateway stashes it there) and
-        default to 0 so the activity emits a clear error when the
-        upstream payload is malformed.
+        The PR id is sourced from the analysis ``rationale`` (the
+        gateway stashes it there). The rationale is free-form prose
+        that may mention the same number several times, so the first
+        contiguous run of digits is taken as the id rather than
+        concatenating every digit in the text. Defaults to 0 so the
+        downstream activity emits a clear error when the upstream
+        payload is malformed.
         """
 
         rationale = inp.analysis.rationale or ""
-        digits = "".join(ch for ch in rationale if ch.isdigit())
-        if digits:
+        match = re.search(r"\d+", rationale)
+        if match:
             try:
-                return int(digits[:9])
+                return int(match.group()[:9])
             except ValueError:
                 return 0
         return 0

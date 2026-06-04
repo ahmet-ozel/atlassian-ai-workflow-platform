@@ -179,6 +179,8 @@ class _ProviderCreateInput:
     base_url: str | None
     api_key: str | None
     org_id: str | None
+    reasoning_effort: str | None = None
+    verbosity: str | None = None
 
 
 class ProviderService:
@@ -271,6 +273,8 @@ class ProviderService:
                     model=payload.model,
                     context_length=payload.context_length,
                     base_url=payload.base_url,
+                    reasoning_effort=payload.reasoning_effort,
+                    verbosity=payload.verbosity,
                 )
                 await self._vault.write_llm_credentials(
                     provider_id=provider_id, payload=credential_payload
@@ -482,6 +486,8 @@ class ProviderService:
             base_url=row.base_url,
             api_key=credentials.get("api_key"),
             org_id=credentials.get("org_id"),
+            reasoning_effort=row.reasoning_effort,
+            verbosity=row.verbosity,
             provider_id=provider_id,
         )
         result = await self._tester.run(req)
@@ -532,6 +538,8 @@ class ProviderService:
             ),
             api_key=payload.api_key,
             org_id=payload.org_id,
+            reasoning_effort=payload.reasoning_effort,
+            verbosity=payload.verbosity,
             provider_id=None,
         )
         result = await self._tester.run(req)
@@ -667,6 +675,8 @@ class ProviderService:
             context_length=row.context_length,
             base_url=row.base_url,
             status=row.status,  # type: ignore[arg-type]
+            reasoning_effort=row.reasoning_effort,  # type: ignore[arg-type]
+            verbosity=row.verbosity,  # type: ignore[arg-type]
             api_key_masked=mask(payload.get("api_key")),
             org_id_masked=(
                 mask(payload["org_id"]) if "org_id" in payload else None
@@ -759,6 +769,8 @@ def _patch_field_names(patch: ProviderUpdate) -> list[str]:
             "api_key",
             "org_id",
             "status",
+            "reasoning_effort",
+            "verbosity",
         )
         if getattr(patch, name) is not None
     ]

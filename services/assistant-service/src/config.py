@@ -66,13 +66,23 @@ class Settings(BaseSettings):
     vllm_api_key: str = Field(default="")
     openai_base_url: str = Field(default="https://api.openai.com/v1")
     anthropic_base_url: str = Field(default="https://api.anthropic.com/v1")
-    llm_model_name: str = Field(default="gpt-4o-mini")
+    llm_model_name: str = Field(default="gpt-5.5")
     openai_api_key: str = Field(default="")
     anthropic_api_key: str = Field(default="")
 
     # LLM tuning parameters.
     llm_request_timeout_s: int = Field(default=60, description="LLM request timeout in seconds.")
     llm_max_tokens_output: int = Field(default=4096, description="Max tokens in LLM output.")
+    llm_reasoning_effort: str = Field(
+        default="",
+        description="Reasoning effort for reasoning-capable models "
+        "(minimal|low|medium|high); blank = upstream default.",
+    )
+    llm_verbosity: str = Field(
+        default="",
+        description="Output verbosity for the gpt-5 family "
+        "(low|medium|high); blank = upstream default.",
+    )
 
     def validate_provider_credentials(self) -> None:
         """Validate that required credentials are present for the configured LLM provider.

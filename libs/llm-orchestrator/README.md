@@ -45,10 +45,15 @@ python -c "from llm_orchestrator import LLMProviderFactory; print(LLMProviderFac
 
 ## Configuration
 
-| Env var          | Default          | Notes                                      |
-| ---------------- | ---------------- | ------------------------------------------ |
-| `LLM_PROVIDER`   | `openai`         | One of `openai` / `anthropic` / `vllm` |
-| `LLM_MODEL_NAME` | `gpt-4o-mini`    | Passed through to the provider constructor |
+| Env var               | Default      | Notes                                                            |
+| --------------------- | ------------ | ---------------------------------------------------------------- |
+| `LLM_PROVIDER`        | `openai`     | One of `openai` / `anthropic` / `vllm`                           |
+| `LLM_MODEL_NAME`      | `gpt-5.5`    | Passed through to the provider constructor                       |
+| `LLM_REASONING_EFFORT`| (blank)      | `minimal`/`low`/`medium`/`high`; sent only for reasoning models  |
+| `LLM_VERBOSITY`       | (blank)      | `low`/`medium`/`high`; sent only for the gpt-5 family            |
 
 Providers read credentials from environment or Vault-resolved runtime
 configuration and fail closed when required credentials are missing.
+The tuning knobs (`LLM_REASONING_EFFORT` / `LLM_VERBOSITY`) are applied
+only when the configured model advertises support; otherwise they are
+dropped so a non-reasoning model is not rejected by the upstream.

@@ -379,6 +379,9 @@ services:
                 "apiKey": "{env:OPENAI_API_KEY}"
               },
               "models": {
+                "gpt-5.5": {
+                  "name": "GPT-5.5"
+                },
                 "gpt-4o-mini": {
                   "name": "GPT-4o mini"
                 }
@@ -473,7 +476,9 @@ services:
       # flip to the dev-mode bypass that accepts any non-empty token.
       AUTH_PROVIDER: ${AUTH_PROVIDER:-local}
       LLM_PROVIDER: ${LLM_PROVIDER:-openai}
-      LLM_MODEL_NAME: ${LLM_MODEL_NAME:-gpt-4o-mini}
+      LLM_MODEL_NAME: ${LLM_MODEL_NAME:-gpt-5.5}
+      LLM_REASONING_EFFORT: ${LLM_REASONING_EFFORT:-}
+      LLM_VERBOSITY: ${LLM_VERBOSITY:-}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       VLLM_BASE_URL: ${VLLM_BASE_URL:-http://host.docker.internal:8000/v1}
@@ -566,7 +571,9 @@ services:
       VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
       VAULT_TOKEN: ${VAULT_TOKEN:-dev-token-not-for-prod}
       LLM_PROVIDER: ${LLM_PROVIDER:-openai}
-      LLM_MODEL_NAME: ${LLM_MODEL_NAME:-gpt-4o-mini}
+      LLM_MODEL_NAME: ${LLM_MODEL_NAME:-gpt-5.5}
+      LLM_REASONING_EFFORT: ${LLM_REASONING_EFFORT:-}
+      LLM_VERBOSITY: ${LLM_VERBOSITY:-}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       VLLM_BASE_URL: ${VLLM_BASE_URL:-http://host.docker.internal:8000/v1}
@@ -623,7 +630,9 @@ services:
       CLIENT_SOURCE: ${CLIENT_SOURCE:-admin-dashboard-api}
       MCP_METRICS_URL: ${MCP_METRICS_URL:-http://atlassian-mcp:8090}
       LLM_PROVIDER: ${LLM_PROVIDER:-openai}
-      LLM_MODEL_NAME: ${LLM_MODEL_NAME:-gpt-4o-mini}
+      LLM_MODEL_NAME: ${LLM_MODEL_NAME:-gpt-5.5}
+      LLM_REASONING_EFFORT: ${LLM_REASONING_EFFORT:-}
+      LLM_VERBOSITY: ${LLM_VERBOSITY:-}
       VLLM_BASE_URL: ${VLLM_BASE_URL:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
@@ -759,7 +768,9 @@ services:
       ASSISTANT_SERVICE_URL: ${ASSISTANT_SERVICE_URL:-http://assistant-service:8081}
       MCP_BASE_URL: ${MCP_BASE_URL:-http://atlassian-mcp:8090}
       LLM_PROVIDER: ${LLM_PROVIDER:-openai}
-      LLM_MODEL_NAME: ${LLM_MODEL_NAME:-gpt-4o-mini}
+      LLM_MODEL_NAME: ${LLM_MODEL_NAME:-gpt-5.5}
+      LLM_REASONING_EFFORT: ${LLM_REASONING_EFFORT:-}
+      LLM_VERBOSITY: ${LLM_VERBOSITY:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
       VLLM_BASE_URL: ${VLLM_BASE_URL:-http://host.docker.internal:8000/v1}
@@ -853,7 +864,9 @@ services:
       VAULT_BACKEND: ${VAULT_BACKEND:-hashicorp}
       VAULT_TOKEN: ${VAULT_TOKEN:-}
       LLM_PROVIDER: ${LLM_PROVIDER:-openai}
-      LLM_MODEL_NAME: ${LLM_MODEL_NAME:-gpt-4o-mini}
+      LLM_MODEL_NAME: ${LLM_MODEL_NAME:-gpt-5.5}
+      LLM_REASONING_EFFORT: ${LLM_REASONING_EFFORT:-}
+      LLM_VERBOSITY: ${LLM_VERBOSITY:-}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       VLLM_BASE_URL: ${VLLM_BASE_URL:-http://host.docker.internal:8000/v1}
@@ -989,7 +1002,9 @@ services:
       MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
       MINIO_REGION: ${MINIO_REGION:-us-east-1}
       LLM_PROVIDER: ${LLM_PROVIDER:-openai}
-      LLM_MODEL_NAME: ${LLM_MODEL_NAME:-gpt-4o-mini}
+      LLM_MODEL_NAME: ${LLM_MODEL_NAME:-gpt-5.5}
+      LLM_REASONING_EFFORT: ${LLM_REASONING_EFFORT:-}
+      LLM_VERBOSITY: ${LLM_VERBOSITY:-}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       VLLM_BASE_URL: ${VLLM_BASE_URL:-http://host.docker.internal:8000/v1}

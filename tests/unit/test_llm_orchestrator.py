@@ -22,6 +22,8 @@ the four behaviours the provider package needs to guarantee:
 
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from llm_orchestrator import LLMProviderFactory, SyntheticLLMProvider
@@ -189,3 +191,81 @@ def test_from_env_unknown_provider_error_mentions_the_offending_value() -> None:
 
     with pytest.raises(ValueError, match="not-a-real-llm"):
         LLMProviderFactory.from_env(env={"LLM_PROVIDER": "not-a-real-llm"})
+
+
+# ---------------------------------------------------------------------------
+# Tuning knobs — forwarded only for capable models
+# ---------------------------------------------------------------------------
+
+
+def _capture_openai_payload(monkeypatch, provider: OpenAIProvider) -> dict:
+    """Run ``provider.complete`` against a mocked Responses endpoint.
+
+    Returns the JSON body the provider posted so the test can assert on
+    the tuning knobs.
+    """
+    import httpx
+
+    captured: dict = {}
+
+    def _handler(request: "httpx.Request") -> "httpx.Response":
+        captured.update(json.loads(request.content))
+        return httpx.Response(200, json={"output_text": "ok"})
+
+    real_client = httpx.Client
+
+    def _client_factory(*args, **kwargs):
+        kwargs["transport"] = httpx.MockTransport(_handler)
+        return real_client(*args, **kwargs)
+
+    monkeypatch.setattr(httpx, "Client", _client_factory)
+    provider.complete("hello")
+    return captured
+
+
+def test_openai_provider_forwards_tuning_for_gpt5(monkeypatch) -> None:
+    """gpt-5 family → reasoning + verbosity in the Responses body."""
+
+    provider = OpenAIProvider(
+        api_key="sk-x",
+        model_name="gpt-5.5",
+        reasoning_effort="high",
+        verbosity="low",
+    )
+    body = _capture_openai_payload(monkeypatch, provider)
+    assert body["reasoning"] == {"effort": "high"}
+    assert body["text"] == {"verbosity": "low"}
+    # Reasoning models reject an explicit temperature.
+    assert "temperature" not in body
+
+
+def test_openai_provider_omits_tuning_for_gpt4o_mini(monkeypatch) -> None:
+    """Non-reasoning model → tuning knobs dropped, temperature kept."""
+
+    provider = OpenAIProvider(
+        api_key="sk-x",
+        model_name="gpt-4o-mini",
+        reasoning_effort="high",
+        verbosity="low",
+    )
+    body = _capture_openai_payload(monkeypatch, provider)
+    assert "reasoning" not in body
+    assert "text" not in body
+    assert "temperature" in body
+
+
+def test_factory_threads_tuning_env_to_openai() -> None:
+    """``LLM_REASONING_EFFORT`` / ``LLM_VERBOSITY`` reach the provider."""
+
+    provider = LLMProviderFactory.from_env(
+        env={
+            "LLM_PROVIDER": "openai",
+            "OPENAI_API_KEY": "sk-x",
+            "LLM_MODEL_NAME": "gpt-5.5",
+            "LLM_REASONING_EFFORT": "medium",
+            "LLM_VERBOSITY": "high",
+        }
+    )
+    assert isinstance(provider, OpenAIProvider)
+    assert provider.reasoning_effort == "medium"
+    assert provider.verbosity == "high"

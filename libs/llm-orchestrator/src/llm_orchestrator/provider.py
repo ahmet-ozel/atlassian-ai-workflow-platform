@@ -34,6 +34,44 @@ __all__ = [
 _LOG = logging.getLogger(__name__)
 
 
+def _model_supports_reasoning_effort(model: str) -> bool:
+    """True when *model* accepts a ``reasoning_effort`` knob.
+
+    Covers the OpenAI o-series (``o1``/``o3``/``o4``) and the gpt-5
+    family, plus Anthropic's Claude 4 / ``-thinking`` snapshots. Kept
+    self-contained so the orchestrator package carries no dependency on
+    the admin-dashboard service module.
+    """
+    norm = (model or "").strip().lower()
+    if not norm:
+        return False
+    for prefix in ("o1", "o3", "o4"):
+        if norm == prefix or norm.startswith(prefix + "-"):
+            return True
+    if norm.startswith("gpt-5"):
+        return True
+    if "thinking" in norm:
+        return True
+    return norm.startswith("claude-opus-4") or norm.startswith(
+        "claude-sonnet-4"
+    )
+
+
+def _model_supports_verbosity(model: str) -> bool:
+    """True when *model* accepts an output ``verbosity`` knob (gpt-5 family)."""
+    return (model or "").strip().lower().startswith("gpt-5")
+
+
+#: Maps a coarse ``reasoning_effort`` level onto an Anthropic
+#: extended-thinking token budget. ``minimal`` is treated as "no
+#: thinking" (the key is absent) so callers can still pass it through.
+_ANTHROPIC_THINKING_BUDGET: dict[str, int] = {
+    "low": 2048,
+    "medium": 8192,
+    "high": 16384,
+}
+
+
 def _extract_responses_text(data: Any) -> str:
     """Extract assistant text from an OpenAI Responses API payload.
 
@@ -232,6 +270,8 @@ class OpenAIProvider:
     timeout: float = 60.0
     max_tokens: int = 2048
     temperature: float = 0.2
+    reasoning_effort: str | None = None
+    verbosity: str | None = None
     _last_healthy: float = field(default_factory=time.monotonic, init=False)
     _last_error_time: float = field(default=0.0, init=False)
 
@@ -251,12 +291,22 @@ class OpenAIProvider:
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self.api_key}",
         }
-        payload = {
+        payload: dict[str, Any] = {
             "model": self.model_name,
             "input": prompt,
             "max_output_tokens": self.max_tokens,
             "temperature": self.temperature,
         }
+        # Optional tuning knobs — only forwarded when the chosen model
+        # advertises support, so a non-reasoning model isn't rejected.
+        if self.reasoning_effort and _model_supports_reasoning_effort(
+            self.model_name
+        ):
+            payload["reasoning"] = {"effort": self.reasoning_effort}
+            # Reasoning models reject an explicit temperature.
+            payload.pop("temperature", None)
+        if self.verbosity and _model_supports_verbosity(self.model_name):
+            payload["text"] = {"verbosity": self.verbosity}
 
         try:
             with httpx.Client(timeout=self.timeout) as client:
@@ -319,6 +369,7 @@ class AnthropicProvider:
     timeout: float = 60.0
     max_tokens: int = 2048
     temperature: float = 0.2
+    reasoning_effort: str | None = None
     _last_healthy: float = field(default_factory=time.monotonic, init=False)
     _last_error_time: float = field(default=0.0, init=False)
 
@@ -339,12 +390,27 @@ class AnthropicProvider:
             "x-api-key": self.api_key,
             "anthropic-version": "2023-06-01",
         }
-        payload = {
+        payload: dict[str, Any] = {
             "model": self.model_name,
             "max_tokens": self.max_tokens,
             "messages": [{"role": "user", "content": prompt}],
             "temperature": self.temperature,
         }
+        # Map reasoning effort to an extended-thinking budget on the
+        # Claude models that support it. Higher effort → larger budget.
+        if self.reasoning_effort and _model_supports_reasoning_effort(
+            self.model_name
+        ):
+            budget = _ANTHROPIC_THINKING_BUDGET.get(self.reasoning_effort)
+            if budget:
+                payload["thinking"] = {
+                    "type": "enabled",
+                    "budget_tokens": budget,
+                }
+                # Extended thinking requires max_tokens > budget and
+                # forbids an explicit temperature.
+                payload["max_tokens"] = max(self.max_tokens, budget + 1024)
+                payload.pop("temperature", None)
 
         try:
             with httpx.Client(timeout=self.timeout) as client:
@@ -447,6 +513,9 @@ class LLMProviderFactory:
         if model_name:
             kwargs["model_name"] = model_name
 
+        reasoning_effort = (source.get("LLM_REASONING_EFFORT") or "").strip()
+        verbosity = (source.get("LLM_VERBOSITY") or "").strip()
+
         if provider_cls is VLLMProvider:
             base_url = source.get("VLLM_BASE_URL", "")
             if base_url:
@@ -458,10 +527,16 @@ class LLMProviderFactory:
             api_key = source.get("OPENAI_API_KEY", "")
             if api_key:
                 kwargs["api_key"] = api_key
+            if reasoning_effort:
+                kwargs["reasoning_effort"] = reasoning_effort
+            if verbosity:
+                kwargs["verbosity"] = verbosity
         elif provider_cls is AnthropicProvider:
             api_key = source.get("ANTHROPIC_API_KEY", "")
             if api_key:
                 kwargs["api_key"] = api_key
+            if reasoning_effort:
+                kwargs["reasoning_effort"] = reasoning_effort
 
         return provider_cls(**kwargs)
 
@@ -553,6 +628,12 @@ class LLMProviderFactory:
                         override_env["ANTHROPIC_API_KEY"] = primary_cfg["api_key"]
                 if "model" in primary_cfg:
                     override_env["LLM_MODEL_NAME"] = primary_cfg["model"]
+                if "reasoning_effort" in primary_cfg:
+                    override_env["LLM_REASONING_EFFORT"] = primary_cfg[
+                        "reasoning_effort"
+                    ]
+                if "verbosity" in primary_cfg:
+                    override_env["LLM_VERBOSITY"] = primary_cfg["verbosity"]
                 primary = cls.from_env(override_env)
             else:
                 primary = cls.from_env(source)
@@ -572,6 +653,15 @@ class LLMProviderFactory:
                     fb_kwargs["api_key"] = fallback_cfg["api_key"]
                 if "base_url" in fallback_cfg:
                     fb_kwargs["base_url"] = fallback_cfg["base_url"]
+                if (
+                    "reasoning_effort" in fallback_cfg
+                    and fb_provider_key in ("openai", "anthropic")
+                ):
+                    fb_kwargs["reasoning_effort"] = fallback_cfg[
+                        "reasoning_effort"
+                    ]
+                if "verbosity" in fallback_cfg and fb_provider_key == "openai":
+                    fb_kwargs["verbosity"] = fallback_cfg["verbosity"]
                 fb_cls = _PROVIDER_REGISTRY[fb_provider_key]
                 fallback = fb_cls(**fb_kwargs)
 

@@ -175,3 +175,43 @@ def test_gemini_envelope(api_key: str) -> None:
     body = json.loads(sent.content)
     assert body["contents"] == [{"parts": [{"text": TEST_PROMPT}]}]
     assert body["generationConfig"]["maxOutputTokens"] == TOKEN_CAP
+
+
+def test_openai_forwards_tuning_for_capable_model() -> None:
+    """gpt-5 model → probe body carries reasoning + verbosity knobs."""
+
+    req = TestRequest(
+        provider_type="openai",
+        model="gpt-5.5",
+        base_url=None,
+        api_key="sk-test-1234567890ABCDEFGH",
+        org_id=None,
+        reasoning_effort="high",
+        verbosity="low",
+        provider_id=uuid4(),
+    )
+    result, captured = _run(req)
+    assert result.success is True
+    body = json.loads(captured[0].content)
+    assert body["reasoning"] == {"effort": "high"}
+    assert body["text"] == {"verbosity": "low"}
+
+
+def test_openai_omits_tuning_for_incapable_model() -> None:
+    """gpt-4o-mini → tuning knobs are dropped even if configured."""
+
+    req = TestRequest(
+        provider_type="openai",
+        model="gpt-4o-mini",
+        base_url=None,
+        api_key="sk-test-1234567890ABCDEFGH",
+        org_id=None,
+        reasoning_effort="high",
+        verbosity="low",
+        provider_id=uuid4(),
+    )
+    result, captured = _run(req)
+    assert result.success is True
+    body = json.loads(captured[0].content)
+    assert "reasoning" not in body
+    assert "text" not in body

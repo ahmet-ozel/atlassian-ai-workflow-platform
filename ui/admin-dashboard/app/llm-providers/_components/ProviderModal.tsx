@@ -9,6 +9,16 @@
  * - **openai**:    api_key (required), org_id (optional), base_url (optional)
  * - **anthropic**: api_key (required)
  *
+ * Model-tuning inputs appear only when the entered `model` advertises
+ * support for them (mirrors `modelCapabilities.ts`):
+ *
+ * - **reasoning_effort** (minimal|low|medium|high): OpenAI o-series +
+ *   gpt-5 family, Anthropic Claude 4 / `-thinking` snapshots.
+ * - **verbosity** (low|medium|high): OpenAI gpt-5 family only.
+ *
+ * Both default to "" (use the upstream default) and are omitted from
+ * the request body when left blank.
+ *
  * Edit mode keeps the `api_key` input empty and shows a helper line
  * with the masked existing value; on submit, an empty input means
  * "preserve" (R4.6) — we omit the `api_key` key from the PUT body so
@@ -23,6 +33,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import TestResultBadge from "./TestResultBadge";
+import { supportsReasoningEffort, supportsVerbosity } from "./modelCapabilities";
 import { useProviderApi, ApiError } from "./useProviderApi";
 import type {
   ConnectionTestResult,
@@ -30,6 +41,8 @@ import type {
   ProviderRow,
   ProviderType,
   ProviderUpdatePayload,
+  ReasoningEffort,
+  Verbosity,
 } from "./types";
 
 interface ProviderModalProps {
@@ -47,6 +60,8 @@ interface FormState {
   base_url: string;
   api_key: string;
   org_id: string;
+  reasoning_effort: string; // "" = use upstream default
+  verbosity: string; // "" = use upstream default
 }
 
 const EMPTY_FORM: FormState = {
@@ -57,6 +72,8 @@ const EMPTY_FORM: FormState = {
   base_url: "",
   api_key: "",
   org_id: "",
+  reasoning_effort: "",
+  verbosity: "",
 };
 
 const TEST_REQUIRED_MESSAGE =
@@ -80,6 +97,8 @@ export default function ProviderModal({
           base_url: initial.base_url ?? "",
           api_key: "",
           org_id: "",
+          reasoning_effort: initial.reasoning_effort ?? "",
+          verbosity: initial.verbosity ?? "",
         }
       : EMPTY_FORM,
   );
@@ -103,6 +122,14 @@ export default function ProviderModal({
   const showBaseUrl =
     form.provider_type === "vllm" || form.provider_type === "openai";
   const showOrgId = form.provider_type === "openai";
+  const showReasoningEffort = supportsReasoningEffort(
+    form.provider_type,
+    form.model.trim(),
+  );
+  const showVerbosity = supportsVerbosity(
+    form.provider_type,
+    form.model.trim(),
+  );
   const connectivityChanged =
     !initial ||
     form.model.trim() !== initial.model ||
@@ -139,6 +166,12 @@ export default function ProviderModal({
     if (showOrgId && form.org_id.trim()) {
       base.org_id = form.org_id.trim();
     }
+    if (showReasoningEffort && form.reasoning_effort) {
+      base.reasoning_effort = form.reasoning_effort as ReasoningEffort;
+    }
+    if (showVerbosity && form.verbosity) {
+      base.verbosity = form.verbosity as Verbosity;
+    }
     return base;
   };
 
@@ -163,6 +196,16 @@ export default function ProviderModal({
     }
     if (showOrgId && form.org_id.trim()) {
       patch.org_id = form.org_id.trim();
+    }
+    if (showReasoningEffort && form.reasoning_effort !== (initial.reasoning_effort ?? "")) {
+      if (form.reasoning_effort) {
+        patch.reasoning_effort = form.reasoning_effort as ReasoningEffort;
+      }
+    }
+    if (showVerbosity && form.verbosity !== (initial.verbosity ?? "")) {
+      if (form.verbosity) {
+        patch.verbosity = form.verbosity as Verbosity;
+      }
     }
     return patch;
   };
@@ -349,6 +392,41 @@ export default function ProviderModal({
               />
             </label>
           ) : null}
+
+          {showReasoningEffort ? (
+            <label className="grid grid-cols-3 items-center gap-3">
+              <span className="text-sm font-medium">Reasoning effort</span>
+              <select
+                className="col-span-2 rounded border border-gray-300 px-2 py-1"
+                value={form.reasoning_effort}
+                onChange={(e) => set("reasoning_effort", e.target.value)}
+                data-testid="llm-provider-reasoning-effort"
+              >
+                <option value="">Varsayılan (model seçsin)</option>
+                <option value="minimal">minimal</option>
+                <option value="low">low</option>
+                <option value="medium">medium</option>
+                <option value="high">high</option>
+              </select>
+            </label>
+          ) : null}
+
+          {showVerbosity ? (
+            <label className="grid grid-cols-3 items-center gap-3">
+              <span className="text-sm font-medium">Verbosity</span>
+              <select
+                className="col-span-2 rounded border border-gray-300 px-2 py-1"
+                value={form.verbosity}
+                onChange={(e) => set("verbosity", e.target.value)}
+                data-testid="llm-provider-verbosity"
+              >
+                <option value="">Varsayılan (model seçsin)</option>
+                <option value="low">low</option>
+                <option value="medium">medium</option>
+                <option value="high">high</option>
+              </select>
+            </label>
+          ) : null}
         </div>
 
         <div className="mt-5 flex items-center gap-3">
@@ -416,6 +494,8 @@ function buildTestSignature(form: FormState): string {
     base_url: form.base_url.trim(),
     api_key: form.api_key.trim(),
     org_id: form.org_id.trim(),
+    reasoning_effort: form.reasoning_effort,
+    verbosity: form.verbosity,
   });
 }
 

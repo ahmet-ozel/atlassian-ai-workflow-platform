@@ -91,7 +91,9 @@ Bu döküman, `platform/` Compose stack'indeki tüm servis, worker, sidecar ve U
 | name | service(s) | required | default | description | vault_path | feature_flag |
 |---|---|---|---|---|---|---|
 | `LLM_PROVIDER` | `assistant-service`, `agent-runner-worker`, `automation-service`, `admin-dashboard-api` | true | `openai` | Aktif LLM sağlayıcısı: `vllm` / `openai` / `anthropic`. | — | false |
-| `LLM_MODEL_NAME` | `assistant-service`, `agent-runner-worker`, `automation-service`, `admin-dashboard-api` | false | `gpt-4o-mini` | Çağrılarda kullanılan model adı; provider tarafında karşılığı olmalıdır. | — | false |
+| `LLM_MODEL_NAME` | `assistant-service`, `agent-runner-worker`, `automation-service`, `admin-dashboard-api` | false | `gpt-5.5` | Çağrılarda kullanılan model adı; provider tarafında karşılığı olmalıdır. | — | false |
+| `LLM_REASONING_EFFORT` | `assistant-service`, `agent-runner-worker`, `automation-service`, `admin-dashboard-api` | false | (boş) | Reasoning destekli modeller (o-serisi / gpt-5 ailesi / Claude 4) için `minimal`/`low`/`medium`/`high`; desteklemeyen modelde gönderilmez. | — | false |
+| `LLM_VERBOSITY` | `assistant-service`, `agent-runner-worker`, `automation-service`, `admin-dashboard-api` | false | (boş) | gpt-5 ailesi için çıktı ayrıntı düzeyi `low`/`medium`/`high`; desteklemeyen modelde gönderilmez. | — | false |
 | `VLLM_BASE_URL` | `assistant-service`, `agent-runner-worker`, `automation-service`, `admin-dashboard-api` | false | `http://host.docker.internal:8000/v1` | Compose dışı vLLM endpoint'i; Compose stack vLLM paketlemez. | — | false |
 | `OPENAI_API_KEY` | `assistant-service`, `agent-runner-worker`, `automation-service`, `admin-dashboard-api` | false | (boş) | OpenAI fallback API anahtarı; production'da plain-text yerine Vault path'inden çözülür. | `vault:infrastructure/openai/api_key` | false |
 | `ANTHROPIC_API_KEY` | `assistant-service`, `agent-runner-worker`, `automation-service`, `admin-dashboard-api` | false | (boş) | Anthropic fallback API anahtarı; production'da plain-text yerine Vault path'inden çözülür. | `vault:infrastructure/anthropic/api_key` | false |

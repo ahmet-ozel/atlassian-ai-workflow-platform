@@ -13,6 +13,10 @@ export type ProviderType = "vllm" | "openai" | "anthropic" | "gemini";
 
 export type ProviderStatus = "active" | "inactive";
 
+export type ReasoningEffort = "minimal" | "low" | "medium" | "high";
+
+export type Verbosity = "low" | "medium" | "high";
+
 export interface ProviderRow {
   id: string;
   provider_type: ProviderType;
@@ -21,6 +25,8 @@ export interface ProviderRow {
   context_length: number;
   base_url: string | null;
   status: ProviderStatus;
+  reasoning_effort: ReasoningEffort | null;
+  verbosity: Verbosity | null;
   api_key_masked: string;
   org_id_masked: string | null;
   last_tested_at: string | null;
@@ -37,6 +43,8 @@ export interface ProviderCreatePayload {
   base_url?: string;
   api_key?: string;
   org_id?: string;
+  reasoning_effort?: ReasoningEffort;
+  verbosity?: Verbosity;
 }
 
 export interface ProviderUpdatePayload {
@@ -47,6 +55,8 @@ export interface ProviderUpdatePayload {
   api_key?: string;
   org_id?: string;
   status?: ProviderStatus;
+  reasoning_effort?: ReasoningEffort;
+  verbosity?: Verbosity;
 }
 
 export interface ConnectionTestError {

@@ -134,6 +134,8 @@ class FakePool:
                 context_length,
                 base_url,
                 vault_path,
+                reasoning_effort,
+                verbosity,
             ) = args
             now = datetime.now(timezone.utc)
             row = {
@@ -145,6 +147,8 @@ class FakePool:
                 "base_url": base_url,
                 "vault_path": vault_path,
                 "status": "active",
+                "reasoning_effort": reasoning_effort,
+                "verbosity": verbosity,
                 "last_tested_at": None,
                 "last_test_error": None,
                 "created_at": now,
@@ -163,6 +167,8 @@ class FakePool:
                 context_length,
                 base_url,
                 status,
+                reasoning_effort,
+                verbosity,
             ) = args
             row = self.providers.get(provider_id)
             if row is None:
@@ -177,6 +183,10 @@ class FakePool:
                 row["base_url"] = base_url
             if status is not None:
                 row["status"] = status
+            if reasoning_effort is not None:
+                row["reasoning_effort"] = reasoning_effort
+            if verbosity is not None:
+                row["verbosity"] = verbosity
             row["updated_at"] = datetime.now(timezone.utc)
             return row
         if (

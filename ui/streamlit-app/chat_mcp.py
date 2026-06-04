@@ -456,13 +456,15 @@ def ask_llm(user_text: str, tool_name: str, tool_result: Any) -> str:
             "temperature": 0.1,
             "max_output_tokens": 900,
         }
-        # Apply tuning knobs only for models that accept them.
+        # Reasoning-capable models (gpt-5 family / o-series) reject an
+        # explicit temperature, so drop it for them regardless of whether
+        # a tuning knob was configured.
         reasoning_effort = getattr(settings, "llm_reasoning_effort", "")
         verbosity = getattr(settings, "llm_verbosity", "")
-        if reasoning_effort and _model_supports_reasoning_effort(model):
-            payload["reasoning"] = {"effort": reasoning_effort}
-            # Reasoning models reject an explicit temperature.
+        if _model_supports_reasoning_effort(model):
             payload.pop("temperature", None)
+            if reasoning_effort:
+                payload["reasoning"] = {"effort": reasoning_effort}
         if verbosity and _model_supports_verbosity(model):
             payload["text"] = {"verbosity": verbosity}
     elif api_kind == "anthropic":

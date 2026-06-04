@@ -297,14 +297,13 @@ class OpenAIProvider:
             "max_output_tokens": self.max_tokens,
             "temperature": self.temperature,
         }
-        # Optional tuning knobs — only forwarded when the chosen model
-        # advertises support, so a non-reasoning model isn't rejected.
-        if self.reasoning_effort and _model_supports_reasoning_effort(
-            self.model_name
-        ):
-            payload["reasoning"] = {"effort": self.reasoning_effort}
-            # Reasoning models reject an explicit temperature.
+        # Reasoning-capable models (gpt-5 family / o-series) reject an
+        # explicit temperature, so drop it for them regardless of whether
+        # a reasoning_effort knob was configured.
+        if _model_supports_reasoning_effort(self.model_name):
             payload.pop("temperature", None)
+            if self.reasoning_effort:
+                payload["reasoning"] = {"effort": self.reasoning_effort}
         if self.verbosity and _model_supports_verbosity(self.model_name):
             payload["text"] = {"verbosity": self.verbosity}
 

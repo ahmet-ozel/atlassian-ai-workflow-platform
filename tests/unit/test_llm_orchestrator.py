@@ -254,6 +254,18 @@ def test_openai_provider_omits_tuning_for_gpt4o_mini(monkeypatch) -> None:
     assert "temperature" in body
 
 
+def test_openai_provider_drops_temperature_for_gpt5_without_tuning(monkeypatch) -> None:
+    """gpt-5 family rejects an explicit temperature even when no tuning is set."""
+
+    provider = OpenAIProvider(api_key="sk-x", model_name="gpt-5.5")
+    body = _capture_openai_payload(monkeypatch, provider)
+    # Reasoning models reject `temperature`; it must be dropped regardless
+    # of whether reasoning_effort/verbosity were configured.
+    assert "temperature" not in body
+    assert "reasoning" not in body
+    assert "text" not in body
+
+
 def test_factory_threads_tuning_env_to_openai() -> None:
     """``LLM_REASONING_EFFORT`` / ``LLM_VERBOSITY`` reach the provider."""
 

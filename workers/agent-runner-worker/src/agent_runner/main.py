@@ -91,6 +91,7 @@ def _load_activities() -> list[Any]:
             jira_add_comment,
             jira_build_issue_link,
             jira_get_issue,
+            jira_list_epic_children,
             jira_transition_issue,
         )
         from src.activities.confluence import (  # type: ignore[import-not-found]
@@ -145,6 +146,7 @@ def _load_activities() -> list[Any]:
                 jira_add_comment,
                 jira_build_issue_link,
                 jira_transition_issue,
+                jira_list_epic_children,
                 set_assignee_to_bot,
                 # Confluence
                 confluence_get_page,

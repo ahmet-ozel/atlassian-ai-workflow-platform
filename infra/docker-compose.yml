@@ -345,7 +345,13 @@ services:
     ports:
       - "${FIRECRAWL_HOST_PORT:-33002}:3002"
     networks:
+      # ``internal`` keeps it reachable by the workers; ``default`` gives it
+      # outbound internet so it can fetch allow-listed external hosts. The
+      # FIRECRAWL_EGRESS_ALLOWLIST contract (enforced in-process before any
+      # fetch) is what bounds egress — not network isolation — so a denied
+      # host still returns 403 regardless of connectivity.
       - internal
+      - default
     profiles: ["firecrawl", "task-intake-service", "agent-runner-worker", "workers"]
     healthcheck:
       <<: *http-healthcheck
@@ -504,6 +510,30 @@ services:
           # during long-running suites.
           memory: 1024M
           cpus: "0.5"
+    restart: unless-stopped
+    logging: *default-logging
+
+  # webhook-tunnel exposes the automation-service webhook receiver
+  # (`POST /webhooks/...`) to the public internet so an external
+  # Atlassian Cloud / Bitbucket webhook can reach a locally running
+  # stack without manual port-forwarding. It uses a Cloudflare quick
+  # tunnel, which requires no account, login, or token: on startup it
+  # prints a one-off `https://<random>.trycloudflare.com` URL in the
+  # logs that forwards straight to `automation-service:8080`.
+  #
+  # Profile-gated so it never joins the default boot bundle. Bring it
+  # up only when you need an inbound webhook endpoint:
+  #   docker compose -f infra/docker-compose.yml --profile webhook-tunnel up -d webhook-tunnel
+  #   docker compose -f infra/docker-compose.yml logs webhook-tunnel
+  # then register the printed URL + `/webhooks/jira/pipeline` as the
+  # webhook target in Jira/Bitbucket.
+  webhook-tunnel:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate --url http://automation-service:8080
+    networks:
+      - internal
+      - default
+    profiles: ["webhook-tunnel"]
     restart: unless-stopped
     logging: *default-logging
 

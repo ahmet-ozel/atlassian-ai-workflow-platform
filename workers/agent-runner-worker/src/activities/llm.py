@@ -278,8 +278,17 @@ def _get_llm_provider():
 
 
 def _get_firecrawl_endpoint() -> str:
-    """Get the Firecrawl endpoint from environment."""
-    return os.environ.get("FIRECRAWL_ENDPOINT", _DEFAULT_FIRECRAWL_ENDPOINT)
+    """Get the Firecrawl endpoint from environment.
+
+    Accepts either ``FIRECRAWL_ENDPOINT`` (legacy) or the canonical
+    ``FIRECRAWL_BASE_URL`` Compose variable; falls back to the
+    Compose-internal default.
+    """
+    return (
+        os.environ.get("FIRECRAWL_ENDPOINT")
+        or os.environ.get("FIRECRAWL_BASE_URL")
+        or _DEFAULT_FIRECRAWL_ENDPOINT
+    )
 
 
 async def _firecrawl_search(query: str) -> list[dict[str, str]]:
@@ -304,8 +313,8 @@ async def _firecrawl_search(query: str) -> list[dict[str, str]]:
     try:
         async with httpx.AsyncClient(timeout=_FIRECRAWL_TIMEOUT) as client:
             response = await client.post(
-                f"{endpoint}/v0/search",
-                json={"query": query},
+                f"{endpoint}/search",
+                json={"query": query, "limit": 5},
             )
             if response.status_code != 200:
                 activity.logger.warning(
@@ -316,12 +325,19 @@ async def _firecrawl_search(query: str) -> list[dict[str, str]]:
                 return []
 
             data = response.json()
+            # The wrapper returns either ``{"data": [...]}`` or a bare
+            # list of result objects; accept both.
+            items = data.get("data", data) if isinstance(data, dict) else data
             results: list[dict[str, str]] = []
-            for item in data.get("data", []):
+            for item in items if isinstance(items, list) else []:
+                if not isinstance(item, dict):
+                    continue
                 results.append({
                     "url": item.get("url", ""),
                     "title": item.get("title", ""),
-                    "content": item.get("content", item.get("markdown", "")),
+                    "content": item.get("content")
+                    or item.get("markdown")
+                    or item.get("description", ""),
                 })
             return results
 
@@ -331,6 +347,76 @@ async def _firecrawl_search(query: str) -> list[dict[str, str]]:
             "Firecrawl search failed (graceful degradation): %s", exc
         )
         return []
+
+
+@activity.defn(name="firecrawl_search")
+async def firecrawl_search(query: str, department_id: str) -> list[dict[str, str]]:
+    """Standalone web-search activity used by the research workflows.
+
+    Thin Temporal activity wrapper over :func:`_firecrawl_search`. The
+    research flows (``research_with_web`` / ``research_publish_confluence``
+    / ``research_summary_jira``) call this by name to enumerate candidate
+    URLs for a topic. Returns a list of ``{url, title, content}`` dicts;
+    an empty list signals "no web results" (graceful degradation) rather
+    than an error so the workflow can fall back to LLM-only synthesis.
+    """
+
+    del department_id  # reserved for future per-dept allowlist scoping
+    return await _firecrawl_search(query)
+
+
+@activity.defn(name="firecrawl_scrape")
+async def firecrawl_scrape(url: str, department_id: str) -> dict[str, Any]:
+    """Standalone scrape activity used by the research workflows.
+
+    Fetches a single URL's content via Firecrawl and returns a tagged
+    result the workflow discriminates on:
+
+    * ``{"kind": "success", "body": {"markdown": ..., "title": ...}}``
+      when the page was fetched.
+    * ``{"kind": "egress_blocked"}`` when Firecrawl refuses the URL
+      (HTTP 403 — out of the configured allowlist).
+    * ``{"kind": "error"}`` for any other transport failure, so the
+      per-URL loop skips it without crashing the run.
+    """
+
+    del department_id  # reserved for future per-dept allowlist scoping
+    endpoint = _get_firecrawl_endpoint()
+    try:
+        async with httpx.AsyncClient(timeout=_FIRECRAWL_TIMEOUT) as client:
+            response = await client.post(
+                f"{endpoint}/scrape",
+                json={"url": url, "formats": ["markdown"], "onlyMainContent": True},
+            )
+    except (httpx.HTTPError, httpx.TimeoutException, OSError) as exc:
+        activity.logger.warning(
+            "Firecrawl scrape failed for %s (graceful degradation): %s",
+            url,
+            exc,
+        )
+        return {"kind": "error", "body": {}}
+
+    if response.status_code == 403:
+        return {"kind": "egress_blocked", "body": {}}
+    if response.status_code != 200:
+        activity.logger.warning(
+            "Firecrawl scrape returned status %d for %s",
+            response.status_code,
+            url,
+        )
+        return {"kind": "error", "body": {}}
+
+    payload = response.json()
+    data = payload.get("data", payload) if isinstance(payload, dict) else {}
+    if isinstance(data, dict):
+        metadata = data.get("metadata") if isinstance(data.get("metadata"), dict) else {}
+        body = {
+            "markdown": data.get("markdown") or data.get("content") or "",
+            "title": metadata.get("title") or data.get("title") or "",
+        }
+    else:
+        body = {"markdown": str(data), "title": ""}
+    return {"kind": "success", "body": body}
 
 
 def _parse_json_from_llm(raw: str) -> dict[str, Any]:

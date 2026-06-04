@@ -768,6 +768,39 @@ def _extract_dept_defaults(dept_config: dict[str, Any]) -> _DeptDefaults:
 # ---------------------------------------------------------------------------
 
 
+#: Symbolic confidence levels the prompt asks the LLM to return, mapped
+#: onto the numeric scale the threshold logic compares against. The
+#: prompt (``task_analysis.md``) instructs the model to answer with one
+#: of ``high`` / ``medium`` / ``low``; older prompt revisions and some
+#: models emit a bare float instead, so the coercion accepts both.
+_CONFIDENCE_LEVELS: dict[str, float] = {
+    "high": 1.0,
+    "medium": 0.8,
+    "low": 0.3,
+    "none": 0.0,
+}
+
+
+def _coerce_confidence(raw: Any) -> float:
+    """Normalise the LLM ``confidence`` field to a ``[0, 1]`` float.
+
+    Accepts either the symbolic levels the prompt asks for
+    (``"high"`` / ``"medium"`` / ``"low"``) or a raw numeric value.
+    Unparseable values fall back to ``0.0`` so the task is parked for
+    ``needs_info`` rather than proceeding on a bad signal.
+    """
+
+    if isinstance(raw, str):
+        level = _CONFIDENCE_LEVELS.get(raw.strip().lower())
+        if level is not None:
+            return level
+    try:
+        value = float(raw)
+    except (TypeError, ValueError):
+        return 0.0
+    return max(0.0, min(1.0, value))
+
+
 def _result_from_llm(
     raw_data: dict[str, Any],
     *,
@@ -836,13 +869,7 @@ def _result_from_llm(
     workflow_type = _canonical_workflow_type(
         _str_or_none(raw_data.get("workflow_type"))
     )
-    confidence_raw = raw_data.get("confidence", 0.0)
-    try:
-        confidence = float(confidence_raw)
-    except (TypeError, ValueError):
-        confidence = 0.0
-    # Clamp to [0, 1] — LLMs occasionally emit 1.5 / -0.2 etc.
-    confidence = max(0.0, min(1.0, confidence))
+    confidence = _coerce_confidence(raw_data.get("confidence", 0.0))
 
     missing_raw = raw_data.get("missing_fields") or []
     if isinstance(missing_raw, list):

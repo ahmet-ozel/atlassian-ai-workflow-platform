@@ -332,13 +332,42 @@ async def _handle_jira_transition(
 ) -> dict[str, Any]:
     """Execute a jira_transition action via MCP Server.
 
- Uses the department's status_mapping configuration to resolve
- the target Jira status. If no mapping is found, the action is
- skipped.
+ The MCP ``jira_transition_issue`` tool requires a numeric
+ ``transition_id`` rather than a status name. When the action params
+ carry a ``target_status`` (the platform's logical status vocabulary
+ or a Jira status name) we resolve it to the matching transition id by
+ listing the issue's available transitions first. A ``transition_id``
+ supplied directly in the params is used as-is.
  """
+    from automation_worker.activities.platform_io import _resolve_transition_id
+
+    call_params = _drop_control_params(params, keep_issue_key=True)
+    issue_key = str(call_params.get("issue_key", ""))
+
+    if not call_params.get("transition_id"):
+        target_status = str(
+            call_params.pop("target_status", "")
+            or call_params.pop("status", "")
+        )
+        transition_id = await _resolve_transition_id(
+            caller, issue_key, target_status, dept_id=dept_id
+        )
+        if transition_id is None:
+            _logger.info(
+                "jira transition skipped: no transition matches "
+                "target_status=%s for %s",
+                target_status,
+                issue_key,
+            )
+            return {"skipped": True, "reason": "no_matching_transition"}
+        call_params["transition_id"] = transition_id
+
+    call_params.pop("target_status", None)
+    call_params.pop("status", None)
+
     return await caller.call_tool(
         "jira_transition_issue",
-        _drop_control_params(params, keep_issue_key=True),
+        call_params,
         dept_id=dept_id,
         timeout=ACTION_TIMEOUT_SECONDS,
     )

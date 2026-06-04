@@ -110,6 +110,8 @@ def _load_activities() -> list[Any]:
             bitbucket_open_pr,
         )
         from src.activities.llm import (  # type: ignore[import-not-found]
+            firecrawl_scrape,
+            firecrawl_search,
             llm_analyze_task,
             llm_generate_code,
             llm_generate_doc,
@@ -161,6 +163,9 @@ def _load_activities() -> list[Any]:
                 llm_generate_doc,
                 llm_review_code,
                 llm_research,
+                # Firecrawl (web research)
+                firecrawl_search,
+                firecrawl_scrape,
                 # Artifact
                 artifact_upload,
                 artifact_download,

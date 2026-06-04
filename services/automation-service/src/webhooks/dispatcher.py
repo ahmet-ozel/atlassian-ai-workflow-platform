@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import re
 import time
 import uuid
@@ -689,6 +690,65 @@ class WebhookDispatcher:
 
         return None
 
+    async def _resolve_available_capabilities(self, dept_id: str) -> tuple[str, ...]:
+        """Derive the dept's capability set for the workflow envelope.
+
+        Capabilities are sourced from the registered bot credentials
+        (``automation.department_bots`` — one service row grants the
+        matching ``jira`` / ``bitbucket`` / ``confluence`` capability),
+        plus ``web_search`` when the department opts in and Firecrawl is
+        enabled, and ``execution`` when an SSH runner host is configured.
+        Mirrors ``temporal_shared.capabilities.derive_capabilities`` but
+        runs against the live DB the dispatcher already holds.
+        """
+
+        caps: set[str] = set()
+        try:
+            async with self._db.acquire() as conn:
+                rows = await conn.fetch(
+                    """
+                    SELECT DISTINCT service
+                    FROM automation.department_bots
+                    WHERE department_id = $1
+                      AND credential_ref IS NOT NULL
+                      AND credential_ref != ''
+                    """,
+                    dept_id,
+                )
+                dept_row = await conn.fetchrow(
+                    """
+                    SELECT web_search_enabled
+                    FROM automation.departments
+                    WHERE id = $1
+                    """,
+                    dept_id,
+                )
+        except Exception:
+            logger.exception(
+                "Failed to resolve capabilities for dept=%s", dept_id
+            )
+            return ()
+
+        for row in rows:
+            service = str(row["service"]).strip().lower()
+            if service in {"jira", "bitbucket", "confluence"}:
+                caps.add(service)
+
+        web_search_enabled = bool(dept_row and dept_row["web_search_enabled"])
+        if web_search_enabled and os.environ.get(
+            "FIRECRAWL_ENABLED", "false"
+        ).strip().lower() in {"1", "true", "yes", "on"}:
+            caps.add("web_search")
+
+        if any(
+            (key == "SSH_HOST" or key.startswith("SSH_HOST_"))
+            and str(value).strip()
+            for key, value in os.environ.items()
+        ):
+            caps.add("execution")
+
+        return tuple(sorted(caps))
+
     async def _get_dept_config(self, dept_id: str) -> DepartmentConfig | None:
         """Get department configuration, with cache-miss fallback to DB.
 
@@ -883,11 +943,15 @@ class WebhookDispatcher:
             Trace ID for observability.
         """
         workflow_id = f"automation-jira-{issue_key}"
+        available_capabilities = await self._resolve_available_capabilities(
+            dept_id
+        )
         workflow_input = {
             "trigger": "jira",
             "issue_key": issue_key,
             "department_id": dept_id,
             "trace_id": trace_id,
+            "available_capabilities": list(available_capabilities),
         }
 
         try:

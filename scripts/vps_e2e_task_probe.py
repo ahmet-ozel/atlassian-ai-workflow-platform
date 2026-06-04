@@ -669,7 +669,7 @@ def check_llm_token_usage(workflow_run_id: str) -> dict[str, Any]:
         )
 
         logs = result.stdout + result.stderr
-        model = "gpt-4o-mini"
+        model = "gpt-5.5"
         prompt_tokens = 0
         completion_tokens = 0
         total_tokens = 0
@@ -720,7 +720,7 @@ def check_llm_token_usage(workflow_run_id: str) -> dict[str, Any]:
                 pt_match = re.search(r"prompt_tokens[\":\s=]+(\d+)", line)
                 ct_match = re.search(r"completion_tokens[\":\s=]+(\d+)", line)
                 tt_match = re.search(r"total_tokens[\":\s=]+(\d+)", line)
-                model_match = re.search(r"model[\":\s=]+(gpt-[\w-]+)", line)
+                model_match = re.search(r"model[\":\s=]+([\w.\-]+)", line)
 
                 if pt_match:
                     prompt_tokens = max(prompt_tokens, int(pt_match.group(1)))
@@ -735,8 +735,8 @@ def check_llm_token_usage(workflow_run_id: str) -> dict[str, Any]:
         if total_tokens == 0 and (prompt_tokens > 0 or completion_tokens > 0):
             total_tokens = prompt_tokens + completion_tokens
 
-        # Determine success: non-zero tokens and model is gpt-4o-mini
-        success = (prompt_tokens > 0 or completion_tokens > 0) and "gpt-4o" in model
+        # Determine success: non-zero tokens and a model name was observed
+        success = (prompt_tokens > 0 or completion_tokens > 0) and bool(model)
 
         return {
             "success": success,

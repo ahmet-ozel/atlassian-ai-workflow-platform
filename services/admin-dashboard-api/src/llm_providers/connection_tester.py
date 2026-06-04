@@ -51,10 +51,12 @@ _LOG = logging.getLogger(__name__)
 #: different prompt past the budget.
 TEST_PROMPT: str = "hi"
 
-#: Per-test token cap (R8.2). 5 tokens is enough for the provider to
-#: confirm credential acceptance while keeping the marginal cost at or
-#: below a tenth of a cent on every supported provider.
-TOKEN_CAP: int = 5
+#: Per-test token cap. Kept small so a probe costs at or below a tenth
+#: of a cent on every supported provider, while satisfying the OpenAI
+#: Responses API floor of 16 for ``max_output_tokens`` (a smaller value
+#: is rejected upstream with a 400 before the credential is ever
+#: validated, so the probe must request at least the minimum).
+TOKEN_CAP: int = 16
 
 #: Hard timeout for the entire round-trip (R5.5). Past this point the
 #: in-flight HTTP request is cancelled (httpx honours cancellation) and

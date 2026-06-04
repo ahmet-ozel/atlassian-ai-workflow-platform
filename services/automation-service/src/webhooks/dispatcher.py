@@ -723,6 +723,20 @@ class WebhookDispatcher:
                     """,
                     dept_id,
                 )
+                # ``execution`` is granted when the department has at least
+                # one active SSH runner assigned in the admin-managed pool.
+                # This is the canonical source; the ``SSH_HOST`` env below
+                # is a legacy single-runner fallback.
+                runner_count = await conn.fetchval(
+                    """
+                    SELECT COUNT(*)
+                    FROM infrastructure.dept_ssh_assignments a
+                    JOIN infrastructure.ssh_runners r
+                      ON r.runner_id = a.runner_id
+                    WHERE a.dept_id = $1 AND r.status = 'active'
+                    """,
+                    dept_id,
+                )
         except Exception:
             logger.exception(
                 "Failed to resolve capabilities for dept=%s", dept_id
@@ -740,7 +754,9 @@ class WebhookDispatcher:
         ).strip().lower() in {"1", "true", "yes", "on"}:
             caps.add("web_search")
 
-        if any(
+        if runner_count and int(runner_count) > 0:
+            caps.add("execution")
+        elif any(
             (key == "SSH_HOST" or key.startswith("SSH_HOST_"))
             and str(value).strip()
             for key, value in os.environ.items()

@@ -291,6 +291,8 @@ class TemporalClientProtocol(Protocol):
         payload: Any = None,
     ) -> None: ...  # noqa: E704
 
+    def get_workflow_handle(self, workflow_id: str) -> Any: ...  # noqa: E704
+
 
 class AuditLoggerProtocol(Protocol):
     """Minimal audit logger protocol."""
@@ -818,10 +820,19 @@ class WebhookDispatcher:
     # ------------------------------------------------------------------
 
     async def _is_needs_info(self, issue_key: str) -> bool:
-        """Check if the issue is currently in needs_info status.
+        """Check if the issue's workflow is awaiting a clarification reply.
 
-        Queries the Temporal workflow state or the work_items table
-        to determine if the issue's workflow is waiting for info.
+        The gateway ``AutomationWorkflow`` is dispatch-and-forget for
+        every routing decision *except* the needs_info loop: once it
+        dispatches a child (or stops) it completes within seconds. The
+        only reason its execution stays open is the needs_info
+        ``wait_condition``, which blocks on the ``info_received``
+        signal. A still-running gateway execution for the issue is
+        therefore a reliable signal that the workflow is parked waiting
+        for the user's reply.
+
+        The ``work_items`` table is consulted as a fallback for
+        deployments that surface the status there.
 
         Parameters
         ----------
@@ -831,8 +842,11 @@ class WebhookDispatcher:
         Returns
         -------
         bool
-            True if the issue is in needs_info state.
+            True if the issue's workflow is awaiting a reply.
         """
+        if await self._is_gateway_running(issue_key):
+            return True
+
         try:
             async with self._db.acquire() as conn:
                 row = await conn.fetchrow(
@@ -853,6 +867,37 @@ class WebhookDispatcher:
                 issue_key,
             )
         return False
+
+    async def _is_gateway_running(self, issue_key: str) -> bool:
+        """Return True when the issue's gateway workflow is still open.
+
+        Uses ``get_workflow_handle(...).describe()`` and inspects the
+        execution status. Any error (no handle support, RPC failure,
+        workflow not found) degrades to ``False`` so the dispatcher
+        falls back to the normal routing path.
+        """
+        get_handle = getattr(self._temporal, "get_workflow_handle", None)
+        if not callable(get_handle):
+            return False
+        workflow_id = f"automation-jira-{issue_key}"
+        try:
+            handle = get_handle(workflow_id)
+            if hasattr(handle, "__await__"):
+                handle = await handle
+            description = await handle.describe()
+        except Exception:
+            logger.debug(
+                "describe() unavailable for %s; assuming no parked workflow",
+                workflow_id,
+            )
+            return False
+        status = getattr(description, "status", None)
+        # ``WorkflowExecutionStatus.RUNNING`` has value 1; compare by
+        # name so the check does not depend on importing the enum.
+        status_name = getattr(status, "name", None)
+        if status_name is not None:
+            return status_name == "RUNNING"
+        return status == 1
 
     # ------------------------------------------------------------------
     # Temporal operations

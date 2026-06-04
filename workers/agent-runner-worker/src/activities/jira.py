@@ -175,3 +175,64 @@ async def jira_transition_issue(issue_key: str, target_status: str, dept_id: str
         {"issue_key": issue_key, "status": target_status},
         dept_id,
     )
+
+
+@dataclass(frozen=True)
+class EpicChild:
+    """A single child issue of an Epic.
+
+    Attributes
+    ----------
+    key:
+        The child issue key (e.g. ``PROJ-42``).
+    summary:
+        Human-readable summary/title of the child issue.
+    status:
+        Current Jira status name; empty when unavailable.
+    """
+
+    key: str
+    summary: str
+    status: str = ""
+
+
+def _parse_epic_children(raw: Any) -> list[EpicChild]:
+    data = _parse_jsonish(raw)
+    issues = data.get("issues")
+    if not isinstance(issues, list):
+        return []
+    children: list[EpicChild] = []
+    for item in issues:
+        if not isinstance(item, dict):
+            continue
+        fields = item.get("fields") if isinstance(item.get("fields"), dict) else item
+        key = str(item.get("key") or "").strip()
+        if not key:
+            continue
+        summary = str((fields or {}).get("summary") or item.get("summary") or "")
+        status_raw = (fields or {}).get("status") or item.get("status")
+        if isinstance(status_raw, dict):
+            status = str(status_raw.get("name") or "")
+        else:
+            status = str(status_raw or "")
+        children.append(EpicChild(key=key, summary=summary, status=status))
+    return children
+
+
+@activity.defn(name="jira_list_epic_children")
+async def jira_list_epic_children(epic_key: str, dept_id: str) -> list[EpicChild]:
+    """Return the child issues of an Epic via a ``parent = <epic>`` search.
+
+    Jira Cloud links an Epic's children through the ``parent`` field, so a
+    JQL ``parent = <epic_key>`` query enumerates them without depending on
+    a deployment-specific ``subtasks`` payload shape. The result feeds the
+    multi_step fan-out so each child can run as its own automation.
+    """
+    activity.heartbeat(f"listing children of epic {epic_key}")
+    result = await _jira_tool(
+        "jira_search",
+        epic_key,
+        {"jql": f"parent = {epic_key}", "limit": 50},
+        dept_id,
+    )
+    return _parse_epic_children(result_text(result))

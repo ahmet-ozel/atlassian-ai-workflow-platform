@@ -180,6 +180,11 @@ _SHORT_TIMEOUT: timedelta = timedelta(minutes=2)
 #: Default activity timeout for LLM calls (PR review / explain / research).
 _LLM_TIMEOUT: timedelta = timedelta(minutes=5)
 
+#: Execution-timeout budget for each Epic subtask child workflow in the
+#: multi_step fan-out. Generous enough for a full per-subtask automation
+#: run (analysis + code/PR or research) while bounding a stuck child.
+_EPIC_SUBTASK_TIMEOUT: timedelta = timedelta(minutes=30)
+
 #: Default retry policy for short side-effecting activities.
 _DEFAULT_RETRY: RetryPolicy = RetryPolicy(
     initial_interval=timedelta(seconds=1),
@@ -1247,6 +1252,16 @@ class AgentRunnerWorkflow:
             await self._dispatch_workflow_type(inp)
         except _CancelledViaSignal:
             return await self._handle_cancel(inp)
+        except _EpicSubtaskFailed:
+            # An Epic ``multi_step`` subtask failed; the handler already
+            # posted the stop comment and set ``epic_subtask_failed``.
+            return self._build_output(
+                status="failed",
+                summary=(
+                    "❌ Epic durduruldu: bir subtask başarısız oldu. "
+                    "Ayrıntılar Epic yorumlarında."
+                ),
+            )
         except _OutOfScope:
             return self._build_output(
                 status="out_of_scope",
@@ -1436,6 +1451,10 @@ class AgentRunnerWorkflow:
             return
         if wf_type == "research_summary_jira":
             await self._handle_research_summary_jira(inp)
+            return
+
+        if wf_type == "multi_step":
+            await self._handle_multi_step(inp)
             return
 
         # ---- Legacy signal-wait fallback ------------------------
@@ -2710,6 +2729,209 @@ class AgentRunnerWorkflow:
 
         # Apply LLM-emitted output_actions.
         await self._maybe_execute_llm_output_actions(inp)
+
+    # -- multi_step (Epic fan-out) handler ---------------------------------
+
+    async def _handle_multi_step(
+        self, inp: AgentRunnerWorkflowInput
+    ) -> None:
+        """Fan an Epic out to one child automation per subtask.
+
+        Sequence for the Epic / multi_step flow:
+
+        1. ``set_assignee_to_bot`` claims the parent Epic for the bot.
+        2. ``jira_list_epic_children`` enumerates the Epic's child
+           issues (JQL ``parent = <epic>``). An empty list posts a
+           guidance comment and ends — the analyzer normally gates
+           this case into ``needs_info``, but the workflow defends in
+           depth.
+        3. Each child runs as its own ``AutomationWorkflow`` child,
+           executed sequentially so progress is observable and a
+           failure stops the remaining subtasks (the same contract as
+           the standalone Epic orchestrator). Progress and the final
+           tally are posted back to the parent Epic as Jira comments.
+
+        Children are awaited in order; the first failure posts a
+        failure comment, marks the rest skipped, and flips
+        ``failure_reason`` so the run terminates as ``failed``.
+        """
+
+        # 1. set_assignee_to_bot — claim the Epic for the bot.
+        try:
+            await workflow.execute_activity(
+                "set_assignee_to_bot",
+                args=[inp.issue_key, inp.department_id],
+                start_to_close_timeout=_SHORT_TIMEOUT,
+                retry_policy=_DEFAULT_RETRY,
+            )
+        except Exception as exc:  # noqa: BLE001 - critical step
+            self._failure_reason = "jira_assignee_failed"
+            workflow.logger.warning(
+                "set_assignee_to_bot failed for %s: %s",
+                inp.issue_key,
+                exc,
+            )
+            raise
+
+        # 2. Enumerate the Epic's children.
+        try:
+            children = await workflow.execute_activity(
+                "jira_list_epic_children",
+                args=[inp.issue_key, inp.department_id],
+                start_to_close_timeout=_SHORT_TIMEOUT,
+                retry_policy=_DEFAULT_RETRY,
+            )
+        except Exception as exc:  # noqa: BLE001 - critical
+            self._failure_reason = "epic_children_lookup_failed"
+            workflow.logger.warning(
+                "jira_list_epic_children failed for %s: %s",
+                inp.issue_key,
+                exc,
+            )
+            raise
+
+        child_items = self._normalise_epic_children(children)
+        total = len(child_items)
+        if total == 0:
+            self._failure_reason = "epic_no_subtasks"
+            await self._post_jira_comment_best_effort(
+                inp,
+                "🤖 Bu Epic için işlenecek subtask bulunamadı. "
+                "Epic'e subtask ekleyip yorum yazarak yeniden tetikleyin.",
+            )
+            return
+
+        completed = 0
+        # Disambiguate child ids by the parent workflow run so a
+        # re-triggered Epic actually re-runs its subtasks (Temporal
+        # dedupes by workflow id; reusing a prior id would silently
+        # replay the earlier — possibly denied — execution).
+        run_suffix = workflow.info().run_id[:8]
+        for index, child in enumerate(child_items):
+            child_key = child["key"]
+            child_workflow_id = (
+                f"multi-step-{inp.issue_key}-{child_key}-{index}-{run_suffix}"
+            )
+            child_input = self._build_subtask_child_input(inp, child_key)
+            try:
+                child_output = await workflow.execute_child_workflow(
+                    "AutomationWorkflow",
+                    args=[child_input],
+                    id=child_workflow_id,
+                    task_queue="automation-tq",
+                    execution_timeout=_EPIC_SUBTASK_TIMEOUT,
+                )
+            except Exception as exc:  # noqa: BLE001 - stop on failure
+                self._failure_reason = "epic_subtask_failed"
+                workflow.logger.warning(
+                    "multi_step subtask %s failed for Epic %s: %s",
+                    child_key,
+                    inp.issue_key,
+                    exc,
+                )
+                skipped = total - (index + 1)
+                await self._post_jira_comment_best_effort(
+                    inp,
+                    f"❌ Subtask {child_key} başarısız oldu — Epic durduruldu "
+                    f"({completed}/{total} tamamlandı, {skipped} atlandı).",
+                )
+                # Stop the fan-out: surface a failed terminal status via
+                # the run body's generic handler (no compensation chain —
+                # the Epic itself opened no PR / draft to roll back).
+                raise _EpicSubtaskFailed(child_key) from exc
+
+            # The gateway returns ``decision="denied"`` / ``"failed"`` as a
+            # normal completion (not an exception). Treat anything other
+            # than a dispatched / completed outcome as a subtask failure
+            # so the Epic does not falsely report success.
+            decision = self._extract_child_decision(child_output)
+            if decision in {"denied", "failed", "out_of_scope"}:
+                self._failure_reason = "epic_subtask_failed"
+                skipped = total - (index + 1)
+                await self._post_jira_comment_best_effort(
+                    inp,
+                    f"❌ Subtask {child_key} işlenemedi (sonuç: {decision}) — "
+                    f"Epic durduruldu ({completed}/{total} tamamlandı, "
+                    f"{skipped} atlandı).",
+                )
+                raise _EpicSubtaskFailed(child_key)
+
+            completed += 1
+            await self._post_jira_comment_best_effort(
+                inp,
+                f"🤖 {completed}/{total} subtask tamamlandı "
+                f"(`{child_key}`).",
+            )
+
+        await self._post_jira_comment_best_effort(
+            inp,
+            f"✅ Epic tamamlandı — {completed}/{total} subtask işlendi.",
+        )
+        await self._maybe_execute_llm_output_actions(inp)
+
+    @staticmethod
+    def _normalise_epic_children(children: Any) -> list[dict[str, str]]:
+        """Coerce the ``jira_list_epic_children`` result into dicts.
+
+        Accepts both the activity's ``EpicChild`` dataclass instances
+        and the plain-dict fallback the Temporal data converter may
+        produce, returning a list of ``{"key", "summary"}`` dicts with
+        non-empty keys preserved in order.
+        """
+        items: list[dict[str, str]] = []
+        if not isinstance(children, (list, tuple)):
+            return items
+        for child in children:
+            if isinstance(child, dict):
+                key = str(child.get("key") or "").strip()
+                summary = str(child.get("summary") or "")
+            else:
+                key = str(getattr(child, "key", "") or "").strip()
+                summary = str(getattr(child, "summary", "") or "")
+            if key:
+                items.append({"key": key, "summary": summary})
+        return items
+
+    @staticmethod
+    def _extract_child_decision(child_output: Any) -> str:
+        """Read the ``decision`` from a child AutomationWorkflow result.
+
+        The gateway returns an ``AutomationWorkflowOutput`` (or a plain
+        dict under some data-converter paths). A missing decision is
+        treated as ``"dispatched"`` so a malformed-but-non-raising
+        result does not falsely fail the Epic.
+        """
+        if isinstance(child_output, dict):
+            value = child_output.get("decision")
+        else:
+            value = getattr(child_output, "decision", None)
+        return str(value or "dispatched").strip().lower()
+
+    def _build_subtask_child_input(
+        self, inp: AgentRunnerWorkflowInput, child_key: str
+    ) -> Any:
+        """Build the ``AutomationWorkflowInput`` for one Epic subtask.
+
+        Each subtask re-enters the gateway as a fresh first-iteration
+        run so the analyzer picks the right workflow type for that
+        child. Department-scoped routing context is inherited from the
+        parent Epic input.
+        """
+        from temporal_shared.messages import (  # noqa: PLC0415
+            AutomationWorkflowInput,
+        )
+
+        return AutomationWorkflowInput(
+            issue_key=child_key,
+            department_id=inp.department_id,
+            available_capabilities=tuple(inp.available_capabilities or ()),
+            available_repos=tuple(inp.available_repos or ()),
+            available_spaces=tuple(inp.available_spaces or ()),
+            default_language=inp.default_language,
+            trigger_event="jira:issue_assigned",
+            iteration=1,
+            trace_id=inp.trace_id,
+        )
 
     # -- research helpers --------------------------------------------------
 
@@ -4224,6 +4446,21 @@ class _CancelledViaSignal(Exception):
 
 class _OutOfScope(Exception):
     """Raised internally when the body observes the iter / needs_info cap."""
+
+
+class _EpicSubtaskFailed(Exception):
+    """Raised internally when an Epic ``multi_step`` subtask child fails.
+
+    Caught by the ``run`` body's generic handler, which returns a
+    ``failed`` terminal status carrying the ``epic_subtask_failed``
+    reason already set on the workflow. No compensation chain runs —
+    the Epic parent itself opened no draft PR / page to roll back; the
+    failed subtask child handles its own compensation.
+    """
+
+    def __init__(self, child_key: str) -> None:
+        super().__init__(f"epic subtask failed: {child_key}")
+        self.child_key = child_key
 
 
 class _OutputActionCriticalFailure(Exception):

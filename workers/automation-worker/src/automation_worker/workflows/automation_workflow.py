@@ -2113,6 +2113,9 @@ class AutomationWorkflow:
                 iteration=inp.iteration,
                 default_language=inp.default_language,
                 trace_id=inp.trace_id,
+                available_capabilities=tuple(inp.available_capabilities),
+                available_repos=tuple(inp.available_repos),
+                available_spaces=tuple(inp.available_spaces),
             )
             return (child_input,)
 

@@ -687,6 +687,14 @@ class AgentRunnerWorkflowInput:
     max_iter: int = 5
     default_language: str = "tr"
     trace_id: str = ""
+    # Department routing envelope mirrored from the parent
+    # ``AutomationWorkflowInput`` so a multi_step fan-out can re-enter
+    # each Epic subtask through the gateway with the same capability /
+    # repo / space context. Empty tuples for non-Epic flows keep the
+    # wire shape backward-compatible.
+    available_capabilities: tuple[str, ...] = ()
+    available_repos: tuple[str, ...] = ()
+    available_spaces: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)

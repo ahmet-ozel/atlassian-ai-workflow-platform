@@ -9,7 +9,7 @@ structures and one fixture that model the workspace contract:
 - ``REQUIRED_PATHS`` — relative paths every Component of a given
  ``ComponentType`` must have, plus infra/config/root path lists.
 - ``FORBIDDEN_PATHS`` — paths the project *must not* produce.
-- ``EXPECTED_COMPOSE_SERVICES`` — the 17 service names that the parsed
+- ``EXPECTED_COMPOSE_SERVICES`` — the service names that the parsed
  ``infra/docker-compose.yml`` must equal under the invariant, including
  ``task-intake-service`` (profile-gated) and ``automation-worker``
  (added for the workflow topology).
@@ -607,6 +607,12 @@ EXPECTED_COMPOSE_SERVICES: frozenset[str] = frozenset(
         "streamlit-ui",
         # Profile-gated
         "task-intake-service",
+        # Reverse proxy (profile-gated; bridges the public + internal nets)
+        "traefik",
+        # Inbound webhook tunnel (profile-gated; exposes the webhook
+        # receiver to external Atlassian/Bitbucket webhooks without a
+        # manual port-forward).
+        "webhook-tunnel",
     }
 )
 

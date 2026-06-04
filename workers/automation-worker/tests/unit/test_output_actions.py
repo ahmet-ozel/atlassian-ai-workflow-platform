@@ -372,7 +372,18 @@ class TestActionHandlers:
     def test_jira_transition_calls_jira_transition_issue(
         self, fake_caller: _FakeMCPCaller
     ) -> None:
-        """jira_transition → jira_transition_issue tool."""
+        """jira_transition resolves the transition id then calls the tool.
+
+        The MCP ``jira_transition_issue`` tool requires a numeric
+        ``transition_id``, not a status name, so the handler first lists
+        the issue's transitions via ``jira_get_transitions`` and matches
+        the requested ``target_status`` ("done") against the returned
+        names before issuing the transition.
+        """
+        fake_caller.responses["jira_get_transitions"] = [
+            {"id": "11", "name": "To Do"},
+            {"id": "41", "name": "Done"},
+        ]
         actions = [
             OutputAction(
                 type=ActionType.JIRA_TRANSITION,
@@ -383,7 +394,12 @@ class TestActionHandlers:
         inp = _make_batch_input(actions=actions)
         asyncio.run(execute_output_actions(inp))
 
-        assert fake_caller.calls[0][0] == "jira_transition_issue"
+        called_tools = [c[0] for c in fake_caller.calls]
+        assert called_tools == ["jira_get_transitions", "jira_transition_issue"]
+        # The resolved transition id (Done -> 41) is what reaches the tool.
+        transition_call = fake_caller.calls[1]
+        assert transition_call[1].get("transition_id") == "41"
+        assert "target_status" not in transition_call[1]
 
 
 # ---------------------------------------------------------------------------

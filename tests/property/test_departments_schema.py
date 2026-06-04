@@ -431,7 +431,7 @@ invalid_credential_ref = st.one_of(
         alphabet=":@.\t", min_size=1, max_size=4
     ).map(lambda s: f"vault:atlassian/{s}/jira"),
     # Mixed-valid + invalid characters.
-    st.from_regex(r"^vault:[a-zA-Z0-9/_-]*[:@.\t!*section]+[a-zA-Z0-9/_-]*$",
+    st.from_regex(r"^vault:[a-zA-Z0-9/_-]*[:@.\t!?]+[a-zA-Z0-9/_-]*$",
                   fullmatch=True),
 ).filter(lambda s: not VAULT_REF_RE.fullmatch(s))
 

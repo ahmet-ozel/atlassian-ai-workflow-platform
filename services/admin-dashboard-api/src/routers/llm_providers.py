@@ -33,6 +33,7 @@ from fastapi.responses import JSONResponse
 from ..auth.dependencies import AuthClaims, require_admin
 from ..llm_providers.connection_tester import ConnectionTester
 from ..llm_providers.dept_override_repository import DeptOverrideRepository
+from ..llm_providers.model_capabilities import model_capabilities
 from ..llm_providers.repository import LLMProviderRepository
 from ..llm_providers.schemas import (
     DeptOverrideDTO,
@@ -171,6 +172,19 @@ async def list_providers(
     """``GET /admin/llm-providers`` — list every provider."""
 
     return await service.list_providers()
+
+
+@router.get("/model-capabilities")
+async def get_model_capabilities(model: str) -> dict[str, Any]:
+    """``GET /admin/llm-providers/model-capabilities?model=…``.
+
+    Returns ``{"model": str, "reasoning_effort": bool, "verbosity": bool}``
+    so the provider form can show the tuning inputs only for models that
+    accept them. Pure lookup — no DB / Vault access, no side effects.
+    """
+
+    caps = model_capabilities(model)
+    return {"model": model, **caps}
 
 
 @router.get("/{provider_id}")
@@ -372,6 +386,8 @@ def _payload_to_input(payload: ProviderCreate) -> _ProviderCreateInput:
         ),
         api_key=getattr(payload, "api_key", None),
         org_id=getattr(payload, "org_id", None),
+        reasoning_effort=getattr(payload, "reasoning_effort", None),
+        verbosity=getattr(payload, "verbosity", None),
     )
 
 

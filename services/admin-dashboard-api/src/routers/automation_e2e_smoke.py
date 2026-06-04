@@ -16,6 +16,7 @@ from urllib.parse import quote
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from ..auth.dependencies import require_admin
+from ..llm_providers.model_capabilities import supports_reasoning_effort
 from .live_smoke import (
     _adf,
     _audit,
@@ -249,7 +250,7 @@ async def _llm_decision(
     key_ref = str(primary.get("api_key_ref") or "")
     key_payload = await _vault_read(request, key_ref)
     api_key = _first_secret_value(key_payload or {})
-    model = str(primary.get("model") or "gpt-4o-mini")
+    model = str(primary.get("model") or "gpt-5.5")
     base_url = str(primary.get("base_url") or "https://api.openai.com/v1").rstrip("/")
     if not api_key:
         provider = await _active_openai_provider(request)
@@ -266,16 +267,21 @@ async def _llm_decision(
         "Confluence ve Bitbucket'a yaz. Sadece JSON don: "
         "workflow_type, needs_ssh, needs_docker, outputs."
     )
+    body: dict[str, Any] = {
+        "model": model,
+        "temperature": 0,
+        "text": {"format": {"type": "json_object"}},
+        "instructions": "You are a workflow router. Return strict JSON.",
+        "input": f"{prompt}\nissue_key={issue_key}",
+    }
+    # Reasoning-capable models (gpt-5 family / o-series) reject an
+    # explicit temperature — drop it so the default model still routes.
+    if supports_reasoning_effort(model):
+        body.pop("temperature", None)
     response = await _http(request).post(
         _openai_responses_url(base_url),
         headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-        json={
-            "model": model,
-            "temperature": 0,
-            "text": {"format": {"type": "json_object"}},
-            "instructions": "You are a workflow router. Return strict JSON.",
-            "input": f"{prompt}\nissue_key={issue_key}",
-        },
+        json=body,
         timeout=60,
     )
     await _expect(response, step="openai workflow decision")

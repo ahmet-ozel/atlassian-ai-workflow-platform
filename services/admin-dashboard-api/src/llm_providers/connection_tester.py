@@ -29,6 +29,7 @@ import httpx
 
 from http_shared.redaction import redact_text
 
+from .model_capabilities import supports_reasoning_effort, supports_verbosity
 from .schemas import ConnectionTestError, ConnectionTestResult, ProviderType
 
 
@@ -88,6 +89,8 @@ class TestRequest:
     base_url: str | None
     api_key: str | None
     org_id: str | None
+    reasoning_effort: str | None = None
+    verbosity: str | None = None
     provider_id: UUID | None = None  # for log correlation only
 
 
@@ -215,11 +218,17 @@ class ConnectionTester:
         }
         if req.org_id:
             headers["OpenAI-Organization"] = req.org_id
-        body = {
+        body: dict[str, Any] = {
             "model": req.model,
             "input": TEST_PROMPT,
             "max_output_tokens": TOKEN_CAP,
         }
+        # Forward tuning knobs only when the chosen model honours them,
+        # so the probe doesn't trip a 400 from an unsupported parameter.
+        if req.reasoning_effort and supports_reasoning_effort(req.model):
+            body["reasoning"] = {"effort": req.reasoning_effort}
+        if req.verbosity and supports_verbosity(req.model):
+            body["text"] = {"verbosity": req.verbosity}
         response = await self._safe_request(
             "POST", url, headers=headers, json=body
         )

@@ -26,6 +26,8 @@ from pydantic import BaseModel, ConfigDict, Field, HttpUrl
 __all__ = [
     "ProviderType",
     "Status",
+    "ReasoningEffort",
+    "Verbosity",
     "VllmCreate",
     "OpenAICreate",
     "AnthropicCreate",
@@ -51,6 +53,16 @@ ProviderType = Literal["vllm", "openai", "anthropic", "gemini"]
 #: Status values mirroring the Postgres CHECK constraint on
 #: ``automation.llm_providers.status``.
 Status = Literal["active", "inactive"]
+
+#: Reasoning-effort levels accepted by reasoning-capable models
+#: (OpenAI o-series + gpt-5 family). ``minimal`` is only honoured by
+#: the gpt-5 family; the connection tester / runtime forward the value
+#: verbatim and let the upstream reject an unsupported level.
+ReasoningEffort = Literal["minimal", "low", "medium", "high"]
+
+#: Output-verbosity levels accepted by the gpt-5 family. Mirrors the
+#: Responses API ``text.verbosity`` knob.
+Verbosity = Literal["low", "medium", "high"]
 
 #: Canonical list — used by the custom validation error handler to
 #: populate the ``supported`` field of ``unsupported_provider_type``.
@@ -103,19 +115,33 @@ class VllmCreate(_ProviderBase):
 
 
 class OpenAICreate(_ProviderBase):
-    """OpenAI-compatible provider — requires ``api_key`` (R2.2)."""
+    """OpenAI-compatible provider — requires ``api_key`` (R2.2).
+
+    ``reasoning_effort`` and ``verbosity`` are optional tuning knobs the
+    Responses API accepts for reasoning-capable models (o-series and the
+    gpt-5 family). They are only meaningful when the chosen ``model``
+    supports them; the UI hides the inputs for non-reasoning models and
+    the runtime simply omits the field when it is ``None``.
+    """
 
     provider_type: Literal["openai"]  # type: ignore[assignment]
     api_key: str = Field(min_length=1)
     org_id: str | None = None
     base_url: HttpUrl | None = None
+    reasoning_effort: ReasoningEffort | None = None
+    verbosity: Verbosity | None = None
 
 
 class AnthropicCreate(_ProviderBase):
-    """Anthropic provider — requires ``api_key`` (R2.3)."""
+    """Anthropic provider — requires ``api_key`` (R2.3).
+
+    ``reasoning_effort`` maps to Claude extended-thinking on the models
+    that support it; left ``None`` for models that don't.
+    """
 
     provider_type: Literal["anthropic"]  # type: ignore[assignment]
     api_key: str = Field(min_length=1)
+    reasoning_effort: ReasoningEffort | None = None
 
 
 class GeminiCreate(_ProviderBase):
@@ -154,6 +180,8 @@ class ProviderUpdate(BaseModel):
     api_key: str | None = Field(default=None, min_length=1)
     org_id: str | None = None
     status: Status | None = None
+    reasoning_effort: ReasoningEffort | None = None
+    verbosity: Verbosity | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -184,6 +212,8 @@ class UnsavedTestRequest(_ProviderBase):
     base_url: HttpUrl | None = None
     api_key: str | None = None
     org_id: str | None = None
+    reasoning_effort: ReasoningEffort | None = None
+    verbosity: Verbosity | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -235,6 +265,8 @@ class LLMProviderConfigDTO(BaseModel):
     context_length: int
     base_url: str | None = None
     status: Status
+    reasoning_effort: ReasoningEffort | None = None
+    verbosity: Verbosity | None = None
     api_key_masked: str
     org_id_masked: str | None = None
     last_tested_at: datetime | None = None

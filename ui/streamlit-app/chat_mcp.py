@@ -14,6 +14,28 @@ from config import Settings
 CredentialGetter = Callable[[str], Any | None]
 
 _MCP_TIMEOUT_SECONDS = 75.0
+
+
+def _model_supports_reasoning_effort(model: str) -> bool:
+    """True when *model* accepts a ``reasoning_effort`` knob.
+
+    Covers OpenAI o-series + the gpt-5 family. Kept inline so the
+    Streamlit app stays self-contained.
+    """
+    norm = (model or "").strip().lower()
+    if not norm:
+        return False
+    for prefix in ("o1", "o3", "o4"):
+        if norm == prefix or norm.startswith(prefix + "-"):
+            return True
+    return norm.startswith("gpt-5")
+
+
+def _model_supports_verbosity(model: str) -> bool:
+    """True when *model* accepts an output ``verbosity`` knob (gpt-5 family)."""
+    return (model or "").strip().lower().startswith("gpt-5")
+
+
 _MCP_MAX_ATTEMPTS = 3
 _MCP_RETRY_DELAYS = (0.7, 1.6)
 
@@ -434,6 +456,15 @@ def ask_llm(user_text: str, tool_name: str, tool_result: Any) -> str:
             "temperature": 0.1,
             "max_output_tokens": 900,
         }
+        # Apply tuning knobs only for models that accept them.
+        reasoning_effort = getattr(settings, "llm_reasoning_effort", "")
+        verbosity = getattr(settings, "llm_verbosity", "")
+        if reasoning_effort and _model_supports_reasoning_effort(model):
+            payload["reasoning"] = {"effort": reasoning_effort}
+            # Reasoning models reject an explicit temperature.
+            payload.pop("temperature", None)
+        if verbosity and _model_supports_verbosity(model):
+            payload["text"] = {"verbosity": verbosity}
     elif api_kind == "anthropic":
         payload = {
             "model": model,

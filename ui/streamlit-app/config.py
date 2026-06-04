@@ -47,7 +47,11 @@ class Settings:
             "CLIENT_SOURCE", "streamlit-app"
         )
         self.llm_provider: str = os.environ.get("LLM_PROVIDER", "openai").lower()
-        self.llm_model_name: str = os.environ.get("LLM_MODEL_NAME", "gpt-4o-mini")
+        self.llm_model_name: str = os.environ.get("LLM_MODEL_NAME", "gpt-5.5")
+        self.llm_reasoning_effort: str = os.environ.get(
+            "LLM_REASONING_EFFORT", ""
+        ).strip()
+        self.llm_verbosity: str = os.environ.get("LLM_VERBOSITY", "").strip()
         self.openai_api_key: str = os.environ.get("OPENAI_API_KEY", "")
         self.openai_base_url: str = os.environ.get(
             "OPENAI_BASE_URL", "https://api.openai.com/v1"

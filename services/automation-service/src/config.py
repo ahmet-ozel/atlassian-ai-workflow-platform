@@ -39,7 +39,9 @@ class Settings(BaseSettings):
     vllm_api_key: str = ""
     openai_base_url: str = "https://api.openai.com/v1"
     anthropic_base_url: str = "https://api.anthropic.com/v1"
-    llm_model_name: str = "gpt-4o-mini"
+    llm_model_name: str = "gpt-5.5"
+    llm_reasoning_effort: str = ""
+    llm_verbosity: str = ""
     openai_api_key: str = ""
     anthropic_api_key: str = ""
 

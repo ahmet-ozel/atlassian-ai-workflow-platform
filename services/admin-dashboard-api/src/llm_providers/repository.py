@@ -50,6 +50,8 @@ class LLMProviderRow:
     base_url: str | None
     vault_path: str
     status: str
+    reasoning_effort: str | None
+    verbosity: str | None
     last_tested_at: datetime | None
     last_test_error: str | None
     created_at: datetime
@@ -74,6 +76,8 @@ class LLMProviderRepository:
         model: str,
         context_length: int,
         base_url: str | None,
+        reasoning_effort: str | None = None,
+        verbosity: str | None = None,
     ) -> LLMProviderRow:
         """INSERT a fresh provider row and return the persisted shape.
 
@@ -86,11 +90,12 @@ class LLMProviderRepository:
             """
             INSERT INTO automation.llm_providers
                 (id, provider_type, name, model, context_length,
-                 base_url, vault_path)
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
+                 base_url, vault_path, reasoning_effort, verbosity)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
             RETURNING id, provider_type, name, model, context_length,
-                      base_url, vault_path, status, last_tested_at,
-                      last_test_error, created_at, updated_at
+                      base_url, vault_path, status, reasoning_effort,
+                      verbosity, last_tested_at, last_test_error,
+                      created_at, updated_at
             """,
             provider_id,
             provider_type,
@@ -99,6 +104,8 @@ class LLMProviderRepository:
             context_length,
             base_url,
             vault_path,
+            reasoning_effort,
+            verbosity,
         )
         return _row_to_dataclass(row)
 
@@ -108,8 +115,9 @@ class LLMProviderRepository:
         rows = await conn.fetch(
             """
             SELECT id, provider_type, name, model, context_length,
-                   base_url, vault_path, status, last_tested_at,
-                   last_test_error, created_at, updated_at
+                   base_url, vault_path, status, reasoning_effort,
+                   verbosity, last_tested_at, last_test_error,
+                   created_at, updated_at
             FROM automation.llm_providers
             ORDER BY created_at DESC
             """
@@ -124,8 +132,9 @@ class LLMProviderRepository:
         row = await conn.fetchrow(
             """
             SELECT id, provider_type, name, model, context_length,
-                   base_url, vault_path, status, last_tested_at,
-                   last_test_error, created_at, updated_at
+                   base_url, vault_path, status, reasoning_effort,
+                   verbosity, last_tested_at, last_test_error,
+                   created_at, updated_at
             FROM automation.llm_providers
             WHERE id = $1
             """,
@@ -153,16 +162,19 @@ class LLMProviderRepository:
         row = await conn.fetchrow(
             """
             UPDATE automation.llm_providers
-            SET name           = COALESCE($2, name),
-                model          = COALESCE($3, model),
-                context_length = COALESCE($4, context_length),
-                base_url       = COALESCE($5, base_url),
-                status         = COALESCE($6, status),
-                updated_at     = now()
+            SET name             = COALESCE($2, name),
+                model            = COALESCE($3, model),
+                context_length   = COALESCE($4, context_length),
+                base_url         = COALESCE($5, base_url),
+                status           = COALESCE($6, status),
+                reasoning_effort = COALESCE($7, reasoning_effort),
+                verbosity        = COALESCE($8, verbosity),
+                updated_at       = now()
             WHERE id = $1
             RETURNING id, provider_type, name, model, context_length,
-                      base_url, vault_path, status, last_tested_at,
-                      last_test_error, created_at, updated_at
+                      base_url, vault_path, status, reasoning_effort,
+                      verbosity, last_tested_at, last_test_error,
+                      created_at, updated_at
             """,
             provider_id,
             patch.name,
@@ -170,6 +182,8 @@ class LLMProviderRepository:
             patch.context_length,
             str(patch.base_url) if patch.base_url is not None else None,
             patch.status,
+            patch.reasoning_effort,
+            patch.verbosity,
         )
         return _row_to_dataclass(row) if row is not None else None
 
@@ -256,6 +270,8 @@ def _row_to_dataclass(record: Any) -> LLMProviderRow:
         ),
         vault_path=str(record["vault_path"]),
         status=str(record["status"]),
+        reasoning_effort=_optional_str(_record_get(record, "reasoning_effort")),
+        verbosity=_optional_str(_record_get(record, "verbosity")),
         last_tested_at=record["last_tested_at"],
         last_test_error=(
             str(record["last_test_error"])
@@ -265,3 +281,22 @@ def _row_to_dataclass(record: Any) -> LLMProviderRow:
         created_at=record["created_at"],
         updated_at=record["updated_at"],
     )
+
+
+def _record_get(record: Any, key: str) -> Any:
+    """Read *key* from an asyncpg ``Record`` or mapping, tolerating absence.
+
+    Hand-built test records may predate the tuning columns; treat a
+    missing key as ``None`` rather than raising ``KeyError``.
+    """
+
+    try:
+        return record[key]
+    except (KeyError, IndexError):
+        return None
+
+
+def _optional_str(value: Any) -> str | None:
+    """Coerce a non-``None`` value to ``str``; pass ``None`` through."""
+
+    return str(value) if value is not None else None

@@ -68,6 +68,14 @@ class _OrderRecordingMCPCaller:
         dept_id: str,
         timeout: float = 30.0,
     ) -> dict[str, Any]:
+        # ``jira_transition`` first lists the issue's transitions to
+        # resolve a numeric transition id; that lookup carries no
+        # ``action_index`` and must not be counted as an executed action.
+        # Return a transition list so the resolver matches and proceeds
+        # to the real ``jira_transition_issue`` call (which carries the
+        # action_index forwarded from the action params).
+        if tool_name == "jira_get_transitions":
+            return [{"id": "41", "name": "Done"}]
         # Record the action index from params
         if "action_index" in params:
             self.executed_indices.append(params["action_index"])
@@ -107,10 +115,19 @@ def output_actions_st(max_size: int = 20) -> st.SearchStrategy[list[OutputAction
         actions: list[OutputAction] = []
         for idx in shuffled_indices:
             action_type = draw(action_type_st)
+            params: dict[str, Any] = {
+                "action_index": idx,
+                "body": f"action-{idx}",
+            }
+            # A jira_transition action needs a target status so the
+            # handler can resolve it to a transition id; the recording
+            # caller returns a "Done" transition for the lookup.
+            if action_type == ActionType.JIRA_TRANSITION:
+                params["target_status"] = "done"
             actions.append(
                 OutputAction(
                     type=action_type,
-                    params={"action_index": idx, "body": f"action-{idx}"},
+                    params=params,
                     index=idx,
                 )
             )

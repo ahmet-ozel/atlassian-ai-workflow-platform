@@ -160,7 +160,7 @@ def _tokenize(dockerfile_text: str) -> tuple[_Directive, ...]:
 
 
 _FROM_AS_RE = re.compile(
-    r"^\s*(sectionP<image>\S+)(section:\s+AS\s+(sectionP<alias>[A-Za-z_][A-Za-z0-9_-]*))section\s*$",
+    r"^\s*(?P<image>\S+)(?:\s+AS\s+(?P<alias>[A-Za-z_][A-Za-z0-9_-]*))?\s*$",
     re.IGNORECASE,
 )
 
@@ -193,7 +193,7 @@ def _assert_multi_stage(
     return froms
 
 
-_PYTHON_BASE_RE = re.compile(r"^python:3\.12(section:\.\d+)section-slim$")
+_PYTHON_BASE_RE = re.compile(r"^python:3\.12(?:\.\d+)?-slim$")
 _NODE_BASE_RE = re.compile(r"^node:20-[A-Za-z0-9_.-]+$")
 
 
@@ -319,7 +319,7 @@ def _assert_expose(
 
 
 _HEALTHCHECK_CMD_RE = re.compile(
-    r"^\s*(section:--\S+\s+)*CMD\s+(sectionP<cmd>.+)$", re.IGNORECASE
+    r"^\s*(?:--\S+\s+)*CMD\s+(?P<cmd>.+)$", re.IGNORECASE
 )
 
 

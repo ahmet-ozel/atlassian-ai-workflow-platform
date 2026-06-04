@@ -81,7 +81,7 @@ from firecrawl.metrics import metrics  # noqa: E402
 
 #: A DNS label: lowercase ASCII letters / digits / single hyphen, 1–20 chars.
 #: Hyphens are allowed but never leading or trailing.
-_dns_label = st.from_regex(r"\A[a-z0-9](section:[a-z0-9-]{0,18}[a-z0-9])section\Z", fullmatch=True)
+_dns_label = st.from_regex(r"\A[a-z0-9](?:[a-z0-9-]{0,18}[a-z0-9])?\Z", fullmatch=True)
 
 
 @st.composite

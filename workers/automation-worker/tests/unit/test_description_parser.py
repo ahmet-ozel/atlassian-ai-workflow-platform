@@ -198,7 +198,7 @@ class TestHappyPath:
             "    - type: jira*comment\n"
             "      params:\n"
             "        file*path: strict-live-e2e/out.md\n"
-            "        project*key: johni*test\n"
+            "        project*key: example*workspace\n"
         )
 
         result = parse_description_frontmatter(desc)

@@ -146,7 +146,7 @@ def compose_doc() -> dict[str, Any]:
 #: We only support the suffixes Compose realistically emits in this
 #: project: ``ms``, ``s``, ``m``, ``h``. ``us`` / ``ns`` are unused.
 _DURATION_RE = re.compile(
-    r"(sectionP<value>\d+(section:\.\d+)section)(sectionP<unit>ms|s|m|h)", re.IGNORECASE
+    r"(?P<value>\d+(?:\.\d+)?)(?P<unit>ms|s|m|h)", re.IGNORECASE
 )
 _DURATION_UNIT_SECONDS: dict[str, float] = {
     "ms": 1e-3,

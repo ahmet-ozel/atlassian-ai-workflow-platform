@@ -110,7 +110,7 @@ class EnvLine:
 # digits, underscores; everything after the first ``=`` is the value
 # (Compose's `.env` parser uses the same convention).
 _ASSIGNMENT_RE: re.Pattern[str] = re.compile(
-    r"^(sectionP<key>[A-Za-z_][A-Za-z0-9_]*)=(sectionP<value>.*)$"
+    r"^(?P<key>[A-Za-z_][A-Za-z0-9_]*)=(?P<value>.*)$"
 )
 
 
@@ -176,7 +176,7 @@ _KNOWN_DEV_CREDENTIALS: frozenset[str] = frozenset(
 # real secret and still match.
 _ALLOWLIST_PATTERNS: tuple[re.Pattern[str], ...] = (
     # Placeholder tokens used in example configuration.
-    re.compile(r"^change-me(-[A-Za-z0-9_-]+)section$"),
+    re.compile(r"^change-me(-[A-Za-z0-9_-]+)?$"),
     re.compile(r"^<set-by-vault>$"),
     re.compile(r"^dev-token-not-for-prod$"),
     # ``vault:`` reference path.

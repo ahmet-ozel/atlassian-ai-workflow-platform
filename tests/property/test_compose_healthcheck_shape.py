@@ -77,7 +77,7 @@ def _load_compose() -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 _DURATION_RE = re.compile(
-    r"(sectionP<value>\d+(section:\.\d+)section)(sectionP<unit>ms|s|m|h)", re.IGNORECASE
+    r"(?P<value>\d+(?:\.\d+)?)(?P<unit>ms|s|m|h)", re.IGNORECASE
 )
 _DURATION_UNIT_SECONDS: dict[str, float] = {
     "ms": 1e-3,

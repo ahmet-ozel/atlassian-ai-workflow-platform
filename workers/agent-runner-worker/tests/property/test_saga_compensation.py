@@ -75,7 +75,7 @@ _FORWARD_ACTIONS_WITH_INVERSE: tuple[str, ...] = (
 # Forward actions that may appear in the recorded history but MUST NOT
 # trigger any inverse call (no rollback in P0).
 _FORWARD_ACTIONS_WITHOUT_INVERSE: tuple[str, ...] = (
-    "bitbucket_create_commit",
+    "bitbucket_commit_via_git",
     "bitbucket_open_pr",
     "confluence_create_page",
     "confluence_update_page",
@@ -229,7 +229,7 @@ def test_only_recorded_actions_with_inverse_get_called(
     """No inverse is invoked for actions absent from the inverse table.
 
     The workflow records read-only ops (``jira_get_issue``) and ops
-    without a P0 inverse (``bitbucket_create_commit``,
+    without a P0 inverse (``bitbucket_commit_via_git``,
     ``confluence_create_page``, ...) in the same history list. The
     compensation helper MUST silently skip them.
     """
@@ -358,7 +358,7 @@ def test_realistic_code_change_history_compensates_in_p0_order() -> None:
     Forward order:
         bitbucket_create_branch
         opencode_generate_code     (no inverse)
-        bitbucket_create_commit    (no inverse)
+        bitbucket_commit_via_git   (no inverse)
         bitbucket_open_pr          (no inverse in P0)
         artifact_upload
 
@@ -379,7 +379,7 @@ def test_realistic_code_change_history_compensates_in_p0_order() -> None:
             inverse_kwargs={},
         ),
         CompensableAction(name="opencode_generate_code"),
-        CompensableAction(name="bitbucket_create_commit"),
+        CompensableAction(name="bitbucket_commit_via_git"),
         CompensableAction(name="bitbucket_open_pr"),
         CompensableAction(
             name="artifact_upload",

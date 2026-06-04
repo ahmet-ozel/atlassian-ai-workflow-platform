@@ -425,24 +425,24 @@ def test_activity_files_exist() -> None:
 
 
 def test_at_least_one_network_call_was_discovered() -> None:
-    """Sanity check — the AST walker actually found network call sites.
+    """Sanity check — the AST walker can actually detect network calls.
 
-    A bug in the walker that mis-identifies HTTP methods would silently
-    make the per-call check pass vacuously. Confluence's module is
-    empty in P0, so we only require at least one network call across
-    ``jira.py`` and ``bitbucket.py`` combined.
+    The production activity modules now route every Atlassian request
+    through the ``call_mcp_tool`` helper (which owns the
+    ``make_mcp_client`` + ``with_atlassian_creds`` lifecycle), so they
+    legitimately contain *zero* raw httpx-client call sites. Requiring a
+    raw call in production would therefore be architecturally wrong.
+
+    To keep the walker from passing vacuously we instead assert it
+    detects a network call in a known-good in-test source snippet — this
+    proves the walker is wired correctly without forcing production code
+    to embed a raw client call.
     """
 
-    discovered = [
-        f"{call.module}:{call.function}:{call.lineno}"
-        for result in _SCAN_RESULTS.values()
-        for call in result.network_calls
-    ]
-    assert discovered, (
-        "AST walker found zero network calls across "
-        f"{[p.name for p in _ACTIVITY_FILES]}. Either the activity "
-        "modules are unimplemented (and this test is vacuous) or the "
-        "walker is broken."
+    result = _scan_source(_GOOD_ACTIVITY_SRC)
+    assert result.network_calls, (
+        "AST walker found zero network calls in the known-good sample "
+        "source; the walker is broken."
     )
 
 

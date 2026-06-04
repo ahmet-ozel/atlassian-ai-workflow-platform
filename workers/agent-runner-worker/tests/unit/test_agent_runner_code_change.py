@@ -4,7 +4,7 @@ Covers the four execution paths plumbed into ``_dispatch_workflow_type``:
 
     1. ``code_change_with_test`` happy path — verifies the activity
        sequence (``set_assignee_to_bot`` → ``precommit_scanner`` →
-       ``bitbucket_create_commit`` → child ``ExecutionRunWorkflow`` →
+       ``bitbucket_commit_via_git`` → child ``ExecutionRunWorkflow`` →
        ``bitbucket_create_pull_request_cloud`` → ``jira_add_comment``
        with the PR link).
     2. ``code_change_commit_only`` — same prefix as above but does
@@ -214,13 +214,13 @@ class TestCodeChangeWithTest:
         activity_routes: dict[str, Any] = {
             "set_assignee_to_bot": None,
             "opencode_generate_code": _CODEGEN_OUTPUT,
-            "bitbucket_create_branch": {"name": "ai/PAY-4211/iter-1"},
             "precommit_scanner": {
                 "decision": "pass",
                 "matched_patterns": [],
             },
-            "bitbucket_create_commit": {
+            "bitbucket_commit_via_git": {
                 "commit_hash": "abc123",
+                "branch": "ai/PAY-4211",
                 "message": "[bot] Fix payment retry",
             },
             "bitbucket_create_pull_request_cloud": {
@@ -263,7 +263,7 @@ class TestCodeChangeWithTest:
         called_names = [c.args[0] for c in activity_mock.call_args_list]
         assert "set_assignee_to_bot" in called_names
         assert "precommit_scanner" in called_names
-        assert "bitbucket_create_commit" in called_names
+        assert "bitbucket_commit_via_git" in called_names
         assert "bitbucket_create_pull_request_cloud" in called_names
         assert "jira_add_comment" in called_names
 
@@ -271,16 +271,17 @@ class TestCodeChangeWithTest:
         # which precedes the commit + PR open.
         idx_assignee = called_names.index("set_assignee_to_bot")
         idx_precommit = called_names.index("precommit_scanner")
-        idx_commit = called_names.index("bitbucket_create_commit")
+        idx_commit = called_names.index("bitbucket_commit_via_git")
         idx_pr = called_names.index("bitbucket_create_pull_request_cloud")
         assert idx_assignee < idx_precommit < idx_commit < idx_pr
 
         commit_calls = [
             c for c in activity_mock.call_args_list
-            if c.args[0] == "bitbucket_create_commit"
+            if c.args[0] == "bitbucket_commit_via_git"
         ]
         commit_args = commit_calls[0].kwargs.get("args") or commit_calls[0].args[1]
-        committed_files = commit_args[2]
+        # git commit signature: [repo, branch, source_branch, files, message, dept]
+        committed_files = commit_args[3]
         assert committed_files[0]["path"] == "src/payment_retry.py"
         assert committed_files[0]["content"]
 
@@ -308,10 +309,10 @@ class TestCodeChangeWithTest:
         activity_routes: dict[str, Any] = {
             "set_assignee_to_bot": None,
             "opencode_generate_code": _CODEGEN_OUTPUT,
-            "bitbucket_create_branch": {"name": "ai/PAY-4211/iter-1"},
             "precommit_scanner": {"decision": "pass", "matched_patterns": []},
-            "bitbucket_create_commit": {
+            "bitbucket_commit_via_git": {
                 "commit_hash": "abc123",
+                "branch": "ai/PAY-4211",
                 "message": "[bot] msg",
             },
             "jira_add_comment": None,
@@ -387,7 +388,7 @@ class TestCodeChangeWithTest:
         called_names = [c.args[0] for c in activity_mock.call_args_list]
         assert "jira_add_comment" in called_names
         assert "precommit_scanner" not in called_names
-        assert "bitbucket_create_commit" not in called_names
+        assert "bitbucket_commit_via_git" not in called_names
         assert child_mock.call_count == 0
         assert wf._failure_reason == "code_generation_no_files"
 
@@ -409,10 +410,10 @@ class TestCodeChangeCommitOnly:
         activity_routes: dict[str, Any] = {
             "set_assignee_to_bot": None,
             "opencode_generate_code": _CODEGEN_OUTPUT,
-            "bitbucket_create_branch": {"name": "ai/PAY-4211/iter-1"},
             "precommit_scanner": {"decision": "pass", "matched_patterns": []},
-            "bitbucket_create_commit": {
+            "bitbucket_commit_via_git": {
                 "commit_hash": "deadbeef",
+                "branch": "ai/PAY-4211",
                 "message": "[bot] msg",
             },
             "jira_add_comment": None,
@@ -450,7 +451,7 @@ class TestCodeChangeCommitOnly:
         # The standard prefix is still invoked.
         assert "set_assignee_to_bot" in called_names
         assert "precommit_scanner" in called_names
-        assert "bitbucket_create_commit" in called_names
+        assert "bitbucket_commit_via_git" in called_names
         # And a branch-link Jira comment was posted.
         assert "jira_add_comment" in called_names
 
@@ -469,10 +470,10 @@ class TestCodeChangeCommitOnly:
         activity_routes: dict[str, Any] = {
             "set_assignee_to_bot": None,
             "opencode_generate_code": _CODEGEN_OUTPUT,
-            "bitbucket_create_branch": {"name": "ai/PAY-4211/iter-1"},
             "precommit_scanner": {"decision": "pass", "matched_patterns": []},
-            "bitbucket_create_commit": {
+            "bitbucket_commit_via_git": {
                 "commit_hash": "deadbeef",
+                "branch": "ai/PAY-4211",
                 "message": "msg",
             },
             "jira_add_comment": None,
@@ -658,7 +659,7 @@ class TestPrecommitBlock:
 
         called_names = [c.args[0] for c in activity_mock.call_args_list]
         # Commit / PR steps were NOT invoked.
-        assert "bitbucket_create_commit" not in called_names
+        assert "bitbucket_commit_via_git" not in called_names
         assert "bitbucket_create_pull_request_cloud" not in called_names
         # Failure reason is the audit-stable token.
         assert wf._failure_reason == "precommit_secret_leak_blocked"
@@ -707,7 +708,7 @@ class TestBranchPatternRulesDeny:
         called_names = [c.args[0] for c in activity_mock.call_args_list]
         # Assignee + audit_emit fired — but no commit / PR.
         assert "set_assignee_to_bot" in called_names
-        assert "bitbucket_create_commit" not in called_names
+        assert "bitbucket_commit_via_git" not in called_names
         # Audit row carries the rule's reason token.
         audit_calls = [
             c for c in activity_mock.call_args_list if c.args[0] == "audit_emit"

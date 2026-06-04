@@ -349,13 +349,19 @@ async def docker_build_image(input: DockerBuildInput) -> DockerBuildResult:
             duration_seconds=duration,
         )
 
-    # Build the docker build command
+    # Build the docker build command. ``docker build -f`` resolves the
+    # Dockerfile path relative to the *current working directory*, not the
+    # build-context argument, so we ``cd`` into the workspace first and
+    # reference the Dockerfile relative to it (``.`` build context). This
+    # makes a relative ``dockerfile_path`` such as ``Dockerfile`` resolve
+    # inside the task workspace rather than the SSH login directory.
     dockerfile_arg = shlex.quote(input.dockerfile_path)
     tag_arg = shlex.quote(input.image_tag)
     workspace_arg = shlex.quote(input.workspace_path)
 
     build_cmd = (
-        f"docker build -t {tag_arg} -f {dockerfile_arg} {workspace_arg}"
+        f"cd {workspace_arg} && "
+        f"docker build -t {tag_arg} -f {dockerfile_arg} ."
     )
 
     try:

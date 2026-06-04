@@ -129,6 +129,43 @@ async def jira_add_comment(issue_key: str, body: str, dept_id: str) -> None:
     )
 
 
+@activity.defn(name="jira_build_issue_link")
+async def jira_build_issue_link(issue_key: str, dept_id: str) -> str:
+    """Compose the canonical ``{site_url}/browse/{issue_key}`` deep link.
+
+    Resolves the department's Jira ``url`` from the shared credential
+    resolver (the same ``org``-scoped lookup the MCP activities use) and
+    joins it with the issue key. Best-effort by contract: callers treat a
+    failure or empty result as a degraded provenance footer rather than a
+    workflow error, so any resolver/credential problem returns ``""``.
+    """
+
+    activity.heartbeat(f"building issue link for {issue_key}")
+    from . import get_credential_resolver  # noqa: PLC0415
+
+    try:
+        creds = await get_credential_resolver().get(
+            dept_id, "jira", scope="org"
+        )
+    except Exception:  # noqa: BLE001 — best-effort
+        return ""
+
+    if isinstance(creds, dict):
+        url = str(creds.get("url") or creds.get("base_url") or "").strip()
+    else:
+        url = str(
+            getattr(creds, "url", "") or getattr(creds, "base_url", "")
+        ).strip()
+    if not url:
+        return ""
+    # The Jira site root is the credential URL; ``/wiki`` (Confluence)
+    # is never part of a Jira browse link, so trim it defensively.
+    root = url.rstrip("/")
+    if root.endswith("/wiki"):
+        root = root[: -len("/wiki")]
+    return f"{root}/browse/{issue_key}"
+
+
 @activity.defn(name="jira_transition_issue")
 async def jira_transition_issue(issue_key: str, target_status: str, dept_id: str) -> None:
     activity.heartbeat(f"transitioning {issue_key} to {target_status}")

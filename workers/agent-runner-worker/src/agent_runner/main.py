@@ -89,6 +89,7 @@ def _load_activities() -> list[Any]:
     try:  # pragma: no cover — exercised at boot only
         from src.activities.jira import (  # type: ignore[import-not-found]
             jira_add_comment,
+            jira_build_issue_link,
             jira_get_issue,
             jira_transition_issue,
         )
@@ -142,6 +143,7 @@ def _load_activities() -> list[Any]:
                 # Jira
                 jira_get_issue,
                 jira_add_comment,
+                jira_build_issue_link,
                 jira_transition_issue,
                 set_assignee_to_bot,
                 # Confluence

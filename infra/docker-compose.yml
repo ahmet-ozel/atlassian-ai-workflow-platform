@@ -480,6 +480,10 @@ services:
       VLLM_API_KEY: ${VLLM_API_KEY:-}
       ANTHROPIC_BASE_URL: ${ANTHROPIC_BASE_URL:-https://api.anthropic.com/v1}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      # Runtime toggle consumed by the webhook dispatcher's capability
+      # derivation: ``web_search`` is granted only when this is "true"
+      # AND the department has ``web_search_enabled``.
+      FIRECRAWL_ENABLED: ${FIRECRAWL_ENABLED:-false}
     depends_on:
       postgres:
         condition: service_healthy

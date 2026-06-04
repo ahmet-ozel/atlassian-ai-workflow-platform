@@ -39,11 +39,17 @@ dependencies = [
 allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
-# ``src`` keeps the legacy ``src.main`` / ``src.webhooks`` / ``src.decision``
-# entry points working (Dockerfile, existing tests). ``src/automation_service``
-# is the canonical package for shared Temporal capability helpers and is
-# remapped to the top-level ``automation_service`` import path.
-packages = ["src", "src/automation_service"]
+# The wheel ships only the canonical ``automation_service`` package
+# (shared Temporal capability helpers, imported as
+# ``automation_service.*``). The legacy ``src.*`` entry points
+# (``src.main``/``src.webhooks``/``src.decision``) are served at
+# runtime from the source tree copied to ``/app/src`` (uvicorn runs
+# from WORKDIR ``/app`` so ``src`` resolves on the CWD path) and by
+# the test tree — NOT from the wheel. Listing ``src`` as a second
+# package here makes hatchling map ``src/automation_service/__init__.py``
+# to ``automation_service/__init__.py`` twice and abort with a
+# duplicate-archive-path error.
+packages = ["src/automation_service"]
 
 [tool.hatch.build.targets.wheel.sources]
 "src/automation_service" = "automation_service"

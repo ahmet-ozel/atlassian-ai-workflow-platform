@@ -62,13 +62,16 @@ class SearchRequest(BaseModel):
     """Input payload for ``POST /search``.
 
     The wrapper builds an HTTP target from the search engine host (taken
-    from the optional ``engine`` field, default ``duckduckgo.com``) and the
-    query, then runs the same egress check against that synthesized URL.
+    from the optional ``engine`` field, default ``html.duckduckgo.com``)
+    and the query, then runs the same egress check against that
+    synthesized URL. The HTML results page is parsed into a structured
+    list of ``{url, title, content}`` entries so callers receive search
+    hits rather than a raw HTML blob.
     """
 
     query: str = Field(..., description="Free-text search query.")
     engine: str = Field(
-        default="duckduckgo.com",
+        default="html.duckduckgo.com",
         description="Hostname of the search backend the wrapper will fetch.",
     )
     limit: int = Field(default=10, ge=1, le=50)
@@ -80,13 +83,79 @@ def build_search_url(query: str, engine: str) -> str:
     """Synthesize an HTTPS URL for the configured search engine.
 
     Kept as a small pure helper so the property test can drive
-    ``decide_egress`` against a deterministic URL shape.
+    ``decide_egress`` against a deterministic URL shape. DuckDuckGo's
+    ``html.duckduckgo.com/html/`` endpoint returns a server-rendered
+    results page whose anchors are stable to parse.
     """
 
     from urllib.parse import quote_plus
 
-    safe_engine = engine.strip().lower() or "duckduckgo.com"
+    safe_engine = engine.strip().lower() or "html.duckduckgo.com"
+    # The DuckDuckGo HTML endpoint lives under ``/html/``; other engines
+    # fall back to a bare ``/?q=`` form.
+    if "duckduckgo.com" in safe_engine:
+        return f"https://{safe_engine}/html/?q={quote_plus(query)}"
     return f"https://{safe_engine}/?q={quote_plus(query)}"
+
+
+def parse_search_results(html: str, *, limit: int) -> list[dict[str, str]]:
+    """Parse a DuckDuckGo HTML results page into structured hits.
+
+    Extracts each result's destination URL, title and snippet from the
+    server-rendered markup. DuckDuckGo wraps the real target in a
+    ``/l/?uddg=<urlencoded>`` redirect, which is unwrapped here so the
+    caller receives a directly-fetchable URL. Parsing is best-effort and
+    regex-based (no extra dependency); a markup change degrades to fewer
+    or zero results rather than raising.
+    """
+
+    import html as _html
+    import re
+    from urllib.parse import parse_qs, unquote, urlparse
+
+    results: list[dict[str, str]] = []
+    seen: set[str] = set()
+
+    # Each organic result is an ``<a class="result__a" href="...">title</a>``.
+    anchor_re = re.compile(
+        r'<a[^>]*class="[^"]*result__a[^"]*"[^>]*href="([^"]+)"[^>]*>(.*?)</a>',
+        re.IGNORECASE | re.DOTALL,
+    )
+    # Snippets live in ``<a class="result__snippet">...</a>`` (optional).
+    snippet_re = re.compile(
+        r'<a[^>]*class="[^"]*result__snippet[^"]*"[^>]*>(.*?)</a>',
+        re.IGNORECASE | re.DOTALL,
+    )
+    tag_re = re.compile(r"<[^>]+>")
+
+    def _clean(fragment: str) -> str:
+        return _html.unescape(tag_re.sub("", fragment)).strip()
+
+    def _unwrap(href: str) -> str:
+        # DuckDuckGo redirect: //duckduckgo.com/l/?uddg=<encoded target>
+        if "uddg=" in href:
+            qs = parse_qs(urlparse(href if "//" in href else "https:" + href).query)
+            target = qs.get("uddg", [""])[0]
+            if target:
+                return unquote(target)
+        if href.startswith("//"):
+            return "https:" + href
+        return href
+
+    snippets = [_clean(s) for s in snippet_re.findall(html)]
+    for idx, (href, title_html) in enumerate(anchor_re.findall(html)):
+        url = _unwrap(href)
+        if not url.startswith("http") or url in seen:
+            continue
+        seen.add(url)
+        results.append({
+            "url": url,
+            "title": _clean(title_html),
+            "content": snippets[idx] if idx < len(snippets) else "",
+        })
+        if len(results) >= limit:
+            break
+    return results
 
 
 def _log_decision(decision: EgressDecision, *, endpoint: str, client_source: str = _CLIENT_SOURCE_UNKNOWN) -> None:
@@ -198,6 +267,60 @@ async def _forward_or_fetch(
             await client.aclose()
 
 
+async def _fetch_and_parse_search(
+    settings: Settings,
+    *,
+    target_url: str,
+    limit: int,
+    client: httpx.AsyncClient | None = None,
+) -> JSONResponse:
+    """Fetch a search-engine HTML page and return structured results.
+
+    Returns a ``{"data": [{url, title, content}], "count": N}`` envelope.
+    A browser-like ``User-Agent`` is sent because DuckDuckGo's HTML
+    endpoint returns an empty body to header-less clients. Transport
+    failures surface as HTTP 502 (mirrors :func:`_forward_or_fetch`).
+    """
+
+    timeout = settings.request_timeout_s
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+            "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+        ),
+        "Accept": "text/html,application/xhtml+xml",
+    }
+
+    owns_client = client is None
+    if client is None:
+        client = httpx.AsyncClient(timeout=timeout, follow_redirects=True)
+
+    try:
+        resp = await client.get(target_url, headers=headers)
+        results = parse_search_results(resp.text, limit=limit)
+        return JSONResponse(
+            status_code=200,
+            content={
+                "url": target_url,
+                "status_code": resp.status_code,
+                "data": results,
+                "count": len(results),
+            },
+        )
+    except httpx.HTTPError as exc:
+        return JSONResponse(
+            status_code=502,
+            content={
+                "error": "upstream_error",
+                "message": str(exc),
+                "url": target_url,
+            },
+        )
+    finally:
+        if owns_client:
+            await client.aclose()
+
+
 def create_app(settings: Settings | None = None) -> FastAPI:
     """Instantiate the FastAPI app with a fresh settings snapshot.
 
@@ -271,11 +394,22 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         _log_decision(decision, endpoint="/search", client_source=client_source)
         if decision.verdict == "denied":
             return _denied_response(decision)
-        return await _forward_or_fetch(
+        # When an upstream Firecrawl is configured, forward verbatim so its
+        # native search results flow through. Otherwise fetch the HTML
+        # results page ourselves and parse it into structured hits so the
+        # caller gets ``{url, title, content}`` entries, not raw HTML.
+        if s.upstream_base_url:
+            return await _forward_or_fetch(
+                s,
+                target_url=target_url,
+                upstream_path="/v1/search",
+                upstream_body=payload.model_dump(by_alias=True, exclude_none=True),
+                client=getattr(request.app.state, "http_client", None),
+            )
+        return await _fetch_and_parse_search(
             s,
             target_url=target_url,
-            upstream_path="/v1/search",
-            upstream_body=payload.model_dump(by_alias=True, exclude_none=True),
+            limit=payload.limit,
             client=getattr(request.app.state, "http_client", None),
         )
 

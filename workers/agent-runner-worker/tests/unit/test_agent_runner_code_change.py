@@ -392,6 +392,87 @@ class TestCodeChangeWithTest:
         assert child_mock.call_count == 0
         assert wf._failure_reason == "code_generation_no_files"
 
+    def test_codegen_retry_recovers_when_first_pass_empty(
+        self, make_wf, patched_workflow_now
+    ) -> None:
+        """First opencode pass returns no files; the directive retry
+        produces a committable file and the workflow proceeds to commit
+        + PR instead of giving up."""
+
+        wf = make_wf()
+        inp = _make_input(workflow_type="code_change_with_test")
+
+        codegen_calls = {"n": 0}
+
+        def _codegen(*args, **kwargs):
+            codegen_calls["n"] += 1
+            if codegen_calls["n"] == 1:
+                return {"files": [], "explanation": "need paths"}
+            return _CODEGEN_OUTPUT
+
+        activity_routes: dict[str, Any] = {
+            "set_assignee_to_bot": None,
+            "opencode_generate_code": _codegen,
+            "precommit_scanner": {"decision": "pass", "matched_patterns": []},
+            "bitbucket_commit_via_git": {
+                "commit_hash": "abc123",
+                "branch": "ai/PAY-4211",
+                "message": "[bot] Fix payment retry",
+            },
+            "bitbucket_create_pull_request_cloud": {
+                "id": 127,
+                "title": "[bot] Fix payment retry",
+                "url": "https://bitbucket.example/pr/127",
+                "draft": True,
+            },
+            "jira_add_comment": None,
+            "audit_emit": None,
+        }
+        activity_mock = _activity_dispatcher(activity_routes)
+        child_mock = AsyncMock(
+            return_value=type("ExecOutput", (), {"status": "passed"})()
+        )
+
+        async def _drive() -> None:
+            with patch.object(
+                _temporal_workflow, "execute_activity", activity_mock
+            ), patch.object(
+                _temporal_workflow,
+                "execute_child_workflow",
+                child_mock,
+            ), patch.object(
+                _temporal_workflow,
+                "info",
+                lambda: type(
+                    "WfInfo",
+                    (),
+                    {"workflow_id": "automation-jira-PAY-4211"},
+                )(),
+            ):
+                await wf._handle_code_change_with_test(inp)
+
+        asyncio.run(_drive())
+
+        called_names = [c.args[0] for c in activity_mock.call_args_list]
+        # opencode_generate_code was invoked twice (first empty, then retry).
+        assert codegen_calls["n"] == 2
+        # The retry recovered: commit + PR happened, no give-up comment.
+        assert "precommit_scanner" in called_names
+        assert "bitbucket_commit_via_git" in called_names
+        assert "bitbucket_create_pull_request_cloud" in called_names
+        assert wf._failure_reason != "code_generation_no_files"
+
+    def test_codegen_retry_directive_prompt_differs(self) -> None:
+        """The retry prompt must be stronger than the first-pass prompt
+        and demand at least one file."""
+
+        inp = _make_input(workflow_type="code_change_with_test")
+        first = AgentRunnerWorkflow._build_code_generation_prompt(inp)
+        retry = AgentRunnerWorkflow._build_code_generation_retry_prompt(inp)
+        assert retry != first
+        assert first in retry
+        assert "at least one file" in retry.lower()
+
 
 # ---------------------------------------------------------------------------
 # 2. ``code_change_commit_only`` — no PR creation, no test child

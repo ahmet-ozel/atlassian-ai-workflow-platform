@@ -419,7 +419,14 @@ class TestCriticalFailureTriggersCompensation:
 
         record: list[tuple[str, tuple, dict]] = []
         activity_mock = _activity_dispatcher(
-            {"bitbucket_open_pr": {"id": 7}}, record=record
+            {
+                "bitbucket_open_pr": {
+                    "pr_id": 7,
+                    "url": "https://bitbucket.example/pr/7",
+                },
+                "jira_add_comment": None,
+            },
+            record=record,
         )
         with patch.object(
             _temporal_workflow, "execute_activity", activity_mock
@@ -437,6 +444,14 @@ class TestCriticalFailureTriggersCompensation:
         pr_args = pr_calls[0][1]["args"]
         # args = [repo, source_branch, target_branch, title, desc, dept]
         assert pr_args[1] == "ai/PAY-9"
+        # The PR URL is surfaced to Jira after a successful PR open.
+        jira_calls = [
+            (a, kw) for name, a, kw in record if name == "jira_add_comment"
+        ]
+        assert any(
+            "https://bitbucket.example/pr/7" in str(kw.get("args") or a)
+            for a, kw in jira_calls
+        )
 
     def test_run_triggers_compensation_chain_on_critical_failure(
         self, make_wf, patched_workflow_now

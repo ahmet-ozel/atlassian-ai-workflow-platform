@@ -3817,7 +3817,7 @@ class AgentRunnerWorkflow:
         else:
             activity_args = [payload_dict, inp.department_id]
         try:
-            await workflow.execute_activity(
+            activity_result = await workflow.execute_activity(
                 activity_name,
                 args=activity_args,
                 start_to_close_timeout=_SHORT_TIMEOUT,
@@ -3834,6 +3834,20 @@ class AgentRunnerWorkflow:
                 reason,
             )
             return False, reason
+
+        # When a PR was opened as an output action, surface its URL on
+        # the Jira issue so the reviewer has a direct link (the LLM's
+        # own comment only promises that the link "will be shared").
+        if action.kind == "bitbucket_create_pr":
+            pr_url = self._extract_pr_url(activity_result)
+            pr_id = self._extract_pr_id_from_info(activity_result)
+            if pr_id is not None:
+                self._previous_pr_id = pr_id
+            if pr_url:
+                await self._post_jira_comment_best_effort(
+                    inp,
+                    f"✅ Draft PR açıldı: {pr_url}",
+                )
         return True, ""
 
     async def _merge_output_actions_into_log(

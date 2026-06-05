@@ -140,6 +140,9 @@ def _load_activities() -> list[Any]:
         from src.activities.work_item import (  # type: ignore[import-not-found]
             update_work_item_status,
         )
+        from src.activities.compensation_chain import (  # type: ignore[import-not-found]
+            compensation_chain_run,
+        )
 
         activities.extend(
             [
@@ -184,6 +187,8 @@ def _load_activities() -> list[Any]:
                 # Pre-commit / work item
                 precommit_scanner,
                 update_work_item_status,
+                # Cancel + compensation saga chain
+                compensation_chain_run,
             ]
         )
     except ImportError as exc:  # pragma: no cover — diagnostic-only

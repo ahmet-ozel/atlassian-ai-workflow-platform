@@ -210,7 +210,10 @@ class TestSuccessfulOutputActions:
             OutputAction(
                 kind="bitbucket_create_pr",
                 severity="critical",
-                payload=(("repo", "payment-callbacks"),),
+                payload=(
+                    ("repo", "payment-callbacks"),
+                    ("source_branch", "ai/PAY-1"),
+                ),
             ),
             OutputAction(
                 kind="slack_notify",
@@ -333,7 +336,7 @@ class TestCriticalFailureTriggersCompensation:
             OutputAction(
                 kind="bitbucket_create_pr",
                 severity="critical",
-                payload=(("repo", "r"),),
+                payload=(("repo", "r"), ("source_branch", "ai/PAY-1")),
             ),
         )
         inp = _make_input(output_actions=actions)
@@ -365,6 +368,75 @@ class TestCriticalFailureTriggersCompensation:
         assert kind == "bitbucket_create_pr"
         assert "api 500" in reason
         assert wf._failure_reason == OUTPUT_ACTION_CRITICAL_FAILED_REASON
+
+    def test_bitbucket_create_pr_without_source_branch_fails_fast(
+        self, make_wf, patched_workflow_now
+    ) -> None:
+        """A ``bitbucket_create_pr`` action with no resolvable source
+        branch must fail with a clear reason and never call the PR
+        activity (Bitbucket rejects an empty source with 400)."""
+
+        wf = make_wf()
+        action = OutputAction(
+            kind="bitbucket_create_pr",
+            severity="critical",
+            payload=(("repo", "r"),),
+        )
+        inp = _make_input(output_actions=(action,))
+        # No prior commit recorded → no branch fallback available.
+        assert wf._last_commit_branch is None
+
+        record: list[tuple[str, tuple, dict]] = []
+        activity_mock = _activity_dispatcher(
+            {"bitbucket_open_pr": {"id": 1}}, record=record
+        )
+        with patch.object(
+            _temporal_workflow, "execute_activity", activity_mock
+        ), patch.object(_temporal_workflow, "info", lambda: _info_stub()):
+            success, reason = asyncio.run(
+                wf._apply_single_output_action(action, inp)
+            )
+
+        assert success is False
+        assert reason == "bitbucket_create_pr_no_source_branch"
+        # The PR activity must never be called with an empty source.
+        assert all(name != "bitbucket_open_pr" for name, _a, _kw in record)
+
+    def test_bitbucket_create_pr_falls_back_to_commit_branch(
+        self, make_wf, patched_workflow_now
+    ) -> None:
+        """When the action omits a source branch but a commit landed on
+        a branch earlier in the run, the PR opens from that branch."""
+
+        wf = make_wf()
+        wf._last_commit_branch = "ai/PAY-9"
+        action = OutputAction(
+            kind="bitbucket_create_pr",
+            severity="critical",
+            payload=(("repo", "r"),),
+        )
+        inp = _make_input(output_actions=(action,))
+
+        record: list[tuple[str, tuple, dict]] = []
+        activity_mock = _activity_dispatcher(
+            {"bitbucket_open_pr": {"id": 7}}, record=record
+        )
+        with patch.object(
+            _temporal_workflow, "execute_activity", activity_mock
+        ), patch.object(_temporal_workflow, "info", lambda: _info_stub()):
+            success, reason = asyncio.run(
+                wf._apply_single_output_action(action, inp)
+            )
+
+        assert success is True
+        pr_calls = [
+            (a, kw) for name, a, kw in record if name == "bitbucket_open_pr"
+        ]
+        assert len(pr_calls) == 1
+        # execute_activity is called as (name, args=[...]) → kwargs["args"].
+        pr_args = pr_calls[0][1]["args"]
+        # args = [repo, source_branch, target_branch, title, desc, dept]
+        assert pr_args[1] == "ai/PAY-9"
 
     def test_run_triggers_compensation_chain_on_critical_failure(
         self, make_wf, patched_workflow_now

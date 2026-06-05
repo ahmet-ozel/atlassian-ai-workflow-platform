@@ -848,6 +848,16 @@ class AgentRunnerWorkflow:
         # first PR opens.
         self._previous_pr_id: int | None = None
 
+        # Branch name the most recent code-change commit was pushed to.
+        # Set by the ``code_change_*`` spine after a successful
+        # ``bitbucket_commit_via_git`` so a follow-on
+        # ``bitbucket_create_pr`` output action that omits an explicit
+        # ``source_branch`` can fall back to the branch that actually
+        # received the commit (rather than sending an empty source,
+        # which Bitbucket rejects with ``400 Bad Request``). ``None``
+        # until the first commit lands.
+        self._last_commit_branch: str | None = None
+
         # Latest Confluence page id created/updated by this workflow.
         # Populated by the ``confluence_doc_create`` body
         # so the terminal :class:`AgentRunnerWorkflowOutput` can
@@ -1770,6 +1780,11 @@ class AgentRunnerWorkflow:
             raise
 
         commit_hash = self._extract_commit_hash(commit_info) or branch_name
+
+        # Record the branch that actually received the commit so a
+        # later ``bitbucket_create_pr`` output action that omits an
+        # explicit source can open the PR from the right branch.
+        self._last_commit_branch = branch_name
 
         # 6 + 7. Test execution + PR creation (only for ``with_test``).
         if with_test:
@@ -3776,11 +3791,21 @@ class AgentRunnerWorkflow:
                 or inp.target_repo
                 or "",
             }
-            activity_args = [
-                repo,
+            pr_source_branch = (
                 payload_dict.get("source_branch")
                 or payload_dict.get("from_branch")
-                or "",
+                or self._last_commit_branch
+                or ""
+            )
+            if not pr_source_branch:
+                # Bitbucket rejects a PR with an empty source branch
+                # (400 Bad Request). Fail this action with a clear
+                # reason instead of issuing a request that cannot
+                # succeed and would only burn the retry budget.
+                return False, "bitbucket_create_pr_no_source_branch"
+            activity_args = [
+                repo,
+                pr_source_branch,
                 payload_dict.get("target_branch")
                 or payload_dict.get("to_branch")
                 or inp.target_branch

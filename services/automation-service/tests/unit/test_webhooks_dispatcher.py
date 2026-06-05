@@ -482,6 +482,40 @@ class TestNeedsInfoSignal:
         assert signal["payload"] == "Here is the repo: github.com/org/repo"
 
     @pytest.mark.asyncio
+    async def test_prefixed_comment_event_on_needs_info_signals(
+        self, fake_temporal: FakeTemporalClient, fake_audit: FakeAuditLogger
+    ) -> None:
+        """A pipeline-shaped ``jira:comment_created`` event must also signal.
+
+        Regression: the webhook *pipeline* preserves the raw Atlassian
+        ``webhookEvent`` value (``"jira:comment_created"``) while the
+        legacy handler strips the prefix (``"comment_created"``). The
+        dispatcher previously matched only the bare form, so a user's
+        reply delivered via the pipeline fell through to a duplicate
+        workflow start instead of waking the parked needs_info workflow.
+        """
+        conn = FakeConnection(
+            bot_rows=[{"account_id": "bot-123", "department_id": "pay", "service": "jira"}],
+            dept_rows=[{"id": "pay", "mode": "active", "config_json": {}}],
+            work_item_row={"status": "needs_info"},
+        )
+        pool = FakePool(conn=conn)
+        dispatcher = WebhookDispatcher(
+            db=pool, temporal=fake_temporal, audit_logger=fake_audit
+        )
+
+        payload = WebhookPayload(
+            event_type="jira:comment_created",
+            issue_key="PAY-600",
+            assignee_account_id="bot-123",
+            comment_body="Detaylar: smoke-test reposuna README ekle.",
+        )
+        result = await dispatcher.dispatch(payload)
+        assert result.action == "signaled"
+        assert len(fake_temporal.sent_signals) == 1
+        assert fake_temporal.sent_signals[0]["signal_name"] == "info_received"
+
+    @pytest.mark.asyncio
     async def test_comment_on_non_needs_info_starts_workflow(
         self, dispatcher: WebhookDispatcher, fake_temporal: FakeTemporalClient
     ) -> None:

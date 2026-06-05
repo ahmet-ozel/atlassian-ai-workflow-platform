@@ -1643,6 +1643,44 @@ class AgentRunnerWorkflow:
 
         commit_files = self._extract_commit_files(code_output)
         if not commit_files:
+            # The first pass produced no committable files. Before giving
+            # up, retry once with a more directive prompt that instructs
+            # the generator to always materialise at least one sensible
+            # file from the available context (e.g. a README for a simple
+            # request). Many vague-but-actionable tasks succeed on this
+            # second pass; only a genuinely under-specified task falls
+            # through to the clarification comment below.
+            retry_prompt = self._build_code_generation_retry_prompt(inp)
+            retry_tokens = max(1, len(retry_prompt) // 4)
+            try:
+                retry_output = await self._execute_llm_activity(
+                    "opencode_generate_code",
+                    args=[
+                        {
+                            "issue_key": inp.issue_key,
+                            "prompt": retry_prompt,
+                            "model": None,
+                        },
+                        workspace_path,
+                    ],
+                    input_tokens=retry_tokens,
+                    inp=inp,
+                )
+            except TokenCapExceededError:
+                raise
+            except Exception as exc:  # noqa: BLE001 - critical
+                self._failure_reason = "opencode_generate_code_failed"
+                workflow.logger.warning(
+                    "opencode_generate_code retry failed for %s: %s",
+                    inp.issue_key,
+                    exc,
+                )
+                raise
+            commit_files = self._extract_commit_files(retry_output)
+            if commit_files:
+                code_output = retry_output
+
+        if not commit_files:
             self._failure_reason = "code_generation_no_files"
             await self._post_jira_comment_best_effort(
                 inp,
@@ -3862,6 +3900,34 @@ class AgentRunnerWorkflow:
             "create/update."
         )
         return "\n".join(parts)
+
+    @staticmethod
+    def _build_code_generation_retry_prompt(
+        inp: AgentRunnerWorkflowInput,
+    ) -> str:
+        """Build a stronger prompt used when the first pass yields no files.
+
+        The first generation prompt is deliberately neutral. When it
+        comes back empty the task is often actionable but under-specified
+        (e.g. "add a README", "create a config file") and the generator
+        simply declined to guess. This retry prompt removes that
+        ambiguity: it requires at least one file and tells the generator
+        to choose a sensible path and default content from the task
+        context rather than returning an empty set.
+        """
+
+        base = AgentRunnerWorkflow._build_code_generation_prompt(inp)
+        directive = (
+            "IMPORTANT: A previous attempt returned no files. You MUST now "
+            "return at least one file. Do not return an empty list and do "
+            "not ask for clarification. Infer the most reasonable change "
+            "from the task details above. For a simple request (for example "
+            "adding a README, a config file, or a small helper), create the "
+            "file at a conventional repository-relative path with sensible, "
+            "self-contained default content derived from the issue title and "
+            "task details. Provide the full file content for every entry."
+        )
+        return f"{base}\n\n{directive}"
 
     @staticmethod
     def _normalise_commit_action(value: Any) -> str:

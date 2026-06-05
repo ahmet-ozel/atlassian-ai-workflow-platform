@@ -325,6 +325,23 @@ class JiraCommenterProtocol(Protocol):
 # ---------------------------------------------------------------------------
 
 
+def _is_comment_created(event_type: str | None) -> bool:
+    """Return True for a Jira comment-created event in either wire form.
+
+    The dispatcher is fed from two paths that label the event
+    differently: the legacy handler strips the ``jira:`` prefix
+    (``"comment_created"``), while the webhook *pipeline*
+    (``extract_webhook_payload``) preserves the raw Atlassian value
+    (``"jira:comment_created"``). Matching both keeps the needs_info /
+    iterate / approval comment branches firing regardless of which
+    path delivered the event.
+    """
+
+    if not event_type:
+        return False
+    return event_type == "comment_created" or event_type == "jira:comment_created"
+
+
 class WebhookDispatcher:
     """Routes webhook to the correct department workflow.
 
@@ -438,7 +455,7 @@ class WebhookDispatcher:
 
         # [iterate] comment → Iteration Manager
         if (
-            payload.event_type == "comment_created"
+            _is_comment_created(payload.event_type)
             and payload.comment_body is not None
             and self._is_iterate_command(payload.comment_body)
         ):
@@ -478,7 +495,7 @@ class WebhookDispatcher:
 
         # Comment on needs_info issue → signal existing workflow
         if (
-            payload.event_type == "comment_created"
+            _is_comment_created(payload.event_type)
             and await self._is_needs_info(payload.issue_key)
         ):
             await self._signal_workflow(
@@ -507,7 +524,7 @@ class WebhookDispatcher:
         # as a normal update so the workflow's normal restart path
         # still runs.
         if (
-            payload.event_type == "comment_created"
+            _is_comment_created(payload.event_type)
             and payload.comment_body is not None
             and self._is_approval_comment(payload.comment_body)
         ):

@@ -26,7 +26,7 @@ Kurulum kuralları:
 | Hedef departman | `dept_id`, `jira_project_keys[]`, `bitbucket_workspace`, `bot.bitbucket.deployment ∈ {cloud, server}` | `platform/config/departments.json` |
 | Vault erişimi | KV v2 mount altında `webhooks/jira/<dept_id>` ve `webhooks/bitbucket/<dept_id>` path'lerine yazma yetkisi | Vault root/admin token |
 | Atlassian araçları | Jira Cloud için organizasyon admin paneli; Jira DC için `https://<jira-dc>/plugins/servlet/webhooks` admin sayfası | Atlassian admin |
-| Bitbucket araçları | Bitbucket Cloud için workspace admin'i; Bitbucket DC için `Repository / Project Settings → Webhooks` (DC plugin'i ile) | Bitbucket admin |
+| Bitbucket araçları | Bitbucket Cloud için workspace admin'i; Bitbucket DC için `Repository / Project Settings  Webhooks` (DC plugin'i ile) | Bitbucket admin |
 | Test aracı | `curl`, `openssl` (HMAC üretimi için), `vault` CLI veya UI | Yerel makine |
 
 > **`dept_id` çözümlemesi:** `dept_id` değerini `platform/config/departments.json` dosyasındaki `id` alanından oku. Vault path'lerinde **bu değer aynen** kullanılır; lower-case ve `[a-z0-9_-]` ile sınırlıdır.
@@ -62,7 +62,7 @@ vault kv put "secret/webhooks/jira/${DEPT_ID}" \
 
 Atlassian admin panelinden:
 
-1. Atlassian admin (`https://admin.atlassian.com`) → **Products → Jira → System → Webhooks**.
+1. Atlassian admin (`https://admin.atlassian.com`)  **Products  Jira  System  Webhooks**.
 2. **Create a webhook** butonuna bas.
 3. Aşağıdaki alanları doldur:
 
@@ -86,7 +86,7 @@ Atlassian, gövde üzerinden HMAC-SHA256 imzasını **`X-Atlassian-Webhook-Signa
 Jira DC'de webhook tanımı sistem admin sayfasından yapılır.
 
 1. `https://<jira-dc>/plugins/servlet/webhooks` admin sayfasına gir.
-2. **Create a webhook** → aşağıdaki alanları doldur:
+2. **Create a webhook**  aşağıdaki alanları doldur:
 
 | Alan | Değer |
 |---|---|
@@ -127,7 +127,7 @@ vault kv put "secret/webhooks/bitbucket/${DEPT_ID}" \
 Bitbucket Cloud `bot.bitbucket.workspace` seviyesinde webhook destekler (workspace düzeyi tüm repo'ları kapsar; bu tek-abonelik kuralına uyumludur).
 
 1. `https://bitbucket.org/<workspace>/workspace/settings/webhooks` sayfasına gir.
-2. **Add webhook** → aşağıdaki alanları doldur:
+2. **Add webhook**  aşağıdaki alanları doldur:
 
 | Alan | Değer |
 |---|---|
@@ -135,7 +135,7 @@ Bitbucket Cloud `bot.bitbucket.workspace` seviyesinde webhook destekler (workspa
 | **URL** | `{public_url}/webhooks/bitbucket` (örn. `https://automation.example.com/webhooks/bitbucket`) |
 | **Secret** | `${SECRET}` (Adım 4.1.1) |
 | **Status** | `Active` |
-| **Triggers** | **Choose from a full list of triggers** seçeneğini aç ve şunları işaretle: `Pull Request → Created` (`pullrequest:created`), `Pull Request → Comment created` (`pullrequest:commented`), `Pull Request → Updated` (`pullrequest:updated`). `Pull Request → Merged` (`pullrequest:fulfilled`) **işaretlenir** (gateway loop guard ile drop eder; ama dahil olması ileride config değişimi gerektirmez). |
+| **Triggers** | **Choose from a full list of triggers** seçeneğini aç ve şunları işaretle: `Pull Request  Created` (`pullrequest:created`), `Pull Request  Comment created` (`pullrequest:commented`), `Pull Request  Updated` (`pullrequest:updated`). `Pull Request  Merged` (`pullrequest:fulfilled`) **işaretlenir** (gateway loop guard ile drop eder; ama dahil olması ileride config değişimi gerektirmez). |
 
 3. Save.
 
@@ -145,17 +145,17 @@ Bitbucket, gövde üzerinden HMAC-SHA256 imzasını **`X-Hub-Signature`** header
 
 ### 4.2 Bitbucket Data Center (DC)
 
-Bitbucket DC'de webhook tanımı **proje** veya **repository** düzeyinde yapılır. Tek-abonelik kuralı için workspace karşılığı **Project Settings → Webhooks** seviyesidir; bu da o projedeki tüm repo'ları kapsar.
+Bitbucket DC'de webhook tanımı **proje** veya **repository** düzeyinde yapılır. Tek-abonelik kuralı için workspace karşılığı **Project Settings  Webhooks** seviyesidir; bu da o projedeki tüm repo'ları kapsar.
 
 1. `https://<bitbucket-dc>/projects/<project>/settings/webhooks` sayfasına gir.
-2. **Create webhook** → aşağıdaki alanları doldur:
+2. **Create webhook**  aşağıdaki alanları doldur:
 
 | Alan | Değer |
 |---|---|
 | **Name** | `automation-service / {dept_id}` |
 | **URL** | `{public_url}/webhooks/bitbucket` |
 | **Secret** | `${SECRET}` (Adım 4.1.1 - DC için aynı path: `vault:webhooks/bitbucket/{dept_id}`) |
-| **Events** | `Pull request → Opened` (`pr:opened`, gateway tarafında `pullrequest:created`'a normalize edilir), `Pull request → Comment added` (`pr:comment:added` → `pullrequest:commented`), `Pull request → Modified` / `Source branch updated` (`pr:modified`, `pr:from_ref_updated` → `pullrequest:updated`) |
+| **Events** | `Pull request  Opened` (`pr:opened`, gateway tarafında `pullrequest:created`'a normalize edilir), `Pull request  Comment added` (`pr:comment:added`  `pullrequest:commented`), `Pull request  Modified` / `Source branch updated` (`pr:modified`, `pr:from_ref_updated`  `pullrequest:updated`) |
 
 3. Kaydet.
 
@@ -178,9 +178,9 @@ Admin Dashboard artık webhook secret rotation'ını doğrudan UI üzerinden des
 
 #### Adımlar
 
-1. **Admin Dashboard'a giriş yap** → sol menüden **Security** sayfasına git.
+1. **Admin Dashboard'a giriş yap**  sol menüden **Security** sayfasına git.
 2. **"Webhook Secrets"** kartında ilgili `dept × provider` satırını bul.
-3. **"Döndür"** butonuna tıkla → onay diyaloğu açılır.
+3. **"Döndür"** butonuna tıkla  onay diyaloğu açılır.
 4. Onayladıktan sonra sistem:
    - 32 byte yeni secret üretir.
    - Vault'taki mevcut `secret_current`'ı `secret_previous`'a indirir.
@@ -195,7 +195,7 @@ Admin Dashboard artık webhook secret rotation'ını doğrudan UI üzerinden des
    - Süre dolduğunda `secret_previous` otomatik olarak temizlenir (background Temporal workflow).
    - İsterseniz **"Sonlandır"** butonuna basarak overlap penceresini manuel olarak erken kapatabilirsiniz (provider tarafında secret'ı güncellediğinizden emin olduktan sonra).
 
-> **Audit izlenebilirlik:** Her rotation ve finalize işlemi `webhook_secret_rotated` / `webhook_secret_rotation_finalized` audit action'ları ile kayıt altına alınır; `admin-dashboard → Audit` sayfasından izlenebilir.
+> **Audit izlenebilirlik:** Her rotation ve finalize işlemi `webhook_secret_rotated` / `webhook_secret_rotation_finalized` audit action'ları ile kayıt altına alınır; `admin-dashboard  Audit` sayfasından izlenebilir.
 
 #### API endpoint'leri (programatik erişim)
 
@@ -224,7 +224,7 @@ vault kv put "secret/webhooks/${PROVIDER}/${DEPT_ID}" \
   rotated_at="$(date -u +%FT%TZ)"
 
 # 3) Atlassian/Bitbucket UI'sında webhook'un Secret alanını ${NEW_SECRET} ile güncelle
-#    (manuel adım - provider UI'sından)
+# (manuel adım - provider UI'sından)
 
 # 4) 1 saat bekle (overlap penceresi)
 

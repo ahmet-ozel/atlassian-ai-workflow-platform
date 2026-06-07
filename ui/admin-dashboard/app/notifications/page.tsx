@@ -2,8 +2,7 @@
 
 /**
  * Notifications panel.
- *
- * Surfaces dept-level notification configuration (Slack webhook
+ * * Surfaces dept-level notification configuration (Slack webhook
  * vault refs, email recipients, notify_on_success toggle).
  */
 
@@ -56,7 +55,7 @@ export default function NotificationsPage(): JSX.Element {
           </div>
           <div className="page-header__actions">
             <button className="btn" onClick={refresh} disabled={loading}>
-              {loading ? <span className="spinner" /> : "🔄"} Yenile
+              {loading ? <span className="spinner" /> : ""} Yenile
             </button>
           </div>
         </div>
@@ -64,7 +63,7 @@ export default function NotificationsPage(): JSX.Element {
 
       {error && (
         <div className="banner banner--danger">
-          <span className="banner__icon">⚠️</span>
+          <span className="banner__icon"></span>
           <div className="banner__body">{error}</div>
         </div>
       )}
@@ -77,7 +76,7 @@ export default function NotificationsPage(): JSX.Element {
         <div className="card__body card__body--flush">
           {rows.length === 0 ? (
             <div className="empty">
-              <div className="empty__icon">🔔</div>
+              <div className="empty__icon"></div>
               <div className="empty__title">Yapılandırılmış bildirim yok</div>
             </div>
           ) : (

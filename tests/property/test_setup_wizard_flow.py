@@ -146,7 +146,7 @@ class TestSetupWizardAllComplete:
         }
 
     def test_all_complete_false_when_no_steps_completed(self) -> None:
-        """All steps pending → all_complete is False."""
+        """All steps pending  all_complete is False."""
         state = {name: SetupStep(name=name) for name in STEP_ORDER}
         result = self._build_status_response(state)
         assert result["all_complete"] is False
@@ -170,7 +170,7 @@ class TestSetupWizardAllComplete:
         assert result["current_step"] == incomplete_step
 
     def test_all_complete_true_when_all_steps_completed(self) -> None:
-        """All steps completed → all_complete is True."""
+        """All steps completed  all_complete is True."""
         state = {
             name: SetupStep(name=name, status=StepStatus.COMPLETED)
             for name in STEP_ORDER

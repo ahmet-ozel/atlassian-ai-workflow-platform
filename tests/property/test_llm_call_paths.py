@@ -54,7 +54,7 @@ from _path_whitelist import (  # noqa: E402
 # Workspace anchor
 # ---------------------------------------------------------------------------
 
-# tests/property/test_llm_call_paths.py → platform/
+# tests/property/test_llm_call_paths.py  platform/
 _PLATFORM_ROOT: Path = Path(__file__).resolve().parents[2]
 
 

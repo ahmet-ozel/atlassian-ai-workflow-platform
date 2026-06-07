@@ -116,11 +116,11 @@ class _FakeVaultClient:
     """
 
     def __init__(self) -> None:
-        # path → current entry
+        # path  current entry
         self._store: dict[str, _VaultEntry] = {}
-        # path → number of read_with_metadata calls
+        # path  number of read_with_metadata calls
         self.read_with_metadata_calls: dict[str, int] = {}
-        # path → number of read_secret calls
+        # path  number of read_secret calls
         self.read_secret_calls: dict[str, int] = {}
 
     def set_secret(self, path: str, entry: _VaultEntry) -> None:

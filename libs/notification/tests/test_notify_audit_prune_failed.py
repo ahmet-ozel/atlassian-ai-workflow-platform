@@ -192,7 +192,7 @@ def test_idempotent_retry_skips_second_admin_send() -> None:
 
 
 def test_distinct_run_ids_produce_distinct_dedup_keys() -> None:
-    """Two cron runs ⇒ two rows; hashes differ."""
+    """Two cron runs  two rows; hashes differ."""
 
     service, slack, _, _, store = _service_with_fakes()
 
@@ -240,7 +240,7 @@ def test_log_row_records_admin_channel_label_not_webhook_url() -> None:
 
 
 def test_render_failure_raises_template_render_error() -> None:
-    """Missing prompt template ⇒ ``TemplateRenderError`` (never retryable)."""
+    """Missing prompt template  ``TemplateRenderError`` (never retryable)."""
 
     prompts = _FakePromptRenderer(bodies={})  # template missing
     service, slack, _, _, store = _service_with_fakes(prompts=prompts)

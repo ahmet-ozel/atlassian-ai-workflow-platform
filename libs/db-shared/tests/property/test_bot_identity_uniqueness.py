@@ -433,7 +433,7 @@ def test_crud_conflict_detector_matches_oracle(
     # Additionally check the empty-conflict invariants:
     # * a candidate with no real pairs never produces conflicts;
     # * a candidate self-skipped against existing == [candidate]
-    #   never produces conflicts.
+    # never produces conflicts.
     if not candidate_pairs:
         assert actual == []
     if (

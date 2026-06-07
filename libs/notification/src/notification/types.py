@@ -123,8 +123,8 @@ class WorkflowResult:
 
     Args:
         status: One of :data:`WorkflowStatus`. Drives the dispatch policy:
-            ``"failed"`` ⇒ failure-mandatory branch; ``"completed"``
-            and ``"partial"`` ⇒ success-gated branch.
+            ``"failed"``  failure-mandatory branch; ``"completed"``
+            and ``"partial"``  success-gated branch.
         summary: Single-line human-readable summary (eg.
             ``"PR #123 merged"``). Surfaced verbatim into the rendered
             notification body via the ``{result_summary}`` placeholder.

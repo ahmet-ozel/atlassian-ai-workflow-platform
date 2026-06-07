@@ -530,7 +530,7 @@ def test_overrides_can_shadow_allowlisted_host_keys() -> None:
 
 
 # ---------------------------------------------------------------------------
-#  surface - no temporary.env files written under workspace
+# surface - no temporary.env files written under workspace
 # ---------------------------------------------------------------------------
 
 

@@ -7,7 +7,7 @@ Provides:
 * ``GET /admin/departments``              - list all departments.
 * ``GET /admin/departments/{dept_id}``    - department detail + capability matrix.
 * ``GET /admin/departments/{dept_id}/capability-matrix``
-                                          - 10×1 workflow_type matrix (✅/❌).
+                                          - 10×1 workflow_type matrix (/).
 * ``POST /admin/departments/{dept_id}/repo-mappings``
                                           - add a repo mapping.
 * ``PUT /admin/departments/{dept_id}/repo-mappings``
@@ -98,12 +98,12 @@ def _derive_capabilities(dept: dict[str, Any]) -> frozenset[str]:
     """Derive the capability set from a department's bot credentials.
 
     Capability derivation rules:
-    - jira credential_ref non-empty → jira_read, jira_write
-    - bitbucket credential_ref non-empty → bitbucket_read, bitbucket_write
-    - confluence credential_ref non-empty → confluence_read, confluence_write
+    - jira credential_ref non-empty  jira_read, jira_write
+    - bitbucket credential_ref non-empty  bitbucket_read, bitbucket_write
+    - confluence credential_ref non-empty  confluence_read, confluence_write
     - SSH_HOST configured (execution-runner; SSH_HOST_1 accepted as
-      deprecated alias) → execution
-    - web_search_enabled=true → web_search
+      deprecated alias)  execution
+    - web_search_enabled=true  web_search
     """
     caps: set[str] = set()
     bot = dept.get("bot", {})
@@ -718,8 +718,8 @@ class _FileLockContext:
     dependency tree (``virtualenv`` pins it). When ``filelock`` isn't
     importable we fall back to platform-native primitives:
 
-    * POSIX → ``fcntl.flock`` against a sidecar ``.lock`` file.
-    * Windows → ``msvcrt.locking`` against the same sidecar.
+    * POSIX  ``fcntl.flock`` against a sidecar ``.lock`` file.
+    * Windows  ``msvcrt.locking`` against the same sidecar.
 
     Either way the lock is **advisory** - only well-behaved writers
     (i.e. the admin-dashboard-api) need to acquire it. The lock is
@@ -998,7 +998,7 @@ async def _emit_dept_audit(
     legitimate dept mutation (the row write is observability, not a
     correctness guarantee). The sink is resolved through the same
     fallback chain as :func:`workflow_control._get_audit_sink`:
-    explicit ``app.state.dept_audit_sink`` → AdminProxy's audit sink.
+    explicit ``app.state.dept_audit_sink``  AdminProxy's audit sink.
     """
 
     sink = getattr(request.app.state, "dept_audit_sink", None)

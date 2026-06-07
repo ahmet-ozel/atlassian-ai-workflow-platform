@@ -33,15 +33,15 @@ endpoints and the production wiring:
 Probe contract
 --------------
 
-Service value → probe action:
+Service value  probe action:
 
-* ``jira``        → ``GET {site}/rest/api/3/myself``
-* ``bitbucket``   → ``GET {site}/2.0/user``
-* ``confluence``  → ``GET {site}/wiki/rest/api/space``
-* ``llm``         → minimal completion call against the dept's primary
+* ``jira``         ``GET {site}/rest/api/3/myself``
+* ``bitbucket``    ``GET {site}/2.0/user``
+* ``confluence``   ``GET {site}/wiki/rest/api/space``
+* ``llm``          minimal completion call against the dept's primary
   LLM provider
-* ``ssh``         → SSH authentication attempt against the runner host
-* ``docker``      → ``docker info`` over SSH on the runner host
+* ``ssh``          SSH authentication attempt against the runner host
+* ``docker``       ``docker info`` over SSH on the runner host
 
 Each probe returns a :class:`ProbeResult` with one of three statuses:
 
@@ -602,7 +602,7 @@ async def get_capability_matrix(request: Request) -> dict[str, Any]:
                 services_block[service] = cached.to_response()
                 continue
 
-            # No cached row → derive a placeholder. ``not_configured``
+            # No cached row  derive a placeholder. ``not_configured``
             # for unconfigured services, ``unknown`` otherwise so the
             # UI can render a grey placeholder until the first probe
             # writes a row.

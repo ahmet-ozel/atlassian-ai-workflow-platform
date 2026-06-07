@@ -153,7 +153,7 @@ def _reference_deploy(client: MockJiraClient, template: dict[str, Any]) -> None:
 
  The deploy script that lands in must implement the same
  contract; this invariant only relies on the *documented*
- behaviour (read → diff → no-op or single mutation), so any correct
+ behaviour (read  diff  no-op or single mutation), so any correct
  implementation will satisfy the property.
 
  The contract is:
@@ -360,7 +360,7 @@ def test_deploy_jira_issue_template_is_idempotent(template: dict[str, Any]) -> N
 
 
 # ---------------------------------------------------------------------------
-# Companion sanity test - empty Jira → first deploy populates everything
+# Companion sanity test - empty Jira  first deploy populates everything
 # ---------------------------------------------------------------------------
 
 

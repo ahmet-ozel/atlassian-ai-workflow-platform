@@ -135,7 +135,7 @@ def _make_settings(
 
 
 # ---------------------------------------------------------------------------
-# OpenAI - empty/missing API key → ConfigurationError
+# OpenAI - empty/missing API key  ConfigurationError
 # ---------------------------------------------------------------------------
 
 
@@ -154,13 +154,13 @@ class TestOpenAICredentialFailFast:
     def test_openai_empty_key_raises_configuration_error(
         self, api_key: str
     ) -> None:
-        """: OpenAI provider + empty/whitespace key → ConfigurationError."""
+        """: OpenAI provider + empty/whitespace key  ConfigurationError."""
         s = _make_settings(llm_provider="openai", openai_api_key=api_key)
         with pytest.raises(ConfigurationError):
             s.validate_provider_credentials()
 
     def test_openai_valid_key_does_not_raise(self) -> None:
-        """Sanity: OpenAI provider + non-empty key → no error."""
+        """Sanity: OpenAI provider + non-empty key  no error."""
         s = _make_settings(
             llm_provider="openai", openai_api_key="sk-test-valid-key-12345"
         )
@@ -169,7 +169,7 @@ class TestOpenAICredentialFailFast:
 
 
 # ---------------------------------------------------------------------------
-# Anthropic - empty/missing API key → ConfigurationError
+# Anthropic - empty/missing API key  ConfigurationError
 # ---------------------------------------------------------------------------
 
 
@@ -188,13 +188,13 @@ class TestAnthropicCredentialFailFast:
     def test_anthropic_empty_key_raises_configuration_error(
         self, api_key: str
     ) -> None:
-        """: Anthropic provider + empty/whitespace key → ConfigurationError."""
+        """: Anthropic provider + empty/whitespace key  ConfigurationError."""
         s = _make_settings(llm_provider="anthropic", anthropic_api_key=api_key)
         with pytest.raises(ConfigurationError):
             s.validate_provider_credentials()
 
     def test_anthropic_valid_key_does_not_raise(self) -> None:
-        """Sanity: Anthropic provider + non-empty key → no error."""
+        """Sanity: Anthropic provider + non-empty key  no error."""
         s = _make_settings(
             llm_provider="anthropic",
             anthropic_api_key="sk-ant-test-valid-key-12345",
@@ -204,7 +204,7 @@ class TestAnthropicCredentialFailFast:
 
 
 # ---------------------------------------------------------------------------
-# vLLM - empty/invalid URL → ConfigurationError
+# vLLM - empty/invalid URL  ConfigurationError
 # ---------------------------------------------------------------------------
 
 
@@ -223,7 +223,7 @@ class TestVllmCredentialFailFast:
     def test_vllm_invalid_url_raises_configuration_error(
         self, base_url: str
     ) -> None:
-        """: vLLM provider + invalid URL → ConfigurationError."""
+        """: vLLM provider + invalid URL  ConfigurationError."""
         # Pre-filter: only test values that are actually invalid URLs
         # (the strategy should produce only invalid ones, but double-check)
         if _is_valid_url(base_url):
@@ -237,7 +237,7 @@ class TestVllmCredentialFailFast:
             s.validate_provider_credentials()
 
     def test_vllm_valid_url_does_not_raise(self) -> None:
-        """Sanity: vLLM provider + valid URL → no error."""
+        """Sanity: vLLM provider + valid URL  no error."""
         s = _make_settings(
             llm_provider="vllm",
             vllm_base_url="http://localhost:8000/v1",
@@ -265,19 +265,19 @@ class TestVllmCredentialFailFast:
             s.validate_provider_credentials()
 
     def test_vllm_empty_string_raises(self) -> None:
-        """: vLLM provider + empty string → ConfigurationError."""
+        """: vLLM provider + empty string  ConfigurationError."""
         s = _make_settings(llm_provider="vllm", vllm_base_url="")
         with pytest.raises(ConfigurationError):
             s.validate_provider_credentials()
 
     def test_vllm_whitespace_only_raises(self) -> None:
-        """: vLLM provider + whitespace-only → ConfigurationError."""
+        """: vLLM provider + whitespace-only  ConfigurationError."""
         s = _make_settings(llm_provider="vllm", vllm_base_url=" ")
         with pytest.raises(ConfigurationError):
             s.validate_provider_credentials()
 
     def test_vllm_no_scheme_raises(self) -> None:
-        """: vLLM provider + URL without scheme → ConfigurationError."""
+        """: vLLM provider + URL without scheme  ConfigurationError."""
         s = _make_settings(llm_provider="vllm", vllm_base_url="localhost:8000/v1")
         with pytest.raises(ConfigurationError):
             s.validate_provider_credentials()
@@ -285,7 +285,7 @@ class TestVllmCredentialFailFast:
 
 # ---------------------------------------------------------------------------
 # Cross-provider - any credential-requiring provider with
-# invalid credentials → ConfigurationError
+# invalid credentials  ConfigurationError
 # ---------------------------------------------------------------------------
 
 
@@ -306,7 +306,7 @@ class TestCrossProviderFailFast:
     def test_any_provider_with_empty_credential_raises(
         self, provider: str, invalid_value: str
     ) -> None:
-        """Any credential-requiring provider + empty credential → ConfigurationError.
+        """Any credential-requiring provider + empty credential  ConfigurationError.
 
  For vllm, empty/whitespace is always invalid. For openai/anthropic,
  empty/whitespace API keys are always invalid.
@@ -338,9 +338,9 @@ class TestHealthzInvariant:
  and /healthz returns 503.
 
  We test this behavior by verifying the logical chain:
- 1. Invalid credentials → ConfigurationError raised
- 2. ConfigurationError at boot → llm_client never set (remains None)
- 3. llm_client is None → /healthz returns 503 (not 200)
+ 1. Invalid credentials  ConfigurationError raised
+ 2. ConfigurationError at boot  llm_client never set (remains None)
+ 3. llm_client is None  /healthz returns 503 (not 200)
  """
 
     @settings(
@@ -355,7 +355,7 @@ class TestHealthzInvariant:
     def test_invalid_credentials_prevent_healthz_200(
         self, provider: str, invalid_value: str
     ) -> None:
-        """Invalid credentials → ConfigurationError → llm_client=None → /healthz ≠ 200.
+        """Invalid credentials  ConfigurationError  llm_client=None  /healthz ≠ 200.
 
  We verify the first link in the chain: that ConfigurationError
  IS raised, which guarantees the boot sequence aborts before

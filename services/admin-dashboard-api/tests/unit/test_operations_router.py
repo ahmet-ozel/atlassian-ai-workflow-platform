@@ -3,12 +3,12 @@ The router is exercised through :class:`fastapi.testclient.TestClient`
 against an in-memory stub asyncpg pool. The ``require_admin`` dependency
 is overridden with a permissive stub for the happy paths.
 Coverage matrix:
-* ``GET /admin/operations/license`` → 200 + correct usage objects when
+* ``GET /admin/operations/license``  200 + correct usage objects when
   the pool is wired and license data exists.
-* ``GET`` → 200 + empty list when no license tiers exist.
-* ``GET`` → 200 + ``__default__`` sentinel entry for depts with no
+* ``GET``  200 + empty list when no license tiers exist.
+* ``GET``  200 + ``__default__`` sentinel entry for depts with no
   license assigned.
-* ``GET`` → 503 with ``pg_pool_unavailable`` when the pool slot is
+* ``GET``  503 with ``pg_pool_unavailable`` when the pool slot is
   ``None``.
 * ``percent_used`` is ``max(concurrent%, daily%, monthly%)`` rounded to
   one decimal place.
@@ -153,15 +153,15 @@ def test_license_empty_when_no_caps() -> None:
     usage counters are all zero.
     """
 
-    # bot_license_caps has no rows → only the NULL bucket is returned.
+    # bot_license_caps has no rows  only the NULL bucket is returned.
     pool = _FakePool(
         {
-            # DISTINCT license_id query returns empty → NULL bucket added.
+            # DISTINCT license_id query returns empty  NULL bucket added.
             "DISTINCT license_id": [],
             # All usage counters return 0.
             "COUNT(*)": [{"n": 0}],
             "COALESCE(SUM": [{"total": Decimal("0")}],
-            # cap row for NULL license_id → None (no row).
+            # cap row for NULL license_id  None (no row).
             "max_concurrent_workflows": [],
         }
     )
@@ -237,7 +237,7 @@ def test_percent_used_is_max_of_three_dimensions() -> None:
     """``percent_used`` equals ``max(concurrent%, daily%, monthly%)``."""
 
     # concurrent: 3/10 = 30%
-    # daily: 80/100 = 80%  ← max
+    # daily: 80/100 = 80%   max
     # monthly: 100/1000 = 10%
     pool = _FakePool(
         {

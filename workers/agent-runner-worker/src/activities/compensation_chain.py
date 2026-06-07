@@ -55,7 +55,7 @@ def _cancel_comment_body(reason: str, actor_role: str) -> str:
     why = (reason or "").strip()
     suffix = f" Sebep: {why}." if why else ""
     return (
-        "🛑 Otomasyon iş akışı iptal edildi ve yapılan ara adımlar geri "
+        " Otomasyon iş akışı iptal edildi ve yapılan ara adımlar geri "
         f"alındı ({actor}).{suffix} Devam etmek için yeni bir yorum yazın."
     )
 

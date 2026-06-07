@@ -7,7 +7,7 @@ the Setup Wizard UI.
 
 Flow:
 1. Check if Vault is already initialized via ``/v1/sys/init``.
-2. If already initialized → 409 Conflict.
+2. If already initialized  409 Conflict.
 3. Execute init via ``/v1/sys/init`` PUT with key shares/threshold.
 4. Write root token to Vault's own secret engine for safekeeping.
 5. Return unseal keys and root token (one-time display).

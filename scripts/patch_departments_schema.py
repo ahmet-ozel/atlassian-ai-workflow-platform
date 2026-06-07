@@ -61,7 +61,7 @@ def main() -> None:
         changed.append("bot.description added")
 
     # 4. BotEntry: keep credential_ref, add email + api_token_ref as
-    #    an alternate. Use anyOf so consumers can choose either form.
+    # an alternate. Use anyOf so consumers can choose either form.
     bot_entry = data["$defs"]["BotEntry"]
     props = bot_entry.setdefault("properties", OrderedDict())
 

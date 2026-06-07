@@ -16,8 +16,8 @@ Implementation note:
 
     The async generator under test is re-implemented here with the same
     framing contract as the production code:
-    - Each stdout line → ``data: <line>\\n\\n``
-    - Process exit → ``event: done\\ndata: {"exit_code": N}\\n\\n``
+    - Each stdout line  ``data: <line>\\n\\n``
+    - Process exit  ``event: done\\ndata: {"exit_code": N}\\n\\n``
 
     This validates that the SSE protocol guarantees hold for arbitrary
     output sequences.

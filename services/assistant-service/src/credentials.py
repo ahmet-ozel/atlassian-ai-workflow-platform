@@ -6,7 +6,7 @@ Thin call-site wrapper around
 
 The foundation resolver
 (:class:`automation_service.credentials.CredentialResolver`) owns the
-priority decision (per-user → org-default) and the path layout. This
+priority decision (per-user  org-default) and the path layout. This
 wrapper layers exactly one extra responsibility on top:
 
 1. **Audit emission at the call-site.** Every resolution attempt emits
@@ -239,13 +239,13 @@ class AuditingCredentialResolver:
 
         Three outcomes:
 
-        * Per-user override hit → ``credential_resolved_per_user_session``
+        * Per-user override hit  ``credential_resolved_per_user_session``
           (``result="ok"``); the resolver's
           ``ResolvedCredential.source == "user_session"``.
-        * Org-default fallback hit →
+        * Org-default fallback hit
           ``credential_resolved_org_default`` (``result="ok"``); the
           resolver's ``ResolvedCredential.source == "org_default"``.
-        * Both paths missing → ``credential_resolve_failed``
+        * Both paths missing  ``credential_resolve_failed``
           (``result="error"``) is written **before**
           :class:`CredentialNotFoundError` is re-raised. The audit
           payload carries the missing ``attempted_paths`` tuple

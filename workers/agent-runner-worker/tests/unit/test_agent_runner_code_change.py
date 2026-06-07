@@ -3,9 +3,9 @@
 Covers the four execution paths plumbed into ``_dispatch_workflow_type``:
 
     1. ``code_change_with_test`` happy path - verifies the activity
-       sequence (``set_assignee_to_bot`` → ``precommit_scanner`` →
-       ``bitbucket_commit_via_git`` → child ``ExecutionRunWorkflow`` →
-       ``bitbucket_create_pull_request_cloud`` → ``jira_add_comment``
+       sequence (``set_assignee_to_bot``  ``precommit_scanner``
+       ``bitbucket_commit_via_git``  child ``ExecutionRunWorkflow``
+       ``bitbucket_create_pull_request_cloud``  ``jira_add_comment``
        with the PR link).
     2. ``code_change_commit_only`` - same prefix as above but does
        NOT invoke any PR-creation activity nor the
@@ -158,7 +158,7 @@ def make_wf():
 def _activity_dispatcher(routes: dict[str, Any]) -> AsyncMock:
     """Return an ``AsyncMock`` that resolves ``execute_activity`` calls.
 
-    *routes* maps activity-name → return value (or callable). Activities
+    *routes* maps activity-name  return value (or callable). Activities
     not present in *routes* return ``None``.
     """
 

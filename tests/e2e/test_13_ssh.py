@@ -292,7 +292,7 @@ class TestSSHConnectionTest:
     """
 
     def test_ssh_connection_via_api(self, credentials):
-        """R13.2: Click "Test Connection" → SSH attempt completes within 15s.
+        """R13.2: Click "Test Connection"  SSH attempt completes within 15s.
 
         In live Playwright MCP execution, this clicks the "Test Connection"
         button in the SSH test section and waits for the result badge.

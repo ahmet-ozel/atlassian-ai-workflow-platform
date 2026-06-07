@@ -45,7 +45,7 @@ from temporalio import workflow as _temporal_workflow
 # Path bootstrapping
 # ---------------------------------------------------------------------------
 
-# tests/integration/_temporal_helpers.py → platform/
+# tests/integration/_temporal_helpers.py  platform/
 _PLATFORM_ROOT: Path = Path(__file__).resolve().parents[2]
 _AGENT_RUNNER_WORKER: Path = (
     _PLATFORM_ROOT / "workers" / "agent-runner-worker"

@@ -75,7 +75,7 @@ STEP_RESULT_OK: Final[str] = "ok"
 STEP_RESULT_FAILED: Final[str] = "failed"
 
 #: One step was a no-op because the target side effect was never
-#: written in the first place (e.g. ``branch is None`` ⇒ skip
+#: written in the first place (e.g. ``branch is None``  skip
 #: ``delete_ai_branch_if_unused``).
 STEP_RESULT_SKIPPED: Final[str] = "skipped"
 

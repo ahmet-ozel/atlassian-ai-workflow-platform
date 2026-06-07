@@ -64,7 +64,7 @@ __all__ = [
 # ---------------------------------------------------------------------------
 
 #: Default workflow-duration buckets, in seconds. Covers sub-second
-#: webhook → workflow start latency at the low end up to long-running
+#: webhook  workflow start latency at the low end up to long-running
 #: code-change workflows that may take multiple minutes (B15 cost
 #: prediction CI uses the same range for its training data).
 _WORKFLOW_DURATION_BUCKETS: Final[tuple[float, ...]] = (

@@ -235,8 +235,8 @@ class TestPurityInvariant:
 # alongside the existing formatters. The unit tests below pin the
 # documented format regexes:
 #
-#   ^automation-jira-[A-Z][A-Z0-9_]{1,9}-\d+$
-#   ^automation-bb-[a-z0-9-]+-pr-\d+$
+# ^automation-jira-[A-Z][A-Z0-9_]{1,9}-\d+$
+# ^automation-bb-[a-z0-9-]+-pr-\d+$
 #
 # A companion property-based test exercises the round-trip
 # invariant ``parse(format(x)) == x`` across a Hypothesis-generated input

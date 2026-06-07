@@ -9,7 +9,7 @@ Test layout:
 * Construction guards (empty addr / token / mount).
 * ``write_env_override``: URL, body, header on success; ``5xx`` and
   ``4xx`` raise :class:`VaultWriteError`; transport errors raise.
-* ``read_env_overrides``: empty-prefix ``404`` on LIST → ``{}``;
+* ``read_env_overrides``: empty-prefix ``404`` on LIST  ``{}``;
   successful LIST + GET assemble the dict; soft-deleted keys
   (``404`` on per-key GET) are skipped; ``5xx`` on LIST or per-key
   GET raises.
@@ -272,7 +272,7 @@ async def test_write_env_override_raises_on_transport_error() -> None:
 
 @pytest.mark.asyncio
 async def test_read_env_overrides_returns_empty_dict_when_prefix_missing() -> None:
-    """Design §3.5: ``404`` on LIST means first-time start → ``{}``."""
+    """Design §3.5: ``404`` on LIST means first-time start  ``{}``."""
 
     def handler(request: httpx.Request) -> httpx.Response:
         # Only the LIST should be hit when the prefix is empty.

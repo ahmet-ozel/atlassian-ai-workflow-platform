@@ -78,8 +78,8 @@ class AgentRunnerInputShape:
 class ConfluenceDocUpdateAgentRunnerStub:
     """Test-local AgentRunnerWorkflow exercising the confluence branch.
 
- Flow: ``confluence_search`` → ``confluence_get_page`` →
- ``llm_generate_doc`` → ``confluence_update_page``.
+ Flow: ``confluence_search``  ``confluence_get_page``
+ ``llm_generate_doc``  ``confluence_update_page``.
 
  Returns a short success summary; the parent's
  ``_stringify_child_result`` flattens it into the completion comment.
@@ -144,7 +144,7 @@ class ConfluenceDocUpdateAgentRunnerStub:
 class ResearchSummaryJiraAgentRunnerStub:
     """Test-local AgentRunnerWorkflow exercising the research_summary branch.
 
- Flow: ``llm_research`` → ``jira_add_comment`` (with the research summary).
+ Flow: ``llm_research``  ``jira_add_comment`` (with the research summary).
  """
 
     @workflow.run
@@ -184,7 +184,7 @@ class ResearchSummaryJiraAgentRunnerStub:
 class PRReviewAgentRunnerStub:
     """Test-local AgentRunnerWorkflow exercising the pr_review branch.
 
- Flow: ``bitbucket_fetch_pr_diff`` → ``llm_review_code`` →
+ Flow: ``bitbucket_fetch_pr_diff``  ``llm_review_code``
  ``bitbucket_add_pr_comment``.
 
  The child input encodes the target PR via ``output_actions`` - the

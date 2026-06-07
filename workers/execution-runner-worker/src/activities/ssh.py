@@ -469,19 +469,19 @@ async def ssh_cleanup(
 # :class:`ExecutionRunWorkflowOutput`'s fields, populated as follows:
 #
 # * ``status``           - ``"passed"`` (exit_code == 0),
-#                          ``"failed"`` (exit_code != 0), or
-#                          ``"timeout"`` (TimeoutError raised by SSH).
+# ``"failed"`` (exit_code != 0), or
+# ``"timeout"`` (TimeoutError raised by SSH).
 # * ``exit_code``        - process exit code, or ``None`` on timeout.
 # * ``stdout_uri`` /     - ``s3://{bucket}/{prefix}/stdout.txt`` and
-#   ``stderr_uri``         ``stderr.txt``; ``None``
-#                          if upload failed.
+# ``stderr_uri``         ``stderr.txt``; ``None``
+# if upload failed.
 # * ``duration_seconds`` - wall-clock seconds spent inside the activity.
 # * ``runner_id``        - echo of the input runner identifier so the
-#                          parent can correlate retries against runner.
+# parent can correlate retries against runner.
 # * ``failure_reason``   - stable category string when ``status !=
-#                          "passed"``: ``"non_zero_exit"``, ``"timeout"``,
-#                          ``"runner_unreachable"``,
-#                          ``"artifact_upload_failed"``, or ``None``.
+# "passed"``: ``"non_zero_exit"``, ``"timeout"``,
+# ``"runner_unreachable"``,
+# ``"artifact_upload_failed"``, or ``None``.
 # ---------------------------------------------------------------------------
 
 import os
@@ -735,7 +735,7 @@ async def ssh_run_test(
         when applicable.
     env:
         Environment variables to export before invoking the command.
-        Either a mapping of ``str → str`` or a tuple of
+        Either a mapping of ``str  str`` or a tuple of
         ``(key, value)`` pairs (the message-dataclass shape - frozen
         and hashable).
     artifact_minio_prefix:

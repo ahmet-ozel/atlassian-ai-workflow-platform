@@ -42,10 +42,10 @@ Lifecycles
 ----------
 
 * The profile / init-order test owns a single
- ``docker compose --profile task-intake up -d`` ↔ ``down -v`` cycle
+ ``docker compose --profile task-intake up -d``  ``down -v`` cycle
  and asserts on host-side health probes plus
  ``docker compose exec postgres psql`` schema enumeration.
-* The RLS test owns a single ``docker compose up -d postgres`` ↔
+* The RLS test owns a single ``docker compose up -d postgres``
  ``down -v`` cycle so it does not boot the application services
  (which require ``.env`` files staged from ``.env.example`` and pull
  upstream images from registries the test environment may not reach).
@@ -123,10 +123,10 @@ TASK_INTAKE_ENDPOINT: HealthEndpoint = HealthEndpoint(
 )
 
 
-#: Compose service ↔ component path pairs whose ``env_file:`` directive
+#: Compose service  component path pairs whose ``env_file:`` directive
 #: points at a ``.env`` file that does NOT ship with the repo (only
 #: ``.env.example`` does, per . The test stages
-#: each file by copying ``.env.example`` → ``.env`` before bringing up
+#: each file by copying ``.env.example``  ``.env`` before bringing up
 #: the stack and removes only the files it created on cleanup.
 ENV_FILE_TARGETS: tuple[str, ...] = (
     "services/automation-service",
@@ -173,7 +173,7 @@ def _docker_available() -> bool:
 
 
 def _stage_env_files(repo_root: Path) -> list[Path]:
-    """Copy ``.env.example`` → ``.env`` for every Compose ``env_file:``
+    """Copy ``.env.example``  ``.env`` for every Compose ``env_file:``
  target that is missing.
 
  Returns the list of ``.env`` files this call created so the
@@ -534,9 +534,7 @@ def test_task_intake_profile_brings_up_service_and_postgres_schemas_exist(
 # ===========================================================================
 # the implementation - Postgres RLS dept isolation
 # ===========================================================================
-#
-
-#
+# #
 # The remaining helpers and the test below cover the RLS
 # dept-isolation contract. They share ``--run-docker`` gating with the
 # test above but own a separate, lighter Compose lifecycle

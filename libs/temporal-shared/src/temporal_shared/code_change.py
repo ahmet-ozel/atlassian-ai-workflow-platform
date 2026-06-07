@@ -19,9 +19,9 @@ Format references
 Branch names follow this schema::
 
     iter == 1 and "ai/{ISSUE_KEY}" not in existing_branches
-        → "ai/{ISSUE_KEY}"
+         "ai/{ISSUE_KEY}"
     otherwise
-        → "ai/{ISSUE_KEY}-iter{ITER}"
+         "ai/{ISSUE_KEY}-iter{ITER}"
 
 This is intentionally distinct from the foundation
 :func:`temporal_shared.identifiers.branch_name` formatter (which always

@@ -5,9 +5,9 @@ Wires the ``automation-worker`` Temporal activity surface to:class:`notification
 can fan out a Slack / Email completion notification the decision
 table in ```` design.md §`NotificationService`:
 
-* ``status == "failed"`` ⇒ Slack send is **mandatory** regardless of
+* ``status == "failed"``  Slack send is **mandatory** regardless of
  ``dept.notify_on_success``.
-* ``status ∈ {"completed", "partial"}`` ⇒ success-gated; the dispatcher
+* ``status ∈ {"completed", "partial"}``  success-gated; the dispatcher
  short-circuits to a no-op when ``notify_on_success == False``.
 * Idempotency, body redaction and the ``shared.notification_log`` row
  shape are all enforced inside:class:`NotificationService` - this
@@ -209,7 +209,7 @@ async def dispatch_notification(inp: DispatchNotificationInput) -> None:
  The activity:
 
  1. Resolves the registered:class:`NotificationService`. Missing
- service ⇒ log + return (dev / test environment without the
+ service  log + return (dev / test environment without the
  notification lib wired).
  2. Lazily imports the notification lib types
  (:class:`DeptConfigView`,:class:`WorkflowResult`) so a worker

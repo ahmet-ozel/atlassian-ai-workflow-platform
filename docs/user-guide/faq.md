@@ -33,8 +33,8 @@ Departmanın default diline göre. Türkçe departmanda Türkçe, İngilizce dep
 
 ### 6. Issue type ne fark eder?
 
-Bot tipini okur ve davranışını ayarlar. Story → AC odaklı, Bug → reproduce + fix +
-regression test, Task → serbest, Epic → multi_step.
+Bot tipini okur ve davranışını ayarlar. Story  AC odaklı, Bug  reproduce + fix +
+regression test, Task  serbest, Epic  multi_step.
 [Detay: `task-creation.md`](task-creation.md#issue-type-seçimi).
 
 ### 7. Hangi repo'lar bot'a açık?
@@ -44,7 +44,7 @@ yoksa AI Admin'e başvur.
 
 ### 8. Tek task'ta iki repo değiştirebilir mi?
 
-❌ Hayır. Ayrı task'lar veya Epic + subtask kullan.
+ Hayır. Ayrı task'lar veya Epic + subtask kullan.
 [Detay: `what-bot-cannot-do.md`](what-bot-cannot-do.md#multi-repo-task’lar).
 
 ## Bekleme & Bildirim
@@ -66,18 +66,18 @@ bildir - prompt veya repo özel sebebi olabilir.
 
 ### 12. Bot hata aldıysa nereden öğrenirim?
 
-Jira'da `❌ Hata aldım: ...` comment'i + departmanına göre Slack/email bildirimi.
+Jira'da ` Hata aldım: ...` comment'i + departmanına göre Slack/email bildirimi.
 
 ### 13. Bot bittiyse ne göreceğim?
 
-Jira'da `✅ Tamamlandı` comment'i + (varsa) PR linki, Confluence linki, test sonuçları.
-Provenance footer `🔎` simgesinin arkasında gizli.
+Jira'da ` Tamamlandı` comment'i + (varsa) PR linki, Confluence linki, test sonuçları.
+Provenance footer `` simgesinin arkasında gizli.
 
 ## İterasyon
 
 ### 14. `[fix]` nasıl çalışır?
 
-Comment'i `[fix]` ile başlat → bot mevcut PR'a yeni commit atar.
+Comment'i `[fix]` ile başlat  bot mevcut PR'a yeni commit atar.
 [Detay: `iteration-with-comments.md`](iteration-with-comments.md).
 
 ### 15. Kaç kez `[fix]` yapabilirim?
@@ -91,7 +91,7 @@ problem değil.
 
 ### 17. `[cancel]` nasıl çalışır?
 
-Comment olarak `[cancel]` yaz → bot temiz şekilde durur, branch siler.
+Comment olarak `[cancel]` yaz  bot temiz şekilde durur, branch siler.
 
 ### 18. Bot aynı hatayı tekrarlıyor
 
@@ -101,11 +101,11 @@ Description ve önceki comment'ler çelişebilir. Description'ı netleştir, yen
 
 ### 19. Bot PR'ı merge edebilir mi?
 
-❌ Hayır. **Daima draft PR** açar; sen merge edersin.
+ Hayır. **Daima draft PR** açar; sen merge edersin.
 
 ### 20. Draft PR'da CI çalışmıyor
 
-Departman config'inde `pr_draft_strategy=open_after_test_pass` aç → bot CI'yi
+Departman config'inde `pr_draft_strategy=open_after_test_pass` aç  bot CI'yi
 geçince PR'ı open'a çeker.
 
 ### 21. PR açıldı ama CI fail
@@ -131,7 +131,7 @@ Departman config'inde `approval_required_paths` listesindeki path'lerde önce on
 
 ### 25. Bot başka departmanın repo'suna erişemez mi?
 
-❌ Hayır. Atlassian seviyesinde yetki sınırı + sistem seviyesinde capability gate. Bot
+ Hayır. Atlassian seviyesinde yetki sınırı + sistem seviyesinde capability gate. Bot
 yanlış dept'e atanırsa anında reddeder.
 
 ---

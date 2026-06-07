@@ -1,7 +1,7 @@
 ﻿"""LlmOrchestrator constructor signature compatibility checks.
 
 =============================================================================
-LEGACY → CURRENT KWARG MAPPING (recorded from LlmOrchestrator.__init__)
+LEGACY  CURRENT KWARG MAPPING (recorded from LlmOrchestrator.__init__)
 =============================================================================
 
 Current LlmOrchestrator signature (from platform/libs/llm-orchestrator/src/
@@ -19,9 +19,9 @@ Current kwargs:
   - sleep     (optional, default=asyncio.sleep)
 
 Legacy kwargs retained here as regression inputs:
-  - primary=   → still valid (same name, no change here)
-  - fallbacks= → LEGACY (plural); current name is `fallback` (singular)
-  - provider=  → LEGACY (alternative name that may have been used)
+  - primary=    still valid (same name, no change here)
+  - fallbacks=  LEGACY (plural); current name is `fallback` (singular)
+  - provider=   LEGACY (alternative name that may have been used)
 
 =============================================================================
 OBSERVED TypeError MESSAGES (integration anchor: test_llm_orchestrator.py)
@@ -40,9 +40,9 @@ the stub behavior. The test's expected behavior (NotImplementedError) no
 longer matches the current production contract.
 
 For LlmOrchestrator itself, legacy kwargs that raise TypeError:
-  - LlmOrchestrator(fallbacks=[...])  → TypeError: __init__() got an
+  - LlmOrchestrator(fallbacks=[...])   TypeError: __init__() got an
     unexpected keyword argument 'fallbacks'
-  - LlmOrchestrator(provider=primary) → TypeError: __init__() got an
+  - LlmOrchestrator(provider=primary)  TypeError: __init__() got an
     unexpected keyword argument 'provider'
 
 =============================================================================
@@ -51,9 +51,9 @@ DUAL-FORM TEST STRUCTURE
 
 This test captures both sides of the constructor compatibility check:
   1. Property half (Hypothesis): current-signature construction succeeds
-     → PASSES on unfixed code (production LlmOrchestrator is fine)
+      PASSES on unfixed code (production LlmOrchestrator is fine)
   2. Deterministic half: legacy-kwarg construction raises TypeError
-     → PASSES on unfixed code (confirms legacy kwargs are rejected)
+      PASSES on unfixed code (confirms legacy kwargs are rejected)
 
 The integration anchor (test_llm_orchestrator.py) FAILS on unfixed code,
 confirming the overall bug condition exists.
@@ -98,9 +98,9 @@ async def aiter(items):  # type: ignore[no-untyped-def]
 # ---------------------------------------------------------------------------
 
 # The current LlmOrchestrator.__init__ parameters (from @dataclass):
-#   primary: LlmProviderStream  (required)
-#   fallback: LlmProviderStream | None = None  (optional)
-#   sleep: Callable = asyncio.sleep  (optional)
+# primary: LlmProviderStream  (required)
+# fallback: LlmProviderStream | None = None  (optional)
+# sleep: Callable = asyncio.sleep  (optional)
 #
 # We only vary the optional `fallback` parameter since `primary` must be a
 # valid LlmProviderStream and `sleep` is a callable.

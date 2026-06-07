@@ -33,8 +33,8 @@ Scenarios covered
    (canonical).
 6. Legacy :class:`LegacyExecutionRunWorkflow` mirrors the same
    behaviour:
-   - quota=1024, usage=500 → gate passes, full legacy flow runs.
-   - quota=1024, usage=1100 → gate rejects, ``ssh_connect_and_run``
+   - quota=1024, usage=500  gate passes, full legacy flow runs.
+   - quota=1024, usage=1100  gate rejects, ``ssh_connect_and_run``
      is **never** invoked.
 
 Determinism
@@ -230,14 +230,14 @@ class TestResolveQuotaBase:
         assert _resolve_quota_base("") == ""
 
     def test_canonical_layout_strips_iter_and_issue_key(self) -> None:
-        # ``{base}/{ISSUE_KEY}/iter-{N}`` → ``{base}``.
+        # ``{base}/{ISSUE_KEY}/iter-{N}``  ``{base}``.
         assert (
             _resolve_quota_base("/var/ai-runner/PAY-4211/iter-3")
             == "/var/ai-runner"
         )
 
     def test_layout_without_iter_strips_only_issue_key(self) -> None:
-        # ``{base}/{ISSUE_KEY}`` → ``{base}`` (no iter segment to drop).
+        # ``{base}/{ISSUE_KEY}``  ``{base}`` (no iter segment to drop).
         assert _resolve_quota_base("/srv/runner/PAY-1") == "/srv/runner"
 
     def test_trailing_slash_normalised(self) -> None:
@@ -286,7 +286,7 @@ async def test_canonical_gate_skipped_when_quota_none() -> None:
                     command="pytest -q",
                     workdir="/var/ai-runner/PAY-1/iter-1",
                     department_id="payments",
-                    # workspace_quota_mb intentionally omitted → None
+                    # workspace_quota_mb intentionally omitted  None
                 ),
                 id=f"wf-quota-skip-{uuid.uuid4().hex[:8]}",
                 task_queue=task_queue,
@@ -331,7 +331,7 @@ async def test_canonical_gate_skipped_when_dept_id_empty() -> None:
                     runner_id="runner-1",
                     command="pytest -q",
                     workdir="/var/ai-runner/PAY-1/iter-1",
-                    department_id="",  # empty → skip
+                    department_id="",  # empty  skip
                     workspace_quota_mb=1024.0,
                 ),
                 id=f"wf-quota-no-dept-{uuid.uuid4().hex[:8]}",
@@ -390,7 +390,7 @@ async def test_canonical_gate_passes_when_usage_below_cap() -> None:
             )
 
     names = log.names()
-    # Order: healthcheck → check_disk_quota → ssh_run_test → cleanup
+    # Order: healthcheck  check_disk_quota  ssh_run_test  cleanup
     assert names.count("check_disk_quota") == 1, names
     quota_idx = names.index("check_disk_quota")
     run_idx = names.index("ssh_run_test")
@@ -460,7 +460,7 @@ async def test_canonical_gate_rejects_when_usage_exceeds_cap() -> None:
     assert names.count("check_disk_quota") == 1, names
     assert "ssh_run_test" not in names, names
 
-    # Temporal wraps the user error in a WorkflowFailureError → cause is
+    # Temporal wraps the user error in a WorkflowFailureError  cause is
     # ApplicationError(type="DiskQuotaExceeded").  We accept either the
     # cause or the message containing "DiskQuotaExceeded" / "disk quota".
     cause = getattr(exc_info.value, "cause", None)
@@ -472,7 +472,7 @@ async def test_canonical_gate_rejects_when_usage_exceeds_cap() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Canonical: SSH probe failure → activity returns allowed=True (best-effort)
+# Canonical: SSH probe failure  activity returns allowed=True (best-effort)
 # ---------------------------------------------------------------------------
 
 
@@ -612,7 +612,7 @@ async def test_legacy_gate_passes_when_usage_below_cap() -> None:
             )
 
     names = log.names()
-    # Order: vault → check_disk_quota → ssh_connect_and_run → minio×3
+    # Order: vault  check_disk_quota  ssh_connect_and_run  minio×3
     vault_idx = names.index("vault_fetch_ssh_credentials")
     quota_idx = names.index("check_disk_quota")
     ssh_idx = names.index("ssh_connect_and_run")

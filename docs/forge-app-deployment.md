@@ -96,7 +96,7 @@ forge deploy
 `forge deploy` default olarak `development` ortamına bundle yükler. Beklenen çıktı:
 
 ```
-✔ Deployed your app
+ Deployed your app
 Deployed to environment: development
 ```
 
@@ -109,7 +109,7 @@ Hata durumunda CLI manifest validation çıktısını gösterir; ilk olarak `per
 > forge deploy --environment production
 > ```
 >
-> Geçiş kuralı: `development` → `staging` → `production`, her aşamada smoke test (Adım 6) tamamlandıktan sonra ilerle.
+> Geçiş kuralı: `development`  `staging`  `production`, her aşamada smoke test (Adım 6) tamamlandıktan sonra ilerle.
 
 ### 4.2 Hedef site'a install et
 
@@ -178,9 +178,9 @@ Sonra UPDATE ile `true`'ya çek.
 
 Üretim ortamında flag manipülasyonu admin-dashboard üzerinden yapılır (her değişim audit'lenir):
 
-1. Admin dashboard → **Feature Flags** sayfasına git.
+1. Admin dashboard  **Feature Flags** sayfasına git.
 2. `FEATURE_FLAG_FORGE_ADDON_ENABLED` satırındaki toggle'ı `On` durumuna çevir.
-3. Onay diyaloğunda değişikliğin runtime etkisini doğrula → `Save`.
+3. Onay diyaloğunda değişikliğin runtime etkisini doğrula  `Save`.
 4. Audit log'da `feature_flag_toggled` action'ı yazıldığını doğrula:
    ```bash
    psql -h <pg_host> -U postgres -d automation -c \
@@ -214,9 +214,9 @@ Aşağıdaki smoke test'ler deploy + install + flag toggle dizisinin doğru çal
 
 ### 6.1 Forge tarafı
 
-1. Atlassian developer console (<https://developer.atlassian.com/console/myapps/>) → uygulamayı aç → **Distribution → Installations** sekmesi → hedef site `<your-instance>.atlassian.net` listede görünüyor.
-2. Aynı sitedeki Jira'da **Create issue** ekranını aç → issue type listesinde `AI Bot Task` görünür.
-3. `AI Bot Task`'ı seç → 5 zorunlu field formu render edilir (`AI Görev Tipi` dropdown'u 5 değer; `Branch` text default `develop`; `Cleanup Policy` default `delete_on_success`).
+1. Atlassian developer console (<https://developer.atlassian.com/console/myapps/>)  uygulamayı aç  **Distribution  Installations** sekmesi  hedef site `<your-instance>.atlassian.net` listede görünüyor.
+2. Aynı sitedeki Jira'da **Create issue** ekranını aç  issue type listesinde `AI Bot Task` görünür.
+3. `AI Bot Task`'ı seç  5 zorunlu field formu render edilir (`AI Görev Tipi` dropdown'u 5 değer; `Branch` text default `develop`; `Cleanup Policy` default `delete_on_success`).
 
 ### 6.2 Platform tarafı (flag kapalı)
 
@@ -265,7 +265,7 @@ Adım 5.1 ile flag'i `true`'ya çektikten sonra aynı talebi tekrar gönder. Bek
 
 ### 8.3 Versiyonlama
 
-Forge add-on versiyonu `package.json` `version` alanı ile yönetilir. Major versiyon (`1.0.0` → `2.0.0`) breaking change (örn. custom field key rename) gerektirir; bu durumda `forge install` migration sihirbazı tetiklenir. Minor / patch deploy'ları (`0.1.0` → `0.1.1`) kullanıcı için saydam.
+Forge add-on versiyonu `package.json` `version` alanı ile yönetilir. Major versiyon (`1.0.0`  `2.0.0`) breaking change (örn. custom field key rename) gerektirir; bu durumda `forge install` migration sihirbazı tetiklenir. Minor / patch deploy'ları (`0.1.0`  `0.1.1`) kullanıcı için saydam.
 
 ### 8.4 Flag-gated başlatma
 

@@ -215,15 +215,15 @@ def _run_with_inbound_trace(
     @app.get("/__trace_probe__")
     async def _trace_probe() -> dict[str, str]:
         # 1. Capture the contextvars-bound trace_id observed inside
-        #    the request handler.  TraceMiddleware MUST have
-        #    populated this slot before we got here.
+        # the request handler.  TraceMiddleware MUST have
+        # populated this slot before we got here.
         captured["context_trace"] = get_trace_id()
 
         # 2. Issue an outbound "MCP call" through the canonical
-        #    factory and capture the X-Trace-Id header on the wire.
-        #    The factory's request hook reads from the same
-        #    contextvars slot - the captured value MUST equal the
-        #    one we read directly above.
+        # factory and capture the X-Trace-Id header on the wire.
+        # The factory's request hook reads from the same
+        # contextvars slot - the captured value MUST equal the
+        # one we read directly above.
         outbound_captured: list[httpx.Request] = []
 
         def _handler(request: httpx.Request) -> httpx.Response:
@@ -434,7 +434,7 @@ def test_property10_anchor_valid_uuid_propagates(
 
 
 def test_property10_anchor_missing_header_triggers_uuidv7() -> None:
-    """Concrete anchor - no inbound header → fresh UUIDv7 throughout."""
+    """Concrete anchor - no inbound header  fresh UUIDv7 throughout."""
 
     response_trace, context_trace, outbound_trace = _run_with_inbound_trace(
         None
@@ -446,7 +446,7 @@ def test_property10_anchor_missing_header_triggers_uuidv7() -> None:
 
 
 def test_property10_anchor_empty_header_triggers_uuidv7() -> None:
-    """Concrete anchor - empty inbound header → fresh UUIDv7 throughout.
+    """Concrete anchor - empty inbound header  fresh UUIDv7 throughout.
 
     The middleware treats ``X-Trace-Id: `` (empty value) the same as
     a missing header - both fall through to the

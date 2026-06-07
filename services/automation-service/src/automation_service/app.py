@@ -248,8 +248,8 @@ class _AsyncpgInboundDeptResolver:
     """Production :class:`InboundDeptResolver` over an asyncpg pool.
 
     The resolver holds the shared :class:`asyncpg.Pool` so future
-    schema additions (Slack workspace → dept mapping, inbound email
-    address → dept mapping) can be implemented without re-plumbing the
+    schema additions (Slack workspace  dept mapping, inbound email
+    address  dept mapping) can be implemented without re-plumbing the
     lifespan handler. Until those mapping tables exist the resolver
     returns ``None`` for every lookup; the inbound route translates an
     unresolved dept into a 400 ``inbound_dept_unresolved`` response,
@@ -624,14 +624,14 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     try:
         # 1. Shared HTTP client - used by Vault, Atlassian probe,
-        #    OIDC validator and any future outbound HTTP collaborator.
+        # OIDC validator and any future outbound HTTP collaborator.
         http_client = httpx.AsyncClient(timeout=10.0)
         cleanup.append(http_client.aclose)
 
         # 2. Asyncpg pool - sized for the per-process request rate
-        #    target (min=1 / max=8) with a 10s
-        #    command timeout so a stuck statement never wedges a
-        #    request worker indefinitely.
+        # target (min=1 / max=8) with a 10s
+        # command timeout so a stuck statement never wedges a
+        # request worker indefinitely.
         pool = await asyncpg.create_pool(
             dsn=settings.postgres_dsn,
             min_size=1,
@@ -641,33 +641,33 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         cleanup.append(pool.close)
 
         # 3. Vault client - env-driven backend selection
-        #    (``VAULT_BACKEND=hashicorp`` vs ``local-dev``). The
-        #    factory is synchronous and the resulting client does
-        #    not require an explicit close, so no cleanup entry is
-        #    appended (the Hashicorp backend reuses the shared HTTP
-        #    client which is closed above).
+        # (``VAULT_BACKEND=hashicorp`` vs ``local-dev``). The
+        # factory is synchronous and the resulting client does
+        # not require an explicit close, so no cleanup entry is
+        # appended (the Hashicorp backend reuses the shared HTTP
+        # client which is closed above).
         vault = vault_factory.make_client(os.environ)
 
         # 4. Audit logger - wraps the asyncpg-backed events writer
-        #    so the application-layer ``actor_role`` invariant
-        #    fires before any SQL runs. No
-        #    explicit close: the logger holds the pool by reference
-        #    and the pool is closed via the entry already on the
-        #    cleanup stack.
+        # so the application-layer ``actor_role`` invariant
+        # fires before any SQL runs. No
+        # explicit close: the logger holds the pool by reference
+        # and the pool is closed via the entry already on the
+        # cleanup stack.
         audit_logger = AuditLogger(writer=AsyncpgAuditEventsWriter(pool=pool))
 
         # 5. Temporal client - connects lazily to the cluster.
-        #    ``connect()`` is awaited here so a Temporal outage
-        #    aborts startup (fail-fast) instead of surfacing as a
-        #    500 on the first webhook.  The ``TemporalClient``
-        #    wrapper does not currently expose a ``close``
-        #    coroutine; ``_close_quietly`` tolerates that case by
-        #    catching the ``AttributeError`` raised at the factory
-        #    call site (see the unit-test contract pinned by
-        #    ``test_lifespan_close_quietly``).  Wrapping the
-        #    attribute lookup in a lambda defers it to shutdown
-        #    time so the AttributeError surfaces inside the helper
-        #    rather than at append time.
+        # ``connect()`` is awaited here so a Temporal outage
+        # aborts startup (fail-fast) instead of surfacing as a
+        # 500 on the first webhook.  The ``TemporalClient``
+        # wrapper does not currently expose a ``close``
+        # coroutine; ``_close_quietly`` tolerates that case by
+        # catching the ``AttributeError`` raised at the factory
+        # call site (see the unit-test contract pinned by
+        # ``test_lifespan_close_quietly``).  Wrapping the
+        # attribute lookup in a lambda defers it to shutdown
+        # time so the AttributeError surfaces inside the helper
+        # rather than at append time.
         temporal = TemporalClient(
             host=settings.temporal_host,
             namespace=settings.temporal_namespace,
@@ -683,9 +683,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         cleanup.append(_close_temporal)
 
         # 6. Atlassian probe client - concrete shell built from the
-        #    shared HTTP client + MCP routing metadata (see
-        #    :mod:`automation_service.atlassian` for the wiring
-        #    contract).
+        # shared HTTP client + MCP routing metadata (see
+        # :mod:`automation_service.atlassian` for the wiring
+        # contract).
         probe_client = AtlassianProbeClient(
             http_client,
             settings.mcp_base_url,
@@ -693,21 +693,21 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         )
 
         # 7. OIDC validator - env-driven configuration honouring
-        #    ``AUTH_PROVIDER`` (``oidc`` vs ``local``).  The
-        #    validator does not own any resource that needs
-        #    closing.
+        # ``AUTH_PROVIDER`` (``oidc`` vs ``local``).  The
+        # validator does not own any resource that needs
+        # closing.
         oidc_validator = OIDCValidator(OIDCConfig.from_env(os.environ))
 
         # 8. Processed events repo - webhook ``delivery_id`` ledger
-        #    backed by the shared pool.
+        # backed by the shared pool.
         processed_events = ProcessedEventsRepo(pool=pool)
 
         # 9. Connection-factory closure - each call returns a fresh
-        #    pool-acquired connection so the credential / department
-        #    orchestrators can run ``with_dept_session(...)`` blocks
-        #    against pool-managed connections.  Releasing the
-        #    connection back to the pool is the caller's
-        #    responsibility.
+        # pool-acquired connection so the credential / department
+        # orchestrators can run ``with_dept_session(...)`` blocks
+        # against pool-managed connections.  Releasing the
+        # connection back to the pool is the caller's
+        # responsibility.
         async def connection_factory() -> object:
             return _PoolConnectionLease(pool, await pool.acquire())
 
@@ -738,18 +738,16 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # ------------------------------------------------------------------
     # Phase C - fan the shared singletons out into per-router
     # ``*EndpointDeps`` containers and stash them on ``app.state.<slot>``.
-    #
-    # Each ``_wire_*`` helper opens with the "skip if slot already set"
+    # # Each ``_wire_*`` helper opens with the "skip if slot already set"
     # guard so test code that pre-populates ``app.state.<slot>`` before
     # entering the lifespan keeps observing its own container
     # The production construction bodies honour the guard
     # and otherwise return without populating the slot, so the lifespan
     # remains importable / runnable without losing the override
     # contract.
-    #
-    # ``wire_webhook_pipeline`` is the existing helper from this module
+    # # ``wire_webhook_pipeline`` is the existing helper from this module
     # and already builds the
-    # Event_Dedup → Loop_Guard → Webhook_Dispatcher chain from the
+    # Event_Dedup  Loop_Guard  Webhook_Dispatcher chain from the
     # shared collaborators, so we call it directly here.
     # ------------------------------------------------------------------
     _wire_dept_credentials(
@@ -855,12 +853,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 # Each helper:
 #
 # 1. Honours the "skip if slot already set" override contract so
-#    test override behavior holds: tests that pre-populate
-#    ``app.state.<slot>`` before entering the lifespan keep observing
-#    their own container.
+# test override behavior holds: tests that pre-populate
+# ``app.state.<slot>`` before entering the lifespan keep observing
+# their own container.
 # 2. Otherwise returns without populating the slot until the matching
-#    ``*EndpointDeps`` construction can be built against the existing
-#    dataclass shape; the lifespan signature does not change.
+# ``*EndpointDeps`` construction can be built against the existing
+# dataclass shape; the lifespan signature does not change.
 #
 # The helpers are intentionally module-private (leading underscore) and
 # accept their collaborators as keyword-only arguments so the lifespan
@@ -1936,7 +1934,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(admin_router)
 
     # Mount the inbound channel adapter.
-    # The Slack→task router exposes ``POST /webhooks/inbound/slack`` and
+    # The Slacktask router exposes ``POST /webhooks/inbound/slack`` and
     # reads its collaborators (dept resolver, workflow client, Slack
     # signature verifier, audit logger, env, clock) from
     # ``app.state.inbound`` at request time. The IMAP-based email
@@ -2022,15 +2020,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     # Mount the webhook pipeline router. Exposes ``POST /webhooks/jira/pipeline`` which
     # runs every payload through the canonical
-    # Event_Dedup → Loop_Guard → Webhook_Dispatcher chain. The
+    # Event_Dedup  Loop_Guard  Webhook_Dispatcher chain. The
     # :class:`middleware.webhook_auth.WebhookAuthMiddleware` (already
     # mounted at the ASGI layer when production wiring runs
     # :func:`wire_webhook_pipeline` below) sits in front of this
     # endpoint so the pipeline only sees HMAC-authenticated payloads
-    # - keeping the HMAC verify → dedup → loop_guard → dispatcher
+    # - keeping the HMAC verify  dedup  loop_guard  dispatcher
     # ordering intact.
-    #
-    # Production wiring populates ``app.state.webhook_pipeline`` (a
+    # # Production wiring populates ``app.state.webhook_pipeline`` (a
     # :class:`webhooks.WebhookPipeline`) during the lifespan startup
     # via :func:`wire_webhook_pipeline`. Tests can build a stub
     # pipeline directly and stash it on the same attribute. When the
@@ -2068,7 +2065,7 @@ def wire_webhook_pipeline(
     (:class:`middleware.webhook_auth.WebhookAuthMiddleware`) MUST be
     added separately (typically before this call) so that it sits in
     front of the pipeline - only authenticated payloads should ever
-    reach the dedup → loop_guard → dispatcher chain
+    reach the dedup  loop_guard  dispatcher chain
     for the dedup, loop-guard, and dispatcher pipeline.
 
     Parameters

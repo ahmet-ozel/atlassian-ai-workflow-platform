@@ -69,7 +69,7 @@ class TestIsWriteIntent:
     """Tabular checks for the three rows of the decision table."""
 
     def test_explicit_intent_returns_true_for_any_tool_name(self) -> None:
-        """Row 1: ``llm_intent_field == 'write_action_requested'`` ⇒ True
+        """Row 1: ``llm_intent_field == 'write_action_requested'``  True
         regardless of the tool name (including read-only tools)."""
         call = ToolCall(tool_name="jira_search")  # not in WRITE_ACTION_TOOLS
 

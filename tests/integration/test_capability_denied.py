@@ -8,7 +8,7 @@ Scenario
 A Jira ``issue_created`` webhook arrives for a department whose bot
 has *no* Atlassian credentials configured. The webhook handler in
 ``automation_service.webhooks_handlers`` runs through the canonical
-chain (HMAC verify → loop guard → capability gate) and the capability
+chain (HMAC verify  loop guard  capability gate) and the capability
 gate denies the request because the dept's derived capability set is
 empty while the webhook-layer workflow type ``noop_test`` requires
 ``{"jira_read"}`` (see ``temporal_shared.WORKFLOW_TYPE_CAPABILITIES``).
@@ -121,7 +121,7 @@ class _StubDept:
 
 
 class _StubDeptResolver:
-    """``DeptResolver`` stand-in backed by a static project_key → dept map."""
+    """``DeptResolver`` stand-in backed by a static project_key  dept map."""
 
     def __init__(
         self,
@@ -296,7 +296,7 @@ def _build_app() -> tuple[
         vault=_StubVault(dept_id=_DEPT_ID, secret=_WEBHOOK_SECRET),  # type: ignore[arg-type]
         dept_resolver=_StubDeptResolver(
             project_key_to_dept={_PROJECT_KEY: dept},
-            bot_registry=[],  # no bots → loop guard cannot fire
+            bot_registry=[],  # no bots  loop guard cannot fire
         ),
         workflow_client=workflow_client,
         jira_commenter=commenter,

@@ -1,11 +1,11 @@
 ﻿"""Webhook predicate guards (loop, assignee, changelog, event-type).
 
 Invariants tested:
-  7a. is_self_actor(actor_id, bot_ids) ↔ actor_id ∈ bot_ids
+  7a. is_self_actor(actor_id, bot_ids)  actor_id ∈ bot_ids
       (None actor always returns False)
-  7b. is_bot_assignee(assignee_id, bot_ids) ↔ assignee_id ∈ bot_ids
+  7b. is_bot_assignee(assignee_id, bot_ids)  assignee_id ∈ bot_ids
       (None assignee always returns False)
-  7c. assignee_changed_to_bot(changelog, bot_ids) → True iff changelog
+  7c. assignee_changed_to_bot(changelog, bot_ids)  True iff changelog
       has field=="assignee" and to ∈ bot_ids
   7d. route(event_type) returns "accepted" for supported types,
       "ignored" for all others
@@ -96,7 +96,7 @@ def _changelog_with_assignee_to_bot(
     bot_id = draw(st.sampled_from(sorted(bot_ids)))
     # Build other items
     other_items = draw(st.lists(_changelog_items(), min_size=0, max_size=5))
-    # Insert the assignee→bot item at a random position
+    # Insert the assigneebot item at a random position
     assignee_item: dict[str, str | None] = {
         "field": "assignee",
         "from": draw(st.one_of(st.none(), _account_ids)),
@@ -108,12 +108,12 @@ def _changelog_with_assignee_to_bot(
 
 
 # ---------------------------------------------------------------------------
-# is_self_actor ↔ membership
+# is_self_actor  membership
 # ---------------------------------------------------------------------------
 
 
 class TestIsSelfActorMembership:
-    """is_self_actor(actor_id, bot_ids) ↔ actor_id ∈ bot_ids."""
+    """is_self_actor(actor_id, bot_ids)  actor_id ∈ bot_ids."""
 
     @settings(max_examples=200, deadline=2000)
     @given(actor_id=_account_ids, bot_ids=_bot_registries)
@@ -149,12 +149,12 @@ class TestIsSelfActorMembership:
 
 
 # ---------------------------------------------------------------------------
-# is_bot_assignee ↔ membership
+# is_bot_assignee  membership
 # ---------------------------------------------------------------------------
 
 
 class TestIsBotAssigneeMembership:
-    """is_bot_assignee(assignee_id, bot_ids) ↔ assignee_id ∈ bot_ids."""
+    """is_bot_assignee(assignee_id, bot_ids)  assignee_id ∈ bot_ids."""
 
     @settings(max_examples=200, deadline=2000)
     @given(assignee_id=_account_ids, bot_ids=_bot_registries)
@@ -421,7 +421,7 @@ class TestShortCircuitOrdering:
         """
         bot_id = sorted(bot_ids)[0]
 
-        # Step 1: Loop guard fires → skip
+        # Step 1: Loop guard fires  skip
         assert is_self_actor(bot_id, bot_ids) is True
 
         # Even if the bot is also the assignee, the loop guard takes priority
@@ -435,7 +435,7 @@ class TestShortCircuitOrdering:
 
 
 class TestDeterminism:
-    """All predicates are pure: same inputs → same output."""
+    """All predicates are pure: same inputs  same output."""
 
     @settings(max_examples=200, deadline=2000)
     @given(actor_id=_optional_account_ids, bot_ids=_bot_registries)
@@ -797,7 +797,7 @@ class TestBotSelfActionLoopGuard:
 
 
 # ---------------------------------------------------------------------------
-# Webhook handler dept_id resolution → HTTP 400
+# Webhook handler dept_id resolution  HTTP 400
 # ---------------------------------------------------------------------------
 #
 # Companion to ``test_hmac_verify.py``'s ``TestPerDeptHmacIsolation``,
@@ -808,22 +808,22 @@ class TestBotSelfActionLoopGuard:
 # :mod:`automation_service.webhooks_handlers`:
 #
 # - When the payload's ``issue.fields.project.key`` cannot be
-#   extracted at all (missing / wrong type / empty), the handler
-#   returns **HTTP 400** with ``reason="missing_issue_key"`` /
-#   ``"invalid_json"`` / ``"webhook_dept_unresolved"`` depending on
-#   which extractor failed.
+# extracted at all (missing / wrong type / empty), the handler
+# returns **HTTP 400** with ``reason="missing_issue_key"`` /
+# ``"invalid_json"`` / ``"webhook_dept_unresolved"`` depending on
+# which extractor failed.
 #
 # - When the project key *is* present but no department is registered
-#   for it (``DeptResolver.resolve_by_project_key`` returns ``None``),
-#   the handler returns **HTTP 400** with
-#   ``reason="webhook_dept_unresolved"`` *and* writes an audit event
-#   with ``action="webhook_dept_unresolved"``,
-#   ``result="denied"``, and ``dept_id=None``.
+# for it (``DeptResolver.resolve_by_project_key`` returns ``None``),
+# the handler returns **HTTP 400** with
+# ``reason="webhook_dept_unresolved"`` *and* writes an audit event
+# with ``action="webhook_dept_unresolved"``,
+# ``result="denied"``, and ``dept_id=None``.
 #
 # - When the project key resolves to a department, dept_id-resolution
-#   passes and the chain proceeds to HMAC verification (which fails
-#   here because we never sign the body - but that's the *next* leg,
-#   audited as ``webhook_hmac_failed``, not ``webhook_dept_unresolved``).
+# passes and the chain proceeds to HMAC verification (which fails
+# here because we never sign the body - but that's the *next* leg,
+# audited as ``webhook_hmac_failed``, not ``webhook_dept_unresolved``).
 #
 # These properties drive the real router with hand-rolled fakes for
 # every collaborator so the test stays self-contained - no Postgres,
@@ -986,7 +986,7 @@ def _build_app_with_unresolvable_dept() -> tuple["TestClient", _RecordingAuditLo
     audit = _RecordingAuditLogger()
     ctx = WebhookContext(
         vault=_AlwaysFailingVault(),  # type: ignore[arg-type]
-        dept_resolver=_StubDeptResolver(),  # empty mapping → always None
+        dept_resolver=_StubDeptResolver(),  # empty mapping  always None
         workflow_client=_FakeWorkflowClient(),
         jira_commenter=None,
         audit_logger=audit,  # type: ignore[arg-type]
@@ -1113,7 +1113,7 @@ def _payloads_missing_issue_key(draw: st.DrawFn) -> dict:
 
 
 class TestWebhookDeptUnresolved:
-    """Dept_id resolution failure → HTTP 400 + ``webhook_dept_unresolved`` audit.
+    """Dept_id resolution failure  HTTP 400 + ``webhook_dept_unresolved`` audit.
 
     When the inbound webhook event's ``project_key``
     cannot be mapped to a configured department, the handler SHALL
@@ -1131,7 +1131,7 @@ class TestWebhookDeptUnresolved:
     def test_unknown_project_key_returns_400_and_audits(
         self, payload: dict
     ) -> None:
-        """Unknown project_key → HTTP 400 + ``webhook_dept_unresolved`` audit.
+        """Unknown project_key  HTTP 400 + ``webhook_dept_unresolved`` audit.
 
         """
         client, audit = _build_app_with_unresolvable_dept()
@@ -1173,7 +1173,7 @@ class TestWebhookDeptUnresolved:
     )
     @given(payload=_payloads_missing_project_key())
     def test_missing_project_key_returns_400(self, payload: dict) -> None:
-        """No extractable project_key → HTTP 400 ``webhook_dept_unresolved``.
+        """No extractable project_key  HTTP 400 ``webhook_dept_unresolved``.
 
         ``_extract_project_key`` returns ``None`` when neither
         ``issue.fields.project.key`` nor ``project.key`` is present;
@@ -1206,7 +1206,7 @@ class TestWebhookDeptUnresolved:
     )
     @given(payload=_payloads_missing_issue_key())
     def test_missing_issue_key_returns_400(self, payload: dict) -> None:
-        """No extractable issue key → HTTP 400 ``missing_issue_key``.
+        """No extractable issue key  HTTP 400 ``missing_issue_key``.
 
         The handler validates ``issue.key`` *before* attempting
         dept_id resolution; this is a separate 400 path
@@ -1261,7 +1261,7 @@ class TestWebhookDeptUnresolved:
         finally:
             client.close()
 
-        # The dept_id resolver succeeded → no 400 / no
+        # The dept_id resolver succeeded  no 400 / no
         # ``webhook_dept_unresolved`` audit.
         assert resp.status_code != 400, (
             f"dept_id resolution should have succeeded, but got "
@@ -1314,7 +1314,7 @@ class TestWebhookDeptUnresolved:
         assert "webhook_dept_unresolved" not in actions
 
     def test_invalid_json_returns_400(self) -> None:
-        """Non-JSON body → HTTP 400 ``invalid_json``.
+        """Non-JSON body  HTTP 400 ``invalid_json``.
 
         Not a Hypothesis property (the input space is too narrow to be
         worth shrinking) but covers the same 4xx contract as the
@@ -1368,10 +1368,10 @@ class TestWebhookDeptUnresolved:
 # Strategies in this block:
 #
 # * ``_chain_event_strategies`` - random :class:`WebhookEvent`
-#   generators for both Jira and Bitbucket dialects.
+# generators for both Jira and Bitbucket dialects.
 # * ``_bot_id_pools``           - random bot account-id sets.
 # * ``_body_text_options``      - random body text including
-#   ``[bot:``-prefixed lines and unrelated chatter.
+# ``[bot:``-prefixed lines and unrelated chatter.
 #
 # We intentionally re-use the foundation strategies above for actor
 # IDs / bot registries so the same Hypothesis pool generates events
@@ -1611,7 +1611,7 @@ class TestChainResolveDeptProperty:
     ) -> None:
         """Missing department raises the resolution error.
 
-        ``resolve_dept(ev) is None`` ↔
+        ``resolve_dept(ev) is None``
         :class:`WebhookDeptUnresolvedError` is raised. Any non-None
         dept_id lets the chain proceed.
         """
@@ -1726,7 +1726,7 @@ class TestChainLoopGuardActorIdProperty:
     def test_empty_registry_never_loops(self, actor: str) -> None:
         """The bot account registry is loaded once per evaluation.
 
-        Empty registry → every event flows through the loop guard,
+        Empty registry  every event flows through the loop guard,
         regardless of actor. This pins the boot-time invariant.
         """
 
@@ -1750,7 +1750,7 @@ class TestChainLoopGuardRegexFallbackProperty:
         """Regex fallback drops self-authored bot events.
 
         ``actor_account_id is None`` AND body matches
-        ``^\\s*\\[bot:`` → drop with
+        ``^\\s*\\[bot:``  drop with
         :data:`REASON_LOOP_GUARD_REGEX_DROPPED`.
         """
 
@@ -1773,7 +1773,7 @@ class TestChainLoopGuardRegexFallbackProperty:
         """Regex fallback ignores non-matching bodies.
 
         ``actor_account_id is None`` AND body does NOT match the
-        regex → pass through (the event is treated as a system
+        regex  pass through (the event is treated as a system
         emission with no bot footprint).
         """
 
@@ -1854,7 +1854,7 @@ class TestChainLoopGuardDeterminism:
     ) -> None:
         """Three back-to-back evaluations produce the same decision.
 
-        Same event + same callbacks → identical
+        Same event + same callbacks  identical
         :class:`FilterDecision`. Catches sneaky stateful caches
         that could leak between evaluations.
         """
@@ -1909,17 +1909,17 @@ from automation_service.webhook_filters import (  # noqa: E402
 # ``_chain_bot_registries``, etc.) but adds:
 #
 # * ``_chain_event_types``     - the supported Jira event types so we
-#   can sample comment vs. non-comment scenarios.
+# can sample comment vs. non-comment scenarios.
 # * ``_chain_iter_counts``     - small ints that span the Z6 boundary
-#   (``0``, ``1``, ``> 1``).
+# (``0``, ``1``, ``> 1``).
 # * ``_chain_mention_sets``    - small frozensets of bot-mentioned
-#   account ids; deliberately overlaps with ``_chain_actor_ids`` so
-#   Hypothesis can produce both "actor ∈ mention_set" and "actor ∉
-#   mention_set" examples.
+# account ids; deliberately overlaps with ``_chain_actor_ids`` so
+# Hypothesis can produce both "actor ∈ mention_set" and "actor ∉
+# mention_set" examples.
 # * ``_chain_bypass_bodies``   - bodies that contain the
-#   ``[bot:hear]`` tag in random casings / positions.
+# ``[bot:hear]`` tag in random casings / positions.
 # * ``_chain_no_bypass_bodies``- bodies that do **not** contain the
-#   tag.
+# tag.
 
 _chain_event_types = st.sampled_from(
     [
@@ -2084,7 +2084,7 @@ class TestChainReplayDedupProperty:
     def test_seen_delivery_drops_with_duplicate_event_dropped(
         self, delivery_id: str, actor: str | None
     ) -> None:
-        """Any seen delivery_id → drop with ``duplicate_event_dropped``.
+        """Any seen delivery_id  drop with ``duplicate_event_dropped``.
 
 
         Hypothesis varies the delivery_id and actor across the full
@@ -2211,7 +2211,7 @@ class TestChainFirstIterExceptionProperty:
     def test_z6_fires_iff_iter_le_one_and_actor_equals_reporter(
         self, actor: str, reporter: str, iter_count: int
     ) -> None:
-        """Z6 fires ↔ ``iter <= 1 ∧ actor == reporter``.
+        """Z6 fires  ``iter <= 1 ∧ actor == reporter``.
 
 
         The chain treats ``iter == 0`` as ``iter == 1`` for Z6
@@ -2246,11 +2246,11 @@ class TestChainFirstIterExceptionProperty:
             # Hypothesis surfaces accidental Z6 leaks here.
             assert decision.reason != REASON_MENTION_FILTER_FIRST_ITER_EXCEPTION
             if iter_count > 1:
-                # Empty mention set → actor ∉ mention_set → Y6 drops.
+                # Empty mention set  actor ∉ mention_set  Y6 drops.
                 assert decision.action == "drop"
                 assert decision.reason == REASON_COMMENT_IGNORED_UNAUTHORIZED_ACTOR
             else:
-                # iter <= 1 with actor != reporter → fall through.
+                # iter <= 1 with actor != reporter  fall through.
                 assert decision.action == "pass"
                 assert decision.reason == REASON_FILTER_CHAIN_PASS
 
@@ -2373,7 +2373,7 @@ class TestChainMentionFilterScopeProperty:
         iter_count: int,
         mention_set: frozenset[str],
     ) -> None:
-        """Y6 fires ↔ ``iter > 1 ∧ actor ∉ mention_set``.
+        """Y6 fires  ``iter > 1 ∧ actor ∉ mention_set``.
 
 
         Comment events with ``iter <= 1`` either trigger Z6 (when
@@ -2402,12 +2402,12 @@ class TestChainMentionFilterScopeProperty:
             assert decision.action == "drop"
             assert decision.reason == REASON_COMMENT_IGNORED_UNAUTHORIZED_ACTOR
         elif iter_count > 1 and actor in mention_set:
-            # Mentioned actor at iter > 1 → pass with the default
+            # Mentioned actor at iter > 1  pass with the default
             # reason; Y6 falls through.
             assert decision.action == "pass"
             assert decision.reason == REASON_FILTER_CHAIN_PASS
         else:
-            # iter <= 1 + actor != reporter → fall through (Z6 disabled
+            # iter <= 1 + actor != reporter  fall through (Z6 disabled
             # because the reporter does not match).
             assert decision.action == "pass"
             assert decision.reason == REASON_FILTER_CHAIN_PASS
@@ -2500,7 +2500,7 @@ class TestChainMidChainDeterminismProperty:
 
 
     The chain is a pure function of ``(event, callbacks)``: same
-    input → same output. The 4.2 sibling class
+    input  same output. The 4.2 sibling class
     :class:`TestChainLoopGuardDeterminism` pins the same invariant for
     the verifier stages; this class extends the coverage to events
     that exercise the mid-chain. Catches stateful caches that could
@@ -2528,7 +2528,7 @@ class TestChainMidChainDeterminismProperty:
     ) -> None:
         """Three back-to-back evaluations produce the same decision.
 
-        Same event + same callbacks → identical
+        Same event + same callbacks  identical
         :class:`FilterDecision`. The strategy spans every mid-chain
         decision branch (bypass / dedup / Z6 / Y6 / pass-through)
         so a regression in any stage's purity surfaces here.
@@ -2560,15 +2560,15 @@ class TestChainMidChainDeterminismProperty:
 # **burst-debounce** stage. Specifically:
 #
 # * 3-second window invariant: same ``issue_key`` events arriving
-#   inside the window coalesce; the last payload wins (design mandate
-#   "son event'in payload'ı korunur").
+# inside the window coalesce; the last payload wins (design mandate
+# "son event'in payload'ı korunur").
 # * Drop reason invariant: every coalesced delivery surfaces as
-#   :class:`FilterDecision` with ``action="drop"`` and
-#   ``reason=REASON_BURST_COALESCED``.
+# :class:`FilterDecision` with ``action="drop"`` and
+# ``reason=REASON_BURST_COALESCED``.
 # * Independent windows: events with different ``issue_key`` never
-#   coalesce - they live in separate buffers.
+# coalesce - they live in separate buffers.
 # * Anchor delivery never appears in ``coalesced_with``: the design
-#   contract reserves that list for *dropped* deliveries.
+# contract reserves that list for *dropped* deliveries.
 #
 # The :class:`automation_service.burst_window.BurstWindow` is the
 # only stage in the chain that owns wall-clock state, so the tests
@@ -2628,9 +2628,9 @@ def _build_burst_chain(
 
     * ``verify_hmac`` always True.
     * ``resolve_dept`` returns a fixed dept_id.
-    * ``bot_account_ids`` empty → loop guard never fires.
-    * ``is_processed`` False → replay-dedup never fires.
-    * ``mention_set_for`` empty + ``iter_count_for`` 1 → mention
+    * ``bot_account_ids`` empty  loop guard never fires.
+    * ``is_processed`` False  replay-dedup never fires.
+    * ``mention_set_for`` empty + ``iter_count_for`` 1  mention
       filter falls through; the comment event hits the burst stage.
     * ``reporter_for`` returns a sentinel that no test actor matches
       so Z6 cannot accidentally fire.
@@ -2751,7 +2751,7 @@ class TestChainBurstDebounceDropReasonProperty:
         payload_a: dict,
         payload_b: dict,
     ) -> None:
-        """Same-key + within-window → drop with reason ``burst_coalesced``.
+        """Same-key + within-window  drop with reason ``burst_coalesced``.
 
         The anchor delivery must dispatch (``filter_chain_pass``) and
         the second delivery must drop with the canonical reason. The
@@ -3039,7 +3039,7 @@ class TestChainBurstDebounceIndependentWindowsProperty:
 # :class:`WebhookEvent` instances and a fully-wired
 # :class:`WebhookFilterChain`, evaluating the same sequence twice
 # produces the same list of :class:`FilterDecision` verdicts. This is
-# the "Same state sequence in two calls → same decision list
+# the "Same state sequence in two calls  same decision list
 # (deterministic)" invariant.
 #
 # Why this is a **separate** property from the per-stage determinism
@@ -3056,9 +3056,9 @@ class TestChainBurstDebounceIndependentWindowsProperty:
 # of the chain and the burst window for each pass. The decision list
 # only depends on:
 #
-#   * the event sequence (immutable),
-#   * the callbacks (pure functions of the event),
-#   * the fresh burst window (with the same injected ``now`` queue).
+# * the event sequence (immutable),
+# * the callbacks (pure functions of the event),
+# * the fresh burst window (with the same injected ``now`` queue).
 #
 # So if the chain is truly a deterministic state machine, both passes
 # will return identical lists.

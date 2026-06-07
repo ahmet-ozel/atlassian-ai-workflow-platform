@@ -2,12 +2,12 @@
 
 Covers the workflow notification decision table:
 
-* ``status == "failed"`` ⇒ Slack send is **mandatory** regardless of
+* ``status == "failed"``  Slack send is **mandatory** regardless of
   ``dept.notify_on_success``; email is sent iff ``notify_email`` is
   set or ``"email"`` ∈ ``notify_channels``.
 * ``status ∈ {"completed","partial"}`` and
-  ``dept.notify_on_success == False`` ⇒ no-op.
-* ``notify_on_success == True`` ⇒ dispatch on the dept's
+  ``dept.notify_on_success == False``  no-op.
+* ``notify_on_success == True``  dispatch on the dept's
   ``notify_channels`` set.
 * Idempotent retry - the same ``workflow_id`` + channel + kind hashes to
   the same ``dedup_key``; the second attempt skips the adapter send when
@@ -223,7 +223,7 @@ def test_partial_with_notify_on_success_false_is_noop() -> None:
 
 
 def test_completed_with_notify_on_success_true_dispatches_listed_channels() -> None:
-    """``notify_on_success=True`` ⇒ send on every channel in ``notify_channels``."""
+    """``notify_on_success=True``  send on every channel in ``notify_channels``."""
 
     service, slack, email, prompts, store = _service_with_fakes()
     dept = _dept(
@@ -337,7 +337,7 @@ def test_failed_with_email_configured_also_sends_email() -> None:
 
 
 def test_failed_with_no_email_configured_skips_email_channel() -> None:
-    """No ``notify_email`` ⇒ failure-mandatory still does not email."""
+    """No ``notify_email``  failure-mandatory still does not email."""
 
     service, _, email, _, store = _service_with_fakes()
     dept = _dept(
@@ -359,7 +359,7 @@ def test_failed_with_no_email_configured_skips_email_channel() -> None:
 
 
 def test_failed_with_no_slack_webhook_skips_slack_channel() -> None:
-    """No dept Slack webhook ⇒ skip Slack."""
+    """No dept Slack webhook  skip Slack."""
 
     service, slack, _, _, store = _service_with_fakes()
     dept = _dept(
@@ -508,7 +508,7 @@ def test_log_row_stores_body_hash_not_body() -> None:
 
 
 def test_render_failure_raises_template_render_error() -> None:
-    """Missing prompt template ⇒ ``TemplateRenderError`` (never retryable)."""
+    """Missing prompt template  ``TemplateRenderError`` (never retryable)."""
 
     prompts = _FakePromptRenderer(bodies={})  # all templates missing
     service, _, _, _, _ = _service_with_fakes(prompts=prompts)
@@ -525,7 +525,7 @@ def test_render_failure_raises_template_render_error() -> None:
 
 
 def test_failure_path_reraises_when_slack_adapter_raises() -> None:
-    """Failure-mandatory channel transport error ⇒ raises ``NotificationError``."""
+    """Failure-mandatory channel transport error  raises ``NotificationError``."""
 
     slack = _FakeSlackAdapter(raise_on_send=RuntimeError("slack 503"))
     service, _, _, _, store = _service_with_fakes(slack=slack)

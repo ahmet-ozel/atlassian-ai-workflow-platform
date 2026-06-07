@@ -24,7 +24,7 @@ This module implements the :class:`Trace_Propagator` component:
      thread the value through every function.
   4. Mirrors the trace_id back into the response under the same
      ``X-Trace-Id`` header so callers (and reverse proxies) can
-     correlate request ↔ response.
+     correlate request  response.
 
 The module is intentionally dependency-light: it uses only the Python
 standard library. The :class:`TraceMiddleware` class is implemented
@@ -246,7 +246,7 @@ class TraceMiddleware:
        call :func:`get_trace_id` to retrieve it.
     5. Mirrors the resolved trace_id into the response under the same
        ``X-Trace-Id`` header so reverse proxies and clients can
-       correlate the request ↔ response pair.
+       correlate the request  response pair.
     6. Stores the trace_id under ``scope["state"]["trace_id"]`` to
        parallel the shape used by :class:`observability.tracing.TracingMiddleware`.
 

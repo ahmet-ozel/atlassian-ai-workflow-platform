@@ -1,4 +1,4 @@
-﻿"""CI gate - Template placeholder ↔ render context dict matching.
+﻿"""CI gate - Template placeholder  render context dict matching.
 
 
 For each template in the minimum set , this test extracts the
@@ -20,7 +20,7 @@ from pathlib import Path
 import pytest
 from jinja2 import BaseLoader, Environment, meta
 
-# platform/ root (tests/ci/ → tests/ → platform/)
+# platform/ root (tests/ci/  tests/  platform/)
 _PLATFORM_ROOT = Path(__file__).resolve().parent.parent.parent
 
 

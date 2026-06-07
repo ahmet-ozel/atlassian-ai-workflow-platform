@@ -16,12 +16,12 @@ response shape and audit-log entry):
       actor is a registered bot.
   (e) ``loop_guard.route(...)`` event-type classification - 200
       ``ignored`` for unsupported event types.
-  (f) ``jira:comment_created`` → ``temporal.signal_workflow(...)``
+  (f) ``jira:comment_created``  ``temporal.signal_workflow(...)``
       ``new_comment`` signal, 200 ``signal_forwarded``.
-  (g) ``jira:issue_created`` / ``jira:issue_assigned`` →
+  (g) ``jira:issue_created`` / ``jira:issue_assigned``
       ``loop_guard.is_bot_assignee``? Otherwise 200
       ``not_bot_assignee``.
-  (h) ``jira:issue_updated`` → ``loop_guard.assignee_changed_to_bot``?
+  (h) ``jira:issue_updated``  ``loop_guard.assignee_changed_to_bot``?
       Otherwise 200 ``not_bot_assignee``.
   (i) ``capability_gate.has_jira_credential(...)`` - 200
       ``missing_capability`` if the resolved department lacks a Jira
@@ -91,12 +91,12 @@ _EVENT_COMMENT_CREATED: str = "jira:comment_created"
 #: by default; the department-specific ``default_language`` override
 #: is applied by the activity layer if/when a non-``tr`` department is
 #: added.
-_ACK_COMMENT_TR: str = "🤖 Task alındı, analiz ediliyor..."
+_ACK_COMMENT_TR: str = " Task alındı, analiz ediliyor..."
 
 #: Comment posted as best-effort acknowledgement when Phase 1
 #: capability gate denies (no Jira bot credential for the department).
 _MISSING_CAPABILITY_COMMENT_TR: str = (
-    "🤖 Bu departman için Jira bot credential'ı bulunamadı; "
+    " Bu departman için Jira bot credential'ı bulunamadı; "
     "otomasyon başlatılamadı."
 )
 
@@ -188,11 +188,11 @@ async def _resolve_webhook_secret(
 
     The resolver is expected to map ``dept_id`` to one of:
 
-    * a real department id (e.g. ``"payment"``) →
+    * a real department id (e.g. ``"payment"``)
       ``secret/webhook/{dept_id}/secret`` in Vault,
-    * the sentinel ``"__global__"`` →
+    * the sentinel ``"__global__"``
       ``secret/webhook/global/secret`` in Vault (two-stage fallback),
-    * ``None`` (legacy, single-secret callers) → process-wide default.
+    * ``None`` (legacy, single-secret callers)  process-wide default.
 
     Returns ``None`` when neither resolver nor fallback yields a value
     (the handler maps that to either a 503 or the next-stage probe).
@@ -217,8 +217,8 @@ async def _resolve_webhook_secret_two_stage(
 ) -> tuple[bytes | None, str | None, str]:
     """Two-stage HMAC secret lookup (per-dept then global).
 
-    Stage 1 - best-effort body parse for ``project_key`` →
-    ``automation.department_project_keys`` lookup → resolver call with
+    Stage 1 - best-effort body parse for ``project_key``
+    ``automation.department_project_keys`` lookup  resolver call with
     the resolved ``dept_id``. The body parse happens *before* HMAC
     verification, so any parse failure is silently absorbed and we fall
     through to the global secret.
@@ -383,7 +383,7 @@ async def _jira_bot_account_ids_for_dept(
 async def _resolve_dept_for_issue_key(
     db: Any, issue_key: str
 ) -> str | None:
-    """Resolve ``department_id`` from a Jira issue key (``PROJ-123`` →
+    """Resolve ``department_id`` from a Jira issue key (``PROJ-123``
     ``payment``).
 
     Reads ``automation.department_project_keys`` (UNIQUE on
@@ -664,7 +664,7 @@ async def post_jira_webhook(request: Request) -> JSONResponse:  # noqa: PLR0911,
             content={"status": "bad_request"},
         )
 
-    # ---- (f) jira:comment_created → signal existing workflow -----------
+    # ---- (f) jira:comment_created  signal existing workflow -----------
     if event_type == _EVENT_COMMENT_CREATED:
         try:
             workflow_id = automation_workflow_id_jira(issue_key)
@@ -940,7 +940,7 @@ async def _handle_comment_created(
             payload=signal_payload,
         )
     except WorkflowNotFoundError:
-        # No execution exists for this issue → consider restart.
+        # No execution exists for this issue  consider restart.
         return await _maybe_restart_workflow_from_comment(
             temporal=temporal,
             workflow_id=workflow_id,
@@ -1068,8 +1068,8 @@ async def _maybe_restart_workflow_from_comment(
             "assignee_not_dept_bot", current_status=current_status
         )
 
-    # 5. All gates passed → atomically (re)start the workflow with
-    #    the comment buffered as the first signal.
+    # 5. All gates passed  atomically (re)start the workflow with
+    # the comment buffered as the first signal.
     workflow_input = {
         "trigger": "jira",
         "event_type": _EVENT_COMMENT_CREATED,

@@ -254,7 +254,7 @@ class RedactionFilter(logging.Filter):
                 # Build the rendered message under the (already
                 # redacted) args, then redact again to catch secret
                 # patterns that span the ``%s`` boundary (eg.
-                # ``logger.info("Authorization: Basic %s", blob)`` ⇒
+                # ``logger.info("Authorization: Basic %s", blob)``
                 # the literal ``Authorization: Basic`` is in
                 # ``record.msg`` and the blob is in ``record.args``;
                 # the post-render redaction collapses both halves).

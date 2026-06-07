@@ -2,12 +2,10 @@
 
 /**
  * Provider list table (Requirements 4.4, 9.4, 9.5, 14.1).
- *
- * Columns: provider_type, name, model, context_length, status badge,
+ * * Columns: provider_type, name, model, context_length, status badge,
  * last_tested_at (relative time), and a per-row action menu (Test /
  * Edit / Disable / Delete).
- *
- * The table renders `api_key_masked` only - never the raw credential.
+ * * The table renders `api_key_masked` only - never the raw credential.
  * The parent page owns the data and the action handlers; the table is
  * a pure presentational component so the property-test surface stays
  * deterministic.

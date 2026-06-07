@@ -186,7 +186,7 @@ BITBUCKET_LOOP_GUARD_EVENTS: Final[frozenset[str]] = frozenset(
     }
 )
 
-#: Provider → header name carrying the HMAC signature. The two
+#: Provider  header name carrying the HMAC signature. The two
 #: dialects diverge here: Jira ships
 #: ``X-Atlassian-Webhook-Signature`` (Atlassian Cloud's standard),
 #: Bitbucket ships ``X-Hub-Signature`` (the GitHub-style envelope).
@@ -197,7 +197,7 @@ _HEADER_HMAC_BY_PROVIDER: Final[Mapping[str, str]] = MappingProxyType(
     }
 )
 
-#: Provider → header name carrying the idempotency delivery id.
+#: Provider  header name carrying the idempotency delivery id.
 _HEADER_DELIVERY_BY_PROVIDER: Final[Mapping[str, str]] = MappingProxyType(
     {
         "jira": "X-Atlassian-Webhook-Identifier",
@@ -713,7 +713,7 @@ async def _dispatch_pass(
 ) -> JSONResponse:
     """Claim the delivery, dispatch the workflow, audit, and respond.
 
-    Encapsulates the "filter chain passed → fire signalWithStart"
+    Encapsulates the "filter chain passed  fire signalWithStart"
     branch so the Jira and Bitbucket entry points stay tiny. The
     sequence is:
 
@@ -731,7 +731,7 @@ async def _dispatch_pass(
        *delivery* metadata (delivery_id, event_type, workflow_id) so
        operators can correlate the 429 back to the originating
        Atlassian envelope without a cross-table join.
-    1. ``processed_events.claim`` - ``False`` on race → 200 with
+    1. ``processed_events.claim`` - ``False`` on race  200 with
        audit ``webhook_claim_duplicate``.
     2. :func:`start_workflow_idempotent` - on exception, release the
        claim and re-raise so the webhook provider retries.
@@ -744,8 +744,7 @@ async def _dispatch_pass(
     delivery_id = event.delivery_id
 
     # ---- (0) License cap enforcement ------------------------------
-    #
-    # Runs before the idempotency claim so a rejected delivery does
+    # # Runs before the idempotency claim so a rejected delivery does
     # not consume a ``processed_events`` slot. Atlassian's webhook
     # retry will redeliver the same envelope after the cap-window
     # rolls (concurrent workflows finish, day rolls over, monthly
@@ -969,7 +968,7 @@ async def _reject_for_license_cap(
     poster = deps.jira_ack_comment_poster
     if poster is not None and event.issue_key:
         comment_body = (
-            "🤖 Bot lisans limiti aşıldı "
+            " Bot lisans limiti aşıldı "
             f"({exc.limit_type}: {current_json}/{max_json}). "
             "Mevcut workflow'lar bittiğinde tekrar denenecek."
         )

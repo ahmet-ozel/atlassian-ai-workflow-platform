@@ -42,7 +42,7 @@ class WorkflowStep(Base):
     """Multi-Step Orchestrator step tracking.
 
     Each row represents one step within a multi-step workflow execution.
-    Steps transition through: pending → running → completed | failed.
+    Steps transition through: pending  running  completed | failed.
 
     Table: automation.workflow_steps
     """

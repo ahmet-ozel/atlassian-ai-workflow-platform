@@ -24,8 +24,8 @@ deliberately keeps three concerns isolated:
    the matching ``idx_cost_dept_time`` / ``idx_cost_user_time``
    indexes (``20_ops.sql``).
 3. **Decision + audit** - :meth:`BudgetCapPolicy.enforce` checks the
-   four scopes in the order ``dept_weekly → user_weekly →
-   dept_monthly → user_monthly`` (matching the ordering in
+   four scopes in the order ``dept_weekly  user_weekly
+   dept_monthly  user_monthly`` (matching the ordering in
    ``departments.README.md``); on the **first** breach it writes a
    single ``budget_exceeded`` audit event with a payload describing
    the offending scope, the current usage, the configured limit,
@@ -85,8 +85,8 @@ DenyScope = Literal["dept_weekly", "user_weekly", "dept_monthly", "user_monthly"
 
 
 #: Order in which scopes are checked. The list mirrors
-#: ``departments.README.md`` ("dept_weekly → user_weekly →
-#: dept_monthly → user_monthly"). Exposed as a module constant so tests
+#: ``departments.README.md`` ("dept_weekly  user_weekly
+#: dept_monthly  user_monthly"). Exposed as a module constant so tests
 #: can assert on the exact ordering instead of duplicating the literal.
 SCOPE_ORDER: Final[tuple[DenyScope, ...]] = (
     "dept_weekly",
@@ -585,8 +585,7 @@ class BudgetCapPolicy:
 
         # ------------------------------------------------------------------
         # Threshold alarm check
-        #
-        # When the workflow is allowed (no scope exceeded), check whether
+        # # When the workflow is allowed (no scope exceeded), check whether
         # any configured alarm threshold has been breached. If so, and
         # the alarm has not already been sent in the current period,
         # dispatch a notification and update last_alarmed_at.
@@ -1164,7 +1163,7 @@ async def check_budget(
         # Post Jira comment (best-effort)
         if jira_comment_callback is not None:
             comment_body = (
-                f"⛔ Bütçe limiti aşıldı - iş akışı reddedildi.\n\n"
+                f" Bütçe limiti aşıldı - iş akışı reddedildi.\n\n"
                 f"Aşılan kapsam: **{exceeded_scope}**\n"
                 f"Mevcut kullanım: ${_decimal_to_str(_get_usage_for_scope(usage, exceeded_scope))}\n"
                 f"Limit: ${_decimal_to_str(_get_cap_for_scope(caps, exceeded_scope))}"
@@ -1196,7 +1195,7 @@ async def check_budget(
     if warning_scopes and jira_comment_callback is not None:
         scopes_str = ", ".join(warning_scopes)
         comment_body = (
-            f"⚠️ Bütçe uyarısı - aşağıdaki kapsam(lar) %90 eşiğine ulaştı:\n\n"
+            f" Bütçe uyarısı - aşağıdaki kapsam(lar) %90 eşiğine ulaştı:\n\n"
             f"**{scopes_str}**\n\n"
             f"İş akışı başlatıldı ancak bütçe limitine yaklaşılıyor."
         )
@@ -1255,7 +1254,7 @@ async def pre_llm_budget_guard(
         _LOG.error("pre_llm_budget_guard: dept_id is empty or invalid")
         return False
 
-    # Undefined dept_id → block (fail-closed)
+    # Undefined dept_id  block (fail-closed)
     try:
         caps = policy._caps_provider.get(dept_id)
     except KeyError:

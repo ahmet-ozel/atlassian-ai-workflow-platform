@@ -106,11 +106,11 @@ _CLIENT_SOURCE: Final[str] = "automation-service"
 _DEFAULT_TIMEOUT_SECONDS: Final[float] = 15.0
 
 #: Body line listing the prediction with its 80% confidence interval.
-#: The prefix is "🤖 Tahmini maliyet" and the source label
+#: The prefix is " Tahmini maliyet" and the source label
 #: is rendered verbatim - ``dept`` or ``global_fallback`` - so admins
 #: can grep for it in Jira.
 _BODY_HEADER_TEMPLATE: Final[str] = (
-    "🤖 Tahmini maliyet: ${predicted} (CI %80: ${low}-${high}). "
+    " Tahmini maliyet: ${predicted} (CI %80: ${low}-${high}). "
     "Kaynak: {source}."
 )
 

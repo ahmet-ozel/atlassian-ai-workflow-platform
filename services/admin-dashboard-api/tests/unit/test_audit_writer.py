@@ -124,7 +124,7 @@ class _FakePool:
         # When True, ``raise_on_execute`` is NOT consumed one-shot - every
         # acquired connection keeps raising. Used by the precheck
         # connection-error tests to simulate a genuinely-down DB where the
-        # writer's one-shot pool-reset retry must also fail (→ 502).
+        # writer's one-shot pool-reset retry must also fail ( 502).
         self.persist_failure = False
 
     def acquire(self) -> _FakeAcquireCtx:
@@ -246,7 +246,7 @@ def test_details_with_env_keys_with_empty_iterable() -> None:
 
 
 # ---------------------------------------------------------------------------
-#  precheck -
+# precheck -
 # ---------------------------------------------------------------------------
 
 
@@ -272,7 +272,7 @@ def test_precheck_raises_audit_unreachable_on_connection_error() -> None:
         pool = _FakePool()
         # Persistent failure: the writer's one-shot pool-reset retry must
         # also hit the connection error before declaring the DB
-        # unreachable (a genuinely-down DB → 502).
+        # unreachable (a genuinely-down DB  502).
         pool.persist_failure = True
         pool.raise_on_execute = _FakeConnectionError("connection refused")
         writer, _ = await _build_writer(pool)
@@ -340,7 +340,7 @@ def test_precheck_propagates_non_connection_errors_verbatim() -> None:
 
 
 # ---------------------------------------------------------------------------
-#  write -
+# write -
 # ---------------------------------------------------------------------------
 
 
@@ -438,7 +438,7 @@ def test_write_before_start_raises_runtime_error() -> None:
 
 
 # ---------------------------------------------------------------------------
-#  write_with_retry -
+# write_with_retry -
 # ---------------------------------------------------------------------------
 
 

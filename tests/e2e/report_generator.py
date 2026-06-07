@@ -128,7 +128,7 @@ class ReportGenerator:
     """Generates E2E_REPORT.md from collected test results and evidence.
 
  Sections produced:
- 1. Executive Summary (🔴 ISSUES FOUND or 🟢 ALL CLEAR)
+ 1. Executive Summary ( ISSUES FOUND or  ALL CLEAR)
  2. Pre-existing Bugs Fixed
  3. Requirements Verdict Table
  4. Error Path Results
@@ -234,10 +234,10 @@ class ReportGenerator:
         )
 
         if failed > 0:
-            prefix = "🔴 ISSUES FOUND"
+            prefix = " ISSUES FOUND"
             summary_line = f"**{failed}** requirement(s) failed out of **{total}** total."
         else:
-            prefix = "🟢 ALL CLEAR"
+            prefix = " ALL CLEAR"
             summary_line = f"All **{passed}** tested requirements passed."
 
         lines = [
@@ -249,10 +249,10 @@ class ReportGenerator:
             "",
             f"| Metric | Count |",
             f"|--------|-------|",
-            f"| ✅ Passed | {passed} |",
-            f"| ❌ Failed | {failed} |",
-            f"| ⏭️ Skipped | {skipped} |",
-            f"| 📋 Total | {total} |",
+            f"|  Passed | {passed} |",
+            f"|  Failed | {failed} |",
+            f"|  Skipped | {skipped} |",
+            f"|  Total | {total} |",
         ]
 
         return "\n".join(lines)
@@ -275,10 +275,10 @@ class ReportGenerator:
 
         for fix in self._bug_fixes:
             status_icon = {
-                "fixed": "✅",
-                "partial": "⚠️",
-                "not_fixed": "❌",
-            }.get(fix.status, "❓")
+                "fixed": "",
+                "partial": "",
+                "not_fixed": "",
+            }.get(fix.status, "")
 
             lines.append(
                 f"| {fix.bug_id} | {fix.title} | {status_icon} {fix.status} | "
@@ -302,16 +302,16 @@ class ReportGenerator:
 
             if verdict:
                 verdict_icon = {
-                    "PASS": "✅ PASS",
-                    "FAIL": "❌ FAIL",
-                    "SKIP": "⏭️ SKIP",
-                    "ERROR": "💥 ERROR",
+                    "PASS": " PASS",
+                    "FAIL": " FAIL",
+                    "SKIP": " SKIP",
+                    "ERROR": " ERROR",
                 }.get(verdict.verdict, verdict.verdict)
 
                 duration = f"{verdict.duration_seconds:.1f}s" if verdict.duration_seconds else "-"
                 evidence = f"`{verdict.evidence_path}`" if verdict.evidence_path else "-"
             else:
-                verdict_icon = "⏭️ SKIP"
+                verdict_icon = " SKIP"
                 duration = "-"
                 evidence = "-"
 
@@ -347,7 +347,7 @@ class ReportGenerator:
         ])
 
         for test in error_tests:
-            status_icon = "✅" if test.status == "passed" else "❌"
+            status_icon = "" if test.status == "passed" else ""
             duration = f"{test.duration_seconds:.1f}s"
             error = test.error_message[:60] if test.error_message else "-"
             lines.append(f"| {test.test_name} | {status_icon} {test.status} | {duration} | {error} |")
@@ -379,7 +379,7 @@ class ReportGenerator:
         ])
 
         for test in property_tests:
-            status_icon = "✅" if test.status == "passed" else "❌"
+            status_icon = "" if test.status == "passed" else ""
             duration = f"{test.duration_seconds:.1f}s"
             error = test.error_message[:50] if test.error_message else "-"
             lines.append(

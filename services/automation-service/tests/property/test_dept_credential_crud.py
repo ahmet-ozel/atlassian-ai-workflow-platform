@@ -1,6 +1,6 @@
 ﻿"""Property test: Dept credential CRUD atomicity.
 
-For *any* random sequence of ``add → probe → update → remove`` calls
+For *any* random sequence of ``add  probe  update  remove`` calls
 issued against :class:`services.dept_credential_service.DeptCredentialService`
 the following invariants must hold at every step:
 
@@ -34,11 +34,11 @@ I3.  **Update leaves no stale Vault paths.**  Re-running
 I4.  **Audit chain completeness.**  Every successful mutation
      emits exactly one terminal audit row whose ``action`` matches
      the operation:
-       * first add for a pair → ``dept_credential_added``
-       * subsequent add on same pair → ``dept_credential_updated``
-       * remove of an existing row → ``dept_credential_removed``
+       * first add for a pair  ``dept_credential_added``
+       * subsequent add on same pair  ``dept_credential_updated``
+       * remove of an existing row  ``dept_credential_removed``
          with ``payload.existed = True``
-       * remove of a missing row → ``dept_credential_removed``
+       * remove of a missing row  ``dept_credential_removed``
          with ``payload.existed = False``
      Every failure path emits exactly one
      ``dept_credential_add_failed`` row whose ``payload.reason``
@@ -645,8 +645,8 @@ def _build_service(
 
 
 class DeptCredentialCRUDStateMachine(RuleBasedStateMachine):
-    """Random ``add → probe → update → remove`` sequences must always
-    leave DB ↔ Vault in a consistent state and emit a complete audit
+    """Random ``add  probe  update  remove`` sequences must always
+    leave DB  Vault in a consistent state and emit a complete audit
     chain.
 
     The machine tracks an *expected* model of the system state in
@@ -707,7 +707,7 @@ class DeptCredentialCRUDStateMachine(RuleBasedStateMachine):
         token: str,
         url: str,
     ) -> None:
-        """Happy-path add or update.  Must promote staging → final."""
+        """Happy-path add or update.  Must promote staging  final."""
 
         request = _build_request(
             dept_id=dept_id,
@@ -729,7 +729,7 @@ class DeptCredentialCRUDStateMachine(RuleBasedStateMachine):
         assert result.dept_id == dept_id
         assert result.service == service
         assert result.vault_path == _final_path(dept_id, service)
-        # ``outcome`` flips ``created`` → ``updated`` once the row
+        # ``outcome`` flips ``created``  ``updated`` once the row
         # exists.
         expected_outcome = "updated" if was_present else "created"
         assert result.outcome == expected_outcome, (
@@ -955,7 +955,7 @@ class DeptCredentialCRUDStateMachine(RuleBasedStateMachine):
     def probe_all(self, dept_id: str) -> None:
         """Probe every service the dept currently owns.
 
-        This rule does not change DB ↔ Vault state; it only emits
+        This rule does not change DB  Vault state; it only emits
         ``dept_credential_probed`` audit rows (one per registered
         service).  The invariants apply equally before and after.
         """

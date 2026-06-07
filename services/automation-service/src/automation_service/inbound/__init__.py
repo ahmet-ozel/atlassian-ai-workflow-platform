@@ -24,7 +24,7 @@ Two surface types are provided:
   address, and starts a workflow per accepted message.
 
 Both adapters share the same downstream contract (``InboundTaskRequest``
-→ ``start_workflow_idempotent``) so the audit / RBAC / loop-guard
+ ``start_workflow_idempotent``) so the audit / RBAC / loop-guard
 behaviour is identical regardless of channel.
 """
 

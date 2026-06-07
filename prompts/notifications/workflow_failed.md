@@ -1,4 +1,4 @@
-🛑 Workflow başarısız
+ Workflow başarısız
 
 **Workflow:** `{workflow_id}`
 **Departman:** `{dept_id}`

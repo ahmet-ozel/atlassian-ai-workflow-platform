@@ -1,4 +1,4 @@
-﻿"""Integration test: AgentRunnerWorkflow cancel → compensation chain.
+﻿"""Integration test: AgentRunnerWorkflow cancel  compensation chain.
 
 
 Scenario
@@ -83,7 +83,7 @@ def _temporal_test_env_available() -> bool:
 
     try:
         from temporalio.testing import WorkflowEnvironment  # noqa: F401
-    except Exception:  # noqa: BLE001 - any import failure → skip.
+    except Exception:  # noqa: BLE001 - any import failure  skip.
         return False
     return True
 
@@ -263,7 +263,7 @@ def _make_input(
 
 
 # ---------------------------------------------------------------------------
-# 1. Cancel triggers compensation chain + end-user audit 
+# 1. Cancel triggers compensation chain + end-user audit
 # ---------------------------------------------------------------------------
 
 
@@ -618,7 +618,7 @@ async def test_admin_cancel_emits_admin_audit_action(admin_role: str) -> None:
 
 
 # ---------------------------------------------------------------------------
-# 4. MAX_ITER natural termination must NOT run compensation 
+# 4. MAX_ITER natural termination must NOT run compensation
 # ---------------------------------------------------------------------------
 
 

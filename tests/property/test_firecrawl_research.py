@@ -28,7 +28,7 @@ the egress matrix here would only invite drift. We add a single
 sentinel test in:class:`TestEgressAllowlistCoverage` that pins the
 allowlist set algebra so a regression *anywhere* in either property
 file is visible from this one too - and we leave a TODO for the
-post-flight 403 → Jira
+post-flight 403  Jira
 fallback predicate, which still lives inside the activity layer.
 
 Behavior statements
@@ -77,7 +77,7 @@ When the input sources list contains the same URL twice but
  duplicate input**).
 
 Empty / degenerate inputs produce a coherent fallback: empty
- ``summary`` + empty ``sources`` ⇒ a non-empty comment string
+ ``summary`` + empty ``sources``  a non-empty comment string
  and ``minio_uri is None``. The bot's Jira comment is therefore
  always intelligible even if firecrawl returns nothing.
 
@@ -553,13 +553,13 @@ class TestEgressAllowlistCoverage:
 
     @pytest.mark.skip(
         reason=(
-            "Activity-layer post-flight 403 → Jira fallback predicate "
+            "Activity-layer post-flight 403  Jira fallback predicate "
             "(the operational rule) lives inside the FirecrawlClient.scrape / search "
             "code path that requires an async transport mock; covered "
             "by the FastAPI 403 test in "
             "tests.property.test_firecrawl_egress and the workflow "
             "graceful-degradation integration test attached to "
-            "the Firecrawl client path. TODO: lift the 403 → "
+            "the Firecrawl client path. TODO: lift the 403  "
             "EgressBlocked outcome assertion into a pure-helper test "
             "once a transport-free predicate is available."
         )
@@ -568,7 +568,7 @@ class TestEgressAllowlistCoverage:
         """Placeholder for the post-flight egress-blocked mapping.
 
  See the ``skip`` reason for why this property is staged
- rather than implemented inline. The post-flight 403 →
+ rather than implemented inline. The post-flight 403
  ``EgressBlocked`` mapping is currently bound to:class:`mcp_client.firecrawl.FirecrawlClient` and depends on
  an injected transport.
  """

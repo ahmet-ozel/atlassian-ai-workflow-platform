@@ -380,7 +380,7 @@ class AssistantClient:
         except httpx.RequestError as exc:
             _LOG.error("Assistant-service request failed: %s", exc)
             return {
-                "reply": f"⚠️ Bağlantı hatası: {exc}",
+                "reply": f" Bağlantı hatası: {exc}",
                 "tokens_used": 0,
                 "cost_usd": 0.0,
                 "error": True,
@@ -393,7 +393,7 @@ class AssistantClient:
                 extra={"status": response.status_code, "detail": detail},
             )
             return {
-                "reply": f"⚠️ Servis hatası ({response.status_code}): {detail}",
+                "reply": f" Servis hatası ({response.status_code}): {detail}",
                 "tokens_used": 0,
                 "cost_usd": 0.0,
                 "error": True,

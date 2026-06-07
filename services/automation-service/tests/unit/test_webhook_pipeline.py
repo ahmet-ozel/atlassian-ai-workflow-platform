@@ -1,7 +1,7 @@
 """Unit tests for the WebhookPipeline orchestrator.
 
 Tests verify:
-- Sequential stage execution (dedup → loop_guard → dispatcher)
+- Sequential stage execution (dedup  loop_guard  dispatcher)
 - Pipeline stops on non-PASS actions (DROP, SIGNALED, etc.)
 - Audit logging for each stage result
 - Payload extraction from raw webhook data

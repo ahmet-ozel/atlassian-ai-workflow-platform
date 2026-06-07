@@ -580,7 +580,7 @@ class TestAuthBoundary:
 
         client = TestClient(app)
 
-        # No Authorization header → 401 from require_admin's bearer
+        # No Authorization header  401 from require_admin's bearer
         # check (before even reaching the validator).
         response = client.get("/admin/prompts")
         assert response.status_code == 401

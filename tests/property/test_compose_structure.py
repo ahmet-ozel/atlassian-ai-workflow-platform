@@ -79,7 +79,7 @@ from conftest import (  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
-# Manifest → Compose name remapping
+# Manifest  Compose name remapping
 # ---------------------------------------------------------------------------
 
 #: ``admin-dashboard`` (manifest) ships as the ``admin-dashboard-ui``
@@ -418,7 +418,7 @@ def test_http_healthcheck_shape(
 # ---------------------------------------------------------------------------
 
 
-#: ``volume_name → (service, expected_mount_path)`` mappings the test
+#: ``volume_name  (service, expected_mount_path)`` mappings the test
 #: enforces. ``agent_workspace`` is mounted on *two* services so it
 #: appears twice in the parametrized matrix.
 _VOLUME_MOUNTS: tuple[tuple[str, str, str], ...] = (
@@ -510,7 +510,7 @@ def test_compose_depends_on_is_acyclic(compose_doc: dict[str, Any]) -> None:
     cycle = _has_cycle(graph)
     assert cycle is None, (
         f"depends_on graph must be acyclic (the operational rule, invariant); "
-        f"detected cycle: {' → '.join(cycle) if cycle else ''}"
+        f"detected cycle: {'  '.join(cycle) if cycle else ''}"
     )
 
 
@@ -792,7 +792,7 @@ def test_foundation_manifest_health_endpoint_matches_kind(
 
 
  Workers, sidecars, and UI components do not expose an HTTP health
- surface at the Compose boundary - "worker crash →
+ surface at the Compose boundary - "worker crash
  Temporal redelegate"). HTTP services and infra services MUST
  declare a non-empty path starting with ``/``.
  """

@@ -8,7 +8,7 @@
 # are handled by each FastAPI service's SecurityHeadersMiddleware.
 #
 # Middlewares defined here:
-#   - security-headers: HSTS + CSP headers (applied to all HTTPS routers)
+# - security-headers: HSTS + CSP headers (applied to all HTTPS routers)
 # =============================================================================
 
 http:

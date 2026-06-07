@@ -93,7 +93,7 @@ def test_parse_request_counters_skips_unrelated_metrics() -> None:
 
 
 def test_parse_request_counters_handles_empty_exposition() -> None:
-    """No samples → empty list, no error."""
+    """No samples  empty list, no error."""
 
     rows = parse_request_counters(_EMPTY_EXPOSITION)
     assert rows == []
@@ -113,7 +113,7 @@ def test_parse_request_counters_skips_samples_with_missing_labels() -> None:
 
 
 def test_parse_request_counters_raises_on_unparseable_body() -> None:
-    """Garbage input → ``McpMetricsError``."""
+    """Garbage input  ``McpMetricsError``."""
 
     with pytest.raises(McpMetricsError):
         parse_request_counters("not even close to valid \x00\x01\x02")
@@ -150,7 +150,7 @@ def _build_mock_client(
 
 @pytest.mark.asyncio
 async def test_fetch_request_counters_returns_parsed_rows() -> None:
-    """Happy path: 200 + valid body → list of counters."""
+    """Happy path: 200 + valid body  list of counters."""
 
     def respond(request: httpx.Request) -> httpx.Response:
         assert request.url.path == "/metrics"
@@ -191,7 +191,7 @@ async def test_fetch_request_counters_strips_trailing_slash_in_base_url() -> Non
 
 @pytest.mark.asyncio
 async def test_fetch_request_counters_raises_on_non_2xx() -> None:
-    """5xx → ``McpMetricsError``."""
+    """5xx  ``McpMetricsError``."""
 
     def respond(request: httpx.Request) -> httpx.Response:
         return httpx.Response(503, text="upstream down")
@@ -208,7 +208,7 @@ async def test_fetch_request_counters_raises_on_non_2xx() -> None:
 
 @pytest.mark.asyncio
 async def test_fetch_request_counters_raises_on_transport_error() -> None:
-    """``httpx.HTTPError`` → ``McpMetricsError`` with cause."""
+    """``httpx.HTTPError``  ``McpMetricsError`` with cause."""
 
     def respond(request: httpx.Request) -> httpx.Response:
         raise httpx.ConnectError("could not connect")
@@ -224,7 +224,7 @@ async def test_fetch_request_counters_raises_on_transport_error() -> None:
 
 
 def test_constructor_rejects_empty_base_url() -> None:
-    """``base_url=""`` → ``ValueError`` at construction time."""
+    """``base_url=""``  ``ValueError`` at construction time."""
 
     with pytest.raises(ValueError):
         McpMetricsClient(base_url="", http_client=httpx.AsyncClient())

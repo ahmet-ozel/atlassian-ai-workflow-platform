@@ -201,7 +201,7 @@ def _llm_payload(
         "web_search": web_search,
         "output_actions": output_actions
         or [
-            {"type": "jira_comment", "payload": {"body": "✅ Done."}},
+            {"type": "jira_comment", "payload": {"body": " Done."}},
         ],
         "confidence": confidence,
         "missing_fields": missing_fields or [],
@@ -266,7 +266,7 @@ class TestLLMAnalysis:
         fake_llm: _FakeLLM,
         fake_commenter: _FakeCommenter,
     ) -> None:
-        """Invalid LLM JSON → confidence 0 → reject (workflow_type missing)."""
+        """Invalid LLM JSON  confidence 0  reject (workflow_type missing)."""
         fake_llm.response = "this is not JSON at all"
         result = asyncio.run(analyze_task(_make_input()))
 
@@ -309,7 +309,7 @@ class TestConfidenceThreshold:
         fake_llm: _FakeLLM,
         fake_commenter: _FakeCommenter,
     ) -> None:
-        """Confidence < 0.7 → needs_info."""
+        """Confidence < 0.7  needs_info."""
         fake_llm.response = _llm_payload(
             confidence=0.5,
             missing_fields=["repo", "branch"],
@@ -342,7 +342,7 @@ class TestConfidenceThreshold:
         prompt_path: Path,
         fake_llm: _FakeLLM,
     ) -> None:
-        """confidence 0.69 → needs_info."""
+        """confidence 0.69  needs_info."""
         fake_llm.response = _llm_payload(confidence=0.69)
         result = asyncio.run(analyze_task(_make_input()))
 
@@ -361,7 +361,7 @@ class TestWorkflowTypeValidation:
         fake_llm: _FakeLLM,
         fake_commenter: _FakeCommenter,
     ) -> None:
-        """Unknown workflow_type → reject + comment."""
+        """Unknown workflow_type  reject + comment."""
         fake_llm.response = _llm_payload(
             workflow_type="not_a_real_type",
             confidence=0.95,
@@ -405,7 +405,7 @@ class TestWebSearchDowngrade:
         fake_llm: _FakeLLM,
         fake_commenter: _FakeCommenter,
     ) -> None:
-        """research_with_web → research_basic."""
+        """research_with_web  research_basic."""
         fake_llm.response = _llm_payload(
             workflow_type="research_with_web",
             confidence=0.9,
@@ -486,7 +486,7 @@ class TestPromptHotReload:
         prompt_path: Path,
         fake_llm: _FakeLLM,
     ) -> None:
-        """Same mtime → cached body is reused."""
+        """Same mtime  cached body is reused."""
         # Use a fresh PromptCache to count loads precisely.
         cache = PromptCache()
         body1 = cache.load(prompt_path)
@@ -499,7 +499,7 @@ class TestPromptHotReload:
         self,
         prompt_path: Path,
     ) -> None:
-        """File change → cache invalidated."""
+        """File change  cache invalidated."""
         cache = PromptCache()
         body_v1 = cache.load(prompt_path)
 
@@ -520,7 +520,7 @@ class TestPromptHotReload:
         self,
         tmp_path: Path,
     ) -> None:
-        """Missing prompt file → FileNotFoundError surfaces from PromptCache."""
+        """Missing prompt file  FileNotFoundError surfaces from PromptCache."""
         cache = PromptCache()
         missing = tmp_path / "does-not-exist.md"
         with pytest.raises(FileNotFoundError):
@@ -578,7 +578,7 @@ class TestYamlFrontMatter:
         prompt_path: Path,
         fake_llm: _FakeLLM,
     ) -> None:
-        """Valid YAML block → LLM is not called."""
+        """Valid YAML block  LLM is not called."""
 
         @dataclass
         class _ParsedFM:
@@ -616,8 +616,8 @@ class TestYamlFrontMatter:
         prompt_path: Path,
         fake_llm: _FakeLLM,
     ) -> None:
-        """No YAML / parser returns None → LLM fires."""
-        # Stub returns None → no front-matter detected.
+        """No YAML / parser returns None  LLM fires."""
+        # Stub returns None  no front-matter detected.
         self._install_stub_parser(None)
         try:
             fake_llm.response = _llm_payload(confidence=0.9)
@@ -633,7 +633,7 @@ class TestYamlFrontMatter:
         prompt_path: Path,
         fake_llm: _FakeLLM,
     ) -> None:
-        """Parsed YAML without workflow_type → still uses LLM."""
+        """Parsed YAML without workflow_type  still uses LLM."""
 
         @dataclass
         class _PartialFM:
@@ -665,11 +665,11 @@ class TestYamlFrontMatter:
         fake_llm: _FakeLLM,
         fake_commenter: _FakeCommenter,
     ) -> None:
-        """YAML with garbage workflow_type → rejection (validation runs after)."""
+        """YAML with garbage workflow_type  rejection (validation runs after)."""
 
         @dataclass
         class _BadFM:
-            workflow_type: str | None = "💀_invalid"
+            workflow_type: str | None = "_invalid"
             repo: str | None = None
             branch: str | None = None
             needs_ssh: bool | None = None
@@ -705,7 +705,7 @@ class TestFieldDefaults:
         prompt_path: Path,
         fake_llm: _FakeLLM,
     ) -> None:
-        """LLM omits timeout_seconds → dept default fills in."""
+        """LLM omits timeout_seconds  dept default fills in."""
         fake_llm.response = _llm_payload(timeout_seconds=None)
         result = asyncio.run(analyze_task(_make_input()))
 
@@ -716,7 +716,7 @@ class TestFieldDefaults:
         prompt_path: Path,
         fake_llm: _FakeLLM,
     ) -> None:
-        """LLM omits cleanup_policy → dept default fills in."""
+        """LLM omits cleanup_policy  dept default fills in."""
         # Empty string for cleanup_policy still uses the default.
         payload = json.loads(_llm_payload())
         payload.pop("cleanup_policy", None)
@@ -777,7 +777,7 @@ class TestDescriptionOverrideIntegration:
         prompt_path: Path,
         fake_llm: _FakeLLM,
     ) -> None:
-        """YAML omits timeout_seconds → dept default fills in.
+        """YAML omits timeout_seconds  dept default fills in.
 
         The YAML branch used to leave ``timeout_seconds`` as ``None``, which
         is inconsistent with the LLM branch and would
@@ -850,7 +850,7 @@ class TestDescriptionOverrideIntegration:
         fake_llm: _FakeLLM,
         fake_commenter: _FakeCommenter,
     ) -> None:
-        """Invalid YAML field → warning comment listing the errors.
+        """Invalid YAML field  warning comment listing the errors.
 
         The parser drops the offending fields to ``None`` and records
         per-field error strings in ``parse_errors``. ``analyze_task``
@@ -870,8 +870,8 @@ class TestDescriptionOverrideIntegration:
             needs_ssh: bool | None = None
             needs_docker: bool | None = None
             execution_command: str | None = "pytest -q"
-            cleanup: str | None = None  # invalid → dropped to None
-            timeout_seconds: int | None = None  # invalid → dropped to None
+            cleanup: str | None = None  # invalid  dropped to None
+            timeout_seconds: int | None = None  # invalid  dropped to None
             web_search: bool | None = None
             output: list[dict] | None = None
             parse_errors: list[str] = field(default_factory=lambda: list(errors))
@@ -942,7 +942,7 @@ class TestDescriptionOverrideIntegration:
 
         @dataclass
         class _PartialFM:
-            workflow_type: str | None = None  # missing → LLM branch wins
+            workflow_type: str | None = None  # missing  LLM branch wins
             repo: str | None = None
             branch: str | None = None
             needs_ssh: bool | None = None

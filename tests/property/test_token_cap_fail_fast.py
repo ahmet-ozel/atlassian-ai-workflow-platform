@@ -222,7 +222,7 @@ def _build_chunks(
     """Wrap an integer sequence into a :class:`_Chunk` tuple.
 
     ``finalise`` flips ``is_final=True`` on the trailing chunk so
-    clause (c) - "cap never exceeded ⇒ ``done`` event" - has a
+    clause (c) - "cap never exceeded  ``done`` event" - has a
     well-defined trigger inside the orchestrator's loop.
     """
 
@@ -415,7 +415,7 @@ def test_token_cap_fail_fast_invariants(
         )
     )
 
-    # ----- (e) Determinism - same script ⇒ same SSE sequence -----
+    # ----- (e) Determinism - same script  same SSE sequence -----
     assert events_a == events_b, (
         f"stream_with_tool_loop is non-deterministic: identical "
         f"inputs produced different SSE sequences.\n"
@@ -488,7 +488,7 @@ def test_token_cap_fail_fast_invariants(
         )
 
     else:
-        # ----- (c) cap never crossed ⇒ ``done`` terminal event -----
+        # ----- (c) cap never crossed  ``done`` terminal event -----
         assert TOKEN_CAP_EVENT not in event_types, (
             f"``{TOKEN_CAP_EVENT}`` was emitted for non-crossing "
             f"input chunks={chunks!r} cap={token_cap} "

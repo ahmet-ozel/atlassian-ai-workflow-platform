@@ -2,12 +2,12 @@
 Docker Inspect Health State Mapping (Q14)**
 For any docker inspect `.State.Health.Status` output `S`, the
 `_probe_assume_running` behaviour is deterministic:
-- ``S == "healthy"``   → snapshot.state = ``"healthy"``
-- ``S == "unhealthy"`` → snapshot.state = ``"unhealthy"``
-- ``S == "starting"``  → snapshot.state = ``"starting"``
+- ``S == "healthy"``    snapshot.state = ``"healthy"``
+- ``S == "unhealthy"``  snapshot.state = ``"unhealthy"``
+- ``S == "starting"``   snapshot.state = ``"starting"``
 - ``S == ""`` or ``S == "<no value>"`` or subprocess fail
-  (timeout, FileNotFoundError) → snapshot.state = ``"running_unmonitored"``
-- Any unknown value   → snapshot.state = ``"running_unmonitored"``
+  (timeout, FileNotFoundError)  snapshot.state = ``"running_unmonitored"``
+- Any unknown value    snapshot.state = ``"running_unmonitored"``
 The old ``unknown`` literal is **not** emitted by ``_probe_assume_running``;
 it is retained in ``HealthState`` for backwards compatibility only.
 Strategy
@@ -142,7 +142,7 @@ _UNKNOWN_STATUS = st.text(
 
 
 # ---------------------------------------------------------------------------
-#  - known-good statuses map deterministically
+# - known-good statuses map deterministically
 # ---------------------------------------------------------------------------
 
 
@@ -192,7 +192,7 @@ def test_known_docker_status_maps_deterministically(
 
 
 # ---------------------------------------------------------------------------
-#  - sentinel / empty / unknown statuses → running_unmonitored
+# - sentinel / empty / unknown statuses  running_unmonitored
 # ---------------------------------------------------------------------------
 
 
@@ -211,7 +211,7 @@ def test_unmonitored_docker_status_yields_running_unmonitored(
     docker_status: str,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """- empty / sentinel / unknown statuses → running_unmonitored.
+    """- empty / sentinel / unknown statuses  running_unmonitored.
     For any ``S ∉ {"healthy", "unhealthy", "starting"}``, including the
     empty string and the Go-template ``"<no value>"`` sentinel,
     ``_probe_assume_running`` must yield ``snapshot.state == "running_unmonitored"``."""
@@ -241,7 +241,7 @@ def test_unmonitored_docker_status_yields_running_unmonitored(
 
 
 # ---------------------------------------------------------------------------
-#  - subprocess failure modes → running_unmonitored
+# - subprocess failure modes  running_unmonitored
 # ---------------------------------------------------------------------------
 
 
@@ -305,7 +305,7 @@ def test_subprocess_failure_yields_running_unmonitored(
 
 
 # ---------------------------------------------------------------------------
-# same input → same output (idempotency)
+# same input  same output (idempotency)
 # ---------------------------------------------------------------------------
 
 

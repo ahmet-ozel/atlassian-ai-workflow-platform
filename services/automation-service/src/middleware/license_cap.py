@@ -19,7 +19,7 @@ For a given ``dept_id`` and a fresh workflow start request, the
    ``max_workflows_per_day=100``,
    ``max_token_usd_per_month=Decimal("1000.00")``.
 2. Reads three usage counters in a deterministic order - **concurrent
-   → daily → monthly_token** - short-circuiting on the *first*
+    daily  monthly_token** - short-circuiting on the *first*
    exceeded limit.
 3. If a limit is exceeded, writes a ``bot_license_cap_exceeded``
    audit row (``actor_role="system"``, ``result="denied"``) with
@@ -559,7 +559,7 @@ async def enforce_license_cap(
     ------
     BotLicenseCapExceededError
         When *any* of the three caps (in the deterministic order
-        ``concurrent`` → ``daily`` → ``monthly_token``) is met or
+        ``concurrent``  ``daily``  ``monthly_token``) is met or
         exceeded by current usage. The exception carries the offending
         limit, the observed current value, the cap threshold, the
         license_id (or ``None``), the dept_id and the issue_key so
@@ -640,7 +640,7 @@ async def enforce_license_cap(
         )
 
     # 3. Monthly token - production LLM cost (USD) since the start of
-    #    the current UTC calendar month.
+    # the current UTC calendar month.
     monthly = await _sum_monthly_token_cost(
         db,
         license_id=cap.license_id,

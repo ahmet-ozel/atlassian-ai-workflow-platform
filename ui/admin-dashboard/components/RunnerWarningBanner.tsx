@@ -2,12 +2,10 @@
 
 /**
  * RunnerWarningBanner - SSH Runner Single Point of Failure warning.
- *
- * Queries `GET /admin/ssh-runners` on page
+ * * Queries `GET /admin/ssh-runners` on page
  * load and displays a yellow warning banner when the number of active runners
  * is less than 2.
- *
- */
+ * */
 
 import { useCallback, useEffect, useState } from "react";
 
@@ -72,7 +70,7 @@ export default function RunnerWarningBanner() {
       aria-live="polite"
       style={bannerStyle}
     >
-      <span style={iconStyle} aria-hidden="true">⚠️</span>
+      <span style={iconStyle} aria-hidden="true"></span>
       <span>
         Tek SSH runner = Single Point of Failure. En az 2 active runner önerilir.
       </span>

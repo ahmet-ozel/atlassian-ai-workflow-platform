@@ -5,7 +5,7 @@ Hypothesis-driven exercise of :func:`pii_shared.mask`:
 (a) For any text + N injected PII patterns (TR phone, email,
     Luhn-valid credit-card), the masked output contains zero
     PII pattern matches and ``len(matches) == N``.
-(b) The function is deterministic - same input ⇒ same output
+(b) The function is deterministic - same input  same output
     (same matches, same masked string).
 (c) Luhn-invalid card numbers are NOT masked (they are not credit
     cards, so we must not destroy unrelated 13-19 digit numbers).

@@ -26,14 +26,14 @@ from components.theme import apply_theme, page_hero
 
 
 _inject_session_state()
-st.set_page_config(page_title="Explorer", page_icon="🔍", layout="wide")
+st.set_page_config(page_title="Explorer", page_icon="", layout="wide")
 apply_theme()
 page_hero(
     "Explorer",
     "Departman kataloğunda tanımlı Jira issue, Bitbucket PR ve "
     "Confluence sayfalarını okuma modunda gezin. Yazma işlemleri burada "
     "yer almaz; gerektiğinde Task Creator'a yönlendirilirsiniz.",
-    icon="🔍",
+    icon="",
 )
 
 dept_id = render_dept_switcher()

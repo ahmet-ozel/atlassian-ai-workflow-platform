@@ -113,7 +113,7 @@ def _temporal_test_env_available() -> bool:
 
     try:
         from temporalio.testing import WorkflowEnvironment  # noqa: F401
-    except Exception:  # noqa: BLE001 - any import failure → skip.
+    except Exception:  # noqa: BLE001 - any import failure  skip.
         return False
     return True
 
@@ -449,8 +449,7 @@ async def test_pr_review_happy_path_posts_findings() -> None:
     )
 
     # ----- Activity ordering ----------------------------------------
-    #
-    # The diff fetch must precede the LLM call, which must precede
+    # # The diff fetch must precede the LLM call, which must precede
     # the comment posts. A regression that re-orders the body would
     # post empty comments before the LLM ran.
     relevant = [
@@ -473,8 +472,7 @@ async def test_pr_review_happy_path_posts_findings() -> None:
     )
 
     # ----- Diff fetch payload ---------------------------------------
-    #
-    # The handler passes ``({"workspace": "", "repo_slug": ...}, pr_id,
+    # # The handler passes ``({"workspace": "", "repo_slug": ...}, pr_id,
     # dept_id)``. We assert the integer PR id was extracted out of
     # ``analysis.rationale`` correctly ( fallback path until task
     # 10.1 lifts pr_id to a first-class field).
@@ -522,8 +520,7 @@ async def test_pr_review_happy_path_posts_findings() -> None:
         assert args[3] == "payments"
 
     # ----- get_previous_findings query -----------------
-    #
-    # The query is declared as returning ``tuple[str, ...]`` - but
+    # # The query is declared as returning ``tuple[str, ...]`` - but
     # the Temporal JSON data converter renders the value as a list
     # on the wire so the return type at the call site is normalised
     # to ``list``. We coerce to a tuple before the equality check
@@ -634,8 +631,7 @@ async def test_pr_review_dedup_within_single_run() -> None:
     assert log.count("llm_review_code") == 1
 
     # ----- Comment activity fired at least twice --------------------
-    #
-    # Each *distinct* finding hash must have flushed at least once.
+    # # Each *distinct* finding hash must have flushed at least once.
     # The duplicate ``h1`` may or may not have flushed depending on
     # whether the body's ``_previous_findings`` had absorbed the
     # first ``h1`` before the second occurrence's
@@ -657,8 +653,7 @@ async def test_pr_review_dedup_within_single_run() -> None:
     )
 
     # ----- Posted bodies carry both distinct hashes -----------------
-    #
-    # ``h1`` body must be present (regardless of whether it was
+    # # ``h1`` body must be present (regardless of whether it was
     # posted once or twice) and ``h3`` body must be present.
     comment_args_list = log.args_for("bitbucket_add_pr_comment")
     posted_bodies = [args[2] for args in comment_args_list]
@@ -672,8 +667,7 @@ async def test_pr_review_dedup_within_single_run() -> None:
     )
 
     # ----- Dedup invariant: query returns the set, not the bag ------
-    #
-    # The hash set is the canonical surface downstream consumers
+    # # The hash set is the canonical surface downstream consumers
     # rely on for cross-iteration dedup. Duplicates
     # MUST collapse into a single set entry. The Temporal JSON
     # data converter renders the query result as a list, so we

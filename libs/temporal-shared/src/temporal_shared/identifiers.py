@@ -224,8 +224,8 @@ def execution_artifact_key(workflow_id: str, name: str) -> str:
 #
 # These pinned regexes define the workflow id format:
 #
-#   Jira:      ^automation-jira-[A-Z][A-Z0-9_]{1,9}-\d+$
-#   Bitbucket: ^automation-bb-[a-z0-9-]+-pr-\d+$
+# Jira:      ^automation-jira-[A-Z][A-Z0-9_]{1,9}-\d+$
+# Bitbucket: ^automation-bb-[a-z0-9-]+-pr-\d+$
 #
 # The Jira project key body is bounded ([1, 10] alphanumeric/underscore
 # characters following the leading uppercase letter), giving a 2..10 char
@@ -273,10 +273,10 @@ class WorkflowIdRef:
     Exactly one of the two source-specific tuples is populated, controlled
     by :attr:`provider`:
 
-    * ``provider == "jira"`` →
+    * ``provider == "jira"``
       :attr:`project_key` and :attr:`issue_num` are set;
       :attr:`repo_slug` and :attr:`pr_id` are ``None``.
-    * ``provider == "bitbucket"`` →
+    * ``provider == "bitbucket"``
       :attr:`repo_slug` and :attr:`pr_id` are set;
       :attr:`project_key` and :attr:`issue_num` are ``None``.
 

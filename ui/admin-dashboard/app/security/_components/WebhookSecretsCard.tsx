@@ -3,14 +3,12 @@
 /**
  * WebhookSecretsCard - Displays webhook HMAC secrets per dept × provider
  * with rotation controls and live overlap countdown.
- *
- * Fetches data from `GET /admin/security/webhooks` and provides:
+ * * Fetches data from `GET /admin/security/webhooks` and provides:
  * - Last rotation timestamp per entry
  * - Live countdown for remaining overlap window
- * - "Döndür" (Rotate) button → modal with new secret + 3-step guide
- * - "Sonlandır" (Finalize) button → ends overlap early
- *
- * Requirements: 9.4, 9.5
+ * - "Döndür" (Rotate) button  modal with new secret + 3-step guide
+ * - "Sonlandır" (Finalize) button  ends overlap early
+ * * Requirements: 9.4, 9.5
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -370,7 +368,7 @@ export default function WebhookSecretsCard(): JSX.Element {
                             fontWeight: 600,
                           }}
                         >
-                          ⏱ {formatCountdown(remaining)}
+                           {formatCountdown(remaining)}
                         </span>
                       ) : (
                         "-"
@@ -513,7 +511,7 @@ export default function WebhookSecretsCard(): JSX.Element {
               id="webhook-result-title"
               style={{ margin: "0 0 0.75rem 0" }}
             >
-              🔑 Yeni Webhook Secret
+               Yeni Webhook Secret
             </h3>
             <p style={{ fontSize: "0.9rem", marginBottom: "0.75rem" }}>
               <strong>{rotateResult.deptId}</strong> /{" "}
@@ -555,7 +553,7 @@ export default function WebhookSecretsCard(): JSX.Element {
                 marginBottom: "0.75rem",
               }}
             >
-              ℹ️ Overlap penceresi boyunca hem eski hem yeni secret kabul
+              ℹ Overlap penceresi boyunca hem eski hem yeni secret kabul
               edilir - geçiş sırasında kesinti yaşanmaz.
             </div>
 
@@ -576,7 +574,7 @@ export default function WebhookSecretsCard(): JSX.Element {
                   void navigator.clipboard.writeText(rotateResult.newSecret);
                 }}
               >
-                📋 Kopyala
+                 Kopyala
               </button>
               <button
                 type="button"

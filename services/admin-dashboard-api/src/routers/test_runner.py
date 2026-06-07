@@ -18,8 +18,8 @@ This module provides:
 The streaming generator handles:
 - Line-by-line stdout/stderr emission as SSE ``data:`` frames.
 - Final ``event: done`` with ``{"exit_code": N}`` on process exit.
-- Client disconnect detection → subprocess SIGTERM + cleanup.
-- Unexpected errors → ``event: error`` frame before stream close.
+- Client disconnect detection  subprocess SIGTERM + cleanup.
+- Unexpected errors  ``event: error`` frame before stream close.
 """
 
 from __future__ import annotations
@@ -44,7 +44,7 @@ router = APIRouter(prefix="/admin/services", tags=["test-runner"])
 
 
 # ---------------------------------------------------------------------------
-# Service → test command resolution
+# Service  test command resolution
 # ---------------------------------------------------------------------------
 
 # Known service test commands. In production this is read from the

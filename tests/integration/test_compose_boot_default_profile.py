@@ -10,7 +10,7 @@ runtime envelopes:
  ``platform/config/services.manifest.json``. When the ``docker``
  CLI is absent (CI fast-lane, sandboxed dev machines), the test
  falls back to parsing ``infra/docker-compose.yml`` directly with
- PyYAML so the foundation invariant ("manifest ↔ Compose parity")
+ PyYAML so the foundation invariant ("manifest  Compose parity")
  stays enforced even without a Docker daemon. This test does **not**
  require ``--run-docker`` - parsing is cheap, deterministic, and
  carries no side effects.
@@ -91,10 +91,10 @@ DEFAULT_PROFILE_ENDPOINTS: tuple[HealthEndpoint, ...] = (
 )
 
 
-#: Compose service ↔ component path pairs whose ``env_file:`` directive
+#: Compose service  component path pairs whose ``env_file:`` directive
 #: points at a ``.env`` file that does NOT ship with the repo (only
 #: ``.env.example`` does, per . The test stages
-#: each file by copying ``.env.example`` → ``.env`` before bringing up
+#: each file by copying ``.env.example``  ``.env`` before bringing up
 #: the stack and removes it on cleanup if the test created it.
 ENV_FILE_TARGETS: tuple[str, ...] = (
     "services/automation-service",
@@ -142,7 +142,7 @@ def _docker_available() -> bool:
 
 
 def _stage_env_files(repo_root: Path) -> list[Path]:
-    """Copy ``.env.example`` → ``.env`` for every Compose ``env_file:``
+    """Copy ``.env.example``  ``.env`` for every Compose ``env_file:``
  target that is missing.
 
  Returns the list of ``.env`` files this call created so the
@@ -219,7 +219,7 @@ def _wait_for_endpoints(
 ) -> dict[HealthEndpoint, str | None]:
     """Poll every endpoint until each returns 2xx or the timeout expires.
 
- Returns a mapping from endpoint → last error message (``None``
+ Returns a mapping from endpoint  last error message (``None``
  means the endpoint became healthy within the timeout).
  """
 
@@ -481,7 +481,7 @@ def test_compose_default_profile_config_parses_with_ten_services(
     compose_file = repo_root / COMPOSE_FILE_REL
     assert compose_file.is_file(), (
         f"Compose file missing at {compose_file}; "
-        "cannot validate manifest ↔ Compose parity."
+        "cannot validate manifest  Compose parity."
     )
 
     expected_services = FOUNDATION_COMPOSE_SERVICES

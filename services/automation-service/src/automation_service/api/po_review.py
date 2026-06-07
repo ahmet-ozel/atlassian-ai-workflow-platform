@@ -575,7 +575,7 @@ def _project_branches(
     * a tuple of :class:`Branch` dataclass instances keyed by name
       (the input the pure :func:`compute_orphan_branches` helper
       expects), and
-    * a name → ``diff_hash`` lookup so the orphan-branches endpoint
+    * a name  ``diff_hash`` lookup so the orphan-branches endpoint
       can attach a cached diff summary to each surviving entry. The
       lookup contains :data:`None` when the MCP did not supply a
       hash (degenerate branches with no commits yet).
@@ -1054,7 +1054,7 @@ async def request_changes(
 
     The request body is parsed for an optional ``"comment"`` field;
     when omitted the endpoint falls back to a canned message
-    ("``🤖 Lütfen revize edin.``") so the action can be invoked from
+    ("`` Lütfen revize edin.``") so the action can be invoked from
     a Streamlit button without forcing the operator to type a
     message every time.
     """
@@ -1075,7 +1075,7 @@ async def request_changes(
     body = await _read_optional_json_body(request)
     comment = _coerce_comment(
         body.get("comment") if body else None,
-        default="🤖 Lütfen revize edin.",
+        default=" Lütfen revize edin.",
     )
 
     await _run_pr_action(
@@ -1142,7 +1142,7 @@ async def approve_note(
     body = await _read_optional_json_body(request)
     comment = _coerce_comment(
         body.get("comment") if body else None,
-        default="🤖 PO onay notu: bu yön doğru görünüyor.",
+        default=" PO onay notu: bu yön doğru görünüyor.",
     )
 
     await _run_pr_action(

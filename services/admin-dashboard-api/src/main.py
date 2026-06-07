@@ -3,10 +3,10 @@
 Exposes the standard liveness/readiness contract shared by every HTTP service
 in the service stack and the Control_Plane wiring for the audit sink:
 
-* ``GET /healthz`` → 200 with body ``{"status": "ok"}``. Always returns
+* ``GET /healthz``  200 with body ``{"status": "ok"}``. Always returns
   200 as long as the process is alive - the manifest-load failure does
   **not** affect liveness.
-* ``GET /readyz``  → 200 ``{"status": "ready"}`` when dependencies are
+* ``GET /readyz``   200 ``{"status": "ready"}`` when dependencies are
   reachable **and** the manifest loaded cleanly. Returns 503 with
   ``{"status": "not_ready"}`` (≤64 bytes) when the dependency probe
   fails, or 503 with ``{"status": "not_ready", "reason":
@@ -265,8 +265,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # instead of silent webhook routing ambiguity. The CRUD layer's
     # ``_find_account_id_conflicts`` covers the "edited via API"
     # case; this block covers the "edited on disk" case.
-    #
-    # The validator is intentionally tolerant of a missing /
+    # # The validator is intentionally tolerant of a missing /
     # malformed file - the readiness probe already surfaces config
     # corruption via the existing 503 paths, and we don't want a
     # transient ``OSError`` to take the whole admin surface down.
@@ -430,7 +429,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         http_client=http_client,
         audit_sink=LoggingAuditSink(),
         # Credential save runs a live Atlassian read+write probe through
-        # the MCP (myself → find issue → add comment → delete comment),
+        # the MCP (myself  find issue  add comment  delete comment),
         # which legitimately takes longer than the default 30s on cloud
         # round trips. Allow 90s so a valid credential is not rejected
         # with a spurious 504 upstream timeout.
@@ -504,36 +503,34 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # ---- 8. Ops routers wiring ------------------------------------
     # The operations routers shipped under ``src/routers/`` expect
     # the following ``app.state`` slots:
-    #
-    # * ``pg_pool`` - asyncpg pool used by costs / feature_flags
-    #   routers. We try to reuse the prompts audit pool so we don't
-    #   open a second connection pool against the same Postgres;
-    #   when the prompts wiring also failed we fall back to a fresh
-    #   pool here. Both branches surface a clear 503 with
-    #   ``reason="pg_pool_unavailable"`` from the routers when the
-    #   pool is missing entirely.
+    # # * ``pg_pool`` - asyncpg pool used by costs / feature_flags
+    # routers. We try to reuse the prompts audit pool so we don't
+    # open a second connection pool against the same Postgres;
+    # when the prompts wiring also failed we fall back to a fresh
+    # pool here. Both branches surface a clear 503 with
+    # ``reason="pg_pool_unavailable"`` from the routers when the
+    # pool is missing entirely.
     # * ``loki_client`` - Loki search proxy. Wired with a soft-fail
-    #   stub when the deployment doesn't ship Loki (the audit search
-    #   panel still renders Postgres-backed Audit results from the
-    #   foundation surface).
+    # stub when the deployment doesn't ship Loki (the audit search
+    # panel still renders Postgres-backed Audit results from the
+    # foundation surface).
     # * ``archive_index`` - MinIO/Postgres-backed archive index for
-    #   the ``audit/search`` archived-row branch.
+    # the ``audit/search`` archived-row branch.
     # * ``healthcheck_aggregator`` - :class:`HealthcheckAggregator`
-    #   built once per process; reads the manifest's
-    #   ``depends_on_services`` for cascade computation.
+    # built once per process; reads the manifest's
+    # ``depends_on_services`` for cascade computation.
     # * ``credential_rotation_state`` - callable returning the dept
-    #   rotation TTL list for the security panel banner.
+    # rotation TTL list for the security panel banner.
     # * ``feature_flag_audit_sink`` - bound to the AdminProxy's audit
-    #   sink so toggles are observable in ``automation.audit_events``.
-    #
-    # Every wire is best-effort; when the underlying dependency is
+    # sink so toggles are observable in ``automation.audit_events``.
+    # # Every wire is best-effort; when the underlying dependency is
     # missing the slot stays ``None`` and the router surfaces a 503
     # with the documented ``reason`` field. This mirrors the
     # PromptsGitRouter pattern so a partial rollout never blocks the
     # entire admin surface.
 
     # 8a. pg_pool - share the prompts pool when available, else
-    #     open a dedicated one.
+    # open a dedicated one.
     pg_pool = app.state.prompts_audit_pool
     if pg_pool is None:
         try:
@@ -573,8 +570,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # on a fresh deployment and the admin features that depend on them
     # return 500. ``apply_migrations`` is idempotent (checksum-tracked
     # via ``shared.schema_migrations``) so we run it on every boot.
-    #
-    # The directory is resolved from ``MIGRATIONS_DIR`` env (mounted
+    # # The directory is resolved from ``MIGRATIONS_DIR`` env (mounted
     # at ``/app/migrations`` inside the container via the compose
     # volume) with a sensible repo-relative fallback so local dev
     # invocations (``python -m admin_dashboard_api``) work without
@@ -596,7 +592,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
                 if _container_path.is_dir():
                     _migrations_path = _container_path
                 else:
-                    # services/admin-dashboard-api/src/main.py →
+                    # services/admin-dashboard-api/src/main.py
                     # parents[3] = platform/
                     _migrations_path = (
                         Path(__file__).resolve().parents[3]
@@ -747,7 +743,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             )
 
     # 8b. Loki client - best-effort; when missing the audit search
-    #     router degrades to "0 hits from Loki, plus archive hits".
+    # router degrades to "0 hits from Loki, plus archive hits".
     try:
         from .clients.loki_client import LokiClient  # type: ignore[import-not-found]
 
@@ -761,8 +757,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         logger.info("loki_client unavailable (soft): %s", exc)
 
     # 8b'. MCP metrics client - best-effort.
-    #     Powers ``GET /api/v1/mcp/traffic``; when missing the endpoint
-    #     surfaces 503 with ``reason="mcp_metrics_unavailable"``.
+    # Powers ``GET /api/v1/mcp/traffic``; when missing the endpoint
+    # surfaces 503 with ``reason="mcp_metrics_unavailable"``.
     try:
         from .clients.mcp_metrics_client import McpMetricsClient
 
@@ -779,7 +775,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         logger.info("mcp_metrics_client unavailable (soft): %s", exc)
 
     # 8c. Archive index - best-effort; the ``audit/search`` router
-    #     skips archived-row aggregation when this slot is ``None``.
+    # skips archived-row aggregation when this slot is ``None``.
     try:
         from .audit.archive_index import ArchiveIndex  # type: ignore[import-not-found]
 
@@ -793,8 +789,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         logger.info("archive_index unavailable (soft): %s", exc)
 
     # 8d. Healthcheck aggregator - built only when the manifest
-    #     loaded; otherwise the cascade router has no dependency
-    #     graph to reason against.
+    # loaded; otherwise the cascade router has no dependency
+    # graph to reason against.
     if manifest is not None:
         try:
             from .routers.healthcheck import HealthcheckAggregator
@@ -804,7 +800,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
                 The :class:`HealthProbe` bound during the lifecycle
                 wiring tracks every service's status in its internal
-                state; we project that to a flat name → status map
+                state; we project that to a flat name  status map
                 here so the aggregator can compose the cascade
                 without poking at probe internals.
                 """
@@ -853,16 +849,16 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             )
 
     # 8e. Credential rotation state - callable returning the dept
-    #     rotation TTL list. The admin proxy already forwards the
-    #     foundation Vault metadata to automation-service, so for
-    #     this lifespan we ship a no-op default that returns an
-    #     empty list. The router treats that as "no banners
-    #     today" and renders nothing.
+    # rotation TTL list. The admin proxy already forwards the
+    # foundation Vault metadata to automation-service, so for
+    # this lifespan we ship a no-op default that returns an
+    # empty list. The router treats that as "no banners
+    # today" and renders nothing.
     app.state.credential_rotation_state = lambda: []
 
     # 8f. Feature-flag audit sink - bound to the AdminProxy's audit
-    #     sink so toggles land in the same ``automation.audit_events``
-    #     stream as the proxy-forwarded admin commands.
+    # sink so toggles land in the same ``automation.audit_events``
+    # stream as the proxy-forwarded admin commands.
     app.state.feature_flag_audit_sink = getattr(
         admin_proxy, "_audit", LoggingAuditSink()
     )
@@ -1314,18 +1310,18 @@ if not _llm_providers_routers_mounted_early:
 # 15.1-15.5). Resolves its dependencies through three ``app.state`` slots:
 #
 # * ``secret_rotator`` - :class:`SupportsSecretRotator` adapter that
-#   performs the Vault KV-v2 write. Production wires this against
-#   :mod:`vault_client`; until that lands the slot stays ``None`` and
-#   the endpoint returns ``HTTP 503`` with
-#   ``reason="secret_rotator_unavailable"``.
+# performs the Vault KV-v2 write. Production wires this against
+# :mod:`vault_client`; until that lands the slot stays ``None`` and
+# the endpoint returns ``HTTP 503`` with
+# ``reason="secret_rotator_unavailable"``.
 # * ``secret_reload_publisher`` - optional
-#   :class:`SupportsHotReloadPublisher` (Redis pub/sub or HTTP fan-out).
-#   When ``None`` the rotation logs a structured ``secret_reload_pending``
-#   warning so operators can page consumers manually.
+# :class:`SupportsHotReloadPublisher` (Redis pub/sub or HTTP fan-out).
+# When ``None`` the rotation logs a structured ``secret_reload_pending``
+# warning so operators can page consumers manually.
 # * ``secret_rotation_audit_sink`` - optional explicit audit sink. When
-#   absent the router falls back to the AdminProxy's audit sink so
-#   ``secret_rotated`` events land in the same audit stream as other
-#   admin actions.
+# absent the router falls back to the AdminProxy's audit sink so
+# ``secret_rotated`` events land in the same audit stream as other
+# admin actions.
 app.state.secret_rotator = None
 app.state.secret_reload_publisher = None
 app.state.secret_rotation_audit_sink = None
@@ -1344,7 +1340,7 @@ except Exception as _import_exc:  # noqa: BLE001
 # ---------------------------------------------------------------------------
 #
 # Mounts the ``/admin/runner/workspaces[...]`` endpoints used by the
-# *Services → Workspaces* sub-tab. Imported with the same soft-fail
+# *Services  Workspaces* sub-tab. Imported with the same soft-fail
 # pattern as the other admin routers so a missing dependency cannot
 # block the rest of the admin surface. The router resolves its SSH
 # side-effect surface through ``app.state.runner_workspaces_client``;
@@ -1382,11 +1378,11 @@ except Exception as _import_exc:  # noqa: BLE001
 # Mounts the three routers shipped under ``src/routers/``:
 #
 # * ``firecrawl_allowlist`` - Firecrawl egress allowlist CRUD
-#   endpoints.
+# endpoints.
 # * ``setup_wizard`` - Step-by-step guided setup for platform
-#   services.
+# services.
 # * ``test_results`` - Service test results parsing and history
-#   and history.
+# and history.
 #
 # Each include uses the same soft-fail pattern as the other admin
 # routers so a stale checkout cannot block the rest of the admin
@@ -1468,10 +1464,10 @@ except Exception as _import_exc:  # noqa: BLE001
 # Hot-reload signalling is wired through two optional ``app.state`` slots:
 #
 # * ``departments_reload_publisher`` - async callable
-#   ``(dept_id, action) -> None`` used when a pub/sub channel is
-#   available (Redis, Postgres LISTEN/NOTIFY, etc).
+# ``(dept_id, action) -> None`` used when a pub/sub channel is
+# available (Redis, Postgres LISTEN/NOTIFY, etc).
 # * Fallback: ``POST {automation_service_url}/admin/departments/_reload``
-#   through the AdminProxy's HTTP client when the publisher is missing.
+# through the AdminProxy's HTTP client when the publisher is missing.
 #
 # Both paths are best-effort - when neither is wired the next 30s config
 # poll loop in each consumer picks up the new dept anyway. The slot
@@ -1533,16 +1529,16 @@ if not globals().get("_ssh_runners_routers_mounted_early", False):
 # ``app.state`` slots:
 #
 # * ``capability_prober`` - :class:`SupportsCapabilityProber` adapter
-#   that runs the actual ``/myself`` / ``docker info`` / etc.
-#   probes. Production wires this against the foundation MCP / SSH
-#   clients; until that lands the slot stays ``None`` and the
-#   single-probe endpoint surfaces ``503`` with
-#   ``reason="prober_unavailable"``. The matrix endpoint stays
-#   answerable regardless - it only reads from the cache.
+# that runs the actual ``/myself`` / ``docker info`` / etc.
+# probes. Production wires this against the foundation MCP / SSH
+# clients; until that lands the slot stays ``None`` and the
+# single-probe endpoint surfaces ``503`` with
+# ``reason="prober_unavailable"``. The matrix endpoint stays
+# answerable regardless - it only reads from the cache.
 # * ``capability_probe_store`` - :class:`SupportsCapabilityProbeStore`
-#   adapter backed by ``shared.capability_probes`` (capability persistence wiring). When
-#   ``None`` the router auto-installs an in-memory store so the
-#   matrix endpoint always has a cache to read from.
+# adapter backed by ``shared.capability_probes`` (capability persistence wiring). When
+# ``None`` the router auto-installs an in-memory store so the
+# matrix endpoint always has a cache to read from.
 app.state.capability_prober = None
 app.state.capability_probe_store = None
 try:  # pragma: no cover - exercised by unit tests
@@ -1642,14 +1638,14 @@ except Exception as _import_exc:  # noqa: BLE001
 # production wires real backends and tests inject fakes:
 #
 # * ``prompts_llm`` - :class:`SupportsLLMClient` for the sandbox call.
-#   When ``None`` ``POST .../sandbox`` returns ``HTTP 503`` with
-#   ``reason="prompts_llm_unavailable"``.
+# When ``None`` ``POST .../sandbox`` returns ``HTTP 503`` with
+# ``reason="prompts_llm_unavailable"``.
 # * ``prompts_committer`` - :class:`SupportsPromptCommitter` for the
-#   git branch + push. When ``None`` ``POST .../commit`` returns 503
-#   with ``reason="prompts_committer_unavailable"``.
+# git branch + push. When ``None`` ``POST .../commit`` returns 503
+# with ``reason="prompts_committer_unavailable"``.
 # * ``prompts_bitbucket`` - :class:`SupportsBitbucketClient` for the
-#   draft PR. When ``None`` ``POST .../commit`` returns 503 with
-#   ``reason="prompts_bitbucket_unavailable"``.
+# draft PR. When ``None`` ``POST .../commit`` returns 503 with
+# ``reason="prompts_bitbucket_unavailable"``.
 #
 # The version row insert into ``shared.prompt_versions`` reads through
 # ``app.state.pg_pool`` (already wired earlier in the lifespan); the

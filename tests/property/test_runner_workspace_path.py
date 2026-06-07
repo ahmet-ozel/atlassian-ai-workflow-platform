@@ -496,7 +496,7 @@ def test_default_when_neither_env_set(
 
 
 # ---------------------------------------------------------------------------
-# End-to-end Settings → build_workspace_path round-trip
+# End-to-end Settings  build_workspace_path round-trip
 # ---------------------------------------------------------------------------
 
 

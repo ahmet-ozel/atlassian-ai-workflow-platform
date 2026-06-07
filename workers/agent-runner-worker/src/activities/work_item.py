@@ -14,12 +14,12 @@ rows and exposes:
 
 Allowed transitions:
 
-    pending  → running
-    pending  → failed
-    running  → completed
-    running  → failed
+    pending   running
+    pending   failed
+    running   completed
+    running   failed
 
-Self-loops (``s → s`` for every status) are also accepted as idempotent
+Self-loops (``s  s`` for every status) are also accepted as idempotent
 no-ops. Every other ordered pair is rejected.
 
 """

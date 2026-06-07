@@ -3,7 +3,7 @@
 These tests cover the readiness probe outcomes:
 
 * PostgreSQL probe executes SELECT 1.
-* Each probe has 3s timeout; timeout → unreachable.
+* Each probe has 3s timeout; timeout  unreachable.
 * Any unreachable dependency returns 503 with failed_dependencies list.
 * All reachable dependencies return 200 with {"status": "ready"}.
 """
@@ -83,7 +83,7 @@ class TestProbePostgres:
     """Tests for the PostgreSQL probe."""
 
     def test_successful_probe(self) -> None:
-        """SELECT 1 succeeds → reachable."""
+        """SELECT 1 succeeds  reachable."""
         mock_conn = AsyncMock()
         mock_conn.fetchval = AsyncMock(return_value=1)
         mock_conn.close = AsyncMock()
@@ -100,7 +100,7 @@ class TestProbePostgres:
         assert result.latency_ms >= 0
 
     def test_connection_timeout(self) -> None:
-        """Timeout → unreachable."""
+        """Timeout  unreachable."""
 
         async def slow_connect(*args, **kwargs):
             await asyncio.sleep(10)
@@ -113,7 +113,7 @@ class TestProbePostgres:
         assert result.latency_ms is None
 
     def test_connection_refused(self) -> None:
-        """Connection error → unreachable."""
+        """Connection error  unreachable."""
 
         async def fail_connect(*args, **kwargs):
             raise OSError("Connection refused")
@@ -135,7 +135,7 @@ class TestProbeRedis:
     """Tests for the Redis probe."""
 
     def test_successful_ping(self) -> None:
-        """PING → PONG means reachable."""
+        """PING  PONG means reachable."""
 
         async def _run():
             # Create a mock server that responds with +PONG
@@ -163,7 +163,7 @@ class TestProbeRedis:
         asyncio.run(_run())
 
     def test_connection_refused(self) -> None:
-        """Connection refused → unreachable."""
+        """Connection refused  unreachable."""
         # Use a port that's almost certainly not listening
         result = asyncio.run(probe_redis("redis://127.0.0.1:1"))
 
@@ -181,7 +181,7 @@ class TestProbeTemporal:
     """Tests for the Temporal probe."""
 
     def test_successful_connect(self) -> None:
-        """gRPC connect succeeds → reachable."""
+        """gRPC connect succeeds  reachable."""
 
         async def mock_connect(host, **kwargs):
             return MagicMock()
@@ -194,7 +194,7 @@ class TestProbeTemporal:
         assert result.latency_ms is not None
 
     def test_connect_timeout(self) -> None:
-        """Timeout → unreachable."""
+        """Timeout  unreachable."""
 
         async def slow_connect(host, **kwargs):
             await asyncio.sleep(10)
@@ -207,7 +207,7 @@ class TestProbeTemporal:
         assert result.latency_ms is None
 
     def test_connect_error(self) -> None:
-        """Connection error → unreachable."""
+        """Connection error  unreachable."""
 
         async def fail_connect(host, **kwargs):
             raise OSError("Connection refused")
@@ -229,7 +229,7 @@ class TestProbeVault:
     """Tests for the Vault probe."""
 
     def test_successful_health_check(self) -> None:
-        """Vault responds with HTTP 200 → reachable."""
+        """Vault responds with HTTP 200  reachable."""
         mock_response = MagicMock()
         mock_response.status_code = 200
 
@@ -247,7 +247,7 @@ class TestProbeVault:
         assert result.latency_ms is not None
 
     def test_vault_sealed_still_reachable(self) -> None:
-        """Vault responds with HTTP 503 (sealed) → still reachable."""
+        """Vault responds with HTTP 503 (sealed)  still reachable."""
         mock_response = MagicMock()
         mock_response.status_code = 503
 
@@ -264,7 +264,7 @@ class TestProbeVault:
         assert result.reachable is True
 
     def test_connection_timeout(self) -> None:
-        """Timeout → unreachable."""
+        """Timeout  unreachable."""
         import httpx as httpx_mod
 
         with patch("httpx.AsyncClient") as MockClient:
@@ -290,7 +290,7 @@ class TestCheckReadiness:
     """Tests for the readiness aggregation function."""
 
     def test_all_dependencies_reachable(self) -> None:
-        """All reachable → ready."""
+        """All reachable  ready."""
 
         async def probe_ok_1():
             return DependencyProbeResult(name="postgres", reachable=True, latency_ms=1.5)
@@ -304,7 +304,7 @@ class TestCheckReadiness:
         assert details == {"status": "ready"}
 
     def test_one_dependency_unreachable(self) -> None:
-        """One unreachable → not_ready with failed list."""
+        """One unreachable  not_ready with failed list."""
 
         async def probe_ok():
             return DependencyProbeResult(name="postgres", reachable=True, latency_ms=1.5)
@@ -320,7 +320,7 @@ class TestCheckReadiness:
         assert "postgres" not in details["failed_dependencies"]
 
     def test_multiple_dependencies_unreachable(self) -> None:
-        """Multiple failures → all listed in failed_dependencies."""
+        """Multiple failures  all listed in failed_dependencies."""
 
         async def probe_fail_pg():
             return DependencyProbeResult(name="postgres", reachable=False, latency_ms=None)
@@ -340,7 +340,7 @@ class TestCheckReadiness:
         assert set(details["failed_dependencies"]) == {"postgres", "redis"}
 
     def test_empty_dependencies_is_ready(self) -> None:
-        """No dependencies configured → ready."""
+        """No dependencies configured  ready."""
         all_ready, details = asyncio.run(check_readiness([]))
 
         assert all_ready is True
@@ -402,7 +402,7 @@ class TestCredentialGuardIntegration:
     def test_healthz_503_when_credential_blocked(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """/healthz → 503 when credential_blocked is True."""
+        """/healthz  503 when credential_blocked is True."""
         from starlette.testclient import TestClient
         import src.main as main_module
         from src.main import app
@@ -427,7 +427,7 @@ class TestCredentialGuardIntegration:
         assert body["reason"] == "insecure_credentials"
 
     def test_healthz_200_when_credential_not_blocked(self) -> None:
-        """Normal state: /healthz → 200 when credential_blocked is False."""
+        """Normal state: /healthz  200 when credential_blocked is False."""
         from starlette.testclient import TestClient
         from src.main import app
 
@@ -456,7 +456,7 @@ class TestCredentialGuardIntegration:
         assert response.json()["status"] == "ready"
 
     def test_readyz_503_when_dependency_fails_and_not_blocked(self) -> None:
-        """When credential guard is not blocking but a dependency fails, /readyz → 503."""
+        """When credential guard is not blocking but a dependency fails, /readyz  503."""
         from starlette.testclient import TestClient
         from src.main import app
         from src.lifecycle import readiness as readiness_mod

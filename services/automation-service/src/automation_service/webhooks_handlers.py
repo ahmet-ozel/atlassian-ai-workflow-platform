@@ -11,11 +11,11 @@ The chain is the canonical four-step sequence:
    (per-department secret at ``vault:webhooks/jira/<dept_id>``;
    1h rotation overlap window).
 
-   *  ``dept_id`` is resolved from the payload's ``issue.fields.project.key``
+   * ``dept_id`` is resolved from the payload's ``issue.fields.project.key``
       via an injected :class:`DeptResolver`. If the lookup yields
       ``None``, the handler returns **HTTP 400** with audit
       ``webhook_dept_unresolved``.
-   *  If HMAC fails → **HTTP 401** ``unauthorized`` (audit
+   * If HMAC fails  **HTTP 401** ``unauthorized`` (audit
       ``webhook_hmac_failed``).
 
 2. **Loop guard**: if the event ``actor.account_id`` matches *any*
@@ -117,7 +117,7 @@ _TASK_QUEUE = task_queue_for(_WORKFLOW_NAME)
 #: ``{missing}`` placeholder is filled with the comma-separated set of
 #: missing capabilities.
 _CAPABILITY_DENIED_COMMENT = (
-    "🤖 Otomasyon başlatılamadı: bu departman için eksik yetenek(ler): {missing}. "
+    " Otomasyon başlatılamadı: bu departman için eksik yetenek(ler): {missing}. "
     "Lütfen sistem yöneticinize başvurun."
 )
 
@@ -130,7 +130,7 @@ _AUDIT_ACTOR_ID = "automation-service.webhook"
 _EVENT_ISSUE_CREATED = "jira:issue_created"
 _EVENT_COMMENT_CREATED = "jira:comment_created"
 
-#: A frozen mapping from URL path stem → expected Atlassian event
+#: A frozen mapping from URL path stem  expected Atlassian event
 #: type. Drives the matching check in the per-route handlers.
 _PATH_TO_EVENT: Mapping[str, str] = MappingProxyType(
     {
@@ -162,7 +162,7 @@ class BotRegistryEntry:
 
 @runtime_checkable
 class DeptResolver(Protocol):
-    """Resolve a Jira ``project_key`` → :class:`SupportsDepartment`.
+    """Resolve a Jira ``project_key``  :class:`SupportsDepartment`.
 
     The runtime implementation reads from the ``automation.departments``
     Postgres table joined with ``automation.department_project_keys``;

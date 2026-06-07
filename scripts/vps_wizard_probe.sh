@@ -4,20 +4,20 @@
 # =============================================================================
 # Runs on VPS_Host. Setup wizard probe checks:
 #
-#   1. Prompt operator to open admin-dashboard and trigger wizard steps  (R8.1)
-#   2. Poll setup_wizard_state every 30s until all steps completed       (R8.2)
-#   3. Assert mcp_server healthz returns 200 when step completes         (R8.3)
-#   4. Prompt operator for add_first_department bot probe                (R8.4)
-#   5. Assert all 7 rows have status='completed'                         (R8.5)
-#   6. Capture service logs on failure/timeout, emit Open_Issue           (R8.6)
-#   7. Emit evidence to /tmp/08-wizard.txt                               (R8.7)
+# 1. Prompt operator to open admin-dashboard and trigger wizard steps  (R8.1)
+# 2. Poll setup_wizard_state every 30s until all steps completed       (R8.2)
+# 3. Assert mcp_server healthz returns 200 when step completes         (R8.3)
+# 4. Prompt operator for add_first_department bot probe                (R8.4)
+# 5. Assert all 7 rows have status='completed'                         (R8.5)
+# 6. Capture service logs on failure/timeout, emit Open_Issue           (R8.6)
+# 7. Emit evidence to /tmp/08-wizard.txt                               (R8.7)
 #
 # Usage:
-#   ./vps_wizard_probe.sh
+# ./vps_wizard_probe.sh
 #
 # Prerequisites:
-#   - Boot_Bundle healthy (R7 passed)
-#   - Operator has SSH tunnel: ssh -L 3000:localhost:3000 root@91.99.149.163
+# - Boot_Bundle healthy (R7 passed)
+# - Operator has SSH tunnel: ssh -L 3000:localhost:3000 root@91.99.149.163
 # =============================================================================
 set -euo pipefail
 
@@ -126,7 +126,7 @@ echo ""
 echo "  2. Open in browser: http://localhost:3000"
 echo ""
 echo "  3. Trigger the 7 Setup Wizard steps IN ORDER:"
-echo "     vault → postgresql → temporal → mcp_server → workers → services → add_first_department"
+echo "     vault  postgresql  temporal  mcp_server  workers  services  add_first_department"
 echo ""
 echo "  4. For 'add_first_department' step, use these values:"
 echo "     - dept_id:    johni-test"

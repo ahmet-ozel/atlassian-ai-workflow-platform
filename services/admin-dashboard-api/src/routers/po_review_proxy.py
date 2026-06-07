@@ -1,4 +1,4 @@
-﻿"""``po_review_proxy`` - admin-dashboard-api → automation-service shim.
+﻿"""``po_review_proxy`` - admin-dashboard-api  automation-service shim.
 
 The PO Review Inbox and Orphan Branches surfaces moved from the
 Streamlit end-user app into the admin dashboard (admin-only). The

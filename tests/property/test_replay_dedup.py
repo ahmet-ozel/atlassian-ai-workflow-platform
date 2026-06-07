@@ -28,7 +28,7 @@ HTTP-layer invariants tested:
  3. ``signalWithStart`` HTTP 503 rollback path: ``release`` after a
       successful ``claim`` removes the row, so the next ``claim``
       with the same id returns True again (retry-safe). Combined
-      ``claim → release → claim → True`` round-trip.
+      ``claim  release  claim  True`` round-trip.
  4. Composite invariant: dispatching
       the same payload N times yields exactly one Temporal
       ``signalWithStart`` execution because the replay-dedup gate
@@ -300,15 +300,15 @@ async def test_check_and_insert_first_true_then_false(
     pool = FakePool()
 
     for h in hashes:
-        # First insert → True
+        # First insert  True
         result = await check_and_insert(pool, h, ttl)
         assert result is True, f"First insert of {h!r} should return True"
 
-        # Second insert → False (duplicate)
+        # Second insert  False (duplicate)
         result = await check_and_insert(pool, h, ttl)
         assert result is False, f"Second insert of {h!r} should return False"
 
-        # Third insert → still False (idempotent)
+        # Third insert  still False (idempotent)
         result = await check_and_insert(pool, h, ttl)
         assert result is False, f"Third insert of {h!r} should return False"
 
@@ -535,7 +535,7 @@ _claim_inputs = st.tuples(_delivery_ids, _providers)
 class _ProcessedEventsFakeConnection:
     """asyncpg-shaped connection fake honouring the new PK + CHECK constraints.
 
-    The store is a plain ``dict[str, str]`` mapping ``delivery_id`` →
+    The store is a plain ``dict[str, str]`` mapping ``delivery_id``
     ``provider``, which is the minimal projection of the
     ``automation.processed_events`` row needed to validate the
     processed-events invariants. ``received_at`` is intentionally not
@@ -565,7 +565,7 @@ class _ProcessedEventsFakeConnection:
                     f"chk_processed_events_provider violated: {provider!r}"
                 )
             if delivery_id in self._store:
-                # ON CONFLICT DO NOTHING → no row returned.
+                # ON CONFLICT DO NOTHING  no row returned.
                 return None
             self._store[delivery_id] = provider
             return {"delivery_id": delivery_id}
@@ -655,14 +655,14 @@ async def test_claim_first_true_then_false_exactly_one_row(
     pool = _ProcessedEventsFakePool()
     repo = ProcessedEventsRepo(pool)
 
-    # First claim → True (inserted)
+    # First claim  True (inserted)
     first = await repo.claim(delivery_id, provider)
     assert first is True, "first claim must return True"
     assert pool.store == {delivery_id: provider}, (
         "first claim must leave exactly one row in the store"
     )
 
-    # Replays → False (idempotent no-op)
+    # Replays  False (idempotent no-op)
     for _ in range(extra_attempts):
         replay = await repo.claim(delivery_id, provider)
         assert replay is False, "replay claim must return False"
@@ -762,7 +762,7 @@ async def test_is_processed_true_after_claim_and_stable(
 
 
 # ---------------------------------------------------------------------------
-# signalWithStart 503 rollback - claim → release → claim → True
+# signalWithStart 503 rollback - claim  release  claim  True
 # ---------------------------------------------------------------------------
 
 
@@ -796,13 +796,13 @@ async def test_claim_release_claim_round_trip_after_503(
     repo = ProcessedEventsRepo(pool)
 
     for cycle in range(rollback_cycles):
-        # claim → True (fresh row inserted)
+        # claim  True (fresh row inserted)
         assert await repo.claim(delivery_id, provider) is True, (
             f"cycle {cycle}: post-rollback claim must return True"
         )
         assert await repo.is_processed(delivery_id) is True
 
-        # release → True (row removed)
+        # release  True (row removed)
         assert await repo.release(delivery_id) is True, (
             f"cycle {cycle}: release after claim must return True"
         )
@@ -840,7 +840,7 @@ async def test_release_without_prior_claim_is_noop(delivery_id: str) -> None:
     pool = _ProcessedEventsFakePool()
     repo = ProcessedEventsRepo(pool)
 
-    # No claim → release is a no-op.
+    # No claim  release is a no-op.
     assert await repo.release(delivery_id) is False
     assert pool.store == {}
 
@@ -849,7 +849,7 @@ async def test_release_without_prior_claim_is_noop(delivery_id: str) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Composite invariant - N webhook replays → 1 dispatch
+# Composite invariant - N webhook replays  1 dispatch
 # ---------------------------------------------------------------------------
 
 

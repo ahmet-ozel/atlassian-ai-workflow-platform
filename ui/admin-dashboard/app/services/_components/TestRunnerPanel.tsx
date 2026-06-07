@@ -2,18 +2,15 @@
 
 /**
  * TestRunnerPanel - Real-time SSE test runner with terminal-like output.
- *
- * Frontend component for
+ * * Frontend component for
  * ``POST /admin/services/{service_name}/test?stream=true``.
- *
- * Features:
+ * * Features:
  * - SSE streaming via fetch + ReadableStream (POST not supported by EventSource)
  * - Real-time line-by-line rendering in a scrollable terminal panel
  * - Cancel button with AbortController to abort the SSE stream
  * - PASSED (green) / FAILED (red) badge on completion
  * - "Connection lost" warning with reconnect option on unexpected disconnect
- *
- */
+ * */
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getAdminApiBaseUrl, getAdminAuthHeaders } from "@/lib/api-client";
@@ -314,7 +311,7 @@ export default function TestRunnerPanel({
         {/* Connection lost warning */}
         {status === "disconnected" && (
           <div style={disconnectWarningStyle} role="alert">
-            <span>⚠️ Connection lost</span>
+            <span> Connection lost</span>
             <button
               type="button"
               onClick={handleReconnect}

@@ -2,12 +2,10 @@
 
 /**
  * Servis Kataloğu sayfası.
- *
- * Tablo halinde Service_Manifest'ten dönen tüm Managed_Service satırlarını
+ * * Tablo halinde Service_Manifest'ten dönen tüm Managed_Service satırlarını
  * gösterir. Polling intervalinde state sütununu otomatik tazeler; manuel
  * "Refresh" düğmesi de sunar.
- *
- * Eylem düğmeleri (`Start`, `Stop`, `Restart`, `View Logs`, `Run Tests`)
+ * * Eylem düğmeleri (`Start`, `Stop`, `Restart`, `View Logs`, `Run Tests`)
  * mevcut state'e göre `disabled` durumunda render edilir; gizlenmez
  * `Start` modal `StartFormModal` ile,
  * `View Logs` `LogsViewer` ile, `Run Tests` `TestRunnerPanel` ile
@@ -121,7 +119,7 @@ function FlagGatedBadge({ flags }: { flags: string[] }) {
       title={`Bu servis aşağıdaki feature flag'lere bağlıdır: ${flags.join(", ")}`}
       style={{ marginLeft: 6 }}
     >
-      🏳️ {flags.join(", ")}
+       {flags.join(", ")}
     </span>
   );
 }
@@ -216,7 +214,7 @@ function useServiceCatalog(pollIntervalSec: number) {
         const text = await res.text().catch(() => "");
         setState({
           kind: "error",
-          message: `GET /admin/services → HTTP ${res.status}${
+          message: `GET /admin/services  HTTP ${res.status}${
             text ? `: ${text.slice(0, 200)}` : ""
           }`,
         });
@@ -264,7 +262,7 @@ async function invokeRestart(serviceName: string): Promise<void> {
   if (!res.ok && res.status !== 202) {
     const text = await res.text().catch(() => "");
     throw new Error(
-      `restart ${serviceName} → HTTP ${res.status}${
+      `restart ${serviceName}  HTTP ${res.status}${
         text ? `: ${text.slice(0, 200)}` : ""
       }`,
     );

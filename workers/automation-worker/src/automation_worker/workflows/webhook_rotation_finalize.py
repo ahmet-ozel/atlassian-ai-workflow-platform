@@ -14,11 +14,11 @@ closed even if the operator forgets to click "Finalize" in the UI.
 Lifecycle (one cron tick)::
 
     1. ``list_webhook_entries_with_overlap()``
-       → list of ``WebhookOverlapEntry`` (dept_id, provider, overlap_until)
+        list of ``WebhookOverlapEntry`` (dept_id, provider, overlap_until)
     2. For each entry where ``overlap_until <= workflow.now()``:
          ``finalize_webhook_rotation(dept_id, provider)``
-         → clears ``secret_previous`` slot in Vault
-         → writes ``webhook_secret_auto_finalized`` audit event
+          clears ``secret_previous`` slot in Vault
+          writes ``webhook_secret_auto_finalized`` audit event
     3. return ``WebhookRotationFinalizeReport(scanned, finalized, errors)``
 
     On any exception inside the finalize activity for a single entry:
@@ -238,7 +238,7 @@ class WebhookRotationFinalizeWorkflow:
         """Execute one tick of the webhook rotation finalize cron."""
 
         # 1. List all entries that currently have an active overlap
-        #    window (non-null secret_previous slot).
+        # window (non-null secret_previous slot).
         entries: list[WebhookOverlapEntry] = await workflow.execute_activity(
             _ACT_LIST_WEBHOOK_ENTRIES_WITH_OVERLAP,
             start_to_close_timeout=_LIST_TIMEOUT,

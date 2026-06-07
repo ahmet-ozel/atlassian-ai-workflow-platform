@@ -2,13 +2,11 @@
 
 /**
  * MCP traffic page.
- *
- * Surfaces the `GET /api/v1/mcp/traffic` snapshot from the atlassian-mcp
+ * * Surfaces the `GET /api/v1/mcp/traffic` snapshot from the atlassian-mcp
  * Prometheus exposition: per-client_source / per-tool / per-status
  * request counters. Operators use it to answer "hangi client'tan ne
  * kadar çağrı geldi, hangi tool ne sıklıkta, hangisinde fail oldu".
- *
- * The page offers three independent filters (client_source, tool,
+ * * The page offers three independent filters (client_source, tool,
  * status) and auto-refreshes every 60 seconds. The MCP counters are
  * cumulative since the MCP process started (documented snapshot
  * framing - see mcp_traffic.py module docstring).
@@ -210,7 +208,7 @@ export default function McpTrafficPage(): JSX.Element {
           </div>
           <div className="page-header__actions">
             <button className="btn" onClick={() => load(filters)} disabled={loading}>
-              {loading ? <span className="spinner" /> : "🔄"} Yenile
+              {loading ? <span className="spinner" /> : ""} Yenile
             </button>
           </div>
         </div>
@@ -224,7 +222,7 @@ export default function McpTrafficPage(): JSX.Element {
 
       {error && (
         <div className="banner banner--danger" role="alert">
-          <span className="banner__icon">⚠️</span>
+          <span className="banner__icon"></span>
           <div className="banner__body">{error}</div>
         </div>
       )}
@@ -258,7 +256,7 @@ export default function McpTrafficPage(): JSX.Element {
                 className="btn btn--sm btn--ghost"
                 onClick={() => setFilters(EMPTY_FILTERS)}
               >
-                ✕ Filtreleri temizle
+                 Filtreleri temizle
               </button>
             )}
           </div>
@@ -495,7 +493,7 @@ function DetailTable({
           </table>
         ) : (
           <div className="empty" style={{ padding: "2rem" }}>
-            <div className="empty__icon">📭</div>
+            <div className="empty__icon"></div>
             <div className="empty__title">Eşleşen MCP trafiği yok</div>
           </div>
         )}

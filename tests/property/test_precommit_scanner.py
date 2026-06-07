@@ -20,12 +20,12 @@ For any hypothesis-generated diff string ``d`` and pattern selection
 ``p`` drawn from the four documented secret families, the pure
 :func:`scan_diff` core MUST satisfy:
 
-(P1) **Clean diff → pass.** A diff drawn from the *clean* generator
+(P1) **Clean diff  pass.** A diff drawn from the *clean* generator
      (random ASCII / unified-diff text guaranteed to contain none of
      the four documented secret patterns) returns
      ``ScanResult(decision="pass", matched_patterns=())``.
 
-(P2) **Dirty diff → block + matched name.** A diff drawn from the
+(P2) **Dirty diff  block + matched name.** A diff drawn from the
      *dirty* generator (clean text with one or more secret literals
      spliced in) returns ``decision == "block"`` and the corresponding
      pattern name(s) appear in ``matched_patterns``. The "block
@@ -45,7 +45,7 @@ Strategy design
 
 The clean-diff generator emits printable ASCII without any of the
 secret literal *fragments* (``AKIA``, ``ATATT3x``, ``Bearer``,
-``password = "``). This makes the *clean → pass* assertion robust
+``password = "``). This makes the *clean  pass* assertion robust
 against accidental collisions in random text. The dirty-diff
 generator picks 1..N pattern names from the four-family table and
 splices a synthesised literal of each into a random clean carrier
@@ -148,7 +148,7 @@ assert set(_PATTERN_NAMES).issubset(SECRET_PATTERNS.keys()), (
 
 #: Substrings that, when present in otherwise random text, would
 #: accidentally fire one of the production regexes. The clean-diff
-#: generator filters them out so the *clean → pass* assertion never
+#: generator filters them out so the *clean  pass* assertion never
 #: depends on luck. ``AKIA`` is the AWS prefix, ``ATATT3x`` is the
 #: Atlassian token prefix, ``Bearer`` triggers the bearer-header
 #: regex when followed by token chars, and ``password`` (case
@@ -254,7 +254,7 @@ _generic_password_literal: st.SearchStrategy[str] = st.text(
 ).map(lambda body: f'password = "{body}"')
 
 
-#: Mapping from pattern name → literal generator. The dirty-diff
+#: Mapping from pattern name  literal generator. The dirty-diff
 #: composite below picks names from this table and splices the
 #: matching literal into a clean carrier.
 _LITERAL_BY_NAME: dict[str, st.SearchStrategy[str]] = {

@@ -19,7 +19,7 @@ The wrapper enforces three platform invariants:
    in the allowlist or when the underlying service replies with HTTP
    403, the call **returns** an :class:`EgressBlocked` outcome instead
    of raising. The caller (``AgentRunnerWorkflow``) translates that
-   outcome into a Jira-comment ("``🤖 {url} domain'i araştırma için
+   outcome into a Jira-comment ("`` {url} domain'i araştırma için
    izinli değil; admin'den eklenmesini isteyin.``") and continues -
    the workflow does **not** fail.
 3. **Output size cap with MinIO offload**. When a
@@ -172,7 +172,7 @@ class FirecrawlSuccess:
             ``firecrawl-search:{query}`` token so the field is always
             populated.
         body: The decoded response body. Shape matches the firecrawl
-            service contract (search → ``list[dict]``, scrape →
+            service contract (search  ``list[dict]``, scrape
             ``dict``); the wrapper does not reshape it.
         bytes_len: Byte length of the encoded response - recorded so
             audit logs can reason about output size budgets without
@@ -469,7 +469,7 @@ class FirecrawlClient:
         synthetic_url = f"firecrawl-search:{query}"
         response = await self._transport("search", {"query": query})
 
-        # Upstream 403 → graceful EgressBlocked.
+        # Upstream 403  graceful EgressBlocked.
         if response.status == 403:
             return EgressBlocked(
                 url=synthetic_url,

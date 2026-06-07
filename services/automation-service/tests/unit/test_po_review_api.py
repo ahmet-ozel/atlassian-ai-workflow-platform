@@ -127,7 +127,7 @@ class _FakePullRequestScanner:
 
 @dataclass
 class _FakeDiffSummaryCache:
-    """In-memory cache; records every (hash → summary) hit + miss."""
+    """In-memory cache; records every (hash  summary) hit + miss."""
 
     summaries: dict[str, str] = field(default_factory=dict)
     get_calls: list[str] = field(default_factory=list)
@@ -410,9 +410,9 @@ class TestOrphanBranchesShape:
         assert resp.status_code == 200, resp.text
         body = resp.json()
         names = [b["name"] for b in body["branches"]]
-        # ai/PAY-1 has a PR → not orphan.
-        # feature/manual is non-bot → not orphan.
-        # ai/PAY-2 + ai/PAY-3 are bot-authored, no PR → orphan.
+        # ai/PAY-1 has a PR  not orphan.
+        # feature/manual is non-bot  not orphan.
+        # ai/PAY-2 + ai/PAY-3 are bot-authored, no PR  orphan.
         assert sorted(names) == ["ai/PAY-2", "ai/PAY-3"]
 
     def test_orphan_list_sorted_oldest_first_by_last_commit(

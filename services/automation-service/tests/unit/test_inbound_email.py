@@ -394,7 +394,7 @@ async def test_poll_once_dept_unresolved_emits_audit_no_workflow() -> None:
     sink: _RecordingAuditWriter = audit_logger._writer  # type: ignore[assignment]
     workflow_client = _FakeWorkflowClient()
     mailbox = _FakeMailbox(messages=[("u1", _email_bytes())])
-    # No mapping configured → dept_unresolved.
+    # No mapping configured  dept_unresolved.
     poller = _make_poller(
         mailbox=mailbox,
         audit_logger=audit_logger,
@@ -425,7 +425,7 @@ async def test_poll_once_idempotent_via_already_started() -> None:
 
     started = await poller.poll_once()
 
-    # ``was_existing`` is True → ``started`` counter does not increment.
+    # ``was_existing`` is True  ``started`` counter does not increment.
     assert started == 0
     actions = [e.action for e in sink.events]
     assert "inbound_workflow_already_started" in actions

@@ -13,7 +13,7 @@ are covered:
   ``update_repo_mappings`` exactly once with the new mapping list
   and emits a single ``repo_mapping_synced`` audit row carrying the
   diff in the payload.
-* **Non-admin → 403** - an authenticated viewer (or any non-admin
+* **Non-admin  403** - an authenticated viewer (or any non-admin
   role) receives HTTP 403 with an ``rbac_denied`` audit row; the
   scanner and the registry writer are **never** called.
 
@@ -384,7 +384,7 @@ class TestApplyModeMutatesAndAudits:
 
 
 # ---------------------------------------------------------------------------
-# Tests - RBAC: non-admin → 403
+# Tests - RBAC: non-admin  403
 # ---------------------------------------------------------------------------
 
 

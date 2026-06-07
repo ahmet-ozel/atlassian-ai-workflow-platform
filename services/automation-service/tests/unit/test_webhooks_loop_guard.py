@@ -4,7 +4,7 @@ Tests cover:
 - R2.1: Bot account detection via department_bot_identity
 - R2.2: DROP + audit on bot actor
 - R2.3: Approval Gate exemption (bot can't self-approve)
-- R2.4: Storm detection (3+ drops in 60s → 5min block + notification)
+- R2.4: Storm detection (3+ drops in 60s  5min block + notification)
 - R2.5: Pipeline ordering (Loop Guard runs after Event_Dedup, before Dispatcher)
 """
 
@@ -352,7 +352,7 @@ class TestApprovalGateExemption:
 
 
 class TestStormDetection:
-    """R2.4: 3+ drops in 60s → 5min block + admin notification."""
+    """R2.4: 3+ drops in 60s  5min block + admin notification."""
 
     @pytest.mark.asyncio
     async def test_storm_triggers_block_and_notification(self, make_guard, fixed_clock):
@@ -372,10 +372,10 @@ class TestStormDetection:
                 nonlocal call_count
                 call_count += 1
                 self.executed.append((query, args))
-                # First call: _is_blocked → None
+                # First call: _is_blocked  None
                 if "loop_guard_blocks" in query:
                     return None
-                # Second call: _is_storm → count = 3
+                # Second call: _is_storm  count = 3
                 if "COUNT" in query:
                     return {"drop_count": 3}
                 return None

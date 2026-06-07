@@ -7,10 +7,10 @@ is configured.
 
 Flow:
 1. Client sends ``POST /auth/bootstrap`` with ``{"token": "<token>"}``.
-2. If OIDC is already configured → 410 Gone (bootstrap disabled).
-3. If the token format is invalid → 400 Bad Request.
-4. If the token is valid → create admin user, invalidate token → 201.
-5. If the token is expired or already consumed → 401 Unauthorized.
+2. If OIDC is already configured  410 Gone (bootstrap disabled).
+3. If the token format is invalid  400 Bad Request.
+4. If the token is valid  create admin user, invalidate token  201.
+5. If the token is expired or already consumed  401 Unauthorized.
 
 Security considerations:
 - The endpoint is rate-limited by the global rate limiter middleware.

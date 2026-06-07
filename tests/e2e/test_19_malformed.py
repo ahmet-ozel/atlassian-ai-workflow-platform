@@ -2,9 +2,9 @@
 Test 19: Malformed payload validation (R19).
 
 Validates that the MCP gateway handles malformed input gracefully:
-- Malformed JSON → HTTP 400 with parse error
-- >1 MiB payload → HTTP 413 or 400
-- Valid JSON with invalid fields → HTTP 400/422 with field errors
+- Malformed JSON  HTTP 400 with parse error
+- >1 MiB payload  HTTP 413 or 400
+- Valid JSON with invalid fields  HTTP 400/422 with field errors
 - MCP does NOT crash, no stack traces in response
 
 Requirements: R19.1, R19.2, R19.3, R19.4, R19.5
@@ -119,7 +119,7 @@ class TestMalformedJSON:
     """R19.1: Malformed JSON returns HTTP 400 with parse error."""
 
     def test_missing_closing_brace(self):
-        """R19.1: Malformed JSON (missing closing brace) → HTTP 400.
+        """R19.1: Malformed JSON (missing closing brace)  HTTP 400.
 
         WHEN malformed JSON is sent to the MCP endpoint, THE system
         SHALL return HTTP 400 with a structured error message containing
@@ -170,7 +170,7 @@ class TestOversizedPayload:
     """R19.2: Oversized payload (>1 MiB) returns HTTP 413 or 400."""
 
     def test_oversized_payload_rejected(self):
-        """R19.2: Payload >1 MiB → HTTP 413 or 400.
+        """R19.2: Payload >1 MiB  HTTP 413 or 400.
 
         WHEN a payload exceeding 1 MiB is sent to the MCP endpoint,
         THE system SHALL return HTTP 413 or HTTP 400 with a size-limit error.
@@ -212,7 +212,7 @@ class TestInvalidFields:
     """R19.3: Valid JSON with invalid fields returns HTTP 400/422."""
 
     def test_empty_project_key(self):
-        """R19.3: Valid JSON with empty project key → HTTP 400/422.
+        """R19.3: Valid JSON with empty project key  HTTP 400/422.
 
         WHEN valid JSON with invalid field values (empty project key)
         is sent, THE system SHALL return HTTP 400 or 422 with field-level
@@ -241,7 +241,7 @@ class TestInvalidFields:
         )
 
     def test_null_summary_field(self):
-        """R19.3: Valid JSON with null summary → HTTP 400/422."""
+        """R19.3: Valid JSON with null summary  HTTP 400/422."""
         null_field_payload = (
             '{"jsonrpc": "2.0", "method": "tools/call", '
             '"params": {"name": "jira_create_issue", '

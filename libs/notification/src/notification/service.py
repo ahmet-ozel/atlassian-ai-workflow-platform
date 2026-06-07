@@ -249,8 +249,7 @@ class NotificationService:
 
         # ------------------------------------------------------------------
         # 1. Decide whether this call notifies at all (success-gated).
-        #
-        # The failure path bypasses this gate: even when
+        # # The failure path bypasses this gate: even when
         # ``dept.notify_on_success == False`` we MUST notify on
         # ``status == "failed"``.
         # ------------------------------------------------------------------
@@ -260,9 +259,9 @@ class NotificationService:
 
         # ------------------------------------------------------------------
         # 2. Render the body once. The same body lands on every channel so
-        #    we render before the adapter calls; this also keeps the
-        #    body_hash field stable across channels for forensic
-        #    correlation.
+        # we render before the adapter calls; this also keeps the
+        # body_hash field stable across channels for forensic
+        # correlation.
         # ------------------------------------------------------------------
         template_name = _FAILURE_TEMPLATE if is_failure else _SUCCESS_TEMPLATE
         try:
@@ -279,11 +278,11 @@ class NotificationService:
 
         # ------------------------------------------------------------------
         # 3. Decide which channels are eligible. Failure path forces Slack;
-        #    success path consults ``dept.notify_channels``. Email is
-        #    *never* implicit for failures - it ships only when the dept
-        #    has either listed ``"email"`` in ``notify_channels`` OR set
-        #    ``notify_email`` (the design phrases this as "email
-        #    config'liyse" - "iff email is configured").
+        # success path consults ``dept.notify_channels``. Email is
+        # *never* implicit for failures - it ships only when the dept
+        # has either listed ``"email"`` in ``notify_channels`` OR set
+        # ``notify_email`` (the design phrases this as "email
+        # config'liyse" - "iff email is configured").
         # ------------------------------------------------------------------
         slack_eligible = is_failure or "slack" in dept.notify_channels
         email_eligible = "email" in dept.notify_channels or (
@@ -294,9 +293,9 @@ class NotificationService:
 
         # ------------------------------------------------------------------
         # 4. Dispatch Slack (if eligible). Order is Slack first, email
-        #    second because Slack is the *mandatory* channel on failure;
-        #    if its dispatch raises we still want the email row in
-        #    ``notification_log`` so audits can see the partial state.
+        # second because Slack is the *mandatory* channel on failure;
+        # if its dispatch raises we still want the email row in
+        # ``notification_log`` so audits can see the partial state.
         # ------------------------------------------------------------------
         slack_error: Exception | None = None
         if slack_eligible:
@@ -351,9 +350,9 @@ class NotificationService:
 
         # ------------------------------------------------------------------
         # 6. Re-raise on failure-mandatory transport failures. We only
-        #    raise in the failure branch - success-gated dispatch is
-        #    "best effort" by design (a stuck Slack webhook should not
-        #    bubble back into the workflow on a *successful* run).
+        # raise in the failure branch - success-gated dispatch is
+        # "best effort" by design (a stuck Slack webhook should not
+        # bubble back into the workflow on a *successful* run).
         # ------------------------------------------------------------------
         if is_failure and (slack_error is not None or email_error is not None):
             # Prefer Slack error message; failure-mandatory channel.
@@ -432,9 +431,9 @@ class NotificationService:
 
         # ------------------------------------------------------------------
         # 1. Render body. The audit prune template gets only ``{error}`` -
-        #    no department / workflow placeholders; this alarm is platform-
-        #    wide. We pass the error string verbatim so the renderer's
-        #    Mapping interface does not require a typed PromptVars.
+        # no department / workflow placeholders; this alarm is platform-
+        # wide. We pass the error string verbatim so the renderer's
+        # Mapping interface does not require a typed PromptVars.
         # ------------------------------------------------------------------
         try:
             body = self._prompts.render(
@@ -451,11 +450,11 @@ class NotificationService:
 
         # ------------------------------------------------------------------
         # 2. Build the dedup_key reusing the same shape as the workflow
-        #    completion path. ``kind="audit_prune_failed"`` is already
-        #    reserved in :data:`notification.types.NotificationKind`; we
-        #    feed it through the existing helper unchanged so a future
-        #    schema change to :func:`_dedup_key` (eg. adding a salt)
-        #    propagates uniformly.
+        # completion path. ``kind="audit_prune_failed"`` is already
+        # reserved in :data:`notification.types.NotificationKind`; we
+        # feed it through the existing helper unchanged so a future
+        # schema change to :func:`_dedup_key` (eg. adding a salt)
+        # propagates uniformly.
         # ------------------------------------------------------------------
         kind: NotificationKind = "audit_prune_failed"
         dedup_key = _dedup_key(
@@ -466,16 +465,15 @@ class NotificationService:
 
         # ------------------------------------------------------------------
         # 3. Optimistic insert into ``shared.notification_log``. The store
-        #    returns ``False`` when an earlier identical attempt landed -
-        #    we then skip the adapter send (idempotent retry), matching
-        #    the behavior of :meth:`notify_workflow_completion`.
-        #
-        #    The ``target`` column carries the constant
-        #    :data:`_ADMIN_CHANNEL_TARGET` because the admin webhook URL
-        #    never crosses this dispatcher (the adapter resolves it from
-        #    Vault). Persisting a stable label keeps audit queries simple
-        #    (``WHERE target = 'admin-channel'``) without leaking the
-        #    secret webhook URL.
+        # returns ``False`` when an earlier identical attempt landed -
+        # we then skip the adapter send (idempotent retry), matching
+        # the behavior of :meth:`notify_workflow_completion`.
+        # #    The ``target`` column carries the constant
+        # :data:`_ADMIN_CHANNEL_TARGET` because the admin webhook URL
+        # never crosses this dispatcher (the adapter resolves it from
+        # Vault). Persisting a stable label keeps audit queries simple
+        # (``WHERE target = 'admin-channel'``) without leaking the
+        # secret webhook URL.
         # ------------------------------------------------------------------
         entry = NotificationLogEntry(
             dedup_key=dedup_key,
@@ -500,11 +498,11 @@ class NotificationService:
             return _outcome_with_dedup(outcome, "slack")
 
         # ------------------------------------------------------------------
-        # 4. Fire the admin alarm. Adapter raises ⇒ re-raise as
-        #    NotificationError so the Temporal activity's RetryPolicy
-        #    can replay. Failure here is **never** swallowed - this is
-        #    the platform's mandatory ops alarm channel and a silent
-        #    failure would violate the mandatory alarm contract.
+        # 4. Fire the admin alarm. Adapter raises  re-raise as
+        # NotificationError so the Temporal activity's RetryPolicy
+        # can replay. Failure here is **never** swallowed - this is
+        # the platform's mandatory ops alarm channel and a silent
+        # failure would violate the mandatory alarm contract.
         # ------------------------------------------------------------------
         try:
             await self._slack.send_admin_channel(

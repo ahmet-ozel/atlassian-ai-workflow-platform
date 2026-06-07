@@ -2,17 +2,15 @@
 
 /**
  * PO Review panel - admin-only review of bot-opened draft PRs.
- *
- * Moved out of the Streamlit end-user app: PO review is a governance
+ * * Moved out of the Streamlit end-user app: PO review is a governance
  * action that must be gated by admin auth, not exposed to every
  * credential-holding chat user. The list + actions are served by the
  * admin-dashboard-api PO-review proxy (`/api/po-review-inbox`), which
  * forwards to automation-service and enforces `require_admin`.
- *
- * Actions map to the documented automation-service endpoints:
- *   - Approve note → POST .../approve-note
- *   - Request changes → POST .../request-changes
- *   - Re-open draft → POST .../open-draft
+ * * Actions map to the documented automation-service endpoints:
+ * - Approve note  POST .../approve-note
+ * - Request changes  POST .../request-changes
+ * - Re-open draft  POST .../open-draft
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -140,7 +138,7 @@ export default function PoReviewPage(): JSX.Element {
           </div>
           <div className="page-header__actions">
             <button className="btn" onClick={refresh} disabled={loading || !deptId}>
-              {loading ? <span className="spinner" /> : "🔄"} Yenile
+              {loading ? <span className="spinner" /> : ""} Yenile
             </button>
           </div>
         </div>
@@ -170,20 +168,20 @@ export default function PoReviewPage(): JSX.Element {
         <div className="card__body card__body--flush">
           {error && (
             <div className="banner banner--danger" style={{ margin: "1rem" }}>
-              <span className="banner__icon">⚠️</span>
+              <span className="banner__icon"></span>
               <div className="banner__body">{error}</div>
             </div>
           )}
           {notice && (
             <div className="banner banner--success" style={{ margin: "1rem" }}>
-              <span className="banner__icon">✅</span>
+              <span className="banner__icon"></span>
               <div className="banner__body">{notice}</div>
             </div>
           )}
 
           {!error && rows.length === 0 ? (
             <div className="empty">
-              <div className="empty__icon">📥</div>
+              <div className="empty__icon"></div>
               <div className="empty__title">Bekleyen PO inceleme talebi yok</div>
               <div className="muted">Botun açtığı draft PR olduğunda burada listelenir.</div>
             </div>
@@ -210,12 +208,12 @@ export default function PoReviewPage(): JSX.Element {
                       <div className="row" style={{ gap: "1rem" }}>
                         {row.pr_url && (
                           <a href={row.pr_url} target="_blank" rel="noopener noreferrer">
-                            Bitbucket PR ↗
+                            Bitbucket PR
                           </a>
                         )}
                         {row.jira_issue_url && (
                           <a href={row.jira_issue_url} target="_blank" rel="noopener noreferrer">
-                            Jira issue ↗
+                            Jira issue
                           </a>
                         )}
                       </div>
@@ -240,21 +238,21 @@ export default function PoReviewPage(): JSX.Element {
                           onClick={() => act(id, "approve-note")}
                           disabled={busy}
                         >
-                          ✅ Onay notu
+                           Onay notu
                         </button>
                         <button
                           className="btn btn--sm"
                           onClick={() => act(id, "request-changes")}
                           disabled={busy}
                         >
-                          ✏️ Değişiklik iste
+                           Değişiklik iste
                         </button>
                         <button
                           className="btn btn--ghost btn--sm"
                           onClick={() => act(id, "open-draft")}
                           disabled={busy}
                         >
-                          ↩️ Draft&apos;ı yeniden aç
+                           Draft&apos;ı yeniden aç
                         </button>
                       </div>
                     </div>

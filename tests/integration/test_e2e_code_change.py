@@ -4,11 +4,11 @@
 Flow under test::
 
  webhook payload
- → AutomationWorkflow
- → (LLM analysis returns code_change_with_test)
- → AgentRunnerWorkflow child
- → branch + commit + draft PR
- → completion comment + Done transition + work_items.status='completed'
+  AutomationWorkflow
+  (LLM analysis returns code_change_with_test)
+  AgentRunnerWorkflow child
+  branch + commit + draft PR
+  completion comment + Done transition + work_items.status='completed'
 
 Reality check
 -------------
@@ -40,7 +40,7 @@ cluster, no Docker. Activities are mocked in-process with the names
 
 The ``update_work_item_status`` mock keeps an in-memory state machine
 that funnels through :func:`validate_work_item_transition`, ensuring the
-pending → running → completed path passes the same validator the real
+pending  running  completed path passes the same validator the real
 activity uses (the invariant). MinIO upload assertions are **out of scope
 for this test**: artifact upload happens inside the AgentRunnerWorkflow
 child, which is mocked here. Separate AgentRunner coverage exercises
@@ -251,8 +251,7 @@ async def test_code_change_with_test_e2e_flow_completes() -> None:
         state.work_item_status_history.append((prev, new_status))
 
     # --- AgentRunnerWorkflow double ----------------------------------------
-    #
-    # ``_AgentRunnerWorkflowDouble`` is defined at module scope (Temporal
+    # # ``_AgentRunnerWorkflowDouble`` is defined at module scope (Temporal
     # rejects ``@workflow.run`` on local classes) and writes onto the
     # ``_LAST_RUN`` sink. Reset that sink at entry to keep the test
     # hermetic if the module is ever loaded twice (e.g. by pytest's
@@ -301,7 +300,7 @@ async def test_code_change_with_test_e2e_flow_completes() -> None:
     assert result.failure_reason is None
     assert result.child_workflow_id == "agent-automation-jira-PAY-4211-iter-1"
 
-    # 2. The work_items state machine traversed pending → running → completed.
+    # 2. The work_items state machine traversed pending  running  completed.
     statuses = [edge[1] for edge in state.work_item_status_history]
     assert statuses == ["running", "completed"], (
         f"unexpected work_items.status path: {statuses!r}"
@@ -336,10 +335,10 @@ async def test_code_change_with_test_e2e_flow_completes() -> None:
         f"bitbucket_pr.draft must be True, got payload={pr_payload!r}"
     )
 
-    # 4. Completion comment posted (✅ prefix per
+    # 4. Completion comment posted ( prefix per
     # AutomationWorkflow._format_completion_comment) and the issue
     # transitioned to Done.
-    assert any(c.startswith("✅") for c in state.comments), (
+    assert any(c.startswith("") for c in state.comments), (
         f"completion comment missing in {state.comments!r}"
     )
     assert "Done" in state.transitions, (

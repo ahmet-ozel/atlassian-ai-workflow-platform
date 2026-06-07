@@ -117,10 +117,10 @@ def _expected(
  itself. This routine re-encodes the three rules from the
  requirement:
 
- * empty author → never authorised,
- * author in approvers → authorised,
- * author equals a non-empty reporter → authorised,
- * otherwise → not authorised.
+ * empty author  never authorised,
+ * author in approvers  authorised,
+ * author equals a non-empty reporter  authorised,
+ * otherwise  not authorised.
 
  Booleans short-circuit through the same order the spec describes;
  the order does not affect the final result because the predicates
@@ -189,7 +189,7 @@ def test_authorized_when_in_approvers_or_is_reporter(
     include_in_approvers: bool,
     use_reporter_match: bool,
 ) -> None:
-    """If author ∈ approvers OR author == non-empty reporter → ``True``.
+    """If author ∈ approvers OR author == non-empty reporter  ``True``.
 
  The strategy synthesises both authorization paths in a single
  example: ``include_in_approvers`` injects the author into the
@@ -257,7 +257,7 @@ def test_unauthorized_when_neither_approver_nor_reporter(
     approvers: list[str],
     reporter: str | None,
 ) -> None:
-    """If author ∉ approvers AND author ≠ non-empty reporter → ``False``.
+    """If author ∉ approvers AND author ≠ non-empty reporter  ``False``.
 
  The example is only counted when *both* conditions fail
  simultaneously; otherwise we fall under 's domain.
@@ -307,7 +307,7 @@ def test_empty_author_is_never_authorized(
     approvers: list[str],
     reporter: str | None,
 ) -> None:
-    """Empty author id → ``False`` regardless of approvers / reporter.
+    """Empty author id  ``False`` regardless of approvers / reporter.
 
  A webhook that drops the actor accountId must not silently grant
  access - even when the approvers list happens to contain the

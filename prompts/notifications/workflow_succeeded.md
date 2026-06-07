@@ -1,4 +1,4 @@
-✅ Workflow tamamlandı
+ Workflow tamamlandı
 
 **Workflow:** `{workflow_id}`
 **Departman:** `{dept_id}`

@@ -1,6 +1,6 @@
 ﻿"""Unit tests for the ``upload_artifact_to_jira`` activity.
 
-Validates the MinIO → tempfile → MCP-jira pipeline contract:
+Validates the MinIO  tempfile  MCP-jira pipeline contract:
 
 * Happy path - download, stage, MCP-call, cleanup.
 * Extension rejection - ``.exe`` and friends short-circuit before
@@ -154,7 +154,7 @@ def patch_pipe(monkeypatch: pytest.MonkeyPatch):
 
 
 class TestHappyPath:
-    """Full pipeline: download → temp write → MCP call → cleanup."""
+    """Full pipeline: download  temp write  MCP call  cleanup."""
 
     def test_pipeline_returns_success_payload(self, patch_pipe) -> None:
         patch_pipe.download.payload = b"# report\nbody\n"

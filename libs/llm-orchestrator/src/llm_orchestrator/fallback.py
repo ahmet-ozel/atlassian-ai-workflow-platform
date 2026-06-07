@@ -292,14 +292,14 @@ class FallbackLLMProviderFactory:
             )
             return result
         except asyncio.TimeoutError:
-            # Primary timeout → switch to fallback.
+            # Primary timeout  switch to fallback.
             error_reason = (
                 f"Timeout after {self.primary_config.timeout_seconds}s"
             )
             await self._switch_to_fallback(error_reason)
             return await self._try_fallback(prompt, dept_id, **kwargs)
         except LLMServerError as exc:
-            # Primary 5xx → retry 3 times, then fallback.
+            # Primary 5xx  retry 3 times, then fallback.
             return await self._retry_primary_then_fallback(
                 prompt, dept_id, exc, **kwargs
             )

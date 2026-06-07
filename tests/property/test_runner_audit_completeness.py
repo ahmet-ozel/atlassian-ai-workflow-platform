@@ -488,7 +488,7 @@ class TestAssignmentAuditCompleteness:
         dept_id = scenario["dept_id"]
         current = scenario["current_runner_ids"]
 
-        # Use same set for both current and desired → no changes
+        # Use same set for both current and desired  no changes
         audit_sink = InMemoryAuditSink()
 
         asyncio.run(

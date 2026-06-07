@@ -5,11 +5,11 @@ deletes them when the linked Jira issue is ``Done`` or ``Closed``.
 
 Lifecycle (one cron tick)::
 
- 1. ``list_bot_departments`` → tuple of dept ids
+ 1. ``list_bot_departments``  tuple of dept ids
  2. for each dept:
- a. ``list_ai_branches(dept_id)`` → tuple of BotBranch
+ a. ``list_ai_branches(dept_id)``  tuple of BotBranch
  b. for each branch (filtered by age):
- i. ``get_jira_issue_status(dept_id, key)`` → str
+ i. ``get_jira_issue_status(dept_id, key)``  str
  ii. if ``should_delete_branch(age, status)`` is True:
  ``delete_ai_branch(dept_id, branch)`` (idempotent)
  ``post_branch_retention_jira_comment(dept_id, key, branch)``
@@ -281,7 +281,7 @@ def should_delete_branch(branch_age: timedelta, issue_status: str) -> bool:
  The predicate is the **single source of truth** for the deletion
  rule:
 
- ``True`` ⇔ ``branch_age > 30 days AND issue_status ∈ {Done, Closed}``
+ ``True``  ``branch_age > 30 days AND issue_status ∈ {Done, Closed}``
 
  Both conditions must hold - a young branch on a closed issue is
  kept (so a contributor can still rebase against it for a few days

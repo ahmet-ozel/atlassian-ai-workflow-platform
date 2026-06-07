@@ -7,9 +7,9 @@ implementation based on the ``VAULT_BACKEND`` environment variable
 Mapping
 -------
 
-* ``VAULT_BACKEND=hashicorp`` → :class:`HashicorpBackend`. Requires
+* ``VAULT_BACKEND=hashicorp``  :class:`HashicorpBackend`. Requires
   ``VAULT_ADDR`` and ``VAULT_TOKEN``.
-* ``VAULT_BACKEND=local-dev`` → :class:`LocalDevBackend`. Requires
+* ``VAULT_BACKEND=local-dev``  :class:`LocalDevBackend`. Requires
   ``VAULT_LOCAL_KEY`` (32 bytes after hex/base64 decoding); rejects
   weak placeholder keys (R6.6 - plain-text rejected).
 * Anything else (including missing) raises :class:`ValueError` so a

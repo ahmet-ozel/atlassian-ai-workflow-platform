@@ -282,7 +282,7 @@ def test_reject_when_bot_empty(
 def test_reject_when_id_invalid_and_bot_empty(
     validator: Draft202012Validator, dept_id: str
 ) -> None:
-    """Both invariants violated → still rejected (with at least one error)."""
+    """Both invariants violated  still rejected (with at least one error)."""
 
     assume(not VALID_ID_RE.fullmatch(dept_id))
 

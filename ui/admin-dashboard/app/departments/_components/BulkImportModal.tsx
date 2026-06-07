@@ -2,13 +2,11 @@
 
 /**
  * BulkImportModal - Modal for bulk-importing departments from a JSON file.
- *
- * Features:
+ * * Features:
  * - File upload (JSON format matching `departments.schema.json`)
  * - "Önce Önizle (dry-run)" / "Şimdi Uygula" radio selection
- * - Result table showing per-department status (✅/❌/⚠️ + reason)
- *
- * Requirements: 11.5
+ * - Result table showing per-department status (// + reason)
+ * * Requirements: 11.5
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -116,11 +114,11 @@ const tdStyle: React.CSSProperties = {
 function getStatusIcon(status: DeptResult["status"]): string {
   switch (status) {
     case "success":
-      return "✅";
+      return "";
     case "failed":
-      return "❌";
+      return "";
     case "skipped":
-      return "⚠️";
+      return "";
     default:
       return "-";
   }
@@ -296,7 +294,7 @@ export default function BulkImportModal({
           }}
         >
           <h2 id={titleId} style={{ margin: 0, fontSize: "1.15rem" }}>
-            📦 Toplu Departman İçe Aktarma
+             Toplu Departman İçe Aktarma
           </h2>
           <button
             type="button"
@@ -310,7 +308,7 @@ export default function BulkImportModal({
               cursor: "pointer",
             }}
           >
-            ✕
+
           </button>
         </header>
 
@@ -401,7 +399,7 @@ export default function BulkImportModal({
                 disabled={submitting}
               />
               <span>
-                🔍 Önce Önizle <em>(dry-run)</em>
+                 Önce Önizle <em>(dry-run)</em>
               </span>
             </label>
             <label
@@ -422,7 +420,7 @@ export default function BulkImportModal({
                 disabled={submitting}
               />
               <span>
-                🚀 Şimdi Uygula
+                 Şimdi Uygula
               </span>
             </label>
           </div>
@@ -484,8 +482,8 @@ export default function BulkImportModal({
             {submitting
               ? "İşleniyor…"
               : mode === "dry_run"
-                ? "🔍 Önizle"
-                : "🚀 Uygula"}
+                ? " Önizle"
+                : " Uygula"}
           </button>
         </div>
 
@@ -518,13 +516,13 @@ export default function BulkImportModal({
               }}
             >
               <span style={{ color: "#16a34a" }}>
-                ✅ Başarılı: {results.filter((r) => r.status === "success").length}
+                 Başarılı: {results.filter((r) => r.status === "success").length}
               </span>
               <span style={{ color: "#dc2626" }}>
-                ❌ Başarısız: {results.filter((r) => r.status === "failed").length}
+                 Başarısız: {results.filter((r) => r.status === "failed").length}
               </span>
               <span style={{ color: "#d97706" }}>
-                ⚠️ Uyarı: {results.filter((r) => r.status === "skipped").length}
+                 Uyarı: {results.filter((r) => r.status === "skipped").length}
               </span>
             </div>
 

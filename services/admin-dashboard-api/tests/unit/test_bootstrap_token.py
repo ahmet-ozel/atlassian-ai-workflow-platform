@@ -1,9 +1,9 @@
 ﻿"""Unit tests for the BootstrapTokenService class.
 * : Token generation when no admin exists (stdout output).
 * : Token has 1-hour TTL; expired tokens are invalid.
-* : Valid token → consumed successfully.
-* : Expired/used token → validation fails.
-* : OIDC configured → bootstrap mechanism disabled."""
+* : Valid token  consumed successfully.
+* : Expired/used token  validation fails.
+* : OIDC configured  bootstrap mechanism disabled."""
 
 from __future__ import annotations
 
@@ -78,7 +78,7 @@ class TestGenerateIfNeeded:
 
     @pytest.mark.asyncio
     async def test_generates_token_when_no_admin_exists(self) -> None:
-        """First boot with no admin → generates token."""
+        """First boot with no admin  generates token."""
         service = BootstrapTokenService()
         pool = _make_mock_pool(admin_exists=False, valid_token_exists=False)
 
@@ -91,7 +91,7 @@ class TestGenerateIfNeeded:
 
     @pytest.mark.asyncio
     async def test_returns_none_when_admin_already_exists(self) -> None:
-        """Admin already bootstrapped → no new token."""
+        """Admin already bootstrapped  no new token."""
         service = BootstrapTokenService()
         pool = _make_mock_pool(admin_exists=True)
 
@@ -101,7 +101,7 @@ class TestGenerateIfNeeded:
 
     @pytest.mark.asyncio
     async def test_returns_none_when_valid_token_already_pending(self) -> None:
-        """Idempotency: valid unexpired token exists → no new token."""
+        """Idempotency: valid unexpired token exists  no new token."""
         service = BootstrapTokenService()
         pool = _make_mock_pool(admin_exists=False, valid_token_exists=True)
 
@@ -174,7 +174,7 @@ class TestValidateAndConsume:
 
     @pytest.mark.asyncio
     async def test_valid_token_is_consumed_successfully(self) -> None:
-        """Valid token → consumed, returns True."""
+        """Valid token  consumed, returns True."""
         service = BootstrapTokenService()
         pool = _make_mock_pool(consume_returns_row=True)
 
@@ -184,7 +184,7 @@ class TestValidateAndConsume:
 
     @pytest.mark.asyncio
     async def test_invalid_token_returns_false(self) -> None:
-        """Invalid/expired/used token → returns False."""
+        """Invalid/expired/used token  returns False."""
         service = BootstrapTokenService()
         pool = _make_mock_pool(consume_returns_row=False)
 
@@ -214,7 +214,7 @@ class TestValidateAndConsume:
 
     @pytest.mark.asyncio
     async def test_consumed_token_cannot_be_reused(self) -> None:
-        """Already consumed token → returns False."""
+        """Already consumed token  returns False."""
         service = BootstrapTokenService()
 
         # First call succeeds (row returned)
@@ -243,7 +243,7 @@ class TestTTLExpiry:
 
     @pytest.mark.asyncio
     async def test_expired_token_validation_fails(self) -> None:
-        """Expired token → validation returns False.
+        """Expired token  validation returns False.
         The DB query includes `expires_at > now()` so expired tokens
         won't match, resulting in fetchrow returning None."""
         service = BootstrapTokenService()
@@ -261,7 +261,7 @@ class TestTTLExpiry:
         """When only expired tokens exist (no valid pending), generate new one."""
         service = BootstrapTokenService()
         # admin_exists=False, valid_token_exists=False means all existing
-        # tokens are expired → should generate a new one
+        # tokens are expired  should generate a new one
         pool = _make_mock_pool(admin_exists=False, valid_token_exists=False)
 
         token = await service.generate_if_needed(pool)
@@ -281,7 +281,7 @@ class TestOIDCConfiguration:
     async def test_oidc_configured_when_all_vars_set_and_production_mode(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """OIDC fully configured → returns True."""
+        """OIDC fully configured  returns True."""
         monkeypatch.setenv("AUTH_MODE", "production")
         monkeypatch.setenv("OIDC_ISSUER", "https://accounts.google.com")
         monkeypatch.setenv("OIDC_AUDIENCE", "my-app-client-id")
@@ -296,7 +296,7 @@ class TestOIDCConfiguration:
     async def test_oidc_not_configured_when_auth_mode_is_dev(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """AUTH_MODE=dev → OIDC not configured."""
+        """AUTH_MODE=dev  OIDC not configured."""
         monkeypatch.setenv("AUTH_MODE", "dev")
         monkeypatch.setenv("OIDC_ISSUER", "https://accounts.google.com")
         monkeypatch.setenv("OIDC_AUDIENCE", "my-app-client-id")
@@ -311,7 +311,7 @@ class TestOIDCConfiguration:
     async def test_oidc_not_configured_when_issuer_missing(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Missing OIDC_ISSUER → not configured."""
+        """Missing OIDC_ISSUER  not configured."""
         monkeypatch.setenv("AUTH_MODE", "production")
         monkeypatch.delenv("OIDC_ISSUER", raising=False)
         monkeypatch.setenv("OIDC_AUDIENCE", "my-app-client-id")
@@ -326,7 +326,7 @@ class TestOIDCConfiguration:
     async def test_oidc_not_configured_when_audience_missing(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Missing OIDC_AUDIENCE → not configured."""
+        """Missing OIDC_AUDIENCE  not configured."""
         monkeypatch.setenv("AUTH_MODE", "production")
         monkeypatch.setenv("OIDC_ISSUER", "https://accounts.google.com")
         monkeypatch.delenv("OIDC_AUDIENCE", raising=False)
@@ -341,7 +341,7 @@ class TestOIDCConfiguration:
     async def test_oidc_not_configured_when_jwks_url_missing(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Missing OIDC_JWKS_URL → not configured."""
+        """Missing OIDC_JWKS_URL  not configured."""
         monkeypatch.setenv("AUTH_MODE", "production")
         monkeypatch.setenv("OIDC_ISSUER", "https://accounts.google.com")
         monkeypatch.setenv("OIDC_AUDIENCE", "my-app-client-id")
@@ -356,7 +356,7 @@ class TestOIDCConfiguration:
     async def test_oidc_not_configured_when_vars_are_empty_strings(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Empty string values → not configured."""
+        """Empty string values  not configured."""
         monkeypatch.setenv("AUTH_MODE", "production")
         monkeypatch.setenv("OIDC_ISSUER", "")
         monkeypatch.setenv("OIDC_AUDIENCE", "")
@@ -371,7 +371,7 @@ class TestOIDCConfiguration:
     async def test_oidc_not_configured_when_vars_are_whitespace_only(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Whitespace-only values are treated as empty → not configured."""
+        """Whitespace-only values are treated as empty  not configured."""
         monkeypatch.setenv("AUTH_MODE", "production")
         monkeypatch.setenv("OIDC_ISSUER", "   ")
         monkeypatch.setenv("OIDC_AUDIENCE", "  ")
@@ -386,7 +386,7 @@ class TestOIDCConfiguration:
     async def test_oidc_not_configured_when_no_env_vars_set(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """No OIDC env vars set at all → not configured (default dev mode)."""
+        """No OIDC env vars set at all  not configured (default dev mode)."""
         monkeypatch.delenv("AUTH_MODE", raising=False)
         monkeypatch.delenv("OIDC_ISSUER", raising=False)
         monkeypatch.delenv("OIDC_AUDIENCE", raising=False)

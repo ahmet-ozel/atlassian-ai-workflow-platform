@@ -73,13 +73,13 @@ Strategy
  semantic class:
 
  - **User-attributed actions** (``prompt_*``, ``feature_flag_toggled``,
- ``dept_decommissioned``, ``credential_rotated``) → ``actor_role``
+ ``dept_decommissioned``, ``credential_rotated``)  ``actor_role``
  sampled from ``("admin", "dept_admin", "lead", "viewer")``.
- - **Chat actions** (``chat_message``) → ``actor_role`` sampled from
+ - **Chat actions** (``chat_message``)  ``actor_role`` sampled from
  the four RBAC roles plus a populated payload with all four
  mandatory fields.
  - **System actions** (``budget_exceeded``, ``audit_prune_*``,
- ``cost_prediction_comment_*``, ``notification_dispatch_*``) →
+ ``cost_prediction_comment_*``, ``notification_dispatch_*``)
  ``actor_role='system'``.
 
 * ``invalid_chat_payloads`` - Hypothesis strategy producing

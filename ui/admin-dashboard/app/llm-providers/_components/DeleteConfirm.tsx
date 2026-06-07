@@ -2,8 +2,7 @@
 
 /**
  * Delete-confirmation dialog for a provider row (R14.8, R14.9).
- *
- * On confirm calls `DELETE /admin/llm-providers/{id}`. When the
+ * * On confirm calls `DELETE /admin/llm-providers/{id}`. When the
  * backend responds with HTTP 409 `provider_in_use`, the dialog stays
  * open and renders an inline toast listing every `dept_id` so the
  * operator can unpin the override(s) before retrying. The parent

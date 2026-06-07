@@ -57,7 +57,7 @@ def test_error_message_truncated_to_max(error_text: str) -> None:
 @settings(max_examples=50, deadline=None)
 @given(invalid=st.text(max_size=200).filter(lambda s: not s.startswith("{")))
 def test_invalid_json_returns_unstructured(invalid: str) -> None:
-    """Non-JSON output → empty cases + unstructured flag."""
+    """Non-JSON output  empty cases + unstructured flag."""
     cases, structured = _parse_test_output(invalid)
     assert cases == []
     assert structured is False

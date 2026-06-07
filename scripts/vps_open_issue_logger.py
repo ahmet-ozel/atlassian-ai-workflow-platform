@@ -170,7 +170,7 @@ def log_open_issue(
     with open(OPEN_ISSUES_FILE, "w", encoding="utf-8") as f:
         json.dump(issues, f, indent=2, ensure_ascii=False)
 
-    # R16.3: critical severity → stdout alert
+    # R16.3: critical severity  stdout alert
     if severity == "critical":
         print(f"[CRITICAL OPEN ISSUE] R{next_id}")
 

@@ -9,8 +9,8 @@
 Bu runbook aşağıdaki durumlarda izlenir:
 
 - Bir departman organizasyondan ayrıldı veya proje sonlandırıldı; bot hesapları, Atlassian credential'ları ve audit dışı tüm artifact'ler kaldırılacak.
-- Bir departman geçici olarak duraklatılacak ama ileride tekrar açılabilir → **yalnızca Adım 1**'i uygula, Adım 2-4'ü atla.
-- Bir departman yanlış konfigürasyonla oluşturuldu (yanlış `dept_id`, yanlış `bitbucket_workspace` vb.) ve sıfırdan kurulacak → tüm 4 adım uygulanır.
+- Bir departman geçici olarak duraklatılacak ama ileride tekrar açılabilir  **yalnızca Adım 1**'i uygula, Adım 2-4'ü atla.
+- Bir departman yanlış konfigürasyonla oluşturuldu (yanlış `dept_id`, yanlış `bitbucket_workspace` vb.) ve sıfırdan kurulacak  tüm 4 adım uygulanır.
 
 ## Ön gereksinimler
 
@@ -59,7 +59,7 @@ HTTP/1.1 200 OK
 { "id": "<dept_id>", "mode": "disabled", "disabled_at": "2025-01-15T10:00:00Z" }
 ```
 
-> **Alternatif** (admin-dashboard-ui üzerinden): **Departments → `<dept_id>` → Actions → Disable** butonu. Aynı endpoint'i proxy'ler.
+> **Alternatif** (admin-dashboard-ui üzerinden): **Departments  `<dept_id>`  Actions  Disable** butonu. Aynı endpoint'i proxy'ler.
 
 Endpoint'in iki yan etkisi vardır:
 
@@ -185,9 +185,9 @@ tctl --address <temporal_host>:7233 workflow list \
 
 ## Adım 3 - Vault credential revoke
 
-**Amaç:** Departman bot'larına ait tüm Atlassian credential'larını ve webhook secret'larını Vault'tan **kalıcı olarak** silmek. Bu adımdan sonra credential `read(...) → not_found` döner; rotation overlap penceresi de geçersiz olur.
+**Amaç:** Departman bot'larına ait tüm Atlassian credential'larını ve webhook secret'larını Vault'tan **kalıcı olarak** silmek. Bu adımdan sonra credential `read(...)  not_found` döner; rotation overlap penceresi de geçersiz olur.
 
-> ⚠️ **Yıkıcı.** Aşağıdaki path'lere yazılı tüm secret değerleri silinir; geri yüklemek için yedek + Vault audit log gerekir. Adım 1 ve 2 doğrulanmadan bu adıma geçme.
+>  **Yıkıcı.** Aşağıdaki path'lere yazılı tüm secret değerleri silinir; geri yüklemek için yedek + Vault audit log gerekir. Adım 1 ve 2 doğrulanmadan bu adıma geçme.
 
 ### 3.1 Silinecek path'leri belirle
 
@@ -227,7 +227,7 @@ done
 
 > **Önce upstream'de revoke et:** Atlassian token'ı Vault'tan silmek **kullanım yetkisini iptal etmez**; Atlassian tarafında token revoke gereklidir. Aksi halde token süresi dolana kadar başka yerden kullanılabilir.
 
-1. Atlassian Admin Console → Bots / Service accounts → `<dept_id>` botu → **Revoke API token**.
+1. Atlassian Admin Console  Bots / Service accounts  `<dept_id>` botu  **Revoke API token**.
 2. Bot Atlassian hesabını gerekirse devre dışı bırak (account suspension).
 
 ### 3.4 Vault path'lerini sil
@@ -269,7 +269,7 @@ for path in \
   "webhooks/confluence/<dept_id>"; do
     echo "=== $path ==="
     vault kv get -mount=secret "$path" 2>&1 | grep -E "(No value|404|not found)" \
-      || echo "❌ STILL PRESENT - DO NOT PROCEED"
+      || echo " STILL PRESENT - DO NOT PROCEED"
 done
 # beklenen: tüm path'ler için "No value found" / 404
 ```
@@ -289,7 +289,7 @@ kubectl logs deploy/automation-service --since=10m | grep -i "<dept_id>" | grep 
 
 **Amaç:** `departments` tablosundan kaydı kaldırmak. Audit izi (`audit_events`) **silinmez**; uyumluluk için saklanır.
 
-> ⚠️ **Yıkıcı ve geri alınamaz.** Adım 1, 2, 3 hepsi doğrulanmadan bu adıma geçme. Yedek (Adım 4.2) zorunludur.
+>  **Yıkıcı ve geri alınamaz.** Adım 1, 2, 3 hepsi doğrulanmadan bu adıma geçme. Yedek (Adım 4.2) zorunludur.
 
 ### 4.1 Bağımlı kayıtları kontrol et
 

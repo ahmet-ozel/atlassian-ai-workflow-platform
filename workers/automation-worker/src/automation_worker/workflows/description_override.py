@@ -31,7 +31,7 @@ Why a separate module?
 
 The companion module:mod:`automation_worker.activities.task_analyzer`
 owns the *parsing* and *validation* of the override fields; this
-module owns the *merge* (analyser output → child workflow envelope).
+module owns the *merge* (analyser output  child workflow envelope).
 """
 
 from __future__ import annotations
@@ -192,9 +192,9 @@ def to_llm_analysis_result(
  Confidence mapping
  ------------------
 
- * ``confidence ≥ 0.85`` → ``"high"``
- * ``0.7 ≤ confidence < 0.85`` → ``"medium"``
- * ``confidence < 0.7`` → ``"low"`` (the workflow does not normally
+ * ``confidence ≥ 0.85``  ``"high"``
+ * ``0.7 ≤ confidence < 0.85``  ``"medium"``
+ * ``confidence < 0.7``  ``"low"`` (the workflow does not normally
  reach this branch because the analyser intercepts low-
  confidence results into its own ``needs_info`` flow before this
  bridge is called)

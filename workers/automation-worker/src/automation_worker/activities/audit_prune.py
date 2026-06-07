@@ -660,10 +660,10 @@ def _json_default(value: Any) -> Any:
 
  Handles the two non-JSON types we expect to see in audit rows:
 
- *:class:`datetime.datetime` → ISO 8601 string in UTC.
- *:class:`bytes` /:class:`bytearray` → utf-8 string with a
+ *:class:`datetime.datetime`  ISO 8601 string in UTC.
+ *:class:`bytes` /:class:`bytearray`  utf-8 string with a
  ``"<binary>"`` placeholder for non-decodable bytes.
- * dataclass instances → ``asdict``.
+ * dataclass instances  ``asdict``.
 
  Anything else falls back to ``str(value)`` so the encoder never
  fails an entire archive over an unexpected payload type.

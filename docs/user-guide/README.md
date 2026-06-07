@@ -26,10 +26,10 @@ ile ekleyebilirsin (sahibi: `ai-admin` ekibi).
 
 ## Hızlı Yardım
 
-- "Bot benim task'ımı görmedi" → [`waiting-for-bot.md`](waiting-for-bot.md#bot-task’ımı-görmedi-mi)
-- "Bot yanlış kod yazdı" → [`iteration-with-comments.md`](iteration-with-comments.md)
-- "Bot bunu yapamam dedi" → [`what-bot-cannot-do.md`](what-bot-cannot-do.md)
-- "Bot ne kadar sürer?" → [`waiting-for-bot.md`](waiting-for-bot.md#süre-tahmini)
-- Genel sorular → [`faq.md`](faq.md)
+- "Bot benim task'ımı görmedi"  [`waiting-for-bot.md`](waiting-for-bot.md#bot-task’ımı-görmedi-mi)
+- "Bot yanlış kod yazdı"  [`iteration-with-comments.md`](iteration-with-comments.md)
+- "Bot bunu yapamam dedi"  [`what-bot-cannot-do.md`](what-bot-cannot-do.md)
+- "Bot ne kadar sürer?"  [`waiting-for-bot.md`](waiting-for-bot.md#süre-tahmini)
+- Genel sorular  [`faq.md`](faq.md)
 
 > Hata bildirimi için AI Admin Slack kanalı.

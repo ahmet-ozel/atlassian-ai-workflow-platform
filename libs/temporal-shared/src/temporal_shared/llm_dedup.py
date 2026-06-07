@@ -104,10 +104,10 @@ def compute_diff_summary(
     Pure helper consumed by the ``code_change_commit_only`` flow.
     The contract:
 
-    * **Cache hit** - ``diff_hash`` already in ``cache`` → return
+    * **Cache hit** - ``diff_hash`` already in ``cache``  return
       the cached summary verbatim and a *copy* of the input cache.
       The LLM callback is **not** invoked.
-    * **Cache miss** - ``diff_hash`` absent → invoke
+    * **Cache miss** - ``diff_hash`` absent  invoke
       ``llm_callback()``, write the result into a *copy* of the
       cache, and return the new ``(summary, cache)`` pair.
     * **Never mutate** - the input ``cache`` is treated as borrowed
@@ -125,7 +125,7 @@ def compute_diff_summary(
     diff_hash:
         Stable identity for the diff being summarised.
     cache:
-        Existing diff-hash → summary mapping.  Treated as
+        Existing diff-hash  summary mapping.  Treated as
         read-only.
     llm_callback:
         Zero-argument callable invoked exactly once on a cache

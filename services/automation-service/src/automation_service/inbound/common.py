@@ -2,7 +2,7 @@
 
 This module is the deterministic core of the Slack and email
 adapters: it owns the signature verification helpers, the workflow-id
-formatter and the ``InboundTaskRequest`` → ``workflow_input`` mapper.
+formatter and the ``InboundTaskRequest``  ``workflow_input`` mapper.
 Channel-specific glue (FastAPI routes, IMAP polling) lives in the
 sibling modules; everything that is tested with hypothesis or unit
 tests belongs here.
@@ -169,7 +169,7 @@ class InboundDeptResolver(Protocol):
     """Map an incoming channel signal to a department id.
 
     Slack-specific resolvers consult ``team_id`` (or the configured
-    Slack workspace → dept mapping); email-specific resolvers parse
+    Slack workspace  dept mapping); email-specific resolvers parse
     the recipient address (``To:`` / ``Delivered-To:``). The
     resolver is intentionally narrow so tests can inject a dict-backed
     fake.

@@ -6,8 +6,8 @@ Provides :func:`start_workflow_idempotent`, a thin wrapper around
 ``(execution_id, was_existing)`` so that callers (HTTP handlers,
 webhook adapters, admin endpoints) can implement the contract:
 
-* New start  → HTTP 202, ``was_existing=False``.
-* Duplicate  → HTTP 202, ``was_existing=True`` with the *same*
+* New start   HTTP 202, ``was_existing=False``.
+* Duplicate   HTTP 202, ``was_existing=True`` with the *same*
   ``execution_id`` (which equals the caller-supplied ``workflow_id``).
 
 This helper is the single source of truth for the idempotency rule

@@ -19,7 +19,7 @@ from pii_shared import mask, PiiMatch, PII_PATTERNS
 masked, matches = mask("TC: 12345678901, mail: ali@example.com")
 # masked  -> "TC: ***TC_REDACTED***, mail: ***EMAIL_REDACTED***"
 # matches -> [PiiMatch(kind="tc_kimlik", start=4, end=15),
-#             PiiMatch(kind="email",     start=23, end=38)]
+# PiiMatch(kind="email",     start=23, end=38)]
 ```
 
 ## Patterns

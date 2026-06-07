@@ -553,9 +553,9 @@ class TestChatIntentWiringEdgeCases:
  to Task Creator (which pops the key), then sending a read-only
  message. The second message must NOT re-set the redirect key.
 
- This validates the full lifecycle: set → pop → absent."""
+ This validates the full lifecycle: set  pop  absent."""
 
-        # First message: write intent → key set.
+        # First message: write intent  key set.
         session_state = process_chat_events(write_stream)
         assert "_pending_task_creator_redirect" in session_state
 
@@ -564,7 +564,7 @@ class TestChatIntentWiringEdgeCases:
         assert was_prefilled is True
         assert "_pending_task_creator_redirect" not in session_state
 
-        # Second message: read-only → key stays absent.
+        # Second message: read-only  key stays absent.
         # In production the session_state persists across page renders;
         # we simulate by processing the read stream and merging into
         # the same state dict.

@@ -2,24 +2,19 @@
 
 /**
  * StartFormModal - Servis Yapilandirma Formu.
- *
- * The component is rendered when the operator clicks "Start" on a service
+ * * The component is rendered when the operator clicks "Start" on a service
  * catalog row. It fetches the service manifest, renders one field per
  * form_schema entry, and submits env_overrides only after explicit user input.
- *
- * Sensitive fields render as required password inputs. Non-sensitive fields use
+ * * Sensitive fields render as required password inputs. Non-sensitive fields use
  * text inputs, display API defaults as placeholders, and fall back to those
  * defaults when submitted blank. Empty sensitive values raise an inline
  * validation error and the start request is not sent.
- *
- * Error envelopes are surfaced inline. Upstream failures include the
+ * * Error envelopes are surfaced inline. Upstream failures include the
  * correlation_id so the operator can pivot into audit logs or structured logs.
- *
- * Defense-in-depth: backend is_sensitive is authoritative, but the UI also
+ * * Defense-in-depth: backend is_sensitive is authoritative, but the UI also
  * applies the shared sensitive-key matcher so a stale server cache cannot render
  * a token field as plain text.
- *
- * The modal only calls the API on mount and explicit submit. There is no
+ * * The modal only calls the API on mount and explicit submit. There is no
  * polling, automatic retry, or preflight start.
  */
 
@@ -523,8 +518,7 @@ export default function StartFormModal({
                           title="Sensitive_Env_Key - must be entered explicitly"
                           style={{ marginLeft: "0.4rem", color: "#b00" }}
                         >
-                          *
-                        </span>
+                          * </span>
                       )}
                     </span>
                     {field.comment && (

@@ -10,8 +10,8 @@ For any hypothesis-generated ``(messages, n)`` pair where
 ``∈ [0, 100]`` and ``n ∈ [1, 50]``, ``sliding_window.compress(
 messages, n=n, summarizer=mock_summarizer)`` MUST satisfy:
 
-    (a) ``len(messages) <= n`` ⇒ output ``== messages`` (no-op).
-    (b) ``len(messages) > n`` ⇒ ``len(output) == n + 1``
+    (a) ``len(messages) <= n``  output ``== messages`` (no-op).
+    (b) ``len(messages) > n``  ``len(output) == n + 1``
         (1 summary message + ``n`` recent messages).
     (c) The last ``n`` elements of the output equal ``messages[-n:]``
         verbatim - original ordering preserved.
@@ -20,7 +20,7 @@ messages, n=n, summarizer=mock_summarizer)`` MUST satisfy:
         ``"[Önceki konuşma özeti]"``.
     (e) Determinism: a deterministic ``summarizer`` produces the same
         ``compress`` output for the same input on every call.
-    (f) Empty input ⇒ empty output (no-op edge case).
+    (f) Empty input  empty output (no-op edge case).
 
 Surface under test
 ------------------
@@ -82,10 +82,10 @@ from hypothesis import strategies as st
 # (``test_session_credential.py``, ``test_audit_one_to_one.py``) and
 # the assistant-service unit tests (``services/assistant-service/
 # tests/unit/test_handler.py``): we expose
-#   - the assistant-service root so ``from src.chat.sliding_window
-#     import compress`` resolves;
-#   - the ``libs/messages/src`` directory so ``from messages import
-#     Message`` resolves without a pip install.
+# - the assistant-service root so ``from src.chat.sliding_window
+# import compress`` resolves;
+# - the ``libs/messages/src`` directory so ``from messages import
+# Message`` resolves without a pip install.
 # The workspace ``pytest.ini`` already adds the ``libs/*/src`` paths
 # for the repo-level test session, but we add them defensively here so
 # the file imports cleanly under ``python -m pytest <this-file>``

@@ -51,7 +51,7 @@ handler:meth:`AgentRunnerWorkflow._apply_fix_signal` - SHALL satisfy:
  - queues NO ``[fix]``-family audit row. transition path.
 
 (P6) **Sequential ``[fix]`` semantics** - A three-step sequence
- ``debounced → re_test_protected → fresh_diff`` produces a single
+ ``debounced  re_test_protected  fresh_diff`` produces a single
  terminal state where:
 
  - ``iter_count`` advanced by exactly one (only the third call
@@ -119,7 +119,7 @@ from temporalio import workflow as _temporal_workflow
 # ``test_token_cap_fail_fast.py``, ``test_task_analysis_parser.py``).
 # ---------------------------------------------------------------------------
 
-# tests/property/test_fix_keyword.py → platform/
+# tests/property/test_fix_keyword.py  platform/
 _PLATFORM_ROOT: Path = Path(__file__).resolve().parents[2]
 
 _AGENT_RUNNER_SRC: Path = (
@@ -541,7 +541,7 @@ def test_apply_fix_signal_fresh_diff_advances_iter(
 
     state = IterationState(
         iter_count=iter_count,
-        last_fix_trigger_at=None,  # No prior ``[fix]`` → not debounced.
+        last_fix_trigger_at=None,  # No prior ``[fix]``  not debounced.
         test_results_by_diff_hash=cache,
     )
 
@@ -572,7 +572,7 @@ def test_apply_fix_signal_fresh_diff_advances_iter(
 
 
 # ---------------------------------------------------------------------------
-# invariant - sequential ``[fix]`` semantics (debounced → protected → new)
+# invariant - sequential ``[fix]`` semantics (debounced  protected  new)
 # ---------------------------------------------------------------------------
 
 
@@ -616,12 +616,12 @@ def test_sequential_fix_debounced_protected_then_new_iter(
     # already tested.
     state = IterationState(
         iter_count=iter_count_seed,
-        last_fix_trigger_at=_ANCHOR_NOW,  # → step (1) is debounced
+        last_fix_trigger_at=_ANCHOR_NOW,  #  step (1) is debounced
         test_results_by_diff_hash={cached_diff: test_status},
     )
     wf = _build_workflow(state)
 
-    # ----- Step (1): inside the debounce window → drop ----------------
+    # ----- Step (1): inside the debounce window  drop ----------------
     debounce_now = _ANCHOR_NOW + timedelta(seconds=10)
     with _patched_workflow_now(debounce_now):
         wf._apply_fix_signal(text="[fix]", diff_hash=cached_diff)
@@ -630,7 +630,7 @@ def test_sequential_fix_debounced_protected_then_new_iter(
     assert wf._iteration_state.last_fix_trigger_at == _ANCHOR_NOW
     assert wf._pending_audit_actions == [FIX_DEBOUNCE_AUDIT_ACTION]
 
-    # ----- Step (2): outside the window, cached diff → protected ------
+    # ----- Step (2): outside the window, cached diff  protected ------
     protected_now = _ANCHOR_NOW + FIX_DEBOUNCE_WINDOW + timedelta(seconds=5)
     with _patched_workflow_now(protected_now):
         wf._apply_fix_signal(
@@ -645,7 +645,7 @@ def test_sequential_fix_debounced_protected_then_new_iter(
         FIX_RETEST_PROTECTED_AUDIT_ACTION,
     ]
 
-    # ----- Step (3): outside the window, fresh diff → new run ---------
+    # ----- Step (3): outside the window, fresh diff  new run ---------
     fresh_now = (
         protected_now + FIX_DEBOUNCE_WINDOW + timedelta(seconds=1)
     )

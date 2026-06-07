@@ -5,9 +5,9 @@ three intents: ``"fix"``, ``"explain"``, or ``"review"``. Supports both
 Turkish and English keywords.
 
 Intent mapping:
-- (düzelt|fix|tamir et) → "fix"
-- (açıkla|explain|anlat) → "explain"
-- (incele|review|gözden geçir) → "review"
+- (düzelt|fix|tamir et)  "fix"
+- (açıkla|explain|anlat)  "explain"
+- (incele|review|gözden geçir)  "review"
 
 If no intent is matched, returns ``None``.
 

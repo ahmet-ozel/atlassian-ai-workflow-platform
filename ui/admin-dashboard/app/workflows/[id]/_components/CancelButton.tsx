@@ -2,13 +2,11 @@
 
 /**
  * CancelButton - RBAC-aware cancel button for a running workflow.
- *
- * Enabled only when:
- *   - workflow.state == "running"
- *   - actor role is "admin" (always), or "dept_admin" with the workflow's
- *     dept_id in their viewer_dept_ids list.
- *
- * The RBAC check is enforced server-side by `POST /admin/workflows/{id}/cancel`.
+ * * Enabled only when:
+ * - workflow.state == "running"
+ * - actor role is "admin" (always), or "dept_admin" with the workflow's
+ * dept_id in their viewer_dept_ids list.
+ * * The RBAC check is enforced server-side by `POST /admin/workflows/{id}/cancel`.
  * The client-side check here is a UX hint only - it disables the button when
  * the workflow is not running, matching the spec requirement (R8.3).
  */

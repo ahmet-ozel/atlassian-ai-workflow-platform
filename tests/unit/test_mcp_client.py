@@ -284,7 +284,7 @@ class TestEnforcePrDraftAuditing:
         assert event.payload == {"original_draft": None}
 
     def test_does_not_write_audit_event_when_draft_was_already_true(self) -> None:
-        """No-op flip → no operator-facing audit event."""
+        """No-op flip  no operator-facing audit event."""
 
         logger, writer = _make_logger()
         result = asyncio.run(

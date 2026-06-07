@@ -3,7 +3,7 @@
 # confluence_write) emitted by production WORKFLOW_TYPE_CAPABILITIES.
 """Unit tests for ``WORKFLOW_TYPE_CAPABILITIES`` dictionary integrity.
 
-These tests pin the shape of the workflow-type → capability set mapping
+These tests pin the shape of the workflow-type  capability set mapping
 shipped by ``libs/temporal-shared``. This test is the structural
 guardrail that prevents the production mapping from drifting unexpectedly.
 

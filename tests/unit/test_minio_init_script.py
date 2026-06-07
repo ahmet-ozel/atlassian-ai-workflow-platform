@@ -101,7 +101,7 @@ def test_required_buckets_array_includes_audit_archive(script_text: str) -> None
 
 
 def test_409_bucket_already_owned_treated_as_success(script_text: str) -> None:
-    """The HTTP fallback maps 409 → success log line, not a die()."""
+    """The HTTP fallback maps 409  success log line, not a die()."""
 
     # Find the case statement that handles status codes.
     case_match = re.search(

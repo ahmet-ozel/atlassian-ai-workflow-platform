@@ -1,6 +1,6 @@
-﻿"""Workflow-type → required capability set mapping and capability gate.
+﻿"""Workflow-type  required capability set mapping and capability gate.
 
-This module is the **single source of truth** for the workflow-type →
+This module is the **single source of truth** for the workflow-type
 capability mapping. Other modules import these
 symbols rather than redefining them. The constant
 :data:`WORKFLOW_TYPE_CAPABILITIES` is wrapped in
@@ -55,10 +55,10 @@ __all__ = [
 
 
 # ---------------------------------------------------------------------------
-# Workflow-type → required capability set (single source of truth)
+# Workflow-type  required capability set (single source of truth)
 # ---------------------------------------------------------------------------
 
-#: Workflow type → frozenset of required capabilities. Mirrors
+#: Workflow type  frozenset of required capabilities. Mirrors
 #: the workflow capability table.
 #: Wrapped in ``MappingProxyType`` so callers cannot mutate the shared
 #: dictionary at runtime.
@@ -236,13 +236,13 @@ def derive_capabilities(
 
     Rules:
 
-    1. ``bot.jira`` has a credential → ``jira_read``, ``jira_write``.
-    2. ``bot.bitbucket`` has a credential → ``bitbucket_read``,
+    1. ``bot.jira`` has a credential  ``jira_read``, ``jira_write``.
+    2. ``bot.bitbucket`` has a credential  ``bitbucket_read``,
        ``bitbucket_write``.
-    3. ``bot.confluence`` has a credential → ``confluence_read``,
+    3. ``bot.confluence`` has a credential  ``confluence_read``,
        ``confluence_write``.
     4. ``SSH_HOST`` (canonical) or any ``SSH_HOST_<n>`` (deprecated
-       legacy alias) key in *env* → ``execution``. Single-runner
+       legacy alias) key in *env*  ``execution``. Single-runner
        canonical contract: the platform runs **exactly one** SSH host
        shared by all departments under ``RUNNER_BASE_PATH``; per-dept
        host overrides are not supported.
@@ -250,7 +250,7 @@ def derive_capabilities(
        flag is now a deprecated no-op under the
        single-runner contract.)
     5. ``dept.web_search_enabled`` and ``env["FIRECRAWL_ENABLED"] == "true"``
-       → ``web_search``.
+        ``web_search``.
 
     Args:
         dept: Object exposing :class:`SupportsDepartment` shape.
@@ -381,7 +381,7 @@ def gate(
 # the department only ever holds them as a pair (a Jira credential grants
 # both), so collapsing both to `"jira"` preserves the gate semantics.
 
-#: Split capability suffix → simple capability name. Used by
+#: Split capability suffix  simple capability name. Used by
 #: :func:`_collapse_capability` to fold the split vocabulary down to the
 #: simple service vocabulary.
 _SPLIT_TO_SIMPLE: Final[Mapping[str, str]] = {

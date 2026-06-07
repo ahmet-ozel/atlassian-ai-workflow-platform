@@ -52,7 +52,7 @@ import pytest
 # ---------------------------------------------------------------------------
 
 #: Absolute path to the agent-runner-worker package root, computed from the
-#: location of this test file (``tests/property/<this>.py`` → ``../../``).
+#: location of this test file (``tests/property/<this>.py``  ``../../``).
 _WORKER_ROOT: Path = Path(__file__).resolve().parents[2]
 _ACTIVITIES_DIR: Path = _WORKER_ROOT / "src" / "activities"
 
@@ -265,9 +265,9 @@ def _scan_tree(tree: ast.Module, module_name: str) -> ModuleScanResult:
                 result.make_mcp_client_calls_without_client_source.append(node)
 
         # 3. Network call sites must sit inside a creds block. Only flag
-        #    attribute calls whose receiver Name is a tracked client
-        #    binding, which avoids false positives on dict.get / .update /
-        #    os.environ.get / etc.
+        # attribute calls whose receiver Name is a tracked client
+        # binding, which avoids false positives on dict.get / .update /
+        # os.environ.get / etc.
         method_name = _http_method_attr(node)
         if method_name is not None and enclosing_func_stack:
             receiver = _attr_receiver_name(node)
@@ -812,13 +812,13 @@ class TestScannerSelfChecks:
         assert _has_client_source_argument(call)
 
     def test_has_client_source_argument_missing(self) -> None:
-        """No args at all → rejected."""
+        """No args at all  rejected."""
         call = ast.parse("make_mcp_client()").body[0].value
         assert isinstance(call, ast.Call)
         assert not _has_client_source_argument(call)
 
     def test_has_client_source_argument_other_keyword_only(self) -> None:
-        """A different kwarg with no positional args → rejected."""
+        """A different kwarg with no positional args  rejected."""
         call = ast.parse("make_mcp_client(timeout=1.0)").body[0].value
         assert isinstance(call, ast.Call)
         assert not _has_client_source_argument(call)

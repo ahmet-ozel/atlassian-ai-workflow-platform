@@ -58,7 +58,7 @@ import pytest
 # Workspace anchors and sys.path bootstrapping
 # ---------------------------------------------------------------------------
 
-# tests/property/test_workflow_determinism_replay.py → platform/
+# tests/property/test_workflow_determinism_replay.py  platform/
 _PLATFORM_ROOT: Path = Path(__file__).resolve().parents[2]
 
 # Workers ship under ``workers/<name>/src/`` and import their submodules
@@ -117,8 +117,8 @@ AGENT_RUNNER_FIXTURES: tuple[HistoryFixture, ...] = (
         stem="agent_runner_workflow_code_change_happy_path",
         description=(
             "code_change_with_test happy path through bitbucket_create_branch "
-            "→ opencode_generate_code → bitbucket_create_commit → "
-            "bitbucket_open_pr → ExecutionRunWorkflow child → artifact_upload."
+            " opencode_generate_code  bitbucket_create_commit  "
+            "bitbucket_open_pr  ExecutionRunWorkflow child  artifact_upload."
         ),
     ),
 )

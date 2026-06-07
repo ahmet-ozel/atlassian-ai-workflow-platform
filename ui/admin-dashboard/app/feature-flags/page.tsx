@@ -2,10 +2,8 @@
 
 /**
  * Feature flags panel.
- *
- * Supports listing and toggling runtime feature flags.
- *
- * Lists every flag in `shared.feature_flags` with global value and
+ * * Supports listing and toggling runtime feature flags.
+ * * Lists every flag in `shared.feature_flags` with global value and
  * per-dept overrides. Each toggle opens a 5-second countdown confirm
  * dialog; mutations target the v1 surface (`/api/v1/feature-flags`).
  */
@@ -44,11 +42,11 @@ const CONFIRM_SECONDS = 5;
 function describeAction(action: ToggleAction): string {
   switch (action.kind) {
     case "global":
-      return `Global "${action.flag.key}" → ${
+      return `Global "${action.flag.key}"  ${
         action.nextValue ? "AÇIK" : "KAPALI"
       }`;
     case "dept-set":
-      return `"${action.deptId}" departman override "${action.flag.key}" → ${
+      return `"${action.deptId}" departman override "${action.flag.key}"  ${
         action.nextValue ? "AÇIK" : "KAPALI"
       }`;
     case "dept-remove":
@@ -284,7 +282,7 @@ export default function FeatureFlagsPage(): JSX.Element {
           </div>
           <div className="page-header__actions">
             <button className="btn" onClick={refresh} disabled={loading}>
-              {loading ? <span className="spinner" /> : "🔄"} Yenile
+              {loading ? <span className="spinner" /> : ""} Yenile
             </button>
           </div>
         </div>
@@ -292,7 +290,7 @@ export default function FeatureFlagsPage(): JSX.Element {
 
       {error && (
         <div className="banner banner--danger" role="alert">
-          <span className="banner__icon">⚠️</span>
+          <span className="banner__icon"></span>
           <div className="banner__body">{error}</div>
         </div>
       )}
@@ -313,7 +311,7 @@ export default function FeatureFlagsPage(): JSX.Element {
         <div className="card__body card__body--flush">
           {sortedFlags.length === 0 ? (
             <div className="empty">
-              <div className="empty__icon">🚩</div>
+              <div className="empty__icon"></div>
               <div className="empty__title">Bayrak yok</div>
             </div>
           ) : (
@@ -349,7 +347,7 @@ export default function FeatureFlagsPage(): JSX.Element {
                           onClick={() => queueGlobalToggle(flag)}
                           aria-label={`${flag.key} global değerini değiştir`}
                         >
-                          {flag.global_value ? "✅ AÇIK" : "⛔ KAPALI"}
+                          {flag.global_value ? " AÇIK" : " KAPALI"}
                         </button>
                       </td>
                       <td>
@@ -366,7 +364,7 @@ export default function FeatureFlagsPage(): JSX.Element {
                                   disabled={busyKey === flag.key}
                                   onClick={() => queueDeptOverrideToggle(flag, deptId, value)}
                                 >
-                                  {value ? "✅" : "⛔"}
+                                  {value ? "" : ""}
                                 </button>
                                 <button
                                   type="button"

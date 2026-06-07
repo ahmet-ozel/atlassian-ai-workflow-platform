@@ -179,10 +179,10 @@ def compare_account_ids(
 
     Consistency rules:
 
-    * Both ``None`` → consistent (no validation possible yet).
-    * Either side ``None`` → consistent (only one source has spoken
+    * Both ``None``  consistent (no validation possible yet).
+    * Either side ``None``  consistent (only one source has spoken
       so far; the next probe / next config push will fill the other).
-    * Both non-``None`` → byte-equal comparison; mismatch otherwise.
+    * Both non-``None``  byte-equal comparison; mismatch otherwise.
 
     The function is intentionally tiny so the callers (admin
     endpoint, startup hook, probe runner) all agree on the same

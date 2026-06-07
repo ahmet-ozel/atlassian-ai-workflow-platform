@@ -4,7 +4,7 @@ Deploys the platform's standard Issue Template - issue type, custom
 fields and screen scheme - to a target Jira tenant. The script reads
 the desired template from a YAML / JSON configuration file (or an
 in-memory dict for direct programmatic use) and aligns the live Jira
-state with that desired state via per-entity ``read → diff → write``
+state with that desired state via per-entity ``read  diff  write``
 operations.
 
 Idempotency contract

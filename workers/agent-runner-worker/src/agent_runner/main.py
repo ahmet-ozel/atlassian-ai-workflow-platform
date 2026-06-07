@@ -178,7 +178,7 @@ def _load_activities() -> list[Any]:
                 artifact_upload,
                 artifact_download,
                 artifact_delete,
-                # MinIO → Jira binary attachment pipeline
+                # MinIO  Jira binary attachment pipeline
                 upload_artifact_to_jira,
                 # OpenCode
                 opencode_generate_code,

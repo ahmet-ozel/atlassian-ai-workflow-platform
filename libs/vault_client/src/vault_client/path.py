@@ -49,11 +49,11 @@ _PREFIX: Final[str] = "vault:"
 # All templates use ``str.format``-style placeholders so that producing a
 # concrete path stays a single, greppable call site::
 #
-#     ref = "vault:" + USER_SESSION_PATH_TEMPLATE.format(
-#         session_id=session_id,
-#         service="jira",
-#     )
-#     path = VaultPath.parse(ref)
+# ref = "vault:" + USER_SESSION_PATH_TEMPLATE.format(
+# session_id=session_id,
+# service="jira",
+# )
+# path = VaultPath.parse(ref)
 #
 # The templates intentionally **omit** the ``vault:`` prefix so they
 # compose with :meth:`VaultPath.relative` naturally; callers prepend the

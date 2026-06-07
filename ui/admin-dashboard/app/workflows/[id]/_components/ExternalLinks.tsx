@@ -36,7 +36,7 @@ export default function ExternalLinks({ links }: ExternalLinksProps): JSX.Elemen
             textDecoration: "none",
           }}
         >
-          🔗 Jira Issue
+           Jira Issue
         </a>
       )}
       {links.bitbucket_pr_url && (
@@ -56,7 +56,7 @@ export default function ExternalLinks({ links }: ExternalLinksProps): JSX.Elemen
             textDecoration: "none",
           }}
         >
-          🔀 Bitbucket PR
+           Bitbucket PR
         </a>
       )}
       {links.confluence_page_url && (
@@ -76,7 +76,7 @@ export default function ExternalLinks({ links }: ExternalLinksProps): JSX.Elemen
             textDecoration: "none",
           }}
         >
-          📄 Confluence Page
+           Confluence Page
         </a>
       )}
     </section>

@@ -1,7 +1,7 @@
 ﻿"""Loop Guard pipeline stage - drops webhooks triggered by bot's own actions.
 
 This module implements the stateful ``LoopGuard`` class that participates
-in the webhook processing pipeline (Event_Dedup → **Loop_Guard** →
+in the webhook processing pipeline (Event_Dedup  **Loop_Guard**
 Webhook_Dispatcher). Unlike the pure predicates in
 ``decision/loop_guard.py``, this class performs I/O:
 
@@ -133,9 +133,9 @@ class LoopGuard:
     This is a stateful pipeline stage that:
     1. Compares ``actor_account_id`` against all bot IDs in
        ``automation.department_bots``.
-    2. If the actor is a bot → DROP + audit ``loop_guard_dropped``.
+    2. If the actor is a bot  DROP + audit ``loop_guard_dropped``.
     3. Tracks drops per ``issue_key`` for storm detection.
-    4. If 3+ drops in 60s for the same issue → block for 5 min +
+    4. If 3+ drops in 60s for the same issue  block for 5 min +
        admin notification.
     5. Exempts Approval Gate ``[approve]``/``[reject]`` comments
        (but bot cannot approve itself).
@@ -215,7 +215,7 @@ class LoopGuard:
             )
             return StageResult(action="pass")
 
-        # 4. Actor is a bot → DROP.
+        # 4. Actor is a bot  DROP.
         await self._record_drop(payload, now)
         await self._audit_drop(payload, reason="loop_guard_dropped")
 

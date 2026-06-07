@@ -2,21 +2,17 @@
 
 /**
  * ExternalProvidersSection - AI model provider status widget.
- *
- * Renders a compact section above the managed services table showing the
+ * * Renders a compact section above the managed services table showing the
  * live status of explicitly configured AI model providers.
- *
- * Each provider displays:
+ * * Each provider displays:
  * - Name
  * - Status badge (green/yellow/red/grey)
  * - Last probe timestamp
  * - Latency (ms)
  * - "Şimdi Test Et" (Test Now) button for on-demand re-probe
- *
- * When no AI provider is configured, the section renders a neutral grey
+ * * When no AI provider is configured, the section renders a neutral grey
  * "AI model tanimli degil" state instead of red provider failures.
- *
- */
+ * */
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -346,7 +342,7 @@ export default function ExternalProvidersSection() {
       if (!res.ok) {
         const text = await res.text().catch(() => "");
         setError(
-          `GET /api/v1/services/external → HTTP ${res.status}${text ? `: ${text.slice(0, 200)}` : ""}`,
+          `GET /api/v1/services/external  HTTP ${res.status}${text ? `: ${text.slice(0, 200)}` : ""}`,
         );
         return;
       }

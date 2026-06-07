@@ -52,10 +52,10 @@ class TestModuleSurface:
         match Jira comments by this prefix; the literal text must
         not drift without an explicit migration.
         """
-        assert NOOP_SUCCESS_PREFIX == "✅ noop_test sonucu"
+        assert NOOP_SUCCESS_PREFIX == " noop_test sonucu"
 
     def test_failure_prefix_is_pinned(self) -> None:
-        assert NOOP_FAILURE_PREFIX == "❌ noop_test sonucu"
+        assert NOOP_FAILURE_PREFIX == " noop_test sonucu"
 
     def test_unknown_exit_code_marker_is_pinned(self) -> None:
         assert NOOP_EXIT_CODE_UNKNOWN == "n/a"
@@ -99,7 +99,7 @@ class TestSuccessCases:
         """
         body = format_noop_result_comment(exit_code=0, stdout="ok")
         assert body == (
-            "✅ noop_test sonucu: exit_code=0, çıktı:\n"
+            " noop_test sonucu: exit_code=0, çıktı:\n"
             "```\nok\n```"
         )
 
@@ -110,7 +110,7 @@ class TestSuccessCases:
         so a Jira reader does not see an empty code block.
         """
         body = format_noop_result_comment(exit_code=0, stdout="")
-        assert body == "✅ noop_test sonucu: exit_code=0, çıktı: <yok>"
+        assert body == " noop_test sonucu: exit_code=0, çıktı: <yok>"
         assert "```" not in body
 
     def test_success_with_none_stdout_renders_no_output_marker(self) -> None:
@@ -120,7 +120,7 @@ class TestSuccessCases:
         renders identically to the empty-string case.
         """
         body = format_noop_result_comment(exit_code=0, stdout=None)
-        assert body == "✅ noop_test sonucu: exit_code=0, çıktı: <yok>"
+        assert body == " noop_test sonucu: exit_code=0, çıktı: <yok>"
 
     def test_success_no_trailing_newline_in_comment(self) -> None:
         """
@@ -164,7 +164,7 @@ class TestFailureCases:
 
     def test_large_exit_code_renders_verbatim(self) -> None:
         body = format_noop_result_comment(exit_code=255, stdout="")
-        assert body == "❌ noop_test sonucu: exit_code=255, çıktı: <yok>"
+        assert body == " noop_test sonucu: exit_code=255, çıktı: <yok>"
 
     def test_none_exit_code_renders_unknown_marker_and_failure_prefix(
         self,
@@ -189,7 +189,7 @@ class TestFailureCases:
         outcome.
         """
         body = format_noop_result_comment(exit_code=1, stdout="")
-        assert body == "❌ noop_test sonucu: exit_code=1, çıktı: <yok>"
+        assert body == " noop_test sonucu: exit_code=1, çıktı: <yok>"
 
 
 # ---------------------------------------------------------------------------
@@ -266,7 +266,7 @@ class TestTruncation:
         body = format_noop_result_comment(exit_code=0, stdout=stdout)
         assert NOOP_TRUNCATION_MARKER not in body
 
-        # One character over the cap → truncated, regardless of
+        # One character over the cap  truncated, regardless of
         # byte count.
         stdout = "ı" * (NOOP_STDOUT_TRUNCATE_CHARS + 1)
         body = format_noop_result_comment(exit_code=0, stdout=stdout)

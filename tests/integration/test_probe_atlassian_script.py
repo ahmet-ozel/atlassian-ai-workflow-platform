@@ -96,7 +96,7 @@ _PAYMENTS_JIRA_BASE = "https://payments.atlassian.net"
 _PAYMENTS_CONFLUENCE_BASE = "https://payments.atlassian.net"
 _PAYMENTS_BITBUCKET_BASE = "https://api.bitbucket.org"
 
-#: Service → expected probe path (the script's private
+#: Service  expected probe path (the script's private
 #: ``_SERVICE_PATHS`` mapping; we duplicate the constants here so a
 #: regression in the script is caught by URL-path mismatch in the mock
 #: transport rather than by an opaque ``http_404`` reason).
@@ -175,7 +175,7 @@ def _make_transport(
  Parameters
  ----------
  failures:
- Optional mapping of ``(host, path)`` → HTTP status code. Any
+ Optional mapping of ``(host, path)``  HTTP status code. Any
  ``(host, path)`` listed here returns the configured non-2xx
  status; the rest return 200 with an Atlassian-shaped body.
  transport_errors:
@@ -327,7 +327,7 @@ def test_all_credentials_succeed_returns_exit_zero_and_no_stderr(
  Every dept/service pair has a valid Vault secret and the mock
  Atlassian transport returns 200 for every probe. The script MUST
  exit ``0`` and write **nothing** to stderr 's
- second sentence: "tüm probe'lar başarılı → exit_code=0").
+ second sentence: "tüm probe'lar başarılı  exit_code=0").
  """
 
     env = _vault_env(tmp_path)
@@ -480,7 +480,7 @@ def test_any_credential_failure_returns_exit_one_with_dept_service_reason_lines(
         line for line in captured.err.splitlines() if line.strip()
     ]
     assert len(stderr_lines) == 1, (
-        f"exactly one failing probe → exactly one stderr line; got "
+        f"exactly one failing probe  exactly one stderr line; got "
         f"{stderr_lines!r}"
     )
     line = stderr_lines[0]

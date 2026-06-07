@@ -2,25 +2,22 @@
 
 /**
  * Service detail page.
- *
- * Renders the manifest entry, the cached lifecycle state (via
+ * * Renders the manifest entry, the cached lifecycle state (via
  * :func:`StateBadge`) and a credentials banner reflecting the most
  * recent connectivity probe outcome. The banner exposes a ``Re-probe``
  * action that hits ``POST /admin/services/{name}/probe`` and refreshes
  * the surfaced fields in place.
- *
- * Wire shape mirrors :class:`src.routers._models.ServiceDetail` (with
+ * * Wire shape mirrors :class:`src.routers._models.ServiceDetail` (with
  * the connectivity probe fields added in this same task) and
  * :class:`src.routers._models.ProbeResponse`.
- *
- * Banner rules:
+ * * Banner rules:
  * --------------------
- * - ``credentials_status === "ok"``      → green "Credentials OK".
- * - ``credentials_status === "failed"``  → yellow banner with detail
- *                                          + ``[Re-probe]`` button.
- * - ``credentials_status === "unknown"`` → no banner (probe never ran).
- * - ``credentials_status === null``      → no banner (no probe
- *                                          configured for this service).
+ * - ``credentials_status === "ok"``       green "Credentials OK".
+ * - ``credentials_status === "failed"``   yellow banner with detail
+ * + ``[Re-probe]`` button.
+ * - ``credentials_status === "unknown"``  no banner (probe never ran).
+ * - ``credentials_status === null``       no banner (no probe
+ * configured for this service).
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -100,8 +97,7 @@ function formatTimestamp(value: string | null | undefined): string {
  * its manifest form-schema. Returns ``null`` when the service has no
  * LLM fields (e.g. postgres, vault, atlassian-mcp) - those services do
  * not talk to a model, so no "model" row is shown for them.
- *
- * NOTE: there is no standalone "AI model" service - each service that
+ * * NOTE: there is no standalone "AI model" service - each service that
  * needs an LLM receives the provider/model + key in its own Start
  * modal. This surfaces that per-service configuration so operators can
  * see at a glance which model a given service runs on.
@@ -163,7 +159,7 @@ function CredentialsBanner({
   reprobeError,
 }: CredentialsBannerProps) {
   // ``null`` (no probe configured) and ``unknown`` (probe never run)
-  // → no banner rendered. The catalog still shows the lifecycle state.
+  //  no banner rendered. The catalog still shows the lifecycle state.
   if (status === null || status === "unknown") {
     return null;
   }
@@ -186,7 +182,7 @@ function CredentialsBanner({
           fontSize: "0.9rem",
         }}
       >
-        <span aria-hidden style={{ fontSize: "1.05rem" }}>✅</span>
+        <span aria-hidden style={{ fontSize: "1.05rem" }}></span>
         <span style={{ fontWeight: 600 }}>Kimlik bilgileri OK</span>
         <span style={{ color: "#15803d", fontWeight: 400 }}>
           · son kontrol {formatTimestamp(probeAt)}
@@ -218,7 +214,7 @@ function CredentialsBanner({
           marginBottom: detail ? "0.5rem" : 0,
         }}
       >
-        <span aria-hidden style={{ fontSize: "1.05rem" }}>⚠️</span>
+        <span aria-hidden style={{ fontSize: "1.05rem" }}></span>
         <strong>Kimlik bilgileri başarısız</strong>
         <span style={{ color: "#92400e", fontWeight: 400 }}>
           · son kontrol {formatTimestamp(probeAt)}
@@ -308,7 +304,7 @@ export default function ServiceDetailPage({ params }: PageProps) {
         const detail = await safeReadDetail(res);
         setState({
           kind: "error",
-          message: `GET /admin/services/${name} → HTTP ${res.status}: ${detail}`,
+          message: `GET /admin/services/${name}  HTTP ${res.status}: ${detail}`,
         });
         return;
       }
@@ -375,7 +371,7 @@ export default function ServiceDetailPage({ params }: PageProps) {
         }}
       >
         <a href="/services" style={{ color: "#2563eb", textDecoration: "none" }}>
-          ← Servisler
+           Servisler
         </a>
       </nav>
 
@@ -520,7 +516,7 @@ export default function ServiceDetailPage({ params }: PageProps) {
                   <dd style={ddStyle}>
                     {running ? (
                       <span style={{ color: "#166534", fontWeight: 600 }}>
-                        ✓ Servis çalışıyor
+                         Servis çalışıyor
                       </span>
                     ) : (
                       <span style={{ color: "#92400e", fontWeight: 600 }}>

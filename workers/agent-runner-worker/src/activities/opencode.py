@@ -362,8 +362,7 @@ async def opencode_generate_code(plan: CodePlan, workspace_path: str) -> CodeRes
             session_id = session_data["id"]
 
             # 2. Send the code generation message.
-            #
-            # The sidecar runs the model as a headless assistant: the
+            # # The sidecar runs the model as a headless assistant: the
             # workspace is empty (the platform commits the returned file
             # set through the Bitbucket API rather than from a working
             # tree), so the model must answer with the complete file

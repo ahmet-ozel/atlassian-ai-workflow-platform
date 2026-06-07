@@ -8,7 +8,7 @@ This file pins the expected partition and partial-failure behavior:
     single source of truth) and :func:`partition` routes every action
     by ``kind`` membership - never by the carried ``severity`` field.
 
-(b) **Critical failure → workflow ``failed`` + compensation.**  When a
+(b) **Critical failure  workflow ``failed`` + compensation.**  When a
     simulated apply step records a non-empty ``failed_critical`` list
     on an :class:`ApplyResult`, the workflow body raises
     :class:`_OutputActionCriticalFailure` (the sentinel
@@ -16,7 +16,7 @@ This file pins the expected partition and partial-failure behavior:
     workflow's ``run`` traps to dispatch ``compensation_chain_run``
     after a critical output-action failure.
 
-(c) **Best-effort failure → workflow ``completed`` / partial.**  When
+(c) **Best-effort failure  workflow ``completed`` / partial.**  When
     ``failed_critical`` is empty but ``failed_best_effort`` is
     non-empty, the simulated apply step does **not** raise; the
     list of failed best-effort kinds parities with
@@ -29,7 +29,7 @@ This file pins the expected partition and partial-failure behavior:
     :func:`_validate_jira_attachment_format` mirrors the contract that
     ``apply()`` enforces before invoking the activity.
 
-(e) **Size-cap → MinIO redirection invariant.**  Calling
+(e) **Size-cap  MinIO redirection invariant.**  Calling
     :func:`redirect_oversized_payload` on a payload whose JSON
     encoding exceeds :data:`MAX_OUTPUT_BYTES` returns a new action
     whose payload is the canonical ``{summary, minio_uri, size_bytes}``
@@ -47,7 +47,7 @@ The companion module :mod:`test_output_size_cap` already pins the
 identity / replacement contract of
 :func:`redirect_oversized_payload` exhaustively across many random
 payloads; clause (e) here re-asserts the boundary condition with a
-single deterministic example so the routing of "oversized → summary
+single deterministic example so the routing of "oversized  summary
 triple" remains covered with the partition semantics.
 
 Run target (from ``platform/``)::
@@ -87,7 +87,7 @@ from temporal_shared.output_size_cap import (
 # ---------------------------------------------------------------------------
 
 #: Closed alphabet of valid :class:`OutputAction.kind` values plus the
-#: severity each kind maps to (the kind ↔ severity invariant from
+#: severity each kind maps to (the kind  severity invariant from
 #: :mod:`temporal_shared.messages`).  Hypothesis samples from this
 #: tuple so every generated action is well-formed in isolation; the
 #: partition behaviour is what the property tests assert.
@@ -301,7 +301,7 @@ class TestPartitionDisjoint:
 
 
 # ---------------------------------------------------------------------------
-# failed_critical non-empty → critical-failure raised
+# failed_critical non-empty  critical-failure raised
 # ---------------------------------------------------------------------------
 
 
@@ -396,7 +396,7 @@ def _simulate_apply(
 
 
 class TestCriticalFailureTriggersCompensation:
-    """``failed_critical`` non-empty → exception + compensation dispatch."""
+    """``failed_critical`` non-empty  exception + compensation dispatch."""
 
     @settings(max_examples=100, deadline=None)
     @given(
@@ -484,12 +484,12 @@ class TestCriticalFailureTriggersCompensation:
 
 
 # ---------------------------------------------------------------------------
-# best-effort failure → completed_with_partial_failure
+# best-effort failure  completed_with_partial_failure
 # ---------------------------------------------------------------------------
 
 
 class TestBestEffortFailureIsRecordedNotRaised:
-    """``failed_best_effort`` non-empty (and ``failed_critical`` empty) →
+    """``failed_best_effort`` non-empty (and ``failed_critical`` empty)
     workflow ``completed`` / partial; the failed kinds parity with
     ``ApplyResult.failed_best_effort``."""
 
@@ -526,7 +526,7 @@ class TestBestEffortFailureIsRecordedNotRaised:
             compensation=compensation,
         )
 
-        # No exception → no compensation dispatch.
+        # No exception  no compensation dispatch.
         assert compensation.invocations == []
 
         # No critical failure recorded.
@@ -683,7 +683,7 @@ class TestJiraAttachmentFormatGuard:
 
 
 # ---------------------------------------------------------------------------
-# size cap → MinIO redirection invariant (boundary)
+# size cap  MinIO redirection invariant (boundary)
 # ---------------------------------------------------------------------------
 #
 # The exhaustive size-cap behaviour (random-payload identity / replacement

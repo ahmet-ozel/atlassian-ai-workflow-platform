@@ -227,10 +227,10 @@ async def probe_workspace_disk_usage() -> dict[str, Any]:
         evict_pct,
     )
 
-    # ``df -P -m {base}`` → POSIX-portable, MB units.
+    # ``df -P -m {base}``  POSIX-portable, MB units.
     # Output shape:
-    #   Filesystem    1M-blocks    Used    Available    Capacity    Mounted on
-    #   /dev/sda1     102400       54231   48169        53%         /
+    # Filesystem    1M-blocks    Used    Available    Capacity    Mounted on
+    # /dev/sda1     102400       54231   48169        53%         /
     command = f"df -P -m {base!s} 2>/dev/null | tail -n 1"
 
     try:

@@ -89,7 +89,7 @@ import pytest
 # Workspace anchors
 # ---------------------------------------------------------------------------
 
-# tests/property/test_no_hardcoded_field_ids.py → platform/
+# tests/property/test_no_hardcoded_field_ids.py  platform/
 _PLATFORM_ROOT: Path = Path(__file__).resolve().parents[2]
 
 

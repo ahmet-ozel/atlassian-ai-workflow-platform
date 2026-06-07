@@ -2,8 +2,7 @@
 
 /**
  * Security panel.
- *
- * Cards: dept connectivity probe artifacts, bot credential rotation
+ * * Cards: dept connectivity probe artifacts, bot credential rotation
  * banner (TTL countdown per dept), SSH runners, webhook secrets.
  */
 
@@ -77,7 +76,7 @@ export default function SecurityPage(): JSX.Element {
           </div>
           <div className="page-header__actions">
             <button className="btn" onClick={refresh} disabled={loading}>
-              {loading ? <span className="spinner" /> : "🔄"} Yenile
+              {loading ? <span className="spinner" /> : ""} Yenile
             </button>
           </div>
         </div>
@@ -103,7 +102,7 @@ export default function SecurityPage(): JSX.Element {
 
       {error && (
         <div className="banner banner--danger">
-          <span className="banner__icon">⚠️</span>
+          <span className="banner__icon"></span>
           <div className="banner__body">{error}</div>
         </div>
       )}
@@ -115,14 +114,14 @@ export default function SecurityPage(): JSX.Element {
         <div className="card__body">
           {rotate.length === 0 ? (
             <div className="banner banner--success">
-              <span className="banner__icon">✅</span>
+              <span className="banner__icon"></span>
               <div className="banner__body">Tüm bot kimlikleri rotasyon penceresi içinde.</div>
             </div>
           ) : (
             <ul className="stack" style={{ margin: 0, padding: 0, listStyle: "none" }}>
               {rotate.map((r, i) => (
                 <li key={`${r.dept_id}-${r.service}-${i}`} className="banner banner--warn">
-                  <span className="banner__icon">⚠️</span>
+                  <span className="banner__icon"></span>
                   <div className="banner__body">
                     <strong>{r.dept_id}</strong> / {r.service} -{" "}
                     <strong>{r.rotates_in_days} gün</strong> içinde rotasyon gerekli.
@@ -142,7 +141,7 @@ export default function SecurityPage(): JSX.Element {
         <div className="card__body card__body--flush">
           {probes.length === 0 ? (
             <div className="empty">
-              <div className="empty__icon">🩺</div>
+              <div className="empty__icon"></div>
               <div className="empty__title">Probe kaydı yok</div>
             </div>
           ) : (

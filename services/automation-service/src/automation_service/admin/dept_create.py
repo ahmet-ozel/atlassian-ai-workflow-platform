@@ -41,7 +41,7 @@ Sequence:
     5. Insert into ``automation.departments`` (config_json mirror)
        and ``automation.department_bots`` (with ``credential_ref``
        pointing at the **final** path).
-    6. Move staging → final path in Vault: read staging value, write
+    6. Move staging  final path in Vault: read staging value, write
        to final, delete staging. Done one-by-one so a partial failure
        still leaves the staging key around for cleanup.
     7. ``COMMIT`` and emit a ``dept_created`` audit row with
@@ -397,9 +397,9 @@ class DepartmentCreateOrchestrator:
         )
 
         # 1. Stage every credential. Vault holds the encrypted-at-rest
-        #    canonical copy; the in-memory bytearray stays alive for
-        #    the probe phase below and is zeroed before the DB
-        #    transaction begins.
+        # canonical copy; the in-memory bytearray stays alive for
+        # the probe phase below and is zeroed before the DB
+        # transaction begins.
         try:
             for bot in request.bots:
                 staging = staging_paths[bot.service]
@@ -412,10 +412,10 @@ class DepartmentCreateOrchestrator:
             raise
 
         # 2. Run probes against the staged credentials. The probe
-        #    runner reads the in-memory token bytes via the
-        #    :class:`ResolvedCredential` payload - Vault has the same
-        #    value, but reaching back into Vault for the probe would
-        #    add a needless round trip on every create call.
+        # runner reads the in-memory token bytes via the
+        # :class:`ResolvedCredential` payload - Vault has the same
+        # value, but reaching back into Vault for the probe would
+        # add a needless round trip on every create call.
         try:
             await self._run_probes(request)
         except ProbeFailureError:
@@ -433,10 +433,10 @@ class DepartmentCreateOrchestrator:
         # value again on the success path.
         self._zero_all_tokens(request)
 
-        # 3. DB transaction + Vault staging→final move. Any failure
-        #    inside this block deletes every staging key and rolls
-        #    back; the orchestrator emits the appropriate audit row
-        #    before re-raising.
+        # 3. DB transaction + Vault stagingfinal move. Any failure
+        # inside this block deletes every staging key and rolls
+        # back; the orchestrator emits the appropriate audit row
+        # before re-raising.
         try:
             created_at = await self._commit(
                 request,
@@ -462,8 +462,8 @@ class DepartmentCreateOrchestrator:
             raise
 
         # 4. Successful path - emit a single ``dept_created`` audit
-        #    row carrying the actor's role for the audit
-        #    actor_role-mandatory invariant.
+        # row carrying the actor's role for the audit
+        # actor_role-mandatory invariant.
         await self._audit.write(
             AuditEvent(
                 actor_id=actor_id,
@@ -673,7 +673,7 @@ class DepartmentCreateOrchestrator:
     ) -> datetime:
         """Insert the department + bots and promote staging keys.
 
-        The DB work and the Vault staging→final move all happen
+        The DB work and the Vault stagingfinal move all happen
         within the ``with_dept_session`` context. Any failure aborts
         the transaction (``ROLLBACK`` is issued by the helper) and
         re-raises. The caller deletes staging keys on the way out;
@@ -725,7 +725,7 @@ class DepartmentCreateOrchestrator:
                     space_keys=request.confluence_space_keys,
                 )
 
-                # Now promote staging → final in Vault. If any move
+                # Now promote staging  final in Vault. If any move
                 # fails, the surrounding ``except`` catches it,
                 # ``ROLLBACK`` runs (via with_dept_session), and the
                 # outer caller deletes all staging paths.
@@ -866,7 +866,7 @@ class DepartmentCreateOrchestrator:
             )
 
     # ------------------------------------------------------------------
-    # Vault staging → final promotion
+    # Vault staging  final promotion
     # ------------------------------------------------------------------
 
     def _promote_staging(self, staging: VaultPath, final: VaultPath) -> None:

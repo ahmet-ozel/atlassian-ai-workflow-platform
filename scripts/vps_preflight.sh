@@ -5,13 +5,13 @@
 #
 # Outputs structured KEY=VALUE lines to stdout.
 # Section markers allow the local launcher to split output into evidence files:
-#   01-preflight.txt  (### SECTION: PREFLIGHT ###)
-#   02-install.txt    (### SECTION: INSTALL ###)
+# 01-preflight.txt  (### SECTION: PREFLIGHT ###)
+# 02-install.txt    (### SECTION: INSTALL ###)
 #
 # Exit codes:
-#   0 = all assertions pass
-#   1 = pre-flight assertion failure (port conflict, hardware, OS)
-#   2 = software-install assertion failure
+# 0 = all assertions pass
+# 1 = pre-flight assertion failure (port conflict, hardware, OS)
+# 2 = software-install assertion failure
 #
 # Requirements: R1.1, R1.2, R1.3, R1.4, R1.5, R2.1, R2.2, R2.3, R2.4, R2.5, R2.6
 # =============================================================================

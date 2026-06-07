@@ -1,4 +1,4 @@
-﻿"""Bitbucket webhook handler - sequential guard chain → Temporal dispatch.
+﻿"""Bitbucket webhook handler - sequential guard chain  Temporal dispatch.
 
 Implements the ``POST /webhooks/bitbucket`` endpoint with the same
 ordered guard chain as ``webhooks/jira.py`` (each step short-circuits
@@ -11,16 +11,16 @@ audit entry; see Error Handling §5.1):
   (d) ``loop_guard.is_self_actor(...)`` - 200 ``loop_guard`` on self.
   (e) Classify event type via ``loop_guard.route(...)`` - 200 ``ignored``
       for unsupported event types.
-  (f) ``pullrequest:reviewer_added`` → reviewer is bot?  If not, 200
+  (f) ``pullrequest:reviewer_added``  reviewer is bot?  If not, 200
       ``not_bot_reviewer``.  Otherwise:
         - INSERT INTO ``automation.work_items`` with status ``pending``.
         - ``temporal.start_workflow("AutomationWorkflow", ...)`` with
           idempotent ID ``automation_workflow_id_bb(workspace, repo, pr_id)``
           and ``workflow_type='pr_review'``.
         - 200 ``{"status": "accepted", "workflow_id": "..."}``.
-  (g) ``pullrequest:comment_created`` → ``temporal.signal_workflow(...)``
+  (g) ``pullrequest:comment_created``  ``temporal.signal_workflow(...)``
       ``new_comment`` signal forwarded to the existing PR-review
-      workflow → 200 ``comment_signaled`` (or ``ignored`` when no
+      workflow  200 ``comment_signaled`` (or ``ignored`` when no
       workflow is running for this PR).
 
 A ``WorkflowAlreadyStartedError`` raised from the workflow start

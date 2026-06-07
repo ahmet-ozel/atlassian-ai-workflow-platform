@@ -36,7 +36,7 @@ Properties checked
  forbids accidental collisions like ``.../iter-1`` being a prefix
  of ``.../iter-10`` from creeping in for *consecutive* iterations
  - a subtle directory-tree foot-gun the design explicitly calls
- out for the iter-N → iter-N+1 hand-off.
+ out for the iter-N  iter-N+1 hand-off.
 
 These two properties together guarantee: for the
 consecutive case the paths cannot even share a filesystem prefix, and
@@ -178,7 +178,7 @@ def test_consecutive_iterations_are_mutually_non_prefixed(
     issue_key: str,
     n: int,
 ) -> None:
-    """(consecutive iter-N → iter-N+1).
+    """(consecutive iter-N  iter-N+1).
 
  For any iteration ``N`` with a valid successor ``N+1``, the two
  rendered paths must:

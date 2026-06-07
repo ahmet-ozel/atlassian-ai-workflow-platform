@@ -91,7 +91,7 @@ _CLIENT, _CAPTURED = _build_app()
 )
 @settings(max_examples=100, deadline=None)
 def test_saved_test_rejects_prompt_shaping_fields(extras: list[str]) -> None:
-    """``POST /admin/llm-providers/{id}/test`` with extras → 422."""
+    """``POST /admin/llm-providers/{id}/test`` with extras  422."""
 
     body: dict[str, Any] = {field: "x" for field in extras}
     before = len(_CAPTURED)
@@ -116,7 +116,7 @@ def test_saved_test_rejects_prompt_shaping_fields(extras: list[str]) -> None:
 )
 @settings(max_examples=100, deadline=None)
 def test_unsaved_test_rejects_prompt_shaping_fields(extras: list[str]) -> None:
-    """``POST /admin/llm-providers/test`` with extras → 422."""
+    """``POST /admin/llm-providers/test`` with extras  422."""
 
     # Build a minimally-valid OpenAI body so the discriminated union
     # picks the variant before encountering the extras.

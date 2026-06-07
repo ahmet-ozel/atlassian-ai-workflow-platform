@@ -76,7 +76,7 @@ For any hypothesis-generated tuple
 For any hypothesis-generated outcome list ``outcomes`` the aggregator
 SHALL satisfy:
 
-**Empty input → empty aggregate.**
+**Empty input  empty aggregate.**
  ``aggregated_output([])`` returns
  ``AggregatedOutput(started=0, skipped=0, total=0,
  child_outcomes=)``.
@@ -349,9 +349,9 @@ def test_dispatch_skip_reason_classification(
 
  Every skip plan's ``reason`` matches the rule table:
 
- * ``"multi_step"`` workflow type → ``nested_multi_step_forbidden``
- * unknown workflow type → ``unknown_workflow_type``
- * known type with missing caps → ``out_of_scope``
+ * ``"multi_step"`` workflow type  ``nested_multi_step_forbidden``
+ * unknown workflow type  ``unknown_workflow_type``
+ * known type with missing caps  ``out_of_scope``
 
  And every ``"start"`` plan carries reason ``dispatched`` and an
  empty ``missing_capabilities`` set.

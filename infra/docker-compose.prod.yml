@@ -6,23 +6,23 @@
 # ``VAULT_DEV_ROOT_TOKEN_ID=dev-token-not-for-prod``,
 # ``AUTH_PROVIDER=local``). This override file:
 #
-#   1. Requires production credentials to be supplied via the
-#      environment - no dev defaults are inherited. ``docker compose``
-#      will refuse to start a service whose required variable is unset.
-#   2. Forces ``AUTH_PROVIDER=oidc`` (the canonical production auth
-#      provider) on automation-service. The dev ``local`` bypass - which
-#      accepts any non-empty bearer token - is disabled.
-#   3. Switches Vault out of ``-dev`` mode and onto persistent storage.
-#      A full unseal flow is documented in
-#      ``docs/runbooks/vault-production.md`` (Y2 follow-up).
-#   4. Tightens log retention and container restart policy.
+# 1. Requires production credentials to be supplied via the
+# environment - no dev defaults are inherited. ``docker compose``
+# will refuse to start a service whose required variable is unset.
+# 2. Forces ``AUTH_PROVIDER=oidc`` (the canonical production auth
+# provider) on automation-service. The dev ``local`` bypass - which
+# accepts any non-empty bearer token - is disabled.
+# 3. Switches Vault out of ``-dev`` mode and onto persistent storage.
+# A full unseal flow is documented in
+# ``docs/runbooks/vault-production.md`` (Y2 follow-up).
+# 4. Tightens log retention and container restart policy.
 #
 # Usage:
-#   make prod                    # equivalent to:
-#   docker compose -p platform \
-#     -f infra/docker-compose.yml \
-#     -f infra/docker-compose.prod.yml \
-#     up -d
+# make prod                    # equivalent to:
+# docker compose -p platform \
+# -f infra/docker-compose.yml \
+# -f infra/docker-compose.prod.yml \
+# up -d
 #
 # The Makefile's ``prod`` target wires this file alongside the base.
 # Never run ``make boot`` or ``make up-all`` in production - they layer

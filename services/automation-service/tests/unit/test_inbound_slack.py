@@ -4,15 +4,15 @@ Exercises the FastAPI route end-to-end using ``TestClient`` plus
 hand-rolled fakes for every collaborator (dept resolver, signature
 verifier, workflow client, audit logger). The tests cover:
 
-* The happy path (signed mention → 202 ``accepted`` + workflow
+* The happy path (signed mention  202 ``accepted`` + workflow
   started + audit ``inbound_workflow_started``).
-* Idempotent retry (same external id → ``was_existing=True`` +
+* Idempotent retry (same external id  ``was_existing=True`` +
   ``inbound_workflow_already_started``).
-* Bad signature → 401 + ``inbound_slack_hmac_failed``.
-* Unknown dept → 400 + ``inbound_dept_unresolved``.
-* URL verification handshake → 200 with the challenge.
-* Empty mention → 200 ``ignored``, **no** workflow started.
-* Unsupported event type → 200 ``ignored``.
+* Bad signature  401 + ``inbound_slack_hmac_failed``.
+* Unknown dept  400 + ``inbound_dept_unresolved``.
+* URL verification handshake  200 with the challenge.
+* Empty mention  200 ``ignored``, **no** workflow started.
+* Unsupported event type  200 ``ignored``.
 """
 
 from __future__ import annotations

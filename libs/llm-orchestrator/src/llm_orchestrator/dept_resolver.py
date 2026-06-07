@@ -1,7 +1,7 @@
 ﻿"""Department-level LLM provider resolution (Feature 6).
 
 Implements the resolution chain:
-    dept-override → global fallback
+    dept-override  global fallback
 
 When a department has ``llm_overrides`` configured in departments.json,
 the resolver uses the department-specific provider/credentials. Otherwise
@@ -145,7 +145,7 @@ def _try_dept_override(
 def resolve_llm_for_department(dept_id: str) -> LLMResolution:
     """Resolve the LLM provider for a department.
 
-    Resolution chain: dept primary → dept fallback → global.
+    Resolution chain: dept primary  dept fallback  global.
 
     Parameters
     ----------

@@ -451,7 +451,7 @@ def _build_new_mapping_list(
         m for m in current_mappings if m.slug not in diff.removed
     ]
 
-    # Build a lookup from slug → name based on the MCP scan so we can
+    # Build a lookup from slug  name based on the MCP scan so we can
     # populate the human-readable name for added entries. Falling
     # back to the slug when the MCP omits a name keeps the resulting
     # ``departments.json`` document valid even if the upstream is

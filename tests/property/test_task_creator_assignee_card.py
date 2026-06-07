@@ -10,7 +10,7 @@ data from ``GET /api/dept/{id}/bot-info`` and renders one of three
 visual states:
 
 (a) **Green badges** - All credentials present and probe status is
-    ``"ok"`` for every bot entry. Each service shows ✅.
+    ``"ok"`` for every bot entry. Each service shows .
 (b) **Red warning** - No bot credentials at all (``bots`` list is
     empty). Shows error message + link to Credentials page.
 (c) **Yellow warning** - At least one credential exists but its probe
@@ -87,10 +87,10 @@ def _truncate_account_id(account_id: str | None) -> str:
 
 
 def _probe_badge(probe_status: str) -> str:
-    """Return ✅ for ok, ❌ for anything else."""
+    """Return  for ok,  for anything else."""
     if probe_status == "ok":
-        return "✅"
-    return "❌"
+        return ""
+    return ""
 
 
 def determine_card_state(
@@ -238,7 +238,7 @@ _probe_failure_bot_info = st.builds(
 
 class TestAssigneeCardAllOk:
     """When all bot credentials are present and probe status is "ok" for
-    every entry, the card renders green badges (✅) for each service.
+    every entry, the card renders green badges () for each service.
     """
 
     @settings(
@@ -250,7 +250,7 @@ class TestAssigneeCardAllOk:
     def test_all_ok_produces_green_state(
         self, data: dict[str, Any]
     ) -> None:
-        """All credentials present + probe ok → card state is 'all_ok'."""
+        """All credentials present + probe ok  card state is 'all_ok'."""
         state = determine_card_state(data)
         assert state == "all_ok", (
             f"Expected 'all_ok' state for data with all probes ok, got '{state}'"
@@ -265,15 +265,15 @@ class TestAssigneeCardAllOk:
     def test_all_ok_badges_are_green(
         self, data: dict[str, Any]
     ) -> None:
-        """Each service badge shows ✅ when probe is ok."""
+        """Each service badge shows  when probe is ok."""
         bots = data["bots"]
         badges = get_badges(bots)
 
         for badge in badges:
-            assert "✅" in badge, (
-                f"Expected green badge (✅) for ok probe, got: {badge}"
+            assert "" in badge, (
+                f"Expected green badge () for ok probe, got: {badge}"
             )
-            assert "❌" not in badge
+            assert "" not in badge
 
     @settings(
         max_examples=100,
@@ -329,7 +329,7 @@ class TestAssigneeCardNoCredentials:
     def test_no_credentials_produces_red_state(
         self, data: dict[str, Any]
     ) -> None:
-        """No credentials → card state is 'no_credentials'."""
+        """No credentials  card state is 'no_credentials'."""
         state = determine_card_state(data)
         assert state == "no_credentials", (
             f"Expected 'no_credentials' state for empty bots list, got '{state}'"
@@ -381,7 +381,7 @@ class TestAssigneeCardProbeFailure:
     def test_probe_failure_produces_yellow_state(
         self, data: dict[str, Any]
     ) -> None:
-        """Credential exists + probe fail → card state is 'probe_failure'."""
+        """Credential exists + probe fail  card state is 'probe_failure'."""
         state = determine_card_state(data)
         assert state == "probe_failure", (
             f"Expected 'probe_failure' state for data with failed probes, got '{state}'"
@@ -396,13 +396,13 @@ class TestAssigneeCardProbeFailure:
     def test_probe_failure_has_at_least_one_red_badge(
         self, data: dict[str, Any]
     ) -> None:
-        """At least one service badge shows ❌ when probe failed."""
+        """At least one service badge shows  when probe failed."""
         bots = data["bots"]
         badges = get_badges(bots)
 
-        has_red = any("❌" in badge for badge in badges)
+        has_red = any("" in badge for badge in badges)
         assert has_red, (
-            f"Expected at least one red badge (❌) for probe failure, "
+            f"Expected at least one red badge () for probe failure, "
             f"got badges: {badges}"
         )
 
@@ -474,7 +474,7 @@ class TestAssigneeCardEdgeCases:
     """
 
     def test_unavailable_when_data_is_none(self) -> None:
-        """API unreachable → card state is 'unavailable'."""
+        """API unreachable  card state is 'unavailable'."""
         state = determine_card_state(None)
         assert state == "unavailable"
 
@@ -541,15 +541,15 @@ class TestAssigneeCardEdgeCases:
 
     def test_probe_badge_ok(self) -> None:
         """Probe status 'ok' returns green badge."""
-        assert _probe_badge("ok") == "✅"
+        assert _probe_badge("ok") == ""
 
     def test_probe_badge_failed(self) -> None:
         """Probe status 'failed' returns red badge."""
-        assert _probe_badge("failed") == "❌"
+        assert _probe_badge("failed") == ""
 
     def test_probe_badge_timeout(self) -> None:
         """Probe status 'timeout' returns red badge."""
-        assert _probe_badge("timeout") == "❌"
+        assert _probe_badge("timeout") == ""
 
     @settings(
         max_examples=100,
@@ -562,8 +562,8 @@ class TestAssigneeCardEdgeCases:
         )
     )
     def test_probe_badge_non_ok_always_red(self, probe_status: str) -> None:
-        """Any probe_status that is not 'ok' produces ❌."""
-        assert _probe_badge(probe_status) == "❌"
+        """Any probe_status that is not 'ok' produces ."""
+        assert _probe_badge(probe_status) == ""
 
 
 # ---------------------------------------------------------------------------
@@ -577,11 +577,11 @@ class TestAssigneeCardEdgeCases:
 
 #: Badge mapping for probe status (mirrors bot_identity_card.py).
 _IDENTITY_PROBE_BADGE: dict[str, str] = {
-    "ok": "🟢",
-    "failed": "🔴",
-    "not_probed": "🟡",
+    "ok": "",
+    "failed": "",
+    "not_probed": "",
 }
-_IDENTITY_PROBE_BADGE_DEFAULT: str = "⚪"
+_IDENTITY_PROBE_BADGE_DEFAULT: str = ""
 
 
 def _identity_get_probe_badge(probe_status: str) -> str:
@@ -707,7 +707,7 @@ class TestBotInfoCardRenderingCompleteness:
     def test_jira_bot_returns_account_id_for_assignee_prefill(
         self, data: dict[str, Any]
     ) -> None:
-        """Jira bot present → account_id returned for Assignee pre-fill."""
+        """Jira bot present  account_id returned for Assignee pre-fill."""
         result = simulate_render_bot_identity_card(data)
 
         # The function must return the Jira bot's account_id
@@ -832,7 +832,7 @@ class TestBotInfoCardRenderingCompleteness:
         # Simulate what the task creator page does:
         # _jira_bot_account_id = render_bot_identity_card(dept_id, api_base)
         # if _jira_bot_account_id:
-        #     st.session_state["_bot_identity_card_account_id"] = _jira_bot_account_id
+        # st.session_state["_bot_identity_card_account_id"] = _jira_bot_account_id
         # Then: _prefill_assignee = st.session_state.get("_bot_identity_card_account_id")
 
         jira_bot = next(b for b in data["bots"] if b["service"] == "jira")
@@ -949,10 +949,10 @@ def _simulate_fetch_bot_info_error(error_type: str, status_code: int = 503) -> d
     """Simulate the _fetch_bot_info function behavior under error conditions.
 
     This mirrors the production logic in bot_identity_card.py:
-    - Non-200 status → returns None
-    - TimeoutException → returns None
-    - ConnectError → returns None
-    - HTTPError → returns None
+    - Non-200 status  returns None
+    - TimeoutException  returns None
+    - ConnectError  returns None
+    - HTTPError  returns None
     """
     if error_type == "non_200":
         # Server responded but with an error status code
@@ -1022,7 +1022,7 @@ class TestBotInfoGracefulDegradation:
     def test_any_error_returns_none_account_id(
         self, error_type: str, status_code: int, dept_id: str
     ) -> None:
-        """Any error → account_id is None (Task Creator functional, assignee empty)."""
+        """Any error  account_id is None (Task Creator functional, assignee empty)."""
         account_id, _, _ = _simulate_render_bot_identity_card_degradation(
             error_type, status_code
         )
@@ -1043,7 +1043,7 @@ class TestBotInfoGracefulDegradation:
     def test_any_error_shows_degradation_warning(
         self, error_type: str, status_code: int
     ) -> None:
-        """Any error → warning message contains 'Bot bilgileri yüklenemedi'."""
+        """Any error  warning message contains 'Bot bilgileri yüklenemedi'."""
         _, warning_message, _ = _simulate_render_bot_identity_card_degradation(
             error_type, status_code
         )
@@ -1064,7 +1064,7 @@ class TestBotInfoGracefulDegradation:
     def test_any_error_provides_retry_option(
         self, error_type: str, status_code: int
     ) -> None:
-        """Any error → retry option is available."""
+        """Any error  retry option is available."""
         _, _, has_retry = _simulate_render_bot_identity_card_degradation(
             error_type, status_code
         )
@@ -1133,7 +1133,7 @@ class TestBotInfoGracefulDegradation:
     def test_non_200_status_codes_return_none(
         self, status_code: int, dept_id: str, api_base: str
     ) -> None:
-        """Any non-200 HTTP status code → _fetch_bot_info returns None."""
+        """Any non-200 HTTP status code  _fetch_bot_info returns None."""
         from components.bot_identity_card import _fetch_bot_info
 
         with patch("components.bot_identity_card.httpx.get") as mock_get:
@@ -1266,7 +1266,7 @@ class TestBotInfoGracefulDegradation:
             result = render_bot_identity_card("payment-dept", "http://localhost:8081")
 
             # Returns None - Task Creator uses this to decide assignee pre-fill
-            # None means "don't pre-fill" → field remains empty but usable
+            # None means "don't pre-fill"  field remains empty but usable
             assert result is None
 
             # The function does NOT raise - it degrades gracefully
@@ -1291,4 +1291,4 @@ class TestBotInfoGracefulDegradation:
             mock_st.button.assert_called_once()
             call_args = mock_st.button.call_args
             # The button text should contain retry indicator
-            assert "🔄" in call_args[0][0] or "Yeniden dene" in call_args[0][0]
+            assert "" in call_args[0][0] or "Yeniden dene" in call_args[0][0]

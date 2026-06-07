@@ -88,11 +88,11 @@ async def require_auth_context(
 
     Failure modes:
 
-    * Missing / non-Bearer ``Authorization`` header → ``401``.
-    * Empty token after ``Bearer`` prefix → ``401``.
-    * Validator raises :class:`InvalidTokenError` → ``401``.
+    * Missing / non-Bearer ``Authorization`` header  ``401``.
+    * Empty token after ``Bearer`` prefix  ``401``.
+    * Validator raises :class:`InvalidTokenError`  ``401``.
     * Token validates but :func:`extract_auth_context` rejects the
-      claim shape (eg. unknown role, missing ``sub``) → ``401`` (the
+      claim shape (eg. unknown role, missing ``sub``)  ``401`` (the
       missing-claim case is already a subclass of
       :class:`InvalidTokenError` so a single ``except`` clause covers
       both).

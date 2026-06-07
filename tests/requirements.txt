@@ -4,7 +4,7 @@
 # this file exists so the suite can be installed without a PEP-517 build
 # step via:
 #
-#     pip install -r tests/requirements.txt
+# pip install -r tests/requirements.txt
 #
 # Pins follow the test dependency baseline. All ranges use compatible-major
 # upper bounds so property tests stay reproducible across CI runs.

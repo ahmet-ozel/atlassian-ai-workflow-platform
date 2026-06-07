@@ -6,18 +6,18 @@
 # Called by vps_credential_loader.ps1 post-MCP-up.
 #
 # Flow:
-#   1. Wait for atlassian-mcp container to become healthy (max 120s)
-#   2. Call bitbucket_get_repository via MCP JSON-RPC with Token_B (Basic)
-#   3. If HTTP non-2xx: switch to Token_A (Bearer), restart MCP, retry
-#   4. Determine selection_verdict: token_b_only | token_a_only | both_succeed | both_fail
-#   5. Cross-token check: if selected token works, try alternate for parity matrix
-#   6. Emit evidence to /tmp/05-token-selection.json (D2 schema)
-#   7. Set MCP env to final state based on selected_token_label
+# 1. Wait for atlassian-mcp container to become healthy (max 120s)
+# 2. Call bitbucket_get_repository via MCP JSON-RPC with Token_B (Basic)
+# 3. If HTTP non-2xx: switch to Token_A (Bearer), restart MCP, retry
+# 4. Determine selection_verdict: token_b_only | token_a_only | both_succeed | both_fail
+# 5. Cross-token check: if selected token works, try alternate for parity matrix
+# 6. Emit evidence to /tmp/05-token-selection.json (D2 schema)
+# 7. Set MCP env to final state based on selected_token_label
 #
 # Exit codes:
-#   0 = token selected successfully (token_b_only, token_a_only, or both_succeed)
-#   1 = both_fail — critical Open_Issue logged, halt
-#   2 = MCP never became healthy
+# 0 = token selected successfully (token_b_only, token_a_only, or both_succeed)
+# 1 = both_fail — critical Open_Issue logged, halt
+# 2 = MCP never became healthy
 #
 # Token selection must finish with a usable MCP credential mode.
 # =============================================================================
@@ -391,9 +391,9 @@ if [ "$TOKEN_B_SUCCESS" = true ]; then
       if is_2xx "$CROSS_HTTP_STATUS"; then
         TOKEN_A_SUCCESS=true
         SELECTION_VERDICT="both_succeed"
-        log "Cross-token check: Token_A also succeeded → both_succeed"
+        log "Cross-token check: Token_A also succeeded  both_succeed"
       else
-        log "Cross-token check: Token_A failed (HTTP $CROSS_HTTP_STATUS) → token_b_only confirmed"
+        log "Cross-token check: Token_A failed (HTTP $CROSS_HTTP_STATUS)  token_b_only confirmed"
       fi
 
       # Switch back to Token_B (the selected token)
@@ -415,7 +415,7 @@ elif [ "$TOKEN_A_SUCCESS" = true ]; then
   CROSS_HTTP_STATUS="$PRIMARY_HTTP_STATUS"
   CROSS_LATENCY_MS="$PRIMARY_LATENCY_MS"
   CROSS_EXCERPT="$PRIMARY_EXCERPT"
-  log "Cross-token check: Token_B already failed in primary attempt (HTTP $PRIMARY_HTTP_STATUS) → token_a_only confirmed"
+  log "Cross-token check: Token_B already failed in primary attempt (HTTP $PRIMARY_HTTP_STATUS)  token_a_only confirmed"
   # MCP is already on Token_A from the fallback, which is correct
 fi
 

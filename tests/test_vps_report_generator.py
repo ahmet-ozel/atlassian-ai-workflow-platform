@@ -71,32 +71,32 @@ class TestAggregateVerdict:
     """Tests for the aggregate_verdict function."""
 
     def test_pass_when_evidence_exists_and_no_issues(self, evidence_dir):
-        """No open issues + evidence file exists → pass."""
+        """No open issues + evidence file exists  pass."""
         (evidence_dir / "01-preflight.txt").write_text("OK")
         result = rg.aggregate_verdict("R1", evidence_dir, "01-preflight.txt", [])
         assert result == "pass"
 
     def test_manual_pending_when_no_evidence(self, evidence_dir):
-        """No evidence file → manual_pending."""
+        """No evidence file  manual_pending."""
         result = rg.aggregate_verdict("R1", evidence_dir, "01-preflight.txt", [])
         assert result == "manual_pending"
 
     def test_fail_when_critical_issue(self, evidence_dir):
-        """Critical open issue → fail regardless of evidence."""
+        """Critical open issue  fail regardless of evidence."""
         (evidence_dir / "10-jira.json").write_text("[]")
         issues = [_make_issue(severity="critical", requirement_id="R10")]
         result = rg.aggregate_verdict("R10", evidence_dir, "10-jira.json", issues)
         assert result == "fail"
 
     def test_fail_when_major_issue(self, evidence_dir):
-        """Major open issue → fail."""
+        """Major open issue  fail."""
         (evidence_dir / "10-jira.json").write_text("[]")
         issues = [_make_issue(severity="major", requirement_id="R10")]
         result = rg.aggregate_verdict("R10", evidence_dir, "10-jira.json", issues)
         assert result == "fail"
 
     def test_partial_when_only_minor_issues(self, evidence_dir):
-        """Only minor open issues → partial."""
+        """Only minor open issues  partial."""
         (evidence_dir / "10-jira.json").write_text("[]")
         issues = [_make_issue(severity="minor", requirement_id="R10")]
         result = rg.aggregate_verdict("R10", evidence_dir, "10-jira.json", issues)
@@ -116,22 +116,22 @@ class TestAggregateVerdict:
 
 
 class TestExecutiveSummaryPrefix:
-    """Tests for the 🟢/🔴 prefix logic."""
+    """Tests for the / prefix logic."""
 
     def test_green_when_zero_failures(self):
-        """0 fail verdicts → 🟢 GO-LIVE READY."""
+        """0 fail verdicts   GO-LIVE READY."""
         verdicts = {"R1": "pass", "R2": "pass", "R3": "manual_pending"}
         result = rg.render_executive_summary(verdicts, [])
-        assert "🟢 GO-LIVE READY" in result
-        assert "🔴" not in result
+        assert " GO-LIVE READY" in result
+        assert "" not in result
 
     def test_red_when_any_failure(self):
-        """≥1 fail verdict → 🔴 NOT GO-LIVE READY."""
+        """≥1 fail verdict   NOT GO-LIVE READY."""
         verdicts = {"R1": "pass", "R10": "fail"}
         issues = [_make_issue(severity="critical")]
         result = rg.render_executive_summary(verdicts, issues)
-        assert "🔴 NOT GO-LIVE READY" in result
-        assert "🟢" not in result
+        assert " NOT GO-LIVE READY" in result
+        assert "" not in result
 
     def test_issue_counts_in_summary(self):
         """Open issue counts are rendered correctly."""
@@ -157,12 +157,12 @@ class TestOpenIssuesRendering:
     """Tests for severity-grouped Open Issues rendering."""
 
     def test_empty_issues(self):
-        """No issues → informational message."""
+        """No issues  informational message."""
         result = rg.render_open_issues([])
         assert "No open issues recorded" in result
 
     def test_severity_ordering(self):
-        """Issues are grouped critical → major → minor."""
+        """Issues are grouped critical  major  minor."""
         issues = [
             _make_issue(id=1, severity="minor", summary="Minor issue"),
             _make_issue(id=2, severity="critical", summary="Critical issue"),

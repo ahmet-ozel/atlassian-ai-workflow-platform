@@ -1,4 +1,4 @@
-﻿"""Deterministic Jinja2 → WeasyPrint PDF renderer.
+﻿"""Deterministic Jinja2  WeasyPrint PDF renderer.
 
 This module owns :func:`render_pdf`, the single rendering entry point
 used by the ``AgentRunnerWorkflow``'s ``jira_attachment`` output action

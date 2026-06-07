@@ -822,7 +822,7 @@ async def sandbox_test_prompt(
         ),
     )
 
-    # ---- 7. Project SandboxResult → response model ------------------
+    # ---- 7. Project SandboxResult  response model ------------------
     return PromptSandboxResponse(
         path=safe_path,
         response_text=result.response_text,
@@ -1090,11 +1090,11 @@ async def _promote_logic(
     Steps:
 
     ① Fetch ``sandbox_run_id`` from ``automation.prompt_sandbox_runs``.
-       Not found → raise ``_PromoteNotFoundError`` (→ HTTP 404).
-    ② ``passed=False`` → raise ``_PromoteSandboxNotPassedError`` (→ HTTP 422)
+       Not found  raise ``_PromoteNotFoundError`` ( HTTP 404).
+    ② ``passed=False``  raise ``_PromoteSandboxNotPassedError`` ( HTTP 422)
        + ``prompt_promote_rejected_sandbox_failed`` audit.
-    ③ ``passed=True`` → open PR via ``pr_opener``.
-    ④ Success → ``prompt_promoted`` audit + return ``_PromoteResult``.
+    ③ ``passed=True``  open PR via ``pr_opener``.
+    ④ Success  ``prompt_promoted`` audit + return ``_PromoteResult``.
     """
     # ① Fetch the sandbox run.
     run = await pool.fetch_sandbox_run(sandbox_run_id)
@@ -1223,13 +1223,13 @@ async def promote_prompt(
 
     1. Normalise / safe-check the path.
     2. Look up ``sandbox_run_id`` in ``automation.prompt_sandbox_runs``.
-       Missing row → 404 ``sandbox_run_not_found``.
-    3. ``passed=false`` → 422 + ``prompt_promote_rejected_sandbox_failed``
+       Missing row  404 ``sandbox_run_not_found``.
+    3. ``passed=false``  422 + ``prompt_promote_rejected_sandbox_failed``
        audit.
-    4. ``passed=true`` → delegate to the same PR-opening logic used by
+    4. ``passed=true``  delegate to the same PR-opening logic used by
        ``POST /admin/prompts/{path}/pr`` (branch validation, conflict
        detection, title/description rendering, opener invocation).
-    5. Success → ``prompt_promoted`` audit + 201
+    5. Success  ``prompt_promoted`` audit + 201
        ``{pr_url, branch, sandbox_run_id}``.
     """
 

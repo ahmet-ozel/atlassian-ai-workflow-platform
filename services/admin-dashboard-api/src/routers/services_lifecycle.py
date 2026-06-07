@@ -21,13 +21,13 @@ Endpoints (8 total, every one is gated on
 
 HTTP error mapping:
 
-* :class:`UnknownServiceError`        → ``404 Not Found``.
-* :class:`FormSchemaMismatchError`    → ``422 Unprocessable Entity``.
-* :class:`TestPreconditionError`      → ``409 Conflict``.
-* :class:`FeatureFlagDisabledError`   → ``409 Conflict``.
-* :class:`VaultWriteError`            → ``502 Bad Gateway`` + ``correlation_id``.
-* :class:`AuditUnreachableError`      → ``502 Bad Gateway`` + ``correlation_id``.
-* :class:`ComposeFailureError`        → ``502 Bad Gateway`` + ``correlation_id``.
+* :class:`UnknownServiceError`         ``404 Not Found``.
+* :class:`FormSchemaMismatchError`     ``422 Unprocessable Entity``.
+* :class:`TestPreconditionError`       ``409 Conflict``.
+* :class:`FeatureFlagDisabledError`    ``409 Conflict``.
+* :class:`VaultWriteError`             ``502 Bad Gateway`` + ``correlation_id``.
+* :class:`AuditUnreachableError`       ``502 Bad Gateway`` + ``correlation_id``.
+* :class:`ComposeFailureError`         ``502 Bad Gateway`` + ``correlation_id``.
 
 The 502 envelopes carry a ``correlation_id`` UUID so the operator can
 pivot between the HTTP response, the audit log row, and the
@@ -171,10 +171,10 @@ def _detail_from_entry(
 
     The router fans out across:
 
-    * :meth:`LifecycleService.get_manifest_entry` → manifest fields.
-    * :meth:`LifecycleService.state_cache` → ``state``,
+    * :meth:`LifecycleService.get_manifest_entry`  manifest fields.
+    * :meth:`LifecycleService.state_cache`  ``state``,
       ``last_started_at``, ``last_health_snapshot`` (cached snapshot).
-    * :meth:`LifecycleService.get_form_schema` → ``form_schema.fields``.
+    * :meth:`LifecycleService.get_form_schema`  ``form_schema.fields``.
 
     We deliberately surface the *cached* snapshot rather than firing a
     fresh probe - the dedicated ``GET /admin/services/{name}/health``
@@ -372,13 +372,13 @@ async def start_service(
 
     Error mapping:
 
-    * ``UnknownServiceError``              → 404
-    * ``FormSchemaMismatchError``          → 422
-    * ``VaultWriteError``                  → 502 + ``correlation_id``
-    * ``AuditUnreachableError``            → 502 + ``correlation_id``
-    * ``ComposeFailureError``              → 502 + ``correlation_id``
-    * ``MaxDependencyDepthExceededError``  → 502 + ``correlation_id``
-    * ``DependencyStartFailedError``       → 502 + ``correlation_id``
+    * ``UnknownServiceError``               404
+    * ``FormSchemaMismatchError``           422
+    * ``VaultWriteError``                   502 + ``correlation_id``
+    * ``AuditUnreachableError``             502 + ``correlation_id``
+    * ``ComposeFailureError``               502 + ``correlation_id``
+    * ``MaxDependencyDepthExceededError``   502 + ``correlation_id``
+    * ``DependencyStartFailedError``        502 + ``correlation_id``
     """
 
     try:
@@ -402,7 +402,7 @@ async def start_service(
         # The orchestrator's Step 1.5 raised because at least one flag
         # in the manifest's ``feature_flag_dependency`` is disabled.
         # We surface 409 with a structured envelope so the UI can
-        # render a targeted "open Feature Flags page → toggle X" modal
+        # render a targeted "open Feature Flags page  toggle X" modal
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail={
@@ -979,8 +979,8 @@ async def probe_service_connectivity(
 
     Error mapping:
 
-    * ``UnknownServiceError`` → 404 Not Found.
-    * ``AuditUnreachableError`` → 502 Bad Gateway + ``correlation_id``.
+    * ``UnknownServiceError``  404 Not Found.
+    * ``AuditUnreachableError``  502 Bad Gateway + ``correlation_id``.
 
     When the manifest entry has no ``connectivity_probe_command`` the
     call is a no-op and the response reflects ``credentials_status=None``

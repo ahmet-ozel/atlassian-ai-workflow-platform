@@ -110,13 +110,13 @@ def render_executive_summary(
     verdicts: dict[str, str],
     open_issues: list[dict[str, Any]],
 ) -> str:
-    """Render the Executive Summary section with 🟢/🔴 prefix (R20.6)."""
+    """Render the Executive Summary section with / prefix (R20.6)."""
     has_fail = any(v == "fail" for v in verdicts.values())
 
     if has_fail:
-        prefix = "🔴 NOT GO-LIVE READY"
+        prefix = " NOT GO-LIVE READY"
     else:
-        prefix = "🟢 GO-LIVE READY"
+        prefix = " GO-LIVE READY"
 
     critical_count = sum(1 for oi in open_issues if oi.get("severity") == "critical")
     major_count = sum(1 for oi in open_issues if oi.get("severity") == "major")
@@ -300,7 +300,7 @@ def render_open_issues(open_issues: list[dict[str, Any]]) -> str:
         lines.append("")
         return "\n".join(lines)
 
-    # Group by severity: critical → major → minor
+    # Group by severity: critical  major  minor
     severity_order = ["critical", "major", "minor"]
     grouped: dict[str, list[dict[str, Any]]] = {s: [] for s in severity_order}
 
@@ -399,7 +399,7 @@ def render_cost_and_cleanup(evidence_dir: Path) -> str:
         hours_num = float(billed_hours.split()[0].replace(",", "."))
         if hours_num > 8:
             lines.append(
-                "- ⚠️ [BUDGET] VPS runtime exceeded 8h target - review test efficiency"
+                "-  [BUDGET] VPS runtime exceeded 8h target - review test efficiency"
             )
     except (ValueError, IndexError):
         pass

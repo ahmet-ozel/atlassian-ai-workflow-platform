@@ -63,7 +63,7 @@ _payloads = st.binary(min_size=0, max_size=65536)
 )
 @given(secret=_secrets, payload=_payloads)
 def test_hmac_sign_verify_round_trip(secret: bytes, payload: bytes) -> None:
-    """invariant - compute(payload, secret) → verify(payload, sig, secret) is True.
+    """invariant - compute(payload, secret)  verify(payload, sig, secret) is True.
 
  For every valid (secret, payload) pair, signing and then verifying
  with the same inputs must always succeed.
@@ -73,7 +73,7 @@ def test_hmac_sign_verify_round_trip(secret: bytes, payload: bytes) -> None:
 
 
 # ---------------------------------------------------------------------------
-# invariant: Tampered payload → verification fails
+# invariant: Tampered payload  verification fails
 # ---------------------------------------------------------------------------
 
 
@@ -98,7 +98,7 @@ def test_hmac_tampered_payload_rejected(
 
 
 # ---------------------------------------------------------------------------
-# invariant: Tampered signature → verification fails
+# invariant: Tampered signature  verification fails
 # ---------------------------------------------------------------------------
 
 
@@ -136,7 +136,7 @@ def test_hmac_tampered_signature_rejected(
 
 
 # ---------------------------------------------------------------------------
-# invariant: Wrong secret → verification fails
+# invariant: Wrong secret  verification fails
 # ---------------------------------------------------------------------------
 
 
@@ -208,7 +208,7 @@ def test_verify_uses_hmac_compare_digest() -> None:
 #
 #
 # Companion to ``test_webhook_predicates.py``'s ``TestWebhookDeptUnresolved``
-# class which covers the *dept_id resolution → HTTP 400* leg of the
+# class which covers the *dept_id resolution  HTTP 400* leg of the
 # property. Here we exercise the *per-department HMAC verification*
 # leg through:func:`vault_client.verify_webhook_hmac`:
 #
@@ -384,7 +384,7 @@ class TestPerDeptHmacIsolation:
  Provisions a single dept under provider ``"jira"`` only; a
  signature computed with that secret MUST NOT validate when
  looked up against ``"bitbucket"`` or ``"confluence"`` for the
- same dept (those slots are absent → ``False``).
+ same dept (those slots are absent  ``False``).
  """
         tmp_path = tmp_path_factory.mktemp("provider_slot_isolation")
         backend = _make_backend(tmp_path)
@@ -436,7 +436,7 @@ class TestWebhookSecretRotationOverlap:
 
 
 
- After rotating from ``old → new``, signatures produced by
+ After rotating from ``old  new``, signatures produced by
  either secret must validate at any instant strictly inside
  the overlap window.
  """
@@ -630,7 +630,7 @@ class TestVerifyWebhookHmacMissingSecret:
 
 
  ``webhook_dept_unresolved`` audit when dept_id can't be resolved;
- the predicate-level analogue is "no secret stored → False").
+ the predicate-level analogue is "no secret stored  False").
  """
 
     @settings(
@@ -652,10 +652,10 @@ class TestVerifyWebhookHmacMissingSecret:
         secret: str,
         body: bytes,
     ) -> None:
-        """No secret stored at the path → ``verify_webhook_hmac`` returns False.
+        """No secret stored at the path  ``verify_webhook_hmac`` returns False.
 
 
- for dept_id" → reject path).
+ for dept_id"  reject path).
  """
         tmp_path = tmp_path_factory.mktemp("missing_secret_rejects")
         backend = _make_backend(tmp_path)

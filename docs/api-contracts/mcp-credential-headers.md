@@ -45,10 +45,10 @@
 
 > **Auth resolution order (Jira):**
 >
-> 1. `Authorization: Bearer ...` header → OAuth 2.0 (Cloud only); requires `X-Atlassian-Cloud-Id`.
-> 2. `X-Atlassian-Jira-Personal-Token` → DC PAT (applied against `X-Atlassian-Jira-Url`).
-> 3. `X-Atlassian-Jira-Username` + `X-Atlassian-Jira-Api-Token` → Cloud Basic Auth.
-> 4. None of the above → fall back to MCP's globally configured credentials (boot-time env).
+> 1. `Authorization: Bearer ...` header  OAuth 2.0 (Cloud only); requires `X-Atlassian-Cloud-Id`.
+> 2. `X-Atlassian-Jira-Personal-Token`  DC PAT (applied against `X-Atlassian-Jira-Url`).
+> 3. `X-Atlassian-Jira-Username` + `X-Atlassian-Jira-Api-Token`  Cloud Basic Auth.
+> 4. None of the above  fall back to MCP's globally configured credentials (boot-time env).
 
 ---
 
@@ -123,7 +123,7 @@ headers as any other caller. A minimal working config:
       "headers": {
         "X-Client-Source": "ide:<your-name>",
 
-        // Server / Data Center → Personal Access Token (sent as Bearer)
+        // Server / Data Center  Personal Access Token (sent as Bearer)
         "X-Atlassian-Jira-Url": "https://jira.internal",
         "X-Atlassian-Jira-Personal-Token": "<jira-PAT>",
 
@@ -168,7 +168,7 @@ curl -H "Authorization: Bearer <jira-PAT>" -H "Accept: application/json" \
   "https://jira.internal/rest/api/2/myself"
 ```
 
-200 + user JSON ⇒ the token is valid and the gateway will accept the same PAT.
+200 + user JSON  the token is valid and the gateway will accept the same PAT.
 
 **Quick gateway probe** (returns the real error behind a client-side
 `-32001`/`32603` "tool failed" code):
@@ -236,12 +236,12 @@ result = await client.jira_get_issue(
 The header strings above are mirrored as Python constants in:
 
 - `services/atlassian_mcp_bitbucket/src/mcp_atlassian/utils/environment.py`
-  → `BITBUCKET_URL_HEADER`, `BITBUCKET_DC_PAT_HEADER`,
+   `BITBUCKET_URL_HEADER`, `BITBUCKET_DC_PAT_HEADER`,
     `BITBUCKET_CLOUD_ACCESS_TOKEN_HEADER`,
     `BITBUCKET_CLOUD_APP_PASSWORD_HEADER`,
     `BITBUCKET_CLOUD_USERNAME_HEADER`.
 - `services/atlassian_mcp_bitbucket/src/mcp_atlassian/servers/dependencies.py`
-  → Jira `url_header="X-Atlassian-Jira-Url"`,
+   Jira `url_header="X-Atlassian-Jira-Url"`,
     `token_header="X-Atlassian-Jira-Personal-Token"`,
     Confluence equivalents.
 

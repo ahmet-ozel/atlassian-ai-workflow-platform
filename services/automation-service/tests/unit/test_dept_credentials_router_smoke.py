@@ -8,7 +8,7 @@ depend on a live Postgres / Vault / probe client:
 * The router is registered with the expected paths and methods.
 * When ``app.state.dept_credentials`` is missing, every endpoint
   returns 500 with the wiring-error detail (defence-in-depth
-  guard, mirrors :func:`automation_service.app.create_app` →
+  guard, mirrors :func:`automation_service.app.create_app`
   ``app.state.<key>`` contracts used by sibling routers).
 * Roles below ``dept_admin`` are denied on mutating endpoints
   before any orchestrator collaborator is touched (RBAC defence-

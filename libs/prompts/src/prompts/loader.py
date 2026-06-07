@@ -322,12 +322,12 @@ def _git_short_hash_for(path: Path) -> str:
     the canonical incantation.
 
     Fail-soft branches:
-        * ``git`` binary missing → ``FileNotFoundError`` from
+        * ``git`` binary missing  ``FileNotFoundError`` from
           :mod:`subprocess`.
-        * Path is outside a working tree → non-zero exit; stderr is
+        * Path is outside a working tree  non-zero exit; stderr is
           captured for the warning.
         * Path is tracked but never committed (eg. fresh
-          ``git add``-only) → ``git log`` exits 0 with empty stdout.
+          ``git add``-only)  ``git log`` exits 0 with empty stdout.
 
     All branches resolve to ``_UNKNOWN_GIT_HASH`` plus a warning log
     so operators can investigate without breaking the request.

@@ -7,20 +7,20 @@ The
 edges of the directed graph ``G_status`` with vertex set
 ``{pending, running, completed, failed}`` and edge set:
 
-    pending → running
-    pending → failed
-    running → completed
-    running → failed
+    pending  running
+    pending  failed
+    running  completed
+    running  failed
 
-Plus self-loops (``s → s`` for every status, modelling idempotent
+Plus self-loops (``s  s`` for every status, modelling idempotent
 re-writes from retried activities).
 
 Every other ordered pair is forbidden - most notably:
 
-* ``pending → completed`` (must transit ``running`` first),
-* any outgoing edge from a terminal state (``completed → *``,
-  ``failed → *``),
-* ``running → pending`` (the machine is monotone).
+* ``pending  completed`` (must transit ``running`` first),
+* any outgoing edge from a terminal state (``completed  *``,
+  ``failed  *``),
+* ``running  pending`` (the machine is monotone).
 
 The function under test, :func:`validate_work_item_transition`, is a
 pure helper extracted from the Temporal activity
@@ -165,8 +165,8 @@ def test_documented_forward_edges_are_accepted(
     """Every documented edge is accepted.
 
     The validator must not raise for any of:
-        pending → running, pending → failed,
-        running → completed, running → failed.
+        pending  running, pending  failed,
+        running  completed, running  failed.
     """
 
     # Boolean predicate agrees with the spec.
@@ -182,7 +182,7 @@ def test_documented_forward_edges_are_accepted(
 
 @pytest.mark.parametrize("status", sorted(WORK_ITEM_STATUSES))
 def test_self_loop_is_accepted_for_every_status(status: str) -> None:
-    """``s → s`` is an allowed transition for every valid ``s``.
+    """``s  s`` is an allowed transition for every valid ``s``.
 
     Models the idempotent re-write contract: if a Temporal activity
     is retried after the row has already been advanced, re-issuing the
@@ -228,9 +228,9 @@ def test_forbidden_pairs_raise_invalid_work_item_transition(
     """Every non-allowed pair from the canonical 4-status grid is rejected.
 
     Notable inclusions:
-        - ``pending → completed`` (must transit ``running``),
-        - ``completed → *`` and ``failed → *`` (terminal states),
-        - ``running → pending`` (no backward transitions).
+        - ``pending  completed`` (must transit ``running``),
+        - ``completed  *`` and ``failed  *`` (terminal states),
+        - ``running  pending`` (no backward transitions).
     """
 
     assert is_valid_work_item_transition(from_status, to_status) is False
@@ -367,10 +367,10 @@ def test_unknown_source_status_is_always_rejected(
 
 
 def test_canonical_lifecycle_pending_running_completed_is_accepted() -> None:
-    """The happy-path sequence ``pending → running → completed`` is allowed.
+    """The happy-path sequence ``pending  running  completed`` is allowed.
 
     Mirrors the rule that the platform maintains the work_item
-    record with accurate status transitions: pending → running →
+    record with accurate status transitions: pending  running
     completed/failed."
     """
 
@@ -379,14 +379,14 @@ def test_canonical_lifecycle_pending_running_completed_is_accepted() -> None:
 
 
 def test_canonical_failure_lifecycle_pending_running_failed_is_accepted() -> None:
-    """The failure-path sequence ``pending → running → failed`` is allowed."""
+    """The failure-path sequence ``pending  running  failed`` is allowed."""
 
     validate_work_item_transition("pending", "running")
     validate_work_item_transition("running", "failed")
 
 
 def test_pending_to_completed_shortcut_is_rejected() -> None:
-    """``pending → completed`` MUST be rejected (must transit ``running``).
+    """``pending  completed`` MUST be rejected (must transit ``running``).
 
     Anchor example for the most common temptation when a
     workflow short-circuits a no-op task. The state machine forbids this

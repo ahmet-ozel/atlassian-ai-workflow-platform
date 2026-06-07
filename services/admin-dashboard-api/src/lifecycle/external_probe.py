@@ -16,8 +16,8 @@ Key behaviours
   cached per entry name with a 30 s TTL so rapid UI refreshes do not
   hammer external APIs. The cache is process-local and resets on
   restart.
-* **Status mapping**: HTTP 200 → ``"ok"``, 401/403 → ``"unauthorized"``,
-  429 → ``"rate_limited"``, timeout / connection error → ``"unreachable"``.
+* **Status mapping**: HTTP 200  ``"ok"``, 401/403  ``"unauthorized"``,
+  429  ``"rate_limited"``, timeout / connection error  ``"unreachable"``.
 * **Audit + streak alerting** (behavior 10.7, audit and alarm wiring): Every
   failed probe emits an ``external_provider_probe_failed`` audit entry.
   When a provider accumulates 3 consecutive failures, a single
@@ -345,7 +345,7 @@ async def probe_external(
     if api_key is None and vault_reader is not None:
         api_key = await vault_reader.read_api_key(name)
 
-    # If provider requires auth but no key found → unauthorized
+    # If provider requires auth but no key found  unauthorized
     if name in _CREDENTIAL_ENV_MAP and api_key is None:
         result = ExternalProbeResult(
             name=name,

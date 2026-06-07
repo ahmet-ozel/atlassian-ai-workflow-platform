@@ -11,12 +11,12 @@ collapses consecutive webhook deliveries that target the same Jira
 dispatched signal. Specifically:
 
 * Two events with the **same** ``issue_key`` arriving within
- ``BURST_WINDOW_SECONDS`` (3.0s) → the first dispatches
+ ``BURST_WINDOW_SECONDS`` (3.0s)  the first dispatches
  (``coalesce_emit``); subsequent deliveries inside the window drop
  (``coalesce_dropped``) and are recorded in ``coalesced_with``.
  The latest event's payload is preserved.
 * Two events with the same ``issue_key`` arriving **at or after** the
- window threshold (≥3.0s apart) → both dispatch independently
+ window threshold (≥3.0s apart)  both dispatch independently
  (``coalesce_emit`` each), because the first event's window has
  closed before the second arrives.
 * Events with **different** ``issue_key`` values never coalesce -
@@ -175,7 +175,7 @@ _offsets = st.floats(
 
 
 # ---------------------------------------------------------------------------
-# Test 1: two events same issue_key within 3s → second is dropped,
+# Test 1: two events same issue_key within 3s  second is dropped,
 # latest payload preserved
 # ---------------------------------------------------------------------------
 
@@ -267,7 +267,7 @@ class TestSameKeyWithinWindow:
 
 
 # ---------------------------------------------------------------------------
-# Test 2: two events 4s apart (or any gap >= window) → both pass through
+# Test 2: two events 4s apart (or any gap >= window)  both pass through
 # ---------------------------------------------------------------------------
 
 
@@ -635,7 +635,7 @@ class TestChainWiring:
     """The chain translates burst decisions into FilterDecision verdicts."""
 
     def test_first_event_passes_through(self) -> None:
-        """Fresh window → ``filter_chain_pass``."""
+        """Fresh window  ``filter_chain_pass``."""
 
         burst = BurstWindow()
         now_q: list[float] = [100.0]
@@ -654,7 +654,7 @@ class TestChainWiring:
         assert decision.coalesced_with == ()
 
     def test_second_event_within_window_drops_with_burst_coalesced(self) -> None:
-        """Second event inside window → drop, reason="burst_coalesced"."""
+        """Second event inside window  drop, reason="burst_coalesced"."""
 
         burst = BurstWindow()
         # First call: t=100, second call: t=101 (within 3s window).
@@ -683,7 +683,7 @@ class TestChainWiring:
         assert second.coalesced_with == ("d2",)
 
     def test_third_event_within_window_extends_coalesced_with(self) -> None:
-        """Three events same-key in window → second & third drop, both listed."""
+        """Three events same-key in window  second & third drop, both listed."""
 
         burst = BurstWindow()
         now_q: list[float] = [100.0, 100.5, 101.0]

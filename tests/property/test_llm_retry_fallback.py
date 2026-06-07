@@ -959,7 +959,7 @@ class TestBackoffPinnedExamples:
  """
 
     def test_two_consecutive_429s_then_success_emits_done(self) -> None:
-        """Two 429s ⇒ one delay, then a success completes the stream."""
+        """Two 429s  one delay, then a success completes the stream."""
 
         plan = (
             _Failure(kind="rate_limit"),
@@ -1002,10 +1002,10 @@ class TestBackoffPinnedExamples:
     def test_three_consecutive_429s_emits_exhausted_with_one_delay(
         self,
     ) -> None:
-        """Three 429s ⇒ exhaustion; only **one** sleep was issued
- between the first 429 (attempts_429 → 1, sleep) and the
- second 429 (attempts_429 → 2, sleep), but the third 429
- (attempts_429 → 3, exhausted) does NOT sleep.
+        """Three 429s  exhaustion; only **one** sleep was issued
+ between the first 429 (attempts_429  1, sleep) and the
+ second 429 (attempts_429  2, sleep), but the third 429
+ (attempts_429  3, exhausted) does NOT sleep.
  """
 
         plan = (

@@ -23,9 +23,9 @@ The chosen ``ai-bot`` mapping is then serialised through
 YAML - only the **field-level** values are invalid. After parsing we
 assert the post-conditions field:
 
-* valid → ``result.<field>`` equals what we supplied AND the field
+* valid  ``result.<field>`` equals what we supplied AND the field
  name does not appear in any ``parse_errors`` entry.
-* invalid → ``result.<field>`` is ``None`` AND at least one
+* invalid  ``result.<field>`` is ``None`` AND at least one
  ``parse_errors`` entry mentions the field name.
 
 The ``output`` field is exercised at the *top level* (a non-list
@@ -302,7 +302,7 @@ def _error_blames_field(error: str, field_name: str) -> bool:
 def test_invalid_yaml_field_dropped_with_warning_entry(
     block: tuple[dict[str, Any], dict[str, tuple[str, Any]]],
 ) -> None:
-    """: invalid YAML field → ``None`` + ``parse_errors``
+    """: invalid YAML field  ``None`` + ``parse_errors``
  entry, while valid sibling fields are preserved verbatim.
 
  **"""

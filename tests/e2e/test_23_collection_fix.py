@@ -7,8 +7,8 @@ that syntax/import errors in individual test files do not kill the entire
 test suite collection.
 
 Verification steps:
-1. Run `pytest tests/ --collect-only` → assert exit 0
-2. Run `pytest tests/ -v --tb=short` → assert run completes (no abort)
+1. Run `pytest tests/ --collect-only`  assert exit 0
+2. Run `pytest tests/ -v --tb=short`  assert run completes (no abort)
 3. Emit evidence JSON to `e2e-evidence/23-collection-fix.json`
 
 Requirements: R23.3, R23.4, R23.5

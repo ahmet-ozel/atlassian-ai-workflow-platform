@@ -5,7 +5,7 @@ Covers the four-role decision matrix for the
 
 * Role enumeration is exactly ``{"viewer", "lead", "admin",
   "dept_admin"}``.
-* The viewer→lead→admin precedence holds for guards that only
+* The viewerleadadmin precedence holds for guards that only
   require global roles.
 * ``required_role="admin"`` is global-only - ``dept_admin`` is
   rejected for global actions.

@@ -56,7 +56,7 @@ class FakeVaultReader:
     """In-memory Vault reader for tests.
 
     Attributes:
-        secrets: Mapping of path → payload dict.
+        secrets: Mapping of path  payload dict.
         timeout_paths: Set of paths that simulate a timeout.
         error_paths: Set of paths that raise a generic exception.
         read_calls: List of paths that were read (for assertions).

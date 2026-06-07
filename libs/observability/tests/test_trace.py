@@ -98,7 +98,7 @@ def test_generate_trace_id_round_trips_through_uuid_module() -> None:
     parsed = uuid.UUID(trace_id)
     assert parsed.version == 7
     # RFC 4122 / 9562 variant: top two bits of clock_seq_hi_and_reserved
-    # are 0b10 → variant string is ``RFC_4122``.
+    # are 0b10  variant string is ``RFC_4122``.
     assert parsed.variant == uuid.RFC_4122
 
 

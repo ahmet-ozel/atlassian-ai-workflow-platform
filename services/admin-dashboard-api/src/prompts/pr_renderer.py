@@ -96,7 +96,7 @@ class SandboxRunSummary:
 
 @dataclass(frozen=True)
 class V15SyncStatus:
-    """V15 (prompt MD ↔ architecture notes) sync status snapshot.
+    """V15 (prompt MD  architecture notes) sync status snapshot.
 
     The router computes this via :func:`extract_v15_status` (or, in
     tests, builds it explicitly) and hands it to the renderer.
@@ -104,7 +104,7 @@ class V15SyncStatus:
     Attributes:
         all_ids: Backlog IDs found in the prompt body (sorted, unique).
         missing_in_mimari: Subset of ``all_ids`` that the caller could
-            not find in ``architecture notes``. Empty tuple ⇒ everything is in
+            not find in ``architecture notes``. Empty tuple  everything is in
             sync. The renderer surfaces this as a callout when
             non-empty so the reviewer notices before merging.
         mimari_available: ``True`` when the caller successfully read
@@ -327,7 +327,7 @@ def _render_sandbox_section(history: Sequence[SandboxRunSummary]) -> str:
 
 
 def _render_v15_section(v15: V15SyncStatus | None) -> str:
-    """Render the V15 (prompt ↔ architecture) sync section."""
+    """Render the V15 (prompt  architecture) sync section."""
 
     if v15 is None:
         return (
@@ -354,7 +354,7 @@ def _render_v15_section(v15: V15SyncStatus | None) -> str:
 
     if not v15.mimari_available:
         lines.append(
-            "⚠️ `architecture notes` was not available when this PR description "
+            " `architecture notes` was not available when this PR description "
             "was rendered - V15 sync could not be verified. The CI "
             "gate `tests/test_taskprompt_mimari_sync.py` (prompt sync wiring) "
             "remains the source of truth and will fail the build if "
@@ -363,14 +363,14 @@ def _render_v15_section(v15: V15SyncStatus | None) -> str:
     elif v15.missing_in_mimari:
         missing = ", ".join(f"`{_id}`" for _id in v15.missing_in_mimari)
         lines.append(
-            f"⚠️ The following backlog IDs are **missing** from "
+            f" The following backlog IDs are **missing** from "
             f"`architecture notes`: {missing}. The V15 CI gate will fail this "
             f"PR until each ID is documented in `architecture notes` or "
             f"removed from the prompt body."
         )
     else:
         lines.append(
-            "✅ All backlog IDs above are present in `architecture notes`. "
+            " All backlog IDs above are present in `architecture notes`. "
             "V15 sync gate is satisfied."
         )
     return "\n".join(lines)

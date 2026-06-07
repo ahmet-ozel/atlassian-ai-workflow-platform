@@ -15,15 +15,15 @@ the lifespan-managed collaborators on ``app.state``.
 Error handling
 --------------
 
-* Vault write failure during create → ``ROLLBACK``, raise
-  :class:`VaultWriteFailed` (→ 502 ``vault_write_failed``) (R3.5).
-* Rollback itself fails → log ``llm_provider_rollback_failed`` at
+* Vault write failure during create  ``ROLLBACK``, raise
+  :class:`VaultWriteFailed` ( 502 ``vault_write_failed``) (R3.5).
+* Rollback itself fails  log ``llm_provider_rollback_failed`` at
   ERROR with ``{provider_id, exc.__class__.__name__}`` and still
   surface the 502 (R3.6).
-* Delete blocked by referencing override → raise
-  :class:`ProviderInUse` (→ 409 ``provider_in_use``) (R1.7).
-* Vault delete failure → leave the row, raise
-  :class:`VaultDeleteFailed` (→ 502 ``vault_delete_failed``) and emit
+* Delete blocked by referencing override  raise
+  :class:`ProviderInUse` ( 409 ``provider_in_use``) (R1.7).
+* Vault delete failure  leave the row, raise
+  :class:`VaultDeleteFailed` ( 502 ``vault_delete_failed``) and emit
   ``llm_provider_delete_vault_failed`` audit (R3.7).
 * Sink failures are swallowed at WARNING log level - they NEVER mask
   the underlying HTTP response (R12.7).

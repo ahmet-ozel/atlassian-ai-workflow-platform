@@ -104,7 +104,7 @@ def _temporal_test_env_available() -> bool:
 
     try:
         from temporalio.testing import WorkflowEnvironment  # noqa: F401
-    except Exception:  # noqa: BLE001 - any import failure → skip.
+    except Exception:  # noqa: BLE001 - any import failure  skip.
         return False
     return True
 
@@ -316,8 +316,7 @@ async def test_multi_step_dispatch_with_one_skip_via_real_temporal() -> None:
     dept_capabilities = frozenset({"jira", "bitbucket", "execution"})
 
     # ----- 1. Pure dispatch decision --------------------------------
-    #
-    # ``multi_step_dispatch`` is replay-safe and pure; it makes no
+    # # ``multi_step_dispatch`` is replay-safe and pure; it makes no
     # Temporal calls. Calling it before the env spins up keeps the
     # test isolated from any cluster state.
 

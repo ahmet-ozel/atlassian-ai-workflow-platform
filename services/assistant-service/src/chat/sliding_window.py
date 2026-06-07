@@ -16,9 +16,9 @@ older messages, which is the seam through which a real LLM-backed
 summariser is injected at runtime. The deterministic-summariser tests
 pin the following invariants:
 
-(a) ``len(messages) <= n`` ⇒ output ``== messages`` (no-op, no
+(a) ``len(messages) <= n``  output ``== messages`` (no-op, no
     summariser call).
-(b) ``len(messages) > n`` ⇒ ``len(output) == n + 1`` (exactly one
+(b) ``len(messages) > n``  ``len(output) == n + 1`` (exactly one
     summary message followed by the ``n`` most recent entries).
 (c) The trailing ``n`` elements of the output equal ``messages[-n:]``
     verbatim - original ordering preserved.
@@ -26,7 +26,7 @@ pin the following invariants:
     contains the substring ``"[Önceki konuşma özeti]"``.
 (e) Determinism: identical inputs (with a deterministic summariser)
     yield identical outputs across invocations.
-(f) Empty input ⇒ empty output.
+(f) Empty input  empty output.
 
 The compressor is intentionally minimal: env wiring (``CHAT_SLIDING
 _WINDOW_N=20``), the LLM-backed summariser default, the audit

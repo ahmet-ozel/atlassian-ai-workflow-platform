@@ -553,7 +553,7 @@ if kind_errs:
 print("OK   foundation kind invariants hold.")
 
 # 4) Required field consistency: each foundation entry's compose_profile
-#    SHALL contain its compose_service_name.
+# SHALL contain its compose_service_name.
 profile_errs: list[str] = []
 for name in FOUNDATION_REQUIRED_NAMES:
     entry = by_name[name]
@@ -570,9 +570,9 @@ if profile_errs:
 print("OK   compose_profile contains compose_service_name for all foundation entries.")
 
 # 5) HTTP-service entries SHALL define a non-null health_endpoint;
-#    worker/sidecar/ui foundation entries SHALL have health_endpoint=null
-#    (workers don't open HTTP, sidecars are Compose-internal-only, UIs
-#    serve via their own framework).
+# worker/sidecar/ui foundation entries SHALL have health_endpoint=null
+# (workers don't open HTTP, sidecars are Compose-internal-only, UIs
+# serve via their own framework).
 health_errs: list[str] = []
 for name in FOUNDATION_REQUIRED_NAMES:
     entry = by_name[name]
@@ -594,9 +594,9 @@ print("OK   foundation health_endpoint invariants hold.")
 
 # ---------------------------------------------------------------------------
 # 6) Cycle detection (DFS) over depends_on_services edges, restricted to
-#    intra-manifest references. External dependency names that are not
-#    manifest entry names are skipped - they cannot form a cycle since
-#    they are not nodes in the graph.
+# intra-manifest references. External dependency names that are not
+# manifest entry names are skipped - they cannot form a cycle since
+# they are not nodes in the graph.
 # ---------------------------------------------------------------------------
 
 

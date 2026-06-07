@@ -2,14 +2,12 @@
 
 /**
  * SSHRunnersCard - Displays SSH runners with key rotation controls.
- *
- * Fetches runner data from `GET /admin/ssh-runners` (list endpoint, EK4
+ * * Fetches runner data from `GET /admin/ssh-runners` (list endpoint, EK4
  * fix; the rotation endpoints below live under `/admin/security/...`)
  * and renders
  * each runner with host info, fingerprint, last rotation date, and action
  * buttons for key rotation, known_hosts refresh, and rotation finalization.
- *
- * Requirements: 8.5, 8.6
+ * * Requirements: 8.5, 8.6
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -474,7 +472,7 @@ export default function SSHRunnersCard(): JSX.Element {
             aria-labelledby="ssh-result-title"
           >
             <h3 id="ssh-result-title" style={{ margin: "0 0 0.75rem 0" }}>
-              🔑 Yeni SSH Public Key
+               Yeni SSH Public Key
             </h3>
             <p style={{ fontSize: "0.9rem", marginBottom: "0.5rem" }}>
               Aşağıdaki public key <strong>{rotateResult.host}</strong>{" "}
@@ -492,7 +490,7 @@ export default function SSHRunnersCard(): JSX.Element {
                 marginBottom: "0.75rem",
               }}
             >
-              ℹ️ Bu anahtarı sunucudaki <code>~/.ssh/authorized_keys</code>{" "}
+              ℹ Bu anahtarı sunucudaki <code>~/.ssh/authorized_keys</code>{" "}
               dosyasına ekleyin, sonra &quot;Rotation&apos;ı Sonlandır&quot;
               butonuna basın.
             </div>
@@ -514,7 +512,7 @@ export default function SSHRunnersCard(): JSX.Element {
                   void navigator.clipboard.writeText(rotateResult.publicKey);
                 }}
               >
-                📋 Kopyala
+                 Kopyala
               </button>
               <button
                 type="button"

@@ -2,13 +2,11 @@
 
 /**
  * Operations > License sayfası.
- *
- * `GET /admin/operations/license` endpoint'inden bot license cap verilerini çeker;
+ * * `GET /admin/operations/license` endpoint'inden bot license cap verilerini çeker;
  * her license için:
- *   - Bar chart: concurrent / daily / monthly kullanım vs. maksimum.
- *   - 30 günlük trend line chart (GET /admin/operations/license/{id}/trend).
- *
- */
+ * - Bar chart: concurrent / daily / monthly kullanım vs. maksimum.
+ * - 30 günlük trend line chart (GET /admin/operations/license/{id}/trend).
+ * */
 
 import { useCallback, useEffect, useState } from "react";
 
@@ -428,7 +426,7 @@ export default function LicensePage(): JSX.Element {
       if (!res.ok) {
         const text = await res.text().catch(() => "");
         throw new Error(
-          `GET /admin/operations/license → HTTP ${res.status}${
+          `GET /admin/operations/license  HTTP ${res.status}${
             text ? `: ${text.slice(0, 200)}` : ""
           }`,
         );

@@ -167,7 +167,7 @@ class BulkImportService:
     """Bulk department import orchestrator.
 
     Implements the per-department atomic flow described in design.md:
-    staging write → probe → promote + DB commit.  Failures on any
+    staging write  probe  promote + DB commit.  Failures on any
     step cause that department to be skipped with staging cleanup.
 
     Args:
@@ -546,7 +546,7 @@ class BulkImportService:
                 probe_results=probe_results,
             )
 
-        # --- Step 3: Promote staging → final + DB commit ---
+        # --- Step 3: Promote staging  final + DB commit ---
         try:
             await self._promote_and_commit(
                 dept_id=dept_id,

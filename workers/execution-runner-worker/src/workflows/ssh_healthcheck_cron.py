@@ -4,8 +4,8 @@ Runs every 5 minutes via Temporal cron schedule and monitors SSH runner
 health using the existing ``ssh_healthcheck`` activity.
 
 State machine:
-    - 3 consecutive failures → mark "unhealthy", block new SSH tasks
-    - 2 consecutive successes (while unhealthy) → restore "healthy", remove block
+    - 3 consecutive failures  mark "unhealthy", block new SSH tasks
+    - 2 consecutive successes (while unhealthy)  restore "healthy", remove block
 """
 
 from __future__ import annotations

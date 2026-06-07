@@ -1,16 +1,14 @@
 ﻿/**
  * Thin API client for the admin dashboard.
- *
- * All URL / port resolution is centralized in ``lib/config.ts`` (single
+ * * All URL / port resolution is centralized in ``lib/config.ts`` (single
  * source of truth, env-driven). This module only composes requests; it
  * does not hard-code any host or port.
- *
- * Two call patterns:
- *   1. `await apiFetch(path, init?)` returns `Response` - caller is
- *      responsible for `res.ok` / `await res.json()`.
- *   2. `await apiFetch<T>(path, init?)` types the awaited value as `T`.
- *      The runtime call is identical to (1); the generic is a type-level
- *      convenience for call sites that already treat the result as a body.
+ * * Two call patterns:
+ * 1. `await apiFetch(path, init?)` returns `Response` - caller is
+ * responsible for `res.ok` / `await res.json()`.
+ * 2. `await apiFetch<T>(path, init?)` types the awaited value as `T`.
+ * The runtime call is identical to (1); the generic is a type-level
+ * convenience for call sites that already treat the result as a body.
  */
 import { getAdminApiBaseUrl, getDevToken } from "@/lib/config";
 

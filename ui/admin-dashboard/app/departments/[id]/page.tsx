@@ -2,24 +2,19 @@
 
 /**
  * Department detail route.
- *
- * The route exists primarily as a mount point for the credential
+ * * The route exists primarily as a mount point for the credential
  * modal (:file:`../_components/CredentialModal.tsx`). Operators
  * navigate here from the departments table (row click
  * handler) and the modal opens automatically when credentials exist.
- *
- * When no credentials are bound to the department, the page shows a
+ * * When no credentials are bound to the department, the page shows a
  * yellow "Pending Credentials" badge with an "Add Credential" button
  * Clicking the button opens the CredentialModal.
- *
- * When credentials exist, the page shows a green "Active" badge and
+ * * When credentials exist, the page shows a green "Active" badge and
  * the CredentialModal opens automatically (existing behavior).
- *
- * Closing the modal navigates back to ``/departments`` so the
+ * * Closing the modal navigates back to ``/departments`` so the
  * catalog refetches and the credential indicators reflect the
  * latest state.
- *
- * Additionally, an "Assigned SSH Runners" section allows operators to
+ * * Additionally, an "Assigned SSH Runners" section allows operators to
  * assign/unassign SSH runners to this department via a multi-select
  * dropdown, and displays a table of assigned runners with metrics.
  * If the global runner pool is empty, a `runner_pool_empty` warning
@@ -382,7 +377,7 @@ export default function DepartmentDetailPage({
         }}
       >
         <a href="/departments" style={{ color: "#2563eb", textDecoration: "none" }}>
-          ← Departmanlar
+           Departmanlar
         </a>
       </nav>
 
@@ -453,7 +448,7 @@ export default function DepartmentDetailPage({
             role="status"
             aria-label="Pending Credentials"
           >
-            ⚠ Kimlik bilgileri bekleniyor
+             Kimlik bilgileri bekleniyor
           </span>
           <button
             type="button"
@@ -499,7 +494,7 @@ export default function DepartmentDetailPage({
             role="status"
             aria-label="Active"
           >
-            ✓ Aktif
+             Aktif
           </span>
           <button
             type="button"
@@ -544,7 +539,7 @@ export default function DepartmentDetailPage({
               aria-label="runner_pool_empty"
               style={warningBannerStyle}
             >
-              <span aria-hidden="true">⚠️</span>
+              <span aria-hidden="true"></span>
               <span>
                 SSH runner havuzu boş - henüz hiçbir runner tanımlanmamış.
                 Lütfen önce{" "}
@@ -552,7 +547,7 @@ export default function DepartmentDetailPage({
                   href="/security"
                   style={{ color: "#92400e", fontWeight: 600 }}
                 >
-                  Security → SSH Runners
+                  Security  SSH Runners
                 </a>{" "}
                 sayfasından runner ekleyin.
               </span>

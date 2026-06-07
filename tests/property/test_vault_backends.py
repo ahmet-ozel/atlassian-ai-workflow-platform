@@ -74,7 +74,7 @@ def vault_paths(draw: st.DrawFn) -> VaultPath:
     return VaultPath.parse("vault:" + "/".join(segs))
 
 
-# Flat ``str → str`` payloads - KV v2 stores at most a flat dict per
+# Flat ``str  str`` payloads - KV v2 stores at most a flat dict per
 # secret. Keys must be non-empty and free of NUL characters; values are
 # arbitrary printable text. Limiting the dict to 4 entries keeps test
 # wall-time low while still exercising multi-field round-trips.

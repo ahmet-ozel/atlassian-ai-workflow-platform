@@ -28,12 +28,12 @@ What this module owns
    logic. The :meth:`evaluate` method runs the stages in this order:
 
    ```
-   verify_hmac  →  resolve_dept  →  loop_guard
-       →  streamlit_bypass     # [bot:hear] takes precedence
-       →  replay_dedup
-       →  mention_filter (with first_iter_exception merged in)
-       →  burst_debounce
-       →  pass
+   verify_hmac    resolve_dept    loop_guard
+         streamlit_bypass     # [bot:hear] takes precedence
+         replay_dedup
+         mention_filter (with first_iter_exception merged in)
+         burst_debounce
+         pass
    ```
 
 Determinism contract
@@ -472,25 +472,25 @@ class FilterDecision:
 VerifyHmac = Callable[[WebhookEvent], bool]
 
 #: Department resolver: ``project_key`` (Jira) or ``repo_slug``
-#: (Bitbucket) → ``dept_id`` or ``None`` if no department owns it.
+#: (Bitbucket)  ``dept_id`` or ``None`` if no department owns it.
 ResolveDept = Callable[[WebhookEvent], str | None]
 
 #: Bot account-id snapshot. The chain calls this lazily so the registry
 #: can be refreshed without restarting the chain.
 BotAccountIds = Callable[[], frozenset[str]]
 
-#: Replay dedup probe: ``delivery_id`` → ``True`` if the platform has
+#: Replay dedup probe: ``delivery_id``  ``True`` if the platform has
 #: already processed this delivery.
 IsProcessed = Callable[[str], bool]
 
-#: Per-issue mention set: ``issue_key`` → set of bot-mentioned account
+#: Per-issue mention set: ``issue_key``  set of bot-mentioned account
 #: ids. Used by the mention-filter stage.
 MentionSetFor = Callable[[str], frozenset[str]]
 
-#: Per-issue iteration counter: ``issue_key`` → current iter_count.
+#: Per-issue iteration counter: ``issue_key``  current iter_count.
 IterCountFor = Callable[[str], int]
 
-#: Per-issue reporter resolver: ``issue_key`` → reporter account id.
+#: Per-issue reporter resolver: ``issue_key``  reporter account id.
 #: Used by the first-iter exception.
 ReporterFor = Callable[[str], str]
 
@@ -896,8 +896,7 @@ class WebhookFilterChain:
     # Stage helpers (replay_dedup, mention_filter,
     # first_iter_exception, streamlit_bypass)
     # -----------------------------------------------------------------
-    #
-    # Each ``_stage_*`` method below is a small *pure* helper: it takes
+    # # Each ``_stage_*`` method below is a small *pure* helper: it takes
     # a :class:`WebhookEvent`, consults at most one chain callback, and
     # returns a :class:`FilterDecision` if the stage produced a verdict
     # - or ``None`` to mean "this stage did not fire, fall through to
@@ -906,8 +905,7 @@ class WebhookFilterChain:
     # one stage at a time and lets the property tests in
     # ``tests/property/test_webhook_predicates.py`` enumerate every
     # combination without spinning up the entire chain.
-    #
-    # The stages are intentionally synchronous: the callbacks are pure
+    # # The stages are intentionally synchronous: the callbacks are pure
     # Python predicates wired to in-memory caches at the call site
     # (the FastAPI router materialises ``processed_events`` /
     # ``mention_set`` lookups before invoking the chain). When a
@@ -918,8 +916,7 @@ class WebhookFilterChain:
     # -----------------------------------------------------------------
     # HMAC, department resolution, and loop-guard stages
     # -----------------------------------------------------------------
-    #
-    # The two HTTP-level failure stages (``_stage_verify_hmac`` and
+    # # The two HTTP-level failure stages (``_stage_verify_hmac`` and
     # ``_stage_resolve_dept``) surface their drop reason via raised
     # exceptions because the router needs distinct HTTP status codes
     # (401 / 400) - not a generic 200 ``"drop"``. The loop-guard stage
@@ -1318,18 +1315,18 @@ class WebhookFilterChain:
         Decision rules
         --------------
 
-        * No ``burst_register`` callback configured → ``None``
+        * No ``burst_register`` callback configured  ``None``
           (skip the stage).
-        * Callback returns ``None`` → ``None`` (the callback decided
+        * Callback returns ``None``  ``None`` (the callback decided
           the event is out of scope for the burst window - for
           instance because it has no ``issue_key``).
         * Callback returns ``BurstRegisterResult(decision="coalesce_emit")``
-          → ``None`` (the event opened a fresh window; the chain
+           ``None`` (the event opened a fresh window; the chain
           falls through to ``filter_chain_pass`` so the FastAPI
           router dispatches the event normally - the eventual flush
           will carry the coalesced delivery_ids).
         * Callback returns ``BurstRegisterResult(decision="coalesce_dropped")``
-          → :class:`FilterDecision` with ``action="drop"``,
+           :class:`FilterDecision` with ``action="drop"``,
           ``reason="burst_coalesced"``, and ``coalesced_with`` set to
           the running delivery_id list. The router replies ``200 OK``
           and writes the audit row; the buffered payload remains in

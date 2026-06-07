@@ -8,7 +8,7 @@ comes back online.
 Verification steps:
 1. docker restart postgres (simulate ~10s outage)
 2. Assert automation-service reconnects within 30s
-3. Execute DB-dependent operation post-reconnect → assert success
+3. Execute DB-dependent operation post-reconnect  assert success
 4. Assert structured log entries for connection loss/recovery
 5. Assert no credential leakage in logs
 6. Emit evidence JSON

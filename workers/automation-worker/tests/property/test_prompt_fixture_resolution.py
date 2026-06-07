@@ -13,26 +13,26 @@ When pytest is invoked from the workspace root
 (``c:/Users/ahmet/Desktop/atlassian-ai-workflow-platform``):
  - ``DEFAULT_PROMPT_PATH`` resolves to:
  ``C:\\Users\\ahmet\\Desktop\\atlassian-ai-workflow-platform\\platform\\prompts\\task_analysis.md``
- - ``is_file`` → False ← BUG CONDITION
+ - ``is_file``  False  BUG CONDITION
 
 When pytest is invoked from ``platform/``:
  - Same absolute resolution (``__file__``-anchored, not CWD-relative):
  ``C:\\Users\\ahmet\\Desktop\\atlassian-ai-workflow-platform\\platform\\prompts\\task_analysis.md``
- - ``is_file`` → False ← BUG CONDITION
+ - ``is_file``  False  BUG CONDITION
 
 When pytest is invoked from ``platform/workers/automation-worker/``:
  - Same absolute resolution:
  ``C:\\Users\\ahmet\\Desktop\\atlassian-ai-workflow-platform\\platform\\prompts\\task_analysis.md``
- - ``is_file`` → False ← BUG CONDITION
+ - ``is_file``  False  BUG CONDITION
 
 When pytest is invoked from ``platform/workers/agent-runner-worker/``:
  - Same absolute resolution:
  ``C:\\Users\\ahmet\\Desktop\\atlassian-ai-workflow-platform\\platform\\prompts\\task_analysis.md``
- - ``is_file`` → False ← BUG CONDITION
+ - ``is_file``  False  BUG CONDITION
 
 Canonical prompt (always exists):
  ``platform/workers/agent-runner-worker/prompts/task_analysis.md``
- ``is_file`` → True
+ ``is_file``  True
 
 **isBugCondition_5(X)**:
  ``Path(resolved).is_file == False AND canonical_path.is_file == True``

@@ -299,10 +299,10 @@ def compute_orphan_branches(
     >>> # Idempotent - feeding the orphans back returns the same set.
     >>> compute_orphan_branches(orphans, [p1]) == orphans
     True
-    >>> # Empty PR list → every ai/* branch is orphan.
+    >>> # Empty PR list  every ai/* branch is orphan.
     >>> compute_orphan_branches([b1, b2, b3], []) == {b1, b2}
     True
-    >>> # Empty branch list → empty result regardless of PR list.
+    >>> # Empty branch list  empty result regardless of PR list.
     >>> compute_orphan_branches([], [p1]) == frozenset()
     True
     """
@@ -414,12 +414,12 @@ def compute_po_review_inbox(
     ... )
     >>> inbox == {draft_bot}
     True
-    >>> # Empty bot_ids → empty result even when drafts exist.
+    >>> # Empty bot_ids  empty result even when drafts exist.
     >>> compute_po_review_inbox(
     ...     [draft_bot, draft_human], frozenset()
     ... ) == frozenset()
     True
-    >>> # Empty PR list → empty result.
+    >>> # Empty PR list  empty result.
     >>> compute_po_review_inbox([], frozenset({bot})) == frozenset()
     True
     """

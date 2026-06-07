@@ -24,10 +24,10 @@ Strategy
 We use Hypothesis to generate random budget configurations, usage
 levels, and threshold settings, then verify four behaviors:
 
-(a) Below threshold → no alarm dispatched.
-(b) At or above threshold → alarm dispatched exactly once.
-(c) Same period, threshold still breached → alarm NOT re-dispatched.
-(d) New period (last_alarmed_at outside window) → alarm fires again.
+(a) Below threshold  no alarm dispatched.
+(b) At or above threshold  alarm dispatched exactly once.
+(c) Same period, threshold still breached  alarm NOT re-dispatched.
+(d) New period (last_alarmed_at outside window)  alarm fires again.
 
 The policy is exercised end-to-end with in-memory fakes for the
 ``AlarmThresholdStore``, ``NotificationDispatcher``,
@@ -237,7 +237,7 @@ _cap_strategy = st.decimals(
 
 
 # ---------------------------------------------------------------------------
-# Behavior: Below threshold → no alarm dispatched
+# Behavior: Below threshold  no alarm dispatched
 # ---------------------------------------------------------------------------
 
 
@@ -270,7 +270,7 @@ class TestBelowThresholdNoAlarm:
     ) -> None:
         """: No alarm when usage is below threshold_pct."""
         # Compute a usage value strictly below the threshold
-        # usage_pct < threshold_pct → usage < cap * threshold_pct / 100
+        # usage_pct < threshold_pct  usage < cap * threshold_pct / 100
         max_usage = (cap * Decimal(str(threshold_pct)) / Decimal("100")) - Decimal("0.01")
         usage_val = max(Decimal("0"), max_usage)
 
@@ -333,7 +333,7 @@ class TestBelowThresholdNoAlarm:
 
 
 # ---------------------------------------------------------------------------
-# Behavior: At or above threshold → alarm dispatched once
+# Behavior: At or above threshold  alarm dispatched once
 # ---------------------------------------------------------------------------
 
 
@@ -442,7 +442,7 @@ class TestAboveThresholdAlarmFires:
 
 
 # ---------------------------------------------------------------------------
-# Behavior: Same period, already alarmed → no re-dispatch
+# Behavior: Same period, already alarmed  no re-dispatch
 # ---------------------------------------------------------------------------
 
 
@@ -544,7 +544,7 @@ class TestSamePeriodNoReDispatch:
 
 
 # ---------------------------------------------------------------------------
-# Behavior: New period (last_alarmed_at outside window) → alarm resets
+# Behavior: New period (last_alarmed_at outside window)  alarm resets
 # ---------------------------------------------------------------------------
 
 

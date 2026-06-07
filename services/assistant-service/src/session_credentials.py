@@ -10,8 +10,8 @@ zeroed before the response is returned.
 
 Lifecycle:
 
-* ``POST /session/credentials`` → write or refresh.
-* ``DELETE /session/credentials?session_id=...&service=...`` →
+* ``POST /session/credentials``  write or refresh.
+* ``DELETE /session/credentials?session_id=...&service=...``
   remove the path so ``CredentialResolver.resolve`` falls back to
   the org-default.
 * ``GET /session/credentials/{session_id}/{service}`` is **not**

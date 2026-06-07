@@ -1,7 +1,7 @@
 ﻿"""- Auth gate blocks every endpoint before any side-effect.
 the test asserts:
-* A request with no ``Authorization`` header → HTTP 401.
-* A request with a valid token whose principal is not admin → HTTP 403.
+* A request with no ``Authorization`` header  HTTP 401.
+* A request with a valid token whose principal is not admin  HTTP 403.
 * The asyncpg fake, ``VaultClient`` fake and ``httpx.MockTransport``
   recorded ZERO calls in either case - the gate short-circuits before
   any router-level logic runs."""
@@ -58,8 +58,8 @@ class _StubValidator:
     so the route-level admin check resolves deterministically without
     a live IdP.  Token strings:
 
-    * ``"admin-token"`` → claims with ``role=admin``.
-    * ``"viewer-token"`` → claims with ``role=viewer`` (non-admin).
+    * ``"admin-token"``  claims with ``role=admin``.
+    * ``"viewer-token"``  claims with ``role=viewer`` (non-admin).
     """
 
     def validate(self, token: str) -> dict[str, Any]:
@@ -150,7 +150,7 @@ def _snapshot_state_unchanged(
     suppress_health_check=[HealthCheck.function_scoped_fixture],
 )
 def test_missing_authorization_returns_401(idx: int) -> None:
-    """No header → 401 + no side-effects."""
+    """No header  401 + no side-effects."""
 
     method, path = _ROUTES[idx]
     pool_before = len(_POOL.providers)
@@ -170,7 +170,7 @@ def test_missing_authorization_returns_401(idx: int) -> None:
     suppress_health_check=[HealthCheck.function_scoped_fixture],
 )
 def test_non_admin_token_returns_403(idx: int) -> None:
-    """Valid non-admin token → 403 + no side-effects."""
+    """Valid non-admin token  403 + no side-effects."""
 
     method, path = _ROUTES[idx]
     pool_before = len(_POOL.providers)

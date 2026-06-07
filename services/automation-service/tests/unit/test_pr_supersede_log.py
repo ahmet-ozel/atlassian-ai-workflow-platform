@@ -72,7 +72,7 @@ class TestRecord:
     async def test_returns_true_when_row_inserted(
         self, mock_pool: AsyncMock
     ) -> None:
-        """Fresh ``(workflow_id, old_pr_id)`` → ``RETURNING`` row → True."""
+        """Fresh ``(workflow_id, old_pr_id)``  ``RETURNING`` row  True."""
 
         mock_pool._conn.fetchrow.return_value = {
             "workflow_id": "automation-bb-payment-callbacks-pr-127"
@@ -91,7 +91,7 @@ class TestRecord:
     async def test_returns_false_on_duplicate(
         self, mock_pool: AsyncMock
     ) -> None:
-        """Duplicate PK → ``ON CONFLICT DO NOTHING`` swallows → False."""
+        """Duplicate PK  ``ON CONFLICT DO NOTHING`` swallows  False."""
 
         mock_pool._conn.fetchrow.return_value = None  # no RETURNING row
         repo = PrSupersedeLogRepo(mock_pool)

@@ -28,7 +28,7 @@ Every test class targets exactly one stage so a stage-local regression
 shrinks the failing example to that stage's logic without dragging in
 unrelated callbacks. The composite stage-ordering tests live at the
 bottom; their purpose is to pin the
-``streamlit_bypass → replay_dedup → mention_filter`` precedence so the
+``streamlit_bypass  replay_dedup  mention_filter`` precedence so the
 stage-level suites above can stay focused on individual decision
 tables.
 """
@@ -175,7 +175,7 @@ class TestStreamlitBypassStage:
     """``_stage_streamlit_bypass`` short-circuits when ``[bot:hear]`` is present."""
 
     def test_body_with_bot_hear_passes_with_bypass_reason(self) -> None:
-        """``[bot:hear]`` in the body → pass with the canonical reason.
+        """``[bot:hear]`` in the body  pass with the canonical reason.
 
         """
 
@@ -352,7 +352,7 @@ class TestReplayDedupStage:
     """``_stage_replay_dedup`` drops events whose ``delivery_id`` was seen."""
 
     def test_already_processed_drops_with_duplicate_event_dropped(self) -> None:
-        """``is_processed`` True → drop with the canonical reason.
+        """``is_processed`` True  drop with the canonical reason.
 
         """
 
@@ -367,7 +367,7 @@ class TestReplayDedupStage:
         assert REASON_DUPLICATE_EVENT_DROPPED == "duplicate_event_dropped"
 
     def test_unseen_delivery_falls_through(self) -> None:
-        """``is_processed`` False → fall through to the next stage.
+        """``is_processed`` False  fall through to the next stage.
 
         With every other callback set to no-op the chain reaches
         ``filter_chain_pass``.
@@ -467,7 +467,7 @@ class TestMentionFilterStage:
     """
 
     def test_unauthorized_actor_at_iter_two_drops(self) -> None:
-        """iter > 1 + actor ∉ mention_set → drop with Y6 reason.
+        """iter > 1 + actor ∉ mention_set  drop with Y6 reason.
 
         """
 
@@ -488,7 +488,7 @@ class TestMentionFilterStage:
         )
 
     def test_mentioned_actor_at_iter_two_passes(self) -> None:
-        """iter > 1 + actor ∈ mention_set → pass through.
+        """iter > 1 + actor ∈ mention_set  pass through.
 
         """
 
@@ -519,7 +519,7 @@ class TestMentionFilterStage:
         assert decision.reason == REASON_COMMENT_IGNORED_UNAUTHORIZED_ACTOR
 
     def test_none_actor_at_iter_two_drops(self) -> None:
-        """iter > 1 + actor None → drop (no actor cannot be mentioned).
+        """iter > 1 + actor None  drop (no actor cannot be mentioned).
 
         The Y6 predicate's "actor not in mention_set" branch fires
         when the actor is missing entirely - we cannot match a
@@ -562,7 +562,7 @@ class TestMentionFilterStage:
         assert decision.reason == REASON_FILTER_CHAIN_PASS
 
     def test_missing_issue_key_passes_through_defensively(self) -> None:
-        """Comment events without ``issue_key`` cannot be evaluated → pass.
+        """Comment events without ``issue_key`` cannot be evaluated  pass.
 
         Real Atlassian comment payloads always populate ``issue.key``;
         if an upstream contract change ever lands an event without
@@ -660,7 +660,7 @@ class TestMentionFilterFirstIterException:
     """
 
     def test_iter_one_reporter_passes_with_first_iter_reason(self) -> None:
-        """iter == 1 + actor == reporter → bypass with the Z6 audit reason.
+        """iter == 1 + actor == reporter  bypass with the Z6 audit reason.
 
         """
 
@@ -681,7 +681,7 @@ class TestMentionFilterFirstIterException:
         )
 
     def test_iter_one_non_reporter_falls_through_without_z6(self) -> None:
-        """iter == 1 + actor != reporter → fall through (no Z6 label).
+        """iter == 1 + actor != reporter  fall through (no Z6 label).
 
         Z6 specifically requires actor == reporter. Other commenters
         at iter 1 still pass (Y6 only enforces from iter 2 onward),
@@ -702,7 +702,7 @@ class TestMentionFilterFirstIterException:
         assert decision.reason == REASON_FILTER_CHAIN_PASS
 
     def test_iter_two_reporter_no_longer_qualifies_for_z6(self) -> None:
-        """iter > 1 + actor == reporter → no Z6 (Z6 is iter-1 only).
+        """iter > 1 + actor == reporter  no Z6 (Z6 is iter-1 only).
 
         At iter 2 the reporter must already be in the mention set
         like everyone else (typically true because the bot mentioned
@@ -719,13 +719,13 @@ class TestMentionFilterFirstIterException:
         event = _make_comment_event(actor_account_id="alice")
 
         decision = chain.evaluate(event)
-        # Reporter is also in mention set at iter 2 → pass with the
+        # Reporter is also in mention set at iter 2  pass with the
         # default ``filter_chain_pass`` reason, NOT Z6.
         assert decision.action == "pass"
         assert decision.reason == REASON_FILTER_CHAIN_PASS
 
     def test_iter_zero_treated_as_iter_one_for_z6(self) -> None:
-        """iter == 0 + actor == reporter → Z6 fires.
+        """iter == 0 + actor == reporter  Z6 fires.
 
         The design's iter semantics treat ``0`` as "freshly created
         issue, no iter advanced yet" and the bot's first reply will
@@ -802,7 +802,7 @@ class TestMentionFilterFirstIterException:
 
 
 class TestMidChainStageOrdering:
-    """The chain runs streamlit_bypass → replay_dedup → mention_filter.
+    """The chain runs streamlit_bypass  replay_dedup  mention_filter.
 
     The composite tests pin the ordering invariants from the design's
     decision diagram. The unit-level alternatives above each pin the

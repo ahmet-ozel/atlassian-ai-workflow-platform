@@ -46,7 +46,7 @@ Bot bu durumlarda kendisi *"out_of_scope"* der ve task'ı geri çevirir:
 
 ### Bot ne der?
 
-> 🤖 Bu task'ı yapamam.
+>  Bu task'ı yapamam.
 >
 > **Sebep:** Production database operations are outside bot capabilities. This requires
 > DBA approval and manual execution.
@@ -71,7 +71,7 @@ Departmanına atanmış olan **capability**'ler bot'un ne yapabileceğini belirl
 | Code execution (SSH) | Test çalıştırma, script execution |
 | Vision (LLM) | Image / PDF attachment'ları okuma |
 
-Hangi capability'lerin var olduğunu görmek için: **Streamlit Departments sayfası** → kendi
+Hangi capability'lerin var olduğunu görmek için: **Streamlit Departments sayfası**  kendi
 departmanını seç.
 
 ## Multi-Repo Task'lar
@@ -79,7 +79,7 @@ departmanını seç.
 Bot **tek repo** ile çalışır. Description'da iki veya daha fazla repo'ya değişiklik
 isterse:
 
-> 🤖 Bot tek repo ile çalışır. Birden fazla repo değişmesi gerekiyorsa **iki seçeneğin
+>  Bot tek repo ile çalışır. Birden fazla repo değişmesi gerekiyorsa **iki seçeneğin
 > var**:
 >
 > 1. **Ayrı task'lar aç** - her repo için bir task, sırayla bot'a ata.
@@ -90,7 +90,7 @@ isterse:
 
 Bot bir task'ı tek seferde yapamayacak kadar büyük görürse alt-task önerisi yapar:
 
-> 🤖 Bu task'ı tek seferde yapamam. Aşağıdaki alt-task'lara bölersem yapabilirim:
+>  Bu task'ı tek seferde yapamam. Aşağıdaki alt-task'lara bölersem yapabilirim:
 >
 > **Sebep:** Task hem backend API hem frontend UI değişikliği içeriyor - tek workflow'da
 > yapamam.
@@ -124,7 +124,7 @@ atarak yap; sonra bot'u PR reviewer olarak ekle.
 
 ## "Bot Production'a Deploy Etsin"
 
-❌ Hayır. Bot CI/CD pipeline'ını tetiklemez. PR açar, sen merge edersin, deploy senin
+ Hayır. Bot CI/CD pipeline'ını tetiklemez. PR açar, sen merge edersin, deploy senin
 kontrolündedir.
 
 İstisna: `pr_draft_strategy=open_after_test_pass` config'i açıksa bot CI testi geçtikten
@@ -136,7 +136,7 @@ hazır" sinyali.
 Bot LLM hızıyla sınırlıdır. Hızlandırmak için:
 
 - Description'ı net yaz - gereksiz `needs_info` döngüsü olmasın
-- Issue type'ı doğru seç (Story → AC, Bug → reproduce; Task → serbest)
+- Issue type'ı doğru seç (Story  AC, Bug  reproduce; Task  serbest)
 - Attachment ekle - bot okumakla zaman kaybetmesin
 
 ## "Bot Bunu Bedava Yapsın"
@@ -153,5 +153,5 @@ Bot her iterasyon başında tahmini maliyet paylaşır. Limit aşılmadan onayı
 
 **İlgili:**
 
-- Bot ne yapabilir → [`task-creation.md`](task-creation.md)
-- "Yapamam" dedi, ne yapayım? → Description'ı düzelt, yeniden ata.
+- Bot ne yapabilir  [`task-creation.md`](task-creation.md)
+- "Yapamam" dedi, ne yapayım?  Description'ı düzelt, yeniden ata.

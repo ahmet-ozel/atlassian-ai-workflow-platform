@@ -438,7 +438,7 @@ def test_verify_webhook_hmac_active_secret_only(tmp_path: Path) -> None:
     body = b'{"event":"jira:issue_created"}'
     now = datetime.now(_tz.utc)
 
-    # Correct signature → True.
+    # Correct signature  True.
     assert verify_webhook_hmac(
         backend,
         provider="jira",
@@ -448,7 +448,7 @@ def test_verify_webhook_hmac_active_secret_only(tmp_path: Path) -> None:
         now=now,
     ) is True
 
-    # Wrong secret → False.
+    # Wrong secret  False.
     assert verify_webhook_hmac(
         backend,
         provider="jira",

@@ -220,7 +220,7 @@ class IterationContext:
  iteration, or ``None`` when no prior iteration exists.
  previous_pr_id: PR id from the most recent stored iteration,
  or ``None`` when no prior PR exists. The workflow uses
- this to decide whether to commit to the same PR 
+ this to decide whether to commit to the same PR
  or open a new branch + PR.
  extra_instructions: Free-form text extracted from the
  ``[iterate]`` comment body following the keyword, or
@@ -683,7 +683,7 @@ async def prepare_iteration(
     )
 
     # ------------------------------------------------------------------
-    # Step 1 - Authorization gate 
+    # Step 1 - Authorization gate
     # ------------------------------------------------------------------
     approvers_raw = input.dept_config.get("approvers") if input.dept_config else None
     approvers: list[str] = (
@@ -790,12 +790,12 @@ async def prepare_iteration(
     # of truth.
 
     # ------------------------------------------------------------------
-    # Step 5 - Extra instructions 
+    # Step 5 - Extra instructions
     # ------------------------------------------------------------------
     extra_instructions = extract_extra_instructions(input.comment_body)
 
     # ------------------------------------------------------------------
-    # Step 6 - Persist the new iteration row 
+    # Step 6 - Persist the new iteration row
     # ------------------------------------------------------------------
     workflow_id = (
         f"iteration-{input.issue_key}-{new_iteration_number}-"

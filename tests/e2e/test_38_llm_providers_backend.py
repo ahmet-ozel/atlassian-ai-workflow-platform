@@ -5,7 +5,7 @@ Validates the LLM provider FastAPI surface against the live
 ``admin-dashboard-api`` container:
 
 * Auth gate - every endpoint requires an admin bearer.
-* CRUD round-trip (, , , ) - POST → GET → PUT → DELETE
+* CRUD round-trip (, , , ) - POST  GET  PUT  DELETE
  with credential masking on every response.
 * Test-endpoint validation - prompt-shaping fields are
  rejected with the documented ``extra_fields_not_allowed`` shape.
@@ -184,7 +184,7 @@ class TestAuthGate:
 
 @pytest.mark.llm_providers
 class TestProviderCrudRoundTrip:
-    """ - POST → GET → PUT → DELETE with masked credentials.
+    """ - POST  GET  PUT  DELETE with masked credentials.
 
  Validates the provider lifecycle and credential masking behavior.
  """
@@ -299,7 +299,7 @@ class TestEndpointRejectsExtraFields:
 
 @pytest.mark.llm_providers
 class TestUnsupportedProviderType:
-    """ - Unknown ``provider_type`` → 422 with the documented body."""
+    """ - Unknown ``provider_type``  422 with the documented body."""
 
     def test_unsupported_provider_type_response_shape(self) -> None:
         _require_llm_providers_mounted_or_skip()
@@ -416,7 +416,7 @@ class TestRedactionIntegration:
 
 @pytest.mark.llm_providers
 class TestRoundTripEvidence:
-    """Captures a full POST → GET → DELETE round-trip for evidence."""
+    """Captures a full POST  GET  DELETE round-trip for evidence."""
 
     def test_round_trip_evidence(
         self, evidence_collector, evidence_dir
@@ -500,7 +500,7 @@ class TestRoundTripEvidence:
                     "Auth gate (401 without bearer)",
                     "CRUD round-trip with masked credentials",
                     "Test endpoint rejects prompt-shaping fields",
-                    "Unsupported provider type → 422 with body",
+                    "Unsupported provider type  422 with body",
                     "Department override get/put surfaces",
                     "Live redaction scrubs credential markers",
                     "End-to-end round-trip evidence emitted",

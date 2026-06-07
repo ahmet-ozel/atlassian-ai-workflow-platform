@@ -7,7 +7,7 @@ invariants: no Bearer ATCTT3x, no Bearer ATATT3x, no sk-proj-, no
 plaintext passwords in log output.
 
 Verification steps:
-1. Run `pytest tests/property/test_log_redaction.py -v` from platform/ → assert exit 0
+1. Run `pytest tests/property/test_log_redaction.py -v` from platform/  assert exit 0
 2. Assert test output mentions redaction patterns being validated
 3. Emit evidence JSON to e2e-evidence/21-redaction-fix.json
 

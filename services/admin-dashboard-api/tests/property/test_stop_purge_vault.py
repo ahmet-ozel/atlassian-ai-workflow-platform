@@ -8,16 +8,16 @@ vault_delete_outcome)`` driving the ``POST /admin/services/{name}/stop``
 endpoint, the observable behaviour must satisfy the following deterministic
 matrix (a strict superset of ``tests/property/test_stop_lifecycle_purge_guard.py``):
 1.  **Production guard** - ``purge_vault=True`` AND
-    ``deployment_profile.lower() == "production"`` →
+    ``deployment_profile.lower() == "production"``
     HTTP ``403`` with ``error="purge_vault_forbidden_in_production"``;
     a ``purge_vault_blocked_in_production`` audit row is written;
     Compose stop is **never** invoked; Vault is **never** touched.
 2.  **Non-production passthrough** - ``purge_vault=True`` AND
     ``deployment_profile.lower() != "production"`` (e.g. ``dev``,
-    ``staging``, ``test``) → HTTP ``200``; Compose stop runs; Vault
+    ``staging``, ``test``)  HTTP ``200``; Compose stop runs; Vault
     LIST + DELETE run (best-effort).
 3.  **purge_vault=False** - for every profile (including production)
-    the request proceeds normally → HTTP ``200``; Compose stop runs;
+    the request proceeds normally  HTTP ``200``; Compose stop runs;
     Vault is **never** touched .
 4.  **Audit emission discipline** - the ``purge_vault_blocked_in_production``
     audit row appears **only** on the 403 path; the
@@ -41,8 +41,8 @@ Hypothesis generates random combinations of:
   ``{"success", "list_fail", "delete_fail_first", "delete_fail_last"}``
   (only relevant on the non-blocked path).
 * ``stored_keys`` - small dicts of override keys to populate Vault.
-The tests run the full FastAPI request pipeline (URL → router →
-``LifecycleService.stop`` → fake Vault) so the production guard,
+The tests run the full FastAPI request pipeline (URL  router
+``LifecycleService.stop``  fake Vault) so the production guard,
 ``StopRequest`` schema, ``LifecycleService.stop`` purge wiring, and
 audit chain are all exercised together."""
 
@@ -399,7 +399,7 @@ def _build_vault_for_outcome(
 
 
 # ---------------------------------------------------------------------------
-#  - Production guard blocks purge_vault=true (case-insensitive)
+# - Production guard blocks purge_vault=true (case-insensitive)
 # ---------------------------------------------------------------------------
 
 
@@ -414,7 +414,7 @@ def test_production_profile_blocks_purge_vault_true(
     stored: dict[str, str],
     tmp_path: Path,
 ) -> None:
-    """- production + purge_vault=true → 403 + block audit.
+    """- production + purge_vault=true  403 + block audit.
     The router rejects the request before any Compose / Vault call.
     The 403 envelope carries ``error="purge_vault_forbidden_in_production"``.
     A ``purge_vault_blocked_in_production`` audit row is written.
@@ -475,7 +475,7 @@ def test_production_profile_blocks_purge_vault_true(
 
 
 # ---------------------------------------------------------------------------
-#  - Non-production + purge_vault=true → 200 + Vault purge runs
+# - Non-production + purge_vault=true  200 + Vault purge runs
 # ---------------------------------------------------------------------------
 
 
@@ -490,7 +490,7 @@ def test_non_production_profile_runs_vault_purge(
     stored: dict[str, str],
     tmp_path: Path,
 ) -> None:
-    """- non-production + purge_vault=true → 200 + purge runs.
+    """- non-production + purge_vault=true  200 + purge runs.
     The guard does not fire for any profile that does not exactly
     case-fold to ``"production"``. The Compose stop runs, then the
     Vault LIST + DELETE chain runs (best-effort). The block audit
@@ -533,7 +533,7 @@ def test_non_production_profile_runs_vault_purge(
     # All keys removed.
     assert vault.stored[_SERVICE_NAME] == {}
 
-    # Audit chain: stop(success) → vault_overrides_purged(success).
+    # Audit chain: stop(success)  vault_overrides_purged(success).
     assert audit.actions == ["stop", "vault_overrides_purged"], (
         f"Wrong audit chain on non-production happy path: {audit.actions!r}"
     )
@@ -549,7 +549,7 @@ def test_non_production_profile_runs_vault_purge(
 
 
 # ---------------------------------------------------------------------------
-#  - purge_vault=false → Vault never touched on any profile
+# - purge_vault=false  Vault never touched on any profile
 # ---------------------------------------------------------------------------
 
 
@@ -564,7 +564,7 @@ def test_purge_vault_false_never_touches_vault(
     stored: dict[str, str],
     tmp_path: Path,
 ) -> None:
-    """- purge_vault=false → Vault never touched, any profile.
+    """- purge_vault=false  Vault never touched, any profile.
     Whether the body explicitly sets ``purge_vault=False`` or omits it
     entirely, the production guard does NOT fire, Compose stop runs,
     Vault is NOT enumerated, and only the canonical ``stop`` audit
@@ -610,7 +610,7 @@ def test_purge_vault_false_never_touches_vault(
 
 
 # ---------------------------------------------------------------------------
-#  - Vault failures stay best-effort (200 + partial_failure audit)
+# - Vault failures stay best-effort (200 + partial_failure audit)
 # ---------------------------------------------------------------------------
 
 
@@ -685,7 +685,7 @@ def test_vault_failure_is_best_effort(
         partial_count = failure_row.details_json["partial_count"]
         if outcome == "list_fail":
             assert partial_count == 0, (
-                "LIST failure → zero deletions → partial_count=0"
+                "LIST failure  zero deletions  partial_count=0"
             )
             assert vault.delete_calls == []
         elif outcome == "delete_fail_first":
@@ -705,7 +705,7 @@ def test_vault_failure_is_best_effort(
 
 
 # ---------------------------------------------------------------------------
-# same inputs → same outcome on repeated calls
+# same inputs  same outcome on repeated calls
 # ---------------------------------------------------------------------------
 
 
@@ -725,7 +725,7 @@ def test_guard_decision_is_deterministic(
     stored: dict[str, str],
     tmp_path: Path,
 ) -> None:
-    """- same ``(profile, purge_vault)`` → same status code.
+    """- same ``(profile, purge_vault)``  same status code.
     Two independent invocations against fresh service instances must
     produce identical HTTP status codes. The guard is a pure function
     of ``(deployment_profile, purge_vault)``."""
@@ -763,7 +763,7 @@ def test_guard_decision_is_deterministic(
 
 
 # ---------------------------------------------------------------------------
-#  - Audit emission discipline matrix
+# - Audit emission discipline matrix
 # ---------------------------------------------------------------------------
 
 
@@ -785,9 +785,9 @@ def test_audit_emission_matrix(
 ) -> None:
     """- audit-row emission depends only on ``(profile, purge_vault)``.
     The four observable audit actions partition the profile/flag matrix:
-    - 403 path → exactly ``["purge_vault_blocked_in_production"]``.
-    - 200 path, ``purge_vault=False`` → exactly ``["stop"]``.
-    - 200 path, ``purge_vault=True`` → exactly
+    - 403 path  exactly ``["purge_vault_blocked_in_production"]``.
+    - 200 path, ``purge_vault=False``  exactly ``["stop"]``.
+    - 200 path, ``purge_vault=True``  exactly
       ``["stop", "vault_overrides_purged"]`` (Vault success - fakes
       always succeed on this property).
     The ``purge_vault_blocked_in_production`` row never co-occurs with
@@ -817,7 +817,7 @@ def test_audit_emission_matrix(
         # Compose was never invoked.
         assert compose.stop_calls == []
     elif purge_vault:
-        # Non-production + purge_vault=true → success purge.
+        # Non-production + purge_vault=true  success purge.
         assert response.status_code == 200
         assert audit.actions == ["stop", "vault_overrides_purged"], (
             f"Non-production purge path must emit [stop, "
@@ -826,7 +826,7 @@ def test_audit_emission_matrix(
         # Mutual-exclusion: block row never appears here.
         assert "purge_vault_blocked_in_production" not in audit.actions
     else:
-        # purge_vault=false on any profile → only the stop row.
+        # purge_vault=false on any profile  only the stop row.
         assert response.status_code == 200
         assert audit.actions == ["stop"], (
             f"purge_vault=false must emit only the stop audit row; "
@@ -885,7 +885,7 @@ def test_legacy_guard_helper_remains_pure_function() -> None:
         """Return True iff the stop request should be blocked."""
         return purge_vault and deployment_profile.lower() == "production"
 
-    # Production + purge_vault=True → blocked, regardless of casing.
+    # Production + purge_vault=True  blocked, regardless of casing.
     for prof in ("production", "PRODUCTION", "Production", "PrOdUcTiOn"):
         assert _guard(deployment_profile=prof, purge_vault=True) is True
 

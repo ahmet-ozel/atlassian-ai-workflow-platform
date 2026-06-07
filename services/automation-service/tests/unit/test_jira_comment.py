@@ -207,7 +207,7 @@ class TestBodyComposition:
         # The exact header line lives in the body; assert on its salient
         # markers individually so the test is robust to small wording
         # tweaks elsewhere (for instance, swapping the em-dash).
-        assert "🤖 Tahmini maliyet: $1.23" in body
+        assert " Tahmini maliyet: $1.23" in body
         assert "CI %80: $0.80-$1.50" in body
         assert "Kaynak: dept." in body
         # Global-fallback note must NOT appear for ``dept`` source.
@@ -370,7 +370,7 @@ class TestMcpWireShape:
         # The body field is the comment text - assert the expected
         # opening token; full-body assertions live in the body-composition
         # test class above.
-        assert params["arguments"]["comment"].startswith("🤖 Tahmini maliyet:")
+        assert params["arguments"]["comment"].startswith(" Tahmini maliyet:")
 
     @pytest.mark.asyncio
     async def test_credentials_injected_via_atlassian_jira_headers(

@@ -42,15 +42,15 @@ not ready" state instead of a stack trace.
 The :class:`SupportsTemporalControl` protocol mirrors the small set
 of operations this router needs:
 
-* ``get_workflow_description(workflow_id)`` → ``WorkflowDescription`` -
+* ``get_workflow_description(workflow_id)``  ``WorkflowDescription`` -
   raises :class:`WorkflowNotFoundError` when the workflow is unknown.
 * ``cancel_workflow(workflow_id)`` - issue a Temporal cancel signal.
 * ``signal_workflow(workflow_id, name, payload)`` - deliver an
   arbitrary signal.
-* ``restart_workflow(workflow_id)`` → ``RestartedWorkflow`` - read
+* ``restart_workflow(workflow_id)``  ``RestartedWorkflow`` - read
   the original input from history and start a new workflow with the
   same ``workflow_type`` / ``task_queue`` / args.
-* ``list_workflows(dept_id, status, page, page_size, page_token)`` →
+* ``list_workflows(dept_id, status, page, page_size, page_token)``
   ``WorkflowPage`` - paginated visibility query.
 
 The protocol is intentionally narrow so unit tests can ship a tiny
@@ -400,10 +400,10 @@ async def _emit_audit(
 def _map_control_exception(exc: Exception, workflow_id: str) -> HTTPException:
     """Translate an implementation exception into the right HTTP error.
 
-    * :class:`WorkflowNotFoundError` → ``404`` with a stable
+    * :class:`WorkflowNotFoundError`  ``404`` with a stable
       ``"workflow_not_found"`` ``detail`` so the FE can recognise the
       case without parsing the message.
-    * :class:`WorkflowControlError` → ``502`` (upstream failure).
+    * :class:`WorkflowControlError`  ``502`` (upstream failure).
     * Anything else is re-raised by the caller - FastAPI's default
       500 handler kicks in.
     """

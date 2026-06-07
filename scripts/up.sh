@@ -6,10 +6,10 @@
 #
 # Default semantics ("boot bundle"):
 #
-#   docker compose \
-#     -f infra/docker-compose.yml \
-#     -f infra/docker-compose.dev.yml \
-#     up -d
+# docker compose \
+# -f infra/docker-compose.yml \
+# -f infra/docker-compose.dev.yml \
+# up -d
 #
 # (NO --profile flags — only services without a `profiles:` key start:
 # postgres, vault, admin-dashboard-api, admin-dashboard-ui. Operators drive
@@ -17,11 +17,11 @@
 #
 # Opt-in full-stack semantics (`--all` flag or `up-all` subcommand):
 #
-#   docker compose \
-#     -f infra/docker-compose.yml \
-#     -f infra/docker-compose.dev.yml \
-#     --profile <p1> --profile <p2> ... \
-#     up -d
+# docker compose \
+# -f infra/docker-compose.yml \
+# -f infra/docker-compose.dev.yml \
+# --profile <p1> --profile <p2> ... \
+# up -d
 #
 # The profile list is DERIVED from config/services.manifest.json — every
 # entry whose `kind` is one of {infra, http_service, worker, sidecar, ui}
@@ -29,22 +29,22 @@
 # single source of truth (requirements §1.1, §1.10, §2.1).
 #
 # Usage:
-#   ./scripts/up.sh             # default: boot bundle (no profiles)
-#   ./scripts/up.sh up          # same as default
-#   ./scripts/up.sh up --all    # full stack (every manifest profile)
-#   ./scripts/up.sh up-all      # same as `up --all`
-#   ./scripts/up.sh boot        # explicit boot bundle (alias of default)
-#   ./scripts/up.sh down        # docker compose down (with profiles)
-#   ./scripts/up.sh logs        # docker compose logs -f --tail=200
-#   ./scripts/up.sh ps          # docker compose ps
-#   ./scripts/up.sh restart     # down + boot
-#   ./scripts/up.sh profiles    # print the derived profile list
-#   ./scripts/up.sh -- foo bar  # passthrough: docker compose <profiles> foo bar
+# ./scripts/up.sh             # default: boot bundle (no profiles)
+# ./scripts/up.sh up          # same as default
+# ./scripts/up.sh up --all    # full stack (every manifest profile)
+# ./scripts/up.sh up-all      # same as `up --all`
+# ./scripts/up.sh boot        # explicit boot bundle (alias of default)
+# ./scripts/up.sh down        # docker compose down (with profiles)
+# ./scripts/up.sh logs        # docker compose logs -f --tail=200
+# ./scripts/up.sh ps          # docker compose ps
+# ./scripts/up.sh restart     # down + boot
+# ./scripts/up.sh profiles    # print the derived profile list
+# ./scripts/up.sh -- foo bar  # passthrough: docker compose <profiles> foo bar
 #
 # Environment overrides:
-#   PY        Python interpreter used to parse the manifest (default: python3).
-#   COMPOSE   Compose CLI (default: "docker compose"). Set to "docker-compose"
-#             on legacy hosts.
+# PY        Python interpreter used to parse the manifest (default: python3).
+# COMPOSE   Compose CLI (default: "docker compose"). Set to "docker-compose"
+# on legacy hosts.
 # =============================================================================
 set -euo pipefail
 

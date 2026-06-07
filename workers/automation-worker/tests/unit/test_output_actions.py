@@ -114,7 +114,7 @@ class TestEmptyActionsList:
     """Empty or null action list completes successfully."""
 
     def test_empty_list_returns_success(self, fake_caller: _FakeMCPCaller) -> None:
-        """Empty list → successful completion."""
+        """Empty list  successful completion."""
         inp = _make_batch_input(actions=[])
         result = asyncio.run(execute_output_actions(inp))
 
@@ -187,7 +187,7 @@ class TestActionHandlers:
     def test_jira_comment_calls_jira_add_comment(
         self, fake_caller: _FakeMCPCaller
     ) -> None:
-        """jira_comment → jira_add_comment tool."""
+        """jira_comment  jira_add_comment tool."""
         actions = [
             OutputAction(
                 type=ActionType.JIRA_COMMENT,
@@ -204,7 +204,7 @@ class TestActionHandlers:
     def test_jira_attachment_calls_jira_add_attachment(
         self, fake_caller: _FakeMCPCaller
     ) -> None:
-        """jira_attachment → jira_add_attachment tool."""
+        """jira_attachment  jira_add_attachment tool."""
         actions = [
             OutputAction(
                 type=ActionType.JIRA_ATTACHMENT,
@@ -222,8 +222,8 @@ class TestActionHandlers:
     ) -> None:
         """When ``bucket``/``key`` are present the
         attachment action is dispatched to the
-        ``upload_artifact_to_jira`` agent-runner activity (MinIO →
-        tempfile → Jira). The legacy ``jira_add_attachment`` MCP tool
+        ``upload_artifact_to_jira`` agent-runner activity (MinIO
+        tempfile  Jira). The legacy ``jira_add_attachment`` MCP tool
         is **not** called for MinIO-sourced artifacts.
         """
         actions = [
@@ -259,7 +259,7 @@ class TestActionHandlers:
     def test_bitbucket_pr_calls_bitbucket_create_pr(
         self, fake_caller: _FakeMCPCaller
     ) -> None:
-        """bitbucket_pr → bitbucket_create_pr tool."""
+        """bitbucket_pr  bitbucket_create_pr tool."""
         actions = [
             OutputAction(
                 type=ActionType.BITBUCKET_PR,
@@ -340,7 +340,7 @@ class TestActionHandlers:
     def test_confluence_page_with_page_id_calls_update(
         self, fake_caller: _FakeMCPCaller
     ) -> None:
-        """confluence_page with page_id → update."""
+        """confluence_page with page_id  update."""
         actions = [
             OutputAction(
                 type=ActionType.CONFLUENCE_PAGE,
@@ -356,7 +356,7 @@ class TestActionHandlers:
     def test_confluence_page_without_page_id_calls_create(
         self, fake_caller: _FakeMCPCaller
     ) -> None:
-        """confluence_page without page_id → create."""
+        """confluence_page without page_id  create."""
         actions = [
             OutputAction(
                 type=ActionType.CONFLUENCE_PAGE,
@@ -472,7 +472,7 @@ class TestErrorHandling:
     def test_timeout_marks_action_as_timeout(
         self, fake_caller: _FakeMCPCaller, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """30s timeout → action marked as timeout."""
+        """30s timeout  action marked as timeout."""
         import automation_worker.activities.output_actions as oa_mod
 
         # Temporarily reduce timeout to 0.5s for fast testing

@@ -153,7 +153,7 @@ class IterationCapStateMachine(RuleBasedStateMachine):
     Invariants (asserted via :func:`invariant`):
 
     * ``iter_count`` never exceeds :data:`MAX_ITER`.
-    * ``out_of_scope`` ⇒ either ``iter_count >= MAX_ITER`` or
+    * ``out_of_scope``  either ``iter_count >= MAX_ITER`` or
       ``needs_info_streak >= NEEDS_INFO_MAX_STREAK``.
     * ``iter_warning_at_three`` latch is True iff the workflow
       reached ``iter_count >= ITER_WARNING_THRESHOLD`` at some point

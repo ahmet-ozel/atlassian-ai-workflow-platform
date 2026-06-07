@@ -267,7 +267,7 @@ def _agent_runner_temporal_env_available() -> bool:
 
     try:  # noqa: SIM105 - explicit branch keeps the intent legible.
         from temporalio.testing import WorkflowEnvironment  # noqa: F401
-    except Exception:  # noqa: BLE001 - any import failure → skip.
+    except Exception:  # noqa: BLE001 - any import failure  skip.
         return False
     return True
 
@@ -490,7 +490,7 @@ async def test_agent_runner_signal_advances_iter_count_via_real_temporal() -> No
             )
 
             # Release the barrier - the body wakes, the queued
-            # comment_added handler runs and advances iter 3→4, the
+            # comment_added handler runs and advances iter 34, the
             # wait_condition observes _signal_pending=True, and the
             # workflow completes via the legacy fallback's
             # "completed" branch.
@@ -499,7 +499,7 @@ async def test_agent_runner_signal_advances_iter_count_via_real_temporal() -> No
             result = _agent_runner_output_to_dict(await handle.result())
 
     # The run-body's initial advance lifted iter from 2 to 3 (banner
-    # armed) and the barrier-queued signal handler advanced 3→4. The
+    # armed) and the barrier-queued signal handler advanced 34. The
     # cap holds.
     assert result["iter_count"] == 4, (
         f"expected iter_count=4 after run-body advance + one signal, "
@@ -641,18 +641,18 @@ async def test_agent_runner_iter_cap_holds_across_initial_iterations(
 
  Trace per parameter (with ``max_iter=MAX_ITER=5``):
 
- * ``iter_3``: re-seed=2 → advance to 3 (banner armed) → park in
- barrier → queued signal advances 3→4 → body wakes → status
+ * ``iter_3``: re-seed=2  advance to 3 (banner armed)  park in
+ barrier  queued signal advances 34  body wakes  status
  ``completed``, iter_count=4.
- * ``iter_4``: re-seed=3 → advance to 4 (banner armed because
- iter >= 3) → park in barrier → queued signal advances 4→5
- → body wakes → status ``completed``, iter_count=5.
- * ``iter_5``: re-seed=4 → advance to 5 (= MAX_ITER, banner
- armed) → park in barrier → queued signal tries 5→6, hits
- cap, flips ``_out_of_scope`` → body wakes → status
+ * ``iter_4``: re-seed=3  advance to 4 (banner armed because
+ iter >= 3)  park in barrier  queued signal advances 45
+  body wakes  status ``completed``, iter_count=5.
+ * ``iter_5``: re-seed=4  advance to 5 (= MAX_ITER, banner
+ armed)  park in barrier  queued signal tries 56, hits
+ cap, flips ``_out_of_scope``  body wakes  status
  ``out_of_scope``, iter_count=5.
- * ``iter_6``: re-seed=5 → ``_should_advance_iter`` denies on
- the run-body's initial pre-condition → body returns
+ * ``iter_6``: re-seed=5  ``_should_advance_iter`` denies on
+ the run-body's initial pre-condition  body returns
  ``out_of_scope`` immediately, BEFORE reaching the banner. No
  barrier engages; iter_count=5.
  """
@@ -746,7 +746,7 @@ async def test_agent_runner_iter_cap_holds_across_initial_iterations(
         )
     elif initial_iteration == MAX_ITER:
         # iter_5: run-body advance lifts iter to MAX_ITER (banner
-        # armed). Buffered signal tries to advance MAX_ITER→
+        # armed). Buffered signal tries to advance MAX_ITER
         # MAX_ITER+1 and the in-handler cap pre-condition flips
         # ``_out_of_scope``. Banner fires once.
         assert result["status"] == "out_of_scope"
@@ -764,9 +764,7 @@ async def test_agent_runner_iter_cap_holds_across_initial_iterations(
 
 # ===========================================================================
 # Slow-banner barrier coverage for the implementation
-#
-
-#
+# #
 # The block below pins :data:`MAX_ITER` end-to-end against a real
 # Temporal time-skipping cluster using the **slow-banner sync barrier**
 # pattern - the same race-free post-start signal delivery
@@ -1016,13 +1014,13 @@ async def test_iter_count_never_exceeds_max_iter() -> None:
 
  Trace (with ``iteration=3`` / ``max_iter=5``):
 
- * run initial advance → ``iter_count=3`` (banner armed)
- * banner activity parks the body → barrier holds
+ * run initial advance  ``iter_count=3`` (banner armed)
+ * banner activity parks the body  barrier holds
  * signal 1 (signal-with-start) buffered, handler advances
- → ``iter_count=4``
+  ``iter_count=4``
  * signals 2-6 queued via ``handle.signal``
- * barrier releases - handlers fire → 4→5 (signal 2),
- 5→cap-flip ``_out_of_scope``
+ * barrier releases - handlers fire  45 (signal 2),
+ 5cap-flip ``_out_of_scope``
  on signal 3, signals 4-6
  see ``_out_of_scope=True``
  and return silently
@@ -1208,13 +1206,13 @@ async def test_random_signal_sequence_respects_iter_cap() -> None:
 
  Trace (with ``iteration=3`` / ``max_iter=5``):
 
- * run initial advance → ``iter_count=3`` (banner armed)
- * banner parks the body → barrier holds
- * signal 1 plain (start_signal) → buffered, advances 3→4
- * signals 2-8 queued → drained when barrier releases
- * signal 2 plain → 4→5
- * signal 3 ``[fix]`` → 5→cap-flip ``_out_of_scope``
- * signals 4-8 → see ``_out_of_scope=True``
+ * run initial advance  ``iter_count=3`` (banner armed)
+ * banner parks the body  barrier holds
+ * signal 1 plain (start_signal)  buffered, advances 34
+ * signals 2-8 queued  drained when barrier releases
+ * signal 2 plain  45
+ * signal 3 ``[fix]``  5cap-flip ``_out_of_scope``
+ * signals 4-8  see ``_out_of_scope=True``
  and return silently
  * workflow returns ``status="out_of_scope"`` with
  ``iter_count=5 == MAX_ITER``.

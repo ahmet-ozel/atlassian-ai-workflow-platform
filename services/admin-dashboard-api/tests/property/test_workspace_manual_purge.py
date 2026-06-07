@@ -5,12 +5,12 @@
 Workspace Purge Input Validation + SSH Safety (Q15)**
 For any ``issue_key`` string that could be a path-traversal attack vector,
 ``DELETE /admin/runner/workspaces/{issue_key}`` behaviour must be:
-- ``issue_key`` matches regex ``^[A-Z][A-Z0-9_]*-\\d+$`` → SSH command is
+- ``issue_key`` matches regex ``^[A-Z][A-Z0-9_]*-\\d+$``  SSH command is
   executed; the workspace path is derived correctly; the command argv
   contains **no** shell metacharacters (``;``, ``&``, ``|``, ``$``,
   backtick, newline, null-byte).
 - Any input that does NOT match the regex (``"../etc"``,
-  ``"PROJ; rm -rf /"``, ``""``, unicode-encoded vectors) → 400 +
+  ``"PROJ; rm -rf /"``, ``""``, unicode-encoded vectors)  400 +
   ``invalid_issue_key_format``; SSH command is **never** invoked; no
   ``workspace_purge_failed`` audit is written (zero side effects).
 Strategy
@@ -234,7 +234,7 @@ _INVALID_KEY_STRATEGY = st.one_of(
 
 
 # ---------------------------------------------------------------------------
-#  - valid keys → 200 + SSH client called exactly once
+# - valid keys  200 + SSH client called exactly once
 # ---------------------------------------------------------------------------
 
 
@@ -247,7 +247,7 @@ _INVALID_KEY_STRATEGY = st.one_of(
 def test_valid_issue_key_returns_200_and_calls_ssh_client(
     issue_key: str,
 ) -> None:
-    """- valid issue_key → 200 + SSH client called exactly once.
+    """- valid issue_key  200 + SSH client called exactly once.
     For any ``issue_key`` matching ``^[A-Z][A-Z0-9_]*-\\d+$``:
     - The endpoint returns HTTP 200.
     - The SSH client's ``purge_workspace`` is called exactly once with
@@ -310,7 +310,7 @@ def test_valid_issue_key_returns_200_and_calls_ssh_client(
 
 
 # ---------------------------------------------------------------------------
-#  - invalid keys → 400 + SSH client NEVER called
+# - invalid keys  400 + SSH client NEVER called
 # ---------------------------------------------------------------------------
 
 
@@ -323,7 +323,7 @@ def test_valid_issue_key_returns_200_and_calls_ssh_client(
 def test_invalid_issue_key_returns_400_and_never_calls_ssh_client(
     issue_key: str,
 ) -> None:
-    """- invalid issue_key → 400 + SSH client NEVER called.
+    """- invalid issue_key  400 + SSH client NEVER called.
     For any ``issue_key`` that does NOT match ``^[A-Z][A-Z0-9_]*-\\d+$``:
     - The endpoint returns HTTP 400.
     - The response body contains ``{"error": "invalid_issue_key_format"}``.
@@ -361,7 +361,7 @@ def test_invalid_issue_key_returns_400_and_never_calls_ssh_client(
     # Starlette normalises away before reaching the handler - both
     # satisfy the safety invariant: SSH client was never called).
     # 405 occurs when an empty key resolves to the collection endpoint
-    # (DELETE /admin/runner/workspaces/ → Method Not Allowed on the
+    # (DELETE /admin/runner/workspaces/  Method Not Allowed on the
     # GET-only collection route) - also a valid rejection.
     assert response.status_code in (400, 404, 405, 422), (
         f"Expected 400/404/405/422 for invalid key {issue_key!r}; "
@@ -391,7 +391,7 @@ def test_invalid_issue_key_returns_400_and_never_calls_ssh_client(
 
 
 # ---------------------------------------------------------------------------
-#  - shell metachar safety in SSH argv
+# - shell metachar safety in SSH argv
 # ---------------------------------------------------------------------------
 
 
@@ -458,7 +458,7 @@ def test_valid_key_produces_no_shell_metachar_in_ssh_argv(
 
 
 # ---------------------------------------------------------------------------
-# same issue_key → same outcome
+# same issue_key  same outcome
 # ---------------------------------------------------------------------------
 
 
@@ -503,7 +503,7 @@ def test_purge_decision_is_deterministic(
 
 
 # ---------------------------------------------------------------------------
-#  - ISSUE_KEY_PATTERN agrees with router behaviour
+# - ISSUE_KEY_PATTERN agrees with router behaviour
 # ---------------------------------------------------------------------------
 
 
@@ -548,7 +548,7 @@ def test_issue_key_pattern_constant_rejects_invalid_keys(
 
 
 # ---------------------------------------------------------------------------
-#  - audit action set for valid vs invalid keys
+# - audit action set for valid vs invalid keys
 # ---------------------------------------------------------------------------
 
 
@@ -618,7 +618,7 @@ def test_invalid_key_writes_rejected_audit_not_purged_audit(
 
     # 400/404/405/422 are all acceptable - the key was rejected.
     # 405 occurs when an empty key resolves to the collection endpoint
-    # (DELETE /admin/runner/workspaces/ → Method Not Allowed).
+    # (DELETE /admin/runner/workspaces/  Method Not Allowed).
     assert response.status_code in (400, 404, 405, 422), (
         f"Expected rejection status for invalid key {issue_key!r}; "
         f"got {response.status_code}"

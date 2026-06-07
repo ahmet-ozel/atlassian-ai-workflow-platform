@@ -49,7 +49,7 @@ def test_mapping_takes_priority(
 @settings(max_examples=50, deadline=None)
 @given(logical_status=st.sampled_from(sorted(SUPPORTED_LOGICAL_STATES)))
 def test_no_mapping_uses_fallback(logical_status: str) -> None:
-    """No mapping at all → fallback transform applied."""
+    """No mapping at all  fallback transform applied."""
     result = asyncio.run(resolve_jira_status(logical_status, None))
     assert result.resolved is True
     assert result.used_fallback is True

@@ -10,7 +10,7 @@ Scope and surface under test
 
 The base resolver
 (:class:`automation_service.credentials.CredentialResolver`) already
-owns the per-user → org-default *priority decision* - invariant
+owns the per-user  org-default *priority decision* - invariant
 (``test_credential_inject.py`` §invariant) pins that contract
 across the full 2x2 matrix of
 ``(per_user_present, org_default_present)``.
@@ -391,7 +391,7 @@ def test_p17b_org_default_fallback_emits_org_default_audit(
 
 
 # ---------------------------------------------------------------------------
-# invariant - both missing → CredentialNotFoundError + failure audit
+# invariant - both missing  CredentialNotFoundError + failure audit
 # ---------------------------------------------------------------------------
 
 
@@ -404,7 +404,7 @@ def test_p17b_org_default_fallback_emits_org_default_audit(
 def test_p17c_both_missing_raises_and_emits_failure_audit(
     session_id: str, dept_id: str, service: AtlassianService
 ) -> None:
-    """invariant - both missing → ``credential_resolve_failed`` + raise.
+    """invariant - both missing  ``credential_resolve_failed`` + raise.
 
 
 
@@ -509,7 +509,7 @@ def test_p17d_audit_payload_never_contains_plain_credential(
 
 
 # ---------------------------------------------------------------------------
-# invariant - determinism: same inputs ⇒ same path read + same audit
+# invariant - determinism: same inputs  same path read + same audit
 # ---------------------------------------------------------------------------
 
 

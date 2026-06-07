@@ -2,29 +2,25 @@
 
 /**
  * Prompt editor page.
- *
- * Editor surface for the
+ * * Editor surface for the
  * Prompt_Versioning system - diff, sandbox LLM call, draft PR).
- *
- * Catch-all route - the prompt name is everything after `/prompts/`
+ * * Catch-all route - the prompt name is everything after `/prompts/`
  * so that paths with slashes (eg. `notifications/build_failed.md`)
  * round-trip cleanly. Next.js delivers each segment as an array on
  * `params.name`; we re-join them with `/` and forward that to the
  * v1 API.
- *
- * UI flow:
- *   1. Fetch current content via `GET /api/v1/prompts/{name}`.
- *   2. Operator edits the body in a textarea; a per-line diff view
- *      renders next to it (`./_lib/diff.mjs`).
- *   3. **Sandbox** button - `POST /api/v1/prompts/{name}/sandbox`
- *      with `{ body, sample_input }`. The response panel shows the
- *      LLM output plus model / provider / token counts.
- *   4. **Commit** button - opens a 5-second confirm dialog (mirrors
- *      `app/feature-flags/page.tsx`) before calling
- *      `POST /api/v1/prompts/{name}/commit`. On success the panel
- *      shows the resulting PR URL with a clickable link.
- *
- * 503 handling: both the sandbox and commit endpoints surface
+ * * UI flow:
+ * 1. Fetch current content via `GET /api/v1/prompts/{name}`.
+ * 2. Operator edits the body in a textarea; a per-line diff view
+ * renders next to it (`./_lib/diff.mjs`).
+ * 3. **Sandbox** button - `POST /api/v1/prompts/{name}/sandbox`
+ * with `{ body, sample_input }`. The response panel shows the
+ * LLM output plus model / provider / token counts.
+ * 4. **Commit** button - opens a 5-second confirm dialog (mirrors
+ * `app/feature-flags/page.tsx`) before calling
+ * `POST /api/v1/prompts/{name}/commit`. On success the panel
+ * shows the resulting PR URL with a clickable link.
+ * * 503 handling: both the sandbox and commit endpoints surface
  * `{ status: "not_ready", reason }` JSON payloads when their backing
  * `app.state` slot (LLM client, git committer, Bitbucket client,
  * Postgres pool) is missing. The editor renders that as a clear
@@ -107,14 +103,14 @@ type CommitState =
 // ---------------------------------------------------------------------------
 
 /** Re-encode each path segment so `apiFetch` builds the same URL the
- *  router expects. The catch-all returns each segment URL-decoded. */
+ * router expects. The catch-all returns each segment URL-decoded. */
 function buildApiPath(name: string, suffix = ""): string {
   const segments = name.split("/").map(encodeURIComponent).join("/");
   return `/api/v1/prompts/${segments}${suffix}`;
 }
 
 /** Coerce an unknown payload into `ServiceNotReadyDetail` if it
- *  matches the shape; returns `null` otherwise. */
+ * matches the shape; returns `null` otherwise. */
 function asNotReady(detail: unknown): ServiceNotReadyDetail | null {
   if (
     detail !== null &&
@@ -135,8 +131,8 @@ function asNotReady(detail: unknown): ServiceNotReadyDetail | null {
 }
 
 /** Read a non-2xx Response into a discriminated `ApiError`. The
- *  router emits FastAPI-style `{ detail: ... }` envelopes; we unwrap
- *  one level to surface the not-ready reason verbatim. */
+ * router emits FastAPI-style `{ detail: ... }` envelopes; we unwrap
+ * one level to surface the not-ready reason verbatim. */
 async function classifyError(res: Response): Promise<ApiError> {
   let body: unknown = null;
   try {
@@ -639,7 +635,7 @@ export default function PromptEditorPage(): JSX.Element {
     return (
       <main style={{ padding: "1rem" }}>
         <a href="/prompts" style={{ fontSize: "0.85rem" }}>
-          ← Back to Prompts
+           Back to Prompts
         </a>
         <p>Loading prompt…</p>
       </main>
@@ -650,7 +646,7 @@ export default function PromptEditorPage(): JSX.Element {
     return (
       <main style={{ padding: "1rem" }}>
         <a href="/prompts" style={{ fontSize: "0.85rem" }}>
-          ← Back to Prompts
+           Back to Prompts
         </a>
         <p role="alert" style={{ color: "crimson" }}>
           Error loading <code>{promptName}</code>: {load.message}
@@ -676,7 +672,7 @@ export default function PromptEditorPage(): JSX.Element {
       }}
     >
       <a href="/prompts" style={{ fontSize: "0.85rem" }}>
-        ← Back to Prompts
+         Back to Prompts
       </a>
 
       <h1 style={{ marginTop: "0.5rem" }}>
@@ -807,7 +803,7 @@ export default function PromptEditorPage(): JSX.Element {
           </button>
           {sandboxState.kind === "done" && (
             <span style={{ fontSize: "0.85rem", color: "#15803d" }}>
-              ✅ ran successfully
+               ran successfully
             </span>
           )}
         </div>

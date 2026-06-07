@@ -308,7 +308,7 @@ ITER_WARNING_THRESHOLD: int = 3
 #: Banner text mirrored into Jira when ``iter_count >= ITER_WARNING_THRESHOLD``
 #: for the first time.
 ITER_WARNING_BANNER_TEXT: str = (
-    "⚠️ Bu görev şu ana kadar 3 iterasyon sürdü. Yeni bir task açmayı "
+    " Bu görev şu ana kadar 3 iterasyon sürdü. Yeni bir task açmayı "
     "düşünün - devam ederseniz iterasyon sayısı 5'i bulduğunda iş otomatik "
     "olarak kapatılacaktır."
 )
@@ -934,14 +934,12 @@ class AgentRunnerWorkflow:
         return self._compensation_running
 
     # -- Signal handlers ---------------------------------------------------
-    #
-    # Every handler runs the ``should_advance_iter`` pre-condition before
+    # # Every handler runs the ``should_advance_iter`` pre-condition before
     # mutating state. When the pre-condition denies, the handler flips
     # ``_out_of_scope`` and leaves the state untouched - the body's wait
     # predicate then drains and the workflow terminates with
     # ``out_of_scope``.
-    #
-    # Signal handlers MUST NOT perform I/O (Temporal restricts await on
+    # # Signal handlers MUST NOT perform I/O (Temporal restricts await on
     # activities inside signal handlers). They mutate workflow state and
     # flip the ``_signal_pending`` edge so the run body can pick up the
     # change on its next loop turn.
@@ -1037,8 +1035,7 @@ class AgentRunnerWorkflow:
         del actor
 
     # -- Shared signal-application helpers ---------------------------------
-    #
-    # These methods carry the actual debounce / dedup / cache logic so
+    # # These methods carry the actual debounce / dedup / cache logic so
     # ``comment_added`` (keyword-routed) and the dedicated signals share
     # one implementation. They are NOT decorated with ``@workflow.signal``
     # - Temporal still treats them as plain methods, so the per-signal
@@ -1243,7 +1240,7 @@ class AgentRunnerWorkflow:
             return self._build_output(
                 status="out_of_scope",
                 summary=(
-                    "🤖 Maksimum iterasyon sayısına ulaşıldı, lütfen yeni "
+                    " Maksimum iterasyon sayısına ulaşıldı, lütfen yeni "
                     "bir task açın."
                 ),
             )
@@ -1268,7 +1265,7 @@ class AgentRunnerWorkflow:
             return self._build_output(
                 status="failed",
                 summary=(
-                    "❌ Epic durduruldu: bir subtask başarısız oldu. "
+                    " Epic durduruldu: bir subtask başarısız oldu. "
                     "Ayrıntılar Epic yorumlarında."
                 ),
             )
@@ -1276,7 +1273,7 @@ class AgentRunnerWorkflow:
             return self._build_output(
                 status="out_of_scope",
                 summary=(
-                    "🤖 Maksimum iterasyon sayısına ulaşıldı, lütfen yeni "
+                    " Maksimum iterasyon sayısına ulaşıldı, lütfen yeni "
                     "bir task açın."
                 ),
             )
@@ -1300,17 +1297,17 @@ class AgentRunnerWorkflow:
             return self._build_output(
                 status="failed",
                 summary=(
-                    "❌ Token cap aşıldı (girdi token sayısı "
+                    " Token cap aşıldı (girdi token sayısı "
                     f"{exc.input_tokens} > {exc.cap}); LLM çağrısı yapılmadı."
                 ),
             )
-        except Exception as exc:  # noqa: BLE001 - body errors → failed
+        except Exception as exc:  # noqa: BLE001 - body errors  failed
             self._failure_reason = (
                 self._failure_reason or "agent_runner_body_error"
             )
             return self._build_output(
                 status="failed",
-                summary=f"❌ Agent runner başarısız: {exc}",
+                summary=f" Agent runner başarısız: {exc}",
             )
 
         # ----- Cancel handling ---------------------------------------
@@ -1321,7 +1318,7 @@ class AgentRunnerWorkflow:
             return self._build_output(
                 status="out_of_scope",
                 summary=(
-                    "🤖 Maksimum iterasyon sayısına ulaşıldı, lütfen yeni "
+                    " Maksimum iterasyon sayısına ulaşıldı, lütfen yeni "
                     "bir task açın."
                 ),
             )
@@ -1330,7 +1327,7 @@ class AgentRunnerWorkflow:
         # The final Jira comment names every critical action
         # that succeeded plus every best-effort action that failed.
         # When neither list carries content the formatter returns
-        # the empty string and we fall back to the legacy "✅ Tamamlandı"
+        # the empty string and we fall back to the legacy " Tamamlandı"
         # one-liner so the Jira summary is never blank.
         final_summary = format_final_jira_comment(
             self._output_actions_log.successful_critical,
@@ -1339,7 +1336,7 @@ class AgentRunnerWorkflow:
 
         if self._output_actions_partial or self._output_actions_log.failed_best_effort:
             summary = final_summary or (
-                "✅ Tamamlandı, ancak bazı yan-aksiyonlar başarısız: "
+                " Tamamlandı, ancak bazı yan-aksiyonlar başarısız: "
                 + ", ".join(self._output_actions_partial)
             )
             return self._build_output(
@@ -1349,7 +1346,7 @@ class AgentRunnerWorkflow:
 
         if final_summary:
             return self._build_output(status="completed", summary=final_summary)
-        return self._build_output(status="completed", summary="✅ Tamamlandı.")
+        return self._build_output(status="completed", summary=" Tamamlandı.")
 
     async def _handle_output_action_critical(
         self,
@@ -1411,7 +1408,7 @@ class AgentRunnerWorkflow:
             failed_lines,
         )
         if not summary:
-            summary = "❌ Kritik yan-aksiyon başarısız oldu."
+            summary = " Kritik yan-aksiyon başarısız oldu."
         return self._build_output(status="failed", summary=summary)
 
     # -- Body dispatcher (per-workflow-type bodies) ------------------------
@@ -1518,9 +1515,9 @@ class AgentRunnerWorkflow:
         Sequence for the code-change flow:
 
         1. ``set_assignee_to_bot`` claims the Jira issue for the bot.
-        2. ``branch_pattern_rules`` deny → ``out_of_scope``.
+        2. ``branch_pattern_rules`` deny  ``out_of_scope``.
         3. ``compute_branch_name`` (pure formatter).
-        4. ``precommit_scanner`` activity - block → fail with audit
+        4. ``precommit_scanner`` activity - block  fail with audit
            ``precommit_secret_leak_blocked``.
         5. ``bitbucket_create_commit`` to push the change.
         6. Child :class:`ExecutionRunWorkflow` to run tests.
@@ -1563,8 +1560,8 @@ class AgentRunnerWorkflow:
 
         Carries the steps that are identical between
         ``code_change_with_test`` and ``code_change_commit_only``:
-        assignee transfer → branch routing gate → branch name compute
-        → precommit scan → commit. The two diverging suffixes
+        assignee transfer  branch routing gate  branch name compute
+         precommit scan  commit. The two diverging suffixes
         (``with_test`` adds the test-run + PR-create chain;
         ``commit_only`` posts a branch-link Jira comment) are gated
         behind the *open_pr* / *with_test* flags so the activity
@@ -1593,9 +1590,9 @@ class AgentRunnerWorkflow:
             raise
 
         # 2. branch_pattern_rules check - denies hotfix commit-only,
-        #    release non-pr_review etc. The rule list is pinned to
-        #    the foundation defaults; per-dept rule loading lands in
-        #    departments.json schema migration.
+        # release non-pr_review etc. The rule list is pinned to
+        # the foundation defaults; per-dept rule loading lands in
+        # departments.json schema migration.
         if target_branch:
             decision = route_by_branch_pattern(
                 target_branch,
@@ -1609,9 +1606,9 @@ class AgentRunnerWorkflow:
                 raise _OutOfScope
 
         # 3. compute_branch_name - pure formatter; ``existing_branches``
-        #    is empty for the first iteration of a fresh issue. A
-        #    follow-up task (7.6 - iter-N supersede) will populate the
-        #    set from a Bitbucket list-branches activity.
+        # is empty for the first iteration of a fresh issue. A
+        # follow-up task (7.6 - iter-N supersede) will populate the
+        # set from a Bitbucket list-branches activity.
         branch_name = compute_branch_name(
             inp.issue_key,
             self._iteration_state.iter_count,
@@ -1619,10 +1616,10 @@ class AgentRunnerWorkflow:
         )
 
         # 4. precommit_scanner - gating step. The diff to scan is
-        #    produced by the LLM analysis output_actions; for the
-        #    skeleton path we use the analysis ``rationale`` as a
-        #    proxy so the activity is exercised. A future task (10.1)
-        #    threads the actual diff through.
+        # produced by the LLM analysis output_actions; for the
+        # skeleton path we use the analysis ``rationale`` as a
+        # proxy so the activity is exercised. A future task (10.1)
+        # threads the actual diff through.
         generation_prompt = self._build_code_generation_prompt(inp)
         estimated_tokens = max(1, len(generation_prompt) // 4)
         workspace_path = "/tmp/workspace"
@@ -1732,13 +1729,13 @@ class AgentRunnerWorkflow:
             )
 
         # 5. Commit the change via Git-over-HTTPS. A single
-        #    ``bitbucket_commit_via_git`` activity clones the repo,
-        #    creates/updates the branch off the source branch, writes the
-        #    generated file set, commits and pushes. Git transport is
-        #    identical on Bitbucket Cloud and Server/DC, so this one path
-        #    is deployment-agnostic (no Cloud-only REST ``/src`` POST and
-        #    no MCP file-write tool, which does not exist for either
-        #    deployment). Branch creation is implicit in the push.
+        # ``bitbucket_commit_via_git`` activity clones the repo,
+        # creates/updates the branch off the source branch, writes the
+        # generated file set, commits and pushes. Git transport is
+        # identical on Bitbucket Cloud and Server/DC, so this one path
+        # is deployment-agnostic (no Cloud-only REST ``/src`` POST and
+        # no MCP file-write tool, which does not exist for either
+        # deployment). Branch creation is implicit in the push.
         repo_ref = {
             "workspace": "",
             "repo_slug": target_repo,
@@ -1794,7 +1791,7 @@ class AgentRunnerWorkflow:
                 # Post a failure summary comment; no PR opened.
                 await self._post_jira_comment_best_effort(
                     inp,
-                    f"❌ Testler başarısız: branch `{branch_name}`. "
+                    f" Testler başarısız: branch `{branch_name}`. "
                     "Detay için Temporal UI'sini kontrol edin.",
                 )
                 self._failure_reason = "execution_run_failed"
@@ -1892,7 +1889,7 @@ class AgentRunnerWorkflow:
 
             await self._post_jira_comment_best_effort(
                 inp,
-                f"✅ Draft PR açıldı: {pr_url or branch_name}",
+                f" Draft PR açıldı: {pr_url or branch_name}",
             )
             await self._maybe_execute_llm_output_actions(inp)
             return
@@ -1910,7 +1907,7 @@ class AgentRunnerWorkflow:
 
         await self._post_jira_comment_best_effort(
             inp,
-            f"✅ Branch hazır: `{branch_name}` - {diff_summary}",
+            f" Branch hazır: `{branch_name}` - {diff_summary}",
         )
         await self._maybe_execute_llm_output_actions(inp)
 
@@ -2198,7 +2195,7 @@ class AgentRunnerWorkflow:
         link_text = page_url or page_title
         await self._post_jira_comment_best_effort(
             inp,
-            f"📝 Confluence sayfası oluşturuldu: `{link_text}`",
+            f" Confluence sayfası oluşturuldu: `{link_text}`",
         )
 
         # 7. Apply LLM-emitted output_actions.
@@ -2290,7 +2287,7 @@ class AgentRunnerWorkflow:
             )
             await self._post_jira_comment_best_effort(
                 inp,
-                "🤖 Confluence güncellemesi atlandı: hedef sayfa "
+                " Confluence güncellemesi atlandı: hedef sayfa "
                 "bir doğrulama (probe) artefaktı.",
             )
             return
@@ -2312,7 +2309,7 @@ class AgentRunnerWorkflow:
             )
             await self._post_jira_comment_best_effort(
                 inp,
-                "⏸️ Confluence sayfası son 5 dakika içinde başka bir "
+                " Confluence sayfası son 5 dakika içinde başka bir "
                 "kullanıcı tarafından düzenlendi; güncelleme atlandı.",
             )
             return
@@ -2328,7 +2325,7 @@ class AgentRunnerWorkflow:
             )
             await self._post_jira_comment_best_effort(
                 inp,
-                "ℹ️ Confluence güncellemesi atlandı: güncellenecek "
+                "ℹ Confluence güncellemesi atlandı: güncellenecek "
                 "bölüm bulunamadı.",
             )
             return
@@ -2419,7 +2416,7 @@ class AgentRunnerWorkflow:
             updated_sections.append(section_path)
 
         # 6. Jira summary comment (best-effort).
-        summary_lines = ["📝 Confluence güncellemesi tamamlandı:"]
+        summary_lines = [" Confluence güncellemesi tamamlandı:"]
         if updated_sections:
             summary_lines.append(
                 "  • Güncellenen bölümler: " + ", ".join(updated_sections)
@@ -2441,7 +2438,7 @@ class AgentRunnerWorkflow:
     async def _handle_research_publish_confluence(
         self, inp: AgentRunnerWorkflowInput
     ) -> None:
-        """Run the research → Confluence publish flow.
+        """Run the research  Confluence publish flow.
 
         Sequence for the research-to-Confluence publish flow:
 
@@ -2457,11 +2454,11 @@ class AgentRunnerWorkflow:
            outcome:
 
            * ``EgressBlocked`` (or any dict with ``kind ==
-             "egress_blocked"``) → graceful 403 handling:
+             "egress_blocked"``)  graceful 403 handling:
              post a Jira comment naming the blocked domain, record a
              best-effort partial-failure marker, and **continue with
              the remaining URLs**. The workflow MUST NOT raise.
-           * Successful scrape → harvest the content + bookkeeping
+           * Successful scrape  harvest the content + bookkeeping
              (title, url, accessed_at) into the running ``content``
              buffer + ``sources`` list for the formatter.
 
@@ -2535,7 +2532,7 @@ class AgentRunnerWorkflow:
             self._record_partial_failure("research_no_sources")
             await self._post_jira_comment_best_effort(
                 inp,
-                "🤖 Araştırma için kullanılabilir bir kaynak bulunamadı; "
+                " Araştırma için kullanılabilir bir kaynak bulunamadı; "
                 "konuyu daraltarak yeniden deneyin.",
             )
             return
@@ -2610,7 +2607,7 @@ class AgentRunnerWorkflow:
         link_text = page_url or page_title
         await self._post_jira_comment_best_effort(
             inp,
-            f"📝 Araştırma yayınlandı: `{link_text}`",
+            f" Araştırma yayınlandı: `{link_text}`",
         )
 
         # 7. Apply LLM-emitted output_actions.
@@ -2619,7 +2616,7 @@ class AgentRunnerWorkflow:
     async def _handle_research_summary_jira(
         self, inp: AgentRunnerWorkflowInput
     ) -> None:
-        """Run the research → Jira summary flow.
+        """Run the research  Jira summary flow.
 
         Sequence for the research-to-Jira summary flow:
 
@@ -2697,7 +2694,7 @@ class AgentRunnerWorkflow:
             self._record_partial_failure("research_no_sources")
             await self._post_jira_comment_best_effort(
                 inp,
-                "🤖 Araştırma için kullanılabilir bir kaynak bulunamadı; "
+                " Araştırma için kullanılabilir bir kaynak bulunamadı; "
                 "konuyu daraltarak yeniden deneyin.",
             )
             return
@@ -2747,7 +2744,7 @@ class AgentRunnerWorkflow:
                 # explicit (rather than mutating the formatter output)
                 # so the formatter stays a pure function.
                 comment_text = (
-                    f"{comment_text}\n\n🔗 Tam içerik: {stored_uri_str}"
+                    f"{comment_text}\n\n Tam içerik: {stored_uri_str}"
                 )
 
         # Post the comment as the primary output (NOT best-effort -
@@ -2837,7 +2834,7 @@ class AgentRunnerWorkflow:
             self._failure_reason = "epic_no_subtasks"
             await self._post_jira_comment_best_effort(
                 inp,
-                "🤖 Bu Epic için işlenecek subtask bulunamadı. "
+                " Bu Epic için işlenecek subtask bulunamadı. "
                 "Epic'e subtask ekleyip yorum yazarak yeniden tetikleyin.",
             )
             return
@@ -2873,7 +2870,7 @@ class AgentRunnerWorkflow:
                 skipped = total - (index + 1)
                 await self._post_jira_comment_best_effort(
                     inp,
-                    f"❌ Subtask {child_key} başarısız oldu - Epic durduruldu "
+                    f" Subtask {child_key} başarısız oldu - Epic durduruldu "
                     f"({completed}/{total} tamamlandı, {skipped} atlandı).",
                 )
                 # Stop the fan-out: surface a failed terminal status via
@@ -2891,7 +2888,7 @@ class AgentRunnerWorkflow:
                 skipped = total - (index + 1)
                 await self._post_jira_comment_best_effort(
                     inp,
-                    f"❌ Subtask {child_key} işlenemedi (sonuç: {decision}) - "
+                    f" Subtask {child_key} işlenemedi (sonuç: {decision}) - "
                     f"Epic durduruldu ({completed}/{total} tamamlandı, "
                     f"{skipped} atlandı).",
                 )
@@ -2900,13 +2897,13 @@ class AgentRunnerWorkflow:
             completed += 1
             await self._post_jira_comment_best_effort(
                 inp,
-                f"🤖 {completed}/{total} subtask tamamlandı "
+                f" {completed}/{total} subtask tamamlandı "
                 f"(`{child_key}`).",
             )
 
         await self._post_jira_comment_best_effort(
             inp,
-            f"✅ Epic tamamlandı - {completed}/{total} subtask işlendi.",
+            f" Epic tamamlandı - {completed}/{total} subtask işlendi.",
         )
         await self._maybe_execute_llm_output_actions(inp)
 
@@ -3074,7 +3071,7 @@ class AgentRunnerWorkflow:
         if kind == "egress_blocked":
             await self._post_jira_comment_best_effort(
                 inp,
-                f"🤖 {url} domain'i araştırma için izinli değil; "
+                f" {url} domain'i araştırma için izinli değil; "
                 "admin'den eklenmesini isteyin.",
             )
             self._record_partial_failure(f"firecrawl_blocked:{url}")
@@ -3524,7 +3521,7 @@ class AgentRunnerWorkflow:
         # Post the answer to Jira (PR comment for pr_review flow lands
         # behind a future task that surfaces the PR id explicitly).
         await self._post_jira_comment_best_effort(
-            inp, f"🤖 [explain]\n\n{answer}"
+            inp, f" [explain]\n\n{answer}"
         )
 
     async def _maybe_execute_llm_output_actions(
@@ -3846,7 +3843,7 @@ class AgentRunnerWorkflow:
             if pr_url:
                 await self._post_jira_comment_best_effort(
                     inp,
-                    f"✅ Draft PR açıldı: {pr_url}",
+                    f" Draft PR açıldı: {pr_url}",
                 )
         return True, ""
 
@@ -3908,8 +3905,7 @@ class AgentRunnerWorkflow:
         return uri
 
     # -- Activity-result extractors ----------------------------------------
-    #
-    # The activities return either their declared frozen dataclasses
+    # # The activities return either their declared frozen dataclasses
     # (``ScanResult``, ``CommitInfo``, ``PRInfo``, ``PRDiff``) or a
     # raw dict when Temporal's data converter cannot resolve the
     # dataclass at the workflow boundary (e.g. tests that mock the
@@ -4195,8 +4191,7 @@ class AgentRunnerWorkflow:
         # ``temporal_shared.compensation``). When the activity is not
         # yet wired up we fall through gracefully
         # so the cancel still terminates the workflow.
-        #
-        # ``start_to_close_timeout=_SHORT_TIMEOUT`` (= 2 minutes / 120s)
+        # # ``start_to_close_timeout=_SHORT_TIMEOUT`` (= 2 minutes / 120s)
         # covers the full chain (six activities × 30s budgets each)
         # for the compensation contract; individual steps are retried inside
         # the chain activity according to its own ``maximumAttempts=3``
@@ -4232,7 +4227,7 @@ class AgentRunnerWorkflow:
 
         return self._build_output(
             status="cancelled",
-            summary="🤖 Bu task iptal edildi.",
+            summary=" Bu task iptal edildi.",
         )
 
     # -- iter==3 banner + audit drains -------------------------------------

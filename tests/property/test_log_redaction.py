@@ -4,8 +4,8 @@
 
 invariant
 --------
-For any (a) set of ``Sensitive_Env_Key → value`` pairs, (b) set of
-non-sensitive ``KEY → value`` pairs, and (c) freeform plain-text log
+For any (a) set of ``Sensitive_Env_Key  value`` pairs, (b) set of
+non-sensitive ``KEY  value`` pairs, and (c) freeform plain-text log
 noise, the lines returned by:meth:`LifecycleService.logs` SHALL
 satisfy three invariants simultaneously:
 
@@ -269,12 +269,12 @@ for _k in _NON_SENSITIVE_KEYS:
 # Value alphabet: lowercase ASCII letters + digits + dash. Three
 # motivations:
 #
-# * No whitespace → each value is a single ``\S+`` token, which is
+# * No whitespace  each value is a single ``\S+`` token, which is
 # exactly what the redaction regex matches against.
-# * No uppercase → values cannot accidentally collide with KEY
+# * No uppercase  values cannot accidentally collide with KEY
 # identifiers (the redaction pattern is anchored on uppercase
 # word boundaries, so a lowercase value is structurally distinct).
-# * ``min_size=4`` → keeps generated values long enough to be
+# * ``min_size=4``  keeps generated values long enough to be
 # meaningful substrings; ``max_size=32`` keeps Hypothesis examples
 # short enough that the property runs in well under the
 # ``deadline=None`` budget.
@@ -431,8 +431,7 @@ def test_logs_redact_only_sensitive_values(
     # sensitive value happens to appear *outside* a redacted token,
     # which would fail invariant 1 for a reason unrelated to the
     # redactor's correctness.
-    #
-    # 1) A sensitive value must not be a substring of any
+    # # 1) A sensitive value must not be a substring of any
     # non-sensitive value (the non-sensitive line is intentionally
     # NOT redacted, so it would carry the sensitive bytes through).
     for sv in sensitive_values:
@@ -504,7 +503,7 @@ def test_logs_redact_only_sensitive_values(
         )
 
     # Sanity: the redactor must not drop or merge lines (one input
-    # line → one output line).
+    # line  one output line).
     assert len(redacted_lines) == len(log_lines), (
         f"redaction changed line count: input={len(log_lines)}, "
         f"output={len(redacted_lines)}"
@@ -972,8 +971,7 @@ def test_property9_logging_filter_drops_credentials_through_handlers(
 
     try:
         # Exercise both common log-call shapes:
-        #
-        # * ``logger.info(line)`` - secret arrives via ``record.msg``;
+        # # * ``logger.info(line)`` - secret arrives via ``record.msg``;
         # * ``logger.info("got %s", line)`` - secret arrives via
         # ``record.args``.
         logger.info(line)
@@ -1110,9 +1108,9 @@ def test_property6_evidence_logs_contain_no_secrets() -> None:
 # ``api_token=``, ``password=``, ``secret=``. The VPS E2E forbidden
 # substrings map to these families as follows:
 #
-# - ``Bearer ATCTT3x...`` → caught by the ``Bearer <token>`` pattern
-# - ``Bearer ATATT3x...`` → caught by the ``Bearer <token>`` pattern
-# - ``password=ai_dev_only`` → caught by the ``password=<value>`` pattern
+# - ``Bearer ATCTT3x...``  caught by the ``Bearer <token>`` pattern
+# - ``Bearer ATATT3x...``  caught by the ``Bearer <token>`` pattern
+# - ``password=ai_dev_only``  caught by the ``password=<value>`` pattern
 #
 # The remaining patterns (``sk-proj-``, raw ``ATATT3x``, raw ``ATCTT3x``
 # without Bearer prefix) are NOT covered by the current redactor - they

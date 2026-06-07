@@ -261,9 +261,9 @@ def classify_admin_path(method: str, path: str) -> PathPolicy:
     canonical = _normalise_path(path)
 
     # 0. Special-case ``/admin/departments`` (no id) and the
-    #    ``wizard`` sub-route. These are global admin actions; they
-    #    must be matched **before** the generic dept-scoped regex
-    #    would otherwise grab ``wizard`` as a dept_id.
+    # ``wizard`` sub-route. These are global admin actions; they
+    # must be matched **before** the generic dept-scoped regex
+    # would otherwise grab ``wizard`` as a dept_id.
     if canonical == "/admin/departments" or canonical == "/admin/departments/wizard":
         return PathPolicy(required_role="admin", dept_id=None)
 
@@ -300,7 +300,7 @@ def classify_admin_path(method: str, path: str) -> PathPolicy:
         )
 
     # 4. Default: fail-closed at admin. New routes MUST extend the
-    #    classifier above before they can be reached by lower roles.
+    # classifier above before they can be reached by lower roles.
     return PathPolicy(required_role="admin", dept_id=None)
 
 

@@ -438,7 +438,7 @@ def test_auto_start_persisted_continues_on_failure() -> None:
     )
 
     recorder = _make_recorder(
-        _FakeProcess(returncode=1, stderr=b"bad image"),  # up bad → fail
+        _FakeProcess(returncode=1, stderr=b"bad image"),  # up bad  fail
         _FakeProcess(returncode=0),  # up good
         _FakeProcess(returncode=0, stdout=b"[]"),  # ps after good
     )
@@ -476,7 +476,7 @@ def test_check_health_returns_true_on_first_200() -> None:
 
 
 def test_check_health_returns_false_when_endpoint_keeps_failing() -> None:
-    """No 200 within the budget → False, no exception."""
+    """No 200 within the budget  False, no exception."""
 
     transport = httpx.MockTransport(lambda req: httpx.Response(503, text="bad"))
 
@@ -562,7 +562,7 @@ def test_parse_compose_ps_output_handles_array_layout() -> None:
     assert rows[0].state == "running"
     assert rows[0].health == "healthy"
     assert rows[0].image == "x:1"
-    assert rows[1].health is None  # missing key → None
+    assert rows[1].health is None  # missing key  None
 
 
 def test_parse_compose_ps_output_handles_ndjson_layout() -> None:

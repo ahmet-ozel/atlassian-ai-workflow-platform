@@ -745,7 +745,7 @@ class TestAuthModeDevHttpBoundary:
         )
 
     def test_no_authorization_header_returns_401(self) -> None:
-        """Missing header → 401 even in dev mode ."""
+        """Missing header  401 even in dev mode ."""
 
         app = _build_app(self._validator())
         with TestClient(app) as client:
@@ -756,7 +756,7 @@ class TestAuthModeDevHttpBoundary:
         )
 
     def test_bearer_with_empty_token_returns_401(self) -> None:
-        """``Bearer `` with empty token → 401 ."""
+        """``Bearer `` with empty token  401 ."""
 
         app = _build_app(self._validator())
         with TestClient(app) as client:
@@ -813,7 +813,7 @@ class TestAuthModeProductionHttpBoundary:
     def test_no_authorization_header_returns_401(
         self, jwks_document: dict[str, Any]
     ) -> None:
-        """Missing header → 401 ."""
+        """Missing header  401 ."""
 
         app = _build_app(self._validator(jwks_document))
         with TestClient(app) as client:
@@ -823,7 +823,7 @@ class TestAuthModeProductionHttpBoundary:
     def test_garbage_token_returns_401_no_dev_bypass(
         self, jwks_document: dict[str, Any]
     ) -> None:
-        """Garbage token → 401; dev bypass MUST NOT trigger.
+        """Garbage token  401; dev bypass MUST NOT trigger.
 
  second sentence: production mode never falls
  back to the dev-mode "any non-empty string is admin" path.
@@ -845,7 +845,7 @@ class TestAuthModeProductionHttpBoundary:
         private_pem: bytes,
         jwks_document: dict[str, Any],
     ) -> None:
-        """Valid signature + non-admin claim → 403 .
+        """Valid signature + non-admin claim  403 .
 
  Read-only access is NOT granted to authenticated non-admin
  users - the second sentence of makes this
@@ -876,7 +876,7 @@ class TestAuthModeProductionHttpBoundary:
         private_pem: bytes,
         jwks_document: dict[str, Any],
     ) -> None:
-        """Valid signature + ``groups=['admin']`` → 200 .
+        """Valid signature + ``groups=['admin']``  200 .
 
  Confirms the production validator actually parses the JWT,
  verifies the signature against the JWKS document, and feeds

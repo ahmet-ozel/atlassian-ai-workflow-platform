@@ -104,7 +104,7 @@ def test_real_description_parser_drives_yaml_branch(
     llm: _RecordingLLM,
     commenter: _RecordingCommenter,
 ) -> None:
-    """End-to-end: real parser → analyzer → ready result without LLM."""
+    """End-to-end: real parser  analyzer  ready result without LLM."""
     inp = TaskAnalysisInput(
         issue_key="PAY-100",
         title="Add retry",

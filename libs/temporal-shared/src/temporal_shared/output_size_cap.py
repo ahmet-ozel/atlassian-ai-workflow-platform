@@ -113,7 +113,7 @@ MINIO_KEY_TEMPLATE: Final[str] = "ai-runs/{workflow_id}/output-{idx}.json"
 #: Leading prose of the "completed critical steps" line in the final
 #: Jira comment.  The line is omitted when
 #: ``critical_done`` is empty.  The Turkish characters and the leading
-#: ✅ emoji are written as Unicode escapes so the source file stays
+#:  emoji are written as Unicode escapes so the source file stays
 #: ASCII-clean and the byte content is unambiguous regardless of the
 #: editor's encoding heuristics.  At runtime the value is the real
 #: glyph string ``"\u2705 Tamamlanan kritik adımlar: "``.
@@ -125,7 +125,7 @@ FINAL_COMMENT_CRITICAL_PREFIX: Final[str] = (
 #: Jira comment.  The line is omitted when
 #: ``best_effort_failed`` is empty.  Same encoding rationale as
 #: :data:`FINAL_COMMENT_CRITICAL_PREFIX`.  At runtime the value is the
-#: real glyph string ``"⚠️ Başarısız yan-aksiyonlar: "``.
+#: real glyph string ``" Başarısız yan-aksiyonlar: "``.
 FINAL_COMMENT_BEST_EFFORT_PREFIX: Final[str] = (
     "\u26a0\ufe0f Ba\u015far\u0131s\u0131z yan-aksiyonlar: "
 )
@@ -433,17 +433,17 @@ def format_final_jira_comment(
 
     Shape::
 
-        ✅ Tamamlanan kritik adımlar: a, b, c
-        ⚠️ Başarısız yan-aksiyonlar: x (sebep1), y (sebep2)
+         Tamamlanan kritik adımlar: a, b, c
+         Başarısız yan-aksiyonlar: x (sebep1), y (sebep2)
 
     Behaviour:
 
-    * When ``critical_done`` is empty, the ``✅`` line is omitted.
-    * When ``best_effort_failed`` is empty, the ``⚠️`` line is omitted.
+    * When ``critical_done`` is empty, the ```` line is omitted.
+    * When ``best_effort_failed`` is empty, the ```` line is omitted.
     * When **both** are empty, the function returns the empty string
       (the caller is expected to suppress the final comment in that
       case rather than post a blank update).
-    * When both are populated, the ``✅`` line precedes the ``⚠️``
+    * When both are populated, the ```` line precedes the ````
       line and the two are separated by a single newline.  The order
       is fixed by the comment shape.
 
@@ -491,14 +491,14 @@ def format_final_jira_comment(
     >>> format_final_jira_comment([], [])
     ''
 
-    Only critical steps populated → only the ✅ line is emitted:
+    Only critical steps populated  only the  line is emitted:
 
     >>> format_final_jira_comment(["a", "b"], []).startswith(
     ...     FINAL_COMMENT_CRITICAL_PREFIX
     ... )
     True
 
-    Only best-effort failures populated → only the ⚠️ line is emitted:
+    Only best-effort failures populated  only the  line is emitted:
 
     >>> result = format_final_jira_comment([], [("x", "timeout")])
     >>> result.startswith(FINAL_COMMENT_BEST_EFFORT_PREFIX)
@@ -506,7 +506,7 @@ def format_final_jira_comment(
     >>> result.endswith("x (timeout)")
     True
 
-    Both populated → both lines, ✅ first, separated by a single
+    Both populated  both lines,  first, separated by a single
     newline:
 
     >>> result = format_final_jira_comment(

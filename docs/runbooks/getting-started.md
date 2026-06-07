@@ -179,7 +179,7 @@ veya POSIX shell'de:
 `make up-all` her servisi tek seferde başlatır; yalnızca aşağıdaki senaryolarda kullanılır:
 
 - **CI smoke test'leri:** End-to-end pipeline'lar tüm stack'i ayağa kaldırıp `pytest tests/integration/` çalıştırır.
-- **Debug:** Birden fazla servisin etkileşimini gözlemlemek gerektiğinde (örn. webhook gateway → automation-worker → execution-runner zinciri).
+- **Debug:** Birden fazla servisin etkileşimini gözlemlemek gerektiğinde (örn. webhook gateway  automation-worker  execution-runner zinciri).
 - **Geri dönük uyum:** Eski geliştirici muscle-memory'sinin kırılmaması için (eski `make up` davranışı bu hedefe taşındı).
 
 ```bash
@@ -199,9 +199,9 @@ make down
 
 İlk açılış tamamlandıktan sonra:
 
-- **Webhook kurulumu** için → [`webhook-setup.md`](webhook-setup.md) runbook'unu izle (her dept için Jira + Bitbucket webhook abonelikleri).
-- **Departman ekleme/çıkarma** için → admin-dashboard `/departments` sayfası veya [`dept-decommission.md`](dept-decommission.md) runbook'u.
-- **Task açma** için → Streamlit'te Task Creator sayfası (`http://localhost:8501`) veya Jira'ya doğrudan task description yapıştırma (`prompts/task_creation_assistant.md` rehberi ile).
+- **Webhook kurulumu** için  [`webhook-setup.md`](webhook-setup.md) runbook'unu izle (her dept için Jira + Bitbucket webhook abonelikleri).
+- **Departman ekleme/çıkarma** için  admin-dashboard `/departments` sayfası veya [`dept-decommission.md`](dept-decommission.md) runbook'u.
+- **Task açma** için  Streamlit'te Task Creator sayfası (`http://localhost:8501`) veya Jira'ya doğrudan task description yapıştırma (`prompts/task_creation_assistant.md` rehberi ile).
 
 ---
 

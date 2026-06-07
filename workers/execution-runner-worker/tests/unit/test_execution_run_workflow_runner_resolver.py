@@ -340,7 +340,7 @@ async def test_resolver_called_when_dept_id_set_and_runner_id_none() -> None:
                 ExecutionRunWorkflow.run,
                 ExecutionRunWorkflowInput(
                     parent_workflow_id="parent-1",
-                    runner_id=None,  # not set → trigger resolution
+                    runner_id=None,  # not set  trigger resolution
                     command="pytest -q",
                     department_id="payments",
                 ),
@@ -446,7 +446,7 @@ async def test_resolved_runner_context_flows_to_docker_chain() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Test: resolve_runner raises ApplicationError → workflow fails
+# Test: resolve_runner raises ApplicationError  workflow fails
 # ---------------------------------------------------------------------------
 
 
@@ -500,7 +500,7 @@ async def test_resolver_application_error_propagates() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Test: resolve_runner infrastructure error → fallback to input runner_id
+# Test: resolve_runner infrastructure error  fallback to input runner_id
 # ---------------------------------------------------------------------------
 
 

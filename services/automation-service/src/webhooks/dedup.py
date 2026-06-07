@@ -157,9 +157,9 @@ class EventDedup:
         """Check whether the event is a duplicate.
 
         1. Derive ``event_id`` from header or payload hash.
-        2. If ``event_id`` already exists in the dedup table → DROP.
-        3. Otherwise insert with 24h TTL → PASS.
-        4. On DB write failure → PASS (at-least-once) + error log.
+        2. If ``event_id`` already exists in the dedup table  DROP.
+        3. Otherwise insert with 24h TTL  PASS.
+        4. On DB write failure  PASS (at-least-once) + error log.
 
         Returns
         -------

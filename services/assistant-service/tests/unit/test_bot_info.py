@@ -157,7 +157,7 @@ class TestBotInfoEndpoint:
         assert bb_bot["probe_status"] == "error"
 
     def test_returns_404_for_nonexistent_department(self):
-        """Department not found → 404."""
+        """Department not found  404."""
         db = FakeDbPool(departments={})
 
         app = _build_app(db)
@@ -186,7 +186,7 @@ class TestBotInfoEndpoint:
         assert body["bots"] == []
 
     def test_returns_not_probed_when_no_capability_probe(self):
-        """Bot exists but no probe has been run → probe_status='not_probed'."""
+        """Bot exists but no probe has been run  probe_status='not_probed'."""
         db = FakeDbPool(
             departments={
                 "new-dept": {"display_name": "New Department"},
@@ -214,7 +214,7 @@ class TestBotInfoEndpoint:
         assert body["bots"][0]["account_id"] is None
 
     def test_returns_503_when_deps_not_wired(self):
-        """Database pool not available → 503."""
+        """Database pool not available  503."""
         app = _build_app(db=None)
         client = TestClient(app)
         resp = client.get("/api/dept/any/bot-info")

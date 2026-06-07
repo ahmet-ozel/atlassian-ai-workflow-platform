@@ -102,7 +102,7 @@ def _make_caller(
 
 
 # ---------------------------------------------------------------------------
-# Tool → service mapping for credential injection routing
+# Tool  service mapping for credential injection routing
 # ---------------------------------------------------------------------------
 
 

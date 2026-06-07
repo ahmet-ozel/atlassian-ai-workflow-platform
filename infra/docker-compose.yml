@@ -12,27 +12,27 @@
 # `config/services.manifest.json`.
 #
 # Bring up the bootstrap-only stack:
-#   docker compose -f infra/docker-compose.yml up -d
+# docker compose -f infra/docker-compose.yml up -d
 #
 # Activate an additional service profile on demand (example):
-#   docker compose -f infra/docker-compose.yml --profile automation-service up -d
+# docker compose -f infra/docker-compose.yml --profile automation-service up -d
 #
 # Bring up the legacy `task-intake-service`:
-#   docker compose -f infra/docker-compose.yml --profile task-intake up -d
+# docker compose -f infra/docker-compose.yml --profile task-intake up -d
 #
 # Live-reload dev mode (overrides bind-mount source dirs):
-#   docker compose -f infra/docker-compose.yml -f infra/docker-compose.dev.yml up -d
+# docker compose -f infra/docker-compose.yml -f infra/docker-compose.dev.yml up -d
 #
 # Notes
 # -----
 # - `vllm` is NOT packaged here; consumers reach it via VLLM_BASE_URL
-#   Run vLLM separately on the host or use OpenAI
-#   as the default cloud provider.
+# Run vLLM separately on the host or use OpenAI
+# as the default cloud provider.
 # - All credentials below are dev-only placeholders. Runtime values come
-#   from `.env` files or `${VAR}` defaults.
+# from `.env` files or `${VAR}` defaults.
 # - `atlassian-mcp` builds the jellythomas/mcp-atlassian-with-bitbucket
-#   fork at a pinned commit so Jira, Confluence and Bitbucket share the
-#   same stateless HTTP MCP surface.
+# fork at a pinned commit so Jira, Confluence and Bitbucket share the
+# same stateless HTTP MCP surface.
 # =============================================================================
 
 x-default-logging: &default-logging
@@ -98,7 +98,7 @@ services:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-ai}
-      # ⚠ DEV-ONLY weak password.
+      # DEV-ONLY weak password.
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ai_dev_only}
       POSTGRES_DB: ${POSTGRES_DB:-ai}
     ports:
@@ -163,7 +163,7 @@ services:
     cap_add:
       - IPC_LOCK
     environment:
-      # ⚠ DEV-ONLY root token.
+      # DEV-ONLY root token.
       VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_TOKEN:-dev-token-not-for-prod}
       VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
     ports:
@@ -191,7 +191,7 @@ services:
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio}
-      # ⚠ DEV-ONLY.
+      # DEV-ONLY.
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-miniosecret_dev_only}
     ports:
       - "${MINIO_HOST_PORT:-39000}:9000"
@@ -529,11 +529,10 @@ services:
   # tunnel, which requires no account, login, or token: on startup it
   # prints a one-off `https://<random>.trycloudflare.com` URL in the
   # logs that forwards straight to `automation-service:8080`.
-  #
-  # Profile-gated so it never joins the default boot bundle. Bring it
+  # # Profile-gated so it never joins the default boot bundle. Bring it
   # up only when you need an inbound webhook endpoint:
-  #   docker compose -f infra/docker-compose.yml --profile webhook-tunnel up -d webhook-tunnel
-  #   docker compose -f infra/docker-compose.yml logs webhook-tunnel
+  # docker compose -f infra/docker-compose.yml --profile webhook-tunnel up -d webhook-tunnel
+  # docker compose -f infra/docker-compose.yml logs webhook-tunnel
   # then register the printed URL + `/webhooks/jira/pipeline` as the
   # webhook target in Jira/Bitbucket.
   webhook-tunnel:

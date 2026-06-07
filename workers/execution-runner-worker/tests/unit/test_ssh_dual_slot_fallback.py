@@ -1,18 +1,18 @@
 ﻿"""Unit tests for the SSH dual-slot key fallback logic.
 
 Tests the :class:`SSHDualSlotConnector` in
-:mod:`src.runners.remote_ssh` which implements the active → previous
+:mod:`src.runners.remote_ssh` which implements the active  previous
 slot fallback during SSH key rotation windows.
 
 Scenarios covered:
 
-1. Active slot succeeds → returns active key, no fallback.
-2. Active slot auth fails, previous slot succeeds → returns previous key.
-3. Active slot auth fails, previous slot empty → BothSlotsFailedError + audit.
-4. Active slot auth fails, previous slot auth fails → BothSlotsFailedError + audit.
-5. Active slot empty, previous slot succeeds → returns previous key.
-6. Active slot empty, previous slot empty → BothSlotsFailedError + audit.
-7. Active slot non-auth error → raises immediately, no fallback.
+1. Active slot succeeds  returns active key, no fallback.
+2. Active slot auth fails, previous slot succeeds  returns previous key.
+3. Active slot auth fails, previous slot empty  BothSlotsFailedError + audit.
+4. Active slot auth fails, previous slot auth fails  BothSlotsFailedError + audit.
+5. Active slot empty, previous slot succeeds  returns previous key.
+6. Active slot empty, previous slot empty  BothSlotsFailedError + audit.
+7. Active slot non-auth error  raises immediately, no fallback.
 8. Audit writer is called with correct payload on both-slots failure.
 """
 
@@ -144,7 +144,7 @@ class TestSSHDualSlotConnector:
     def test_active_auth_fails_previous_empty(
         self, mock_connect: MagicMock
     ) -> None:
-        """Active slot auth fails, previous slot empty → BothSlotsFailedError."""
+        """Active slot auth fails, previous slot empty  BothSlotsFailedError."""
         import paramiko
 
         mock_connect.side_effect = paramiko.AuthenticationException(
@@ -177,7 +177,7 @@ class TestSSHDualSlotConnector:
 
     @patch("src.runners.remote_ssh._try_connect_with_key")
     def test_both_slots_auth_fail(self, mock_connect: MagicMock) -> None:
-        """Both active and previous slots fail auth → BothSlotsFailedError."""
+        """Both active and previous slots fail auth  BothSlotsFailedError."""
         import paramiko
 
         mock_connect.side_effect = paramiko.AuthenticationException(
@@ -211,7 +211,7 @@ class TestSSHDualSlotConnector:
     def test_active_empty_previous_succeeds(
         self, mock_connect: MagicMock
     ) -> None:
-        """Active slot empty, previous slot succeeds → uses previous."""
+        """Active slot empty, previous slot succeeds  uses previous."""
         mock_connect.return_value = None  # success
 
         reader = FakeSlotReader(active_key=None, previous_key=FAKE_PREVIOUS_KEY)
@@ -233,7 +233,7 @@ class TestSSHDualSlotConnector:
 
     @patch("src.runners.remote_ssh._try_connect_with_key")
     def test_both_slots_empty(self, mock_connect: MagicMock) -> None:
-        """Both slots empty → BothSlotsFailedError + audit."""
+        """Both slots empty  BothSlotsFailedError + audit."""
         reader = FakeSlotReader(active_key=None, previous_key=None)
         audit = FakeAuditWriter()
         connector = SSHDualSlotConnector(slot_reader=reader, audit_writer=audit)
@@ -257,7 +257,7 @@ class TestSSHDualSlotConnector:
     def test_active_non_auth_error_no_fallback(
         self, mock_connect: MagicMock
     ) -> None:
-        """Non-auth error on active slot → raises immediately, no fallback."""
+        """Non-auth error on active slot  raises immediately, no fallback."""
         mock_connect.side_effect = OSError("Connection refused")
 
         reader = FakeSlotReader(active_key=FAKE_ACTIVE_KEY, previous_key=FAKE_PREVIOUS_KEY)

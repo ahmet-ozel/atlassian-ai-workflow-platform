@@ -2,16 +2,13 @@
 
 /**
  * CreateDepartmentModal - Modal for creating a new department.
- *
- * In wizard mode (`wizardMode=true`), the modal shows a two-step flow:
+ * * In wizard mode (`wizardMode=true`), the modal shows a two-step flow:
  * 1. Create the department (id + display name)
  * 2. Add at least one bot credential (Jira recommended) and pass a
- *    connectivity probe before marking the wizard step as complete.
- *
- * The close button triggers a confirmation dialog warning that at
+ * connectivity probe before marking the wizard step as complete.
+ * * The close button triggers a confirmation dialog warning that at
  * least one department is required to continue the wizard flow.
- *
- * Requirements: 5.4, 5.5, 5.6
+ * * Requirements: 5.4, 5.5, 5.6
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -333,7 +330,7 @@ export default function CreateDepartmentModal({
               cursor: "pointer",
             }}
           >
-            ✕
+
           </button>
         </header>
 
@@ -353,12 +350,12 @@ export default function CreateDepartmentModal({
           >
             {wizardStep === "create" ? (
               <>
-                🧙 Setup Wizard akışındasınız. Platformu kullanmaya başlamak
+                 Setup Wizard akışındasınız. Platformu kullanmaya başlamak
                 için en az bir departman eklemeniz gerekiyor.
               </>
             ) : (
               <>
-                🔑 Departman oluşturuldu! Şimdi en az bir bot credential
+                 Departman oluşturuldu! Şimdi en az bir bot credential
                 ekleyip bağlantı testinden geçmeniz gerekiyor.
               </>
             )}
@@ -384,7 +381,7 @@ export default function CreateDepartmentModal({
                 fontWeight: 500,
               }}
             >
-              {wizardStep === "create" ? "1" : "✓"} Departman
+              {wizardStep === "create" ? "1" : ""} Departman
             </span>
             <span
               style={{
@@ -490,7 +487,7 @@ export default function CreateDepartmentModal({
                 {submitting
                   ? "Oluşturuluyor…"
                   : wizardMode
-                    ? "Devam →"
+                    ? "Devam "
                     : "Departman Oluştur"}
               </button>
             </div>
@@ -533,7 +530,7 @@ export default function CreateDepartmentModal({
                   fontSize: "0.9rem",
                 }}
               >
-                ✅ Bağlantı testi başarılı!
+                 Bağlantı testi başarılı!
                 {probeAccountId && (
                   <>
                     {" "}
@@ -676,7 +673,7 @@ export default function CreateDepartmentModal({
                     fontWeight: 600,
                   }}
                 >
-                  Kurulumu Tamamla ✓
+                  Kurulumu Tamamla
                 </button>
               )}
             </div>

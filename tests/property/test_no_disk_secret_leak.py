@@ -59,7 +59,7 @@ from hypothesis import strategies as st
 # ---------------------------------------------------------------------------
 
 #: Workspace root, derived from this file's location: ``tests/property/X``
-#: → ``tests/property`` → ``tests`` → ``<workspace>``.
+#:  ``tests/property``  ``tests``  ``<workspace>``.
 _WORKSPACE_ROOT: Path = Path(__file__).resolve().parents[2]
 
 #: Service root: ``services/admin-dashboard-api/``. Required on
@@ -596,7 +596,7 @@ def test_env_override_values_are_not_persisted_to_disk(
 #
 # This is the integration counterpart of the pure-string property
 # in ``test_log_redaction.py``: it exercises the full
-# ``logger → filter → handler → file`` path and therefore catches
+# ``logger  filter  handler  file`` path and therefore catches
 # regressions where, for example, a custom formatter or a
 # ``handler.format(...)`` override bypasses the filter.
 

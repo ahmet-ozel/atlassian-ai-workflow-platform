@@ -119,7 +119,7 @@ from temporal_shared.identifiers import InvalidIssueKeyError
 # Constants - pinned from the production modules
 # ---------------------------------------------------------------------------
 
-#: Closed set of workflow types referenced by the design (, 
+#: Closed set of workflow types referenced by the design (,
 #: ``WORKFLOW_TYPE_CAPABILITIES``). Hypothesis samples from this list
 #: so the strategy stays inside the documented universe.
 _WORKFLOW_TYPES: Final[tuple[str, ...]] = (
@@ -221,7 +221,7 @@ def _bot_emails(draw: st.DrawFn) -> str:
 _MESSAGES: Final[st.SearchStrategy[str]] = st.one_of(
     st.text(min_size=1, max_size=80),
     # Multi-line body - exercises the rstrip semantic on the trailing
-    # newlines and the body→trailer separator.
+    # newlines and the bodytrailer separator.
     st.lists(
         st.text(min_size=0, max_size=40),
         min_size=2,
@@ -298,7 +298,7 @@ def _existing_branch_sets(
 
 
 # ---------------------------------------------------------------------------
-# invariant(a) - compute_branch_name 
+# invariant(a) - compute_branch_name
 # ---------------------------------------------------------------------------
 
 
@@ -407,13 +407,13 @@ class TestComputeBranchName:
  """
         existing_set = data.draw(_existing_branch_sets(issue_key))
 
-        # Same input, two calls → same output.
+        # Same input, two calls  same output.
         first = compute_branch_name(issue_key, iteration, existing_set)
         second = compute_branch_name(issue_key, iteration, existing_set)
         assert first == second
 
         # Different concrete iterable shapes carry the same set
-        # membership → the function must return the same answer.
+        # membership  the function must return the same answer.
         as_list = list(existing_set)
         as_tuple = tuple(existing_set)
         as_frozen = frozenset(existing_set)
@@ -454,7 +454,7 @@ class TestComputeBranchName:
 
 
 # ---------------------------------------------------------------------------
-# invariant(b) - format_commit_message 
+# invariant(b) - format_commit_message
 # ---------------------------------------------------------------------------
 
 
@@ -520,7 +520,7 @@ class TestFormatCommitMessage:
         assert lines[-2] == ""
 
         # And the line before that - the last line of the body - must
-        # itself be non-empty, otherwise the body→trailer separator
+        # itself be non-empty, otherwise the bodytrailer separator
         # would be ambiguous (multiple blank lines).
         assert lines[-3] != ""
 
@@ -575,19 +575,19 @@ class TestFormatCommitMessage:
 
 
 # ---------------------------------------------------------------------------
-# invariant(c) - select_pr_create_tool 
+# invariant(c) - select_pr_create_tool
 # ---------------------------------------------------------------------------
 
 
 class TestSelectPrCreateTool:
-    """invariant(c) - Bitbucket Cloud ↔ Data Center parity (T9)."""
+    """invariant(c) - Bitbucket Cloud  Data Center parity (T9)."""
 
     @settings(max_examples=100, deadline=None)
     @given(deployment=st.sampled_from(("cloud", "server")))
     def test_p7_parity_mapping_is_exhaustive(
         self, deployment: str
     ) -> None:
-        """P7: ``cloud → cloud_tool``, ``server → dc_tool`` - exhaustive.
+        """P7: ``cloud  cloud_tool``, ``server  dc_tool`` - exhaustive.
 
 
  """
@@ -625,7 +625,7 @@ class TestSelectPrCreateTool:
 
 
 # ---------------------------------------------------------------------------
-# invariant(d) - route_by_branch_pattern 
+# invariant(d) - route_by_branch_pattern
 # ---------------------------------------------------------------------------
 
 
@@ -741,7 +741,7 @@ class TestRouteByBranchPattern:
     def test_p11_decision_is_deterministic(
         self, branch: str, candidate: str
     ) -> None:
-        """P11: same ``(branch, candidate, rules)`` → same decision.
+        """P11: same ``(branch, candidate, rules)``  same decision.
 
 
  """
@@ -783,7 +783,7 @@ class TestRouteByBranchPattern:
 
 
  """
-        # hotfix/* + commit_only → denied
+        # hotfix/* + commit_only  denied
         d = route_by_branch_pattern(
             "hotfix/PAY-1",
             "code_change_commit_only",
@@ -792,7 +792,7 @@ class TestRouteByBranchPattern:
         assert d.allowed is False
         assert d.matched_glob == "hotfix/*"
 
-        # release/* + pr_review → allowed
+        # release/* + pr_review  allowed
         d = route_by_branch_pattern(
             "release/2025-04",
             "pr_review",
@@ -801,7 +801,7 @@ class TestRouteByBranchPattern:
         assert d.allowed is True
         assert d.matched_glob == "release/*"
 
-        # release/* + code_change_with_test → denied
+        # release/* + code_change_with_test  denied
         d = route_by_branch_pattern(
             "release/2025-04",
             "code_change_with_test",
@@ -810,7 +810,7 @@ class TestRouteByBranchPattern:
         assert d.allowed is False
         assert d.matched_glob == "release/*"
 
-        # feature/* + anything → no rule → allowed
+        # feature/* + anything  no rule  allowed
         d = route_by_branch_pattern(
             "feature/AUTH-1",
             "code_change_with_test",

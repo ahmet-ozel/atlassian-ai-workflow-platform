@@ -5,9 +5,9 @@
 bölüm başlıklarını doğru sırayla içerdiğini regex ile doğrular. Bölüm
 sırası:
 
-ROL → ZORUNLU OUTPUT FORMATI → WORKFLOW TYPE SEÇİM REHBERİ →
-ZORUNLU SORU LİSTESİ → "Sizin Adınıza Yazabilir Miyim" → STANDALONE MOD →
-ÖRNEK KONUŞMALAR → DEPARTMAN BİLGİLERİ → KURALLAR → SIK YAPILAN HATALAR →
+ROL  ZORUNLU OUTPUT FORMATI  WORKFLOW TYPE SEÇİM REHBERİ
+ZORUNLU SORU LİSTESİ  "Sizin Adınıza Yazabilir Miyim"  STANDALONE MOD
+ÖRNEK KONUŞMALAR  DEPARTMAN BİLGİLERİ  KURALLAR  SIK YAPILAN HATALAR
 DEĞİŞKEN ENJEKSİYONU
 """
 
@@ -16,7 +16,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-# platform/ kök dizini (tests/ci/ → tests/ → platform/)
+# platform/ kök dizini (tests/ci/  tests/  platform/)
 _PLATFORM_ROOT = Path(__file__).resolve().parent.parent.parent
 
 _CANONICAL_PATH = _PLATFORM_ROOT / "prompts" / "task_creation_assistant.md"

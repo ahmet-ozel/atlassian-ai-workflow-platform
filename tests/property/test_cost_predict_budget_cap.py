@@ -26,7 +26,7 @@ workflow_type)`` tuple:
  writer).
  (c) ``BudgetCapPolicy.enforce(dept_id, user_id)`` checks the
  four scopes in the fixed order
- ``dept_weekly → user_weekly → dept_monthly →
+ ``dept_weekly  user_weekly  dept_monthly
  user_monthly`` and denies on the **first** scope whose
  usage equals or exceeds its cap; when every scope is
  below its cap the policy returns ``allow``.
@@ -54,7 +54,7 @@ Surface under test
  imported behind a ``try / except`` guard. Until the
  cost-tracking lib lands the predictor invariants in (a) / (b)
  are exercised through a tiny in-test stand-in that mirrors the
- design pseudocode (``source="dept"`` ⇔ ``task_count >= 30`` and
+ design pseudocode (``source="dept"``  ``task_count >= 30`` and
  ``confidence_low ≤ predicted_usd ≤ confidence_high``) so the
  Hypothesis search still pins the contract a future
  implementation must satisfy. When ships, the import
@@ -931,7 +931,7 @@ def test_predict_cost_threshold_boundary() -> None:
 
 
 def test_predict_cost_below_threshold_uses_global_fallback() -> None:
-    """Pinned example: ``task_count < 30`` ⇒ ``source='global_fallback'``.
+    """Pinned example: ``task_count < 30``  ``source='global_fallback'``.
 
  invariant (a). Hitting the fallback is mandatory for the
  cold-start path that ``audit cost_prediction_using_global_fallback``

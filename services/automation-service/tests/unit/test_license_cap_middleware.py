@@ -7,7 +7,7 @@ Covers the workflow-start guard contract:
   ``license_id`` is NULL, and degrades gracefully when the dept
   itself does not exist.
 * ``enforce_license_cap`` short-circuits on the *first* exceeded
-  limit in the deterministic order ``concurrent`` → ``daily`` →
+  limit in the deterministic order ``concurrent``  ``daily``
   ``monthly_token``, writes a ``bot_license_cap_exceeded`` audit row and raises
   :class:`BotLicenseCapExceededError`.
 * The success path (every cap below threshold) returns ``None`` and
@@ -156,7 +156,7 @@ def _no_license_row() -> dict[str, Any]:
 
 
 class TestFetchCapForDept:
-    """Resolves dept → :class:`LicenseCap`, including the default cap."""
+    """Resolves dept  :class:`LicenseCap`, including the default cap."""
 
     @pytest.mark.asyncio
     async def test_returns_default_cap_when_dept_missing(self) -> None:
@@ -204,7 +204,7 @@ class TestFetchCapForDept:
 
 
 class TestEnforceAllows:
-    """Below-threshold usage → ``None`` return, no audit row."""
+    """Below-threshold usage  ``None`` return, no audit row."""
 
     @pytest.mark.asyncio
     async def test_allows_when_every_limit_below_cap(self) -> None:
@@ -263,7 +263,7 @@ class TestEnforceRejects:
 
     @pytest.mark.asyncio
     async def test_rejects_on_concurrent_first(self) -> None:
-        """Concurrent = max → 429; daily / monthly never queried."""
+        """Concurrent = max  429; daily / monthly never queried."""
 
         pool = _make_pool(
             _cap_row(max_concurrent=3),

@@ -97,21 +97,18 @@ def test_admin_departments_round_trip_compose(
     # same one the property suite (test_lifespan_p1_slots_populated,
     # test_lifespan_p8_no_not_wired) exercises in-process; the
     # Compose-harness variant adds the live-backend coverage.
-    #
-    # Operators running this test should expect the following sequence:
-    #
-    # 1. ``docker compose -f infra/docker-compose.yml up -d --wait
-    #    --wait-timeout 120 automation-service postgres vault temporal``
+    # # Operators running this test should expect the following sequence:
+    # # 1. ``docker compose -f infra/docker-compose.yml up -d --wait
+    # --wait-timeout 120 automation-service postgres vault temporal``
     # 2. Issue a Vault dev-mode token via the boot sidecar.
     # 3. ``POST http://localhost:8080/admin/departments`` with a
-    #    canonical body (see ``services/automation-service/README.md``
-    #    for the schema) and an ``Authorization: Bearer ...`` header.
+    # canonical body (see ``services/automation-service/README.md``
+    # for the schema) and an ``Authorization: Bearer ...`` header.
     # 4. Assert HTTP 201 and the returned ``dept_id`` is non-empty.
     # 5. ``GET http://localhost:8080/admin/departments``; assert the
-    #    new ``dept_id`` is in the response.
+    # new ``dept_id`` is in the response.
     # 6. ``docker compose -f infra/docker-compose.yml down -v``.
-    #
-    # The shape above is intentionally a docstring rather than executed
+    # # The shape above is intentionally a docstring rather than executed
     # code: the dev-mode Vault token + per-dept bot credentials harness
     # is delivered by the wider Compose smoke
     # suite (``platform/tests/integration/test_admin_departments_*``);

@@ -838,7 +838,7 @@ def test_non_production_rows_excluded_from_budget_usage(
 )
 @given(entries=_entries_list_strategy)
 def test_record_is_deterministic(entries: list[Any]) -> None:
-    """invariant (e) - same entry list ⇒ identical final table state.
+    """invariant (e) - same entry list  identical final table state.
 
 
 
@@ -906,7 +906,7 @@ def _make_entry(activity_id: str, *, cost_tag: str = "production",
 
 
 def test_second_insert_with_same_activity_id_is_a_noop() -> None:
-    """Two records, same ``activity_id`` ⇒ row count stays at 1.
+    """Two records, same ``activity_id``  row count stays at 1.
 
  Anchors clause (a) on a fixed pair so a regression that drops
  the ``ON CONFLICT (activity_id) DO NOTHING`` clause and lets
@@ -964,7 +964,7 @@ def test_second_insert_with_same_activity_id_is_a_noop() -> None:
 
 
 def test_three_distinct_ids_produce_three_rows() -> None:
-    """No collisions ⇒ no audit events; row count = input length.
+    """No collisions  no audit events; row count = input length.
 
  Anchors clause (b) and the "no audit on the happy path"
  sub-invariant of (f) on a fixed input. A regression that
@@ -999,7 +999,7 @@ def test_three_distinct_ids_produce_three_rows() -> None:
 
 
 def test_sandbox_and_probe_rows_excluded_from_production_sum() -> None:
-    """Mixed-tag input ⇒ production sum ignores sandbox / probe rows.
+    """Mixed-tag input  production sum ignores sandbox / probe rows.
 
  Anchors clause (d) on a fixed input: three rows, one per tag,
  each with cost_usd=1.00. The production-only sum must be

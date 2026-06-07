@@ -62,7 +62,7 @@ import pytest
 # Workspace anchors
 # ---------------------------------------------------------------------------
 
-# tests/property/test_workflow_determinism_static.py → platform/
+# tests/property/test_workflow_determinism_static.py  platform/
 _PLATFORM_ROOT: Path = Path(__file__).resolve().parents[2]
 
 WORKFLOW_DIRS: tuple[Path, ...] = (
@@ -852,7 +852,7 @@ class Foo:
 # ---------------------------------------------------------------------------
 #
 # The :data:`temporal_shared.capabilities.WORKFLOW_TYPE_CAPABILITIES`
-# mapping is the *single* source of truth for the workflow-type →
+# mapping is the *single* source of truth for the workflow-type
 # capability set table. Every other module MUST consume the constant
 # via ``from temporal_shared.capabilities import WORKFLOW_TYPE_CAPABILITIES``
 # (or an equivalent ``from`` import); no module may shadow the name
@@ -1179,7 +1179,7 @@ class TestCapabilitiesAssignmentScanner:
 # veya eşdeğer çağrı içermez (workflow karar mantığı yalnız workflow
 # modüllerinde).
 #
-# This is the static AST counterpart of the runtime "workers crash →
+# This is the static AST counterpart of the runtime "workers crash
 # Temporal redelegate" guarantee. If an activity smuggles a
 # ``start_workflow`` call, the workflow's history becomes
 # nondeterministic from the workflow engine's perspective - a future
@@ -1374,14 +1374,14 @@ def test_shared_replay_safe_module_has_no_banned_calls(path: Path) -> None:
 #
 # The methods covered are the canonical Temporal Python SDK entry points:
 #
-#   * ``workflow.execute_activity``
-#   * ``workflow.execute_activity_method``
-#   * ``workflow.execute_local_activity``
-#   * ``workflow.execute_local_activity_method``
-#   * ``workflow.start_activity``
-#   * ``workflow.start_activity_method``
-#   * ``workflow.start_local_activity``
-#   * ``workflow.start_local_activity_method``
+# * ``workflow.execute_activity``
+# * ``workflow.execute_activity_method``
+# * ``workflow.execute_local_activity``
+# * ``workflow.execute_local_activity_method``
+# * ``workflow.start_activity``
+# * ``workflow.start_activity_method``
+# * ``workflow.start_local_activity``
+# * ``workflow.start_local_activity_method``
 #
 # (The child-workflow variants - ``execute_child_workflow`` /
 # ``start_child_workflow`` - accept ``execution_timeout`` /

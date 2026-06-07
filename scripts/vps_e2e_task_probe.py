@@ -10,7 +10,7 @@ workflow_run_id, this script:
   4. Asserts audit_events has ≥1 row with event_type LIKE 'task.%' AND
      correlation_id == workflow_run_id (R13.4)
   5. Checks LLM token usage from automation-service logs (R13.5)
-  6. On timeout/fail: captures temporal workflow show → evidence (R13.6)
+  6. On timeout/fail: captures temporal workflow show  evidence (R13.6)
   7. Emits evidence: vps-test-evidence/13-task.json (D5 schema) (R13.7)
   8. R23.2: if total_tokens > 60000, logs minor warning Open_Issue
 
@@ -305,9 +305,9 @@ def _parse_workflow_status(output: str) -> str:
     """Parse workflow status from temporal workflow describe output."""
     # Look for Status field in the output
     # Common patterns:
-    #   Status: COMPLETED
-    #   Status: RUNNING
-    #   "status": "Completed"
+    # Status: COMPLETED
+    # Status: RUNNING
+    # "status": "Completed"
     for line in output.splitlines():
         line_stripped = line.strip()
         # Pattern: "Status: COMPLETED" or "Status  COMPLETED"
@@ -995,9 +995,9 @@ def run_e2e_task_probe(workflow_run_id: str, timeout: int = DEFAULT_TIMEOUT) -> 
     print(f"E2E Task Probe Verdict: {verdict.upper()}")
     if failures:
         for f in failures:
-            print(f"  ✗ {f}")
+            print(f"   {f}")
     else:
-        print("  ✓ All assertions passed")
+        print("   All assertions passed")
     print(f"{'=' * 60}")
 
     return 1 if failures else 0

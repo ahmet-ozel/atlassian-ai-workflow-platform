@@ -36,11 +36,11 @@ Invariant statements (design.md §"invariant")
  exceeds 30 days **and** the linked Jira issue status is in
  ``{Done, Closed}`` (case-insensitive). Concretely:
 
- 1. ``age <= 30 days`` ⇒ ``False`` (boundary kept - strict
+ 1. ``age <= 30 days``  ``False`` (boundary kept - strict
  inequality).
- 2. ``status ∉ {Done, Closed}`` (case-folded) ⇒ ``False``.
- 3. Negative / zero age ⇒ ``False`` (clock-skew guard).
- 4. Non-string ``status`` ⇒ ``False``.
+ 2. ``status ∉ {Done, Closed}`` (case-folded)  ``False``.
+ 3. Negative / zero age  ``False`` (clock-skew guard).
+ 4. Non-string ``status``  ``False``.
  5. Deterministic - same input always returns the same bool.
 
 * **Orphan-branch filter ** -:func:`compute_orphan_branches`
@@ -105,7 +105,7 @@ from hypothesis import strategies as st
 # package. Mirrors ``test_llm_dedup.py`` / ``test_temporal_loop_cap.py``.
 # ---------------------------------------------------------------------------
 
-# tests/property/test_multi_iter_po_review.py → platform/
+# tests/property/test_multi_iter_po_review.py  platform/
 _PLATFORM_ROOT: Final[Path] = Path(__file__).resolve().parents[2]
 
 _REQUIRED_SRC_DIRS: Final[tuple[Path, ...]] = (
@@ -238,7 +238,7 @@ _PR_LISTS = st.lists(_pull_request_strategy(), max_size=20)
 
 
 # ---------------------------------------------------------------------------
-# compute_orphan_branches - set-algebra invariants 
+# compute_orphan_branches - set-algebra invariants
 # ---------------------------------------------------------------------------
 
 
@@ -350,7 +350,7 @@ class TestComputeOrphanBranchesProperties:
 
 
 # ---------------------------------------------------------------------------
-# compute_po_review_inbox - filter invariants 
+# compute_po_review_inbox - filter invariants
 # ---------------------------------------------------------------------------
 
 
@@ -454,7 +454,7 @@ class TestComputeOrphanBranchesExamples:
  """
 
     def test_empty_inputs_yields_empty_result(self) -> None:
-        """No branches → no orphans, regardless of PR list.
+        """No branches  no orphans, regardless of PR list.
 
 
  """
@@ -472,7 +472,7 @@ class TestComputeOrphanBranchesExamples:
         ) == frozenset()
 
     def test_all_orphan_when_no_prs(self) -> None:
-        """Empty PR list → every ``ai/*`` branch is orphan; manual ones excluded.
+        """Empty PR list  every ``ai/*`` branch is orphan; manual ones excluded.
 
 
  """
@@ -483,7 +483,7 @@ class TestComputeOrphanBranchesExamples:
         assert result == frozenset({ai_one, ai_two})
 
     def test_all_merged_when_every_branch_has_pr(self) -> None:
-        """Every ``ai/*`` branch claimed by a PR → empty orphan set.
+        """Every ``ai/*`` branch claimed by a PR  empty orphan set.
 
 
  """
@@ -535,7 +535,7 @@ class TestComputePoReviewInboxExamples:
  """
 
     def test_empty_inputs_yields_empty_result(self) -> None:
-        """No PRs → empty inbox regardless of bot id set.
+        """No PRs  empty inbox regardless of bot id set.
 
 
  """
@@ -609,7 +609,7 @@ class TestComputePoReviewInboxExamples:
 
 
 # ---------------------------------------------------------------------------
-# should_delete_branch - pure predicate invariants 
+# should_delete_branch - pure predicate invariants
 # ---------------------------------------------------------------------------
 #
 # The retention predicate sits on the daily ``BotBranchRetention`` cron
@@ -701,7 +701,7 @@ class TestShouldDeleteBranchProperties:
     def test_age_at_or_below_boundary_is_kept(
         self, age: timedelta, status: str
     ) -> None:
-        """``age <= 30 days`` ⇒ ``False`` regardless of issue status.
+        """``age <= 30 days``  ``False`` regardless of issue status.
 
  The boundary uses *strict* inequality - a branch whose age is
  exactly 30 days survives the current cron tick and is
@@ -722,7 +722,7 @@ class TestShouldDeleteBranchProperties:
     def test_open_status_is_kept_regardless_of_age(
         self, age: timedelta, status: str
     ) -> None:
-        """Status ∉ {Done, Closed} ⇒ ``False`` regardless of age.
+        """Status ∉ {Done, Closed}  ``False`` regardless of age.
 
  An aged branch on an open issue is kept so the bot does not
  accidentally remove ongoing work.
@@ -741,7 +741,7 @@ class TestShouldDeleteBranchProperties:
     def test_aged_and_closed_yields_true(
         self, age: timedelta, status: str
     ) -> None:
-        """``age > 30 days`` AND status ∈ {Done, Closed} (any case) ⇒ ``True``.
+        """``age > 30 days`` AND status ∈ {Done, Closed} (any case)  ``True``.
 
  Both conditions hold, so the cron is allowed to delete the
  branch. Casing variants exercise the case-fold comparison.
@@ -760,7 +760,7 @@ class TestShouldDeleteBranchProperties:
     def test_negative_age_is_kept(
         self, age: timedelta, status: str
     ) -> None:
-        """Negative age (clock skew) ⇒ ``False`` regardless of status.
+        """Negative age (clock skew)  ``False`` regardless of status.
 
  A negative duration means ``last_commit_at`` is in the future
  relative to ``workflow.now``. The predicate treats this as
@@ -799,28 +799,28 @@ class TestShouldDeleteBranchExamples:
  """
 
     def test_aged_done_yields_true(self) -> None:
-        """31 days old, status ``Done`` → eligible for deletion.
+        """31 days old, status ``Done``  eligible for deletion.
 
 
  """
         assert should_delete_branch(timedelta(days=31), "Done") is True
 
     def test_aged_closed_yields_true(self) -> None:
-        """31 days old, status ``Closed`` → eligible for deletion.
+        """31 days old, status ``Closed``  eligible for deletion.
 
 
  """
         assert should_delete_branch(timedelta(days=31), "Closed") is True
 
     def test_boundary_day_30_is_kept(self) -> None:
-        """Exactly 30 days old → kept (strict inequality).
+        """Exactly 30 days old  kept (strict inequality).
 
 
  """
         assert should_delete_branch(timedelta(days=30), "Done") is False
 
     def test_aged_open_status_is_kept(self) -> None:
-        """31 days old but status ``In Progress`` → kept.
+        """31 days old but status ``In Progress``  kept.
 
 
  """
@@ -829,7 +829,7 @@ class TestShouldDeleteBranchExamples:
         )
 
     def test_young_closed_is_kept(self) -> None:
-        """Only 5 days old, status ``Done`` → kept (too young).
+        """Only 5 days old, status ``Done``  kept (too young).
 
 
  """
@@ -843,7 +843,7 @@ class TestShouldDeleteBranchExamples:
         assert should_delete_branch(timedelta(days=31), "DONE") is True
 
     def test_empty_status_is_kept(self) -> None:
-        """Empty status string → kept.
+        """Empty status string  kept.
 
 
  """
@@ -851,7 +851,7 @@ class TestShouldDeleteBranchExamples:
 
 
 # ---------------------------------------------------------------------------
-# iter_advance pure idempotency helpers 
+# iter_advance pure idempotency helpers
 # ---------------------------------------------------------------------------
 #
 # The full ``iter_advance_pr_supersede`` activity does Bitbucket I/O
@@ -870,7 +870,7 @@ class TestShouldDeleteBranchExamples:
 # Together, these properties are sufficient to prove that an
 # ``iter_advance_pr_supersede`` retry never produces a doubly-prefixed
 # description even when the upstream Bitbucket PUT succeeds and then
-# Temporal retries the activity (which is the loop the 
+# Temporal retries the activity (which is the loop the
 # idempotency the operational rule actually guards against).
 
 # PR ids - bounded so Hypothesis shrinks quickly; the formatter does
@@ -952,7 +952,7 @@ class TestIterAdvanceBannerProperties:
     def test_distinct_pr_ids_produce_distinct_banners(
         self, new_pr_id_a: int, new_pr_id_b: int
     ) -> None:
-        """Different ``new_pr_id`` ⇒ different banner strings.
+        """Different ``new_pr_id``  different banner strings.
 
  Without this invariant, an iter-advance retry against a
  *different* new PR id could fail the ``already-banners``
@@ -1136,14 +1136,14 @@ class TestIterAdvanceBannerExamples:
         assert _build_banner(7) == BANNER_PREFIX_TEMPLATE.format(new_pr_id=7)
 
     def test_empty_description_is_not_already_bannered(self) -> None:
-        """Empty description ⇒ guard returns ``False`` for any id.
+        """Empty description  guard returns ``False`` for any id.
 
 
  """
         assert _description_already_banners("", 1) is False
 
     def test_description_with_banner_returns_true(self) -> None:
-        """Description that starts with the banner ⇒ guard returns ``True``.
+        """Description that starts with the banner  guard returns ``True``.
 
 
  """

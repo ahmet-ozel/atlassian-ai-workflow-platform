@@ -48,7 +48,7 @@ Not in scope
 
 * The ``AutomationWorkflow`` body that emits the needs_info Jira
   comment and re-routes after the user reply - owned by the
-  ``llm_analyze_task`` → capability-gate → choice helper wiring in
+  ``llm_analyze_task``  capability-gate  choice helper wiring in
   :mod:`automation_worker.workflows.automation_workflow`. Exercised by the worker's own unit
   tests, not by this property test.
 * The capability gate itself
@@ -388,7 +388,7 @@ def test_p_a_format_choice_list_label_and_marker_parity(
 
 
 # ---------------------------------------------------------------------------
-# Property (b): resolve_choice - [A]/[B] parse + invalid → unresolved
+# Property (b): resolve_choice - [A]/[B] parse + invalid  unresolved
 # ---------------------------------------------------------------------------
 
 
@@ -453,7 +453,7 @@ def test_p_b_resolve_choice_no_marker_returns_unresolved(
     candidates: Sequence[Mapping[str, str]],
     garbled: str,
 ) -> None:
-    """Comments without a bracketed marker → ``unresolved``.
+    """Comments without a bracketed marker  ``unresolved``.
 
     """
 
@@ -479,7 +479,7 @@ def test_p_b_resolve_choice_no_marker_returns_unresolved(
 def test_p_b_resolve_choice_out_of_range_letter_unresolved(
     candidates: Sequence[Mapping[str, str]],
 ) -> None:
-    """Bracketed letters past ``len(candidates)`` → ``unresolved``.
+    """Bracketed letters past ``len(candidates)``  ``unresolved``.
 
     For a 2-candidate list ``[A]`` and ``[B]`` resolve, but ``[C]``,
     ``[D]``, ``[X]``, ``[Z]`` MUST return the unresolved sentinel.
@@ -606,8 +606,8 @@ def test_p_c_z3_fallback_offered_iff_execution_required_and_missing(
     Hypothesis-driven sweep of the four ``(requires_execution,
     has_execution_capability)`` quadrants:
 
-    * ``(True, False)``  → Z3 menu offered (commit_only / out_of_scope).
-    * any other combo    → no Z3 menu (the workflow proceeds normally).
+    * ``(True, False)``   Z3 menu offered (commit_only / out_of_scope).
+    * any other combo     no Z3 menu (the workflow proceeds normally).
 
     The decision is encoded as a small local predicate
     :func:`_should_offer_z3` so the property is stated as an

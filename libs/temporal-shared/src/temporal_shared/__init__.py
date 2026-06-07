@@ -393,7 +393,7 @@ __all__ = [
     "measure_payload_bytes",
     "redirect_oversized_payload",
     "format_final_jira_comment",
-    # pdf_render - Jinja2 → WeasyPrint deterministic PDF
+    # pdf_render - Jinja2  WeasyPrint deterministic PDF
     "DETERMINISTIC_PDF_TIMESTAMP",
     "PDF_MAGIC",
     "PdfRenderError",

@@ -8,7 +8,7 @@ This module pins the security invariant from the design's invariant:
 
  *For any* ``(scope, dept_id, session_id, service)`` çağrısı için:
 
- - ``scope ∈ {"org"}`` (veya deprecation alias ``"bot"`` → ``"org"``)
+ - ``scope ∈ {"org"}`` (veya deprecation alias ``"bot"``  ``"org"``)
  durumunda, Credential_Resolver Vault'a yapılan **hiçbir** ``get``
  çağrısının path'i ``secret/atlassian/_user_session/...`` veya
  ``secret/atlassian/_user_persisted/...`` prefix'iyle başlamaz.
@@ -16,7 +16,7 @@ This module pins the security invariant from the design's invariant:
  **hiçbir** ``get`` çağrısının path'i
  ``secret/atlassian/{dept_id}/...`` (org-default) prefix'iyle
  başlamaz.
- - ``scope ∉ {"org", "user", "bot"}`` → ``ValueError``.
+ - ``scope ∉ {"org", "user", "bot"}``  ``ValueError``.
 
  İhlal durumunda ``credential_scope_violation_attempt`` audit yazılır.
 

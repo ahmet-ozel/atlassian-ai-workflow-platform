@@ -141,8 +141,8 @@ class TestDeptOverrideForeignKey:
             migration_sql, "automation.dept_llm_provider_overrides"
         )
         # The FK declaration spans multiple lines:
-        #   provider_id UUID NOT NULL
-        #       REFERENCES automation.llm_providers(id) ON DELETE RESTRICT,
+        # provider_id UUID NOT NULL
+        # REFERENCES automation.llm_providers(id) ON DELETE RESTRICT,
         pattern = re.compile(
             r"(?is)provider_id[\s\S]+?REFERENCES\s+"
             r"automation\.llm_providers\([^)]*\)\s+ON\s+DELETE\s+RESTRICT",

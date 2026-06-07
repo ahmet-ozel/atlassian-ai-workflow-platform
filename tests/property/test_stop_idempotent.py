@@ -460,10 +460,10 @@ def test_stop_when_already_stopped_returns_noop(tmp_path: Path) -> None:
 
 
 def test_stop_after_start_then_stop_again_is_idempotent(tmp_path: Path) -> None:
-    """Concrete anchor: ``start`` → ``stop`` → ``stop``.
+    """Concrete anchor: ``start``  ``stop``  ``stop``.
 
     The first ``stop`` actually invokes Compose (state transitions
-    ``running`` → ``stopped``); the second ``stop`` is a no-op.
+    ``running``  ``stopped``); the second ``stop`` is a no-op.
     """
 
     workspace = _build_workspace(tmp_path)

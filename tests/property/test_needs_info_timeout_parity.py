@@ -56,7 +56,7 @@ import pytest
 # ``test_multi_iter_po_review.py`` and ``test_temporal_loop_cap.py``.
 # ---------------------------------------------------------------------------
 
-# tests/property/test_needs_info_timeout_parity.py → platform/
+# tests/property/test_needs_info_timeout_parity.py  platform/
 _PLATFORM_ROOT: Final[Path] = Path(__file__).resolve().parents[2]
 
 _REQUIRED_SRC_DIRS: Final[tuple[Path, ...]] = (

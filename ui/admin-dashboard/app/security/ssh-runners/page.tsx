@@ -2,10 +2,8 @@
 
 /**
  * SSH Runners Admin Page.
- *
- * Route: /admin/security/ssh-runners
- *
- * Provides full CRUD for the SSH runner pool:
+ * * Route: /admin/security/ssh-runners
+ * * Provides full CRUD for the SSH runner pool:
  * - List all runners with metrics (active workflows, healthcheck, rotation)
  * - Create new runner (host, port, username, private_key)
  * - Edit runner (host, port)
@@ -415,7 +413,7 @@ export default function SshRunnersPage(): JSX.Element {
   const getHealthcheckBadge = (runner: SshRunner): JSX.Element => {
     const status = runner.last_healthcheck_status;
     if (!status) return <span style={{ color: "#6b7280" }}>-</span>;
-    const icon = status === "healthy" ? "🟢" : status === "unhealthy" ? "🔴" : "🟡";
+    const icon = status === "healthy" ? "" : status === "unhealthy" ? "" : "";
     return (
       <span>
         {icon} {status}

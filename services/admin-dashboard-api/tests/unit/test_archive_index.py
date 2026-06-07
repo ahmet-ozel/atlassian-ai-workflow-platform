@@ -335,7 +335,7 @@ async def test_search_follows_continuation_tokens() -> None:
 
 @pytest.mark.asyncio
 async def test_search_dedupes_repeated_keys_across_pages() -> None:
-    """Defensive dedupe: same key in two pages → one hit."""
+    """Defensive dedupe: same key in two pages  one hit."""
 
     call_index = {"i": 0}
 
@@ -441,7 +441,7 @@ async def test_empty_prefix_set_returns_empty_tuple_without_http() -> None:
     query = AuditQuery(actor_id=None, dept_id=None, action=None, time_range=rng)
 
     hits = await index.search(query)
-    # The single prefix produces one ListObjectsV2 request → 0 keys.
+    # The single prefix produces one ListObjectsV2 request  0 keys.
     assert hits == ()
     assert len(requests_seen) == 1
 

@@ -285,7 +285,7 @@ class TestCancelEndpoint202Path:
         _, sink = audit
         client = TestClient(app_with_cancel)
 
-        # Alice is the issue reporter → predicate returns True.
+        # Alice is the issue reporter  predicate returns True.
         resp = _post_cancel(client, _WORKFLOW_ID, "token-alice")
 
         assert resp.status_code == 202
@@ -322,7 +322,7 @@ class TestCancelEndpoint202Path:
         _, sink = audit
         client = TestClient(app_with_cancel)
 
-        # Bob is in past_assignees → predicate returns True.
+        # Bob is in past_assignees  predicate returns True.
         resp = _post_cancel(client, _WORKFLOW_ID, "token-bob")
 
         assert resp.status_code == 202

@@ -3,18 +3,18 @@
 For every ``(max_concurrent, current_count)`` pair, ``check_dept_concurrency``
 behaviour satisfies the following invariants:
 
-(A) **None-cap allow** - ``max_concurrent is None`` →
+(A) **None-cap allow** - ``max_concurrent is None``
     the check passes regardless of ``current_count``. The returned
     :class:`ConcurrencyCheckResult` has ``max_allowed is None`` and
     ``current == observed_count``.
 
-(B) **Under-cap allow** - ``current_count < max_concurrent`` →
+(B) **Under-cap allow** - ``current_count < max_concurrent``
     the check returns a :class:`ConcurrencyCheckResult` with
     ``current == observed_count`` and ``max_allowed == max_concurrent``;
     no exception is raised.
 
 (C) **At-or-over-cap reject** - ``current_count >= max_concurrent``
-    (and ``max`` is not ``None``) → :class:`ConcurrencyLimitExceeded` is
+    (and ``max`` is not ``None``)  :class:`ConcurrencyLimitExceeded` is
     raised. The exception carries ``.current == observed_count``,
     ``.max_allowed == max_concurrent``, and ``.dept_id`` matching the
     caller-provided dept.
@@ -165,7 +165,7 @@ _DEPT_ID = st.from_regex(r"[a-z][a-z0-9-]{1,30}", fullmatch=True)
 
 
 class TestNoneCapAllows:
-    """``max_concurrent is None`` → silent allow."""
+    """``max_concurrent is None``  silent allow."""
 
     @_PROFILE
     @given(current_count=_COUNT_INT, dept_id=_DEPT_ID)
@@ -189,12 +189,12 @@ class TestNoneCapAllows:
 
 
 # ---------------------------------------------------------------------------
-# Current < max → allow
+# Current < max  allow
 # ---------------------------------------------------------------------------
 
 
 class TestUnderCapAllows:
-    """``current < max`` → silent allow."""
+    """``current < max``  silent allow."""
 
     @_PROFILE
     @given(
@@ -227,12 +227,12 @@ class TestUnderCapAllows:
 
 
 # ---------------------------------------------------------------------------
-# Current >= max → reject
+# Current >= max  reject
 # ---------------------------------------------------------------------------
 
 
 class TestAtOrOverCapRejects:
-    """``current >= max`` → ``ConcurrencyLimitExceeded``."""
+    """``current >= max``  ``ConcurrencyLimitExceeded``."""
 
     @_PROFILE
     @given(
@@ -277,7 +277,7 @@ class TestNPlusOneBoundary:
     """Starting one more when current = max-1 passes,
     then re-checking with current = max rejects.**
 
-    This covers the "N+1 workflow start → 429" behavior.
+    This covers the "N+1 workflow start  429" behavior.
     """
 
     @_PROFILE
@@ -287,7 +287,7 @@ class TestNPlusOneBoundary:
         max_concurrent: int,
         dept_id: str,
     ) -> None:
-        # Step 1: count = max - 1 → must allow.
+        # Step 1: count = max - 1  must allow.
         below_pool = _FakePool(count=max_concurrent - 1)
         result = asyncio.run(
             check_dept_concurrency(
@@ -297,7 +297,7 @@ class TestNPlusOneBoundary:
         assert result.current == max_concurrent - 1
         assert result.max_allowed == max_concurrent
 
-        # Step 2: workflow N+1 starts → count is now max → must reject.
+        # Step 2: workflow N+1 starts  count is now max  must reject.
         at_pool = _FakePool(count=max_concurrent)
         with pytest.raises(ConcurrencyLimitExceeded) as exc_info:
             asyncio.run(
@@ -335,9 +335,9 @@ class TestNPlusOneBoundary:
 class TestSourceLabelPropagation:
     """``source`` label tracks which counter answered.
 
-    - Visibility client present and *does not* raise → ``"temporal"``.
-    - Visibility client raises → fallback to Postgres → ``"postgres"``.
-    - Visibility client absent (``None``) → ``"postgres"``.
+    - Visibility client present and *does not* raise  ``"temporal"``.
+    - Visibility client raises  fallback to Postgres  ``"postgres"``.
+    - Visibility client absent (``None``)  ``"postgres"``.
 
     The label is propagated identically on the success path
     (``ConcurrencyCheckResult.source``) and on the reject path

@@ -1,4 +1,4 @@
-﻿"""Jira custom field name → id resolver TTL cache.
+﻿"""Jira custom field name  id resolver TTL cache.
 
 
 
@@ -93,7 +93,7 @@ from hypothesis import HealthCheck, given, settings, strategies as st
 # ---------------------------------------------------------------------------
 
 # Importing:mod:`automation_service.jira_field_resolver` triggers
-# ``automation_service.__init__`` → ``automation_service.app`` →
+# ``automation_service.__init__``  ``automation_service.app``
 # ``from src.config import Settings``. Two ``sys.path`` entries are
 # therefore required: the ``src/`` directory (so the
 # ``automation_service`` *package* resolves) and the
@@ -421,7 +421,7 @@ class TestPredictorSelfChecks:
             ("advance", timedelta(hours=1)),
             ("resolve", "Sprint"),
         ]
-        # TTL boundary is inclusive → equality is stale → refetch.
+        # TTL boundary is inclusive  equality is stale  refetch.
         assert _predicted_fetch_count(schedule, timedelta(hours=1)) == 2
 
     def test_zero_ttl_means_one_fetch_per_resolve(self) -> None:

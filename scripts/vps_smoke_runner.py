@@ -760,7 +760,7 @@ def run_confluence_scenarios(client: MCPClient) -> list[dict[str, Any]]:
     if chain_broken:
         results.append(build_entry(scenario, MANUAL_PENDING, 0, 0, tool, args, "", "chain broken"))
     else:
-        # R11.5: If tool is in MCP_BANNED_TOOLS → verdict=n/a
+        # R11.5: If tool is in MCP_BANNED_TOOLS  verdict=n/a
         if tool in banned:
             results.append(build_entry(
                 scenario, NA, 0, 0, tool, args, "",
@@ -826,7 +826,7 @@ def run_bitbucket_scenarios(
     Execute BB-1 through BB-8 with chain dependency.
     Returns list of D3-schema entries (each with token_mode field).
 
-    Chain dependency: BB-2 fail → BB-3/4/5/6/7/8 manual_pending.
+    Chain dependency: BB-2 fail  BB-3/4/5/6/7/8 manual_pending.
 
     Args:
         client: MCPClient instance.
@@ -1464,7 +1464,7 @@ def _extract_diff_text(result_data: Any) -> str:
 
 def _log_bb_issue(scenario_id: str, summary: str, token_mode: str) -> None:
     """Log a Bitbucket integration Open_Issue (R12.10)."""
-    # R12.10: selected-token ≥1 fail → critical
+    # R12.10: selected-token ≥1 fail  critical
     severity = "critical" if token_mode == "selected" else "major"
     try:
         log_open_issue(
@@ -1652,7 +1652,7 @@ def main() -> int:
     write_evidence("12-bitbucket.json", all_bb_results)
     _print_summary("Bitbucket (alternate token)", cross_token_results)
 
-    # R12.10: Check if selected-token run has ≥1 fail → critical Open_Issue
+    # R12.10: Check if selected-token run has ≥1 fail  critical Open_Issue
     selected_failures = [r for r in bitbucket_results if r["verdict"] == FAIL]
     if selected_failures:
         print(f"\n[CRITICAL] Selected-token run has {len(selected_failures)} failure(s) - R12.10 triggered")
@@ -1675,7 +1675,7 @@ def main() -> int:
 def _print_summary(suite: str, results: list[dict[str, Any]]) -> None:
     """Print a quick summary table for a suite."""
     for r in results:
-        icon = {"pass": "✓", "fail": "✗", "n/a": "○", "manual_pending": "?"}
+        icon = {"pass": "", "fail": "", "n/a": "○", "manual_pending": "?"}
         print(f"  {icon.get(r['verdict'], '?')} {r['scenario']}: {r['verdict']} - {r['evidence_excerpt'][:80]}")
 
 

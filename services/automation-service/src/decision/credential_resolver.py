@@ -159,7 +159,7 @@ _USER_PATH_INFIX: Final[str] = "atlassian/_user"
 
 
 class CredentialScopeViolationError(RuntimeError):
-    """Raised when a Vault read crosses the org ↔ user scope boundary.
+    """Raised when a Vault read crosses the org  user scope boundary.
 
     A cross-scope read attempt is treated as a critical security event
     (uyumluluk Q7). The resolver:
@@ -453,9 +453,9 @@ class CredentialResolver:
             # 1. Find the credential_ref from Postgres.
             path = await self._lookup_credential_ref(dept_id, service)
             # 2. Cross-scope guard: an org-scope read MUST NOT touch
-            #    the per-user prefix. A leaked credential_ref pointing
-            #    at ``_user_session`` / ``_user_persisted`` is treated
-            #    as a critical security violation.
+            # the per-user prefix. A leaked credential_ref pointing
+            # at ``_user_session`` / ``_user_persisted`` is treated
+            # as a critical security violation.
             if _USER_PATH_INFIX in path:
                 await self._audit_scope_violation(
                     scope="org",

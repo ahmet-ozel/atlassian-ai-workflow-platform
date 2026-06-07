@@ -73,7 +73,7 @@ ROLES: Final[frozenset[str]] = frozenset({"viewer", "lead", "admin", "dept_admin
 
 # Linear precedence among the *global* roles. ``dept_admin`` is
 # intentionally **absent** from this mapping: it is not a point on the
-# viewer→lead→admin ladder but an orthogonal dept-scoped role that
+# viewerleadadmin ladder but an orthogonal dept-scoped role that
 # can perform admin-like operations within its own dept. The
 # :func:`_rank` helper handles ``dept_admin`` separately.
 _GLOBAL_ROLE_RANK: Final[dict[str, int]] = {

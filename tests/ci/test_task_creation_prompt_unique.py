@@ -12,7 +12,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-# platform/ kök dizini (tests/ci/ → tests/ → platform/)
+# platform/ kök dizini (tests/ci/  tests/  platform/)
 _PLATFORM_ROOT = Path(__file__).resolve().parent.parent.parent
 
 _OLD_DOCS_PATH = _PLATFORM_ROOT / "docs" / "task-creation-assistant-prompt.md"

@@ -1,7 +1,7 @@
 """Unit tests for the ``POST /auth/bootstrap`` endpoint.
-* : Valid token → create admin user, invalidate token, 201.
-* : Expired/used token → 401 with error body.
-* : OIDC active → 410 with bootstrap_disabled_oidc_active."""
+* : Valid token  create admin user, invalidate token, 201.
+* : Expired/used token  401 with error body.
+* : OIDC active  410 with bootstrap_disabled_oidc_active."""
 
 from __future__ import annotations
 
@@ -110,7 +110,7 @@ class TestBootstrapEndpoint:
             yield c
 
     def test_oidc_active_returns_410(self, client, mock_pool) -> None:
-        """OIDC active → 410 Gone."""
+        """OIDC active  410 Gone."""
         with patch(
             "src.auth.bootstrap.BootstrapTokenService.is_oidc_configured",
             return_value=True,
@@ -126,7 +126,7 @@ class TestBootstrapEndpoint:
         assert body["detail"]["error"] == "bootstrap_disabled_oidc_active"
 
     def test_invalid_token_format_returns_400(self, client) -> None:
-        """Invalid format → 400."""
+        """Invalid format  400."""
         with patch(
             "src.auth.bootstrap.BootstrapTokenService.is_oidc_configured",
             return_value=False,
@@ -142,7 +142,7 @@ class TestBootstrapEndpoint:
         assert body["detail"]["error"] == "invalid_token_format"
 
     def test_expired_or_used_token_returns_401(self, client, mock_pool) -> None:
-        """Expired/used token → 401."""
+        """Expired/used token  401."""
         with patch(
             "src.auth.bootstrap.BootstrapTokenService.is_oidc_configured",
             return_value=False,
@@ -164,7 +164,7 @@ class TestBootstrapEndpoint:
     def test_valid_token_creates_admin_returns_201(
         self, client, mock_pool
     ) -> None:
-        """Valid token → create admin, 201."""
+        """Valid token  create admin, 201."""
         with patch(
             "src.auth.bootstrap.BootstrapTokenService.is_oidc_configured",
             return_value=False,
@@ -189,7 +189,7 @@ class TestBootstrapEndpoint:
         uuid.UUID(body["user_id"])  # Raises if invalid
 
     def test_missing_token_field_returns_422(self, client) -> None:
-        """Missing required 'token' field → 422 Unprocessable Entity."""
+        """Missing required 'token' field  422 Unprocessable Entity."""
         response = client.post(
             "/auth/bootstrap",
             json={},
@@ -197,7 +197,7 @@ class TestBootstrapEndpoint:
         assert response.status_code == 422
 
     def test_empty_token_returns_422(self, client) -> None:
-        """Empty token string → 422 (pydantic min_length=1 validation)."""
+        """Empty token string  422 (pydantic min_length=1 validation)."""
         response = client.post(
             "/auth/bootstrap",
             json={"token": ""},
@@ -205,7 +205,7 @@ class TestBootstrapEndpoint:
         assert response.status_code == 422
 
     def test_no_db_pool_returns_503(self) -> None:
-        """When pg_pool is None → 503 Service Unavailable."""
+        """When pg_pool is None  503 Service Unavailable."""
         from src.main import app
 
         original_pg_pool = getattr(app.state, "pg_pool", None)

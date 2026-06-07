@@ -115,7 +115,7 @@ def _sample_counters() -> list[McpRequestCounter]:
 
 
 def test_traffic_returns_rows_and_totals() -> None:
-    """Counters → JSON envelope with rows + totals + filters."""
+    """Counters  JSON envelope with rows + totals + filters."""
 
     fake = _FakeMcpMetricsClient()
     fake.counters = _sample_counters()
@@ -252,7 +252,7 @@ def test_traffic_empty_result_when_no_match() -> None:
 
 
 def test_traffic_returns_503_when_client_unwired() -> None:
-    """``app.state.mcp_metrics_client is None`` → 503 with reason."""
+    """``app.state.mcp_metrics_client is None``  503 with reason."""
 
     client = TestClient(_build_app(client=None))
 
@@ -265,7 +265,7 @@ def test_traffic_returns_503_when_client_unwired() -> None:
 
 
 def test_traffic_returns_502_on_metrics_error() -> None:
-    """Client raises ``McpMetricsError`` → 502 ``mcp_metrics_fetch_failed``."""
+    """Client raises ``McpMetricsError``  502 ``mcp_metrics_fetch_failed``."""
 
     fake = _FakeMcpMetricsClient()
     fake.raise_on_call = McpMetricsError("upstream timeout")
@@ -285,13 +285,13 @@ def test_traffic_returns_502_on_metrics_error() -> None:
 
 
 def test_traffic_requires_admin() -> None:
-    """No admin override → 401 from require_admin (no bearer token)."""
+    """No admin override  401 from require_admin (no bearer token)."""
 
     fake = _FakeMcpMetricsClient()
     fake.counters = _sample_counters()
 
     # Build app without dependency override so the real require_admin
-    # runs. No Authorization header → 401.
+    # runs. No Authorization header  401.
     from fastapi import FastAPI
     app = FastAPI()
     app.include_router(mcp_traffic_router)

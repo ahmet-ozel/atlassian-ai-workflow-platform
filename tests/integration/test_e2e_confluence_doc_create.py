@@ -113,7 +113,7 @@ def _temporal_env_available() -> bool:
 
     try:
         from temporalio.testing import WorkflowEnvironment  # noqa: F401
-    except Exception:  # noqa: BLE001 - any import failure → skip.
+    except Exception:  # noqa: BLE001 - any import failure  skip.
         return False
     return True
 
@@ -369,7 +369,7 @@ async def test_confluence_doc_create_happy_path_includes_provenance_footer() -> 
  ``{"body": _STUB_LLM_BODY}``.
  4. ``confluence_create_page`` is called exactly once. Its body
  argument is the LLM body **plus** a provenance footer that
- embeds :data:`_STUB_JIRA_LINK` verbatim - the marker the 
+ embeds :data:`_STUB_JIRA_LINK` verbatim - the marker the
  audit grep relies on.
  5. The terminal :class:`AgentRunnerWorkflowOutput` reports
  ``status="completed"``, ``failure_reason is None``, and
@@ -489,7 +489,7 @@ async def test_confluence_doc_create_happy_path_includes_provenance_footer() -> 
 
 
 # ---------------------------------------------------------------------------
-# 2. Invalid topic - failure_reason="confluence_title_invalid" 
+# 2. Invalid topic - failure_reason="confluence_title_invalid"
 # ---------------------------------------------------------------------------
 
 
@@ -613,7 +613,7 @@ async def test_confluence_doc_create_with_invalid_topic_fails() -> None:
 # (signal-driven re-entry or a fresh workflow) cannot trivially be
 # tested without rebuilding the gateway dispatch - that scenario is
 # the property test's domain. The integration layer here pins the
-# single-run dedup path: same content_hash for two sections → exactly
+# single-run dedup path: same content_hash for two sections  exactly
 # one update activity call.
 # ---------------------------------------------------------------------------
 

@@ -8,8 +8,8 @@ with correct `dockerfile:` paths so that pyproject.toml dependencies
 (e.g., `../../libs/observability`) resolve within the build context.
 
 Verification steps:
-1. Run `docker compose build` for all 6 services → assert exit 0
-2. Run `docker compose up -d` with all profiles → assert all 6 healthy within 120s
+1. Run `docker compose build` for all 6 services  assert exit 0
+2. Run `docker compose up -d` with all profiles  assert all 6 healthy within 120s
 3. Emit `e2e-evidence/32-docker-build-fix.json`
 
 Requirements: R32.3, R32.4, R32.5
@@ -219,14 +219,14 @@ def _check_compose_build_context(platform_root: Path) -> dict[str, Any]:
             if context_match:
                 context_value = context_match.group(1)
                 # Valid contexts:
-                #   * ``..`` / ``../..`` → platform-root context (R32 fix -
-                #     used by services that pull in libs/* deps)
-                #   * ``../<subdir>`` → Standalone Mode (services with no
-                #     cross-lib deps - agent-runner-worker, streamlit-ui,
-                #     firecrawl). The fix landed here because these three
-                #     Dockerfiles really *are* standalone-pure and trying
-                #     to push them to platform-root context only inflates
-                #     the build context unnecessarily.
+                # * ``..`` / ``../..``  platform-root context (R32 fix -
+                # used by services that pull in libs/* deps)
+                # * ``../<subdir>``  Standalone Mode (services with no
+                # cross-lib deps - agent-runner-worker, streamlit-ui,
+                # firecrawl). The fix landed here because these three
+                # Dockerfiles really *are* standalone-pure and trying
+                # to push them to platform-root context only inflates
+                # the build context unnecessarily.
                 if (
                     context_value in ("..", "../..")
                     or context_value.startswith("../")

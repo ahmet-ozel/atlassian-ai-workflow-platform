@@ -1,11 +1,11 @@
 """Unit tests for ``src.routers.active_workflows`` .
 per-dept concurrency saturation badge).
 The router exposes a single read-only endpoint:
-* ``GET /api/v1/departments/{dept_id}/active-workflows`` →
+* ``GET /api/v1/departments/{dept_id}/active-workflows``
   ``{active, max_concurrent_workflows, saturation, source}``.
 Tests cover:
 * 200 happy path with cap configured (saturation computed).
-* 200 path with cap unset (``max_concurrent_workflows=None`` →
+* 200 path with cap unset (``max_concurrent_workflows=None``
   ``saturation=None``).
 * 503 when the asyncpg pool is unwired."""
 
@@ -120,7 +120,7 @@ def _patch_dept_config(
 
 class TestActiveWorkflowsEndpoint:
     def test_returns_count_with_cap(self) -> None:
-        """Cap configured → saturation is computed."""
+        """Cap configured  saturation is computed."""
         pool = _FakePool(count=3)
         app = _build_app(pool=pool)
         with _patch_dept_config(dept_id="payment", max_concurrent=10):
@@ -135,7 +135,7 @@ class TestActiveWorkflowsEndpoint:
         assert body["source"] == "postgres"
 
     def test_returns_count_without_cap(self) -> None:
-        """No cap → saturation is null but count is still returned."""
+        """No cap  saturation is null but count is still returned."""
         pool = _FakePool(count=5)
         app = _build_app(pool=pool)
         with _patch_dept_config(dept_id="research", max_concurrent=None):
@@ -152,7 +152,7 @@ class TestActiveWorkflowsEndpoint:
         assert body["source"] == "postgres"
 
     def test_returns_503_when_pool_unwired(self) -> None:
-        """Missing ``pg_pool`` → 503 with ``pg_pool_unavailable``."""
+        """Missing ``pg_pool``  503 with ``pg_pool_unavailable``."""
         app = _build_app(pool=None)
         client = TestClient(app)
         res = client.get("/api/v1/departments/payment/active-workflows")
@@ -161,7 +161,7 @@ class TestActiveWorkflowsEndpoint:
         assert body["detail"]["reason"] == "pg_pool_unavailable"
 
     def test_zero_active_with_cap(self) -> None:
-        """Zero active → saturation is 0.0."""
+        """Zero active  saturation is 0.0."""
         pool = _FakePool(count=0)
         app = _build_app(pool=pool)
         with _patch_dept_config(dept_id="payment", max_concurrent=10):

@@ -393,7 +393,7 @@ class ChatHandler:
 
         # ------------------------------------------------------------------
         # 1. PII mask - MUST be the first thing the handler does to
-        #    user-provided text.
+        # user-provided text.
         # ------------------------------------------------------------------
         masked_text, pii_matches = pii_mask(request.user_message)
         counters.pii_matches = len(pii_matches)
@@ -409,7 +409,7 @@ class ChatHandler:
 
         # ------------------------------------------------------------------
         # 2. Sliding window - append the masked user message to the
-        #    history, then trim to ``sliding_window_n``.
+        # history, then trim to ``sliding_window_n``.
         # ------------------------------------------------------------------
         history_with_user: tuple[Message, ...] = (
             *request.history,
@@ -423,7 +423,7 @@ class ChatHandler:
 
         # ------------------------------------------------------------------
         # 3. System prompt render - load (cache hit after boot) +
-        #    inject dept template variables.
+        # inject dept template variables.
         # ------------------------------------------------------------------
         prompt_vars = PromptVars(
             department_id=dept.dept_id,
@@ -439,9 +439,9 @@ class ChatHandler:
 
         # ------------------------------------------------------------------
         # 4. Tool filter - banned-tool list
-        #    THEN dept capability gate. Banned-tool filtering is the
-        #    single source of truth in ``mcp_client.filter_tools``;
-        #    no literal ``BANNED_TOOLS`` membership is hard-coded here.
+        # THEN dept capability gate. Banned-tool filtering is the
+        # single source of truth in ``mcp_client.filter_tools``;
+        # no literal ``BANNED_TOOLS`` membership is hard-coded here.
         # ------------------------------------------------------------------
         raw_catalogue = deps.list_tools()
         if inspect.isawaitable(raw_catalogue):
@@ -455,22 +455,20 @@ class ChatHandler:
 
         # ------------------------------------------------------------------
         # 5. LLM tool-call loop - the orchestrator owns retry,
-        #    fallback, token cap. The handler intercepts ``tool_call``
-        #    events for the write-action gate and
-        #    forwards everything else verbatim.
-        #
-        #    Timeout: The entire streaming loop is
-        #    guarded by ``asyncio.timeout`` using
-        #    ``deps.timeout_s``. If the LLM call exceeds the
-        #    configured timeout, the handler aborts, writes an
-        #    ``assistant_llm_timeout`` audit event, and emits an SSE
-        #    error event.
-        #
-        #    Truncation: The handler tracks
-        #    cumulative output tokens. When the count exceeds
-        #    ``deps.max_tokens_output``, the stream is closed cleanly
-        #    and a final ``done`` event with ``truncated: true`` is
-        #    emitted.
+        # fallback, token cap. The handler intercepts ``tool_call``
+        # events for the write-action gate and
+        # forwards everything else verbatim.
+        # #    Timeout: The entire streaming loop is
+        # guarded by ``asyncio.timeout`` using
+        # ``deps.timeout_s``. If the LLM call exceeds the
+        # configured timeout, the handler aborts, writes an
+        # ``assistant_llm_timeout`` audit event, and emits an SSE
+        # error event.
+        # #    Truncation: The handler tracks
+        # cumulative output tokens. When the count exceeds
+        # ``deps.max_tokens_output``, the stream is closed cleanly
+        # and a final ``done`` event with ``truncated: true`` is
+        # emitted.
         # ------------------------------------------------------------------
         try:
             async with asyncio.timeout(deps.timeout_s):
@@ -482,16 +480,16 @@ class ChatHandler:
                     token_cap=deps.token_cap,
                 ):
                     # 5a. Write-action intercept - the orchestrator surfaces
-                    #     each tool call before dispatch via a ``tool_call``
-                    #     event. We inspect the call and the LLM-supplied
-                    #     intent field; when either flags a write action we
-                    #     emit the redirect event and **stop** the generator
-                    #     without forwarding the tool_call event. The
-                    #     orchestrator's ``on_tool_call`` callback is the
-                    #     contract that actually dispatches the tool, so
-                    #     simply returning here also prevents
-                    #     ``tool_dispatch.invoke`` from running for this
-                    #     call.
+                    # each tool call before dispatch via a ``tool_call``
+                    # event. We inspect the call and the LLM-supplied
+                    # intent field; when either flags a write action we
+                    # emit the redirect event and **stop** the generator
+                    # without forwarding the tool_call event. The
+                    # orchestrator's ``on_tool_call`` callback is the
+                    # contract that actually dispatches the tool, so
+                    # simply returning here also prevents
+                    # ``tool_dispatch.invoke`` from running for this
+                    # call.
                     if event.type == "tool_call" and _is_write_call(event):
                         counters.write_intent_redirected = True
                         yield SseEvent(
@@ -510,14 +508,14 @@ class ChatHandler:
                         return
 
                     # 5b. Token / cost accounting - the orchestrator emits the
-                    #     token usage on every event payload; we keep a
-                    #     running tally for the audit row.
+                    # token usage on every event payload; we keep a
+                    # running tally for the audit row.
                     _accumulate_tokens(event, counters)
 
                     # 5b-ii. Truncation check: if
-                    #     cumulative output tokens exceed the configured
-                    #     max, close the stream cleanly with a ``done``
-                    #     event carrying ``truncated: true``.
+                    # cumulative output tokens exceed the configured
+                    # max, close the stream cleanly with a ``done``
+                    # event carrying ``truncated: true``.
                     if counters.token_out >= deps.max_tokens_output:
                         _LOG.info(
                             "chat.truncated",
@@ -544,19 +542,19 @@ class ChatHandler:
                     yield event
 
                     # 5c. Terminal events - ``done`` /
-                    #     ``rate_limit_exhausted`` / ``token_cap_exceeded`` /
-                    #     ``error`` close the loop. The orchestrator already
-                    #     stops the iteration after these, but we exit
-                    #     defensively in case the protocol implementation
-                    #     keeps yielding.
+                    # ``rate_limit_exhausted`` / ``token_cap_exceeded`` /
+                    # ``error`` close the loop. The orchestrator already
+                    # stops the iteration after these, but we exit
+                    # defensively in case the protocol implementation
+                    # keeps yielding.
                     if event.type in _TERMINAL_EVENT_TYPES:
                         # 5d. Intent detection - when the LLM stream ends with
-                        #     ``done`` and the payload carries
-                        #     ``intent == "write_action_requested"``, emit an
-                        #     additional ``intent`` SSE event before closing.
-                        #     Emit the intent event so the assistant-service
-                        #     publishes the intent + prefill payload for the
-                        #     Streamlit chat page redirect.
+                        # ``done`` and the payload carries
+                        # ``intent == "write_action_requested"``, emit an
+                        # additional ``intent`` SSE event before closing.
+                        # Emit the intent event so the assistant-service
+                        # publishes the intent + prefill payload for the
+                        # Streamlit chat page redirect.
                         if event.type == "done":
                             intent_event = _extract_intent_event(event)
                             if intent_event is not None:
@@ -591,9 +589,9 @@ class ChatHandler:
 
         # ------------------------------------------------------------------
         # 6. Audit ``chat_message``. The mandatory payload fields are
-        #    ``prompt_version``, ``token_in``, ``token_out``,
-        #    ``cost_usd``; we add ``pii_matches_count`` and
-        #    ``tool_calls`` for ops visibility.
+        # ``prompt_version``, ``token_in``, ``token_out``,
+        # ``cost_usd``; we add ``pii_matches_count`` and
+        # ``tool_calls`` for ops visibility.
         # ------------------------------------------------------------------
         await self._write_audit(
             actor=actor,
@@ -810,7 +808,7 @@ def _extract_intent_event(done_event: SseEvent) -> SseEvent | None:
     if intent != "write_action_requested":
         return None
 
-    # Build the intent event payload for Chat → Task Creator wiring.
+    # Build the intent event payload for Chat  Task Creator wiring.
     intent_payload: dict[str, Any] = {
         "intent": "write_action_requested",
         "suggested_workflow_type": payload.get("suggested_workflow_type", ""),

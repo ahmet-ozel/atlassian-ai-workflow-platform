@@ -62,7 +62,7 @@ _MCP_ACCEPT: str = "application/json, text/event-stream"
 #: the identifier.
 CLIENT_SOURCE: str = "automation-worker"
 
-#: Map MCP tool names → Atlassian service for credential injection.
+#: Map MCP tool names  Atlassian service for credential injection.
 #: Tools not in this table fall through to ``"jira"`` because every
 #: action the:mod:`output_actions` activity dispatches today is
 #: routed through Jira credentials except for the explicit

@@ -2,12 +2,12 @@
 
 Validates four scanner invariants:
 
-1. **Clean diff → pass** - a diff with no secret patterns returns
+1. **Clean diff  pass** - a diff with no secret patterns returns
    ``ScanResult(decision="pass", matched_patterns=())``.
-2. **AWS access key → block** - an injected ``AKIA...`` literal is
+2. **AWS access key  block** - an injected ``AKIA...`` literal is
    detected, returns ``decision="block"`` with ``"aws_access_key"``
    in ``matched_patterns``.
-3. **Atlassian API token → block** - an injected ``ATATT3x...``
+3. **Atlassian API token  block** - an injected ``ATATT3x...``
    literal is detected, returns ``decision="block"`` with
    ``"atlassian_api_token"`` in ``matched_patterns``.
 4. **Determinism** - ``precommit_scanner(diff) == precommit_scanner(diff)``
@@ -59,7 +59,7 @@ from src.activities.precommit_scan import (  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
-# Test 1 - clean diff → pass
+# Test 1 - clean diff  pass
 # ---------------------------------------------------------------------------
 
 
@@ -91,7 +91,7 @@ class TestCleanDiffPasses:
 
 
 # ---------------------------------------------------------------------------
-# Test 2 - injected AWS key → block + ``aws_access_key`` matched
+# Test 2 - injected AWS key  block + ``aws_access_key`` matched
 # ---------------------------------------------------------------------------
 
 
@@ -117,7 +117,7 @@ class TestAwsAccessKeyIsBlocked:
 
 
 # ---------------------------------------------------------------------------
-# Test 3 - injected Atlassian token → block + ``atlassian_api_token`` matched
+# Test 3 - injected Atlassian token  block + ``atlassian_api_token`` matched
 # ---------------------------------------------------------------------------
 
 
@@ -144,7 +144,7 @@ class TestAtlassianApiTokenIsBlocked:
 
 
 # ---------------------------------------------------------------------------
-# Test 4 - determinism: same diff → identical ScanResult
+# Test 4 - determinism: same diff  identical ScanResult
 # ---------------------------------------------------------------------------
 
 

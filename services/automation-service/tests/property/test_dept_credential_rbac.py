@@ -19,14 +19,14 @@ boundaries that guard the dept-credential CRUD + probe surface:
 
 The decision matrix this test pins:
 
-  * ``admin``  → forwarded for **every** dept_id (no membership check).
-  * ``system`` → forwarded for **every** dept_id (router only - the
+  * ``admin``   forwarded for **every** dept_id (no membership check).
+  * ``system``  forwarded for **every** dept_id (router only - the
     proxy never sees ``system`` actors because OIDC tokens never carry
     that role; it is reserved for the bot identity that calls the
     router directly without going through the proxy).
-  * ``dept_admin`` → forwarded **only** when ``target_dept_id`` is in
+  * ``dept_admin``  forwarded **only** when ``target_dept_id`` is in
     the actor's ``dept_ids`` set; otherwise denied.
-  * ``lead`` / ``viewer`` → denied at the proxy boundary for **every**
+  * ``lead`` / ``viewer``  denied at the proxy boundary for **every**
     mutating dept-scoped credential endpoint; the router rejects them
     with 403 if reached directly.
 
@@ -451,10 +451,10 @@ class TestProxyBoundaryRbacDeterminism:
         )
 
         # 1. The classifier resolves every mutating dept-credential
-        #    path to ``(dept_admin, target_dept_id)``.  This is the
-        #    spec contract - ``lead`` / ``viewer`` are denied because
-        #    they do not satisfy the ``dept_admin`` policy, and
-        #    ``dept_admin`` itself is gated on dept membership.
+        # path to ``(dept_admin, target_dept_id)``.  This is the
+        # spec contract - ``lead`` / ``viewer`` are denied because
+        # they do not satisfy the ``dept_admin`` policy, and
+        # ``dept_admin`` itself is gated on dept membership.
         policy = classify_admin_path(method, path)
         assert policy.required_role == "dept_admin", (
             f"path {path!r} must be classified as dept-scoped, "
@@ -466,7 +466,7 @@ class TestProxyBoundaryRbacDeterminism:
         )
 
         # 2. The check() outcome must agree with the spec's decision
-        #    matrix for every (role, viewer_dept_ids) pair.
+        # matrix for every (role, viewer_dept_ids) pair.
         actor = _build_actor(role, viewer_dept_ids)
         expected = _expected_proxy_decision(
             role, viewer_dept_ids, target_dept_id

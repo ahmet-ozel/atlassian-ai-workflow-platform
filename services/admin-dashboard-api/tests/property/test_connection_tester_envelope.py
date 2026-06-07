@@ -178,7 +178,7 @@ def test_gemini_envelope(api_key: str) -> None:
 
 
 def test_openai_forwards_tuning_for_capable_model() -> None:
-    """gpt-5 model → probe body carries reasoning + verbosity knobs."""
+    """gpt-5 model  probe body carries reasoning + verbosity knobs."""
 
     req = TestRequest(
         provider_type="openai",
@@ -198,7 +198,7 @@ def test_openai_forwards_tuning_for_capable_model() -> None:
 
 
 def test_openai_omits_tuning_for_incapable_model() -> None:
-    """gpt-4o-mini → tuning knobs are dropped even if configured."""
+    """gpt-4o-mini  tuning knobs are dropped even if configured."""
 
     req = TestRequest(
         provider_type="openai",

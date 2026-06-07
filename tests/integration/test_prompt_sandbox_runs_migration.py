@@ -42,7 +42,7 @@ PG_READY_TIMEOUT: float = 30.0
 POLL_INTERVAL: float = 0.5
 
 
-# Expected column → Postgres ``data_type`` (information_schema) mapping.
+# Expected column  Postgres ``data_type`` (information_schema) mapping.
 # Values mirror the migration's CREATE TABLE statement.
 EXPECTED_COLUMNS: dict[str, str] = {
     "id": "uuid",
@@ -503,6 +503,6 @@ class TestPromptSandboxRunsMigration:
         uuid.UUID(id_text)
         assert prompt_path == "prompts/example.md"
         assert draft_branch == "feature/draft-1"
-        # ``passed`` defaults to FALSE → psql renders as 'f'.
+        # ``passed`` defaults to FALSE  psql renders as 'f'.
         assert passed.lower() in ("f", "false")
         assert created_not_null.lower() in ("t", "true")

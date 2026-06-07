@@ -3,8 +3,8 @@
 Covers the main Confluence behaviors:
 
     1. ``confluence_doc_create`` happy path - verifies the activity
-       sequence (``set_assignee_to_bot`` → ``jira_build_issue_link``
-       → ``llm_generate_doc`` → ``confluence_create_page`` →
+       sequence (``set_assignee_to_bot``  ``jira_build_issue_link``
+        ``llm_generate_doc``  ``confluence_create_page``
        ``jira_add_comment`` carrying the page link) and that the
        provenance footer is appended to the page body before the
        create call.
@@ -93,7 +93,7 @@ from temporal_shared.messages import (  # noqa: E402
 _FIXED_NOW: datetime = datetime(2026, 5, 14, 12, 0, 0, tzinfo=timezone.utc)
 _JIRA_LINK: str = "https://acme.atlassian.net/browse/PAY-4211"
 _PROVENANCE_NEEDLE: str = (
-    "🤖 Bu sayfa AI asistanı yardımıyla yazılmıştır. Kaynak:"
+    " Bu sayfa AI asistanı yardımıyla yazılmıştır. Kaynak:"
 )
 
 
@@ -177,7 +177,7 @@ def make_wf():
 def _activity_dispatcher(routes: dict[str, Any]) -> AsyncMock:
     """Return an ``AsyncMock`` that resolves ``execute_activity`` calls.
 
-    *routes* maps activity-name → return value (or 0-arg callable that
+    *routes* maps activity-name  return value (or 0-arg callable that
     yields the return value). Activities not present in *routes*
     return ``None`` so optional best-effort calls (audit_emit,
     jira_add_comment) never blow up the test fixtures.

@@ -30,22 +30,22 @@ the predicate satisfies the three-row decision table:
 
 .. code-block:: text
 
-    intent == "write_action_requested"           ⇒ True
-    intent ≠  "write_action_requested" ∧ name ∈  ⇒ True
+    intent == "write_action_requested"            True
+    intent ≠  "write_action_requested" ∧ name ∈   True
         WRITE_ACTION_TOOLS
-    intent ≠  "write_action_requested" ∧ name ∉  ⇒ False
+    intent ≠  "write_action_requested" ∧ name ∉   False
         WRITE_ACTION_TOOLS
 
 and the handler-level invariant holds:
 
 .. code-block:: text
 
-    is_write_intent(call, intent) ⇒
+    is_write_intent(call, intent)
         redirect_to_task_creator emitted exactly once,
         tool_dispatch.invoke never called, and
         the stream terminates after the redirect event.
 
-    ¬is_write_intent(call, intent) ⇒
+    ¬is_write_intent(call, intent)
         no redirect_to_task_creator event emitted, and
         the orchestrator's terminal event (``done``) is reached.
 
@@ -382,7 +382,7 @@ class TestIsWriteIntentDecisionTable:
     def test_explicit_intent_takes_priority(
         self, tool_name: str, intent: str | None
     ) -> None:
-        """Row 1: ``intent == "write_action_requested"`` ⇒ ``True``
+        """Row 1: ``intent == "write_action_requested"``  ``True``
         regardless of ``tool_name``.
 
         The explicit LLM signal overrides the implicit catalogue
@@ -392,7 +392,7 @@ class TestIsWriteIntentDecisionTable:
         call = ToolCall(tool_name=tool_name)
         if intent == "write_action_requested":
             assert is_write_intent(call, llm_intent_field=intent) is True
-        # The complementary direction (``intent ≠ explicit ⇒ ?``) is
+        # The complementary direction (``intent ≠ explicit  ?``) is
         # covered by the next two tests, which split the cases by the
         # tool-name branch.
 

@@ -30,9 +30,9 @@ Response shape expected::
     }
 
 Tri-state rendering:
-  (a) All credentials present + probe ok → green badges.
-  (b) No credentials at all → red warning + Credentials page link.
-  (c) Credentials exist but probe failed → yellow warning + admin-dashboard
+  (a) All credentials present + probe ok  green badges.
+  (b) No credentials at all  red warning + Credentials page link.
+  (c) Credentials exist but probe failed  yellow warning + admin-dashboard
       /security deep link.
 """
 
@@ -74,10 +74,10 @@ def _truncate_account_id(account_id: str | None) -> str:
 
 
 def _probe_badge(probe_status: str) -> str:
-    """Return ✅ for ok, ❌ for anything else."""
+    """Return  for ok,  for anything else."""
     if probe_status == "ok":
-        return "✅"
-    return "❌"
+        return ""
+    return ""
 
 
 def _fetch_bot_info(dept_id: str) -> dict[str, Any] | None:
@@ -122,16 +122,16 @@ def render_bot_assignee_card(dept_id: str) -> dict[str, Any] | None:
     bots: list[Mapping[str, Any]] = data.get("bots") or []
 
     # ------------------------------------------------------------------
-    # State (c): No credentials at all → red warning
+    # State (c): No credentials at all  red warning
     # ------------------------------------------------------------------
     if not bots:
         st.error(
-            "⚠️ Bu departmanda henüz bot credential'ı yapılandırılmamış. "
+            " Bu departmanda henüz bot credential'ı yapılandırılmamış. "
             "Önce **Credentials** sayfasına gidin."
         )
         st.page_link(
             "pages/0_credentials.py",
-            label="🔑 Credentials sayfasına git",
+            label=" Credentials sayfasına git",
         )
         return data
 
@@ -147,7 +147,7 @@ def render_bot_assignee_card(dept_id: str) -> dict[str, Any] | None:
     # Render the card
     # ------------------------------------------------------------------
     with st.container():
-        st.markdown("#### 🤖 Bu task açıldığında atayın:")
+        st.markdown("####  Bu task açıldığında atayın:")
 
         # Pick the primary bot (prefer jira, fallback to first)
         primary_bot = next(
@@ -178,11 +178,11 @@ def render_bot_assignee_card(dept_id: str) -> dict[str, Any] | None:
         st.markdown(" · ".join(badge_parts))
 
         # ------------------------------------------------------------------
-        # State (b): Credential exists but probe failed → yellow warning
+        # State (b): Credential exists but probe failed  yellow warning
         # ------------------------------------------------------------------
         if has_probe_failure:
             st.warning(
-                "⚠️ Credential mevcut ama bağlantı testi başarısız - "
+                " Credential mevcut ama bağlantı testi başarısız - "
                 "admin-dashboard'dan re-probe çalıştırın."
             )
             admin_url = st.session_state.get(
@@ -194,7 +194,7 @@ def render_bot_assignee_card(dept_id: str) -> dict[str, Any] | None:
                 else admin_url
             )
             st.markdown(
-                f"[🔗 Admin Dashboard Security]({security_url})"
+                f"[ Admin Dashboard Security]({security_url})"
             )
 
     return data

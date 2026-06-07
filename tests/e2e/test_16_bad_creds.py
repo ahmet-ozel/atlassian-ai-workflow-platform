@@ -236,7 +236,7 @@ class TestBadCredentialsBitbucket:
         Verify that a completely invalid token gets 401 (unauthorized)
         while a valid-format but wrong-scope token would get 403.
         """
-        # Completely invalid token → should be 401
+        # Completely invalid token  should be 401
         result_invalid = _test_bitbucket_connection_with_token(
             token="COMPLETELY_INVALID",
             workspace=credentials.bitbucket_workspace,

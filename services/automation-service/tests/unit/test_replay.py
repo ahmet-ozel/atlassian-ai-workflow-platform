@@ -35,13 +35,13 @@ class TestComputePayloadHash:
         assert compute_payload_hash(body) == compute_payload_hash(body)
 
     def test_key_order_independent(self) -> None:
-        """Semantically identical JSON with different key order → same hash."""
+        """Semantically identical JSON with different key order  same hash."""
         body1 = b'{"b": 2, "a": 1}'
         body2 = b'{"a": 1, "b": 2}'
         assert compute_payload_hash(body1) == compute_payload_hash(body2)
 
     def test_whitespace_independent(self) -> None:
-        """Different whitespace formatting → same hash."""
+        """Different whitespace formatting  same hash."""
         body_compact = b'{"key":"value"}'
         body_pretty = b'{\n  "key": "value"\n}'
         assert compute_payload_hash(body_compact) == compute_payload_hash(body_pretty)

@@ -76,7 +76,7 @@ def test_cleanup_policy_always_performs_cleanup(task_succeeded: bool) -> None:
 def test_cleanup_policy_on_success_with_success_performs_cleanup(
     task_succeeded: bool,
 ) -> None:
-    """Policy "on_success" + success → cleanup (rm + rmi)."""
+    """Policy "on_success" + success  cleanup (rm + rmi)."""
     assume(task_succeeded is True)
 
     result = _should_perform_cleanup("on_success", task_succeeded)
@@ -90,7 +90,7 @@ def test_cleanup_policy_on_success_with_success_performs_cleanup(
 def test_cleanup_policy_on_success_with_failure_skips_cleanup(
     task_succeeded: bool,
 ) -> None:
-    """Policy "on_success" + failure → skip cleanup."""
+    """Policy "on_success" + failure  skip cleanup."""
     assume(task_succeeded is False)
 
     result = _should_perform_cleanup("on_success", task_succeeded)
@@ -117,12 +117,12 @@ def test_cleanup_policy_complete_truth_table(
     """For any (policy, task_succeeded) pair, cleanup decision matches the truth table.
 
     The complete truth table:
-    - ("always", True)  → True
-    - ("always", False) → True
-    - ("on_success", True)  → True
-    - ("on_success", False) → False
-    - ("never", True)  → False
-    - ("never", False) → False
+    - ("always", True)   True
+    - ("always", False)  True
+    - ("on_success", True)   True
+    - ("on_success", False)  False
+    - ("never", True)   False
+    - ("never", False)  False
 
     This is the unified property that covers all combinations.
 

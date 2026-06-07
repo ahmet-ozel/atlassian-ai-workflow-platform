@@ -7,10 +7,10 @@ alarm.
 
 Lifecycle (one cron tick)::
 
- 1. ``get_retention_setting`` → int (env / DB; default 90)
+ 1. ``get_retention_setting``  int (env / DB; default 90)
  2. ``cutoff = workflow.now - timedelta(days=retention_days)``
- 3. ``archive_audit_to_minio(cutoff)`` → AuditArchiveResult
- 4. ``delete_audit_older_than(cutoff)`` → AuditDeleteResult
+ 3. ``archive_audit_to_minio(cutoff)``  AuditArchiveResult
+ 4. ``delete_audit_older_than(cutoff)``  AuditDeleteResult
  5. return ``AuditPruneReport(archived, deleted, cutoff)``
 
  On any exception inside steps 1-4:
@@ -329,8 +329,7 @@ class AuditPruneWorkflow:
             # the workflow as failed (so Grafana ``audit_prune_failed_total``
             # counter increments) and ensures the next daily cron tick
             # fires unaffected.
-            #
-            # The alarm activity itself uses a separate retry policy
+            # # The alarm activity itself uses a separate retry policy
             # (``_NOTIFY_RETRY``); if Slack is unreachable for all
             # three attempts we still re-raise - operators have at
             # least the Temporal failure event and can recover from

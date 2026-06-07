@@ -25,9 +25,9 @@ stopping at the first match:
 | 2 | Jira label `repo:<name>` | Task reporter | Label `repo:payment-callbacks` |
 | 3 | Description YAML front-matter `ai-bot.repo` | Task reporter | `repo: payment-callbacks` inside the `---` block |
 | 4 | Description body explicit "Repo:" line | Task reporter | `Repo: payment-callbacks` in markdown body |
-| 5 | Department single-repo fallback | `departments.json.repo_mappings` | dept has exactly one repo → auto-select |
-| 6 | LLM inference + structured-choice ambiguity guard | `task_analysis.md` LLM | "callback retry" → asks the user A/B/C if multiple repos match |
-| 7 | `needs_info` Jira comment | Bot | "🤖 Hangi repo üzerinde çalışılsın?" |
+| 5 | Department single-repo fallback | `departments.json.repo_mappings` | dept has exactly one repo  auto-select |
+| 6 | LLM inference + structured-choice ambiguity guard | `task_analysis.md` LLM | "callback retry"  asks the user A/B/C if multiple repos match |
+| 7 | `needs_info` Jira comment | Bot | " Hangi repo üzerinde çalışılsın?" |
 
 **Rule of thumb for users:** Put the repo name in **one** of the first
 three places. Don't scatter it across multiple fields with different values
@@ -151,7 +151,7 @@ infer the repo from free-form description text:
   structured choice:
 
   ```
-  🤖 "callback retry" ifadesi birden fazla repo'ya uyabilir.
+   "callback retry" ifadesi birden fazla repo'ya uyabilir.
      Hangisinde çalışayım?
 
      A) `payment-callbacks` - callback gönderme servisi

@@ -8,12 +8,12 @@ slots.
 Behavioural contract
 ====================
 
-* ``max_concurrent_workflows = None`` (or absent) → check is skipped
+* ``max_concurrent_workflows = None`` (or absent)  check is skipped
   and the start proceeds. Departments without an explicit
   cap fall back to the global license-tier cap enforced by
   :mod:`middleware.license_cap`; the two gates are
   complementary.
-* ``count >= max`` → :class:`ConcurrencyLimitExceeded` is raised so
+* ``count >= max``  :class:`ConcurrencyLimitExceeded` is raised so
   the caller can:
 
     1. Skip the workflow start (no Temporal RPC issued).
@@ -21,7 +21,7 @@ Behavioural contract
     3. Post a Jira comment explaining the limit so the human
        reporter knows the bot is throttled.
 
-* ``count < max`` → :func:`check_dept_concurrency` returns the
+* ``count < max``  :func:`check_dept_concurrency` returns the
   observed count and the gate is silently passed.
 
 Counting strategy

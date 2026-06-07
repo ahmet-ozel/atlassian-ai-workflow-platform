@@ -206,21 +206,21 @@ def print_summary(results: dict, duration: float, report_path: Path | None, inde
 
     # Status indicator
     if failed == 0 and errors == 0:
-        print("\n  🟢 ALL TESTS PASSED")
+        print("\n   ALL TESTS PASSED")
     else:
-        print(f"\n  🔴 {failed + errors} ISSUE(S) FOUND")
+        print(f"\n   {failed + errors} ISSUE(S) FOUND")
 
     # Report artifacts
     print("\n  Artifacts:")
     if report_path and report_path.exists():
-        print(f"    📄 Report: {report_path.relative_to(WORKSPACE_ROOT)}")
+        print(f"     Report: {report_path.relative_to(WORKSPACE_ROOT)}")
     else:
-        print("    📄 Report: (not generated)")
+        print("     Report: (not generated)")
 
     if index_path and index_path.exists():
-        print(f"    📋 Evidence Index: {index_path.relative_to(WORKSPACE_ROOT)}")
+        print(f"     Evidence Index: {index_path.relative_to(WORKSPACE_ROOT)}")
     else:
-        print("    📋 Evidence Index: (not generated)")
+        print("     Evidence Index: (not generated)")
 
     print("\n" + "=" * 60)
 

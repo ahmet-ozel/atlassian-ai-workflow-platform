@@ -53,7 +53,7 @@ Design notes
 * The scanner is *static* - it never imports the inspected modules,
  so a missing transitive dependency in the workspace does not skew
  results. The same approach is used by:mod:`test_workflow_determinism_static` and is documented in design
- §6.3 (invariant → Test mapping).
+ §6.3 (invariant  Test mapping).
 * Files under standard exclusion roots (``__pycache__``, ``.venv``,
  ``.pytest_cache``, ``.hypothesis``, ``.mypy_cache``, ``.ruff_cache``,
  ``node_modules``, ``dist``, ``build``, ``.git``, ``.next``) and the
@@ -83,7 +83,7 @@ from typing import Iterable, Iterator, Sequence
 # Workspace anchors
 # ---------------------------------------------------------------------------
 
-# tests/property/_path_whitelist.py → platform/
+# tests/property/_path_whitelist.py  platform/
 PLATFORM_ROOT: Path = Path(__file__).resolve().parents[2]
 
 # Directory names pruned from every os.walk used by the scanners. Tooling
@@ -841,10 +841,10 @@ def _attribute_tail(node: ast.expr) -> str | None:
 
  Examples
  --------
- * ``client.start_workflow`` → ``"start_workflow"``
- * ``self.tx.client.start_workflow`` → ``"start_workflow"``
- * ``foo`` → None (Call, not Attribute)
- * ``open`` → None (Name, not Attribute)
+ * ``client.start_workflow``  ``"start_workflow"``
+ * ``self.tx.client.start_workflow``  ``"start_workflow"``
+ * ``foo``  None (Call, not Attribute)
+ * ``open``  None (Name, not Attribute)
  """
 
     if isinstance(node, ast.Attribute):

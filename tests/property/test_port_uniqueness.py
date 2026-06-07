@@ -29,7 +29,7 @@ Strategy
 Hypothesis draws an ordered pair ``(c1, c2)`` from
 ``st.sampled_from(COMPONENT_MANIFEST)`` × ``st.sampled_from(...)``.
 For each draw with both ``host_port`` values populated, the test
-asserts ``c1.host_port == c2.host_port → c1.name == c2.name``. The
+asserts ``c1.host_port == c2.host_port  c1.name == c2.name``. The
 example space is finite (8 × 8 = 64 ordered pairs) so the property
 exhaustively covers the manifest under the default Hypothesis budget.
 The complementary deterministic checks (full-set distinctness,
@@ -173,10 +173,10 @@ def test_component_plus_infra_ports_are_globally_unique() -> None:
 
 
 # Compose port mapping shapes accepted by docker compose:
-#   - "H:C"
-#   - "H:C/proto"
-#   - "127.0.0.1:H:C"
-#   - {published: H, target: C}
+# - "H:C"
+# - "H:C/proto"
+# - "127.0.0.1:H:C"
+# - {published: H, target: C}
 # Full Compose structure is covered elsewhere; here we only need the
 # published (host) side, so a small parser keyed on the textual form
 # plus the long-form mapping suffices.
@@ -277,7 +277,7 @@ def test_compose_published_ports_match_universe() -> None:
         f"published ports = {sorted(compose_ports, key=lambda t: t[1])}"
     )
 
-    # Build the expected (host_port → owner_set) map from manifest +
+    # Build the expected (host_port  owner_set) map from manifest +
     # infra. ``admin-dashboard`` Component is published as Compose
     # service ``admin-dashboard-ui``; ``streamlit-app`` is published as
     # ``streamlit-ui`` is included in the manifest aliases.
@@ -343,14 +343,14 @@ def test_compose_published_ports_match_universe() -> None:
 # uniqueness checks with two foundation-specific invariants:
 #
 # 1. Every foundation Compose service that publishes host ports
-#    publishes them on globally unique values - re-asserted across
-#    the dynamically-loaded Compose document so newly-added services
-#    cannot quietly reuse a port already taken by an existing one.
+# publishes them on globally unique values - re-asserted across
+# the dynamically-loaded Compose document so newly-added services
+# cannot quietly reuse a port already taken by an existing one.
 #
 # 2. Every foundation service of ``kind=sidecar`` MUST publish
-#    **zero** host ports (mirrors the sidecar assertion in
-#    ``test_compose_structure.py``; reproduced here so the port-
-#    centric file is self-contained).
+# **zero** host ports (mirrors the sidecar assertion in
+# ``test_compose_structure.py``; reproduced here so the port-
+# centric file is self-contained).
 # ===========================================================================
 
 

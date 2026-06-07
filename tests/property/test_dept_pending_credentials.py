@@ -8,9 +8,9 @@ Background
 The department detail page (``app/departments/[id]/page.tsx``) renders
 a status badge based on whether the department has any bound credentials:
 
-- **Zero credentials** (all bots have ``credential_ref: null``) →
+- **Zero credentials** (all bots have ``credential_ref: null``)
  Yellow "Pending Credentials" badge + "Add Credential" button.
-- **At least one credential** (any bot has ``credential_ref`` not null) →
+- **At least one credential** (any bot has ``credential_ref`` not null)
  Green "Active" badge.
 
 Strategy
@@ -45,8 +45,8 @@ import pytest
 # state.kind === "ok" &&
 # state.detail.bots.some((bot) => bot.credential_ref != null);
 #
-# When hasCredentials is false → "Pending Credentials" badge + "Add Credential" button
-# When hasCredentials is true → "Active" badge
+# When hasCredentials is false  "Pending Credentials" badge + "Add Credential" button
+# When hasCredentials is true  "Active" badge
 # ---------------------------------------------------------------------------
 
 
@@ -195,7 +195,7 @@ class TestPendingCredentialsBadge:
     def test_zero_credentials_shows_pending_badge(
         self, detail: dict[str, Any]
     ) -> None:
-        """: Zero bound credentials → badge state is 'pending_credentials'."""
+        """: Zero bound credentials  badge state is 'pending_credentials'."""
         state = determine_badge_state(detail)
         assert state == "pending_credentials", (
             f"Expected 'pending_credentials' for dept with zero credentials, "
@@ -211,7 +211,7 @@ class TestPendingCredentialsBadge:
     def test_zero_credentials_shows_add_credential_button(
         self, detail: dict[str, Any]
     ) -> None:
-        """: Zero bound credentials → 'Add Credential' button is rendered."""
+        """: Zero bound credentials  'Add Credential' button is rendered."""
         show_button = should_show_add_credential_button(detail)
         assert show_button is True, (
             "Expected 'Add Credential' button to be shown when no credentials "
@@ -256,7 +256,7 @@ class TestActiveBadge:
     def test_has_credentials_shows_active_badge(
         self, detail: dict[str, Any]
     ) -> None:
-        """: At least one credential → badge state is 'active'."""
+        """: At least one credential  badge state is 'active'."""
         state = determine_badge_state(detail)
         assert state == "active", (
             f"Expected 'active' for dept with at least one credential, "
@@ -272,7 +272,7 @@ class TestActiveBadge:
     def test_has_credentials_hides_add_credential_button(
         self, detail: dict[str, Any]
     ) -> None:
-        """: At least one credential → 'Add Credential' button NOT shown."""
+        """: At least one credential  'Add Credential' button NOT shown."""
         show_button = should_show_add_credential_button(detail)
         assert show_button is False, (
             "Expected 'Add Credential' button to be hidden when credentials "
@@ -394,13 +394,13 @@ class TestPendingCredentialsEdgeCases:
  """
 
     def test_empty_bots_list_shows_pending(self) -> None:
-        """Department with empty bots list → pending credentials."""
+        """Department with empty bots list  pending credentials."""
         detail = {"id": "dept-1", "display_name": "Test", "mode": "active", "bots": []}
         assert determine_badge_state(detail) == "pending_credentials"
         assert should_show_add_credential_button(detail) is True
 
     def test_single_bot_null_credential_shows_pending(self) -> None:
-        """Single bot with null credential_ref → pending credentials."""
+        """Single bot with null credential_ref  pending credentials."""
         detail = {
             "id": "dept-2",
             "display_name": "Payment",
@@ -413,7 +413,7 @@ class TestPendingCredentialsEdgeCases:
         assert should_show_add_credential_button(detail) is True
 
     def test_single_bot_with_credential_shows_active(self) -> None:
-        """Single bot with non-null credential_ref → active."""
+        """Single bot with non-null credential_ref  active."""
         detail = {
             "id": "dept-3",
             "display_name": "Engineering",
@@ -432,7 +432,7 @@ class TestPendingCredentialsEdgeCases:
         assert should_show_add_credential_button(detail) is False
 
     def test_multiple_bots_all_null_shows_pending(self) -> None:
-        """Multiple bots all with null credential_ref → pending credentials."""
+        """Multiple bots all with null credential_ref  pending credentials."""
         detail = {
             "id": "dept-4",
             "display_name": "Marketing",
@@ -447,7 +447,7 @@ class TestPendingCredentialsEdgeCases:
         assert should_show_add_credential_button(detail) is True
 
     def test_mixed_bots_one_credential_shows_active(self) -> None:
-        """Multiple bots, only one with credential → active."""
+        """Multiple bots, only one with credential  active."""
         detail = {
             "id": "dept-5",
             "display_name": "Sales",

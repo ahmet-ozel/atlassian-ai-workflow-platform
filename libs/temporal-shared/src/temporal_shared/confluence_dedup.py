@@ -378,7 +378,7 @@ def should_skip_overwrite(
     --------
     >>> from datetime import datetime, timedelta, timezone
     >>> now = datetime(2026, 5, 14, 12, 0, tzinfo=timezone.utc)
-    >>> # Recent human edit → skip.
+    >>> # Recent human edit  skip.
     >>> should_skip_overwrite(
     ...     "human-1",
     ...     now - timedelta(minutes=2),
@@ -386,7 +386,7 @@ def should_skip_overwrite(
     ...     {"bot-acct"},
     ... ).skip
     True
-    >>> # Recent bot edit → proceed.
+    >>> # Recent bot edit  proceed.
     >>> should_skip_overwrite(
     ...     "bot-acct",
     ...     now - timedelta(minutes=2),
@@ -394,7 +394,7 @@ def should_skip_overwrite(
     ...     {"bot-acct"},
     ... ).skip
     False
-    >>> # Stale human edit → proceed.
+    >>> # Stale human edit  proceed.
     >>> should_skip_overwrite(
     ...     "human-1",
     ...     now - timedelta(minutes=10),

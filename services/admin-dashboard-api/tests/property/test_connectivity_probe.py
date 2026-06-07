@@ -2,14 +2,14 @@
 Connectivity probe state mapping.
 For any manifest entry ``E`` and subprocess outcome ``O``, the
 ``_run_connectivity_probe`` helper must:
-- ``E.connectivity_probe_command is None`` → no-op; ``credentials_status``
+- ``E.connectivity_probe_command is None``  no-op; ``credentials_status``
   remains ``None``; no audit event emitted.
-- ``exit_code == 0`` → ``credentials_status = "ok"``;
+- ``exit_code == 0``  ``credentials_status = "ok"``;
   ``service_connectivity_probe_passed`` audit emitted.
-- ``exit_code != 0`` → ``credentials_status = "failed"``;
+- ``exit_code != 0``  ``credentials_status = "failed"``;
   ``credentials_probe_detail = stderr[-500:]``;
   ``service_connectivity_probe_failed`` audit emitted.
-- ``subprocess.TimeoutExpired`` → ``credentials_status = "failed"``;
+- ``subprocess.TimeoutExpired``  ``credentials_status = "failed"``;
   ``service_connectivity_probe_failed`` audit emitted.
 In all cases the service ``state`` remains ``"running"``; probe failure
 does not change the lifecycle state.
@@ -262,7 +262,7 @@ _STDERR_STRATEGY = st.text(
 
 
 # ---------------------------------------------------------------------------
-#  - probe_command=None → no-op; credentials_status stays None
+# - probe_command=None  no-op; credentials_status stays None
 # ---------------------------------------------------------------------------
 
 
@@ -313,7 +313,7 @@ def test_null_probe_command_is_noop(tmp_path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-#  - exit_code=0 → credentials_status="ok" + passed audit
+# - exit_code=0  credentials_status="ok" + passed audit
 # ---------------------------------------------------------------------------
 
 
@@ -327,7 +327,7 @@ def test_exit_code_zero_sets_credentials_ok(
     probe_command: str,
     tmp_path: Path,
 ) -> None:
-    """- exit_code=0 → credentials_status='ok' + passed audit.
+    """- exit_code=0  credentials_status='ok' + passed audit.
     For any non-null ``connectivity_probe_command``, when ``subprocess.run``
     returns exit_code=0, the state cache must have ``credentials_status="ok"``
     and a ``service_connectivity_probe_passed`` audit row must be emitted.
@@ -403,7 +403,7 @@ def test_exit_code_zero_sets_credentials_ok(
 
 
 # ---------------------------------------------------------------------------
-#  - exit_code!=0 → credentials_status="failed" + failed audit
+# - exit_code!=0  credentials_status="failed" + failed audit
 # ---------------------------------------------------------------------------
 
 
@@ -423,7 +423,7 @@ def test_nonzero_exit_code_sets_credentials_failed(
     stderr_text: str,
     tmp_path: Path,
 ) -> None:
-    """- exit_code!=0 → credentials_status='failed' + failed audit.
+    """- exit_code!=0  credentials_status='failed' + failed audit.
     For any non-null ``connectivity_probe_command`` and any non-zero exit code,
     the state cache must have ``credentials_status="failed"`` and a
     ``service_connectivity_probe_failed`` audit row must be emitted.
@@ -509,7 +509,7 @@ def test_nonzero_exit_code_sets_credentials_failed(
 
 
 # ---------------------------------------------------------------------------
-#  - TimeoutExpired → credentials_status="failed" + failed audit
+# - TimeoutExpired  credentials_status="failed" + failed audit
 # ---------------------------------------------------------------------------
 
 
@@ -523,7 +523,7 @@ def test_timeout_sets_credentials_failed(
     probe_command: str,
     tmp_path: Path,
 ) -> None:
-    """- subprocess.TimeoutExpired → credentials_status='failed'.
+    """- subprocess.TimeoutExpired  credentials_status='failed'.
     When ``subprocess.run`` raises ``subprocess.TimeoutExpired`` (the 30-second
     timeout fires), the state cache must have ``credentials_status="failed"``
     and a ``service_connectivity_probe_failed`` audit row must be emitted.
@@ -653,7 +653,7 @@ def test_stderr_truncated_to_500_chars(
 
 
 # ---------------------------------------------------------------------------
-# same input → same outcome
+# same input  same outcome
 # ---------------------------------------------------------------------------
 
 

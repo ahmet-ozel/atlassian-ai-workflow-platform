@@ -40,7 +40,7 @@ Strategy
  and ``test_log_redaction.py``). The service's actual ``AuditWriter``
  is replaced by ``_FakeAuditWriter`` that stores every entry in a
  list - this acts as an in-memory test DB: no
- PostgreSQL is required and ``correlation_id`` ↔ rows mapping is
+ PostgreSQL is required and ``correlation_id``  rows mapping is
  observable directly.
 
 Pre-condition handling

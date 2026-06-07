@@ -9,18 +9,18 @@ spinning up Vault, SSH, or MinIO.
 Scenarios covered
 -----------------
 
-* ``git_push_required=False`` → inject / push / cleanup activities
+* ``git_push_required=False``  inject / push / cleanup activities
   are **never** called (legacy contract preserved).
-* ``git_push_required=True`` + push success → ``inject_git_credentials``
-  → ``ssh_connect_and_run`` (push) → ``cleanup_git_credentials`` runs in
+* ``git_push_required=True`` + push success  ``inject_git_credentials``
+   ``ssh_connect_and_run`` (push)  ``cleanup_git_credentials`` runs in
   exactly that order.
-* ``git_push_required=True`` + push fails (non-zero exit code) →
+* ``git_push_required=True`` + push fails (non-zero exit code)
   inject runs, push runs, cleanup **still** runs from the
   ``finally`` block, and the workflow surfaces ``ApplicationError``
   while preserving the cleanup guarantee.
-* ``git_push_required=True`` + push fails (SSH activity raises) →
+* ``git_push_required=True`` + push fails (SSH activity raises)
   same cleanup guarantee.
-* ``inject_git_credentials`` returns ``success=False`` →
+* ``inject_git_credentials`` returns ``success=False``
   ``ApplicationError`` raised, push **not** attempted, cleanup runs
   from the ``finally`` block.
 
@@ -222,7 +222,7 @@ async def test_git_push_success_runs_inject_push_cleanup_in_order() -> None:
     """Happy path runs inject, push, and cleanup in order.
 
     On the happy path the activity sequence is:
-    inject → push (ssh_connect_and_run #2) → cleanup, with the
+    inject  push (ssh_connect_and_run #2)  cleanup, with the
     artifact uploads following.  The cleanup activity runs **inside**
     the ``finally`` block so it appears between the push and the
     artifact uploads (the position is deterministic - we assert it
@@ -316,7 +316,7 @@ async def test_git_push_success_runs_inject_push_cleanup_in_order() -> None:
     names = log.names()
 
     # The push sub-flow runs in a fixed order:
-    #   vault → ssh#1 (test) → inject → ssh#2 (push) → cleanup → minio×3
+    # vault  ssh#1 (test)  inject  ssh#2 (push)  cleanup  minio×3
     inject_idx = names.index("inject_git_credentials")
     cleanup_idx = names.index("cleanup_git_credentials")
     # There are exactly two ssh_connect_and_run calls - the test
@@ -462,7 +462,7 @@ async def test_git_push_failure_still_runs_cleanup() -> None:
     assert push_attempts == 1
     # Inject ran before the failed push, and cleanup ran *after* the
     # failed push. This is the cleanup invariant:
-    #   cleanup runs whether the push succeeded or not.
+    # cleanup runs whether the push succeeded or not.
     assert "inject_git_credentials" in names, names
     assert "cleanup_git_credentials" in names, names
 
@@ -476,7 +476,7 @@ async def test_git_push_failure_still_runs_cleanup() -> None:
     assert inject_idx < push_indices[0] < cleanup_idx, names
 
     # The workflow surfaces the failure as ApplicationError(GitPushFailed).
-    # Temporal wraps the user error in a WorkflowFailureError → cause
+    # Temporal wraps the user error in a WorkflowFailureError  cause
     # is the original ApplicationError.
     cause = exc_info.value.cause if hasattr(exc_info.value, "cause") else None
     assert cause is None or isinstance(cause, ApplicationError) or "GitPush" in str(
@@ -698,7 +698,7 @@ async def test_inject_failure_raises_and_still_cleans_up() -> None:
     # But cleanup still ran.
     assert "cleanup_git_credentials" in names, names
     # And the order preserves the cleanup guarantee:
-    #   inject → (no push) → cleanup
+    # inject  (no push)  cleanup
     inject_idx = names.index("inject_git_credentials")
     cleanup_idx = names.index("cleanup_git_credentials")
     assert inject_idx < cleanup_idx, names

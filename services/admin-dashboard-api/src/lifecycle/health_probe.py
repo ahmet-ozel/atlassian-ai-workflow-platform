@@ -18,10 +18,10 @@ strategies based on the entry's ``kind`` and ``health_endpoint``:
    which shells out to ``docker inspect <container>
    --format '{{.State.Health.Status}}'`` (5 s timeout) and maps the
    native Docker healthcheck status to a :data:`HealthState`:
-   ``"healthy" → "healthy"``, ``"unhealthy" → "unhealthy"``,
-   ``"starting" → "starting"``, and the empty string / ``"<no value>"``
+   ``"healthy"  "healthy"``, ``"unhealthy"  "unhealthy"``,
+   ``"starting"  "starting"``, and the empty string / ``"<no value>"``
    / subprocess failure (timeout, missing ``docker`` binary, exit
-   code != 0) → ``"running_unmonitored"`` (Compose ``healthcheck``
+   code != 0)  ``"running_unmonitored"`` (Compose ``healthcheck``
    block absent - the control plane records that the container is up
    but unobservable via Docker).
 
@@ -255,7 +255,7 @@ class HealthProbe:
         self._http_client = http_client
         self._temporal_host = temporal_host
         self._prefer_docker_health = prefer_docker_health
-        # Defensive copy → the snapshot of ports the probe sees stays
+        # Defensive copy  the snapshot of ports the probe sees stays
         # stable for the lifetime of the instance, even if the caller
         # mutates the original map after construction.
         self._compose_internal_ports: dict[str, int] = dict(
@@ -271,9 +271,9 @@ class HealthProbe:
 
         Dispatch order:
 
-        1. ``kind == "worker"`` → :meth:`_probe_temporal_worker`.
-        2. ``health_endpoint is None`` → :meth:`_probe_assume_running`.
-        3. otherwise → :meth:`_probe_http`.
+        1. ``kind == "worker"``  :meth:`_probe_temporal_worker`.
+        2. ``health_endpoint is None``  :meth:`_probe_assume_running`.
+        3. otherwise  :meth:`_probe_http`.
 
         The method never raises; every failure mode (timeout, DNS,
         non-2xx) is captured inside the returned snapshot so the
@@ -470,9 +470,9 @@ class HealthProbe:
         with a :data:`_DOCKER_INSPECT_TIMEOUT_SECONDS` cap and map the
         single-line stdout per :data:`_DOCKER_HEALTH_STATUS_MAP`:
 
-        * ``"healthy"`` → ``state="healthy"``
-        * ``"unhealthy"`` → ``state="unhealthy"``
-        * ``"starting"`` → ``state="starting"``
+        * ``"healthy"``  ``state="healthy"``
+        * ``"unhealthy"``  ``state="unhealthy"``
+        * ``"starting"``  ``state="starting"``
 
         Any other shape - empty string (no ``Health`` block in the
         container's state), the literal ``"<no value>"`` (Go template

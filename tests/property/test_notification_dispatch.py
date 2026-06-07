@@ -15,15 +15,15 @@ where:
 * ``dept_config.notify_channels ⊆ {"slack", "email", "teams"}``:meth:`NotificationService.notify_workflow_completion(workflow_id, dept,
 result)` MUST satisfy:
 
- (a) ``result.status == "failed"`` ⇒ Slack send is **mandatory**
+ (a) ``result.status == "failed"``  Slack send is **mandatory**
  (regardless of ``dept_config.notify_on_success``) when the
  dept has a Slack webhook; if ``dept.notify_email`` is also set
  an email is dispatched too.
  (b) ``result.status ∈ {"completed", "partial"}`` and
- ``dept.notify_on_success == False`` ⇒ no channel is hit
+ ``dept.notify_on_success == False``  no channel is hit
  (pure no-op; no template render, no log row).
  (c) ``notify_on_success == True`` and
- ``result.status ∈ {"completed", "partial"}`` ⇒ each channel
+ ``result.status ∈ {"completed", "partial"}``  each channel
  listed in ``dept.notify_channels`` is dispatched (when its
  target is configured); channels NOT in the set are NOT hit.
  (d) Every dispatch attempt writes exactly one row per ``(channel)``
@@ -50,7 +50,7 @@ Surface under test
 ------------------
 
 The dispatcher lives at
-``platform/libs/notification/src/notification/service.py`` 
+``platform/libs/notification/src/notification/service.py``
 and exposes::
 
  class NotificationService:
@@ -221,8 +221,8 @@ def _dept_strategy(draw: st.DrawFn) -> DeptConfigView:
     """Build a:class:`DeptConfigView` with random eligible-channel mix.
 
  Both target fields are independently drawn (or set to ``None``) so
- the dispatcher's "eligible channel ∧ no target ⇒ skip" branch is
- covered alongside the "eligible channel ∧ target configured ⇒
+ the dispatcher's "eligible channel ∧ no target  skip" branch is
+ covered alongside the "eligible channel ∧ target configured
  dispatch" branch.
  """
 
@@ -382,7 +382,7 @@ def test_notification_dispatch_invariants(
 
     # ----- (b) success-gated no-op branch ------------------------------
     # ``status ∈ {"completed","partial"}`` AND
-    # ``dept.notify_on_success == False`` ⇒ the entire dispatch is a
+    # ``dept.notify_on_success == False``  the entire dispatch is a
     # no-op: no template render, no adapter invocation, no log row.
     if not is_failure and not dept.notify_on_success:
         assert prompts.render_calls == [], (
@@ -442,7 +442,7 @@ def test_notification_dispatch_invariants(
                 f"{dept.slack_webhook!r}."
             )
         else:
-            # No webhook ⇒ dispatcher logs and skips (sibling 
+            # No webhook  dispatcher logs and skips (sibling
             # owns the admin-channel fallback). Slack adapter must not
             # be called.
             assert slack.sends == [], (
@@ -491,7 +491,7 @@ def test_notification_dispatch_invariants(
                 f"notify_email={dept.notify_email!r}: {email.sends!r}"
             )
 
-        # ``"teams"`` listed in notify_channels has no adapter wired ⇒
+        # ``"teams"`` listed in notify_channels has no adapter wired
         # the dispatcher silently skips. The ``teams`` slot is a
         # forward-compat literal in the
         # ``shared.notification_log.channel`` ``CHECK`` constraint);
@@ -628,7 +628,7 @@ def test_notification_dispatch_idempotent_retry(
     if not is_failure and not dept.notify_on_success:
         # Pure no-op branch; covered by the main invariant above.
         # Skipping here keeps the retry assertion focused on the
-        # interesting branch (something fired ⇒ retry must NOT fire).
+        # interesting branch (something fired  retry must NOT fire).
         assume(False)
 
     service, slack, email, _, store = _service_with_fresh_fakes()

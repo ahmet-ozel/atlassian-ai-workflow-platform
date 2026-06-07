@@ -90,7 +90,7 @@ class GitAuthor:
     """Commit author / committer identity.
 
     Maps onto :class:`git.Actor`. The router builds one of these from
-    the OIDC ``AuthContext`` (``actor_id`` → ``email`` derived from
+    the OIDC ``AuthContext`` (``actor_id``  ``email`` derived from
     the ``sub`` claim, full name from the token's ``name`` claim).
     """
 
@@ -354,7 +354,7 @@ class GitRepo:
 
         # Lazily create / reuse a per-branch staging buffer. The map
         # lives on the instance so a single request that calls
-        # write_file → write_file → commit operates on the same index.
+        # write_file  write_file  commit operates on the same index.
         pending = self._pending().setdefault(branch, {})
         pending[self._normalise_path(path)] = body.encode("utf-8")
 
@@ -504,7 +504,7 @@ class GitRepo:
         try:
             base = self._repo.git.merge_base(target, branch).strip()
         except GitCommandError:
-            # No common ancestor → treat as conflict (defensive).
+            # No common ancestor  treat as conflict (defensive).
             return True
 
         try:

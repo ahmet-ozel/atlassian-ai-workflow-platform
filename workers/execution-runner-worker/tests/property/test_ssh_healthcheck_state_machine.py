@@ -82,7 +82,7 @@ def test_invariants_hold(results: list[bool]) -> None:
 @settings(max_examples=100, deadline=None)
 @given(failure_count=st.integers(min_value=3, max_value=20))
 def test_n_consecutive_failures_unhealthy(failure_count: int) -> None:
-    """3+ consecutive failures (no successes between) → unhealthy."""
+    """3+ consecutive failures (no successes between)  unhealthy."""
     results = [False] * failure_count
     state = _simulate_state_machine(results)
     assert state.is_healthy is False
@@ -91,7 +91,7 @@ def test_n_consecutive_failures_unhealthy(failure_count: int) -> None:
 @settings(max_examples=100, deadline=None)
 @given(success_count=st.integers(min_value=2, max_value=10))
 def test_recovery_after_n_successes(success_count: int) -> None:
-    """3 failures then N>=2 successes → healthy."""
+    """3 failures then N>=2 successes  healthy."""
     results = [False, False, False] + [True] * success_count
     state = _simulate_state_machine(results)
     assert state.is_healthy is True

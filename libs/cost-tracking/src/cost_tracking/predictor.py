@@ -56,10 +56,10 @@ class DeptCostHistory:
             decision.
         avg_cost_per_workflow_type: ``{workflow_type: mean_usd}``.
         stddev_per_workflow_type: Optional ``{workflow_type: stddev_usd}``.
-            ``None`` ⇒ predictor falls back to :data:`_DEFAULT_BAND`.
+            ``None``  predictor falls back to :data:`_DEFAULT_BAND`.
         ci_low_per_workflow_type: Optional pre-computed lower
             confidence bound. Supplying the values lets
-            :func:`predict_cost` skip the stddev → CI conversion and
+            :func:`predict_cost` skip the stddev  CI conversion and
             return the same numbers the reference predictor produces.
         ci_high_per_workflow_type: Optional pre-computed upper
             confidence bound. Same semantics as

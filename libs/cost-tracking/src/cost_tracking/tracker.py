@@ -70,7 +70,7 @@ class CostEntry:
     token_out: int
     cost_usd: float
     cost_tag: CostTag = "production"
-    created_at: datetime | None = None  # ``None`` ⇒ Postgres defaults to ``now()``
+    created_at: datetime | None = None  # ``None``  Postgres defaults to ``now()``
 
 
 @runtime_checkable
@@ -148,7 +148,7 @@ class CostTracker:
 
         # Adapt to either store shape. The reference store used by the
         # property test exposes ``insert_with_on_conflict`` whose return
-        # value is *inverted* (``True`` ⇒ conflict). The production
+        # value is *inverted* (``True``  conflict). The production
         # asyncpg store exposes ``insert`` returning ``True`` on a
         # successful insert. Branch defensively so the same tracker
         # works in both contexts.

@@ -6,9 +6,9 @@
 bot), the comment body SHALL be delivered as a Temporal signal to the
 waiting workflow within 5 seconds of webhook receipt.
 
-The webhook → workflow latency itself is a Temporal infrastructure
-property (HTTP handler → ``Client.signal_workflow`` → Temporal
-front-end → workflow event history) and cannot be measured from a
+The webhook  workflow latency itself is a Temporal infrastructure
+property (HTTP handler  ``Client.signal_workflow``  Temporal
+front-end  workflow event history) and cannot be measured from a
 unit test without a live cluster. What we *can* validate as a
 property - and what explicitly asks for - is that the:class:`AutomationWorkflow.info_received` signal handler:
 
@@ -227,7 +227,7 @@ class TestSignalHandlerSequenceAccumulatesHistory:
  most recent body is exposed via ``_pending_comment_body`` so the
  re-analysis loop sees the latest reply.
 
- **(signal received → run body sees
+ **(signal received  run body sees
  new comment text on next wait wake-up).
  """
 

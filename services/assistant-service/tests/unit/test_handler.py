@@ -820,7 +820,7 @@ class TestTimeoutHandling:
     """
 
     def test_timeout_emits_error_event(self) -> None:
-        """LLM exceeding timeout_s → SSE error with reason=llm_timeout."""
+        """LLM exceeding timeout_s  SSE error with reason=llm_timeout."""
         # Orchestrator that sleeps 2 seconds before yielding
         orch = _SlowOrchestrator(
             events=[SseEvent("done", {"truncated": False})],
@@ -849,7 +849,7 @@ class TestTimeoutHandling:
         assert events[0].payload["reason"] == "llm_timeout"
 
     def test_timeout_writes_audit_event(self) -> None:
-        """LLM timeout → ``assistant_llm_timeout`` audit event written."""
+        """LLM timeout  ``assistant_llm_timeout`` audit event written."""
         orch = _SlowOrchestrator(
             events=[SseEvent("done", {"truncated": False})],
             delay_s=2.0,
@@ -877,7 +877,7 @@ class TestTimeoutHandling:
         assert audit.events[0].payload["timeout_s"] == 1
 
     def test_no_timeout_when_within_limit(self) -> None:
-        """LLM responding within timeout_s → normal done event."""
+        """LLM responding within timeout_s  normal done event."""
         orch = _SlowOrchestrator(
             events=[SseEvent("done", {"truncated": False})],
             delay_s=0.01,  # Very fast
@@ -913,7 +913,7 @@ class TestTruncationHandling:
     """
 
     def test_truncation_emits_done_with_truncated_true(self) -> None:
-        """Output tokens exceeding max → done event with truncated=True."""
+        """Output tokens exceeding max  done event with truncated=True."""
         # Orchestrator that emits token events with high token_out counts
         orch = _ScriptedOrchestrator(
             [
@@ -1011,7 +1011,7 @@ class TestTruncationHandling:
         assert audit.events[0].action == "chat_message"
 
     def test_no_truncation_when_within_limit(self) -> None:
-        """Output tokens within max → normal done event without truncated flag."""
+        """Output tokens within max  normal done event without truncated flag."""
         orch = _ScriptedOrchestrator(
             [
                 SseEvent("token", {"text": "hello", "token_out": 10}),

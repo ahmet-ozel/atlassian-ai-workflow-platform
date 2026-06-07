@@ -9,18 +9,18 @@ banner gönderir).
 
 Lifecycle (one cron tick)::
 
-    1. ``probe_workspace_disk_usage()`` → WorkspaceDiskSnapshot
+    1. ``probe_workspace_disk_usage()``  WorkspaceDiskSnapshot
        (single SSH host, returns total/used/usage_pct + thresholds)
-    2. If ``usage_pct < warn_pct``:                       → no-op
-       If ``warn_pct <= usage_pct < evict_pct``:          → emit warn
-       If ``usage_pct >= evict_pct``:                     → emit warn + evict
+    2. If ``usage_pct < warn_pct``:                        no-op
+       If ``warn_pct <= usage_pct < evict_pct``:           emit warn
+       If ``usage_pct >= evict_pct``:                      emit warn + evict
     3. ``emit_workspace_disk_warning(snapshot)`` (idempotent - Admin
        Dashboard tracks the last warning timestamp and dedupes within
        a 60-minute window).
-    4. ``list_workspace_iter_dirs_oldest_first()`` →
+    4. ``list_workspace_iter_dirs_oldest_first()``
        list[``WorkspaceIterEntry``] (sorted by mtime ascending)
     5. For each entry while ``usage_pct >= evict_pct``:
-         ``prune_workspace_iter(entry.path)`` → freed_mb
+         ``prune_workspace_iter(entry.path)``  freed_mb
          update local ``usage_pct`` estimate; emit
          ``workspace_auto_pruned`` audit per directory.
     6. return ``WorkspaceCleanupReport(probed, warned, pruned_paths,
@@ -578,7 +578,7 @@ class WorkspaceCleanupSchedulerWorkflow:
 
 
 # ---------------------------------------------------------------------------
-# Internal coercion helpers (replay-safe - pure dict → dataclass)
+# Internal coercion helpers (replay-safe - pure dict  dataclass)
 # ---------------------------------------------------------------------------
 
 

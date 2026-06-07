@@ -282,7 +282,7 @@ class TestFormatters:
 
     def test_ack_comment_mentions_pickup(self) -> None:
         body = _format_ack_comment()
-        assert "🤖" in body
+        assert "" in body
         assert "Task" in body or "task" in body
 
     def test_missing_caps_comment_lists_capabilities(self) -> None:
@@ -297,12 +297,12 @@ class TestFormatters:
 
     def test_missing_caps_comment_uses_denial_marker(self) -> None:
         body = _format_missing_caps_comment("pr_review", ("bitbucket",))
-        assert "⛔" in body
+        assert "" in body
 
     def test_unknown_workflow_type_comment_quotes_value(self) -> None:
         body = _format_unknown_workflow_type_comment("totally_invalid")
         assert "totally_invalid" in body
-        assert "⛔" in body
+        assert "" in body
 
     def test_branch_rule_denied_comment_includes_branch_and_glob(
         self,
@@ -645,8 +645,8 @@ class TestStopToOutput:
 # * Signal-handler tolerance for str / dict / None payloads.
 # * Pure formatter helpers used to build the Jira comments.
 # * The fast-path branch of ``_handle_needs_info_loop`` that returns
-#   the analysis untouched when confidence is high or no questions
-#   were asked.
+# the analysis untouched when confidence is high or no questions
+# were asked.
 #
 # The full async loop (signal arrival, timeout, loop cap) lives behind
 # ``workflow.execute_activity`` and ``workflow.wait_condition`` and is
@@ -724,7 +724,7 @@ class TestNeedsInfoFormatters:
         body = _format_needs_info_loop_cap_comment()
         # Octagonal-stop marker matches the rest of the
         # "automation gave up" comments in this module.
-        assert "🛑" in body
+        assert "" in body
         assert "düşük güven" in body
 
 

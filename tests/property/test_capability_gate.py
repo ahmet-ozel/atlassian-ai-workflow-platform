@@ -615,7 +615,7 @@ class TestGateSetAlgebra:
 
 
 class TestWorkflowStartInvariant:
-    """Denial → no ``start_workflow`` call."""
+    """Denial  no ``start_workflow`` call."""
 
     @settings(max_examples=300, deadline=2000)
     @given(
@@ -970,7 +970,7 @@ class TestFeatureFlagsDefaultOff:
         assert "execution" in caps
 
     def test_flag_off_when_no_ssh_host_yields_no_execution(self) -> None:
-        """Flags-off + no ``SSH_HOST_<n>`` keys → no ``execution``.
+        """Flags-off + no ``SSH_HOST_<n>`` keys  no ``execution``.
  """
         dept = _StubDepartment(
             web_search_enabled=False,

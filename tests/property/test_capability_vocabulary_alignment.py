@@ -20,7 +20,7 @@ Tool name: ``jira_get_issue``
  Line ~67: ``"code_change_with_test": frozenset({"jira", "bitbucket", "execution"}),``
  - Bug condition: asserted ∩ {"jira","bitbucket","confluence"} = {"jira","bitbucket"} ≠ ∅
  emitted ∩ {"jira","bitbucket","confluence"} = ∅ (only split tokens present)
- asserted ≠ emitted → isBugCondition_1 = True
+ asserted ≠ emitted  isBugCondition_1 = True
 
 Tool name: ``bitbucket_get_pr``
  - Workflow type exercised: ``pr_review``
@@ -32,7 +32,7 @@ Tool name: ``bitbucket_get_pr``
  Line ~69: ``"pr_review": frozenset({"jira", "bitbucket"}),``
  - Bug condition: asserted ∩ {"jira","bitbucket","confluence"} = {"jira","bitbucket"} ≠ ∅
  emitted ∩ {"jira","bitbucket","confluence"} = ∅
- asserted ≠ emitted → isBugCondition_1 = True
+ asserted ≠ emitted  isBugCondition_1 = True
 
 Tool name: ``confluence_get_page``
  - Workflow type exercised: ``confluence_doc_update``
@@ -44,7 +44,7 @@ Tool name: ``confluence_get_page``
  Line ~71: ``"confluence_doc_update": frozenset({"jira", "confluence"}),``
  - Bug condition: asserted ∩ {"jira","bitbucket","confluence"} = {"jira","confluence"} ≠ ∅
  emitted ∩ {"jira","bitbucket","confluence"} = ∅
- asserted ≠ emitted → isBugCondition_1 = True
+ asserted ≠ emitted  isBugCondition_1 = True
 
 Root cause: ``test_temporal_shared.py`` was written against the legacy single-token
 vocabulary ({"jira","bitbucket","confluence"}) while the production
@@ -104,14 +104,14 @@ SPLIT_TOKENS: frozenset[str] = frozenset(
 )
 
 # ---------------------------------------------------------------------------
-# MCP tool name → workflow type mapping
+# MCP tool name  workflow type mapping
 #
 # These are the MCP tool names from the helper's domain. Each tool name
 # is associated with a workflow type that exercises the corresponding
 # capability. This mapping is used to drive the Hypothesis strategy.
 # ---------------------------------------------------------------------------
 
-#: MCP tool name → workflow type that exercises it.
+#: MCP tool name  workflow type that exercises it.
 #: Drawn from the fixed helper-domain enum.
 MCP_TOOL_TO_WORKFLOW_TYPE: dict[str, str] = {
     "jira_get_issue": "code_change_with_test",
@@ -307,7 +307,7 @@ def test_surface1_temporal_shared_vocabulary_aligned(tool_name: str) -> None:
 # frozenset({'jira', 'bitbucket', 'execution'})
 # - Bug condition: asserted ∩ {"jira","bitbucket","confluence"} = ∅ (split vocab only)
 # emitted ∩ {"jira","bitbucket","confluence"} = {"jira","bitbucket"} ≠ ∅
-# asserted ≠ emitted → isBugCondition_2 = True
+# asserted ≠ emitted  isBugCondition_2 = True
 #
 # Tool name: ``bitbucket_get_pr``
 # - Workflow type exercised: ``pr_review``
@@ -317,7 +317,7 @@ def test_surface1_temporal_shared_vocabulary_aligned(tool_name: str) -> None:
 # frozenset({'jira', 'bitbucket'})
 # - Bug condition: asserted ∩ {"jira","bitbucket","confluence"} = ∅
 # emitted ∩ {"jira","bitbucket","confluence"} = {"jira","bitbucket"} ≠ ∅
-# asserted ≠ emitted → isBugCondition_2 = True
+# asserted ≠ emitted  isBugCondition_2 = True
 #
 # Tool name: ``confluence_get_page``
 # - Workflow type exercised: ``confluence_doc_update``
@@ -327,7 +327,7 @@ def test_surface1_temporal_shared_vocabulary_aligned(tool_name: str) -> None:
 # frozenset({'jira', 'confluence'})
 # - Bug condition: asserted ∩ {"jira","bitbucket","confluence"} = ∅
 # emitted ∩ {"jira","bitbucket","confluence"} = {"jira","confluence"} ≠ ∅
-# asserted ≠ emitted → isBugCondition_2 = True
+# asserted ≠ emitted  isBugCondition_2 = True
 #
 # Root cause: ``test_capability_helpers.py::TestRequiredCapabilities::
 # test_returns_frozenset_for_valid_types`` asserts that ``required_capabilities``
@@ -442,7 +442,7 @@ def is_bug_condition_2(tool_name: str) -> bool:
  - emitted = required_capabilities(wf_type) (simple/collapsed vocab, has legacy tokens)
  - asserted ≠ emitted (True)
  - emitted ∩ {"jira","bitbucket","confluence"} ≠ ∅ (True - simple vocab has these)
- → isBugCondition_2 = True
+  isBugCondition_2 = True
  """
     asserted = tokens_asserted_by_capability_helpers_test(tool_name)
     emitted = tokens_emitted_by_capability_helpers(tool_name)
@@ -480,7 +480,7 @@ def test_surface2_capability_helpers_vocabulary_aligned(tool_name: str) -> None:
  - emitted = {"jira", "bitbucket", "execution"} (simple/collapsed)
  - asserted = {"jira_read", "jira_write", "bitbucket_read", "bitbucket_write", "execution"} (split)
  - asserted ≠ emitted AND emitted ∩ {"jira","bitbucket","confluence"} ≠ ∅
- → isBugCondition_2(X) = True
+  isBugCondition_2(X) = True
 
  After fix: this test PASSES because either:
  - ``test_capability_helpers.py`` is updated to assert the simple vocabulary
@@ -523,7 +523,7 @@ def test_surface2_capability_helpers_vocabulary_aligned(tool_name: str) -> None:
         f"emitted∩legacy={sorted(emitted & LEGACY_TOKENS)}. "
         f"The test asserts the raw split vocabulary from WORKFLOW_TYPE_CAPABILITIES "
         f"but required_capabilities collapses split tokens to simple service names "
-        f"(jira_read/jira_write → jira, bitbucket_read/bitbucket_write → bitbucket, etc.). "
+        f"(jira_read/jira_write  jira, bitbucket_read/bitbucket_write  bitbucket, etc.). "
         f"Fix: update test_capability_helpers.py to assert the simple vocabulary "
         f"that required_capabilities actually returns."
     )

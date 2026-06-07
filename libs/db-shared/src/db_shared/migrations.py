@@ -256,8 +256,8 @@ async def apply_migrations(
 
     async with pool.acquire() as conn:
         # 1. Make sure the tracking table exists. Wrapping in a
-        #    transaction keeps the DDL atomic - important on PG where
-        #    bare CREATE TABLE is transactional.
+        # transaction keeps the DDL atomic - important on PG where
+        # bare CREATE TABLE is transactional.
         async with conn.transaction():
             await conn.execute(SCHEMA_MIGRATIONS_DDL)
 

@@ -116,7 +116,7 @@ DEFAULT_HEALTH_FAIL_STREAK_THRESHOLD: int = 3
 #: a ``dependency_chain_max_depth_exceeded`` audit row.
 #:
 #: A depth of ``3`` is enough to express the canonical chains in the
-#: platform manifest (e.g. ``automation-service → temporal → vault``)
+#: platform manifest (e.g. ``automation-service  temporal  vault``)
 #: without leaving room for accidental cycles or pathological
 #: fan-out. Manifest-time DFS (``manifest._check_no_dependency_cycles``)
 #: still rejects true cycles regardless of this constant; the depth
@@ -239,7 +239,7 @@ class FeatureFlagDisabledError(RuntimeError):
     The first offending flag (manifest order, ties broken by the SQL
     result deterministically) is exposed via :attr:`blocking_flag` so
     the router can render the 409 envelope and the UI can show a
-    targeted "open Feature Flags page → toggle ``{blocking_flag}``"
+    targeted "open Feature Flags page  toggle ``{blocking_flag}``"
     modal (behavior 10.3).
 
     The router maps this to ``409 Conflict``::
@@ -271,7 +271,7 @@ class MaxDependencyDepthExceededError(RuntimeError):
     than an unbounded recursion stack.
 
     The :attr:`recursion_path` attribute carries the chain of
-    parent → child service names that led to the violation; the
+    parent  child service names that led to the violation; the
     audit row's ``details_json`` payload exposes it verbatim so the
     operator can pinpoint the offending manifest edge without
     re-reading the manifest by hand.
@@ -376,7 +376,7 @@ class FeatureFlagReader(Protocol):
 
     * Issue a *single* SQL ``SELECT`` against ``shared.feature_flags``
       (behavior 10.5 - "tek SELECT").
-    * Return a ``dict[str, bool]`` mapping flag name → ``enabled``.
+    * Return a ``dict[str, bool]`` mapping flag name  ``enabled``.
       Missing rows are simply absent from the dict; the lifecycle
       service treats absence as "disabled" so a typo in the manifest
       surfaces as a 409 rather than silently letting the start proceed.
@@ -430,7 +430,7 @@ class AsyncpgFeatureFlagReader:
     async def fetch_enabled_flags(
         self, names: Sequence[str]
     ) -> dict[str, bool]:
-        # Empty input → skip the round trip entirely. The caller
+        # Empty input  skip the round trip entirely. The caller
         # already short-circuits on empty ``feature_flag_dependency``,
         # but defensive guard cheap.
         if not names:
@@ -642,9 +642,9 @@ def _build_redaction_pattern(
         return None
     alternation = "|".join(re.escape(k) for k in keys)
     # Two alternatives:
-    #   - ``KEY=value``  → ``=`` then non-space run.
-    #   - ``KEY: value`` → ``:`` plus optional space, then a run that
-    #                       stops at the first whitespace.
+    # - ``KEY=value``   ``=`` then non-space run.
+    # - ``KEY: value``  ``:`` plus optional space, then a run that
+    # stops at the first whitespace.
     # We keep the key as a backreference group (``\1``) so the
     # replacement string can preserve the original key in the output.
     pattern = re.compile(
@@ -815,7 +815,7 @@ class LifecycleService:
         Algorithm
         ---------
         1. Resolve ``name`` to a :class:`ManagedServiceEntry` (raises
-           :class:`UnknownServiceError` on miss → router 404).
+           :class:`UnknownServiceError` on miss  router 404).
         2. Walk the ``depends_on_services`` graph depth-first using
            Tarjan-style post-order recording. The post-order traversal
            guarantees **dependencies appear before dependents** in the
@@ -843,7 +843,7 @@ class LifecycleService:
         :func:`src.manifest._check_no_dependency_cycles` rejects
         cyclic manifests at boot, so this walk does not need its own
         cycle guard. We still maintain a ``visited`` set to avoid
-        revisiting shared dependencies (a diamond ``A → B,C → D``
+        revisiting shared dependencies (a diamond ``A  B,C  D``
         must not list ``D`` twice in ``will_start``).
         """
 
@@ -859,7 +859,7 @@ class LifecycleService:
             dep_entry = self._by_name.get(svc_name)
             if dep_entry is None:
                 # External Boot_Bundle dep (postgres / vault / ...).
-                # Not a manifest node → we cannot start it, so it must
+                # Not a manifest node  we cannot start it, so it must
                 # not appear in either output bucket. Returning here
                 # also matches the runtime behaviour of
                 # ``_do_start``'s Step 1.6 ``self._by_name.get(...)``
@@ -945,7 +945,7 @@ class LifecycleService:
         6. ``audit.write`` of the ``pending`` row (must succeed -
            we just prechecked).
         7. ``state[name].state = "starting"``.
-        8. Compose ``up`` (failure → ``state="failed"`` and an audit
+        8. Compose ``up`` (failure  ``state="failed"`` and an audit
            ``failed`` row written via ``write_with_retry``).
         9. Poll ``health.probe`` until ``healthy`` or timeout.
         10. Write the final audit row and assemble the response.
@@ -1011,8 +1011,8 @@ class LifecycleService:
         # Step 1.5 - feature-flag gate (rule 10 / Q12). Runs *before* the
         # form-schema check so a flag-disabled start fails fast with
         # 409 even when the operator submitted no env_overrides at all
-        # (matches the design Step Order: Step 1 manifest lookup →
-        # Step 1.5 feature-flag gate → Step 1.6 dependency chain →
+        # (matches the design Step Order: Step 1 manifest lookup
+        # Step 1.5 feature-flag gate  Step 1.6 dependency chain
         # Step 2 form-schema check).
         await self._check_feature_flags(
             entry, actor_sub=actor_sub, correlation_id=correlation_id
@@ -1243,9 +1243,9 @@ class LifecycleService:
           ``services/{name}/`` via :meth:`VaultClient.list_env_override_keys`
           and soft-delete each one via
           :meth:`VaultClient.delete_env_override`.
-        * Total success → ``vault_overrides_purged`` audit row with
+        * Total success  ``vault_overrides_purged`` audit row with
           ``payload: {service_name, deleted_paths_count}``.
-        * Vault list/delete raises :class:`VaultWriteError` →
+        * Vault list/delete raises :class:`VaultWriteError`
           ``vault_purge_partial_failure`` audit row with
           ``payload: {service_name, error_type, partial_count}``.
           The Compose stop has **already** succeeded so the
@@ -1339,8 +1339,7 @@ class LifecycleService:
         # already gated the production profile (behavior 14.2), so
         # by the time we reach here it is safe to enumerate and delete
         # the override keys.
-        #
-        # Failures are recorded as ``vault_purge_partial_failure`` and
+        # # Failures are recorded as ``vault_purge_partial_failure`` and
         # do NOT propagate - the Compose stop has already taken
         # effect and rolling it back would defeat the purpose of the
         # operator's request. The canonical ``stop`` audit row above
@@ -1789,7 +1788,7 @@ class LifecycleService:
             dep_entry = self._by_name.get(dep_name)
             if dep_entry is None:
                 # External Boot_Bundle dep (postgres / vault / temporal /
-                # atlassian-mcp). Not a manifest node → we cannot start
+                # atlassian-mcp). Not a manifest node  we cannot start
                 # it; skip silently (matches ``compute_start_plan`` logic).
                 continue
 
@@ -2047,9 +2046,9 @@ class LifecycleService:
           (behavior 9.1 - default ``null`` means no probe).
         * Otherwise runs the command via ``subprocess.run`` with a 30-second
           timeout (behavior 9.2 - "timeout 30 sn").
-        * ``exit_code == 0`` → ``state[name].credentials_status = "ok"`` +
+        * ``exit_code == 0``  ``state[name].credentials_status = "ok"`` +
           ``service_connectivity_probe_passed`` audit (behavior 9.4).
-        * Any other exit code (or timeout / OS error) →
+        * Any other exit code (or timeout / OS error)
           ``credentials_status = "failed"``,
           ``credentials_probe_detail = stderr[-500:]`` +
           ``service_connectivity_probe_failed`` audit (behavior 9.4).

@@ -307,7 +307,7 @@ def test_profile_gated_start_drives_redis_through_start_stop_cycle(
     request: pytest.FixtureRequest,
     repo_root: Path,
 ) -> None:
-    """End-to-end: Boot_Bundle → start redis → poll running → stop ×2.
+    """End-to-end: Boot_Bundle  start redis  poll running  stop ×2.
 
  """
 

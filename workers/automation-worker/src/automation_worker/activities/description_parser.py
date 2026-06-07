@@ -479,13 +479,13 @@ def parse_description_frontmatter(
 
  Behaviour matrix:
 
- * ``description`` is empty / ``None`` / contains no front-matter →
+ * ``description`` is empty / ``None`` / contains no front-matter
  return ``None``. The caller falls through to LLM analysis.
  * Front-matter delimiters are present but the YAML body is empty,
- malformed, or does not contain an ``ai-bot`` mapping → return
+ malformed, or does not contain an ``ai-bot`` mapping  return
  ``None``. We treat a syntactically broken block the same as a
  missing block; the LLM path is the safety net.
- * Front-matter is well-formed → return a:class:`ParsedFrontMatter`
+ * Front-matter is well-formed  return a:class:`ParsedFrontMatter`
  whose fields carry the validated overrides; invalid field values
  are dropped to ``None`` and recorded in ``parse_errors``..
  """

@@ -3,41 +3,36 @@
 /**
  * CredentialModal - 3-tab credential management modal for a single
  * department.
- *
- * Tabs:
- *   * "Jira Credential"
- *   * "Confluence Credential"
- *   * "Bitbucket Credential"
- *
- * Each tab is rendered by :file:`CredentialServiceTab.tsx` which
+ * * Tabs:
+ * * "Jira Credential"
+ * * "Confluence Credential"
+ * * "Bitbucket Credential"
+ * * Each tab is rendered by :file:`CredentialServiceTab.tsx` which
  * owns the form state for its service. The modal owns the
  * tab-selector + the dept-level refetch trigger so a save in one
  * tab updates the badges shown in the others (e.g. credential_ref
  * derived from the just-promoted Vault path).
- *
- * Wire shape comes from
- * ``GET /admin/departments/{id}`` →
+ * * Wire shape comes from
+ * ``GET /admin/departments/{id}``
  * services/automation-service/src/routers/dept_credentials.py
  * (``_select_department_detail``):
- *
- *     {
- *       "id": "...",
- *       "display_name": "...",
- *       "mode": "active",
- *       "default_language": "...",
- *       "web_search_enabled": true,
- *       "jira_project_keys": ["..."],
- *       "confluence_space_keys": ["..."],
- *       "bots": [
- *         {"service": "jira",
- *          "credential_ref": "vault:atlassian/<id>/jira",
- *          "account_id": "...",
- *          "username": "...",
- *          "deployment": null}
- *       ]
- *     }
- *
- * The modal owns its own GET on mount + after every save / remove.
+ * *     {
+ * "id": "...",
+ * "display_name": "...",
+ * "mode": "active",
+ * "default_language": "...",
+ * "web_search_enabled": true,
+ * "jira_project_keys": ["..."],
+ * "confluence_space_keys": ["..."],
+ * "bots": [
+ * {"service": "jira",
+ * "credential_ref": "vault:atlassian/<id>/jira",
+ * "account_id": "...",
+ * "username": "...",
+ * "deployment": null}
+ * ]
+ * }
+ * * The modal owns its own GET on mount + after every save / remove.
  * The parent route only owns the open/close state; modal
  * closes on save success; the dept catalog listens to ``onClosed``
  * to refetch its row for that dept).
@@ -163,7 +158,7 @@ export default function CredentialModal({
         const detail = await safeReadDetail(res);
         setState({
           kind: "error",
-          message: `GET /admin/departments/${deptId} → HTTP ${res.status}: ${detail}`,
+          message: `GET /admin/departments/${deptId}  HTTP ${res.status}: ${detail}`,
         });
         return;
       }
@@ -273,7 +268,7 @@ export default function CredentialModal({
               cursor: "pointer",
             }}
           >
-            ✕
+
           </button>
         </header>
 

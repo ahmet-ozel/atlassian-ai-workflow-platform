@@ -2,12 +2,10 @@
 
 /**
  * Firecrawl egress allowlist page - `gereksinim.txt` G9 (E2 iyileştirme).
- *
- * CRUD surface over `GET/POST/DELETE /api/v1/firecrawl/allowlist`. The
+ * * CRUD surface over `GET/POST/DELETE /api/v1/firecrawl/allowlist`. The
  * firecrawl service only fetches external URLs whose domain is on this
  * allowlist (FIRECRAWL_EGRESS_ALLOWLIST contract).
- *
- * Operators add/remove domains here instead of hand-editing env vars.
+ * * Operators add/remove domains here instead of hand-editing env vars.
  * The backend store is currently in-memory (see firecrawl_allowlist.py
  * `_allowlist`); the page surfaces that as an informational note.
  */
@@ -154,14 +152,14 @@ export default function FirecrawlAllowlistPage(): JSX.Element {
           </div>
           <div className="page-header__actions">
             <button className="btn" onClick={load} disabled={loading}>
-              {loading ? <span className="spinner" /> : "🔄"} Yenile
+              {loading ? <span className="spinner" /> : ""} Yenile
             </button>
           </div>
         </div>
       </header>
 
       <div className="banner banner--info" role="note">
-        <span className="banner__icon">ℹ️</span>
+        <span className="banner__icon">ℹ</span>
         <div className="banner__body">
           Allowlist şu an in-memory tutuluyor - firecrawl servisi yeniden
           başlarsa liste sıfırlanır. Kalıcı saklama için bir sonraki sürümde
@@ -171,13 +169,13 @@ export default function FirecrawlAllowlistPage(): JSX.Element {
 
       {error && (
         <div className="banner banner--danger" role="alert">
-          <span className="banner__icon">⚠️</span>
+          <span className="banner__icon"></span>
           <div className="banner__body">{error}</div>
         </div>
       )}
       {notice && (
         <div className="banner banner--success" role="status">
-          <span className="banner__icon">✅</span>
+          <span className="banner__icon"></span>
           <div className="banner__body">{notice}</div>
         </div>
       )}
@@ -219,7 +217,7 @@ export default function FirecrawlAllowlistPage(): JSX.Element {
               onClick={handleAdd}
               disabled={!draftValid || adding}
             >
-              {adding ? <span className="spinner" /> : "➕"} Ekle
+              {adding ? <span className="spinner" /> : ""} Ekle
             </button>
           </div>
         </div>
@@ -270,7 +268,7 @@ export default function FirecrawlAllowlistPage(): JSX.Element {
                         {deletingId === entry.id ? (
                           <span className="spinner" />
                         ) : (
-                          "🗑️ Kaldır"
+                          " Kaldır"
                         )}
                       </button>
                     </td>
@@ -280,7 +278,7 @@ export default function FirecrawlAllowlistPage(): JSX.Element {
             </table>
           ) : (
             <div className="empty" style={{ padding: "2rem" }}>
-              <div className="empty__icon">🌐</div>
+              <div className="empty__icon"></div>
               <div className="empty__title">Allowlist boş</div>
               <p className="muted text-sm" style={{ marginTop: 4 }}>
                 Yukarıdaki formdan ilk domain&apos;i ekleyin.

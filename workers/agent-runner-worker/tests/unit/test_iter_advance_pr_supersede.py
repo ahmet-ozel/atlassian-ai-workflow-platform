@@ -5,8 +5,8 @@ Validates the contract documented on
 
 * No-op when ``old_pr_id is None`` (first iteration of a fresh
   issue) - neither Bitbucket nor the supersede ledger is touched.
-* Open old PR → label add + banner prepend + ledger insert all fire.
-* Closed / merged old PR → Bitbucket calls are skipped, ledger row
+* Open old PR  label add + banner prepend + ledger insert all fire.
+* Closed / merged old PR  Bitbucket calls are skipped, ledger row
   is still recorded (audit trail invariant).
 * Idempotent: a second call for the same
   ``(workflow_id, old_pr_id, new_pr_id)`` triple is a no-op:
@@ -247,7 +247,7 @@ class TestPureHelpers:
 
 
 class TestNoOpWhenNoOldPr:
-    """``old_pr_id=None`` → activity returns immediately without HTTP."""
+    """``old_pr_id=None``  activity returns immediately without HTTP."""
 
     def test_returns_no_op_result(
         self, patch_mcp: _FakeAuthClient, fake_repo: RepoRef
@@ -350,7 +350,7 @@ class TestClosedOldPrSkipsBitbucket:
         fake_repo: RepoRef,
         repo_record_log: list[tuple[str, int, int]],
     ) -> None:
-        """Missing PR → treated as already-closed; activity continues."""
+        """Missing PR  treated as already-closed; activity continues."""
 
         patch_mcp._responses = {
             "/api/bitbucket/pull-requests/get": _make_response(404),
@@ -381,7 +381,7 @@ class TestClosedOldPrSkipsBitbucket:
 
 
 class TestOpenOldPrHappyPath:
-    """Open old PR → label + banner prepend + ledger insert all fire."""
+    """Open old PR  label + banner prepend + ledger insert all fire."""
 
     def test_label_added_and_description_prepended(
         self,
@@ -445,7 +445,7 @@ class TestOpenOldPrHappyPath:
         fake_repo: RepoRef,
         repo_record_log: list[tuple[str, int, int]],
     ) -> None:
-        """409 on label add (label already present) → still counts."""
+        """409 on label add (label already present)  still counts."""
 
         patch_mcp._responses = {
             "/api/bitbucket/pull-requests/get": _make_response(
@@ -564,7 +564,7 @@ class TestIdempotentSecondCall:
                 dept_id="payments",
             )
         )
-        # Second ledger insert is a PK conflict → ``False``.
+        # Second ledger insert is a PK conflict  ``False``.
         assert second.log_row_inserted is False
         # Description update did NOT fire (banner already present).
         assert second.description_updated is False
@@ -752,7 +752,7 @@ class TestWorkflowWiring:
         assert wf._previous_pr_id == 200
 
     def test_iter_advance_skipped_when_no_previous_pr(self) -> None:
-        """First iteration → ``_previous_pr_id is None`` → no activity call."""
+        """First iteration  ``_previous_pr_id is None``  no activity call."""
 
         from datetime import datetime, timezone
         from unittest.mock import patch

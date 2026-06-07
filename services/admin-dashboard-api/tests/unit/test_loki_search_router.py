@@ -302,7 +302,7 @@ def test_workflow_logs_omits_trace_id_when_not_supplied() -> None:
 
 
 def test_workflow_logs_returns_warning_when_loki_not_wired() -> None:
-    """Missing Loki client → soft-fail with empty results + warning."""
+    """Missing Loki client  soft-fail with empty results + warning."""
 
     app = _build_workflow_logs_app(loki=None)
     client = TestClient(app)
@@ -321,7 +321,7 @@ def test_workflow_logs_returns_warning_when_loki_not_wired() -> None:
 
 
 def test_workflow_logs_returns_warning_when_loki_query_fails() -> None:
-    """Loki RPC failure → soft-fail with empty results + warning."""
+    """Loki RPC failure  soft-fail with empty results + warning."""
 
     loki = _ExplodingLokiClient()
     app = _build_workflow_logs_app(loki=loki)
@@ -444,6 +444,6 @@ def test_flatten_loki_streams_handles_already_flat_lists() -> None:
 
 
 def test_flatten_loki_streams_handles_none() -> None:
-    """``None`` from a misbehaving client → empty list, not a crash."""
+    """``None`` from a misbehaving client  empty list, not a crash."""
 
     assert _flatten_loki_streams(None) == []

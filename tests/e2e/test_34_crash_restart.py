@@ -5,7 +5,7 @@ Validates that services auto-restart after being killed, return to healthy
 state, and maintain workflow integrity across restarts.
 
 Verification steps:
-1. docker kill automation-service → assert auto-restart within 30s
+1. docker kill automation-service  assert auto-restart within 30s
 2. Assert service returns to healthy within 60s
 3. Verify in-flight Temporal workflows not lost
 4. Verify service reconnects to PostgreSQL and Temporal

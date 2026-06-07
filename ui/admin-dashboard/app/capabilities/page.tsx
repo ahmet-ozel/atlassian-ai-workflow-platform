@@ -2,15 +2,12 @@
 
 /**
  * Capability matrix page.
- *
- * Renders the dept × service connectivity grid for every department.
+ * * Renders the dept × service connectivity grid for every department.
  * Cells are colour-coded:
- *
- * * 🟢 sağlıklı
- * * 🔴 sağlıksız
- * * ⚪ tanımlanmamış / bilinmiyor
- *
- * Clicking a cell opens a side panel with the last error, latency
+ * * *  sağlıklı
+ * *  sağlıksız
+ * *  tanımlanmamış / bilinmiyor
+ * * Clicking a cell opens a side panel with the last error, latency
  * and timestamp, plus a "Yeniden Test Et" button. The grid
  * auto-refreshes every 10 minutes.
  */
@@ -180,7 +177,7 @@ export default function CapabilitiesPage(): JSX.Element {
           </div>
           <div className="page-header__actions">
             <button className="btn" onClick={loadMatrix} disabled={loading}>
-              {loading ? <span className="spinner" /> : "🔄"} Yenile
+              {loading ? <span className="spinner" /> : ""} Yenile
             </button>
           </div>
         </div>
@@ -193,7 +190,7 @@ export default function CapabilitiesPage(): JSX.Element {
 
       {error && (
         <div className="banner banner--danger" role="alert">
-          <span className="banner__icon">⚠️</span>
+          <span className="banner__icon"></span>
           <div className="banner__body">{error}</div>
         </div>
       )}
@@ -242,7 +239,7 @@ function MatrixGrid({
       <div className="card">
         <div className="card__body">
           <div className="empty">
-            <div className="empty__icon">🏢</div>
+            <div className="empty__icon"></div>
             <div className="empty__title">Yapılandırılmış departman yok</div>
           </div>
         </div>
@@ -385,7 +382,7 @@ function DetailPanel({
         <div className="card__title">
           {deptId} <span className="muted">/</span> {service}
         </div>
-        <button onClick={onClose} aria-label="Kapat" className="btn btn--sm btn--ghost btn--icon">✕</button>
+        <button onClick={onClose} aria-label="Kapat" className="btn btn--sm btn--ghost btn--icon"></button>
       </div>
       <div className="card__body">
         {cell === null ? (
@@ -401,7 +398,7 @@ function DetailPanel({
           className="btn btn--primary"
           style={{ marginTop: "0.75rem", width: "100%" }}
         >
-          {reprobing ? <span className="spinner" /> : "🔁"} Yeniden test et
+          {reprobing ? <span className="spinner" /> : ""} Yeniden test et
         </button>
 
         {reprobeError && (

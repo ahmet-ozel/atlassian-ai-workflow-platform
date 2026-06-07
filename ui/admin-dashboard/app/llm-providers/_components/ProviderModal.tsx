@@ -2,30 +2,23 @@
 
 /**
  * Add/Edit provider modal (Requirements 4.5, 4.6, 14.2 - 14.6).
- *
- * Visible fields depend on `provider_type`:
- *
- * - **vllm**:      base_url (required), api_key (required)
+ * * Visible fields depend on `provider_type`:
+ * * - **vllm**:      base_url (required), api_key (required)
  * - **openai**:    api_key (required), org_id (optional), base_url (optional)
  * - **anthropic**: api_key (required)
- *
- * Model-tuning inputs appear only when the entered `model` advertises
+ * * Model-tuning inputs appear only when the entered `model` advertises
  * support for them (mirrors `modelCapabilities.ts`):
- *
- * - **reasoning_effort** (minimal|low|medium|high): OpenAI o-series +
- *   gpt-5 family, Anthropic Claude 4 / `-thinking` snapshots.
+ * * - **reasoning_effort** (minimal|low|medium|high): OpenAI o-series +
+ * gpt-5 family, Anthropic Claude 4 / `-thinking` snapshots.
  * - **verbosity** (low|medium|high): OpenAI gpt-5 family only.
- *
- * Both default to "" (use the upstream default) and are omitted from
+ * * Both default to "" (use the upstream default) and are omitted from
  * the request body when left blank.
- *
- * Edit mode keeps the `api_key` input empty and shows a helper line
+ * * Edit mode keeps the `api_key` input empty and shows a helper line
  * with the masked existing value; on submit, an empty input means
  * "preserve" (R4.6) - we omit the `api_key` key from the PUT body so
  * the backend service merges only the fields the operator actually
  * changed.
- *
- * The inline **Test Connection** button calls
+ * * The inline **Test Connection** button calls
  * `POST /admin/llm-providers/test` with the current form values
  * (without saving) and renders the result through `<TestResultBadge>`.
  */

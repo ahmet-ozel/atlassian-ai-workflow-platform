@@ -2,8 +2,7 @@
 
 /**
  * Typed wrapper over `apiFetch` for the `/admin/llm-providers` surface.
- *
- * Each method returns the parsed JSON body (or `void` for the delete
+ * * Each method returns the parsed JSON body (or `void` for the delete
  * path). Errors surface as thrown `ApiError` instances carrying the
  * upstream status code and response body so the calling component can
  * render a targeted toast (e.g. the `provider_in_use` 409 path needs

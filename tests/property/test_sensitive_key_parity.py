@@ -1,4 +1,4 @@
-﻿"""Behavioral tests for Sensitive_Env_Key matcher TS ↔ Python parity.
+﻿"""Behavioral tests for Sensitive_Env_Key matcher TS  Python parity.
 
 For any uppercase environment-variable-style key drawn from
 ``[A-Z][A-Z0-9_]{3,40}``, the **Python** matcher
@@ -33,10 +33,10 @@ Strategy
 
 Skip semantics
 --------------
-* ``shutil.which("node")`` returns ``None`` → ``pytest.skip("node
+* ``shutil.which("node")`` returns ``None``  ``pytest.skip("node
   not available")``.
 
-* ``libs/web-shared/dist/sensitive.js`` does not exist → the fixture
+* ``libs/web-shared/dist/sensitive.js`` does not exist  the fixture
   attempts ``npm run build`` (after a one-shot ``npm install`` if
   ``node_modules`` is missing). If either step fails, the test
   ``pytest.skip``s with the failing command and stderr captured for
@@ -145,11 +145,11 @@ def _ensure_dist_sensitive_built() -> Path:
 
     Skip semantics
     --------------
-    * If ``package.json`` is missing the ``build`` script entry → skip
+    * If ``package.json`` is missing the ``build`` script entry  skip
       with a precise message.
-    * If ``node_modules`` is missing and ``npm`` is not on ``PATH`` →
+    * If ``node_modules`` is missing and ``npm`` is not on ``PATH``
       skip (no way to install ``typescript`` to drive ``tsc``).
-    * If ``npm install`` or ``npm run build`` fails → skip with the
+    * If ``npm install`` or ``npm run build`` fails  skip with the
       command's stderr so a developer can reproduce the failure
       locally.
 
@@ -294,7 +294,7 @@ def dist_sensitive_path() -> Path:
 
 
 # ---------------------------------------------------------------------------
-# TS ↔ Python parity over a random key universe
+# TS  Python parity over a random key universe
 # ---------------------------------------------------------------------------
 
 
@@ -335,7 +335,7 @@ def test_python_and_typescript_matchers_agree(
     )
 
     assert ts_results == py_results, (
-        "TS↔Python Sensitive_Env_Key parity broken. "
+        "TSPython Sensitive_Env_Key parity broken. "
         f"keys={keys!r}, python={py_results!r}, typescript={ts_results!r}, "
         f"divergences={[ (k, py, ts) for k, py, ts in zip(keys, py_results, ts_results) if py != ts ]!r}"
     )
@@ -417,7 +417,7 @@ def test_concrete_regression_anchors(
         f"typescript={ts_result!r}, expected={expected!r}"
     )
     assert py_result == ts_result, (
-        f"TS↔Python Sensitive_Env_Key parity broken on anchor {key!r}: "
+        f"TSPython Sensitive_Env_Key parity broken on anchor {key!r}: "
         f"python={py_result!r}, typescript={ts_result!r}"
     )
 

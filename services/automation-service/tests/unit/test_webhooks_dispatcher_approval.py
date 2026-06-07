@@ -5,9 +5,9 @@ dispatcher forwards an ``approval_received`` signal to the running
 :class:`ApprovalGateWorkflow` child so it can resume (or reject)
 instead of timing out at 24h. Coverage:
 
-* ``[approve]`` → signal forwarded with parsed user/decision payload.
-* ``[reject]`` → same forwarding path.
-* Plain comment → no signal sent.
+* ``[approve]``  signal forwarded with parsed user/decision payload.
+* ``[reject]``  same forwarding path.
+* Plain comment  no signal sent.
 * Case-insensitive matching: ``[APPROVE]`` / ``[Reject]``.
 * Best-effort: a Temporal failure produces an
   ``approval_signal_forwarding_failed`` audit row but does not break
@@ -310,7 +310,7 @@ class TestApprovalSignalForwarding:
         assert evt.payload.get("decision") == "approve"
         assert evt.payload.get("issue_key") == _ISSUE_KEY
         assert evt.payload.get("actor_account_id") == "po-account-1"
-        # Forwarding success → result must be "ok".
+        # Forwarding success  result must be "ok".
         assert evt.result == "ok"
 
     @pytest.mark.asyncio
@@ -359,7 +359,7 @@ class TestApprovalSignalForwarding:
         dept_rows: list[dict[str, Any]],
         fake_audit: FakeAuditLogger,
     ) -> None:
-        """Best-effort: temporal RPC failure → audit row, no exception."""
+        """Best-effort: temporal RPC failure  audit row, no exception."""
         pool = FakePool(
             conn=FakeConnection(bot_rows=bot_rows, dept_rows=dept_rows)
         )
@@ -389,7 +389,7 @@ class TestApprovalSignalForwarding:
         fake_audit: FakeAuditLogger,
     ) -> None:
         """When the issue is in needs_info AND the comment carries
-        ``[approve]``, the needs_info branch wins (iterate → needs_info →
+        ``[approve]``, the needs_info branch wins (iterate  needs_info
         approval ordering). The test pins the documented ordering so a
         future refactor can't silently swap it."""
         conn = FakeConnection(

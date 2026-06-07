@@ -2,12 +2,10 @@
 
 /**
  * Workflow detail page.
- *
- * Dynamic route `/workflows/[id]` - renders the full drill-down view for a
+ * * Dynamic route `/workflows/[id]` - renders the full drill-down view for a
  * single Temporal workflow: header, event history timeline, activity list,
  * LLM usage table, audit chain, external links and a RBAC-aware cancel button.
- *
- * Data is fetched from `GET /admin/workflows/{workflow_id}` which returns the
+ * * Data is fetched from `GET /admin/workflows/{workflow_id}` which returns the
  * merged envelope (upstream Temporal payload + local Postgres enrichments).
  */
 
@@ -89,7 +87,7 @@ export default function WorkflowDetailPage(): JSX.Element {
     return (
       <main style={{ padding: "1rem" }}>
         <p style={{ color: "crimson" }}>Error: {error}</p>
-        <a href="/workflows">← Back to Workflows</a>
+        <a href="/workflows"> Back to Workflows</a>
       </main>
     );
   }
@@ -98,14 +96,14 @@ export default function WorkflowDetailPage(): JSX.Element {
     return (
       <main style={{ padding: "1rem" }}>
         <p>Workflow not found.</p>
-        <a href="/workflows">← Back to Workflows</a>
+        <a href="/workflows"> Back to Workflows</a>
       </main>
     );
   }
 
   return (
     <main style={{ padding: "1rem", maxWidth: "1200px" }}>
-      <a href="/workflows" style={{ fontSize: "0.875rem" }}>← Back to Workflows</a>
+      <a href="/workflows" style={{ fontSize: "0.875rem" }}> Back to Workflows</a>
 
       <Header detail={detail} />
 

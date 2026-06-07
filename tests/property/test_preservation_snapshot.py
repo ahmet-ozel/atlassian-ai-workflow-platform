@@ -67,7 +67,7 @@ _SNAPSHOT_FILE: Final[Path] = _SPEC_ROOT / "snapshots" / "before" / "platform_fu
 # ---------------------------------------------------------------------------
 
 # Lines in the verbose pytest output look like:
-#   tests/ci/test_admin_dashboard_routes.py::test_admin_pages_dir_exists PASSED [  0%]
+# tests/ci/test_admin_dashboard_routes.py::test_admin_pages_dir_exists PASSED [  0%]
 _LINE_RE: Final[re.Pattern[str]] = re.compile(
     r"^(?P<nodeid>\S+::\S+)\s+(?P<outcome>PASSED|FAILED|SKIPPED|ERROR|XFAIL|XPASS)\b"
 )
@@ -90,7 +90,7 @@ _SURFACE5_TEST_PREFIXES: Final[tuple[str, ...]] = (
     # Three Surface 5 property tests; whole-file exclusion would over-exclude
     # because the same directory holds preserved property tests
     # (see clause 3.3). We exclude only the three tests the design names.
-    # Pre-fix outcome of these three is FAILED → they are not PASSED in the
+    # Pre-fix outcome of these three is FAILED  they are not PASSED in the
     # snapshot anyway, so this list is defensive.
     "workers/automation-worker/tests/property/test_prompt_fixture_resolution.py",
 )

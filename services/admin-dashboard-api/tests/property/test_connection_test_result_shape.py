@@ -1,13 +1,13 @@
 ﻿"""- ConnectionTestResult shape covers timeout, non-2xx, 2xx.
 spec. Three upstream outcomes are exercised:
-* **Slow handler** exceeding the budget → result is
+* **Slow handler** exceeding the budget  result is
   ``success=false, latency_ms=10000, model=null,
   error.message="timeout"``.
-* **Random non-2xx** with a body containing credential markers →
+* **Random non-2xx** with a body containing credential markers
   result has the upstream status code on ``error.status_code`` and an
   ``error.message`` that is (a) ≤ 200 characters and (b) carries no
   unredacted credential pattern.
-* **2xx with model echo** → ``success=true``, ``error=None``,
+* **2xx with model echo**  ``success=true``, ``error=None``,
   ``model`` equal to the upstream-echoed identifier."""
 
 from __future__ import annotations
@@ -76,7 +76,7 @@ def test_timeout_path_returns_spec_envelope() -> None:
     assert result.model is None
     assert result.error is not None
     assert result.error.message == "timeout"
-    #  The budget * 1000 is what surfaces on timeout per.
+    # The budget * 1000 is what surfaces on timeout per.
     assert result.latency_ms == int(0.05 * 1000)
 
 
@@ -124,7 +124,7 @@ def test_non_2xx_returns_redacted_error_message(
 )
 @settings(max_examples=100, deadline=None)
 def test_2xx_returns_model_echo(provider_type: str, echo_model: str) -> None:
-    """2xx with model echo → ``success=true`` and the echoed model surfaces."""
+    """2xx with model echo  ``success=true`` and the echoed model surfaces."""
 
     def handler(request: httpx.Request) -> httpx.Response:
         if request.method == "GET":

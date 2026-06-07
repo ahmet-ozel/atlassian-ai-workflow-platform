@@ -240,7 +240,7 @@ class TestDiff:
     def test_diff_empty_when_no_changes(self, repo_path: Path) -> None:
         gr = GitRepo(repo_path=repo_path)
         gr.create_branch_from_main("draft/clean")
-        # No commits on draft → diff is empty.
+        # No commits on draft  diff is empty.
         assert gr.diff("draft/clean") == ""
 
     def test_diff_captures_change(

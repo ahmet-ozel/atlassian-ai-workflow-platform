@@ -195,8 +195,8 @@ class ChildPlan:
     Attributes
     ----------
     action:
-        Discriminator.  ``"start"`` → the parent workflow should call
-        ``start_child_workflow`` with :attr:`child_spec`.  ``"skip"`` →
+        Discriminator.  ``"start"``  the parent workflow should call
+        ``start_child_workflow`` with :attr:`child_spec`.  ``"skip"``
         the parent must mark the child ``out_of_scope`` (or the
         equivalent sub-status named by :attr:`reason`) and **not**
         invoke any Temporal API for it.
@@ -346,19 +346,19 @@ def multi_step_dispatch(
 
     For every child:
 
-    * If :attr:`ChildProposal.workflow_type` is ``"multi_step"`` →
+    * If :attr:`ChildProposal.workflow_type` is ``"multi_step"``
       ``"skip"`` with reason :data:`REASON_NESTED_MULTI_STEP`.
       Nesting is forbidden by design; catching it here rather than at
       the schema layer keeps the dispatcher robust to future LLM
       drift.
     * Else if :attr:`ChildProposal.workflow_type` is **not** a key of
-      :data:`WORKFLOW_TYPE_CAPABILITIES` → ``"skip"`` with reason
+      :data:`WORKFLOW_TYPE_CAPABILITIES`  ``"skip"`` with reason
       :data:`REASON_UNKNOWN_WORKFLOW_TYPE`.
     * Else compute the simple-vocabulary capability requirement via
       :func:`temporal_shared.capabilities.required_capabilities` and
       take the set difference against ``dept_capabilities``.  When the
-      difference is non-empty → ``"skip"`` with reason
-      :data:`REASON_OUT_OF_SCOPE` and the missing caps.  Otherwise →
+      difference is non-empty  ``"skip"`` with reason
+      :data:`REASON_OUT_OF_SCOPE` and the missing caps.  Otherwise
       ``"start"`` with reason :data:`REASON_DISPATCHED`.
 
     Total-length invariant: the returned list always

@@ -338,7 +338,7 @@ def _execute_step(
 
 
 # ---------------------------------------------------------------------------
-#  - every successful CRUD emits exactly one matching signal
+# - every successful CRUD emits exactly one matching signal
 # ---------------------------------------------------------------------------
 
 
@@ -400,7 +400,7 @@ def test_every_successful_crud_signals_hot_reload_once(
 
 
 # ---------------------------------------------------------------------------
-#  - POST conflict (409) does not signal hot-reload
+# - POST conflict (409) does not signal hot-reload
 # ---------------------------------------------------------------------------
 
 
@@ -440,7 +440,7 @@ def test_post_conflict_does_not_signal_hot_reload(
 
 
 # ---------------------------------------------------------------------------
-#  - DELETE on already-disabled dept does not signal hot-reload
+# - DELETE on already-disabled dept does not signal hot-reload
 # ---------------------------------------------------------------------------
 
 
@@ -494,7 +494,7 @@ def test_delete_already_disabled_does_not_signal_hot_reload(
 
 
 # ---------------------------------------------------------------------------
-#  - coverage of all three action labels
+# - coverage of all three action labels
 # ---------------------------------------------------------------------------
 
 
@@ -509,7 +509,7 @@ def test_full_lifecycle_covers_all_three_actions(
     tmp_path: Path,
     monkeypatch: Any,
 ) -> None:
-    """- create → patch → delete fires the three action labels.
+    """- create  patch  delete fires the three action labels.
     Walks one dept through its whole lifecycle and asserts the
     publisher tape is exactly ``[(id, dept_created), (id, dept_updated),
     (id, dept_decommissioned)]`` - confirming the three constants from

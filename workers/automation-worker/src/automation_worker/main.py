@@ -466,7 +466,7 @@ def _audit_prune_prompt_renderer() -> object:
         def render(self, name: str, *, vars: object) -> str:
             # The standard layout puts the template under
             # ``platform/prompts/<name>.md``; resolve relative to
-            # this module file (workers/.../main.py → parents[4]).
+            # this module file (workers/.../main.py  parents[4]).
             module_path = Path(__file__).resolve()
             try:
                 workspace = module_path.parents[5]
@@ -797,18 +797,15 @@ async def _run_async() -> None:
         )
 
     # ---- Build the worker ---------------------------------------------
-    #
-    # Single ``Worker(task_queue=...)`` call so this worker listens on
+    # # Single ``Worker(task_queue=...)`` call so this worker listens on
     # exactly one task queue.
     # Three workflows share the queue:
-    #
-    # * ``AutomationWorkflow`` - the gateway / capability gate /
+    # # * ``AutomationWorkflow`` - the gateway / capability gate /
     # workflow_type router invoked from the webhook handler via
     # ``signalWithStart``.
     # * ``BotBranchRetention`` - daily cron at 02:30 UTC.
     # * ``AuditPruneWorkflow`` - daily cron at 03:00 UTC.
-    #
-    # Activity registration follows the same single-queue contract:
+    # # Activity registration follows the same single-queue contract:
     # only the ``audit_prune`` activities are wired here today. The
     # ``AutomationWorkflow`` body resolves its activities by string
     # name (``workflow.execute_activity("jira_add_comment",...)``,

@@ -2,9 +2,9 @@
 * ``set_override(dept, provider)`` upserts when ``provider`` is active.
 * ``get_override(dept)`` returns the documented payload (with shaped
   provider) or the ``provider=None`` shape for missing depts.
-* Missing ``provider_id`` → :class:`ProviderNotFound` (→ 422
+* Missing ``provider_id``  :class:`ProviderNotFound` ( 422
   ``provider_not_found``).
-* Inactive provider → :class:`ProviderInactive` (→ 409
+* Inactive provider  :class:`ProviderInactive` ( 409
   ``provider_inactive``).
 * ``set_override(dept, provider_id=None)`` deletes the row."""
 
@@ -53,7 +53,7 @@ def _make_create(name: str = "claude") -> _ProviderCreateInput:
     suppress_health_check=[HealthCheck.function_scoped_fixture],
 )
 def test_set_override_then_get_returns_provider(dept_id: str) -> None:
-    """PUT (active) → GET returns the shaped provider DTO."""
+    """PUT (active)  GET returns the shaped provider DTO."""
 
     async def _go() -> None:
         service, _, _, _, _ = build_service()
@@ -75,7 +75,7 @@ def test_set_override_then_get_returns_provider(dept_id: str) -> None:
     suppress_health_check=[HealthCheck.function_scoped_fixture],
 )
 def test_get_missing_returns_null_shape(dept_id: str) -> None:
-    """GET on a dept with no pin → ``provider=None`` shape."""
+    """GET on a dept with no pin  ``provider=None`` shape."""
 
     async def _go() -> None:
         service, _, _, _, _ = build_service()
@@ -97,7 +97,7 @@ def test_get_missing_returns_null_shape(dept_id: str) -> None:
 def test_set_override_missing_provider_raises_not_found(
     dept_id: str,
 ) -> None:
-    """PUT with unknown provider_id → :class:`ProviderNotFound`."""
+    """PUT with unknown provider_id  :class:`ProviderNotFound`."""
 
     async def _go() -> None:
         service, _, _, _, _ = build_service()
@@ -118,7 +118,7 @@ def test_set_override_missing_provider_raises_not_found(
 def test_set_override_inactive_provider_raises_inactive(
     dept_id: str,
 ) -> None:
-    """PUT with inactive provider → :class:`ProviderInactive`."""
+    """PUT with inactive provider  :class:`ProviderInactive`."""
 
     async def _go() -> None:
         service, _, _, _, _ = build_service()

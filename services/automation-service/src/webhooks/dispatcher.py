@@ -1,15 +1,15 @@
 ﻿"""Webhook Dispatcher - routes webhooks to the correct department workflow.
 
-Resolves ``assignee.accountId`` → ``dept_id`` via the
+Resolves ``assignee.accountId``  ``dept_id`` via the
 ``department_bot_identity`` cache (backed by ``automation.department_bots``
 in Postgres). Applies routing rules:
 
-1. Assignee null (unassign event) → DROP + audit ``dispatch_unassigned``
-2. Assignee not in bot identity table → DROP + audit ``dispatch_not_bot``
-3. Department mode == disabled → DROP + audit ``webhook_dept_disabled``
-4. Comment on needs_info issue → Temporal signal ``info_received``
-5. ``[iterate]`` comment → Iteration Manager start
-6. Normal assign/update → workflow start (trace_id generated)
+1. Assignee null (unassign event)  DROP + audit ``dispatch_unassigned``
+2. Assignee not in bot identity table  DROP + audit ``dispatch_not_bot``
+3. Department mode == disabled  DROP + audit ``webhook_dept_disabled``
+4. Comment on needs_info issue  Temporal signal ``info_received``
+5. ``[iterate]`` comment  Iteration Manager start
+6. Normal assign/update  workflow start (trace_id generated)
 
 Cache refresh: 5-minute interval + instant Vault query on cache miss.
 
@@ -253,7 +253,7 @@ class DepartmentConfig:
 
 @dataclass(frozen=True, slots=True)
 class BotIdentityEntry:
-    """A cached bot identity entry mapping account_id → dept_id."""
+    """A cached bot identity entry mapping account_id  dept_id."""
 
     account_id: str
     department_id: str
@@ -346,7 +346,7 @@ class WebhookDispatcher:
     """Routes webhook to the correct department workflow.
 
     Implements the dispatcher stage of the webhook pipeline:
-    - Resolves assignee.accountId → dept_id from bot identity cache
+    - Resolves assignee.accountId  dept_id from bot identity cache
     - Applies routing rules (unassign, not_bot, disabled, needs_info, iterate)
     - Starts workflows or sends Temporal signals
 
@@ -384,9 +384,9 @@ class WebhookDispatcher:
         # yorum yazılır (zaten check_budget içinde).
         self._budget_policy = budget_policy
 
-        # Bot identity cache: account_id → BotIdentityEntry
+        # Bot identity cache: account_id  BotIdentityEntry
         self._bot_identity_cache: dict[str, BotIdentityEntry] = {}
-        # Department config cache: dept_id → DepartmentConfig
+        # Department config cache: dept_id  DepartmentConfig
         self._dept_config_cache: dict[str, DepartmentConfig] = {}
         # Last cache refresh timestamp (monotonic seconds)
         self._last_cache_refresh: float = 0.0
@@ -410,7 +410,7 @@ class WebhookDispatcher:
         DispatchResult
             The routing decision with action and metadata.
         """
-        # Unassign event (assignee null) → DROP
+        # Unassign event (assignee null)  DROP
         if payload.assignee_account_id is None:
             await self._audit(
                 action="dispatch_unassigned",
@@ -422,10 +422,10 @@ class WebhookDispatcher:
         # Ensure cache is fresh
         await self._maybe_refresh_cache()
 
-        # Resolve assignee.accountId → dept_id
+        # Resolve assignee.accountId  dept_id
         dept_id = await self._resolve_dept(payload.assignee_account_id)
 
-        # Not in bot identity table → DROP
+        # Not in bot identity table  DROP
         if dept_id is None:
             await self._audit(
                 action="dispatch_not_bot",
@@ -448,12 +448,12 @@ class WebhookDispatcher:
                 action="drop", reason="dept_disabled", dept_id=dept_id
             )
 
-        # Comment on needs_info issue → signal existing workflow
-        # Order matters: iterate → needs_info → approval → workflow
+        # Comment on needs_info issue  signal existing workflow
+        # Order matters: iterate  needs_info  approval  workflow
         # start. The three are mutually exclusive - at most one
         # branch fires per comment.
 
-        # [iterate] comment → Iteration Manager
+        # [iterate] comment  Iteration Manager
         if (
             _is_comment_created(payload.event_type)
             and payload.comment_body is not None
@@ -493,7 +493,7 @@ class WebhookDispatcher:
             )
             return DispatchResult(action="iteration_started", dept_id=dept_id)
 
-        # Comment on needs_info issue → signal existing workflow
+        # Comment on needs_info issue  signal existing workflow
         if (
             _is_comment_created(payload.event_type)
             and await self._is_needs_info(payload.issue_key)
@@ -533,7 +533,7 @@ class WebhookDispatcher:
                 action="approval_forwarded", dept_id=dept_id
             )
 
-        # Normal assign/update → workflow start
+        # Normal assign/update  workflow start
         # Per-dept concurrency cap. Run before the
         # workflow start so we never issue an RPC we'd immediately
         # cancel. ``check_dept_concurrency`` is None when the
@@ -1254,7 +1254,7 @@ class WebhookDispatcher:
             current = getattr(exc, "current", "?")
             max_allowed = getattr(exc, "max_allowed", "?")
             body = (
-                "🤖 Departman paralel iş limiti aşıldı "
+                " Departman paralel iş limiti aşıldı "
                 f"({current}/{max_allowed}). "
                 "Mevcut iş akışları tamamlandığında tekrar denenecek."
             )

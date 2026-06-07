@@ -147,7 +147,7 @@ def _stub_running_worker_container(
 
 @pytest.mark.asyncio
 async def test_http_probe_healthy_when_both_endpoints_return_200() -> None:
-    """``/healthz`` 200 + ``/readyz`` 200 → ``state == "healthy"``."""
+    """``/healthz`` 200 + ``/readyz`` 200  ``state == "healthy"``."""
 
     seen: list[str] = []
 
@@ -438,7 +438,7 @@ async def test_http_probe_connection_failure_yields_status_minus_one() -> None:
 async def test_worker_probe_healthy_on_successful_temporal_connect(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """``Client.connect`` success → ``healthz_status=200, state="healthy"``."""
+    """``Client.connect`` success  ``healthz_status=200, state="healthy"``."""
 
     calls = _install_temporal_stub(monkeypatch, behaviour="ok")
     _stub_running_worker_container(monkeypatch)
@@ -461,7 +461,7 @@ async def test_worker_probe_healthy_on_successful_temporal_connect(
 async def test_worker_probe_unhealthy_when_temporal_connect_raises(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """``Client.connect`` raise → ``healthz_status=-1, state="unhealthy"``."""
+    """``Client.connect`` raise  ``healthz_status=-1, state="unhealthy"``."""
 
     _install_temporal_stub(monkeypatch, behaviour="raise")
     _stub_running_worker_container(monkeypatch)
@@ -536,7 +536,7 @@ async def test_worker_probe_unhealthy_when_container_not_running(
 
 
 # ---------------------------------------------------------------------------
-#  Assume-running probe (kind in {infra, ui} with no endpoint)
+# Assume-running probe (kind in {infra, ui} with no endpoint)
 # ---------------------------------------------------------------------------
 
 
@@ -544,7 +544,7 @@ async def test_worker_probe_unhealthy_when_container_not_running(
 async def test_assume_running_probe_running_unmonitored_when_docker_missing(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """No ``docker`` binary on PATH → ``state == "running_unmonitored"``.
+    """No ``docker`` binary on PATH  ``state == "running_unmonitored"``.
     subprocess failures (FileNotFoundError on
     spawn) must be classified as ``running_unmonitored`` rather than
     raising - the lifecycle state cache needs a deterministic reading
@@ -593,10 +593,10 @@ async def test_assume_running_probe_maps_docker_inspect_status(
     """Map every ``docker inspect`` ``.State.Health.Status`` deterministically.
 
     Expected mappings:
-    * ``"healthy"`` → ``state="healthy"``
-    * ``"unhealthy"`` → ``state="unhealthy"``
-    * ``"starting"`` → ``state="starting"``
-    * ``""`` / ``"<no value>"`` / unknown → ``state="running_unmonitored"``"""
+    * ``"healthy"``  ``state="healthy"``
+    * ``"unhealthy"``  ``state="unhealthy"``
+    * ``"starting"``  ``state="starting"``
+    * ``""`` / ``"<no value>"`` / unknown  ``state="running_unmonitored"``"""
 
     captured_cmd: list[tuple] = []
 
@@ -705,7 +705,7 @@ async def test_assume_running_probe_running_unmonitored_on_subprocess_timeout(
 async def test_assume_running_probe_running_unmonitored_on_nonzero_exit(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Non-zero ``docker inspect`` exit (e.g. unknown container) →
+    """Non-zero ``docker inspect`` exit (e.g. unknown container)
     ``running_unmonitored`` with stderr surfaced in the diagnostic
     body."""
 

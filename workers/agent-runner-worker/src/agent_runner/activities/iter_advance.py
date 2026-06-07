@@ -11,7 +11,7 @@ two-part Bitbucket update:
    reader sees the supersede notice without having to open the labels
    panel:
 
-       ⚠️ Bu PR yerine yeni iterasyon (PR #{new_id}) açıldı, kapatılabilir.
+        Bu PR yerine yeni iterasyon (PR #{new_id}) açıldı, kapatılabilir.
 
 The activity *also* records the transition in
 ``automation.pr_supersede_log`` via the existing
@@ -106,7 +106,7 @@ SUPERSEDE_LABEL_TEMPLATE: Final[str] = "superseded-by-pr-{new_pr_id}"
 #: so Markdown rendering keeps the banner as its own paragraph. The
 #: text is kept stable for Markdown rendering.
 BANNER_PREFIX_TEMPLATE: Final[str] = (
-    "⚠️ Bu PR yerine yeni iterasyon (PR #{new_pr_id}) "
+    " Bu PR yerine yeni iterasyon (PR #{new_pr_id}) "
     "açıldı, kapatılabilir.\n\n"
 )
 
@@ -223,9 +223,9 @@ def get_pr_supersede_log_repo() -> Any | None:
 # The activity issues four Bitbucket calls (via the atlassian_mcp_bitbucket
 # MCP):
 #
-#   GET  /api/bitbucket/pull-requests/get      → state + description
-#   POST /api/bitbucket/pull-requests/labels   → add label
-#   POST /api/bitbucket/pull-requests/update   → rewrite description
+# GET  /api/bitbucket/pull-requests/get       state + description
+# POST /api/bitbucket/pull-requests/labels    add label
+# POST /api/bitbucket/pull-requests/update    rewrite description
 #
 # Each helper is a thin wrapper around the same authenticated MCP
 # client so the activity body stays readable. None of the helpers
@@ -298,7 +298,7 @@ async def _get_pr_state_and_description(
             )
 
     if response.status_code == 404:
-        # Missing PR → treat as already-gone, equivalent to closed.
+        # Missing PR  treat as already-gone, equivalent to closed.
         return "CLOSED", ""
 
     if response.status_code != 200:
@@ -533,7 +533,7 @@ async def iter_advance_pr_supersede(
         Frozen dataclass describing what changed.
     """
 
-    # 1. No old PR → no-op (idempotent first iteration).
+    # 1. No old PR  no-op (idempotent first iteration).
     if old_pr_id is None:
         _LOG.debug(
             "iter_advance_pr_supersede: no old_pr_id, no-op "
@@ -545,7 +545,7 @@ async def iter_advance_pr_supersede(
 
     if activity.in_activity():
         activity.heartbeat(
-            f"superseding PR #{old_pr_id} → #{new_pr_id} "
+            f"superseding PR #{old_pr_id}  #{new_pr_id} "
             f"in {repo.workspace}/{repo.repo_slug}"
         )
 
@@ -565,7 +565,7 @@ async def iter_advance_pr_supersede(
     label_added = False
     description_updated = False
 
-    # 3. Closed/merged → skip Bitbucket side-effects, still log.
+    # 3. Closed/merged  skip Bitbucket side-effects, still log.
     if state not in _OPEN_STATES:
         _LOG.info(
             "iter_advance_pr_supersede: old PR #%d is %s "

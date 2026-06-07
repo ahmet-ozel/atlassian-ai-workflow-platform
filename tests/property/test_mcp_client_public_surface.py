@@ -48,7 +48,7 @@ When run on UNFIXED code, the test fails with:
  (symbol not on the package surface)
  - mcp_client.deployment_router.BITBUCKET_CREATE_PR_CLOUD succeeds
  (symbol exists in the submodule)
- → The assertion that both accesses succeed AND yield the same object FAILS.
+  The assertion that both accesses succeed AND yield the same object FAILS.
 
 Failure Mode B - Collection-time error in test_deployment_router.py:
 ----------------------------------------------------------------------
@@ -78,8 +78,8 @@ The invariant below encodes this behavior via:
  3. mcp_client.deployment_router.BITBUCKET_CREATE_PR_CLOUD - submodule access
  4. Assert both (2) and (3) succeed AND yield the same object (``is`` identity)
 
-On UNFIXED code: step (2) raises AttributeError → test FAILS (bug confirmed).
-After fix: all steps succeed → test PASSES.
+On UNFIXED code: step (2) raises AttributeError  test FAILS (bug confirmed).
+After fix: all steps succeed  test PASSES.
 
 =============================================================================
 """
@@ -129,7 +129,7 @@ def test_surface3_bitbucket_create_pr_cloud_reexported() -> None:
     # Step 3: Submodule access must succeed (the constant exists in the submodule)
     # This is the "canonical" location confirmed by:
     # grep -r "BITBUCKET_CREATE_PR_CLOUD" platform/libs/mcp_client/
-    # → platform/libs/mcp_client/src/mcp_client/deployment_router.py:39
+    # platform/libs/mcp_client/src/mcp_client/deployment_router.py:39
     deployment_router = importlib.import_module("mcp_client.deployment_router")
     submodule_value = getattr(deployment_router, "BITBUCKET_CREATE_PR_CLOUD", None)
     assert submodule_value is not None, (
@@ -147,8 +147,8 @@ def test_surface3_bitbucket_create_pr_cloud_reexported() -> None:
         "mcp_client.BITBUCKET_CREATE_PR_CLOUD is None or missing at the package surface. "
         "The constant exists in mcp_client.deployment_router "
         f"(value={submodule_value!r}) but is NOT re-exported from mcp_client/__init__.py. "
-        " getattr(mcp_client, 'BITBUCKET_CREATE_PR_CLOUD') → AttributeError/None "
-        " mcp_client.deployment_router.BITBUCKET_CREATE_PR_CLOUD → 'bitbucket_create_pull_request_cloud' "
+        " getattr(mcp_client, 'BITBUCKET_CREATE_PR_CLOUD')  AttributeError/None "
+        " mcp_client.deployment_router.BITBUCKET_CREATE_PR_CLOUD  'bitbucket_create_pull_request_cloud' "
         "Fix: add to mcp_client/__init__.py: "
         " from.deployment_router import BITBUCKET_CREATE_PR_CLOUD # re-export for downstream callers "
         " and append 'BITBUCKET_CREATE_PR_CLOUD' to __all__"

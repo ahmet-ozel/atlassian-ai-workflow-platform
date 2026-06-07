@@ -17,7 +17,7 @@ absent from both routing sets so it would have been misrouted to the
 agent-runner queue via the ``else`` fallback.
 
 The tests below MUST stay green on every change. Add a workflow type
-in only one place → CI red.
+in only one place  CI red.
 """
 
 from __future__ import annotations

@@ -1,7 +1,7 @@
 ﻿"""Webhook Pipeline orchestrator - sequential stage execution.
 
 Implements the ``WebhookPipeline`` class that runs incoming webhook
-payloads through a strict dedup → loop_guard → dispatcher order.
+payloads through a strict dedup  loop_guard  dispatcher order.
 Each stage can either PASS (continue to next) or DROP (stop processing).
 Every stage result is written to the audit log.
 
@@ -183,7 +183,7 @@ class WebhookPipeline:
     """Sequential webhook processing pipeline.
 
     Runs the payload through stages in strict order:
-    dedup → loop_guard → dispatcher.
+    dedup  loop_guard  dispatcher.
 
     Any stage returning an action other than PASS stops the pipeline.
     Every stage result is audited regardless of outcome.
@@ -558,7 +558,7 @@ class DispatcherStage:
         if result.dept_id:
             metadata["dept_id"] = result.dept_id
         # Propagate the HTTP status code + body when the dispatcher
-        # produced a custom response shape (e.g. budget_exceeded → 429
+        # produced a custom response shape (e.g. budget_exceeded  429
         # with a ``deny_response_body`` payload). The orchestrator
         # picks these up to render the final HTTP response.
         if getattr(result, "status_code", None) is not None:
@@ -584,7 +584,7 @@ def build_webhook_pipeline(
     admin_notifier: Any | None = None,
     budget_policy: Any | None = None,
 ) -> WebhookPipeline:
-    """Construct the canonical webhook pipeline (dedup → loop_guard → dispatcher).
+    """Construct the canonical webhook pipeline (dedup  loop_guard  dispatcher).
 
     Production wiring builds this once during the FastAPI lifespan
     startup and stashes it on ``app.state.webhook_pipeline``. Tests
@@ -665,7 +665,7 @@ async def post_jira_webhook_pipeline(request: Request) -> JSONResponse:
     """Handle ``POST /webhooks/jira/pipeline`` via the pipeline orchestrator.
 
     This endpoint processes Jira webhooks through the sequential pipeline:
-    dedup → loop_guard → dispatcher.
+    dedup  loop_guard  dispatcher.
 
     The pipeline instance is expected on ``request.app.state.webhook_pipeline``
     (a :class:`WebhookPipeline`). If not wired, returns 503.
@@ -761,14 +761,14 @@ async def post_jira_webhook_pipeline(request: Request) -> JSONResponse:
 
     # HTTP status mapping:
     # - 429 when the dispatcher rejected on the concurrency cap
-    #   (DispatchResult.reason="concurrency_limit_exceeded" surfaces
-    #   as HTTP 429 at the FastAPI layer).
+    # (DispatchResult.reason="concurrency_limit_exceeded" surfaces
+    # as HTTP 429 at the FastAPI layer).
     # - 429 + deny_response_body when the dispatcher rejected on the
-    #   budget enforcement runtime guard (BUDGET_EXCEEDED action).
+    # budget enforcement runtime guard (BUDGET_EXCEEDED action).
     # - 422 + configuration_error_response when the dispatcher
-    #   rejected on an undefined dept_id in budget_caps configuration.
+    # rejected on an undefined dept_id in budget_caps configuration.
     # - 200 for everything else (Atlassian expects 200 to acknowledge
-    #   receipt regardless of dedup/loop-guard/dispatch outcome).
+    # receipt regardless of dedup/loop-guard/dispatch outcome).
     http_status = status.HTTP_200_OK
     custom_body: dict[str, Any] | None = None
     if result.stage_results:

@@ -11,7 +11,7 @@
    - **Repo** - değişiklik hangi Bitbucket repo'sunda yapılsın? (departmanına ait
      repo'lar listelenir; kendi repo'n yoksa AI Admin'e başvur)
    - **Issue type** - Story, Task, Bug, Epic - bot bu tipe göre yaklaşımını ayarlar
-3. **Task Oluştur** butonu → bot **5 saniye içinde** Jira'ya `🤖 Task alındı, analiz
+3. **Task Oluştur** butonu  bot **5 saniye içinde** Jira'ya ` Task alındı, analiz
    ediyorum...` comment'i yazar.
 4. Birkaç dakika sonra bot planını + tahmini süre/maliyet'i ikinci comment olarak ekler.
 
@@ -22,20 +22,20 @@ Bot description'dan **ne yapacağını** çıkarır. Belirsizlik olursa size sor
 
 ### 1. Ne istiyorsun? (Hedef)
 
-❌ Yetersiz: *"payment-callbacks repo'sunu güncelle"*
-✅ Net: *"payment-callbacks repo'sunda webhook retry mekanizması ekle. 3 deneme,
+ Yetersiz: *"payment-callbacks repo'sunu güncelle"*
+ Net: *"payment-callbacks repo'sunda webhook retry mekanizması ekle. 3 deneme,
 exponential backoff, hata Sentry'ye loglansın."*
 
 ### 2. Nereye dokunulsun? (Kapsam)
 
-❌ Yetersiz: *"retry ekle"*
-✅ Net: *"src/handlers/webhook.py içine retry decorator. Mevcut send_webhook fonksiyonunu
+ Yetersiz: *"retry ekle"*
+ Net: *"src/handlers/webhook.py içine retry decorator. Mevcut send_webhook fonksiyonunu
 sarmasın, yeni send_webhook_with_retry yaz."*
 
 ### 3. Nasıl test edilsin? (Doğrulama)
 
-❌ Yetersiz: *"test et"*
-✅ Net: *"tests/handlers/test_webhook.py içinde 3 unit test ekle: (a) ilk deneme başarılı,
+ Yetersiz: *"test et"*
+ Net: *"tests/handlers/test_webhook.py içinde 3 unit test ekle: (a) ilk deneme başarılı,
 (b) ikinci denemede başarılı, (c) üç denemede de fail. pytest -k webhook ile geçmeli."*
 
 ## Issue Type Seçimi
@@ -44,7 +44,7 @@ sarmasın, yeni send_webhook_with_retry yaz."*
 |---|---|
 | **Story** | Acceptance Criteria (AC) okur, her AC'yi doğrulayan kod yazar. AC eksikse soru sorar. |
 | **Task** | Serbest format - description'da yazanı yapar, AC beklemez. |
-| **Bug** | Önce reproduce adımlarını çıkarır → failing test yazar → fix uygular → test geçtiğini doğrular. PR'da Root Cause + Fix Summary bölümleri olur. |
+| **Bug** | Önce reproduce adımlarını çıkarır  failing test yazar  fix uygular  test geçtiğini doğrular. PR'da Root Cause + Fix Summary bölümleri olur. |
 | **Epic** | Subtask'ları sırayla işler ([detay: SSS](faq.md#bot-epic-aldı-tüm-subtask’ları-yapacak-mı)). |
 
 ## Sık Sorulan Field'lar
@@ -68,7 +68,7 @@ görüntüleri okur.
 
 ## Tek/Çift Repo'da Değişiklik?
 
-⚠️ **Bot tek repo ile çalışır.** Backend ve frontend'i birlikte değiştirmek istersen iki
+ **Bot tek repo ile çalışır.** Backend ve frontend'i birlikte değiştirmek istersen iki
 seçeneğin var:
 
 1. **Ayrı task'lar** - backend için bir task, frontend için ayrı task. Sırayla bot'a ata.

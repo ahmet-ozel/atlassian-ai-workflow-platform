@@ -19,11 +19,11 @@ ui/streamlit-app/
 ├── app.py                     # Streamlit entrypoint (binds to container port 8501)
 ├── pages/
 │   ├── 0_credentials.py       # per-session Jira/Confluence/Bitbucket credentials
-│   ├── 1_chat.py              # chat → MCP, formatted by the configured LLM
+│   ├── 1_chat.py              # chat  MCP, formatted by the configured LLM
 │   ├── 2_task_creator.py      # Jira task-description drafting assistant
 │   ├── 3_explorer.py          # (admin-debug) read-only MCP explorer
 │   └── 7_mcp_inspector.py     # (admin-debug) MCP inspector
-├── chat_runtime.py            # chat → plan → MCP call → LLM summary
+├── chat_runtime.py            # chat  plan  MCP call  LLM summary
 ├── chat_planner.py            # intent/plan extraction (Confluence space-key, etc.)
 ├── chat_mcp.py                # MCP client wiring
 ├── config.py                  # Pydantic settings loader

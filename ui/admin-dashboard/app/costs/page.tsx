@@ -2,8 +2,7 @@
 
 /**
  * Costs panel.
- *
- * Three cards (dept totals, by model, trend) + "Bütçe Alarmları" tab
+ * * Three cards (dept totals, by model, trend) + "Bütçe Alarmları" tab
  * for configuring per-dept alarm thresholds.
  */
 
@@ -69,13 +68,13 @@ export default function CostsPage(): JSX.Element {
           className={`tab${tab === "overview" ? " is-active" : ""}`}
           onClick={() => setTab("overview")}
         >
-          📊 Genel bakış
+           Genel bakış
         </button>
         <button
           className={`tab${tab === "alarms" ? " is-active" : ""}`}
           onClick={() => setTab("alarms")}
         >
-          🔔 Bütçe alarmları
+           Bütçe alarmları
         </button>
       </div>
 
@@ -148,7 +147,7 @@ function CostsOverviewTab(): JSX.Element {
         </div>
         {error && (
           <div className="banner banner--danger" style={{ margin: "1rem" }}>
-            <span className="banner__icon">⚠️</span>
+            <span className="banner__icon"></span>
             <div className="banner__body">{error}</div>
           </div>
         )}
@@ -175,7 +174,7 @@ function CostsOverviewTab(): JSX.Element {
           <div className="card__body card__body--flush">
             {!dept || dept.by_user.length === 0 ? (
               <div className="empty">
-                <div className="empty__icon">👤</div>
+                <div className="empty__icon"></div>
                 <div className="empty__title">Kayıt yok</div>
               </div>
             ) : (
@@ -206,7 +205,7 @@ function CostsOverviewTab(): JSX.Element {
           <div className="card__body card__body--flush">
             {!model || model.by_model.length === 0 ? (
               <div className="empty">
-                <div className="empty__icon">🧠</div>
+                <div className="empty__icon"></div>
                 <div className="empty__title">Kayıt yok</div>
               </div>
             ) : (
@@ -241,7 +240,7 @@ function CostsOverviewTab(): JSX.Element {
         <div className="card__body">
           {!trend || trend.trend.length === 0 ? (
             <div className="empty">
-              <div className="empty__icon">📈</div>
+              <div className="empty__icon"></div>
               <div className="empty__title">Veri yok</div>
             </div>
           ) : (
@@ -410,7 +409,7 @@ function BudgetAlarmsTab(): JSX.Element {
   return (
     <div className="stack stack--lg">
       <div className="banner banner--info">
-        <span className="banner__icon">ℹ️</span>
+        <span className="banner__icon">ℹ</span>
         <div className="banner__body">
           Departman bütçesinin belirlenen yüzdesine ulaşıldığında ön-uyarı
           gönderilir. Hard limit (%100) aşıldığında workflow başlatma
@@ -439,13 +438,13 @@ function BudgetAlarmsTab(): JSX.Element {
         <div className="card__body card__body--flush">
           {error && (
             <div className="banner banner--danger" style={{ margin: "1rem" }}>
-              <span className="banner__icon">⚠️</span>
+              <span className="banner__icon"></span>
               <div className="banner__body">{error}</div>
             </div>
           )}
           {saveSuccess && (
             <div className="banner banner--success" style={{ margin: "1rem" }}>
-              <span className="banner__icon">✅</span>
+              <span className="banner__icon"></span>
               <div className="banner__body">Eşikler kaydedildi.</div>
             </div>
           )}
@@ -527,7 +526,7 @@ function BudgetAlarmsTab(): JSX.Element {
             onClick={handleSave}
             disabled={saving || loading}
           >
-            {saving ? <span className="spinner" /> : "💾"} Kaydet
+            {saving ? <span className="spinner" /> : ""} Kaydet
           </button>
         </div>
       </div>

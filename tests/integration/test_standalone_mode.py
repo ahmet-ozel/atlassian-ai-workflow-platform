@@ -186,7 +186,7 @@ def _docker_available() -> bool:
 
 
 def _stage_env_file(component_dir: Path) -> Path | None:
-    """Copy ``.env.example`` → ``.env`` inside ``component_dir`` if no
+    """Copy ``.env.example``  ``.env`` inside ``component_dir`` if no
  ``.env`` already exists.
 
  Returns the path of the file this call created (so teardown can

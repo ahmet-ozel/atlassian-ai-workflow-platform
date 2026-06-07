@@ -1,4 +1,4 @@
-⚠️ Bütçe limiti aşıldı
+ Bütçe limiti aşıldı
 
 **Workflow:** `{workflow_id}`
 **Departman:** `{dept_id}`

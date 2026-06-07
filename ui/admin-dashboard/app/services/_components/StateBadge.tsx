@@ -1,21 +1,18 @@
 ﻿/**
  * StateBadge - Lifecycle state pill rendered next to a service row /
  * the service detail header.
- *
- * Renders the
+ * * Renders the
  * full :class:`ServiceState` literal (six values) with the expected
  * colour mapping plus the ``running_unmonitored`` extension.
- *
- * Colour scheme
+ * * Colour scheme
  * -------------
- * - ``stopped``              → grey (#9ca3af)
- * - ``starting``             → blue (#3b82f6)
- * - ``running``              → green (#16a34a)
- * - ``unhealthy``            → yellow (#facc15)
- * - ``failed``               → red (#dc2626)
- * - ``running_unmonitored``  → grey (#cbd5e1) + tooltip
- *
- * The component is a *pure* presentational widget. Polling, refresh,
+ * - ``stopped``               grey (#9ca3af)
+ * - ``starting``              blue (#3b82f6)
+ * - ``running``               green (#16a34a)
+ * - ``unhealthy``             yellow (#facc15)
+ * - ``failed``                red (#dc2626)
+ * - ``running_unmonitored``   grey (#cbd5e1) + tooltip
+ * * The component is a *pure* presentational widget. Polling, refresh,
  * error handling and modal state remain in the parent page so that the
  * existing services catalog test fixtures keep working unchanged.
  */

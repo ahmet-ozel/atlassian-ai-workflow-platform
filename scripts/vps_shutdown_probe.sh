@@ -4,16 +4,16 @@
 # =============================================================================
 # Runs on VPS_Host. Shutdown probe checks:
 #
-#   1. `make down` within 60 seconds, exit 0            (R18.1)
-#   2. Assert `docker compose ps -q` returns empty      (R18.2)
-#   3. Assert named volumes pg_data, minio_data,
-#      agent_workspace still exist                      (R18.3)
-#   4. Optional --destructive: wipe volumes + log       (R18.4)
-#   5. Emit evidence to /tmp/18-shutdown.txt            (R18.5)
+# 1. `make down` within 60 seconds, exit 0            (R18.1)
+# 2. Assert `docker compose ps -q` returns empty      (R18.2)
+# 3. Assert named volumes pg_data, minio_data,
+# agent_workspace still exist                      (R18.3)
+# 4. Optional --destructive: wipe volumes + log       (R18.4)
+# 5. Emit evidence to /tmp/18-shutdown.txt            (R18.5)
 #
 # Usage:
-#   ./vps_shutdown_probe.sh               # graceful shutdown only
-#   ./vps_shutdown_probe.sh --destructive # + volume removal
+# ./vps_shutdown_probe.sh               # graceful shutdown only
+# ./vps_shutdown_probe.sh --destructive # + volume removal
 # =============================================================================
 set -euo pipefail
 

@@ -2,8 +2,7 @@
 
 /**
  * Prompts catalogue.
- *
- * Lists every `.md` under `platform/prompts/`. Each row links to the
+ * * Lists every `.md` under `platform/prompts/`. Each row links to the
  * editor at `/prompts/{name}` (catch-all route) where operators run
  * sandbox calls and commit changes as draft PRs.
  */
@@ -58,7 +57,7 @@ export default function PromptsPage(): JSX.Element {
       if (!res.ok) {
         const text = await res.text().catch(() => "");
         throw new Error(
-          `GET /api/v1/prompts → HTTP ${res.status}${
+          `GET /api/v1/prompts  HTTP ${res.status}${
             text ? `: ${text.slice(0, 200)}` : ""
           }`,
         );
@@ -98,7 +97,7 @@ export default function PromptsPage(): JSX.Element {
           </div>
           <div className="page-header__actions">
             <button className="btn" onClick={refresh} disabled={loading}>
-              {loading ? <span className="spinner" /> : "🔄"} Yenile
+              {loading ? <span className="spinner" /> : ""} Yenile
             </button>
           </div>
         </div>
@@ -106,7 +105,7 @@ export default function PromptsPage(): JSX.Element {
 
       {error && (
         <div className="banner banner--danger" role="alert">
-          <span className="banner__icon">⚠️</span>
+          <span className="banner__icon"></span>
           <div className="banner__body">{error}</div>
         </div>
       )}
@@ -126,7 +125,7 @@ export default function PromptsPage(): JSX.Element {
         <div className="card__body card__body--flush">
           {filtered.length === 0 && !loading ? (
             <div className="empty">
-              <div className="empty__icon">🧠</div>
+              <div className="empty__icon"></div>
               <div className="empty__title">
                 {rows.length === 0 ? "Prompt bulunamadı" : "Eşleşme yok"}
               </div>

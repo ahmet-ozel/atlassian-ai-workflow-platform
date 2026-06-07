@@ -363,8 +363,8 @@ def test_realistic_code_change_history_compensates_in_p0_order() -> None:
         artifact_upload
 
     Compensation order (reverse, inverse-only):
-        artifact_delete            ← artifact_upload
-        bitbucket_delete_branch    ← bitbucket_create_branch
+        artifact_delete             artifact_upload
+        bitbucket_delete_branch     bitbucket_create_branch
     """
 
     history = [

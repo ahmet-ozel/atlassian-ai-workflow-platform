@@ -2,13 +2,11 @@
 
 /**
  * AppShell â€” global navigation chrome for the admin dashboard.
- *
- * Renders the sidebar + topbar around every page (wired in
+ * * Renders the sidebar + topbar around every page (wired in
  * ``app/layout.tsx``). The sidebar groups navigation entries by
  * concern (Setup, Operations, Governance) and highlights the active
  * route via Next's ``usePathname``.
- *
- * Visual styling lives entirely in ``app/globals.css``; this file
+ * * Visual styling lives entirely in ``app/globals.css``; this file
  * stays declarative â€” a flat list of nav entries plus a small
  * presentational shell.
  */

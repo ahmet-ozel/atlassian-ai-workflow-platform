@@ -600,7 +600,7 @@ class TestWizardStep7DepartmentForm:
 # ---------------------------------------------------------------------------
 
 class TestWizardStep7SSHConnection:
-    """R7.3: Test SSH Connection → assert green badge (15s).
+    """R7.3: Test SSH Connection  assert green badge (15s).
 
     WHEN the Playwright_Harness clicks 'Test SSH Connection',
     THE Setup_Wizard SHALL attempt an SSH connection to root@91.99.149.163
@@ -609,7 +609,7 @@ class TestWizardStep7SSHConnection:
     """
 
     def test_ssh_connection(self, credentials):
-        """R7.3: Click 'Test SSH Connection' → assert green badge (15s).
+        """R7.3: Click 'Test SSH Connection'  assert green badge (15s).
 
         In live Playwright MCP execution, this clicks the 'Test SSH Connection'
         button and waits for the green badge to appear. The API-level test
@@ -648,7 +648,7 @@ class TestWizardStep7SSHConnection:
 # ---------------------------------------------------------------------------
 
 class TestWizardStep7BitbucketConnection:
-    """R7.4: Test Bitbucket Connection → assert green badge.
+    """R7.4: Test Bitbucket Connection  assert green badge.
 
     WHEN the Playwright_Harness clicks 'Test Bitbucket Connection',
     THE Setup_Wizard SHALL invoke a Bitbucket API call to verify
@@ -656,7 +656,7 @@ class TestWizardStep7BitbucketConnection:
     """
 
     def test_bitbucket_connection(self, credentials):
-        """R7.4: Click 'Test Bitbucket Connection' → assert green badge.
+        """R7.4: Click 'Test Bitbucket Connection'  assert green badge.
 
         In live Playwright MCP execution, this clicks the 'Test Bitbucket
         Connection' button and waits for the green badge. The API-level test
@@ -695,7 +695,7 @@ class TestWizardStep7BitbucketConnection:
 # ---------------------------------------------------------------------------
 
 class TestWizardStep7CreateDepartment:
-    """R7.5: Click 'Create Department' → assert Step 7 completed.
+    """R7.5: Click 'Create Department'  assert Step 7 completed.
 
     WHEN both connection tests pass and the Playwright_Harness clicks
     'Create Department', THE Setup_Wizard SHALL persist the department

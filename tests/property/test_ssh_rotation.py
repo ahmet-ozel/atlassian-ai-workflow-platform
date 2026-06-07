@@ -227,7 +227,7 @@ def test_active_previous_slot_invariant(
             assert result.active_path.raw == expected_active
 
             # 2. Previous slot bookkeeping depends on whether this is
-            #    the very first rotation in this test run.
+            # the very first rotation in this test run.
             if index == 0:
                 assert result.previous_path is None, (
                     f"{backend_name}: previous_path must be None on the first "
@@ -240,8 +240,8 @@ def test_active_previous_slot_invariant(
                 assert result.previous_path is not None
                 assert result.previous_path.raw == expected_previous
                 # 3. Previous slot equals the *prior* active payload -
-                #    so an in-flight SSH session using key v_(n-1) can
-                #    still validate after we cut over to v_n.
+                # so an in-flight SSH session using key v_(n-1) can
+                # still validate after we cut over to v_n.
                 previous_value = dict(backend.read(result.previous_path))
                 assert previous_value == prior_active_payload, (
                     f"{backend_name}: previous slot drift at rotation #{index}"
@@ -254,7 +254,7 @@ def test_active_previous_slot_invariant(
             )
 
             # 5. Slots never coincide - leaking the same payload into
-            #    both would defeat the dual-slot invariant.
+            # both would defeat the dual-slot invariant.
             if result.previous_path is not None:
                 assert active_value != dict(backend.read(result.previous_path))
 

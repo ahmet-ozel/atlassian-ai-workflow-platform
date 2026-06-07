@@ -5,23 +5,23 @@
 # Runs on VPS_Host at /opt/atlassian-ai-workflow-platform.
 # Full stack probe checks:
 #
-#   1. Assert 13 services are running + healthy via docker compose ps  (R9.1)
-#   2. Run pytest test_compose_healthcheck_shape.py, assert exit 0     (R9.2)
-#   3. If any service unhealthy >120s, capture logs + Open_Issue       (R9.3)
-#   4. Assert automation-service env: LOG_REDACTION_ENABLED=true,
-#      LOG_LEVEL∈{INFO,DEBUG}, LOG_FORMAT=json                         (R9.4)
-#   5. Emit evidence to /tmp/09-stack.txt                              (R9.5)
+# 1. Assert 13 services are running + healthy via docker compose ps  (R9.1)
+# 2. Run pytest test_compose_healthcheck_shape.py, assert exit 0     (R9.2)
+# 3. If any service unhealthy >120s, capture logs + Open_Issue       (R9.3)
+# 4. Assert automation-service env: LOG_REDACTION_ENABLED=true,
+# LOG_LEVEL∈{INFO,DEBUG}, LOG_FORMAT=json                         (R9.4)
+# 5. Emit evidence to /tmp/09-stack.txt                              (R9.5)
 #
 # Exit codes:
-#   0 = all assertions pass
-#   1 = one or more assertions failed
+# 0 = all assertions pass
+# 1 = one or more assertions failed
 #
 # Usage:
-#   ./vps_stack_probe.sh
+# ./vps_stack_probe.sh
 #
 # Prerequisites:
-#   - Setup Wizard completed (R8 passed)
-#   - All profile-gated services started
+# - Setup Wizard completed (R8 passed)
+# - All profile-gated services started
 # =============================================================================
 set -uo pipefail
 
@@ -186,9 +186,9 @@ if [ ${#UNHEALTHY_SERVICES[@]} -gt 0 ] || [ ${#MISSING_SERVICES[@]} -gt 0 ]; the
         echo "Unhealthy services after ${UNHEALTHY_TIMEOUT}s timeout:" >> "$EVIDENCE_FILE"
         for SVC in "${UNHEALTHY_SERVICES[@]}"; do
             LOG_FILE="$EVIDENCE_DIR/09-unhealthy-${SVC}.log"
-            log_info "Capturing last 200 log lines for '$SVC' → $LOG_FILE"
+            log_info "Capturing last 200 log lines for '$SVC'  $LOG_FILE"
             compose_cmd logs --tail=200 --no-color "$SVC" > "$LOG_FILE" 2>&1 || true
-            echo "  $SVC → $LOG_FILE" >> "$EVIDENCE_FILE"
+            echo "  $SVC  $LOG_FILE" >> "$EVIDENCE_FILE"
             log_open_issue "R9" "Service '$SVC' unhealthy >120s after wizard completion (R9.3)" "$SVC"
         done
         echo "" >> "$EVIDENCE_FILE"

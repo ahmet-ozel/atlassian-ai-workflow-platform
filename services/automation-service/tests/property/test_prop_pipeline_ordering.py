@@ -1,10 +1,10 @@
 ﻿"""Property test: Webhook pipeline ordering guarantee.
 
-Stages always execute in dedup → loop_guard → dispatcher order.
+Stages always execute in dedup  loop_guard  dispatcher order.
 
 For ANY webhook payload (generated via Hypothesis strategies), the pipeline
 stages ALWAYS execute in strict order:
-    Event_Dedup → Loop_Guard → Webhook_Dispatcher
+    Event_Dedup  Loop_Guard  Webhook_Dispatcher
 
 No stage can be skipped or reordered. This is verified by injecting fake
 stages that record their invocation order and asserting the invariant
@@ -190,7 +190,7 @@ def webhook_payloads(draw: st.DrawFn) -> WebhookPayload:
 
 class TestPipelineOrderingGuarantee:
     """For any webhook payload, stages execute in strict order:
-    Event_Dedup → Loop_Guard → Webhook_Dispatcher.
+    Event_Dedup  Loop_Guard  Webhook_Dispatcher.
 
     No stage can be skipped or reordered.
     """
@@ -201,7 +201,7 @@ class TestPipelineOrderingGuarantee:
         self, payload: WebhookPayload
     ) -> None:
         """When all stages return PASS, all three stages execute in the
-        exact order: event_dedup → loop_guard → dispatcher.
+        exact order: event_dedup  loop_guard  dispatcher.
         """
         execution_log: list[str] = []
 
@@ -335,7 +335,7 @@ class TestPipelineOrderingGuarantee:
         self, payload: WebhookPayload, terminal_action: StageAction
     ) -> None:
         """Regardless of which terminal action the dispatcher returns,
-        the execution order is always dedup → loop_guard → dispatcher.
+        the execution order is always dedup  loop_guard  dispatcher.
         """
         execution_log: list[str] = []
 

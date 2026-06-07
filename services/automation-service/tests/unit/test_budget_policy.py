@@ -4,8 +4,8 @@ The tests exercise the policy against an in-memory caps provider, a
 list-backed asyncpg fake, and a recording :class:`AuditWriter`. They
 cover:
 
-* the four-scope ordering (``dept_weekly → user_weekly → dept_monthly
-  → user_monthly``),
+* the four-scope ordering (``dept_weekly  user_weekly  dept_monthly
+   user_monthly``),
 * the ``cost_tag = 'production'`` SQL filter (the policy does not
   re-aggregate sandbox / probe rows itself, but we assert the SQL it
   issues carries the literal),
@@ -74,7 +74,7 @@ class _RecordingAuditWriter:
 
 @dataclass
 class _FakeUsageRunner:
-    """In-memory ``fetchval`` fake driven by a (sql_substr, args) → value table.
+    """In-memory ``fetchval`` fake driven by a (sql_substr, args)  value table.
 
     Test cases populate ``responses`` keyed by a tuple of distinguishing
     SQL fragments + the positional arg tuple. The fake also records

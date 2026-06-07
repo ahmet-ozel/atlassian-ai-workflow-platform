@@ -916,7 +916,7 @@ def render_credential_warning() -> None:
     can render the warning without invoking the full manager
     panel.
     """
-    st.warning(CREDENTIAL_WARNING_TEXT, icon="🔒")
+    st.warning(CREDENTIAL_WARNING_TEXT, icon="")
 
 
 def render_logout_button(*, key: str = "credential_manager_logout") -> bool:
@@ -930,7 +930,7 @@ def render_logout_button(*, key: str = "credential_manager_logout") -> bool:
     state.
     """
     manager = _get_manager()
-    if st.button("🚪 Oturumu Kapat", key=key, type="secondary"):
+    if st.button(" Oturumu Kapat", key=key, type="secondary"):
         manager.clear_all()
         _clear_restore_cookie()
         st.success("Oturum kapatıldı; tüm credential'lar bellekten silindi.")
@@ -1014,9 +1014,9 @@ def _render_service_form(manager: CredentialManager, service: str) -> None:
         st.markdown(f"##### {service_label}")
         if cred is not None:
             status = (
-                "✅ Doğrulandı"
+                " Doğrulandı"
                 if cred.is_valid is True
-                else ("⚠️ Doğrulanmadı" if cred.is_valid is None else "❌ Reddedildi")
+                else (" Doğrulanmadı" if cred.is_valid is None else " Reddedildi")
             )
             st.caption(f"Mevcut: `{cred.masked_email()}` - {status}")
         deployment_label = st.radio(

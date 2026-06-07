@@ -1,16 +1,16 @@
 ﻿"""End-to-end integration test for the ``research_summary_jira`` flow.
 
 
-This test exercises the parent → child workflow boundary using
+This test exercises the parent  child workflow boundary using
 ``WorkflowEnvironment.start_time_skipping`` and Temporal's deterministic
 test server. The flow under test:
 
- AutomationWorkflow (jira_get_issue → llm_analyze_task[research_summary_jira])
- → execute_child_workflow("AgentRunnerWorkflow", ...)
- → AgentRunnerWorkflow (research branch)
- → llm_research (with optional firecrawl web search)
- → jira_add_comment (research summary on the issue)
- → completion comment + Done transition
+ AutomationWorkflow (jira_get_issue  llm_analyze_task[research_summary_jira])
+  execute_child_workflow("AgentRunnerWorkflow", ...)
+  AgentRunnerWorkflow (research branch)
+  llm_research (with optional firecrawl web search)
+  jira_add_comment (research summary on the issue)
+  completion comment + Done transition
 
 Test scope decision (option (a) - minimal AgentRunnerWorkflow stub)
 -------------------------------------------------------------------
@@ -172,8 +172,7 @@ async def test_research_summary_jira_e2e_flow() -> None:
             )
 
         # ----- Child (AgentRunnerWorkflow stub) activity mocks ---------
-        #
-        # ``llm_research`` returns a ResearchData-shaped dict - the child
+        # # ``llm_research`` returns a ResearchData-shaped dict - the child
         # stub only needs the ``summary`` field for the Jira comment.
 
         @activity.defn(name="llm_research")

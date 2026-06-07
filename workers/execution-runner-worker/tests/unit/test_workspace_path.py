@@ -56,7 +56,7 @@ class TestBuildWorkspacePathHappy:
         assert build_workspace_path("/x", "A-1", 0) == "/x/A-1/iter-0"
 
     def test_deterministic(self) -> None:
-        # Same inputs → same output, byte-for-byte.
+        # Same inputs  same output, byte-for-byte.
         a = build_workspace_path("/var/ai-runner", "PAY-4211", 7)
         b = build_workspace_path("/var/ai-runner", "PAY-4211", 7)
         assert a == b

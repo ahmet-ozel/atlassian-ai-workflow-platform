@@ -7,15 +7,15 @@ surface is uniformly gated (behavior 10.1).
 
 Behaviour matrix (behaviors 10.2 / 10.3):
 
-* Missing or non-``Bearer`` ``Authorization`` header → ``401`` immediately,
+* Missing or non-``Bearer`` ``Authorization`` header  ``401`` immediately,
   *before* any claim inspection, so anonymous probes never leak whether
   a service exists.
-* ``Bearer`` prefix present but the token portion is empty → ``401``.
-* ``OIDCValidator.validate`` raises :class:`InvalidTokenError` → ``401``.
+* ``Bearer`` prefix present but the token portion is empty  ``401``.
+* ``OIDCValidator.validate`` raises :class:`InvalidTokenError`  ``401``.
 * Validator returns claims, but neither ``groups`` nor ``roles`` contains
-  ``"admin"`` → ``403``. Read-only access is *not* granted to authenticated
+  ``"admin"``  ``403``. Read-only access is *not* granted to authenticated
   non-admin users (behavior 10.3 second sentence).
-* All checks pass → :class:`AuthClaims` is returned and bound to the
+* All checks pass  :class:`AuthClaims` is returned and bound to the
   endpoint handler argument.
 
 The validator is constructed once per process via :func:`get_validator`,

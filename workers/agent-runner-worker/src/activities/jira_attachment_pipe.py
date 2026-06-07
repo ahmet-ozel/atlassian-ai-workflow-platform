@@ -1,4 +1,4 @@
-﻿"""MinIO → Jira binary attachment upload pipeline activity.
+﻿"""MinIO  Jira binary attachment upload pipeline activity.
 
 This module provides the :func:`upload_artifact_to_jira` Temporal
 activity which bridges the agent-runner-worker's MinIO artifact storage

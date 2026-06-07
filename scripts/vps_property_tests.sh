@@ -7,20 +7,20 @@
 # evidence at /tmp/21-property-tests.txt.
 #
 # Implements:
-#   R21.1 — Single pytest invocation with all four test files
-#   R21.2 — Exit code 0 and "failed: 0" assertion
-#   R21.3 — Per-failure Open_Issue (category=code, severity=major) with
-#            Hypothesis falsifying example
-#   R21.4 — Missing test files detected via pytest --collect-only; verdict=n/a
-#            + Open_Issue (category=code, recommended_action=code_change_required)
-#   R21.5 — Sub-table verdicts emitted for TEST_REPORT.md integration
+# R21.1 — Single pytest invocation with all four test files
+# R21.2 — Exit code 0 and "failed: 0" assertion
+# R21.3 — Per-failure Open_Issue (category=code, severity=major) with
+# Hypothesis falsifying example
+# R21.4 — Missing test files detected via pytest --collect-only; verdict=n/a
+# + Open_Issue (category=code, recommended_action=code_change_required)
+# R21.5 — Sub-table verdicts emitted for TEST_REPORT.md integration
 #
 # Usage:
-#   ./vps_property_tests.sh
+# ./vps_property_tests.sh
 #
 # Exit codes:
-#   0 = all tests pass (or missing tests handled gracefully)
-#   1 = one or more test failures detected (Open_Issues logged)
+# 0 = all tests pass (or missing tests handled gracefully)
+# 1 = one or more test failures detected (Open_Issues logged)
 # =============================================================================
 set -uo pipefail
 # NOTE: We do NOT use `set -e` because pytest exit code 1 (test failures) is
@@ -203,7 +203,7 @@ fi
 if [ $OVERALL_EXIT -eq 0 ] && [ ${#MISSING_FILES[@]} -eq 0 ]; then
     echo "OVERALL_VERDICT=PASS" >> "$EVIDENCE_FILE"
 elif [ $OVERALL_EXIT -eq 0 ] && [ ${#MISSING_FILES[@]} -gt 0 ]; then
-    echo "OVERALL_VERDICT=PARTIAL (missing tests → n/a)" >> "$EVIDENCE_FILE"
+    echo "OVERALL_VERDICT=PARTIAL (missing tests  n/a)" >> "$EVIDENCE_FILE"
 else
     echo "OVERALL_VERDICT=FAIL" >> "$EVIDENCE_FILE"
 fi

@@ -7,8 +7,8 @@ rollback semantics and the
 ``state="starting"``-before-response transition.
 Coverage matrix
 ---------------
-* ``start`` happy path - Vault writes per-key, audit precheck → pending
-  row → Compose up → health probe → success row.
+* ``start`` happy path - Vault writes per-key, audit precheck  pending
+  row  Compose up  health probe  success row.
 * ``start`` failures:
   - ``FormSchemaMismatchError`` on missing form key.
   - ``FormSchemaMismatchError`` on extra form key.
@@ -319,7 +319,7 @@ class _FakeFeatureFlagReader:
     Backs the (feature-flag start gate) tests by returning a
     pre-canned ``flags`` map. Missing keys are absent from the returned
     dict so ``LifecycleService._check_feature_flags`` can exercise the
-    "missing row → treat as disabled" branch."""
+    "missing row  treat as disabled" branch."""
 
     flags: dict[str, bool] = field(default_factory=dict)
     calls: list[list[str]] = field(default_factory=list)
@@ -551,8 +551,8 @@ def _entries_with_chain() -> tuple[ManagedServiceEntry, ...]:
 
     Graph (manifest-resident nodes only):
 
-    * ``automation-service`` → ``atlassian-mcp``, ``postgres`` (external).
-    * ``atlassian-mcp`` → ``firecrawl``, ``vault`` (external).
+    * ``automation-service``  ``atlassian-mcp``, ``postgres`` (external).
+    * ``atlassian-mcp``  ``firecrawl``, ``vault`` (external).
     * ``firecrawl``, ``admin-dashboard-api`` are leaves.
     * ``admin-dashboard-api`` is unrelated to the chain - included so
       the plan does *not* leak unrelated services into ``will_start``.
@@ -706,7 +706,7 @@ def test_compute_start_plan_target_already_running(tmp_path: Path) -> None:
 
 
 def test_compute_start_plan_unknown_service_raises(tmp_path: Path) -> None:
-    """Unknown service → :class:`UnknownServiceError` (router 404)."""
+    """Unknown service  :class:`UnknownServiceError` (router 404)."""
 
     workspace = _build_workspace(tmp_path)
     svc, *_ = _make_service(workspace_root=workspace)
@@ -718,7 +718,7 @@ def test_compute_start_plan_unknown_service_raises(tmp_path: Path) -> None:
 def test_compute_start_plan_diamond_dependency_no_duplicates(
     tmp_path: Path,
 ) -> None:
-    """Shared deps in a diamond ``A → B,C → D`` must appear once.
+    """Shared deps in a diamond ``A  B,C  D`` must appear once.
 
     The DFS ``visited`` set ensures ``D`` is post-ordered exactly
     once even though both ``B`` and ``C`` depend on it.
@@ -789,8 +789,8 @@ def test_compute_start_plan_diamond_dependency_no_duplicates(
 
 
 def test_start_happy_path(tmp_path: Path) -> None:
-    """End-to-end: precheck → vault writes → pending audit → compose →
-    health → success audit. ``state`` flips to ``starting`` before the
+    """End-to-end: precheck  vault writes  pending audit  compose
+    health  success audit. ``state`` flips to ``starting`` before the
     response is built  and ends at ``running``."""
 
     workspace = _build_workspace(tmp_path)
@@ -810,7 +810,7 @@ def test_start_happy_path(tmp_path: Path) -> None:
     assert response.state == "running"
     assert response.audit_write_deferred is False
 
-    # Order: precheck → vault writes → pending audit → compose up → health probe.
+    # Order: precheck  vault writes  pending audit  compose up  health probe.
     assert audit.precheck_calls == 1
     assert len(vault.writes) == 2
     assert ("automation-service", "PORT", "8080") in vault.writes
@@ -1184,7 +1184,7 @@ def test_start_compose_up_fail_marks_failed_and_writes_failed_audit(
 
 
 def test_start_health_probe_timeout_marks_failed(tmp_path: Path) -> None:
-    """Health probe never reports ``healthy`` → state ends at ``failed``."""
+    """Health probe never reports ``healthy``  state ends at ``failed``."""
 
     workspace = _build_workspace(tmp_path)
     health = _FakeHealthProbe(snapshots=[_unhealthy_snapshot()])
@@ -1277,7 +1277,7 @@ def test_stop_running_service_invokes_compose(tmp_path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-#  record_purge_vault_blocked - the project
+# record_purge_vault_blocked - the project
 # ---------------------------------------------------------------------------
 
 
@@ -1345,7 +1345,7 @@ def test_record_purge_vault_blocked_unknown_service_raises(
 
 
 # ---------------------------------------------------------------------------
-#  stop + purge_vault - the project
+# stop + purge_vault - the project
 # ---------------------------------------------------------------------------
 
 
@@ -1467,7 +1467,7 @@ def test_stop_purge_vault_true_happy_path_deletes_all_keys(
     # Vault is now empty for this service.
     assert vault.stored["automation-service"] == {}
 
-    # Audit chain: stop → vault_overrides_purged. Both successes.
+    # Audit chain: stop  vault_overrides_purged. Both successes.
     actions = [row.action for row in audit.write_with_retry_calls]
     assert actions == ["stop", "vault_overrides_purged"]
     purge_row = audit.write_with_retry_calls[1]
@@ -1585,7 +1585,7 @@ def test_stop_purge_vault_true_list_failure_partial_audit(
     # Stored override survives - we couldn't enumerate it.
     assert vault.stored["automation-service"] == {"PORT": "8080"}
 
-    # Audit chain: stop(success) → vault_purge_partial_failure(failed).
+    # Audit chain: stop(success)  vault_purge_partial_failure(failed).
     actions = [row.action for row in audit.write_with_retry_calls]
     assert actions == ["stop", "vault_purge_partial_failure"]
     failure_row = audit.write_with_retry_calls[1]
@@ -1902,7 +1902,7 @@ def test_logs_redacts_sensitive_env_values(tmp_path: Path) -> None:
 
 
 def test_logs_no_redaction_when_no_sensitive_keys(tmp_path: Path) -> None:
-    """Worker schema has no sensitive keys → log lines pass through unmodified."""
+    """Worker schema has no sensitive keys  log lines pass through unmodified."""
 
     workspace = _build_workspace(tmp_path)
     initial = {
@@ -1931,7 +1931,7 @@ def test_logs_no_redaction_when_no_sensitive_keys(tmp_path: Path) -> None:
 
 
 def test_health_of_streak_alert_emitted_once_at_threshold(tmp_path: Path) -> None:
-    """Three consecutive ``unhealthy`` snapshots → one streak alert.
+    """Three consecutive ``unhealthy`` snapshots  one streak alert.
 
     Subsequent ``unhealthy`` snapshots must NOT emit another alert
     (the ``streak_alert_emitted`` flag suppresses duplicates).
@@ -1985,7 +1985,7 @@ def test_health_of_streak_alert_emitted_once_at_threshold(tmp_path: Path) -> Non
         "streak": 3,
     }
 
-    # State machine: running → unhealthy after first probe.
+    # State machine: running  unhealthy after first probe.
     slot = svc.state_cache["automation-service"]
     assert slot.state == "unhealthy"
     assert slot.consecutive_unhealthy_polls >= 3
@@ -2091,7 +2091,7 @@ def test_start_no_op_when_no_feature_flag_dependency(tmp_path: Path) -> None:
 
 
 def test_start_proceeds_when_all_flags_enabled(tmp_path: Path) -> None:
-    """- every required flag enabled → start runs to ``running``."""
+    """- every required flag enabled  start runs to ``running``."""
 
     workspace = _build_workspace(tmp_path)
     reader = _FakeFeatureFlagReader(
@@ -2126,7 +2126,7 @@ def test_start_proceeds_when_all_flags_enabled(tmp_path: Path) -> None:
 
 
 def test_start_blocked_when_single_flag_disabled(tmp_path: Path) -> None:
-    """- disabled flag → 409 path, ``blocking_flag`` is the name."""
+    """- disabled flag  409 path, ``blocking_flag`` is the name."""
 
     workspace = _build_workspace(tmp_path)
     reader = _FakeFeatureFlagReader(
@@ -2169,7 +2169,7 @@ def test_start_blocked_when_single_flag_disabled(tmp_path: Path) -> None:
 
 
 def test_start_blocked_when_flag_row_missing(tmp_path: Path) -> None:
-    """- flag absent from ``shared.feature_flags`` → treated as disabled.
+    """- flag absent from ``shared.feature_flags``  treated as disabled.
     Catches manifest typos (``FEATURE_FLAG_TASK_INTAK``) before they
     can corrupt audit history."""
 
@@ -2202,7 +2202,7 @@ def test_start_blocked_when_flag_row_missing(tmp_path: Path) -> None:
 def test_start_blocking_flag_is_first_disabled_in_manifest_order(
     tmp_path: Path,
 ) -> None:
-    """determinism - multiple disabled flags → manifest order wins.
+    """determinism - multiple disabled flags  manifest order wins.
     The lifecycle handler iterates ``feature_flag_dependency`` in
     insertion order so the first disabled
     flag is the deterministic ``blocking_flag``."""
@@ -2239,7 +2239,7 @@ def test_start_blocking_flag_is_first_disabled_in_manifest_order(
 
 
 def test_start_proceeds_when_no_reader_wired(tmp_path: Path) -> None:
-    """Boot-time / unit-test branch - no reader → gate is inert.
+    """Boot-time / unit-test branch - no reader  gate is inert.
 
     Mirrors the production wiring window where ``app.state.pg_pool``
     is not yet ready (Postgres still booting). Rather than refusing
@@ -2289,12 +2289,12 @@ def test_start_proceeds_when_no_reader_wired(tmp_path: Path) -> None:
 #
 # Behaviour table
 # ---------------
-# probe_command=None        → no subprocess call; credentials_status=None.
-# exit_code == 0            → credentials_status="ok"; passed audit.
-# exit_code != 0            → credentials_status="failed"; failed audit;
-#                             credentials_probe_detail = stderr[-500:].
-# subprocess.TimeoutExpired → credentials_status="failed"; failed audit;
-#                             exit_code=-1 sentinel in audit payload.
+# probe_command=None         no subprocess call; credentials_status=None.
+# exit_code == 0             credentials_status="ok"; passed audit.
+# exit_code != 0             credentials_status="failed"; failed audit;
+# credentials_probe_detail = stderr[-500:].
+# subprocess.TimeoutExpired  credentials_status="failed"; failed audit;
+# exit_code=-1 sentinel in audit payload.
 #
 # In every case the lifecycle ``state`` MUST remain ``"running"`` -
 # probe failure does not alter the start outcome. The helper is wired

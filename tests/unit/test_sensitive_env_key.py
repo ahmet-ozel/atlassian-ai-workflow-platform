@@ -80,7 +80,7 @@ is_sensitive_env_key = sensitive.is_sensitive_env_key
 # ---------------------------------------------------------------------------
 
 
-#: Source strings expected on both sides of the TS↔Python twin module,
+#: Source strings expected on both sides of the TSPython twin module,
 #: in the documented order. Any change here
 #: must be applied to ``libs/web-shared/src/sensitive.ts`` in lock-step,
 #: otherwise the parity suite will fail.
@@ -162,7 +162,7 @@ def test_is_sensitive_env_key_matches_documented_examples(key: str) -> None:
 @pytest.mark.parametrize(
     "key",
     [
-        # No leading underscore → glob ``*_TOKEN`` doesn't match.
+        # No leading underscore  glob ``*_TOKEN`` doesn't match.
         "TOKEN",
         "KEY",
         "SECRET",

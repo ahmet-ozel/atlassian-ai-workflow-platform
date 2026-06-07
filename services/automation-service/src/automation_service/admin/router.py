@@ -6,7 +6,7 @@ Owns the HTTP surface for department administration:
   Vault staging + DB transaction (orchestrated by
   :class:`automation_service.admin.dept_create.DepartmentCreateOrchestrator`).
 * ``POST /admin/departments/wizard`` - multi-step setup wizard
-  (Jira → Bitbucket → Confluence) as a thin state-machine over the
+  (Jira  Bitbucket  Confluence) as a thin state-machine over the
   same orchestrator.
 * ``POST /admin/departments/{id}/credentials/rotate`` and
   ``/disable`` - credential rotation and department disable.
@@ -267,9 +267,9 @@ async def create_department(
     Delegates to :class:`DepartmentCreateOrchestrator`. Translates
     the orchestrator's exception ladder into HTTP status codes:
 
-    * :class:`DepartmentAlreadyExistsError` → 409
-    * :class:`ProbeFailureError` / :class:`StagingFailureError` → 502
-    * Any other ``Exception`` → 500
+    * :class:`DepartmentAlreadyExistsError`  409
+    * :class:`ProbeFailureError` / :class:`StagingFailureError`  502
+    * Any other ``Exception``  500
     """
 
     body = await request.json()
@@ -324,7 +324,7 @@ async def create_department_wizard(
     request: Request,
     deps: AdminEndpointDeps = Depends(_deps),
 ) -> JSONResponse:
-    """Multi-step setup wizard - Jira → Bitbucket → Confluence.
+    """Multi-step setup wizard - Jira  Bitbucket  Confluence.
 
     The wizard is a *thin* state machine on top of
     :class:`DepartmentCreateOrchestrator`: each step's credential is
@@ -414,8 +414,7 @@ async def create_department_wizard(
 
     # ------------------------------------------------------------------
     # Atomic inline bot identity probe
-    #
-    # After the orchestrator commits the department (credential write
+    # # After the orchestrator commits the department (credential write
     # + connectivity probe passed), run probe_bot_identity for each
     # service to resolve the bot's account_id. If ANY identity probe
     # fails, downgrade the department to mode="disabled" so the loop

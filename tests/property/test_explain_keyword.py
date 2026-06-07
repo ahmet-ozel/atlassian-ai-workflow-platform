@@ -15,9 +15,9 @@ For any hypothesis-generated triple
 5 minutes, the pure helper:func:`agent_runner.workflows.agent_runner_workflow._explain_should_skip_llm`
 MUST satisfy:
 
- (P1) ``True`` ⇔ ``pr_diff_hash in state.explain_cache`` AND
+ (P1) ``True``  ``pr_diff_hash in state.explain_cache`` AND
  ``(now - cache_entry.issued_at) < EXPLAIN_CACHE_TTL``.
- (P2) Empty / falsy ``pr_diff_hash`` ⇒ ``False`` (degenerate
+ (P2) Empty / falsy ``pr_diff_hash``  ``False`` (degenerate
  cache lookup is never a hit).
  (P3) Determinism: a second call with the same arguments returns
  the same boolean.
@@ -231,7 +231,7 @@ class TestExplainShouldSkipLlm:
         pr_diff_hash: str,
         now_delta: timedelta,
     ) -> None:
-        """invariant: ``True`` ⇔ in cache AND age < TTL.
+        """invariant: ``True``  in cache AND age < TTL.
 
 
  """
@@ -266,7 +266,7 @@ class TestExplainShouldSkipLlm:
         state: IterationState,
         now_delta: timedelta,
     ) -> None:
-        """invariant: empty ``pr_diff_hash`` ⇒ always ``False``.
+        """invariant: empty ``pr_diff_hash``  always ``False``.
 
  The signal handler guards against falsy hashes upstream, but
  the pure helper is also expected to short-circuit: a cache
@@ -296,7 +296,7 @@ class TestExplainShouldSkipLlm:
         pr_diff_hash: str,
         now_delta: timedelta,
     ) -> None:
-        """invariant: identical inputs ⇒ identical output.
+        """invariant: identical inputs  identical output.
 
  Pure helper - no clock, no randomness - so two consecutive
  calls with the same arguments must return the same value.
@@ -609,7 +609,7 @@ class TestApplyExplainSignal:
         self,
         triple: tuple[IterationState, str, datetime],
     ) -> None:
-        """invariant: cache hit ⇒ no iter advance, audit queued.
+        """invariant: cache hit  no iter advance, audit queued.
 
 
  """
@@ -649,7 +649,7 @@ class TestApplyExplainSignal:
         self,
         triple: tuple[IterationState, str, datetime],
     ) -> None:
-        """invariant: cache miss ⇒ iter advances, audit not queued.
+        """invariant: cache miss  iter advances, audit not queued.
 
 
  """
@@ -667,7 +667,7 @@ class TestApplyExplainSignal:
         # the cap by construction).
         assert wf._iteration_state.iter_count == before_iter + 1, (
             f"Cache miss did not advance iter_count: "
-            f"{before_iter} → {wf._iteration_state.iter_count}; "
+            f"{before_iter}  {wf._iteration_state.iter_count}; "
             f"invariant requires +1."
         )
         # No cache-hit audit was queued.

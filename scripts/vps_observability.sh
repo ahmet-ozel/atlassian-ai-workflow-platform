@@ -6,18 +6,18 @@
 # tables, runs log-redaction property test, and emits evidence.
 #
 # Outputs:
-#   /tmp/17-logs-automation-service.txt
-#   /tmp/17-logs-agent-runner-worker.txt
-#   /tmp/17-logs-automation-worker.txt
-#   /tmp/17-logs-atlassian-mcp.txt
-#   /tmp/17-logs-admin-dashboard-api.txt
-#   /tmp/17-observability.json
+# /tmp/17-logs-automation-service.txt
+# /tmp/17-logs-agent-runner-worker.txt
+# /tmp/17-logs-automation-worker.txt
+# /tmp/17-logs-atlassian-mcp.txt
+# /tmp/17-logs-admin-dashboard-api.txt
+# /tmp/17-observability.json
 #
 # Exit codes:
-#   0 = all assertions pass
-#   1 = audit_events count < 5 (R17.2)
-#   2 = setup_wizard_state assertion failure (R17.3)
-#   3 = log-redaction test failure (R17.4) — also emits Open_Issue (R17.5)
+# 0 = all assertions pass
+# 1 = audit_events count < 5 (R17.2)
+# 2 = setup_wizard_state assertion failure (R17.3)
+# 3 = log-redaction test failure (R17.4) — also emits Open_Issue (R17.5)
 #
 # Requirements: R17.1, R17.2, R17.3, R17.4, R17.5, R17.6
 # =============================================================================
@@ -68,7 +68,7 @@ declare -A LOG_LINE_COUNTS
 
 for svc in "${SERVICES[@]}"; do
     local_evidence="$EVIDENCE_DIR/17-logs-${svc}.txt"
-    log_info "  Capturing logs for: $svc → $local_evidence"
+    log_info "  Capturing logs for: $svc  $local_evidence"
 
     docker compose -f "$COMPOSE_FILE" logs --tail=200 --no-color "$svc" \
         > "$local_evidence" 2>&1 || true

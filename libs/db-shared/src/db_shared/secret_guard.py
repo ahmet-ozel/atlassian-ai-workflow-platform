@@ -35,7 +35,7 @@ __all__ = [
 ]
 
 
-#: Mapping of env var name → list of forbidden values that mark the
+#: Mapping of env var name  list of forbidden values that mark the
 #: variable as carrying a dev-only sentinel. Add new entries here when a
 #: new dev default is introduced in the base compose. Values are matched
 #: case-sensitively.
@@ -102,7 +102,7 @@ def enforce_no_dev_secrets(
     Parameters
     ----------
     env:
-        Environment mapping to inspect. ``None`` → ``os.environ``.
+        Environment mapping to inspect. ``None``  ``os.environ``.
     force:
         Bypass the ``REJECT_DEV_SECRETS`` opt-in and always enforce.
         Useful in tests.

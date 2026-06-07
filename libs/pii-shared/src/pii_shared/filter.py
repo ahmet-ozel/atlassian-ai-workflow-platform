@@ -54,14 +54,14 @@ class PiiMatch:
 # (kind, compiled regex, replacement string)
 #
 # The tuple is ordered intentionally:
-#   1. tc_kimlik (11 digit run) is checked first so that a longer
-#      credit-card-like digit run does not accidentally swallow a
-#      shorter TC-id substring before TC redaction is applied.
-#   2. phone_tr is more specific than the bare digit run and uses the
-#      Turkish mobile prefix `5XX` to avoid masking arbitrary numbers.
-#   3. email is well-bounded by the `@` literal.
-#   4. credit_card is last and is Luhn-validated in `mask()` itself -
-#      invalid candidates are left untouched.
+# 1. tc_kimlik (11 digit run) is checked first so that a longer
+# credit-card-like digit run does not accidentally swallow a
+# shorter TC-id substring before TC redaction is applied.
+# 2. phone_tr is more specific than the bare digit run and uses the
+# Turkish mobile prefix `5XX` to avoid masking arbitrary numbers.
+# 3. email is well-bounded by the `@` literal.
+# 4. credit_card is last and is Luhn-validated in `mask()` itself -
+# invalid candidates are left untouched.
 PII_PATTERNS: Final[tuple[tuple[PiiKind, re.Pattern[str], str], ...]] = (
     (
         "tc_kimlik",

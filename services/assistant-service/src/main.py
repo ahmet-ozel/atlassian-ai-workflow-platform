@@ -5,8 +5,8 @@ Listens on port 8081 and exposes:
 * ``GET /healthz`` / ``GET /readyz`` - service health endpoints.
 * ``POST /api/chat/stream`` - SSE chat endpoint owned by
   :class:`src.chat.handler.ChatHandler`. Every request flows through the deterministic
-  six-step pipeline (PII mask → sliding window → system prompt
-  render → tool filter → LLM tool-call loop → audit) before the
+  six-step pipeline (PII mask  sliding window  system prompt
+  render  tool filter  LLM tool-call loop  audit) before the
   first SSE byte is yielded.
 * ``POST /api/session-credentials/...`` - per-user session
   credential relay.
@@ -107,10 +107,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         from prompts import PromptLoader
 
         # Resolve prompts roots:
-        #   service_local: services/assistant-service/prompts/
-        #   shared:        platform/prompts/
+        # service_local: services/assistant-service/prompts/
+        # shared:        platform/prompts/
         # The module file lives at services/assistant-service/src/main.py;
-        # parents[1] → services/assistant-service, parents[3] → platform.
+        # parents[1]  services/assistant-service, parents[3]  platform.
         module_path = Path(__file__).resolve()
         candidate_roots = [module_path.parents[1] / "prompts"]
         if len(module_path.parents) > 3:
@@ -132,8 +132,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         logger.warning("PromptLoader unavailable: %s", exc)
 
     # ---- 2. Provider credential validation (fail-fast) ---------------
-    #
-    # If the configured LLM provider requires
+    # # If the configured LLM provider requires
     # credentials that are missing or invalid, the service MUST fail at
     # boot time with a clear ConfigurationError. This prevents a
     # half-wired deployment from accepting traffic.

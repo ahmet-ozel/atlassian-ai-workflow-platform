@@ -23,7 +23,7 @@ covers the *failure* path:
  ``dept_duplicate_id`` audit and the staging keys are
  still deleted.
 
-* **6h - failure during Vault staging→final promotion rolls Vault forward
+* **6h - failure during Vault stagingfinal promotion rolls Vault forward
  back**: when the final-path write itself fails mid-promotion, any
  already-promoted final paths are deleted before the surrounding
  transaction rolls back - no partially promoted
@@ -519,7 +519,7 @@ def test_p6g_duplicate_id_emits_audit_and_clears_staging(
  When the dept INSERT fails with an asyncpg-style unique-violation
  error, the orchestrator must:
 
- 1. Raise:class:`DepartmentAlreadyExistsError` (router → HTTP 409).
+ 1. Raise:class:`DepartmentAlreadyExistsError` (router  HTTP 409).
  2. Delete every staging key in Vault.
  3. Not promote any staging path to a final path.
  4. Emit exactly one ``dept_duplicate_id`` audit row with
@@ -587,7 +587,7 @@ def test_p6g_duplicate_id_emits_audit_and_clears_staging(
 
 
 # ---------------------------------------------------------------------------
-# invariant - failure during Vault staging→final promotion rolls back
+# invariant - failure during Vault stagingfinal promotion rolls back
 # ---------------------------------------------------------------------------
 
 
@@ -604,7 +604,7 @@ def test_p6h_promotion_failure_rolls_back_vault_and_db(
 
 
 
- When the staging → final ``write`` fails (eg. transient Vault
+ When the staging  final ``write`` fails (eg. transient Vault
  HTTP 5xx during the move), the orchestrator must:
 
  1. Re-raise the underlying exception.
@@ -623,7 +623,7 @@ def test_p6h_promotion_failure_rolls_back_vault_and_db(
         write_failure_paths=frozenset({"vault:atlassian/acme/jira"}),
     )
     # All execute calls succeed; the failure happens during the
-    # Vault promotion (staging → final) call which lives inside the
+    # Vault promotion (staging  final) call which lives inside the
     # try-block of ``_commit``.
     connection = _FailingConnection(
         failure_index=10**6,  # never trigger

@@ -112,7 +112,7 @@ class HashicorpBackend(VaultClient):
         previous = VaultPath.parse(f"vault:ssh/runners/{runner_id}/previous")
 
         # 1. Move current active -> previous (best-effort; absent slot
-        #    on the very first rotation is a no-op).
+        # on the very first rotation is a no-op).
         try:
             current = self.read(active)
         except KeyError:

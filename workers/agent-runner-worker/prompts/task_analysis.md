@@ -161,7 +161,7 @@ Respond with ONLY a valid JSON object (no markdown fencing, no explanation). The
     {"type": "bitbucket_pr", "payload": {"title": "feat: add retry mechanism", "description": "Adds exponential backoff retry for callbacks", "draft": true}},
     {"type": "confluence_page", "payload": {"space": "PAY", "title": "Retry Mechanism Test Results - 2026-05-18", "action": "create"}},
     {"type": "jira_attachment", "payload": {"filename": "test_results.md", "format": "md"}},
-    {"type": "jira_comment", "payload": {"body": "✅ Retry mekanizması eklendi. PR açıldı, test sonuçları Confluence'a ve task'a yüklendi."}}
+    {"type": "jira_comment", "payload": {"body": " Retry mekanizması eklendi. PR açıldı, test sonuçları Confluence'a ve task'a yüklendi."}}
   ],
   "confidence": "high",
   "needs_info_question": null
@@ -177,7 +177,7 @@ Respond with ONLY a valid JSON object (no markdown fencing, no explanation). The
   "cleanup_policy": "never",
   "output_actions": [
     {"type": "jira_attachment", "payload": {"filename": "smoke_test_results.md", "format": "md"}},
-    {"type": "jira_comment", "payload": {"body": "✅ Smoke test tamamlandı. Sonuçlar ekte."}}
+    {"type": "jira_comment", "payload": {"body": " Smoke test tamamlandı. Sonuçlar ekte."}}
   ],
   "confidence": "high",
   "needs_info_question": null
@@ -194,7 +194,7 @@ Respond with ONLY a valid JSON object (no markdown fencing, no explanation). The
   "output_actions": [
     {"type": "confluence_page", "payload": {"space": "HR", "title": "Mükerrer Email Raporu - 2026-05-18", "action": "create"}},
     {"type": "jira_attachment", "payload": {"filename": "duplicates.csv", "format": "csv"}},
-    {"type": "jira_comment", "payload": {"body": "✅ Script çalıştırıldı. 47 mükerrer kayıt bulundu. Detaylar Confluence'ta ve ekte."}}
+    {"type": "jira_comment", "payload": {"body": " Script çalıştırıldı. 47 mükerrer kayıt bulundu. Detaylar Confluence'ta ve ekte."}}
   ],
   "confidence": "high",
   "needs_info_question": null
@@ -211,7 +211,7 @@ Respond with ONLY a valid JSON object (no markdown fencing, no explanation). The
   "output_actions": [
     {"type": "confluence_page", "payload": {"space": "LEGALDOCS", "title": "KVKK Yeni Yönetmelik Analizi - 2026-05-18", "action": "create"}},
     {"type": "jira_transition", "payload": {"target_status": "Done"}},
-    {"type": "jira_comment", "payload": {"body": "✅ Araştırma tamamlandı. Confluence'a yüklendi."}}
+    {"type": "jira_comment", "payload": {"body": " Araştırma tamamlandı. Confluence'a yüklendi."}}
   ],
   "confidence": "high",
   "needs_info_question": null
@@ -229,7 +229,7 @@ Respond with ONLY a valid JSON object (no markdown fencing, no explanation). The
     {"type": "jira_comment", "payload": {"body": "Bilgi bekleniyor..."}}
   ],
   "confidence": "low",
-  "needs_info_question": "🤖 Hangi repo üzerinde çalışılsın? Seçenekler: payment-callbacks, payment-gateway, payment-core. Lütfen yorum olarak belirtin."
+  "needs_info_question": " Hangi repo üzerinde çalışılsın? Seçenekler: payment-callbacks, payment-gateway, payment-core. Lütfen yorum olarak belirtin."
 }
 ```
 

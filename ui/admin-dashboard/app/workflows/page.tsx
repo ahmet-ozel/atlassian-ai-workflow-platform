@@ -2,8 +2,7 @@
 
 /**
  * Workflows panel.
- *
- * Lists active Temporal workflows with a status filter, pagination and
+ * * Lists active Temporal workflows with a status filter, pagination and
  * a drill-down link. Data is served by the admin-dashboard-api
  * `WorkflowsDrillDownRouter` which proxies to
  * automation-service.
@@ -60,7 +59,7 @@ export default function WorkflowsPage(): JSX.Element {
       const res = await apiFetch(`/api/v1/workflows?${params.toString()}`);
       if (!res.ok) {
         const text = await res.text().catch(() => "");
-        throw new Error(`GET /api/v1/workflows → HTTP ${res.status}${text ? `: ${text.slice(0, 200)}` : ""}`);
+        throw new Error(`GET /api/v1/workflows  HTTP ${res.status}${text ? `: ${text.slice(0, 200)}` : ""}`);
       }
       const body = (await res.json()) as ListResponse;
       const items = body.items ?? body.workflows ?? [];
@@ -95,7 +94,7 @@ export default function WorkflowsPage(): JSX.Element {
           </div>
           <div className="page-header__actions">
             <button className="btn" onClick={refresh} disabled={loading}>
-              {loading ? <span className="spinner" /> : "🔄"} Yenile
+              {loading ? <span className="spinner" /> : ""} Yenile
             </button>
           </div>
         </div>
@@ -148,14 +147,14 @@ export default function WorkflowsPage(): JSX.Element {
         <div className="card__body card__body--flush">
           {error && (
             <div className="banner banner--danger" style={{ margin: "1rem" }}>
-              <span className="banner__icon">⚠️</span>
+              <span className="banner__icon"></span>
               <div className="banner__body">{error}</div>
             </div>
           )}
 
           {!error && rows.length === 0 ? (
             <div className="empty">
-              <div className="empty__icon">🔁</div>
+              <div className="empty__icon"></div>
               <div className="empty__title">Workflow bulunamadı</div>
               <div className="muted">Filtre değiştirip yeniden deneyin.</div>
             </div>

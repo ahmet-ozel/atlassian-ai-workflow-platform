@@ -6,9 +6,9 @@ stored in the ``ai-runs`` bucket by default, with key prefixes generated
 by :mod:`temporal_shared.identifiers` helpers:
 
 - ``agent_artifact_key(issue_key, iteration, filename)``
-  → ``artifacts/{issue_key}/iter-{N}/{filename}``
+   ``artifacts/{issue_key}/iter-{N}/{filename}``
 - ``execution_artifact_key(workflow_id, name)``
-  → ``executions/{workflow_id}/{name}``
+   ``executions/{workflow_id}/{name}``
 
 The ``artifact_delete`` activity is idempotent: a 404 (NoSuchKey) response
 is treated as success, making it safe for saga compensation.

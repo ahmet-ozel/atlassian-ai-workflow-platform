@@ -232,7 +232,7 @@ async def _handle_jira_attachment(
     normalized = _drop_control_params(params, keep_issue_key=True)
     if "bucket" in normalized and "key" in normalized:
         # MinIO pipeline - delegate to the agent-runner activity. The
-        # activity handles the download → tempfile → MCP call → cleanup
+        # activity handles the download  tempfile  MCP call  cleanup
         # sequence end-to-end so this dispatcher is intentionally thin.
         return await caller.call_tool(
             "upload_artifact_to_jira",
@@ -535,7 +535,7 @@ def _build_failure_comment(failed_actions: list[ActionResult]) -> str:
     """Build a Jira comment summarizing failed actions.
 
  """
-    lines = ["⚠️ Aşağıdaki output action'lar başarısız oldu:\n"]
+    lines = [" Aşağıdaki output action'lar başarısız oldu:\n"]
     for result in failed_actions:
         status_label = "timeout" if result.status == "timeout" else "hata"
         lines.append(
@@ -558,7 +558,7 @@ async def execute_output_actions(input: ExecutionBatchInput) -> ExecutionBatchRe
  successful result.
 
  """
-    # Handle empty/null actions list - 
+    # Handle empty/null actions list -
     if not input.actions:
         activity.logger.info(
             "output_actions: empty action list for workflow %s, "
@@ -572,7 +572,7 @@ async def execute_output_actions(input: ExecutionBatchInput) -> ExecutionBatchRe
             failed_actions=[],
         )
 
-    # Enforce max batch size - 
+    # Enforce max batch size -
     normalised_actions: list[OutputAction] = []
     for fallback_index, raw_action in enumerate(input.actions):
         action = _normalise_action(raw_action, fallback_index)
@@ -597,12 +597,12 @@ async def execute_output_actions(input: ExecutionBatchInput) -> ExecutionBatchRe
 
     caller = get_mcp_caller()
 
-    # Sort by index to ensure strict sequential order - 
+    # Sort by index to ensure strict sequential order -
     sorted_actions = sorted(actions_to_execute, key=lambda a: a.index)
 
     results: list[ActionResult] = []
 
-    # Execute actions sequentially - 
+    # Execute actions sequentially -
     for action in sorted_actions:
         activity.logger.info(
             "output_actions: executing action %s at index %d "
@@ -619,7 +619,7 @@ async def execute_output_actions(input: ExecutionBatchInput) -> ExecutionBatchRe
     failed_actions = [r for r in results if r.status != "success"]
     all_succeeded = len(failed_actions) == 0
 
-    # Post failure summary to Jira if any actions failed - 
+    # Post failure summary to Jira if any actions failed -
     if failed_actions:
         failure_comment = _build_failure_comment(failed_actions)
         try:

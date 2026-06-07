@@ -55,7 +55,7 @@ The Atlassian `accountId` for each bot service is resolved on first contact:
 3. **Webhook akışı:** Departmana ait Jira/Bitbucket/Confluence webhook'ları
    `dept_id` çözüldükten sonra `mode == "disabled"` kontrolüyle drop edilir;
    audit'e `webhook_dept_disabled` kaydı yazılır.
-4. **Geri dönüş:** `disabled` → `active` geçişi de yine `admin` rolüyle yapılır;
+4. **Geri dönüş:** `disabled`  `active` geçişi de yine `admin` rolüyle yapılır;
    credential rotate gerekmez ancak operatörün capability gate'i **yeniden**
    doğrulaması (probe çalıştırması) önerilir.
 5. **Setup wizard ile ilişki:** `POST /admin/departments/wizard` akışı bir adımdaki
@@ -101,7 +101,7 @@ içerir; tümü USD cinsinden, hepsi `>= 0`:
 | `monthly_usd_user` | `number` | Departman içindeki tek bir kullanıcının aylık USD bütçesi. |
 
 `automation-service.BudgetCapPolicy.enforce(dept_id, user_id)` bu dört alanı
-sırayla `dept_weekly → user_weekly → dept_monthly → user_monthly` olarak
+sırayla `dept_weekly  user_weekly  dept_monthly  user_monthly` olarak
 kontrol eder; ilk aşımda yeni workflow start çağrısı **HTTP 429** ile
 reddedilir ve `audit budget_exceeded` (zorunlu) yazılır. `cost_tag IN
 ('sandbox','probe')` kayıtları usage hesabından dışlanır.

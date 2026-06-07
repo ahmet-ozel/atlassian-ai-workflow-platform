@@ -26,7 +26,7 @@ departments) with varying probe outcomes. Fake implementations of
 VaultClient, AtlassianProbeClient, AsyncConnection, and AuditLogger
 are injected to verify:
 
-(a) Schema-invalid payloads raise SchemaValidationError (→ HTTP 422).
+(a) Schema-invalid payloads raise SchemaValidationError ( HTTP 422).
 (b) Departments whose probe fails are skipped; successful ones commit.
 (c) Each department is processed atomically - failure of one does not
  affect others.
@@ -75,7 +75,7 @@ for _src in _LIB_SRC_DIRS:
 
 # ---------------------------------------------------------------------------
 # Import the bulk import service module directly to avoid the circular
-# import triggered by ``automation_service.__init__`` → ``.app`` chain.
+# import triggered by ``automation_service.__init__``  ``.app`` chain.
 # We use importlib to load the module from its file path.
 # ---------------------------------------------------------------------------
 import importlib.util as _ilu
@@ -507,7 +507,7 @@ def _make_service(
 
 
 # ---------------------------------------------------------------------------
-# Schema-invalid payloads → SchemaValidationError (HTTP 422)
+# Schema-invalid payloads  SchemaValidationError (HTTP 422)
 # ---------------------------------------------------------------------------
 
 

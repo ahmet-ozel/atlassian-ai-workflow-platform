@@ -443,7 +443,7 @@ def _generate_token() -> str:
 
     Wraps :func:`secrets.token_urlsafe` so tests can monkey-patch a
     single module-level symbol when they need deterministic values.
-    32 bytes of entropy → 43-character base64url string, well above
+    32 bytes of entropy  43-character base64url string, well above
     the 8-char ``min_length`` enforced on caller-supplied values.
     """
 
@@ -837,11 +837,11 @@ async def rotate_llm_api_key(
 #
 # 1. ``GET /admin/security/ssh-runners`` - list runners with status.
 # 2. ``POST .../rotate-key`` - generate new Ed25519 keypair, demote
-#    active→previous, write new key to active, return public key once.
+# activeprevious, write new key to active, return public key once.
 # 3. ``POST .../rotate-known-hosts`` - ssh-keyscan the host, update
-#    fingerprint if changed.
+# fingerprint if changed.
 # 4. ``POST .../finalize-rotation`` - clear previous slot after
-#    operator confirms new key works on target host.
+# operator confirms new key works on target host.
 #
 # RBAC: all endpoints require ``admin`` role.
 # ---------------------------------------------------------------------------
@@ -994,7 +994,7 @@ def _resolve_ssh_runners() -> list[dict[str, Any]]:
             return runners
 
     # Fallback: single runner from canonical / legacy env vars.
-    # Resolution order: SSH_HOST → SSH_HOST_1 (deprecated) → "localhost".
+    # Resolution order: SSH_HOST  SSH_HOST_1 (deprecated)  "localhost".
     host = os.environ.get("SSH_HOST", "").strip()
     if not host:
         host = os.environ.get("SSH_HOST_1", "").strip()
@@ -1500,14 +1500,14 @@ async def finalize_ssh_rotation(
 # the dept × provider matrix. The rotation lifecycle is:
 #
 # 1. ``GET /admin/security/webhooks`` - list all dept × provider
-#    entries with rotation status and overlap window remaining.
+# entries with rotation status and overlap window remaining.
 # 2. ``POST .../webhooks/{dept_id}/{provider}/rotate`` - generate a
-#    new 32-byte secret, demote current→previous with overlap window,
-#    return the new secret once so the operator can paste it into the
-#    Atlassian/Bitbucket webhook configuration UI.
+# new 32-byte secret, demote currentprevious with overlap window,
+# return the new secret once so the operator can paste it into the
+# Atlassian/Bitbucket webhook configuration UI.
 # 3. ``POST .../webhooks/{dept_id}/{provider}/finalize`` - clear the
-#    previous slot after the operator has updated the provider-side
-#    webhook secret.
+# previous slot after the operator has updated the provider-side
+# webhook secret.
 #
 # RBAC: all endpoints require ``admin`` role.
 # ---------------------------------------------------------------------------

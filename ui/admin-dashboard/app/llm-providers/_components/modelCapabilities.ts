@@ -1,15 +1,12 @@
 ﻿/**
  * Per-model tuning-capability lookup (client mirror of the backend
  * `llm_providers/model_capabilities.py`).
- *
- * Decides which tuning inputs the provider form should reveal for the
+ * * Decides which tuning inputs the provider form should reveal for the
  * model the operator typed:
- *
- *   reasoning_effort - OpenAI o-series + gpt-5 family, Claude 4 /
- *                      `-thinking` snapshots.
- *   verbosity        - OpenAI gpt-5 family only.
- *
- * The matching is prefix / substring based so dated snapshots
+ * *   reasoning_effort - OpenAI o-series + gpt-5 family, Claude 4 /
+ * `-thinking` snapshots.
+ * verbosity        - OpenAI gpt-5 family only.
+ * * The matching is prefix / substring based so dated snapshots
  * (`gpt-5.1-2025-11-01`, `o3-mini-2025-01-31`) resolve to the same
  * profile as their base model.
  */
@@ -38,8 +35,7 @@ function isAnthropicReasoning(model: string): boolean {
 
 /**
  * Whether *model* (on *providerType*) accepts a `reasoning_effort` knob.
- *
- * Only OpenAI and Anthropic expose reasoning effort; vLLM / Gemini
+ * * Only OpenAI and Anthropic expose reasoning effort; vLLM / Gemini
  * never surface the input here.
  */
 export function supportsReasoningEffort(
@@ -55,8 +51,7 @@ export function supportsReasoningEffort(
 
 /**
  * Whether *model* (on *providerType*) accepts an output `verbosity` knob.
- *
- * Only the OpenAI gpt-5 family ships the `text.verbosity` control.
+ * * Only the OpenAI gpt-5 family ships the `text.verbosity` control.
  */
 export function supportsVerbosity(
   providerType: ProviderType,

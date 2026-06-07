@@ -157,12 +157,12 @@ async def test_needs_info_timeout_after_seven_days_marks_workflow_failed() -> No
         for body in comments_posted
     ), f"timeout comment never posted; got {comments_posted!r}"
 
-    # The work item state machine transitioned through running → failed.
+    # The work item state machine transitioned through running  failed.
     statuses = [args[1] for args in log.args_for("update_work_item_status")]
     assert "running" in statuses
     assert statuses[-1] == "failed", (
         f"expected terminal status 'failed', got {statuses!r}"
     )
 
-    # LLM was called exactly once (no signal arrived → no re-analysis).
+    # LLM was called exactly once (no signal arrived  no re-analysis).
     assert log.count("llm_analyze_task") == 1

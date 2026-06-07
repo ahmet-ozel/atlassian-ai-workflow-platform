@@ -66,7 +66,7 @@ following invariants hold:
  instances each maintain their own cache (no cross-instance
  leakage), preserving per-workflow isolation.
 
-(P8) **Cache miss → ``None``** - ``cache.get(h)`` returns ``None``
+(P8) **Cache miss  ``None``** - ``cache.get(h)`` returns ``None``
  for any hash that was never written. This is the signal the
  ``code_change_commit_only`` body uses to decide whether to
  invoke the LLM-summarisation activity (cache miss) or reuse a
@@ -107,7 +107,7 @@ from hypothesis import strategies as st
 # not pip-installed in the test environment so we expose it manually.
 # ---------------------------------------------------------------------------
 
-# tests/property/test_llm_dedup.py → platform/
+# tests/property/test_llm_dedup.py  platform/
 _PLATFORM_ROOT: Path = Path(__file__).resolve().parents[2]
 
 _REQUIRED_SRC_DIRS: tuple[Path, ...] = (

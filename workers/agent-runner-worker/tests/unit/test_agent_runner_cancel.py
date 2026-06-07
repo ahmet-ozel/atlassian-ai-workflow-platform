@@ -12,9 +12,9 @@ The cancel signal path covers:
        does NOT trigger the compensation chain.
     4. A second ``cancel_requested`` signal that arrives while the
        chain is already running is a silent no-op (no double-fire).
-    5. Audit role mapping - ``end_user`` →
+    5. Audit role mapping - ``end_user``
        ``workflow_cancelled_by_end_user``, ``admin`` / ``dept_admin``
-       → ``workflow_cancelled_by_admin``; unknown roles default to
+        ``workflow_cancelled_by_admin``; unknown roles default to
        end_user.
 
 The tests drive the body methods directly without spinning up a
@@ -169,7 +169,7 @@ def _patch_workflow_runtime(activity_mock: AsyncMock):
 
 
 # ---------------------------------------------------------------------------
-# 1. Pure helper - role → audit action mapping
+# 1. Pure helper - role  audit action mapping
 # ---------------------------------------------------------------------------
 
 

@@ -12,8 +12,8 @@ Universal property
 For every ``(target_host, allowlist)`` pair the firecrawl wrapper inspects:.. code-block:: text
 
  ∀ host, allowlist:
- host ∈ allowlist ⇒ verdict = "allowed" ∧ audit_action ≠ "egress_denied"
- host ∉ allowlist ⇒ verdict = "denied" ∧ audit_action = "egress_denied"
+ host ∈ allowlist  verdict = "allowed" ∧ audit_action ≠ "egress_denied"
+ host ∉ allowlist  verdict = "denied" ∧ audit_action = "egress_denied"
  ∧ HTTP 403 returned
  ∧ structured log carries "egress_denied"
  ∧ ``firecrawl_egress_denied_total`` counter advanced

@@ -177,7 +177,7 @@ class TestBudgetCheckResult:
 class TestCheckBudget:
     @pytest.mark.asyncio
     async def test_allows_when_below_90_percent(self) -> None:
-        """Usage below 90% → allowed, no warnings."""
+        """Usage below 90%  allowed, no warnings."""
         usage_runner = _FakeUsageRunner(
             dept_weekly=Decimal("500"),
             dept_monthly=Decimal("2000"),
@@ -195,7 +195,7 @@ class TestCheckBudget:
 
     @pytest.mark.asyncio
     async def test_warns_at_90_percent_threshold(self) -> None:
-        """Usage at 90% → allowed with warning scopes."""
+        """Usage at 90%  allowed with warning scopes."""
         usage_runner = _FakeUsageRunner(
             dept_weekly=Decimal("900"),  # 90% of 1000
             dept_monthly=Decimal("2000"),
@@ -239,7 +239,7 @@ class TestCheckBudget:
 
     @pytest.mark.asyncio
     async def test_denies_when_limit_exceeded(self) -> None:
-        """Usage >= cap → denied with exceeded scope."""
+        """Usage >= cap  denied with exceeded scope."""
         usage_runner = _FakeUsageRunner(
             dept_weekly=Decimal("1000"),  # == cap
             dept_monthly=Decimal("2000"),
@@ -278,7 +278,7 @@ class TestCheckBudget:
 
     @pytest.mark.asyncio
     async def test_undefined_dept_id_returns_configuration_error(self) -> None:
-        """Unknown dept_id → denied with configuration_error scope."""
+        """Unknown dept_id  denied with configuration_error scope."""
         usage_runner = _FakeUsageRunner()
         policy = _make_policy(
             caps={"eng": _DEFAULT_CAPS},
@@ -312,7 +312,7 @@ class TestCheckBudget:
 
     @pytest.mark.asyncio
     async def test_user_scope_exceeded(self) -> None:
-        """User-scoped limit exceeded → denied."""
+        """User-scoped limit exceeded  denied."""
         usage_runner = _FakeUsageRunner(
             dept_weekly=Decimal("500"),
             dept_monthly=Decimal("2000"),
@@ -393,7 +393,7 @@ class TestCheckBudget:
 class TestPreLlmBudgetGuard:
     @pytest.mark.asyncio
     async def test_allows_when_below_cap(self) -> None:
-        """All scopes below cap → returns True."""
+        """All scopes below cap  returns True."""
         usage_runner = _FakeUsageRunner(
             dept_weekly=Decimal("500"),
             dept_monthly=Decimal("2000"),
@@ -407,7 +407,7 @@ class TestPreLlmBudgetGuard:
 
     @pytest.mark.asyncio
     async def test_blocks_when_dept_weekly_exceeded(self) -> None:
-        """dept_weekly exceeded → returns False."""
+        """dept_weekly exceeded  returns False."""
         usage_runner = _FakeUsageRunner(
             dept_weekly=Decimal("1000"),  # == cap
             dept_monthly=Decimal("2000"),
@@ -421,7 +421,7 @@ class TestPreLlmBudgetGuard:
 
     @pytest.mark.asyncio
     async def test_blocks_when_user_weekly_exceeded(self) -> None:
-        """user_weekly exceeded → returns False."""
+        """user_weekly exceeded  returns False."""
         usage_runner = _FakeUsageRunner(
             dept_weekly=Decimal("500"),
             dept_monthly=Decimal("2000"),
@@ -437,7 +437,7 @@ class TestPreLlmBudgetGuard:
 
     @pytest.mark.asyncio
     async def test_blocks_when_dept_monthly_exceeded(self) -> None:
-        """dept_monthly exceeded → returns False."""
+        """dept_monthly exceeded  returns False."""
         usage_runner = _FakeUsageRunner(
             dept_weekly=Decimal("500"),
             dept_monthly=Decimal("4000"),  # == cap
@@ -451,7 +451,7 @@ class TestPreLlmBudgetGuard:
 
     @pytest.mark.asyncio
     async def test_blocks_when_user_monthly_exceeded(self) -> None:
-        """user_monthly exceeded → returns False."""
+        """user_monthly exceeded  returns False."""
         usage_runner = _FakeUsageRunner(
             dept_weekly=Decimal("500"),
             dept_monthly=Decimal("2000"),
@@ -467,7 +467,7 @@ class TestPreLlmBudgetGuard:
 
     @pytest.mark.asyncio
     async def test_undefined_dept_blocks(self) -> None:
-        """Unknown dept_id → returns False (fail-closed)."""
+        """Unknown dept_id  returns False (fail-closed)."""
         usage_runner = _FakeUsageRunner()
         policy = _make_policy(
             caps={"eng": _DEFAULT_CAPS},
@@ -478,7 +478,7 @@ class TestPreLlmBudgetGuard:
 
     @pytest.mark.asyncio
     async def test_empty_dept_id_blocks(self) -> None:
-        """Empty dept_id → returns False."""
+        """Empty dept_id  returns False."""
         usage_runner = _FakeUsageRunner()
         policy = _make_policy(
             caps={"eng": _DEFAULT_CAPS},

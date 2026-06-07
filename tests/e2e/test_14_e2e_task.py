@@ -3,8 +3,8 @@ Test 14: Full AI task workflow - end-to-end from Streamlit UI to Jira Done.
 
 Validates that a task submitted via the Streamlit UI (localhost:8501) flows
 through the full automation pipeline:
-  Streamlit → assistant-service → automation-service → Temporal workflow →
-  agent-runner-worker → Atlassian MCP → Jira issue → Done
+  Streamlit  assistant-service  automation-service  Temporal workflow
+  agent-runner-worker  Atlassian MCP  Jira issue  Done
 
 This test uses:
 - httpx for API calls to automation-service (localhost:8082) and Jira
@@ -14,8 +14,8 @@ This test uses:
 - credentials fixture for Jira credentials
 - evidence_collector fixture for emitting evidence
 
-The workflow: submit a task → automation-service creates Jira issue →
-LLM processes → Jira issue transitions to Done. Uses 600s timeout for
+The workflow: submit a task  automation-service creates Jira issue
+LLM processes  Jira issue transitions to Done. Uses 600s timeout for
 the full workflow.
 
 Requirements: R14.1, R14.2, R14.3, R14.4, R14.5, R14.6

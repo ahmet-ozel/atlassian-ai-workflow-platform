@@ -200,7 +200,7 @@ class TestGetRetentionSetting:
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         monkeypatch.delenv("RETENTION_DAYS", raising=False)
-        # No pool registered ⇒ DB branch is skipped.
+        # No pool registered  DB branch is skipped.
         result = asyncio.run(get_retention_setting())
         assert result == DEFAULT_RETENTION_DAYS == 90
 
@@ -632,7 +632,7 @@ class TestNotifyAuditPruneFailed:
             asyncio.run(notify_audit_prune_failed("boom"))
 
     def test_unset_service_raises_runtime_error(self) -> None:
-        # No setter called ⇒ activity surfaces a clear configuration
+        # No setter called  activity surfaces a clear configuration
         # error rather than silently dropping the alarm.
         with pytest.raises(RuntimeError, match="NotificationService"):
             asyncio.run(notify_audit_prune_failed("boom"))

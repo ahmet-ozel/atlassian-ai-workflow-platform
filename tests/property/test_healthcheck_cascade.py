@@ -13,10 +13,10 @@ satisfies:
  minimum it can be is ``degraded``.
 (c) A service that is itself ``unhealthy`` keeps the ``unhealthy``
  label even when its deps are healthy (deeper failure wins).
-(d) The function is deterministic: same input ⇒ same output.
+(d) The function is deterministic: same input  same output.
 
 The aggregator under test lives at
-``platform/services/admin-dashboard-api/src/routers/healthcheck.py``. When that module is unavailable (eg. before 
+``platform/services/admin-dashboard-api/src/routers/healthcheck.py``. When that module is unavailable (eg. before
 ships) the test skips with a precise reason.
 """
 

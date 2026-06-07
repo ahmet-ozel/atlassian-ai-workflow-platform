@@ -344,7 +344,7 @@ class TestEnforcePrDraftAuditTrail:
     ) -> None:
         """Already-correct payloads do not pollute the audit log. The
         rule still re-asserts ``draft=True`` on the copy, but no
-        operator-facing event is emitted (zero noise → faster
+        operator-facing event is emitted (zero noise  faster
         anomaly detection).
         """
 

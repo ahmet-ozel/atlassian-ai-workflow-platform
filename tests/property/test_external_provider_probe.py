@@ -10,10 +10,10 @@ running outside the Compose stack. The admin-dashboard probes them via
 HTTP to determine their availability. The:func:`~lifecycle.external_probe.probe_external` helper maps HTTP
 responses to one of four statuses:
 
-* ``200`` (expected) → ``"ok"``
-* ``401`` / ``403`` → ``"unauthorized"``
-* ``429`` → ``"rate_limited"``
-* timeout / connection refused → ``"unreachable"``
+* ``200`` (expected)  ``"ok"``
+* ``401`` / ``403``  ``"unauthorized"``
+* ``429``  ``"rate_limited"``
+* timeout / connection refused  ``"unreachable"``
 
 The:func:`~lifecycle.external_probe.emit_probe_audit` function tracks
 consecutive failures per provider and emits:
@@ -570,7 +570,7 @@ class TestAuditEmissionAndStreakAlerting:
         reset_streak_state()
         audit_writer = FakeAuditWriter()
 
-        # First streak: 3 failures → alert
+        # First streak: 3 failures  alert
         for i in range(EXTERNAL_PROVIDER_STREAK_THRESHOLD):
             result = ExternalProbeResult(
                 name="flaky-provider",
@@ -595,7 +595,7 @@ class TestAuditEmissionAndStreakAlerting:
         )
         await emit_probe_audit(ok_result, audit_writer=audit_writer)
 
-        # Second streak: 3 more failures → second alert
+        # Second streak: 3 more failures  second alert
         for i in range(EXTERNAL_PROVIDER_STREAK_THRESHOLD):
             result = ExternalProbeResult(
                 name="flaky-provider",

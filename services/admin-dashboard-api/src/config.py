@@ -41,7 +41,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 def _default_workspace_root() -> Path:
     """Return the workspace folder relative to this module's location.
 
-    ``services/admin-dashboard-api/src/config.py`` → ``parents[3]`` is
+    ``services/admin-dashboard-api/src/config.py``  ``parents[3]`` is
     the workspace root that contains ``config/``, ``infra/`` and
     ``services/``. The fallback only kicks in when the operator does
     not set ``WORKSPACE_ROOT`` - in production Compose passes the

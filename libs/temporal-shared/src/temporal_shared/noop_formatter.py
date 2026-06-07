@@ -12,8 +12,8 @@ execution:
 
 The ``noop_test`` workflow type is the smoke-test path for newly-onboarded
 departments: a Jira issue triggers
-``AutomationWorkflow → ExecutionRunWorkflow → SSH runner → echo "ok"
-→ Jira comment``.  No LLM is involved, so the success / failure
+``AutomationWorkflow  ExecutionRunWorkflow  SSH runner  echo "ok"
+ Jira comment``.  No LLM is involved, so the success / failure
 comment is composed by this pure formatter rather than by a prompt.
 The activity that calls into this helper performs the side effect
 (Jira comment write) but the body it posts is determined entirely by
@@ -87,15 +87,15 @@ NOOP_STDOUT_TRUNCATE_CHARS: Final[int] = 1024
 NOOP_TRUNCATION_MARKER: Final[str] = "… [truncated]"
 
 #: Comment prefix for a successful ``noop_test`` run (``exit_code == 0``).
-#: Carries the ✅ emoji so a Jira reader can scan the issue history
+#: Carries the  emoji so a Jira reader can scan the issue history
 #: visually.  The literal Turkish wording is pinned by the unit
 #: tests; do not edit without updating those tests.
-NOOP_SUCCESS_PREFIX: Final[str] = "✅ noop_test sonucu"
+NOOP_SUCCESS_PREFIX: Final[str] = " noop_test sonucu"
 
 #: Comment prefix for a failed ``noop_test`` run (``exit_code != 0``
-#: or ``exit_code is None``).  ❌ emoji mirrors the ✅ from
+#: or ``exit_code is None``).   emoji mirrors the  from
 #: :data:`NOOP_SUCCESS_PREFIX` so the colour coding is consistent.
-NOOP_FAILURE_PREFIX: Final[str] = "❌ noop_test sonucu"
+NOOP_FAILURE_PREFIX: Final[str] = " noop_test sonucu"
 
 #: Sentinel rendered in the comment when the runner did not surface an
 #: exit code (e.g. the child workflow timed out before the SSH command
@@ -128,24 +128,24 @@ def format_noop_result_comment(
     -------------
     The comment body is one of two shapes::
 
-        ✅ noop_test sonucu: exit_code=0, çıktı:
+         noop_test sonucu: exit_code=0, çıktı:
         ```
         ok
         ```
 
-        ❌ noop_test sonucu: exit_code=1, çıktı:
+         noop_test sonucu: exit_code=1, çıktı:
         ```
         connection refused
         ```
 
     Special cases:
 
-    * ``stdout`` is ``None`` or an empty string → ``çıktı: <yok>`` (no
+    * ``stdout`` is ``None`` or an empty string  ``çıktı: <yok>`` (no
       code block).
-    * ``stdout`` longer than :data:`NOOP_STDOUT_TRUNCATE_CHARS` →
+    * ``stdout`` longer than :data:`NOOP_STDOUT_TRUNCATE_CHARS`
       truncated to the cap and the :data:`NOOP_TRUNCATION_MARKER`
       appended inside the code block.
-    * ``exit_code`` is ``None`` → rendered as
+    * ``exit_code`` is ``None``  rendered as
       :data:`NOOP_EXIT_CODE_UNKNOWN` and the failure prefix is used
       (a missing exit code is never a success).
 
@@ -177,13 +177,13 @@ def format_noop_result_comment(
     Examples
     --------
     >>> format_noop_result_comment(exit_code=0, stdout="ok\\n")
-    '✅ noop_test sonucu: exit_code=0, çıktı:\\n```\\nok\\n\\n```'
+    ' noop_test sonucu: exit_code=0, çıktı:\\n```\\nok\\n\\n```'
     >>> format_noop_result_comment(exit_code=1, stdout="boom")
-    '❌ noop_test sonucu: exit_code=1, çıktı:\\n```\\nboom\\n```'
+    ' noop_test sonucu: exit_code=1, çıktı:\\n```\\nboom\\n```'
     >>> format_noop_result_comment(exit_code=0, stdout=None)
-    '✅ noop_test sonucu: exit_code=0, çıktı: <yok>'
+    ' noop_test sonucu: exit_code=0, çıktı: <yok>'
     >>> format_noop_result_comment(exit_code=None, stdout="ok")
-    '❌ noop_test sonucu: exit_code=n/a, çıktı:\\n```\\nok\\n```'
+    ' noop_test sonucu: exit_code=n/a, çıktı:\\n```\\nok\\n```'
     """
     # Validate types upfront so a wrong call site fails fast rather
     # than producing a malformed comment.  ``bool`` is rejected for
@@ -202,7 +202,7 @@ def format_noop_result_comment(
             f"stdout must be str or None (got {type(stdout).__name__})"
         )
 
-    # Choose prefix.  ``None`` / non-zero → failure; ``0`` only →
+    # Choose prefix.  ``None`` / non-zero  failure; ``0`` only
     # success.  This matches the standard POSIX convention and is
     # the same logic the unit tests pin.
     if exit_code == 0:

@@ -2,17 +2,14 @@
 
 /**
  * Departments panel.
- *
- * Lists every department with its bot credential reference plus
+ * * Lists every department with its bot credential reference plus
  * inline buttons for the CRUD wizard (create / edit / decommission).
- *
- * Row click navigation:
+ * * Row click navigation:
  * Clicking anywhere on a row (outside the Actions cell) routes to
  * ``/departments/{id}`` where the credential modal opens. The
  * Actions cell stops propagation so the existing Edit /
  * Decommission anchors keep their original semantics.
- *
- * Wizard mode:
+ * * Wizard mode:
  * When ``?wizard=1`` query param is present, the "Yeni Departman Ekle"
  * modal opens automatically on mount. Closing the modal shows a
  * confirmation dialog warning that at least one department is required
@@ -178,14 +175,14 @@ function DepartmentsPageInner(): JSX.Element {
               onClick={refresh}
               disabled={loading}
             >
-              {loading ? <span className="spinner" /> : "🔄"} Yenile
+              {loading ? <span className="spinner" /> : ""} Yenile
             </button>
             <button
               type="button"
               className="btn btn--ghost"
               onClick={() => setShowBulkImportModal(true)}
             >
-              📦 Toplu içe aktar
+               Toplu içe aktar
             </button>
             <button
               type="button"
@@ -200,7 +197,7 @@ function DepartmentsPageInner(): JSX.Element {
 
       {isWizardMode && (
         <div className="banner banner--info" role="alert">
-          <span className="banner__icon">🧙</span>
+          <span className="banner__icon"></span>
           <div className="banner__body">
             <strong>Setup Wizard</strong>
             <div className="text-sm">
@@ -233,7 +230,7 @@ function DepartmentsPageInner(): JSX.Element {
 
       {error && (
         <div className="banner banner--danger">
-          <span className="banner__icon">⚠️</span>
+          <span className="banner__icon"></span>
           <div className="banner__body">{error}</div>
         </div>
       )}
@@ -255,7 +252,7 @@ function DepartmentsPageInner(): JSX.Element {
         <div className="card__body card__body--flush">
           {filtered.length === 0 ? (
             <div className="empty">
-              <div className="empty__icon">🏢</div>
+              <div className="empty__icon"></div>
               <div className="empty__title">
                 {rows.length === 0 ? "Henüz departman yok" : "Eşleşme bulunamadı"}
               </div>

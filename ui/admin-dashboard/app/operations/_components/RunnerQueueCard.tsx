@@ -2,18 +2,14 @@
 
 /**
  * RunnerQueueCard - SSH runner queue/quota visibility widget.
- *
- * Displays a summary card: "Aktif: N/quota - Kuyrukta: M - Ortalama bekleme: Tdk"
+ * * Displays a summary card: "Aktif: N/quota - Kuyrukta: M - Ortalama bekleme: Tdk"
  * with color thresholds (%80 yellow, %95 red).
- *
- * Below the summary, a workspace table lists each active/queued workspace
+ * * Below the summary, a workspace table lists each active/queued workspace
  * with issue_key, dept_id, status, queued_at, started_at, path, and
  * Cancel/Force Cleanup action buttons for admins.
- *
- * Connects to the SSE stream at `/admin/runner/queue-status/stream` for
+ * * Connects to the SSE stream at `/admin/runner/queue-status/stream` for
  * real-time updates.
- *
- * Requirements: 15.3, 15.4, 15.6
+ * * Requirements: 15.3, 15.4, 15.6
  */
 
 import { useCallback, useEffect, useState } from "react";

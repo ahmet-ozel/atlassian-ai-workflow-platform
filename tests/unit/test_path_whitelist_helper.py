@@ -22,7 +22,7 @@ from pathlib import Path
 
 import pytest
 
-# tests/unit/test_path_whitelist_helper.py → platform/
+# tests/unit/test_path_whitelist_helper.py  platform/
 _PLATFORM_ROOT = Path(__file__).resolve().parents[2]
 _PROPERTY_DIR = _PLATFORM_ROOT / "tests" / "property"
 if str(_PROPERTY_DIR) not in sys.path:

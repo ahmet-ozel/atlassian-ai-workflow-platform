@@ -52,7 +52,7 @@ _PR_CREATE_TOOL_BY_DEPLOYMENT: Final[Mapping[str, str]] = MappingProxyType(
 
 
 # ---------------------------------------------------------------------------
-# select_pr_create_tool - deployment → MCP tool name
+# select_pr_create_tool - deployment  MCP tool name
 # ---------------------------------------------------------------------------
 
 

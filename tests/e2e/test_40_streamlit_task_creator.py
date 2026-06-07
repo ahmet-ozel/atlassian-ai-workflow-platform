@@ -49,7 +49,7 @@ except ImportError:  # pragma: no cover - playwright optional at import time
 
 STREAMLIT_URL = "http://localhost:8501"
 #: Streamlit multipage routing strips the numeric prefix from
-#: ``pages/2_task_creator.py`` → ``/task_creator``.
+#: ``pages/2_task_creator.py``  ``/task_creator``.
 TASK_CREATOR_PATH = "/task_creator"
 TASK_CREATOR_FULL_URL = f"{STREAMLIT_URL}{TASK_CREATOR_PATH}"
 HEALTH_URL = f"{STREAMLIT_URL}/_stcore/health"

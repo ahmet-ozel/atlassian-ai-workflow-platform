@@ -52,7 +52,7 @@ _KEY_STRATEGY = st.text(
 def test_update_without_api_key_does_not_touch_vault(
     initial_key: str,
 ) -> None:
-    """``ProviderUpdate`` with no ``api_key`` → Vault writes unchanged."""
+    """``ProviderUpdate`` with no ``api_key``  Vault writes unchanged."""
 
     async def _go() -> None:
         service, _, vault, _, _ = build_service()

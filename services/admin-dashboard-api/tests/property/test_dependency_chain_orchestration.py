@@ -873,7 +873,7 @@ def test_dependency_failure_isolation_parametric(
 # Dependency Depth Guard over random DAG topologies
 # ---------------------------------------------------------------------------
 #
-#  The static / parametric tests above cover linear chains. asks
+# The static / parametric tests above cover linear chains. asks
 # specifically for *random DAG* topologies so we exercise the depth guard
 # under structures that mix branching with chain-shaped paths. The strategy
 # below generates a DAG whose longest root-to-leaf path is exactly
@@ -882,17 +882,17 @@ def test_dependency_failure_isolation_parametric(
 #
 #
 #
-#   * For every random DAG with longest-path-depth ``d``:
-#       - ``d <= MAX_DEPENDENCY_DEPTH``  →  start(root) succeeds.
-#       - ``d >  MAX_DEPENDENCY_DEPTH``  →  MaxDependencyDepthExceededError
-#         (possibly wrapped in DependencyStartFailedError) is raised AND a
-#         ``dependency_chain_max_depth_exceeded`` audit row is written.
+# * For every random DAG with longest-path-depth ``d``:
+# - ``d <= MAX_DEPENDENCY_DEPTH``    start(root) succeeds.
+# - ``d >  MAX_DEPENDENCY_DEPTH``    MaxDependencyDepthExceededError
+# (possibly wrapped in DependencyStartFailedError) is raised AND a
+# ``dependency_chain_max_depth_exceeded`` audit row is written.
 #
-#   * Cycles in the dependency graph (which manifest-time validation
-#     normally rejects but unit tests bypass by constructing fake
-#     ManagedServiceEntry instances directly) are caught at runtime by the
-#     same depth guard - recursion grows the path until length >= 3 and the
-#     guard fires deterministically.
+# * Cycles in the dependency graph (which manifest-time validation
+# normally rejects but unit tests bypass by constructing fake
+# ManagedServiceEntry instances directly) are caught at runtime by the
+# same depth guard - recursion grows the path until length >= 3 and the
+# guard fires deterministically.
 
 
 @st.composite

@@ -121,7 +121,7 @@ def rotate(vault: VaultClient, dept_id: str, provider: str) -> str:
     new_secret = generate_secret()
 
     # Delegate the slot demotion to the VaultClient protocol method
-    # which handles active → previous promotion with overlap_until.
+    # which handles active  previous promotion with overlap_until.
     vault.rotate_webhook_secret(provider, dept_id, new_secret)
 
     # Write rotated_at timestamp to a metadata path so the API can

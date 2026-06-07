@@ -2,17 +2,14 @@
 
 /**
  * Pure status pill for an LLM provider row.
- *
- * Color rules:
- *
- * - **Green** when the provider has been tested AND the last test
- *   succeeded (`last_tested_at != null && last_test_error == null`).
+ * * Color rules:
+ * * - **Green** when the provider has been tested AND the last test
+ * succeeded (`last_tested_at != null && last_test_error == null`).
  * - **Red** when the provider has been tested AND the last test failed
- *   (`last_tested_at != null && last_test_error != null`).
+ * (`last_tested_at != null && last_test_error != null`).
  * - **Grey** when the provider has never been tested
- *   (`last_tested_at == null`).
- *
- * The component renders nothing else - no labels, no tooltips, no
+ * (`last_tested_at == null`).
+ * * The component renders nothing else - no labels, no tooltips, no
  * click handlers. Composition with the rest of the provider table is
  * the parent's job.
  */

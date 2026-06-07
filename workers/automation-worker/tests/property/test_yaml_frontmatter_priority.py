@@ -6,8 +6,8 @@ invoked.
 
 The complementary direction, where YAML cannot be parsed or is absent, is
 exercised by a second check in this module so the implication is tested in
-both directions: ``yaml_present ⇒ ¬llm_called`` *and*
-``yaml_absent ⇒ llm_called``.
+both directions: ``yaml_present  ¬llm_called`` *and*
+``yaml_absent  llm_called``.
 """
 from __future__ import annotations
 
@@ -266,7 +266,7 @@ def _make_input(
 
 
 # ---------------------------------------------------------------------------
-# Valid YAML block ⇒ LLM not invoked, source=yaml_frontmatter
+# Valid YAML block  LLM not invoked, source=yaml_frontmatter
 # ---------------------------------------------------------------------------
 
 
@@ -305,7 +305,7 @@ def test_yaml_frontmatter_skips_llm(
 
 
 # ---------------------------------------------------------------------------
-# No front-matter ⇒ LLM is invoked
+# No front-matter  LLM is invoked
 # ---------------------------------------------------------------------------
 
 

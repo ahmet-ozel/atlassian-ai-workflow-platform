@@ -78,10 +78,10 @@ class _ActivityCallLog:
 
 
 # ---------------------------------------------------------------------------
-# Status mapping matrix 
+# Status mapping matrix
 #
 # Each row encodes the canonical mapping the workflow MUST preserve:
-# ssh_run_test result dict → ExecutionRunWorkflowOutput fields
+# ssh_run_test result dict  ExecutionRunWorkflowOutput fields
 #
 # (status, exit_code, stdout_uri, stderr_uri, duration_seconds,
 # runner_id, failure_reason, scenario_id)
@@ -291,7 +291,7 @@ async def test_canonical_execution_run_status_mapping(
 
 
 # ---------------------------------------------------------------------------
-# Default-timeout fallback test 
+# Default-timeout fallback test
 # ---------------------------------------------------------------------------
 
 

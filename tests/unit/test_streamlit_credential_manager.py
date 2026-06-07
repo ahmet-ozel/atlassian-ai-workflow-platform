@@ -124,7 +124,7 @@ def test_store_rejects_invalid_inputs() -> None:
 
 
 # ---------------------------------------------------------------------------
-# 60 minute inactivity timeout → auto clear
+# 60 minute inactivity timeout  auto clear
 # ---------------------------------------------------------------------------
 
 

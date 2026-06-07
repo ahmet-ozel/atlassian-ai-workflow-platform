@@ -6,8 +6,8 @@ Strategy
 The parser is a pure function - no external collaborators, no async.
 We exercise it with hand-crafted descriptions covering:
 
-* No front-matter → ``None``.
-* Well-formed block → all fields populated.
+* No front-matter  ``None``.
+* Well-formed block  all fields populated.
 * Field-level validation: invalid values are dropped to ``None`` and
   recorded in ``parse_errors``.
 * Edge cases: empty body, malformed YAML, missing ``ai-bot`` key,
@@ -51,12 +51,12 @@ def _make_description(yaml_body: str, *, body: str = "## Amaç\nDo a thing.") ->
 
 
 # ---------------------------------------------------------------------------
-# 1. No / malformed front-matter → None
+# 1. No / malformed front-matter  None
 # ---------------------------------------------------------------------------
 
 
 class TestNoFrontMatter:
-    """Front-matter absent / malformed → fall through to LLM path."""
+    """Front-matter absent / malformed  fall through to LLM path."""
 
     def test_none_description(self) -> None:
         assert parse_description_frontmatter(None) is None
@@ -74,7 +74,7 @@ class TestNoFrontMatter:
         assert parse_description_frontmatter(desc) is None
 
     def test_unclosed_front_matter(self) -> None:
-        # Opening ``---`` but no closing delimiter → not parsed.
+        # Opening ``---`` but no closing delimiter  not parsed.
         desc = "---\nai-bot:\n  workflow_type: noop_test\n\n## Amaç"
         assert parse_description_frontmatter(desc) is None
 
@@ -98,7 +98,7 @@ class TestNoFrontMatter:
 
 
 # ---------------------------------------------------------------------------
-# 2. Well-formed front-matter → fields populated
+# 2. Well-formed front-matter  fields populated
 # ---------------------------------------------------------------------------
 
 
@@ -173,7 +173,7 @@ class TestHappyPath:
         assert result.parse_errors == []
 
     def test_empty_ai_bot_block(self) -> None:
-        # ``ai-bot:`` with no children → empty mapping → all None.
+        # ``ai-bot:`` with no children  empty mapping  all None.
         desc = _make_description("ai-bot: {}")
         result = parse_description_frontmatter(desc)
 

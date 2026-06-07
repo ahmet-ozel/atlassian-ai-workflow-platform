@@ -69,7 +69,7 @@ _CLIENT = _build_test_app()
 def test_unsupported_provider_type_returns_documented_shape(
     bogus_type: str,
 ) -> None:
-    """Unknown ``provider_type`` → 422 ``unsupported_provider_type``."""
+    """Unknown ``provider_type``  422 ``unsupported_provider_type``."""
 
     response = _CLIENT.post(
         "/test/create",
@@ -109,7 +109,7 @@ def test_unsupported_provider_type_returns_documented_shape(
 )
 @settings(max_examples=100, deadline=None)
 def test_extra_fields_are_rejected(extra_field: str) -> None:
-    """Prompt-shaping fields → 422 ``extra_fields_not_allowed``."""
+    """Prompt-shaping fields  422 ``extra_fields_not_allowed``."""
 
     response = _CLIENT.post(
         "/test/create",
@@ -129,7 +129,7 @@ def test_extra_fields_are_rejected(extra_field: str) -> None:
 
 
 def test_missing_required_api_key_for_openai() -> None:
-    """Missing ``api_key`` on OpenAI body → 422 ``validation_failed``."""
+    """Missing ``api_key`` on OpenAI body  422 ``validation_failed``."""
 
     response = _CLIENT.post(
         "/test/create",
@@ -146,7 +146,7 @@ def test_missing_required_api_key_for_openai() -> None:
 
 
 def test_non_positive_context_length() -> None:
-    """``context_length <= 0`` → 422 ``validation_failed``."""
+    """``context_length <= 0``  422 ``validation_failed``."""
 
     response = _CLIENT.post(
         "/test/create",

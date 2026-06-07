@@ -298,7 +298,7 @@ def test_read_after_ttl_expiry_returns_not_found(
     Sessions that expire because the TTL elapsed (rather than an
     explicit logout) MUST converge on the same end-state: the
     ``_user_session`` path is removed and the next ``read`` returns
-    ``not_found``. A regression that wires logout → ``delete`` but
+    ``not_found``. A regression that wires logout  ``delete`` but
     forgets the TTL sweeper would slip past
     ``test_read_after_session_end_returns_not_found`` alone, so we
     drive both code paths independently.

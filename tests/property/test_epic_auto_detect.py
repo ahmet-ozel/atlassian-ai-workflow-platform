@@ -12,12 +12,12 @@ auto-detect branch:
 * When the issue's ``issuetype.name`` is ``"Epic"`` and no YAML
  front-matter specifies a ``workflow_type``, the activity bypasses
  the LLM entirely.
-* If the Epic has ≥1 subtask → deterministic
+* If the Epic has ≥1 subtask  deterministic
  ``workflow_type="multi_step"``, ``confidence=1.0``,
  ``source="epic_auto_detect"``, ``status="ready"``.
-* If the Epic has 0 subtasks → ``status="needs_info"``,
+* If the Epic has 0 subtasks  ``status="needs_info"``,
  ``missing_fields=["subtasks"]``, ``source="epic_auto_detect"``.
-* Non-Epic issue types (Story, Task, Bug) → existing LLM path.
+* Non-Epic issue types (Story, Task, Bug)  existing LLM path.
 * If YAML front-matter sets ``workflow_type``, the auto-detect is
  bypassed regardless of issue type (front-matter > Epic auto-detect
  > LLM priority).
@@ -28,10 +28,10 @@ Strategy
 We use Hypothesis to generate random Jira issue metadata and verify
 the four invariants:
 
-(a) Epic + ≥1 subtask → ``multi_step`` with ``source="epic_auto_detect"``
-(b) Epic + 0 subtask → ``needs_info`` with ``source="epic_auto_detect"``
-(c) Story/Task/Bug → LLM path (``source="llm_analysis"``)
-(d) Front-matter ``workflow_type`` set → auto-detect bypass
+(a) Epic + ≥1 subtask  ``multi_step`` with ``source="epic_auto_detect"``
+(b) Epic + 0 subtask  ``needs_info`` with ``source="epic_auto_detect"``
+(c) Story/Task/Bug  LLM path (``source="llm_analysis"``)
+(d) Front-matter ``workflow_type`` set  auto-detect bypass
  (``source="yaml_frontmatter"``)
 
 The activity is invoked as a plain coroutine (``@activity.defn`` does
@@ -245,7 +245,7 @@ def _task_analysis_input(
 
 
 # ---------------------------------------------------------------------------
-# invariant: Epic + ≥1 subtask → multi_step
+# invariant: Epic + ≥1 subtask  multi_step
 # ---------------------------------------------------------------------------
 
 
@@ -274,7 +274,7 @@ class TestEpicWithSubtasksMultiStep:
         issue_key: str,
         dept_id: str,
     ) -> None:
-        """: Epic + ≥1 subtask → multi_step deterministically."""
+        """: Epic + ≥1 subtask  multi_step deterministically."""
         inp = TaskAnalysisInput(
             issue_key=issue_key,
             title="Epic task",
@@ -372,7 +372,7 @@ class TestEpicWithSubtasksMultiStep:
 
 
 # ---------------------------------------------------------------------------
-# invariant: Epic + 0 subtask → needs_info
+# invariant: Epic + 0 subtask  needs_info
 # ---------------------------------------------------------------------------
 
 
@@ -401,7 +401,7 @@ class TestEpicNoSubtasksNeedsInfo:
         issue_key: str,
         dept_id: str,
     ) -> None:
-        """: Epic + 0 subtask → needs_info."""
+        """: Epic + 0 subtask  needs_info."""
         inp = TaskAnalysisInput(
             issue_key=issue_key,
             title="Epic without subtasks",
@@ -496,7 +496,7 @@ class TestEpicNoSubtasksNeedsInfo:
 
 
 # ---------------------------------------------------------------------------
-# invariant: Story/Task/Bug → LLM path
+# invariant: Story/Task/Bug  LLM path
 # ---------------------------------------------------------------------------
 
 
@@ -606,7 +606,7 @@ class TestNonEpicUsesLLMPath:
 
 
 # ---------------------------------------------------------------------------
-# invariant: Front-matter workflow_type set → auto-detect bypass
+# invariant: Front-matter workflow_type set  auto-detect bypass
 # ---------------------------------------------------------------------------
 
 

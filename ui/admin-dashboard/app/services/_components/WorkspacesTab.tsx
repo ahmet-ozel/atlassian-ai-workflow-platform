@@ -2,23 +2,20 @@
 
 /**
  * WorkspacesTab - Services panel'inin alt sekmesi.
- *
- * SSH üzerindeki ``$RUNNER_BASE_PATH`` altındaki task workspace'lerini
+ * * SSH üzerindeki ``$RUNNER_BASE_PATH`` altındaki task workspace'lerini
  * tablo halinde listeler ve admin'in tek tıkla silmesini sağlar. UI
  * sözleşmesi ``GET /admin/runner/workspaces`` ve
  * ``DELETE /admin/runner/workspaces/{issue_key}`` endpoint'lerini
  * (``runner_workspaces`` router) tüketir.
- *
- * Akış:
+ * * Akış:
  * 1. Mount edildiğinde liste fetch edilir; "Refresh" butonu manuel
- *    yeniden yüklemeye izin verir.
+ * yeniden yüklemeye izin verir.
  * 2. Her satırın ``[Sil]`` butonu confirm modal açar - onay üzerine
- *    DELETE çağrılır, başarılıysa satır listeden çıkar.
+ * DELETE çağrılır, başarılıysa satır listeden çıkar.
  * 3. 400 ``invalid_issue_key_format`` (path-traversal red) UI'a düşmez -
- *    backend regex'ine zaten yalnızca regex uyan key'ler liste hâlinde
- *    geliyor; yine de defansif olarak hata banner'ı gösterilir.
- *
- * Sayfaya ``app/services/page.tsx`` `Workspaces` sekmesini açtığında
+ * backend regex'ine zaten yalnızca regex uyan key'ler liste hâlinde
+ * geliyor; yine de defansif olarak hata banner'ı gösterilir.
+ * * Sayfaya ``app/services/page.tsx`` `Workspaces` sekmesini açtığında
  * bu komponenti render eder. Şimdilik komponent kendisi sekme
  * mekanizmasına bağlanmaz; ``page.tsx`` UI tarafı services
  * panelinde sub-tab) çerçevesinde komponenti monte eder.
@@ -208,7 +205,7 @@ export default function WorkspacesTab() {
         const text = await res.text().catch(() => "");
         setState({
           kind: "error",
-          message: `GET /admin/runner/workspaces → HTTP ${res.status}${
+          message: `GET /admin/runner/workspaces  HTTP ${res.status}${
             text ? `: ${text.slice(0, 200)}` : ""
           }`,
         });
@@ -255,7 +252,7 @@ export default function WorkspacesTab() {
         // non-2xx as an error banner so an out-of-band SSH-side
         // change is visible.
         setActionError(
-          `DELETE /admin/runner/workspaces/${issueKey} → HTTP ${res.status}${
+          `DELETE /admin/runner/workspaces/${issueKey}  HTTP ${res.status}${
             text ? `: ${text.slice(0, 200)}` : ""
           }`,
         );

@@ -148,9 +148,9 @@ def validate_template_format(body: str) -> None:
 def _root_name(field_name: str) -> str:
     """Return the root identifier of a ``str.format`` field reference.
 
-    ``"department_repos"``                    → ``"department_repos"``
-    ``"department_repos[0]"``                 → ``"department_repos"``
-    ``"department_repos.something"``          → ``"department_repos"``
+    ``"department_repos"``                     ``"department_repos"``
+    ``"department_repos[0]"``                  ``"department_repos"``
+    ``"department_repos.something"``           ``"department_repos"``
     """
 
     root = field_name

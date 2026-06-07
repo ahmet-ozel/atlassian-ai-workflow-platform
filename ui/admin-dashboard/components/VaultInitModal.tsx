@@ -2,14 +2,12 @@
 
 /**
  * VaultInitModal - Production Vault Init step for the Setup Wizard.
- *
- * Calls `POST /admin/vault/init` and
+ * * Calls `POST /admin/vault/init` and
  * displays the 5 unseal keys in a one-time modal dialog. The modal
  * cannot be closed without the operator confirming they have saved the
  * keys. Once closed, keys are cleared from the UI and cannot be
  * retrieved again.
- *
- */
+ * */
 
 import { useCallback, useRef, useState } from "react";
 
@@ -124,7 +122,7 @@ export default function VaultInitModal({ onComplete }: VaultInitModalProps) {
       <div style={stepContainerStyle}>
         <h3 style={headingStyle}>Production Vault Init</h3>
         <div style={loadingStyle} role="status" aria-live="polite">
-          <span aria-hidden="true">⏳</span> Vault initialize ediliyor...
+          <span aria-hidden="true"></span> Vault initialize ediliyor...
         </div>
       </div>
     );
@@ -136,7 +134,7 @@ export default function VaultInitModal({ onComplete }: VaultInitModalProps) {
       <div style={stepContainerStyle}>
         <h3 style={headingStyle}>Production Vault Init</h3>
         <div role="alert" style={errorBannerStyle}>
-          <span aria-hidden="true">❌</span> {state.message}
+          <span aria-hidden="true"></span> {state.message}
         </div>
         <button
           type="button"
@@ -155,7 +153,7 @@ export default function VaultInitModal({ onComplete }: VaultInitModalProps) {
       <div style={stepContainerStyle}>
         <h3 style={headingStyle}>Production Vault Init</h3>
         <div style={successBannerStyle} role="status">
-          <span aria-hidden="true">✅</span> Vault başarıyla initialize edildi.
+          <span aria-hidden="true"></span> Vault başarıyla initialize edildi.
           Unseal key&apos;ler güvenli bir şekilde saklandığınızdan emin olun.
         </div>
       </div>
@@ -169,7 +167,7 @@ export default function VaultInitModal({ onComplete }: VaultInitModalProps) {
     <div style={overlayStyle} role="dialog" aria-modal="true" aria-labelledby="vault-init-modal-title">
       <div style={modalStyle}>
         <h3 id="vault-init-modal-title" style={modalHeadingStyle}>
-          🔐 Vault Unseal Keys
+           Vault Unseal Keys
         </h3>
 
         <div style={warningBannerStyle} role="alert">

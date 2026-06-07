@@ -3,15 +3,15 @@
 Covers the main research behaviors:
 
     1. ``research_publish_confluence`` happy path - verifies the
-       activity sequence (``set_assignee_to_bot`` → ``firecrawl_search``
-       → ``firecrawl_scrape`` → ``confluence_create_page`` →
+       activity sequence (``set_assignee_to_bot``  ``firecrawl_search``
+        ``firecrawl_scrape``  ``confluence_create_page``
        ``jira_add_comment`` carrying the page link) and that the
        rendered body picks up the
        :func:`format_research_publish_confluence_body` Kaynaklar
        block.
     2. ``research_publish_confluence`` 403 graceful path - a blocked
        URL produces the canonical
-       ``🤖 {url} domain'i araştırma için izinli değil`` Jira comment,
+       `` {url} domain'i araştırma için izinli değil`` Jira comment,
        a ``research_minio_offload`` / ``firecrawl_blocked:{url}``
        partial-failure marker, and the workflow continues with the
        remaining URLs without raising.
@@ -22,7 +22,7 @@ Covers the main research behaviors:
     4. ``research_summary_jira`` long-content path - when the
        summary overflows the comment carries the MinIO URI returned
        by ``minio_put_research_summary`` and the comment text embeds
-       it via the ``🔗 Tam içerik:`` line.
+       it via the `` Tam içerik:`` line.
 
 The tests drive the body methods directly (i.e.
 ``_handle_research_publish_confluence`` /
@@ -147,7 +147,7 @@ def make_wf():
 def _activity_dispatcher(routes: dict[str, Any]) -> AsyncMock:
     """Return an ``AsyncMock`` resolving ``execute_activity`` calls.
 
-    *routes* maps activity-name → return value (or 0-arg / 1-arg
+    *routes* maps activity-name  return value (or 0-arg / 1-arg
     callable that yields it). Activities not present in *routes*
     return ``None`` so optional best-effort calls (audit_emit,
     jira_add_comment) never trip the test fixtures.
@@ -461,7 +461,7 @@ class TestResearchPublishConfluenceBlockedDomain:
 
 
 class TestResearchSummaryJiraShortContent:
-    """Short summary + few sources → comment carries no MinIO link."""
+    """Short summary + few sources  comment carries no MinIO link."""
 
     def test_short_content_does_not_call_minio_offload(
         self, make_wf, patched_workflow_now
@@ -528,7 +528,7 @@ class TestResearchSummaryJiraShortContent:
 
 
 class TestResearchSummaryJiraLongContent:
-    """Long summary → comment carries the MinIO link from the offload."""
+    """Long summary  comment carries the MinIO link from the offload."""
 
     def test_long_content_appends_minio_uri_to_comment(
         self, make_wf, patched_workflow_now

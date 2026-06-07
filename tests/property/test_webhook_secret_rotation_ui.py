@@ -769,8 +769,8 @@ class TestAutoFinalizeOnOverlapExpiry:
     def test_full_lifecycle_rotate_overlap_autofinalize(
         self, dept_id: str, provider: str, body: bytes
     ) -> None:
-        """Full lifecycle - rotate → overlap window
-        (both accepted) → auto-finalize → only current accepted."""
+        """Full lifecycle - rotate  overlap window
+        (both accepted)  auto-finalize  only current accepted."""
 
         vault = FakeWebhookVault()
         gateway = FakeGateway()

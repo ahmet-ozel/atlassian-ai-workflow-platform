@@ -4,20 +4,20 @@
 # =============================================================================
 # Runs on VPS_Host. Boot probe checks:
 #
-#   1. Run `make boot` to start the four boot-bundle services       (R7.1)
-#   2. Poll docker compose ps every 5s (max 180s) until all four
-#      services report State=running, Health=healthy                 (R7.2)
-#   3. Probe three healthcheck endpoints (200 OK expected)          (R7.3)
-#   4. On timeout or exited service, capture logs and fail          (R7.4)
-#   5. Assert no profile-gated services are running                 (R7.5)
-#   6. Emit evidence to /tmp/07-boot.txt                            (R7.6)
+# 1. Run `make boot` to start the four boot-bundle services       (R7.1)
+# 2. Poll docker compose ps every 5s (max 180s) until all four
+# services report State=running, Health=healthy                 (R7.2)
+# 3. Probe three healthcheck endpoints (200 OK expected)          (R7.3)
+# 4. On timeout or exited service, capture logs and fail          (R7.4)
+# 5. Assert no profile-gated services are running                 (R7.5)
+# 6. Emit evidence to /tmp/07-boot.txt                            (R7.6)
 #
 # Exit codes:
-#   0 = all assertions pass
-#   1 = boot or health assertion failure
+# 0 = all assertions pass
+# 1 = boot or health assertion failure
 #
 # Usage:
-#   ./vps_boot_probe.sh
+# ./vps_boot_probe.sh
 # =============================================================================
 set -euo pipefail
 
@@ -166,7 +166,7 @@ for URL in "${ENDPOINTS[@]}"; do
         echo "[FAIL] $URL returned HTTP $HTTP_CODE (expected 200)" >&2
         PROBE_PASS=0
     else
-        echo "[PASS] $URL → 200 OK"
+        echo "[PASS] $URL  200 OK"
     fi
 done
 

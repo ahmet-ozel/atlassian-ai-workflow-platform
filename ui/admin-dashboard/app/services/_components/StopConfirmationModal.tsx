@@ -3,28 +3,25 @@
 /**
  * StopConfirmationModal - Service Stop confirmation with optional advanced
  * tear-down toggles.
- *
- * Rendered when the operator clicks "Stop" in the Servis Kataloğu. The
+ * * Rendered when the operator clicks "Stop" in the Servis Kataloğu. The
  * modal walks the operator through a single explicit confirmation step
  * before any side-effect lands on the orchestrator:
- *
- *   1. The default body is always ``{remove_volumes: false, purge_vault:
- *      false}`` - equivalent to the legacy click-to-stop behaviour the
- *      Servis Kataloğu had before this task.
- *   2. The ``Advanced ▼`` toggle (collapsed by default) reveals two
- *      independent checkboxes:
- *        - ``Volume'ları sil`` (``remove_volumes``) - removes Compose
- *          named volumes alongside the container.
- *        - ``Vault override'ları sil`` (``purge_vault``) - deletes
- *          ``secret/services/{name}/*`` after Compose down. Disabled in
- *          production with an explanatory tooltip so the lifecycle
- *          guard's 403 cannot accidentally fire.
- *   3. On confirmation, ``POST /admin/services/{name}/stop`` is invoked
- *      with the resolved body. A 403 ``purge_vault_forbidden_in_production``
- *      is surfaced inline in the modal so the operator can untick the
- *      Vault checkbox and retry without losing their other selections.
- *
- * The component owns no polling or auto-retry. It calls back to the
+ * *   1. The default body is always ``{remove_volumes: false, purge_vault:
+ * false}`` - equivalent to the legacy click-to-stop behaviour the
+ * Servis Kataloğu had before this task.
+ * 2. The ``Advanced ▼`` toggle (collapsed by default) reveals two
+ * independent checkboxes:
+ * - ``Volume'ları sil`` (``remove_volumes``) - removes Compose
+ * named volumes alongside the container.
+ * - ``Vault override'ları sil`` (``purge_vault``) - deletes
+ * ``secret/services/{name}/*`` after Compose down. Disabled in
+ * production with an explanatory tooltip so the lifecycle
+ * guard's 403 cannot accidentally fire.
+ * 3. On confirmation, ``POST /admin/services/{name}/stop`` is invoked
+ * with the resolved body. A 403 ``purge_vault_forbidden_in_production``
+ * is surfaced inline in the modal so the operator can untick the
+ * Vault checkbox and retry without losing their other selections.
+ * * The component owns no polling or auto-retry. It calls back to the
  * parent on three paths: explicit Cancel, Escape / backdrop dismissal,
  * and successful stop (``onConfirmed``); the parent decides what to do
  * (close, refresh the catalog, etc.).
@@ -164,7 +161,7 @@ export default function StopConfirmationModal({
 
       const text = await res.text().catch(() => "");
       setError(
-        `stop ${serviceName} → HTTP ${res.status}${
+        `stop ${serviceName}  HTTP ${res.status}${
           text ? `: ${text.slice(0, 200)}` : ""
         }`,
       );

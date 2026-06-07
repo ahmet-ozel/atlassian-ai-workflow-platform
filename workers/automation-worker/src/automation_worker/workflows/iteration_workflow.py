@@ -254,7 +254,7 @@ class IterationWorkflow:
     async def run(
         self, inp: IterationWorkflowInput | dict[str, Any]
     ) -> IterationWorkflowOutput:
-        # 1. Coerce dict → dataclass. The dispatcher passes a plain
+        # 1. Coerce dict  dataclass. The dispatcher passes a plain
         # dict via ``args=[workflow_input]`` (see
         # WebhookDispatcher._start_iteration). Temporal's data
         # converter will hand us either shape depending on how the
@@ -474,7 +474,7 @@ class IterationWorkflow:
             )
 
         body = (
-            f"🤖 Bu görev için maksimum {cap} iterasyon limitine "
+            f" Bu görev için maksimum {cap} iterasyon limitine "
             f"ulaşıldı (mevcut: {count}). Devam etmek için yeni bir "
             f"Jira görevi açın."
         )

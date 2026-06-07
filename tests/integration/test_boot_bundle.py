@@ -52,7 +52,7 @@ import pytest
 COMPOSE_FILE_REL: str = "infra/docker-compose.yml"
 
 #: The exact set of services that MUST be running under the default
-#: (no-profile) ``docker compose up`` invocation per 
+#: (no-profile) ``docker compose up`` invocation per
 BOOT_BUNDLE_SERVICES: frozenset[str] = frozenset(
     {
         "admin-dashboard-ui",
@@ -248,7 +248,7 @@ def _compose_published_ports(repo_root: Path, service: str) -> set[int]:
  """
 
     ports: set[int] = set()
-    # The two service ports we care about for 
+    # The two service ports we care about for
     candidates = {
         "admin-dashboard-ui": (3000,),
         "admin-dashboard-api": (8082,),

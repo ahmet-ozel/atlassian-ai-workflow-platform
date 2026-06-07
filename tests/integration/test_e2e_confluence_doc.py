@@ -1,18 +1,18 @@
 ﻿"""End-to-end integration test for the ``confluence_doc_update`` flow.
 
 
-This test exercises the parent → child workflow boundary using
+This test exercises the parent  child workflow boundary using
 ``WorkflowEnvironment.start_time_skipping`` and Temporal's deterministic
 test server. The flow under test:
 
- AutomationWorkflow (jira_get_issue → llm_analyze_task[confluence_doc_update])
- → execute_child_workflow("AgentRunnerWorkflow", ...)
- → AgentRunnerWorkflow (confluence branch)
- → confluence_search
- → confluence_get_page
- → llm_generate_doc
- → confluence_update_page
- → completion comment + Done transition
+ AutomationWorkflow (jira_get_issue  llm_analyze_task[confluence_doc_update])
+  execute_child_workflow("AgentRunnerWorkflow", ...)
+  AgentRunnerWorkflow (confluence branch)
+  confluence_search
+  confluence_get_page
+  llm_generate_doc
+  confluence_update_page
+  completion comment + Done transition
 
 Test scope decision (option (a) - minimal AgentRunnerWorkflow stub)
 -------------------------------------------------------------------
@@ -93,7 +93,7 @@ class _ActivityCallLog:
 @pytest.mark.asyncio
 @pytest.mark.integration
 async def test_confluence_doc_update_e2e_flow() -> None:
-    """End-to-end: webhook payload → AutomationWorkflow → AgentRunnerWorkflow.
+    """End-to-end: webhook payload  AutomationWorkflow  AgentRunnerWorkflow.
 
  Drives the parent + child workflow against the time-skipping test
  server with mocked activities. Asserts the full activity sequence

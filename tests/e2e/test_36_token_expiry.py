@@ -6,11 +6,11 @@ propagates structured errors without crashing, and supports re-authentication
 through the dashboard UI.
 
 Verification steps:
-1. Replace MCP token with EXPIRED_TOKEN_SIMULATION → assert 401 on API calls
+1. Replace MCP token with EXPIRED_TOKEN_SIMULATION  assert 401 on API calls
 2. Assert automation-service propagates structured error (no crash)
-3. Navigate to dashboard → assert warning indicator for unhealthy connection
-4. Re-enter correct token via UI → assert "Test Connection" succeeds
-5. Execute Jira API call → assert success (re-auth flow works)
+3. Navigate to dashboard  assert warning indicator for unhealthy connection
+4. Re-enter correct token via UI  assert "Test Connection" succeeds
+5. Execute Jira API call  assert success (re-auth flow works)
 6. Emit evidence JSON
 
 Requirements: R36.1, R36.2, R36.3, R36.4, R36.5, R36.6

@@ -2,12 +2,10 @@
 
 /**
  * Inline badge for a `ConnectionTestResult` (R14.3, R14.5).
- *
- * Renders:
+ * * Renders:
  * - A green check + `{latency_ms}ms` on `success === true`.
  * - A red cross + the redacted `error.message` on `success === false`.
- *
- * The component never reaches into raw credential material - the
+ * * The component never reaches into raw credential material - the
  * backend has already projected the result through
  * `http_shared.redact_text` before returning the body, so the
  * `error.message` we render is safe to display verbatim.
@@ -32,7 +30,7 @@ export default function TestResultBadge({
         data-testid="llm-test-result-badge"
         data-success="true"
       >
-        <span aria-hidden="true">✓</span>
+        <span aria-hidden="true"></span>
         <span>{result.latency_ms}ms</span>
       </span>
     );
@@ -47,7 +45,7 @@ export default function TestResultBadge({
       data-success="false"
       title={result.error?.message ?? ""}
     >
-      <span aria-hidden="true">✗</span>
+      <span aria-hidden="true"></span>
       <span>{result.error?.message ?? "unknown error"}</span>
     </span>
   );

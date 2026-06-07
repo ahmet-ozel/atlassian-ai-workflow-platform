@@ -365,7 +365,7 @@ class TestJiraEndpointHappyPath:
 
 
 class TestJiraHmacFailure:
-    """Invalid HMAC → 401 with ``webhook_hmac_invalid`` audit row."""
+    """Invalid HMAC  401 with ``webhook_hmac_invalid`` audit row."""
 
     def test_returns_401_when_signature_mismatches(self) -> None:
         """HMAC failure writes the failure audit row."""
@@ -396,7 +396,7 @@ class TestJiraHmacFailure:
 
 
 class TestJiraDeptUnresolved:
-    """Dept resolution miss → 400 with ``webhook_dept_unresolved``."""
+    """Dept resolution miss  400 with ``webhook_dept_unresolved``."""
 
     def test_returns_400_when_dept_resolver_returns_none(self) -> None:
         """Dept resolve failure writes the failure audit row."""
@@ -629,7 +629,7 @@ class TestReplayDedupDrop:
 
 
 class TestStartWorkflowFailureReleasesClaim:
-    """Temporal error → release the claim + bubble up as 500.
+    """Temporal error  release the claim + bubble up as 500.
 
     The handler must not retain the claim if ``signalWithStart`` fails:
     otherwise Atlassian's webhook retry would trip the replay-dedup
@@ -690,7 +690,7 @@ class TestWebhookHandlerNotWired:
 
 
 class TestInvalidJsonBody:
-    """Bad JSON → 400 ``invalid_json`` (defensive, not in the design table)."""
+    """Bad JSON  400 ``invalid_json`` (defensive, not in the design table)."""
 
     def test_returns_400_for_malformed_body(self) -> None:
         chain = _make_chain()
@@ -801,7 +801,7 @@ class TestJiraEndpointLicenseCapEnforcement:
             jira_resolver=_FakeJiraDeptResolver({"PAY": "payments"}),
         )
         base = _make_deps(**deps_kwargs)
-        # Frozen dataclass → reconstruct with the cap enforcer wired.
+        # Frozen dataclass  reconstruct with the cap enforcer wired.
         deps = WebhooksEndpointDeps(
             chain=base.chain,
             processed_events=base.processed_events,
@@ -831,14 +831,14 @@ class TestJiraEndpointLicenseCapEnforcement:
         assert resp.status_code == 202, resp.text
         # Enforcer was called once with the resolved dept + issue key.
         assert enforcer.calls == [("payments", "PAY-100")]
-        # Idempotency claim still landed (cap allowed → green path).
+        # Idempotency claim still landed (cap allowed  green path).
         assert "delivery-cap-allow" in repo.claimed
         actions = [e.action for e in audit.events]
         assert "webhook_workflow_started" in actions
         assert "webhook_workflow_start_blocked_license_cap" not in actions
 
     def test_returns_429_with_structured_body_when_cap_exceeded(self) -> None:
-        """Cap breach → 429 + audit + best-effort Jira comment."""
+        """Cap breach  429 + audit + best-effort Jira comment."""
 
         chain = _make_chain(iter_count=1, reporter="reporter-1")
         wf_client = _FakeWorkflowClient()

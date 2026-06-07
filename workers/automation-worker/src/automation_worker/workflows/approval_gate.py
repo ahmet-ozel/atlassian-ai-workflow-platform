@@ -29,7 +29,7 @@ signal handlers, and ``workflow.wait_condition``. No ``random`` /
 (regex path matching + block),
 **11.2** (Jira comment with matched paths), **11.3** ([approve] signal),
 **11.4** ([reject] signal), **11.5** (4-hour timeout), **11.6**
-(unauthorized user ignored), **11.7** (empty paths → skip), **11.8**
+(unauthorized user ignored), **11.7** (empty paths  skip), **11.8**
 (audit logging).
 """
 
@@ -189,14 +189,14 @@ def _format_approval_request_comment(matched_paths: list[str]) -> str:
 
     paths_list = "\n".join(f"  • `{p}`" for p in matched_paths)
     return (
-        "🔒 **Onay Gerekli - Hassas Dosya Değişikliği**\n\n"
+        " **Onay Gerekli - Hassas Dosya Değişikliği**\n\n"
         "Aşağıdaki dosyalar onay gerektiren yollarda değişiklik "
         "içermektedir:\n\n"
         f"{paths_list}\n\n"
         "---\n"
         "• Onaylamak için: `[approve]` yazın\n"
         "• Reddetmek için: `[reject]` yazın\n\n"
-        "⏱️ 4 saat içinde yanıt alınmazsa işlem otomatik iptal edilir."
+        " 4 saat içinde yanıt alınmazsa işlem otomatik iptal edilir."
     )
 
 
@@ -205,7 +205,7 @@ def _format_timeout_comment() -> str:
  """
 
     return (
-        "⏱️ **Onay Zaman Aşımı**\n\n"
+        " **Onay Zaman Aşımı**\n\n"
         "4 saat içinde yetkili kullanıcıdan onay alınamadı. "
         "İş akışı otomatik olarak iptal edildi.\n\n"
         "Değişiklikleri uygulamak için görevi yeniden atayın."
@@ -217,7 +217,7 @@ def _format_rejection_comment(approver_id: str) -> str:
  """
 
     return (
-        f"❌ **Değişiklik Reddedildi**\n\n"
+        f" **Değişiklik Reddedildi**\n\n"
         f"Yetkili kullanıcı ({approver_id}) tarafından reddedildi. "
         f"Kod değişiklikleri uygulanmayacak."
     )
@@ -227,7 +227,7 @@ def _format_approval_comment(approver_id: str) -> str:
     """Format the Jira comment for approval confirmation."""
 
     return (
-        f"✅ **Değişiklik Onaylandı**\n\n"
+        f" **Değişiklik Onaylandı**\n\n"
         f"Yetkili kullanıcı ({approver_id}) tarafından onaylandı. "
         f"Commit işlemi devam ediyor."
     )
@@ -344,8 +344,7 @@ class ApprovalGateWorkflow:
         )
 
         #: Wait for signal or timeout
-        #
-        # We use workflow.wait_condition with a timeout. The condition
+        # # We use workflow.wait_condition with a timeout. The condition
         # checks that a decision has been made by an AUTHORIZED user.
         # Signals from unauthorized users set _decision but fail the
         # authorization check, so we reset and keep waiting.
@@ -371,7 +370,7 @@ class ApprovalGateWorkflow:
                 return False
             return True
 
-        # Wait with 4-hour timeout 
+        # Wait with 4-hour timeout
         timed_out = False
         try:
             await workflow.wait_condition(
@@ -381,7 +380,7 @@ class ApprovalGateWorkflow:
         except TimeoutError:
             timed_out = True
 
-        # Handle timeout 
+        # Handle timeout
         if timed_out:
             workflow.logger.warning(
                 "ApprovalGateWorkflow: Timed out waiting for approval "

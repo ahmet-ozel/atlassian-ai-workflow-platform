@@ -214,7 +214,7 @@ def _audit_row(
 
 class TestGetWorkflowHappyPath:
     def test_returns_local_enrichment_when_proxy_unavailable(self) -> None:
-        """No upstream proxy → response carries the three new fields."""
+        """No upstream proxy  response carries the three new fields."""
 
         pool = _FakePool(
             responses=[
@@ -377,7 +377,7 @@ class TestGetWorkflowHappyPath:
 
 class TestGetWorkflowDegradesGracefully:
     def test_no_pool_returns_empty_arrays(self) -> None:
-        """No pg_pool → response has empty ``llm_usage``/``audit_chain``."""
+        """No pg_pool  response has empty ``llm_usage``/``audit_chain``."""
 
         app = _build_app(pool=None, proxy=None)
         client = TestClient(app)
@@ -407,7 +407,7 @@ class TestGetWorkflowDegradesGracefully:
         assert body["external_links"] == {}
 
     def test_upstream_5xx_falls_back_to_local_enrichment(self) -> None:
-        """Upstream 502 → local enrichment still surfaces."""
+        """Upstream 502  local enrichment still surfaces."""
 
         proxy = _FakeUpstreamProxy(
             response=_FakeProxyResponse(

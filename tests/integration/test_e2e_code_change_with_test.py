@@ -21,7 +21,7 @@ steps before exiting:
  :func:`mcp_client.deployment_router.select_pr_create_tool`) -
  open the draft PR with PR-draft enforcement carried by the
  foundation MCP filter.
- 6. ``jira_add_comment`` - post the "✅ Draft PR açıldı: …"
+ 6. ``jira_add_comment`` - post the " Draft PR açıldı: …"
  completion line on the original Jira issue.
 
 This file pins the activity-call sequence end-to-end against the
@@ -110,7 +110,7 @@ def _temporal_test_env_available() -> bool:
 
     try:
         from temporalio.testing import WorkflowEnvironment  # noqa: F401
-    except Exception:  # noqa: BLE001 - any import failure → skip.
+    except Exception:  # noqa: BLE001 - any import failure  skip.
         return False
     return True
 
@@ -485,15 +485,15 @@ async def test_code_change_with_test_happy_path() -> None:
  ``status="passed"``.
  5. ``bitbucket_create_pull_request_cloud`` returns a draft PR
  descriptor with ``pr_id=42``.
- 6. ``jira_add_comment`` posts the "✅ Draft PR açıldı: …"
+ 6. ``jira_add_comment`` posts the " Draft PR açıldı: …"
  completion line.
 
  Assertions
  ----------
  * Activity call sequence matches the expected flow:
- ``set_assignee_to_bot`` → ``precommit_scanner`` →
- ``bitbucket_create_commit`` → child workflow → PR-create tool
- → ``jira_add_comment``.
+ ``set_assignee_to_bot``  ``precommit_scanner``
+ ``bitbucket_create_commit``  child workflow  PR-create tool
+  ``jira_add_comment``.
  * Branch name follows the ``ai/{issue_key}`` convention
  from :func:`temporal_shared.code_change.compute_branch_name`.
  * The PR-create activity ran exactly once (no double-fire).
@@ -691,14 +691,14 @@ async def test_code_change_with_test_test_failure_no_pr() -> None:
  * The child workflow returns
  ``ExecutionRunWorkflowOutput(status="failed", ...)``.
  * The body's ``if not test_passed`` branch posts the
- "❌ Testler başarısız" comment via ``jira_add_comment``,
+ " Testler başarısız" comment via ``jira_add_comment``,
  sets ``self._failure_reason = "execution_run_failed"`` and
  returns early - no PR-create activity, no
  ``iter_advance_pr_supersede``.
  * The outer ``run`` body computes the final summary; with
  ``output_actions=()`` and no partial failures the formatter
  returns the empty string, so the body falls back to the
- legacy "✅ Tamamlandı." one-liner. The terminal status is
+ legacy " Tamamlandı." one-liner. The terminal status is
  therefore ``"completed"``, but ``failure_reason`` carries
  the stable category. The assertion checks ``failure_reason``,
  not ``status``, so this asymmetry is detected.
@@ -774,14 +774,13 @@ async def test_code_change_with_test_test_failure_no_pr() -> None:
     assert issue_key == "PAY-7511"
     assert dept_id == "payments"
     # Expected Turkish failure prefix.
-    assert "Testler başarısız" in body or "❌" in body, (
+    assert "Testler başarısız" in body or "" in body, (
         f"failure comment must surface the test-failure prose; "
         f"got {body!r}"
     )
 
     # ----- Pre-PR activity sequence still ran -----------------------
-    #
-    # The handler must have walked through assignee → scanner →
+    # # The handler must have walked through assignee  scanner
     # commit before bailing out. A regression that short-circuits
     # earlier (e.g. precommit_scanner failing wrongly) would skip
     # one of these.

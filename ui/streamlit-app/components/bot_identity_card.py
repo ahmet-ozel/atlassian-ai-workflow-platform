@@ -4,9 +4,9 @@ Validates Requirements:
     * R8.2 - Info card: dept display_name, bot username, account_id
       (kopyalanabilir kod bloğu), probe status badge.
     * R8.3 - Jira bot yoksa uyarı banner.
-    * R8.4 - probe_status not_probed/failed → badge + "Probe çalıştır" butonu.
+    * R8.4 - probe_status not_probed/failed  badge + "Probe çalıştır" butonu.
     * R8.5 - "Probe çalıştır" butonu POST /admin/departments/{id}/probe.
-    * R8.8 - Graceful degradation: 503/timeout/network → warning + retry.
+    * R8.8 - Graceful degradation: 503/timeout/network  warning + retry.
     * R8.9 - Diğer bot'lar (Bitbucket, Confluence) küçük tabloda listelenir.
 
 This component makes a direct HTTP GET request to
@@ -35,13 +35,13 @@ _BOT_INFO_TIMEOUT_S: float = 5.0
 
 #: Badge mapping for probe status.
 _PROBE_BADGE: dict[str, str] = {
-    "ok": "🟢",
-    "failed": "🔴",
-    "not_probed": "🟡",
+    "ok": "",
+    "failed": "",
+    "not_probed": "",
 }
 
 #: Default badge for unknown probe statuses.
-_PROBE_BADGE_DEFAULT: str = "⚪"
+_PROBE_BADGE_DEFAULT: str = ""
 
 #: Warning message shown when the bot-info endpoint is unreachable.
 _DEGRADATION_WARNING: str = "Bot bilgileri yüklenemedi (yeniden dene)"
@@ -120,7 +120,7 @@ def render_bot_identity_card(dept_id: str, api_base: str) -> str | None:
     # ------------------------------------------------------------------
     if data is None:
         st.warning(_DEGRADATION_WARNING)
-        if st.button("🔄 Yeniden dene", key=f"retry_bot_info_{dept_id}"):
+        if st.button(" Yeniden dene", key=f"retry_bot_info_{dept_id}"):
             st.rerun()
         return None
 
@@ -148,7 +148,7 @@ def render_bot_identity_card(dept_id: str, api_base: str) -> str | None:
     probe_status: str = jira_bot.get("probe_status", "not_probed")
     badge: str = _get_probe_badge(probe_status)
 
-    st.info(f"🤖 **{display_name}** Bot Bilgileri")
+    st.info(f" **{display_name}** Bot Bilgileri")
 
     col1, col2 = st.columns([3, 1])
     with col1:

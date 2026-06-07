@@ -251,7 +251,7 @@ def test_cancel_workflow_happy_path_emits_audit_and_calls_temporal() -> None:
 
 
 def test_cancel_workflow_returns_404_when_not_found() -> None:
-    """``WorkflowNotFoundError`` from describe → 404 with stable detail."""
+    """``WorkflowNotFoundError`` from describe  404 with stable detail."""
 
     temporal = _FakeTemporalControl()
     temporal.describe_result = WorkflowNotFoundError("auto-PAY-missing")
@@ -274,7 +274,7 @@ def test_cancel_workflow_returns_404_when_not_found() -> None:
 
 
 def test_cancel_workflow_returns_502_on_temporal_failure() -> None:
-    """Generic ``WorkflowControlError`` from describe → 502."""
+    """Generic ``WorkflowControlError`` from describe  502."""
 
     temporal = _FakeTemporalControl()
     temporal.describe_result = WorkflowControlError("rpc unavailable")
@@ -290,7 +290,7 @@ def test_cancel_workflow_returns_502_on_temporal_failure() -> None:
 
 
 def test_cancel_workflow_returns_503_when_temporal_not_wired() -> None:
-    """``temporal_workflow_client=None`` → 503 with clear reason."""
+    """``temporal_workflow_client=None``  503 with clear reason."""
 
     app = _build_app(temporal=None, audit_sink=_RecordingAuditSink())
     client = TestClient(app)
@@ -412,7 +412,7 @@ def test_signal_workflow_delivers_payload_and_audits_signal_name() -> None:
 
 
 def test_signal_workflow_rejects_empty_signal_name() -> None:
-    """Empty ``signal_name`` → 422 from Pydantic validation."""
+    """Empty ``signal_name``  422 from Pydantic validation."""
 
     temporal = _FakeTemporalControl()
     app = _build_app(temporal=temporal, audit_sink=_RecordingAuditSink())

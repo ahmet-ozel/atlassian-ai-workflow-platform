@@ -154,20 +154,20 @@ class _Endpoint:
 
 #: All eight admin endpoints declared by ``services_lifecycle.router``
 #:
-#: * ``GET /`` → list summaries.
-#: * ``GET /{name}`` → service detail.
-#: * ``POST /{name}/start`` → start - body has the
+#: * ``GET /``  list summaries.
+#: * ``GET /{name}``  service detail.
+#: * ``POST /{name}/start``  start - body has the
 #: ``env_overrides`` key set to ``{}`` so the Pydantic model
 #: validates regardless of when body parsing runs relative to
 #::func:`require_admin`.
-#: * ``POST /{name}/stop`` → stop - body optional;
+#: * ``POST /{name}/stop``  stop - body optional;
 #: we still send ``{}`` so the StopRequest path matches its
 #: ``remove_volumes`` default.
-#: * ``POST /{name}/restart`` → restart - no body.
-#: * ``POST /{name}/test`` → run tests - no body
+#: * ``POST /{name}/restart``  restart - no body.
+#: * ``POST /{name}/test``  run tests - no body
 #: (only the ``sectionstream=`` query parameter, defaulted).
-#: * ``GET /{name}/logs`` → tail logs.
-#: * ``GET /{name}/health`` → health snapshot.
+#: * ``GET /{name}/logs``  tail logs.
+#: * ``GET /{name}/health``  health snapshot.
 _ENDPOINTS: tuple[_Endpoint, ...] = (
     _Endpoint("GET", "", None),
     _Endpoint("GET", "/{name}", None),
@@ -477,7 +477,7 @@ class _RbacEndpoint:
 
     label: str
     required_role: str  # "viewer" | "lead" | "admin" | "dept_admin"
-    dept_scoped: bool   # True ⇒ dept_id check applies
+    dept_scoped: bool   # True  dept_id check applies
     rationale: str      # which the operational rule clause the row pins
 
 
@@ -751,7 +751,7 @@ def test_missing_actor_is_denied_for_every_endpoint(
  ``admin-dashboard-api`` converts a missing token to an:class:`auth_shared.InvalidTokenError` upstream, which becomes
  HTTP 401; once a token is decoded but lacks claims (the operational rule),:func:`extract_auth_context` raises and the request also
  gets 401. A None actor reaching ``check`` is the safety-net and
- surfaces as PermissionDenied → 403.
+ surfaces as PermissionDenied  403.
  """
 
     target = target_dept_id if endpoint.dept_scoped else None
@@ -778,7 +778,7 @@ def test_missing_actor_is_denied_for_every_endpoint(
 # A claim dict that omits ``sub`` or carries no recognised role MUST
 # raise:class:`MissingClaimError` - a subclass of
 #:class:`InvalidTokenError` so the FastAPI dependency translates it
-# into HTTP 401 "eksik bilgi → HTTP 401").
+# into HTTP 401 "eksik bilgi  HTTP 401").
 @hyp_settings(
     deadline=None,
     max_examples=30,

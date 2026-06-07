@@ -160,10 +160,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     This middleware intercepts every request and applies the appropriate
     rate limit based on the request path:
 
-    * Exempt paths → no limiting applied
-    * Webhook paths → WEBHOOK_LIMIT (100/min) keyed by IP
-    * Admin/API paths → ADMIN_API_LIMIT (60/min) keyed by user/IP
-    * Other paths → default limit (60/min) keyed by IP
+    * Exempt paths  no limiting applied
+    * Webhook paths  WEBHOOK_LIMIT (100/min) keyed by IP
+    * Admin/API paths  ADMIN_API_LIMIT (60/min) keyed by user/IP
+    * Other paths  default limit (60/min) keyed by IP
 
     The middleware uses an internal sliding-window counter (in-memory by
     default; Redis-backed in production) to track request counts per key

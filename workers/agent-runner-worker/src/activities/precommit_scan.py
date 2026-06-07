@@ -31,7 +31,7 @@ Determinism
 -----------
 
 For any ``diff`` string, ``precommit_scanner(diff)`` is a pure
-function of its input: same diff → same :class:`ScanResult` (same
+function of its input: same diff  same :class:`ScanResult` (same
 ``decision`` and same ``matched_patterns`` tuple in the same order).
 This is enforced by:
 
@@ -248,11 +248,11 @@ def scan_diff(diff: str) -> ScanResult:
     output, no side effects. ``test_precommit_scanner``
     asserts:
 
-    1. clean diff → ``ScanResult(decision="pass", matched_patterns=())``,
-    2. each secret pattern → ``decision="block"`` with the matching
+    1. clean diff  ``ScanResult(decision="pass", matched_patterns=())``,
+    2. each secret pattern  ``decision="block"`` with the matching
        name in ``matched_patterns``,
     3. ``scan_diff(d) == scan_diff(d)`` for every ``d`` (determinism),
-    4. multiple distinct patterns in the same diff → all matched
+    4. multiple distinct patterns in the same diff  all matched
        names appear in ``matched_patterns`` with no duplicates.
 
     Implementation notes

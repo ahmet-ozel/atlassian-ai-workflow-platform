@@ -250,7 +250,7 @@ def _format_missing_caps_comment(workflow_type: str, missing: set[str]) -> str:
 
     listed = ", ".join(sorted(missing))
     return (
-        f"⛔ Eksik capability - '{workflow_type}' iş akışı için "
+        f" Eksik capability - '{workflow_type}' iş akışı için "
         f"şu servis(ler) tanımlı değil: {listed}. "
         f"Lütfen departman bot kimlik bilgilerini tamamladıktan sonra "
         f"görevi tekrar atayın."
@@ -263,14 +263,14 @@ def _format_completion_comment(
     """Return the Turkish completion summary comment body."""
 
     suffix = f" - {child_summary}" if child_summary else ""
-    return f"✅ Tamamlandı ({workflow_type}){suffix}."
+    return f" Tamamlandı ({workflow_type}){suffix}."
 
 
 def _format_failure_comment(workflow_type: str, reason: str) -> str:
     """Return the Turkish child-failure summary comment body."""
 
     return (
-        f"❌ İş akışı başarısız ({workflow_type}). "
+        f" İş akışı başarısız ({workflow_type}). "
         f"Sebep: {reason}. Detaylar Temporal UI'da."
     )
 
@@ -351,14 +351,14 @@ class AutomationWorkflow:
         parent_workflow_id = workflow.info().workflow_id
 
         # 1. Best-effort acknowledgement comment. Wrapped in a try/except so
-        #    a failed ack never aborts the run - the issue may have been
-        #    deleted between webhook receipt and workflow start.
+        # a failed ack never aborts the run - the issue may have been
+        # deleted between webhook receipt and workflow start.
         try:
             await workflow.execute_activity(
                 "jira_add_comment",
                 args=[
                     inp.issue_key,
-                    "🤖 Task alındı, analiz ediliyor...",
+                    " Task alındı, analiz ediliyor...",
                     inp.department_id,
                 ],
                 start_to_close_timeout=_SHORT_TIMEOUT,
@@ -370,13 +370,13 @@ class AutomationWorkflow:
                 inp.issue_key,
             )
 
-        # Mark work_item as running. This is the pending → running edge
+        # Mark work_item as running. This is the pending  running edge
         # of the state machine and must succeed for the
         # workflow to progress.
         await self._update_work_item_status(parent_workflow_id, "running")
 
         # 2. Fetch the Jira issue. Failure here is fatal - without issue
-        #    data the LLM cannot analyse the task.
+        # data the LLM cannot analyse the task.
         try:
             issue_data = await workflow.execute_activity(
                 "jira_get_issue",
@@ -391,13 +391,13 @@ class AutomationWorkflow:
                 workflow_type=None,
                 reason="task_analysis_failed",
                 jira_message=(
-                    "❌ Jira issue okunamadı, görev başlatılamıyor. "
+                    " Jira issue okunamadı, görev başlatılamıyor. "
                     f"Hata: {exc}"
                 ),
             )
 
         # 3. Initial LLM analysis. The result drives capability check,
-        #    needs-info loop, and child dispatch.
+        # needs-info loop, and child dispatch.
         dept_context = _LlmDeptContext(
             available_repos=list(inp.available_repos),
             available_spaces=list(inp.available_spaces),
@@ -421,7 +421,7 @@ class AutomationWorkflow:
                 workflow_type=None,
                 reason="task_analysis_failed",
                 jira_message=(
-                    f"❌ Görev analizi başarısız: {exc}. "
+                    f" Görev analizi başarısız: {exc}. "
                     "Lütfen issue açıklamasını netleştirip yeniden atayın."
                 ),
             )
@@ -549,7 +549,7 @@ class AutomationWorkflow:
                     workflow_type=analysis.workflow_type,
                     reason="missing_capability",
                     jira_message=(
-                        f"⛔ Bilinmeyen workflow_type "
+                        f" Bilinmeyen workflow_type "
                         f"'{analysis.workflow_type}'. Görev iptal edildi."
                     ),
                     transition_to_blocked=True,
@@ -629,7 +629,7 @@ class AutomationWorkflow:
                     workflow_type=analysis.workflow_type,
                     reason="loop_cap_reached",
                     jira_message=(
-                        "🛑 Görev analizi 3 iterasyon sonra hâlâ "
+                        " Görev analizi 3 iterasyon sonra hâlâ "
                         "düşük güven üretti, otomatik işleme kapatıldı."
                     ),
                 )
@@ -658,7 +658,7 @@ class AutomationWorkflow:
                     workflow_type=None,
                     reason="task_analysis_failed",
                     jira_message=(
-                        f"❌ Tekrar analiz başarısız: {exc}."
+                        f" Tekrar analiz başarısız: {exc}."
                     ),
                 )
 

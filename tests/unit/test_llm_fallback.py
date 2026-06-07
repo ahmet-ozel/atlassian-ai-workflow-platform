@@ -127,7 +127,7 @@ class TestPrimarySuccess:
 
 
 # ---------------------------------------------------------------------------
-# Tests: Primary Timeout → Fallback
+# Tests: Primary Timeout  Fallback
 # ---------------------------------------------------------------------------
 
 
@@ -201,7 +201,7 @@ class TestPrimaryTimeout:
 
 
 # ---------------------------------------------------------------------------
-# Tests: Primary 5xx → Retry → Fallback
+# Tests: Primary 5xx  Retry  Fallback
 # ---------------------------------------------------------------------------
 
 
@@ -269,7 +269,7 @@ class TestPrimary5xxRetry:
 
 
 class TestFallbackAlsoFails:
-    """Tests for both providers failing → LLMUnavailableError."""
+    """Tests for both providers failing  LLMUnavailableError."""
 
     @pytest.mark.asyncio
     async def test_fallback_timeout_raises_unavailable(self):
@@ -406,7 +406,7 @@ class TestHealthProbe:
 
     @pytest.mark.asyncio
     async def test_health_probe_fails_stays_on_fallback(self):
-        """Failed health probe → stay on fallback."""
+        """Failed health probe  stay on fallback."""
         primary = FakeLLMProvider([
             LLMServerError("err", 500),
             LLMServerError("err", 500),
@@ -426,7 +426,7 @@ class TestHealthProbe:
 
     @pytest.mark.asyncio
     async def test_health_probe_timeout_stays_on_fallback(self):
-        """Health probe timeout → stay on fallback."""
+        """Health probe timeout  stay on fallback."""
 
         async def slow_complete(prompt: str, **kwargs: Any) -> str:
             await asyncio.sleep(100)

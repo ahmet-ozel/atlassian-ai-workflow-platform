@@ -328,7 +328,7 @@ def _build_repo_ask_comment() -> str:
 
  """
     return (
-        "🔍 Görev açıklamasından repository bilgisi yeterli güvenle "
+        " Görev açıklamasından repository bilgisi yeterli güvenle "
         "belirlenemedi.\n\n"
         "Lütfen görevin ilişkili olduğu repository'yi belirtiniz. "
         "Bunu yapılandırılmış \"Repository\" alanını doldurarak veya "
@@ -345,7 +345,7 @@ def _build_repo_rejected_comment(
  """
     allowed_list = "\n".join(f"• {repo}" for repo in allowed_repos)
     return (
-        f"❌ Belirtilen repository (`{repo_value}`) bu departman için "
+        f" Belirtilen repository (`{repo_value}`) bu departman için "
         f"izin verilen repo listesinde bulunamadı.\n\n"
         f"İzin verilen repository'ler:\n{allowed_list}\n\n"
         f"Lütfen yukarıdaki listeden bir repository seçiniz."
@@ -362,13 +362,13 @@ async def resolve_repo_field(input: RepoResolveInput) -> RepoResolveResult:
     """Resolve the target repository for a task.
 
  Priority logic:
- 1. Structured field non-empty → use directly, skip LLM parsing.
- 2. Structured field empty → LLM parse from description.
- - confidence >= 0.8 → accept parsed repo.
- - confidence < 0.8 → ask user via Jira comment.
+ 1. Structured field non-empty  use directly, skip LLM parsing.
+ 2. Structured field empty  LLM parse from description.
+ - confidence >= 0.8  accept parsed repo.
+ - confidence < 0.8  ask user via Jira comment.
  3. Validate resolved repo against repo_mappings.
- - Not in list → reject task, post allowed list comment.
- 4. If user asked and no response within 30 min → "needs_info".
+ - Not in list  reject task, post allowed list comment.
+ 4. If user asked and no response within 30 min  "needs_info".
 
  """
     activity.logger.info(
@@ -382,7 +382,7 @@ async def resolve_repo_field(input: RepoResolveInput) -> RepoResolveResult:
     jira_commenter = get_jira_commenter()
 
     # ------------------------------------------------------------------
-    # Step 1: Check structured "Repository" field 
+    # Step 1: Check structured "Repository" field
     # ------------------------------------------------------------------
     if input.structured_field_value and input.structured_field_value.strip():
         repo_value = input.structured_field_value.strip()
@@ -392,7 +392,7 @@ async def resolve_repo_field(input: RepoResolveInput) -> RepoResolveResult:
             input.issue_key,
         )
 
-        # Validate against allowed list 
+        # Validate against allowed list
         if not _is_repo_in_allowed_list(repo_value, input.repo_mappings):
             activity.logger.warning(
                 "repo_resolver: repo %s not in allowed list for dept %s "
@@ -491,7 +491,7 @@ async def resolve_repo_field(input: RepoResolveInput) -> RepoResolveResult:
         )
 
     # ------------------------------------------------------------------
-    # Step 3: LLM parse from description 
+    # Step 3: LLM parse from description
     # ------------------------------------------------------------------
     activity.logger.info(
         "repo_resolver: structured field empty, attempting LLM parse "
@@ -546,7 +546,7 @@ async def resolve_repo_field(input: RepoResolveInput) -> RepoResolveResult:
     )
 
     # ------------------------------------------------------------------
-    # Step 2a: Confidence check 
+    # Step 2a: Confidence check
     # ------------------------------------------------------------------
     if not parsed_repo or confidence < CONFIDENCE_THRESHOLD:
         activity.logger.info(
@@ -571,7 +571,7 @@ async def resolve_repo_field(input: RepoResolveInput) -> RepoResolveResult:
                 exc,
             )
 
-        # Transition to "needs_info" status 
+        # Transition to "needs_info" status
         # The workflow will handle the 30-minute timeout; we signal
         # that user input is needed so the workflow can set up the
         # timer and transition accordingly.

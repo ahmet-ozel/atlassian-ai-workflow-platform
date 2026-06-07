@@ -240,7 +240,7 @@ class VLLMProvider:
     def downtime(self) -> int:
         """Return seconds since last healthy response.
 
-        Used by the orchestrator to decide fallback (>=60s → switch).
+        Used by the orchestrator to decide fallback (>=60s  switch).
         """
         if self._last_error_time <= 0:
             return 0
@@ -396,7 +396,7 @@ class AnthropicProvider:
             "temperature": self.temperature,
         }
         # Map reasoning effort to an extended-thinking budget on the
-        # Claude models that support it. Higher effort → larger budget.
+        # Claude models that support it. Higher effort  larger budget.
         if self.reasoning_effort and _model_supports_reasoning_effort(
             self.model_name
         ):
@@ -546,9 +546,9 @@ class LLMProviderFactory:
         """Build primary + fallback provider pair from environment.
 
         The fallback is determined by:
-        - If primary is ``vllm`` → fallback is ``openai`` (if OPENAI_API_KEY set).
-        - If primary is ``openai`` → fallback is ``anthropic`` (if ANTHROPIC_API_KEY set).
-        - If primary is ``anthropic`` → fallback is ``openai`` (if OPENAI_API_KEY set).
+        - If primary is ``vllm``  fallback is ``openai`` (if OPENAI_API_KEY set).
+        - If primary is ``openai``  fallback is ``anthropic`` (if ANTHROPIC_API_KEY set).
+        - If primary is ``anthropic``  fallback is ``openai`` (if OPENAI_API_KEY set).
         Returns:
             Tuple of (primary_provider, fallback_provider_or_None).
         """
@@ -561,7 +561,7 @@ class LLMProviderFactory:
         fallback: LLMProvider | None = None
 
         if primary_key == "vllm":
-            # vLLM → OpenAI fallback
+            # vLLM  OpenAI fallback
             openai_key = source.get("OPENAI_API_KEY", "")
             if openai_key:
                 fallback_model = source.get("LLM_MODEL_NAME", "gpt-4o")
@@ -570,12 +570,12 @@ class LLMProviderFactory:
                     model_name=fallback_model,
                 )
         elif primary_key == "openai":
-            # OpenAI → Anthropic fallback
+            # OpenAI  Anthropic fallback
             anthropic_key = source.get("ANTHROPIC_API_KEY", "")
             if anthropic_key:
                 fallback = AnthropicProvider(api_key=anthropic_key)
         elif primary_key == "anthropic":
-            # Anthropic → OpenAI fallback
+            # Anthropic  OpenAI fallback
             openai_key = source.get("OPENAI_API_KEY", "")
             if openai_key:
                 fallback = OpenAIProvider(api_key=openai_key)

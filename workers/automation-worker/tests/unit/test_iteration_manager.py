@@ -257,7 +257,7 @@ class TestIsAuthorizedForIterate:
         )
 
     def test_empty_author_never_authorized(self) -> None:
-        # Misconfigured webhook → empty actor accountId. Must reject.
+        # Misconfigured webhook  empty actor accountId. Must reject.
         assert not is_authorized_for_iterate(
             author_account_id="",
             approvers=["alice", "bob", ""],

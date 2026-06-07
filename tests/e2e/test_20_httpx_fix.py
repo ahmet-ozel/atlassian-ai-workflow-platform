@@ -6,8 +6,8 @@ environment so that `tests/property/test_log_redaction.py` can be collected
 and executed without ImportError.
 
 Verification steps:
-1. Run `pytest tests/property/test_log_redaction.py --collect-only` → assert exit 0
-2. Run `pytest tests/property/test_log_redaction.py -v` → assert no import errors
+1. Run `pytest tests/property/test_log_redaction.py --collect-only`  assert exit 0
+2. Run `pytest tests/property/test_log_redaction.py -v`  assert no import errors
 3. Emit evidence JSON
 
 Requirements: R20.3, R20.4, R20.5

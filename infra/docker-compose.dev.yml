@@ -2,41 +2,41 @@
 # infra/docker-compose.dev.yml - Local-dev override (live reload)
 # =============================================================================
 # Usage:
-#   docker compose -f infra/docker-compose.yml -f infra/docker-compose.dev.yml up -d
+# docker compose -f infra/docker-compose.yml -f infra/docker-compose.dev.yml up -d
 #
 # This override layers developer-machine conveniences on top of the base
 # `infra/docker-compose.yml`:
 #
-#   * Bind-mounts each Component's source tree into the container so edits
-#     on the host are reflected immediately inside the container.
-#   * Replaces the production `CMD` of every FastAPI HTTP service with
-#     `uvicorn ... --reload`, which restarts the ASGI app whenever a file
-#     under `/app/src` changes.
-#   * Forces `LOG_LEVEL=DEBUG` on every Component so developers see verbose
-#     output regardless of the value baked into the per-service `.env`.
-#   * Re-asserts `restart: unless-stopped` on every Component so a crashing
-#     container during development comes back automatically while still
-#     respecting an explicit `docker compose stop`.
-#   * Bind-mounts `ui/admin-dashboard` and runs Next.js in dev mode
-#     (`npm run dev`) so the Next dev server picks up source changes via
-#     its built-in HMR.
+# * Bind-mounts each Component's source tree into the container so edits
+# on the host are reflected immediately inside the container.
+# * Replaces the production `CMD` of every FastAPI HTTP service with
+# `uvicorn ... --reload`, which restarts the ASGI app whenever a file
+# under `/app/src` changes.
+# * Forces `LOG_LEVEL=DEBUG` on every Component so developers see verbose
+# output regardless of the value baked into the per-service `.env`.
+# * Re-asserts `restart: unless-stopped` on every Component so a crashing
+# container during development comes back automatically while still
+# respecting an explicit `docker compose stop`.
+# * Bind-mounts `ui/admin-dashboard` and runs Next.js in dev mode
+# (`npm run dev`) so the Next dev server picks up source changes via
+# its built-in HMR.
 #
 # Notes
 # -----
 # * Compose v2 convention: no top-level `version:` key.
 # * Bind-mount paths are relative to this file's directory (`infra/`),
-#   so the workspace-root sources resolve as `../services/...`,
-#   `../workers/...`, and `../ui/...`.
+# so the workspace-root sources resolve as `../services/...`,
+# `../workers/...`, and `../ui/...`.
 # * Only services already defined in the base Compose file may appear
-#   here - Compose `merge` semantics extend, not introduce.
+# here - Compose `merge` semantics extend, not introduce.
 # * Workers (`agent-runner-worker`, `execution-runner-worker`) do not
-#   expose HTTP ports and run a long-lived Temporal worker entrypoint;
-#   this override only refreshes their source mount + LOG_LEVEL, leaving
-#   the base `command` (or Dockerfile `CMD`) intact. Restart the worker
-#   container after editing source to pick up the change.
+# expose HTTP ports and run a long-lived Temporal worker entrypoint;
+# this override only refreshes their source mount + LOG_LEVEL, leaving
+# the base `command` (or Dockerfile `CMD`) intact. Restart the worker
+# container after editing source to pick up the change.
 # * `atlassian_mcp_bitbucket/` is the Atlassian MCP gateway and intentionally
-#   has no override stanza here - its `LOG_LEVEL` continues to be sourced
-#   from the base file's `${LOG_LEVEL:-INFO}` interpolation.
+# has no override stanza here - its `LOG_LEVEL` continues to be sourced
+# from the base file's `${LOG_LEVEL:-INFO}` interpolation.
 # =============================================================================
 
 services:

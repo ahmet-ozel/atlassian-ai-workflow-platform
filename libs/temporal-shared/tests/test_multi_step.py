@@ -110,16 +110,16 @@ class TestMultiStepDispatchHappyPath:
         )
         assert len(plans) == len(children)
 
-        # pr_review and noop_test → start (have jira+bitbucket / jira)
+        # pr_review and noop_test  start (have jira+bitbucket / jira)
         assert plans[0].action == "start"
         assert plans[2].action == "start"
 
-        # code_change_with_test → skip (missing execution)
+        # code_change_with_test  skip (missing execution)
         assert plans[1].action == "skip"
         assert plans[1].reason == REASON_OUT_OF_SCOPE
         assert plans[1].missing_capabilities == frozenset({"execution"})
 
-        # research_with_web → skip (missing web_search)
+        # research_with_web  skip (missing web_search)
         assert plans[3].action == "skip"
         assert plans[3].reason == REASON_OUT_OF_SCOPE
         assert plans[3].missing_capabilities == frozenset({"web_search"})

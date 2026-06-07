@@ -2,14 +2,14 @@
 
 Validates the runtime contract of :class:`JiraFieldResolver`:
 
-* First call → exactly one ``get_fields()`` HTTP fetch; cache
+* First call  exactly one ``get_fields()`` HTTP fetch; cache
   populated.
-* Second call inside the TTL → **no** HTTP fetch.
-* Third call after the TTL boundary → cache refreshed (one more
+* Second call inside the TTL  **no** HTTP fetch.
+* Third call after the TTL boundary  cache refreshed (one more
   fetch).
-* Concurrent callers racing past an empty/stale cache → exactly one
+* Concurrent callers racing past an empty/stale cache  exactly one
   in-flight fetch (asyncio.Lock invariant).
-* Unknown field name → :class:`JiraFieldNotFoundError`.
+* Unknown field name  :class:`JiraFieldNotFoundError`.
 
 The Jira HTTP client is replaced by a tiny in-memory fake whose
 ``get_fields()`` coroutine records every invocation. This avoids any
@@ -141,7 +141,7 @@ _REFRESHED_FIELDS: tuple[dict[str, str], ...] = (
 
 
 class TestFirstCallTriggersFetch:
-    """First :meth:`resolve_field_id` call → one fetch + populated cache."""
+    """First :meth:`resolve_field_id` call  one fetch + populated cache."""
 
     @pytest.mark.asyncio
     async def test_first_call_invokes_get_fields_once(self) -> None:
@@ -247,7 +247,7 @@ class TestConcurrentCallers:
 
     @pytest.mark.asyncio
     async def test_concurrent_initial_calls_share_one_fetch(self) -> None:
-        """N coroutines racing past an empty cache → 1 fetch.
+        """N coroutines racing past an empty cache  1 fetch.
 
         The asyncio.Lock inside :class:`JiraFieldResolver` is the
         invariant under test: without it, every concurrent caller

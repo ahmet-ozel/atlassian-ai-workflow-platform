@@ -20,7 +20,7 @@ Atomic Dept Credential Add"):
        ``automation.department_bots`` row with ``credential_ref``
        pointing at the *final* path
        ``vault:atlassian/<dept_id>/<service>``.  Once the SQL succeeds,
-       move the staged secret to the final path (read → write → delete
+       move the staged secret to the final path (read  write  delete
        staging).  Any failure inside the block triggers Vault rollback
        (final path delete + staging delete) and a SQL ROLLBACK via
        ``with_dept_session``.
@@ -516,7 +516,7 @@ class DeptCredentialService:
             request.account_id or probe_result.auto_fetched_account_id
         )
 
-        # --- Step 3 - DB upsert + Vault staging→final move ------------
+        # --- Step 3 - DB upsert + Vault stagingfinal move ------------
         try:
             outcome = await self._commit(
                 dept_id=dept_id,
@@ -1202,7 +1202,7 @@ class DeptCredentialService:
         )
 
     # ------------------------------------------------------------------
-    # DB upsert + Vault staging→final move
+    # DB upsert + Vault stagingfinal move
     # ------------------------------------------------------------------
 
     async def _commit(
@@ -1215,9 +1215,9 @@ class DeptCredentialService:
         final: VaultPath,
         resolved_account_id: str | None,
     ) -> Literal["created", "updated"]:
-        """Run the SQL UPSERT and Vault staging→final move atomically.
+        """Run the SQL UPSERT and Vault stagingfinal move atomically.
 
-        Atomicity contract: any failure - staging→final promotion
+        Atomicity contract: any failure - stagingfinal promotion
         error, INSERT failure, **or SQL ``COMMIT`` failure raised at the
         context-manager exit** - must roll the system back to the
         pre-call state.  In particular the Vault tree must be
@@ -1234,7 +1234,7 @@ class DeptCredentialService:
                path.
             2. ``INSERT ... ON CONFLICT (department_id, service) DO
                UPDATE`` - UPSERT the bot row.
-            3. Promote staging → final via
+            3. Promote staging  final via
                :meth:`_promote_staging`.
 
         ``with_dept_session.__aexit__`` issues the ``COMMIT`` after
@@ -1273,8 +1273,8 @@ class DeptCredentialService:
                 self._actor_role_for_session, dept_id, connection=connection
             ) as conn:
                 # 1. Confirm the dept exists; surface 404 cleanly so
-                #    the router does not have to introspect the SQL
-                #    error.
+                # the router does not have to introspect the SQL
+                # error.
                 row = await self._fetchrow(
                     conn,
                     "SELECT 1 FROM automation.departments WHERE id = $1",
@@ -1284,10 +1284,10 @@ class DeptCredentialService:
                     raise DepartmentNotFoundError(dept_id)
 
                 # 2. UPSERT the bot row.  ``credential_ref`` points at
-                #    the *final* path even though the value still
-                #    lives at the staging path until we promote
-                #    below - by the time SQL COMMIT runs the value
-                #    will be at the final path.
+                # the *final* path even though the value still
+                # lives at the staging path until we promote
+                # below - by the time SQL COMMIT runs the value
+                # will be at the final path.
                 existed = await self._row_exists(conn, dept_id, service)
                 await self._upsert_bot_row(
                     conn,
@@ -1299,10 +1299,10 @@ class DeptCredentialService:
                     deployment=deployment,
                 )
 
-                # 3. Promote staging → final.  Once this returns we
-                #    record ``promoted=True`` so the outer rollback
-                #    knows to restore the snapshot if SQL COMMIT
-                #    later fails.
+                # 3. Promote staging  final.  Once this returns we
+                # record ``promoted=True`` so the outer rollback
+                # knows to restore the snapshot if SQL COMMIT
+                # later fails.
                 self._promote_staging(staging, final)
                 promoted = True
             # ``COMMIT`` runs as the context manager exits cleanly;
@@ -1322,13 +1322,13 @@ class DeptCredentialService:
     ) -> None:
         """Restore *final* to its pre-call state on any commit-time failure.
 
-        Called by :meth:`_commit` when the staging→final promotion
+        Called by :meth:`_commit` when the stagingfinal promotion
         already ran but the surrounding SQL transaction was rolled
         back (eg. because COMMIT failed).  Restoration semantics:
 
-        * ``prior_snapshot is None`` → the pair was never
+        * ``prior_snapshot is None``  the pair was never
           registered, so DELETE the new final value.
-        * ``prior_snapshot`` is a mapping → rewrite the prior
+        * ``prior_snapshot`` is a mapping  rewrite the prior
           value at *final* so a previously-registered credential
           is observably unchanged after the failed call.
 
@@ -1486,11 +1486,11 @@ class DeptCredentialService:
         )
 
     # ------------------------------------------------------------------
-    # Vault staging → final promotion
+    # Vault staging  final promotion
     # ------------------------------------------------------------------
 
     def _promote_staging(self, staging: VaultPath, final: VaultPath) -> None:
-        """Move *staging* → *final* (read → write → delete staging).
+        """Move *staging*  *final* (read  write  delete staging).
 
         Mirrors :meth:`DepartmentCreateOrchestrator._promote_staging`
         - Vault has no native ``mv`` primitive, so we read-then-write-

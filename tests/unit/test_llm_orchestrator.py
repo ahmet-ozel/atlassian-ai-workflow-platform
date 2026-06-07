@@ -224,7 +224,7 @@ def _capture_openai_payload(monkeypatch, provider: OpenAIProvider) -> dict:
 
 
 def test_openai_provider_forwards_tuning_for_gpt5(monkeypatch) -> None:
-    """gpt-5 family → reasoning + verbosity in the Responses body."""
+    """gpt-5 family  reasoning + verbosity in the Responses body."""
 
     provider = OpenAIProvider(
         api_key="sk-x",
@@ -240,7 +240,7 @@ def test_openai_provider_forwards_tuning_for_gpt5(monkeypatch) -> None:
 
 
 def test_openai_provider_omits_tuning_for_gpt4o_mini(monkeypatch) -> None:
-    """Non-reasoning model → tuning knobs dropped, temperature kept."""
+    """Non-reasoning model  tuning knobs dropped, temperature kept."""
 
     provider = OpenAIProvider(
         api_key="sk-x",

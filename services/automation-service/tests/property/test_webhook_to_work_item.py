@@ -1,6 +1,6 @@
-﻿"""Property tests for the Jira webhook → ``work_items`` post-condition.
+﻿"""Property tests for the Jira webhook  ``work_items`` post-condition.
 
-Webhook → ``work_items`` post-condition:
+Webhook  ``work_items`` post-condition:
 
 For any well-formed Jira webhook payload ``p`` whose six pre-conditions
 hold simultaneously -
@@ -9,7 +9,7 @@ hold simultaneously -
   2. payload hash NOT already in ``automation.processed_events``,
   3. actor is NOT in the bot registry,
   4. event type requires a workflow start (``issue_created``,
-     ``issue_assigned``, or ``issue_updated`` with assignee→bot change),
+     ``issue_assigned``, or ``issue_updated`` with assigneebot change),
   5. resolved/changed assignee matches a registered bot,
   6. capability gate Phase 1 passes (department exists for the
      ``project_key`` AND has a Jira bot credential),
@@ -239,8 +239,8 @@ class _FakeAcquireContext:
 class _FakeStore:
     """Mutable database state shared by every connection acquired."""
 
-    #: ``project_key`` → ``department_id`` (for
-    #: ``automation.department_project_keys``). Missing keys → no row.
+    #: ``project_key``  ``department_id`` (for
+    #: ``automation.department_project_keys``). Missing keys  no row.
     project_key_to_dept: dict[str, str]
 
     #: Set of ``department_id`` values that have a Jira credential row
@@ -487,14 +487,14 @@ def _happy_payload(draw: st.DrawFn) -> tuple[bytes, str, str, str]:
 
 #: An enumeration of the pre-condition failures covered here.
 _FAILURE_MODES: tuple[str, ...] = (
-    "bad_signature",  # (1) HMAC fails → 401 unauthorized
-    "duplicate",  # (2) hash already in processed_events → 200 duplicate
-    "self_actor",  # (3) actor is a bot → 200 loop_guard
-    "unsupported_event",  # (4) event type ignored → 200 ignored
-    "non_bot_assignee",  # (5) assignee not a bot → 200 not_bot_assignee
-    "no_assignee_change",  # (5) issue_updated w/o assignee→bot edge
-    "missing_capability_no_dept",  # (6) project_key not mapped → missing_capability
-    "missing_capability_no_cred",  # (6) dept exists but no jira cred → missing_capability
+    "bad_signature",  # (1) HMAC fails  401 unauthorized
+    "duplicate",  # (2) hash already in processed_events  200 duplicate
+    "self_actor",  # (3) actor is a bot  200 loop_guard
+    "unsupported_event",  # (4) event type ignored  200 ignored
+    "non_bot_assignee",  # (5) assignee not a bot  200 not_bot_assignee
+    "no_assignee_change",  # (5) issue_updated w/o assigneebot edge
+    "missing_capability_no_dept",  # (6) project_key not mapped  missing_capability
+    "missing_capability_no_cred",  # (6) dept exists but no jira cred  missing_capability
 )
 
 
@@ -600,7 +600,7 @@ def _failing_payload(  # noqa: PLR0912 - one branch per failure mode
     if changelog is not None:
         payload["changelog"] = changelog
     elif event_type == "jira:issue_updated":
-        # Default issue_updated changelog (assignee→bot) when the failure
+        # Default issue_updated changelog (assigneebot) when the failure
         # mode isn't specifically about assignee changes.
         payload["changelog"] = {
             "items": [{"field": "assignee", "to": bot_id}]
@@ -649,7 +649,7 @@ def _make_resolver() -> _FakeCredentialResolver:
 
 
 class TestWebhookHappyPathPostCondition:
-    """All six pre-conditions satisfied → the four post-conditions hold."""
+    """All six pre-conditions satisfied  the four post-conditions hold."""
 
     @_PROFILE
     @given(_happy_payload())
@@ -709,7 +709,7 @@ class TestWebhookHappyPathPostCondition:
 
 
 class TestWebhookFailingPreconditionPostCondition:
-    """Any single failing pre-condition → 0 work_items, 0 workflow starts."""
+    """Any single failing pre-condition  0 work_items, 0 workflow starts."""
 
     @_PROFILE
     @given(_failing_payload())

@@ -6,7 +6,7 @@ commit tool for any deployment. Earlier the commit step posted directly
 to the Bitbucket Cloud ``/2.0/.../src`` REST endpoint, which only works
 on Bitbucket Cloud.
 
-This activity replaces that with a plain ``git clone → write → commit →
+This activity replaces that with a plain ``git clone  write  commit
 push`` over HTTPS. Git-over-HTTPS is identical on Bitbucket Cloud and on
 Bitbucket Server / Data Center, so the same code path works for both;
 only the remote host and repository path differ, and both are derived

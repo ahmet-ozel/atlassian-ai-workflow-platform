@@ -1,4 +1,4 @@
-﻿"""Jira custom field name → id resolver with TTL'li cache.
+﻿"""Jira custom field name  id resolver with TTL'li cache.
 
 The platform MUST NOT hard-code Jira custom field ids
 (``customfield_10001``, ``customfield_10049``, ...) anywhere in the
@@ -13,22 +13,22 @@ Resolver contract::
 
     resolve_field_id(field_name) -> str
 
-* First call → invokes the injected ``jira_client.get_fields()``
+* First call  invokes the injected ``jira_client.get_fields()``
   coroutine (which under the hood issues
   ``GET /rest/api/3/field``), populates the cache atomically with
   every field returned by the response, stamps it with ``now()``, and
   returns the id matching ``field_name``.
-* Subsequent calls within the TTL → **NO** HTTP request; the cached
+* Subsequent calls within the TTL  **NO** HTTP request; the cached
   id is returned directly.
-* Calls after ``now() - fetched_at >= ttl`` → cache is rebuilt (a
+* Calls after ``now() - fetched_at >= ttl``  cache is rebuilt (a
   single new HTTP fetch) and the id from the fresh response is
   returned.
-* Concurrency → an :class:`asyncio.Lock` protects the refresh path so
+* Concurrency  an :class:`asyncio.Lock` protects the refresh path so
   N concurrent resolvers see exactly **one** in-flight fetch even
   when N callers race past a stale or empty cache. The lock is
   released as soon as the cache is populated; subsequent reads are
   lock-free.
-* Unknown field name → :class:`JiraFieldNotFoundError`. The error is
+* Unknown field name  :class:`JiraFieldNotFoundError`. The error is
   raised *after* the cache has been populated so the caller can be
   certain the missing entry is genuinely absent on the upstream
   side rather than a stale lookup.
@@ -89,7 +89,7 @@ _LOG = logging.getLogger(__name__)
 # Defaults
 # ---------------------------------------------------------------------------
 
-#: Default TTL for the field-name → id cache. The 1 hour figure comes
+#: Default TTL for the field-name  id cache. The 1 hour figure comes
 #: from the desired cache behavior: long enough that the resolver makes
 #: at most one ``GET /rest/api/3/field`` call per hour per process under
 #: steady-state load, short enough that an admin who renames a custom
@@ -187,7 +187,7 @@ class JiraFieldNotFoundError(LookupError):
 class _CacheSnapshot:
     """Atomic snapshot of the resolver cache.
 
-    Holding the ``name → id`` mapping and the ``fetched_at`` timestamp
+    Holding the ``name  id`` mapping and the ``fetched_at`` timestamp
     in a single frozen dataclass lets the resolver swap them as one
     atomic reference assignment after a refresh - readers that
     grabbed the previous snapshot keep observing a consistent view
@@ -211,7 +211,7 @@ class _CacheSnapshot:
 
 
 class JiraFieldResolver:
-    """Cache + TTL aware Jira custom-field name → id translator.
+    """Cache + TTL aware Jira custom-field name  id translator.
 
     Intended lifetime: one instance per service process, held on
     ``app.state.jira_field_resolver``. The class is safe for
@@ -339,7 +339,7 @@ class JiraFieldResolver:
             up-to-date at the point of failure.
         """
 
-        # Fast path: cache hit + still fresh → no HTTP call, no lock.
+        # Fast path: cache hit + still fresh  no HTTP call, no lock.
         snapshot = self._cache
         if snapshot is not None and not self._is_stale(snapshot):
             return self._lookup(snapshot, field_name)

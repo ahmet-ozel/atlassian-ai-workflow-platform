@@ -137,7 +137,7 @@ class TestScanDiffSecrets:
         )
 
     def test_same_pattern_multiple_locations_dedupes(self) -> None:
-        # Two AWS keys → still a single ``aws_access_key`` entry.
+        # Two AWS keys  still a single ``aws_access_key`` entry.
         diff = (
             'a = "AKIAIOSFODNN7EXAMPLE"\n'
             'b = "AKIAABCDEFGHIJKL2345"\n'

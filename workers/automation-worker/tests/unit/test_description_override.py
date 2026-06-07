@@ -13,7 +13,7 @@ These tests cover:
 * :func:`to_llm_analysis_result` - confidence-mapping rules and
   output-action coercion.
 
-Validates Requirements: R5.1-R5.10 (analyser → workflow_type), R11.1-
+Validates Requirements: R5.1-R5.10 (analyser  workflow_type), R11.1-
 R11.7 (description override merge).
 """
 
@@ -136,7 +136,7 @@ class TestBuildDescriptionOverride:
 
         first_kind, first_params = override.output_actions[0]
         assert first_kind == "jira_comment"
-        # Sorted keys → deterministic replay-safe payload.
+        # Sorted keys  deterministic replay-safe payload.
         assert first_params == (
             ("body", "Done"),
             ("issue_key", "PAY-1"),

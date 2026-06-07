@@ -8,11 +8,11 @@
 #
 # Usage
 # -----
-#   docker compose \
-#       -f infra/docker-compose.yml \
-#       -f infra/docker-compose.dev.yml \
-#       -f infra/docker-compose.observability.yml \
-#       --profile observability up -d
+# docker compose \
+# -f infra/docker-compose.yml \
+# -f infra/docker-compose.dev.yml \
+# -f infra/docker-compose.observability.yml \
+# --profile observability up -d
 #
 # All three services live behind the ``observability`` Compose profile so
 # the default ``docker compose up`` does not start them - operators
@@ -21,12 +21,12 @@
 # Wiring
 # ------
 # * Prometheus scrapes MCP metrics directly and probes service health via
-#   blackbox-exporter, both configured in ``infra/observability/prometheus.yml``.
+# blackbox-exporter, both configured in ``infra/observability/prometheus.yml``.
 # * Loki is the audit/log store; admin-dashboard-api proxies search
-#   queries through ``LokiSearchProxy``.
+# queries through ``LokiSearchProxy``.
 # * Grafana auto-loads the dashboards under
-#   ``infra/observability/grafana-dashboards/`` via the
-#   provisioning sidecar mount.
+# ``infra/observability/grafana-dashboards/`` via the
+# provisioning sidecar mount.
 # =============================================================================
 
 services:

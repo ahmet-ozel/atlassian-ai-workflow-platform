@@ -915,7 +915,7 @@ async def commit_prompt(
                 pr.pr_url,
             )
     except Exception as exc:  # noqa: BLE001
-        # asyncpg.UniqueViolationError → 409 prompt_unchanged. We
+        # asyncpg.UniqueViolationError  409 prompt_unchanged. We
         # match on the exception class name to avoid importing
         # asyncpg at the top of this module (the dependency is wired
         # at lifespan level, not router level).

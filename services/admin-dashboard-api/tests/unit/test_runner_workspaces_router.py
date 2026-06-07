@@ -9,20 +9,20 @@ endpoint-specific contracts (regex guard, audit emission, soft-fail).
 
 Coverage matrix:
 
-* ``GET /admin/runner/workspaces`` → 200 + serialised entries when the
+* ``GET /admin/runner/workspaces``  200 + serialised entries when the
   client is wired.
-* ``GET`` → 200 + empty list when the client slot is ``None``
+* ``GET``  200 + empty list when the client slot is ``None``
   (soft-fail; UI keeps rendering).
-* ``GET`` → 200 + empty list when the client raises (soft-fail; the
+* ``GET``  200 + empty list when the client raises (soft-fail; the
   router never propagates SSH transport errors to the dashboard).
-* ``DELETE /admin/runner/workspaces/{issue_key}`` → 200 + audit on
+* ``DELETE /admin/runner/workspaces/{issue_key}``  200 + audit on
   happy path (``workspace_manually_purged``).
-* ``DELETE`` → 400 + ``invalid_issue_key_format`` audit + **no** SSH
+* ``DELETE``  400 + ``invalid_issue_key_format`` audit + **no** SSH
   call for path-traversal vectors (``..``, lower-case, ``;``, ``&``,
   ``|``, ``$``, backtick, newline, null-byte).
-* ``DELETE`` → 503 with ``runner_workspaces_client_unavailable`` when
+* ``DELETE``  503 with ``runner_workspaces_client_unavailable`` when
   the client slot is ``None``.
-* ``DELETE`` → 502 + ``workspace_purge_failed`` audit when the client
+* ``DELETE``  502 + ``workspace_purge_failed`` audit when the client
   raises.
 """
 
@@ -200,7 +200,7 @@ class TestListWorkspaces:
     def test_empty_list_when_client_unwired(self) -> None:
         """``app.state.runner_workspaces_client = None`` is the default.
 
-        The dashboard's *Services → Workspaces* tab must keep rendering
+        The dashboard's *Services  Workspaces* tab must keep rendering
         even before the production SSH client is wired - the router
         returns an empty list rather than 503.
         """

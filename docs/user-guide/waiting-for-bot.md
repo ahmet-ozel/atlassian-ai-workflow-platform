@@ -6,17 +6,17 @@
 
 ```
 0s     ───  Task bot'a atandı (Jira webhook tetiklenir)
-5s     ───  🤖 "Task alındı, analiz ediyorum..."     ← hızlı ack
-1-2dk  ───  🤖 "Plan hazır. Tahmini süre: ~12 dk,
-                tahmini maliyet: $0.41. Workflow: ..."  ← analiz sonucu
+5s     ───   "Task alındı, analiz ediyorum..."      hızlı ack
+1-2dk  ───   "Plan hazır. Tahmini süre: ~12 dk,
+                tahmini maliyet: $0.41. Workflow: ..."   analiz sonucu
 3-30dk ───  Bot çalışıyor (kod yazma, test, output_actions)
             Bu sırada ek comment'ler:
               - "PR draft açıldı: <link>"
               - "Test geçti: 12/12"
               - "Confluence sayfası güncellendi: <link>"
-sonunda───  🤖 "✅ Tamamlandı." veya
-            🤖 "❌ Hata aldım - ..."  veya
-            🤖 "❓ Şu bilgiye ihtiyacım var: ..."
+sonunda───   " Tamamlandı." veya
+             " Hata aldım - ..."  veya
+             " Şu bilgiye ihtiyacım var: ..."
 ```
 
 ## Bot Task'ımı Görmedi mi?
@@ -57,12 +57,12 @@ Bot 30+ dakika tahmin etti ama sen 10 dakika bekleyebilecek durumdasın:
 
 - **İptal et** - Jira'da `[cancel]` yazarak comment ekle. Bot temiz şekilde durur,
   branch'i siler, commit etmez.
-- **Workflow'u izle** - Streamlit "Workflows" sayfası → bot şu an hangi step'te?
+- **Workflow'u izle** - Streamlit "Workflows" sayfası  bot şu an hangi step'te?
 - **Maliyet endişesi** - bot tahmini maliyetin %70'ine ulaşırsa zaten sana onay sorar.
 
 ## Bot Soru Sorduğunda
 
-Bot bazen `🤖 Şu bilgiye ihtiyacım var: ...` der. Bu durumda:
+Bot bazen ` Şu bilgiye ihtiyacım var: ...` der. Bu durumda:
 
 1. **Comment ile cevap ver** (Jira'ya). Bot 7 güne kadar bekler.
 2. Cevap bot'u tatmin etmezse tekrar sorar (max 5 kez - sonra `[fix]` döngüsünü
@@ -87,13 +87,13 @@ sıradaki başlar.
 
 ## Bot Tamamlayınca
 
-`✅ Tamamlandı` comment'inde şunlar olur:
+` Tamamlandı` comment'inde şunlar olur:
 
 - Yapılan iş özeti
 - PR linki (varsa) - **draft** olarak açılır, sen merge edersin
 - Confluence sayfa linki (varsa)
 - Test sonuçları (varsa)
-- Provenance footer (gizli - `🔎` simgesine tıklayarak aç)
+- Provenance footer (gizli - `` simgesine tıklayarak aç)
 
 > **Önemli:** Bot **asla merge etmez**. PR'ı incele, gerekiyorsa düzeltme iste,
 > uygunsa kendin merge et. [Detay: SSS](faq.md#bot-pr’ı-merge-edebilir-mi).
@@ -102,5 +102,5 @@ sıradaki başlar.
 
 **Sonraki adım:**
 
-- Bot çıktısını beğenmedinse → [`iteration-with-comments.md`](iteration-with-comments.md)
-- Bot tamamlamadan önce sorun çıktıysa → [`faq.md`](faq.md#troubleshooting)
+- Bot çıktısını beğenmedinse  [`iteration-with-comments.md`](iteration-with-comments.md)
+- Bot tamamlamadan önce sorun çıktıysa  [`faq.md`](faq.md#troubleshooting)

@@ -189,13 +189,13 @@ def test_infra_and_lib_required_path_exists(relative_path: str) -> None:
 # This block extends ``test_path_coverage.py`` with:
 #
 # * an aggregated full-scan assertion that every scanner returns zero
-#   findings against the live source tree,
+# findings against the live source tree,
 # * a Hypothesis property that samples a single source file at a time
-#   and confirms the per-file invariant - this gives fine-grained
-#   shrinking when a single file regresses,
+# and confirms the per-file invariant - this gives fine-grained
+# shrinking when a single file regresses,
 # * scanner self-checks against synthetic source snippets so the
-#   detection logic itself is exercised even when the production
-#   source is invariant-clean.
+# detection logic itself is exercised even when the production
+# source is invariant-clean.
 #
 # The LLM-specific subset lives in a sibling module
 # ``test_llm_call_paths.py``. That module

@@ -61,7 +61,7 @@ follows from the loop body:
 For ``2 * delay`` unhealthy probes the most stringent timeout check
 is ``(2*delay - 1) * 0.5 >= effective_timeout`` at the last
 unhealthy probe, which simplifies (for integer arguments) to
-``delay > effective_timeout`` ⇔ failure.
+``delay > effective_timeout``  failure.
 
 Stub fakes
 ----------

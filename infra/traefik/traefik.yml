@@ -7,10 +7,10 @@
 # rules (per-service labels or file-based) live in the `dynamic/` directory.
 #
 # Environment-aware behavior:
-#   - Production (PLATFORM_ENV=production):
-#       Uses Let's Encrypt ACME for automatic TLS certificate provisioning.
-#   - Development (PLATFORM_ENV=development or unset):
-#       Uses a self-signed default certificate for local TLS termination.
+# - Production (PLATFORM_ENV=production):
+# Uses Let's Encrypt ACME for automatic TLS certificate provisioning.
+# - Development (PLATFORM_ENV=development or unset):
+# Uses a self-signed default certificate for local TLS termination.
 # =============================================================================
 
 # ---------------------------------------------------------------------------
@@ -51,7 +51,7 @@ accessLog:
 entryPoints:
   web:
     address: ":80"
-    # HTTP→HTTPS redirect is configured via dynamic middleware
+    # HTTPHTTPS redirect is configured via dynamic middleware
     # but we declare the redirection at entrypoint level as well for
     # production environments.
     http:

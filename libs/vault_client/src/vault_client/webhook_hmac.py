@@ -24,9 +24,9 @@ Overlap window semantics
   :meth:`VaultClient.rotate_webhook_secret` to ``rotated_at + 1h``.
 * On verification:
 
-  1. The active secret is tried first; constant-time match → ``True``.
+  1. The active secret is tried first; constant-time match  ``True``.
   2. If a previous secret exists *and* ``now < overlap_until``, it is
-     tried second; constant-time match → ``True``.
+     tried second; constant-time match  ``True``.
   3. Otherwise, ``False``.
 
 Both candidate secrets are *always* attempted to keep the function's

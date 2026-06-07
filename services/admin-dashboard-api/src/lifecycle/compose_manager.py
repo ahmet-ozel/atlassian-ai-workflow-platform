@@ -866,7 +866,7 @@ def _parse_compose_ps_output(stdout: str) -> list[RunningService]:
       ``created`` / …).
     * ``Health`` (top-level on modern Compose) for the rollup health
       column. Older versions nest it under
-      ``Publishers`` → ``Health``; we accept both.
+      ``Publishers``  ``Health``; we accept both.
     * ``Image`` for the image identifier.
 
     Missing fields are reported as ``None`` rather than raising;

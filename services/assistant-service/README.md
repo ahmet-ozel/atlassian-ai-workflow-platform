@@ -46,8 +46,8 @@ docker run --rm \
   assistant-service:dev
 
 # 4. Probe the health endpoints
-curl -fsS http://localhost:8081/healthz   # → {"status":"ok"}
-curl -fsS http://localhost:8081/readyz    # → {"status":"ready"}  (or 503 {"status":"not_ready"})
+curl -fsS http://localhost:8081/healthz   #  {"status":"ok"}
+curl -fsS http://localhost:8081/readyz    #  {"status":"ready"}  (or 503 {"status":"not_ready"})
 ```
 
 When external dependencies (Postgres, Redis, MCP) are not reachable,

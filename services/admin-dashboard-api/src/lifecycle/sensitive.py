@@ -1,10 +1,10 @@
-﻿"""Sensitive_Env_Key matcher - Python half of the TS↔Python ikiz modül.
+﻿"""Sensitive_Env_Key matcher - Python half of the TSPython ikiz modül.
 
 This module is the **single source of truth** for which environment
 variable keys count as a Sensitive_Env_Key on the Python side of the admin
 dashboard control plane. The TypeScript twin lives at
 ``libs/web-shared/src/sensitive.ts`` and uses the **identical** regex strings
-in the **identical** order so that invariant C4 (TS↔Python parity) holds
+in the **identical** order so that invariant C4 (TSPython parity) holds
 character-for-character.
 
 Definition:
@@ -32,7 +32,7 @@ import re
 #: order shared with the TypeScript twin. The pattern strings must remain
 #: **character-by-character identical** to the JavaScript
 #: literals in ``libs/web-shared/src/sensitive.ts`` so invariant C4
-#: (TS↔Python parity) can compare both sides on the same input set.
+#: (TSPython parity) can compare both sides on the same input set.
 #:
 #: We use :func:`re.search` semantics (no leading ``^``) so the suffix
 #: anchors ``$`` line up with the JavaScript ``RegExp.test`` behaviour

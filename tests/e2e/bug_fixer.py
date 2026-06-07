@@ -436,7 +436,7 @@ class ConfluenceSpaceHelper:
 
         fix_applied = (
             "Created tests/e2e/confluence_space_helper.py implementing dynamic "
-            "space discovery: list available spaces → use first one → create "
+            "space discovery: list available spaces  use first one  create "
             "test space as fallback"
         )
 
@@ -581,8 +581,7 @@ def pytest_collectreport(report):
         # The issue is that COMPOSE_CMD only includes profiles from the manifest.
         # If there are additional profiles in docker-compose.yml not in the manifest
         # (like 'redis', 'minio', 'temporal-ui', 'workers'), they won't be stopped.
-        #
-        # Fix: Add a more comprehensive down target that also runs a docker compose
+        # # Fix: Add a more comprehensive down target that also runs a docker compose
         # down without profiles (which stops non-profiled services) AND with all
         # known profiles.
 
@@ -689,11 +688,9 @@ def pytest_collectreport(report):
         # the first -f file. Since we use -f infra/docker-compose.yml from
         # the platform/ directory, the project name is "infra" (the directory
         # name of the compose file).
-        #
-        # However, if run from the infra/ directory directly, it would be "infra".
+        # # However, if run from the infra/ directory directly, it would be "infra".
         # If COMPOSE_PROJECT_NAME is set, that takes precedence.
-        #
-        # The volumes defined are: pg_data, minio_data, agent_workspace
+        # # The volumes defined are: pg_data, minio_data, agent_workspace
         # They would be named: infra_pg_data, infra_minio_data, infra_agent_workspace
 
         # Search for volume filter commands in scripts and Makefile

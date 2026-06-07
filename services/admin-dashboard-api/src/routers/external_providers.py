@@ -87,7 +87,7 @@ def _load_external_entries(
     External entries use a different schema shape with fields like
     ``base_url_env``, ``probe_path``, etc.
 
-    Falls back to ``app.state.workspace_root`` → Settings when the
+    Falls back to ``app.state.workspace_root``  Settings when the
     lifespan slot is not wired.
     """
     workspace_root = getattr(request.app.state, "workspace_root", None)

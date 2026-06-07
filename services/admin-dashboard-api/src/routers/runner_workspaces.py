@@ -1,6 +1,6 @@
 ﻿"""``RunnerWorkspacesRouter`` - manual SSH workspace listing + purge.
 
-Two admin-only endpoints backing the *Services → Workspaces* sub-tab:
+Two admin-only endpoints backing the *Services  Workspaces* sub-tab:
 
 * ``GET    /admin/runner/workspaces`` - listing of every directory under
   ``RUNNER_BASE_PATH`` on the SSH runner host. Each row carries
@@ -205,7 +205,7 @@ def _client(request: Request) -> RunnerWorkspacesClient | None:
     during lifespan. Tests bind their own stub before constructing the
     :class:`fastapi.testclient.TestClient`. When the slot is missing
     we return ``None`` and let the caller decide whether to short-
-    circuit (GET → empty list, DELETE → 503).
+    circuit (GET  empty list, DELETE  503).
     """
 
     return getattr(request.app.state, "runner_workspaces_client", None)
@@ -267,7 +267,7 @@ async def list_runner_workspaces(request: Request) -> dict[str, Any]:
 
     The response shape is ``{"workspaces": [{"issue_key", "size_mb",
     "last_modified"}, ...]}``. When the runner client is not wired we
-    return an empty list rather than 503 so the *Services →
+    return an empty list rather than 503 so the *Services
     Workspaces* tab can still render (the operator sees "no
     workspaces yet" instead of a hard error). Errors raised by the
     client (SSH unreachable, ``ls`` failure) propagate up as a logged
@@ -330,9 +330,9 @@ async def purge_runner_workspace(
 
     Audit:
 
-    * Success → ``workspace_manually_purged`` (``result="ok"``,
+    * Success  ``workspace_manually_purged`` (``result="ok"``,
       payload carries ``freed_bytes`` and ``issue_key``).
-    * Failure → ``workspace_purge_failed`` (``result="error"``,
+    * Failure  ``workspace_purge_failed`` (``result="error"``,
       payload carries the trimmed exception message and ``issue_key``).
 
     Both audit writes are best-effort; the request outcome is never

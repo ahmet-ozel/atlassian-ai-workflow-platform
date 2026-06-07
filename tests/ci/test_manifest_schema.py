@@ -14,10 +14,10 @@ This file covers the static, schema-level invariants introduced by
  ``config/services.manifest.json`` cover at least the design's
  minimum set (, :
 
- - ``automation-service`` → ``{"postgres", "vault", "temporal", "atlassian-mcp"}``
- - ``admin-dashboard-api`` → ``{"postgres", "vault", "automation-service"}``
- - ``agent-runner-worker`` → ``{"temporal", "atlassian-mcp", "vault"}``
- - ``execution-runner-worker`` → ``{"temporal", "vault"}``
+ - ``automation-service``  ``{"postgres", "vault", "temporal", "atlassian-mcp"}``
+ - ``admin-dashboard-api``  ``{"postgres", "vault", "automation-service"}``
+ - ``agent-runner-worker``  ``{"temporal", "atlassian-mcp", "vault"}``
+ - ``execution-runner-worker``  ``{"temporal", "vault"}``
 3. ``feature_flag_dependency`` for ``task-intake-service`` covers the
  design minimum ``{"FEATURE_FLAG_TASK_INTAKE_ENABLED"}``
  .
@@ -38,7 +38,7 @@ from jsonschema.validators import Draft202012Validator
 
 
 # ---------------------------------------------------------------------------
-# Constants - design's minimum sets 
+# Constants - design's minimum sets
 # ---------------------------------------------------------------------------
 
 #: Minimum required entries in ``depends_on_services`` service. The

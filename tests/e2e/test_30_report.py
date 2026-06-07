@@ -153,10 +153,10 @@ class TestReportGeneration:
         )
 
     def test_executive_summary_has_status_prefix(self, workspace_root):
-        """R30.5: Executive Summary starts with 🔴 or 🟢 indicator.
+        """R30.5: Executive Summary starts with  or  indicator.
 
         The executive summary must clearly indicate overall status
-        with either '🔴 ISSUES FOUND' or '🟢 ALL CLEAR'.
+        with either ' ISSUES FOUND' or ' ALL CLEAR'.
         """
         from report_generator import ReportGenerator
 
@@ -166,12 +166,12 @@ class TestReportGeneration:
         report_path = workspace_root / "E2E_REPORT.md"
         content = report_path.read_text(encoding="utf-8")
 
-        has_issues_indicator = "🔴 ISSUES FOUND" in content
-        has_clear_indicator = "🟢 ALL CLEAR" in content
+        has_issues_indicator = " ISSUES FOUND" in content
+        has_clear_indicator = " ALL CLEAR" in content
 
         assert has_issues_indicator or has_clear_indicator, (
             "Executive Summary missing status prefix. "
-            "Expected '🔴 ISSUES FOUND' or '🟢 ALL CLEAR'."
+            "Expected ' ISSUES FOUND' or ' ALL CLEAR'."
         )
 
     def test_verdict_table_columns(self, workspace_root):
@@ -264,7 +264,7 @@ class TestReportGenerationEvidence:
                 }
 
             # Check status prefix
-            has_prefix = "🔴 ISSUES FOUND" in content or "🟢 ALL CLEAR" in content
+            has_prefix = " ISSUES FOUND" in content or " ALL CLEAR" in content
             evidence_data["has_status_prefix"] = has_prefix
 
             # Overall verdict

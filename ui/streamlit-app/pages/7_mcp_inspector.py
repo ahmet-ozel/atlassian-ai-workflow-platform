@@ -4,7 +4,7 @@ Provides an interactive interface for inspecting and testing MCP
 (Model Context Protocol) tools:
 
 * Shows available MCP tools (after banned-tool filter).
-* Tool selection → JSON params form (schema-driven) → "Execute" button.
+* Tool selection  JSON params form (schema-driven)  "Execute" button.
 * Displays request/response/latency for each invocation.
 
 Audit event: ``mcp_inspector_tool_invoked``.
@@ -24,14 +24,14 @@ from components import render_cost_widget, render_dept_switcher
 from components.theme import apply_theme, page_hero
 
 _inject_session_state()
-st.set_page_config(page_title="MCP Inspector", page_icon="🔍", layout="wide")
+st.set_page_config(page_title="MCP Inspector", page_icon="", layout="wide")
 apply_theme()
 page_hero(
     "MCP Inspector",
     "Banned-tool listesi uygulandıktan sonra kalan Model Context Protocol "
     "araçlarını schema-driven formla test edin. Latency ve istek/yanıt "
     "JSON'ı her çağrıda görüntülenir.",
-    icon="🔬",
+    icon="",
 )
 
 dept_id = render_dept_switcher()
@@ -162,9 +162,9 @@ if properties:
                         key=f"mcp_param_{field_name}",
                     )
 
-        execute_clicked = st.form_submit_button("🚀 Execute")
+        execute_clicked = st.form_submit_button(" Execute")
 else:
-    execute_clicked = st.button("🚀 Execute (parametresiz)")
+    execute_clicked = st.button(" Execute (parametresiz)")
 
 # ---------------------------------------------------------------------------
 # Execute tool
@@ -179,7 +179,7 @@ if execute_clicked:
     st.subheader("Sonuç")
 
     # Show request
-    with st.expander("📤 Request", expanded=True):
+    with st.expander(" Request", expanded=True):
         st.json({
             "tool": selected_tool_name,
             "params": filtered_params,
@@ -206,7 +206,7 @@ if execute_clicked:
     st.metric("Latency", f"{latency_ms:.1f} ms")
 
     # Show response
-    with st.expander("📥 Response", expanded=True):
+    with st.expander(" Response", expanded=True):
         if success:
             if isinstance(result, (dict, list)):
                 st.json(result)

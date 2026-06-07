@@ -271,7 +271,7 @@ class TestAssigneeChangedToBot:
     def test_changelog_assigning_to_bot_returns_true(
         self, data: st.DataObject, bot_ids: frozenset[str]
     ) -> None:
-        """Any changelog containing a single ``assignee → bot`` item, even
+        """Any changelog containing a single ``assignee  bot`` item, even
         among unrelated noise items, must be flagged.
         """
         changelog = data.draw(_changelog_with_assignee_to_bot(bot_ids))
@@ -428,9 +428,9 @@ class TestRouteEventType:
 class TestShortCircuitOrdering:
     """The webhook handler evaluates predicates in a fixed sequence:
 
-        1. ``is_self_actor``  → if True, skip immediately (loop guard)
+        1. ``is_self_actor``   if True, skip immediately (loop guard)
         2. ``is_bot_assignee`` / ``assignee_changed_to_bot`` (per event)
-        3. ``route``           → classifies the event type
+        3. ``route``            classifies the event type
 
     Step 1 short-circuits steps 2-3. Because each predicate is a pure
     function, the *value* of a downstream predicate is a function of
@@ -519,7 +519,7 @@ class TestShortCircuitOrdering:
 
 
 class TestDeterminism:
-    """Every predicate is a pure function: same inputs → same output."""
+    """Every predicate is a pure function: same inputs  same output."""
 
     @_PROFILE
     @given(actor_id=_optional_account_ids, bot_ids=_bot_registries)

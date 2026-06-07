@@ -426,7 +426,7 @@ class TestRobustness:
     def test_filter_does_not_raise_on_misformatted_log_call(self) -> None:
         """A log call with bad ``%`` substitution must still emit, redacted."""
         flt = RedactionFilter()
-        # Two ``%s`` placeholders but only one positional arg → render
+        # Two ``%s`` placeholders but only one positional arg  render
         # would normally raise ``TypeError``. The filter falls back to
         # appending the args repr and still redacts.
         record = logging.LogRecord(

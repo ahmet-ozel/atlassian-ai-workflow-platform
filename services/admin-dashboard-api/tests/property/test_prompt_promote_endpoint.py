@@ -5,13 +5,13 @@
 Prompt Promote Flow Determinism (Q4)**
 For any ``(sandbox_run_id, sandbox.passed, sandbox_run_exists)`` triplet,
 the promote endpoint behaviour must be deterministic:
-- ``sandbox_run_exists=False`` → 404 ``sandbox_run_not_found``
+- ``sandbox_run_exists=False``  404 ``sandbox_run_not_found``
   (regardless of ``passed`` value).
-- ``sandbox_run_exists=True`` ∧ ``passed=False`` → 422
+- ``sandbox_run_exists=True`` ∧ ``passed=False``  422
   ``sandbox_not_passed`` + ``prompt_promote_rejected_sandbox_failed`` audit.
-- ``sandbox_run_exists=True`` ∧ ``passed=True`` → 201 ``{pr_url, branch,
+- ``sandbox_run_exists=True`` ∧ ``passed=True``  201 ``{pr_url, branch,
   sandbox_run_id}`` + ``prompt_promoted`` audit.
-Additionally, the sandbox-test → promote round-trip must preserve
+Additionally, the sandbox-test  promote round-trip must preserve
 ``sandbox_run_id`` identity: the ``sandbox_run_id`` returned by the
 sandbox-test endpoint must be the same value accepted by the promote
 endpoint.
@@ -58,7 +58,7 @@ if str(_SERVICE_ROOT) not in sys.path:
 # ---------------------------------------------------------------------------
 # The promote endpoint  exposes its core decision logic as a
 # standalone async function ``_promote_logic`` so property tests can call
-#  it without spinning up a FastAPI app. When lands the import
+# it without spinning up a FastAPI app. When lands the import
 # below will resolve to the real implementation; until then the test
 # module defines a *reference implementation* that matches the spec and
 # the test validates that reference.
@@ -173,7 +173,7 @@ class _FakePrOpener:
 class _FakeSandboxRunsPool:
     """Simulates the ``automation.prompt_sandbox_runs`` table.
 
-    ``rows`` maps ``sandbox_run_id`` → ``{"passed": bool, ...}``.
+    ``rows`` maps ``sandbox_run_id``  ``{"passed": bool, ...}``.
     """
     rows: dict[str, dict[str, Any]] = field(default_factory=dict)
 
@@ -212,11 +212,11 @@ async def _promote_logic_reference(
     """Reference implementation of the promote endpoint logic.
     Mirrors the spec :
     ① Fetch ``sandbox_run_id`` from ``automation.prompt_sandbox_runs``.
-       Not found → raise ``PromoteNotFoundError`` (→ HTTP 404).
-    ② ``passed=False`` → raise ``PromoteSandboxNotPassedError`` (→ HTTP 422)
+       Not found  raise ``PromoteNotFoundError`` ( HTTP 404).
+    ② ``passed=False``  raise ``PromoteSandboxNotPassedError`` ( HTTP 422)
        + ``prompt_promote_rejected_sandbox_failed`` audit.
-    ③ ``passed=True`` → open PR via ``pr_opener``.
-    ④ Success → ``prompt_promoted`` audit + return ``PromoteResult``."""
+    ③ ``passed=True``  open PR via ``pr_opener``.
+    ④ Success  ``prompt_promoted`` audit + return ``PromoteResult``."""
     # ① Fetch the sandbox run.
     run = await pool.fetch_sandbox_run(sandbox_run_id)
     if run is None:
@@ -292,7 +292,7 @@ _ACTOR_STRATEGY = st.from_regex(
 
 
 # ---------------------------------------------------------------------------
-#  - sandbox_run_exists=False → PromoteNotFoundError (→ 404)
+# - sandbox_run_exists=False  PromoteNotFoundError ( 404)
 # ---------------------------------------------------------------------------
 
 
@@ -315,7 +315,7 @@ def test_missing_sandbox_run_raises_not_found(
     draft_branch: str,
     actor_id: str,
 ) -> None:
-    """- sandbox_run_exists=False → PromoteNotFoundError (→ 404).
+    """- sandbox_run_exists=False  PromoteNotFoundError ( 404).
     For any ``sandbox_run_id`` that does not exist in the DB, the promote
     logic must raise ``PromoteNotFoundError`` regardless of the ``passed``
     value. No audit event must be emitted (the run was never recorded)."""
@@ -359,7 +359,7 @@ def test_missing_sandbox_run_raises_not_found(
 
 
 # ---------------------------------------------------------------------------
-#  - sandbox_run_exists=True ∧ passed=False → 422 + rejected audit
+# - sandbox_run_exists=True ∧ passed=False  422 + rejected audit
 # ---------------------------------------------------------------------------
 
 
@@ -380,9 +380,9 @@ def test_failed_sandbox_run_raises_not_passed(
     draft_branch: str,
     actor_id: str,
 ) -> None:
-    """- sandbox_run_exists=True ∧ passed=False → 422 + rejected audit.
+    """- sandbox_run_exists=True ∧ passed=False  422 + rejected audit.
     When the sandbox run exists but ``passed=False``, the promote logic must:
-    - Raise ``PromoteSandboxNotPassedError`` (→ HTTP 422).
+    - Raise ``PromoteSandboxNotPassedError`` ( HTTP 422).
     - Emit exactly one ``prompt_promote_rejected_sandbox_failed`` audit event.
     - NOT open a PR."""
     pool = _FakeSandboxRunsPool()
@@ -448,7 +448,7 @@ def test_failed_sandbox_run_raises_not_passed(
 
 
 # ---------------------------------------------------------------------------
-#  - sandbox_run_exists=True ∧ passed=True → 201 + promoted audit
+# - sandbox_run_exists=True ∧ passed=True  201 + promoted audit
 # ---------------------------------------------------------------------------
 
 
@@ -469,7 +469,7 @@ def test_passed_sandbox_run_opens_pr_and_emits_promoted_audit(
     draft_branch: str,
     actor_id: str,
 ) -> None:
-    """- sandbox_run_exists=True ∧ passed=True → 201 + promoted audit.
+    """- sandbox_run_exists=True ∧ passed=True  201 + promoted audit.
     When the sandbox run exists and ``passed=True``, the promote logic must:
     - Return a ``PromoteResult`` with ``sandbox_run_id`` matching the input.
     - Open exactly one PR via the PR opener.
@@ -561,7 +561,7 @@ def test_passed_sandbox_run_opens_pr_and_emits_promoted_audit(
 
 
 # ---------------------------------------------------------------------------
-# same (run_id, passed, exists) → same outcome
+# same (run_id, passed, exists)  same outcome
 # ---------------------------------------------------------------------------
 
 
@@ -651,7 +651,7 @@ def test_sandbox_test_to_promote_round_trip_preserves_run_id(
     draft_branch: str,
     actor_id: str,
 ) -> None:
-    """- sandbox-test → promote round-trip preserves sandbox_run_id.
+    """- sandbox-test  promote round-trip preserves sandbox_run_id.
     The ``sandbox_run_id`` returned by the sandbox-test step must be
     accepted by the promote step without modification. This verifies
     the round-trip contract: the same UUID that the sandbox-test
@@ -717,7 +717,7 @@ def test_sandbox_test_to_promote_round_trip_preserves_run_id(
 
 
 # ---------------------------------------------------------------------------
-#  - wrong sandbox_run_id in promote → 404 (not the run's data)
+# - wrong sandbox_run_id in promote  404 (not the run's data)
 # ---------------------------------------------------------------------------
 
 
@@ -740,7 +740,7 @@ def test_wrong_sandbox_run_id_raises_not_found(
     prompt_path: str,
     draft_branch: str,
 ) -> None:
-    """- wrong sandbox_run_id in promote → 404.
+    """- wrong sandbox_run_id in promote  404.
     When the promote endpoint receives a ``sandbox_run_id`` that does not
     match any row in the DB (even if other rows exist), it must raise
     ``PromoteNotFoundError``. This ensures the promote endpoint cannot be

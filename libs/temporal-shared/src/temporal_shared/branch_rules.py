@@ -50,11 +50,11 @@ function returns ``RouteDecision(allowed=True, reason="no_rule_matched")``
 Examples
 --------------------------------------------------
 
-* ``hotfix/*`` + ``code_change_commit_only`` → ``denied`` (PR open
+* ``hotfix/*`` + ``code_change_commit_only``  ``denied`` (PR open
   mandatory; commit-only would skip review on a hotfix branch).
-* ``release/*`` + ``pr_review`` → ``allowed``.
-* ``release/*`` + ``code_change_with_test`` → ``denied``.
-* ``feature/foo`` + anything → ``allowed`` (no default rule matches).
+* ``release/*`` + ``pr_review``  ``allowed``.
+* ``release/*`` + ``code_change_with_test``  ``denied``.
+* ``feature/foo`` + anything  ``allowed`` (no default rule matches).
 
 Replay determinism
 ------------------
@@ -102,7 +102,7 @@ class RouteDecision:
         as an audit action name. The audit reasons used by the design:
 
         * ``"no_rule_matched"`` - no rule's ``glob`` matched the branch
-          (open default → ``allowed=True``).
+          (open default  ``allowed=True``).
         * ``"matched_allowlist"`` - a rule with
           ``allowed_workflow_types`` matched the branch and the
           candidate is in the allow set (``allowed=True``).
@@ -181,7 +181,7 @@ class BranchPatternRule:
             raise ValueError(
                 f"BranchPatternRule.glob must be a non-empty string; got {self.glob!r}"
             )
-        # Coerce iterables → frozenset so callers may pass a list/tuple
+        # Coerce iterables  frozenset so callers may pass a list/tuple
         # at construction time. Using object.__setattr__ because the
         # dataclass is frozen.
         if not isinstance(self.denied_workflow_types, frozenset):
@@ -279,13 +279,13 @@ def route_by_branch_pattern(
     * Glob matching uses :func:`fnmatch.fnmatchcase` (case-sensitive,
       shell-style globbing - ``*``, ``?``, ``[…]``).
     * For a rule with :attr:`BranchPatternRule.denied_workflow_types`:
-      if *candidate_workflow_type* is in the deny set →
+      if *candidate_workflow_type* is in the deny set
       ``allowed=False``; otherwise ``allowed=True``. **Both branches
       stop iteration** - design treats the first matching glob as the
       authoritative scope, so a later, more permissive rule cannot
       "rescue" a deny.
     * For a rule with :attr:`BranchPatternRule.allowed_workflow_types`:
-      if *candidate_workflow_type* is in the allow set →
+      if *candidate_workflow_type* is in the allow set
       ``allowed=True``; otherwise ``allowed=False``. **Both branches
       stop iteration** - same first-match-wins semantics.
 
@@ -349,7 +349,7 @@ def route_by_branch_pattern(
                     reason=rule.reason,
                     matched_glob=rule.glob,
                 )
-            # Workflow type not in deny set → rule has nothing to say
+            # Workflow type not in deny set  rule has nothing to say
             # about it; pass through with the rule glob noted for audit.
             return RouteDecision(
                 allowed=True,

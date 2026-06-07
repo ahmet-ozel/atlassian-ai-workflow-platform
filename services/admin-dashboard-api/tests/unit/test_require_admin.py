@@ -2,13 +2,13 @@
 
 Covers the auth dependency behaviour matrix:
 
-* Missing ``Authorization`` header → 401, claim inspection skipped.
-* Non-``Bearer`` scheme (``Basic``, etc.) → 401.
-* ``Bearer`` prefix present but token portion empty → 401.
-* Validator raises :class:`InvalidTokenError` → 401.
-* Token valid but no ``admin`` in ``groups`` *or* ``roles`` → 403.
-* Token valid with ``admin`` in ``groups`` only → :class:`AuthClaims`.
-* Token valid with ``admin`` in ``roles`` only → :class:`AuthClaims`.
+* Missing ``Authorization`` header  401, claim inspection skipped.
+* Non-``Bearer`` scheme (``Basic``, etc.)  401.
+* ``Bearer`` prefix present but token portion empty  401.
+* Validator raises :class:`InvalidTokenError`  401.
+* Token valid but no ``admin`` in ``groups`` *or* ``roles``  403.
+* Token valid with ``admin`` in ``groups`` only  :class:`AuthClaims`.
+* Token valid with ``admin`` in ``roles`` only  :class:`AuthClaims`.
 
 The validator is exercised through a hand-written stub that records each
 ``validate`` call and emits canned claims or :class:`InvalidTokenError`.
@@ -109,7 +109,7 @@ def _build_app(validator: _StubValidator) -> FastAPI:
 
 
 def test_missing_authorization_header_returns_401_without_validation() -> None:
-    """No header at all → 401, validator MUST NOT be invoked.
+    """No header at all  401, validator MUST NOT be invoked.
 
     The 401 fires *before* any claim inspection so anonymous probes
     can't even tell whether a service name is valid.
@@ -142,7 +142,7 @@ def test_non_bearer_scheme_returns_401_without_validation() -> None:
 
 
 def test_empty_token_after_bearer_returns_401() -> None:
-    """``Bearer `` (with trailing space and nothing else) → 401."""
+    """``Bearer `` (with trailing space and nothing else)  401."""
 
     validator = _StubValidator(claims={"sub": "x", "groups": ["admin"]})
     client = TestClient(_build_app(validator))
@@ -158,7 +158,7 @@ def test_empty_token_after_bearer_returns_401() -> None:
 
 
 def test_whitespace_only_token_returns_401() -> None:
-    """``Bearer    `` (only whitespace after the scheme) → 401."""
+    """``Bearer    `` (only whitespace after the scheme)  401."""
 
     validator = _StubValidator(claims={"sub": "x", "groups": ["admin"]})
     client = TestClient(_build_app(validator))
@@ -179,7 +179,7 @@ def test_whitespace_only_token_returns_401() -> None:
 
 
 def test_invalid_token_raises_401() -> None:
-    """Validator raising :class:`InvalidTokenError` → 401 ``invalid token``."""
+    """Validator raising :class:`InvalidTokenError`  401 ``invalid token``."""
 
     validator = _StubValidator(raise_invalid=True)
     client = TestClient(_build_app(validator))
@@ -200,7 +200,7 @@ def test_invalid_token_raises_401() -> None:
 
 
 def test_no_admin_in_groups_or_roles_returns_403() -> None:
-    """Authenticated non-admin → 403 ``admin claim required``.
+    """Authenticated non-admin  403 ``admin claim required``.
 
     Read-only access is *not* granted to authenticated non-admin users.
     """
@@ -221,7 +221,7 @@ def test_no_admin_in_groups_or_roles_returns_403() -> None:
 
 
 def test_missing_groups_and_roles_returns_403() -> None:
-    """Token with no group claims at all → 403."""
+    """Token with no group claims at all  403."""
 
     validator = _StubValidator(claims={"sub": "alice"})
     client = TestClient(_build_app(validator))
@@ -257,7 +257,7 @@ def test_non_iterable_groups_value_returns_403() -> None:
 
 
 def test_admin_in_groups_returns_auth_claims() -> None:
-    """``groups: ["admin"]`` → 200 + AuthClaims with the admin group."""
+    """``groups: ["admin"]``  200 + AuthClaims with the admin group."""
 
     validator = _StubValidator(
         claims={"sub": "ops-1", "groups": ["admin", "platform"]}
@@ -340,7 +340,7 @@ def test_bearer_scheme_is_case_insensitive() -> None:
 
 
 def test_token_missing_sub_returns_401() -> None:
-    """Token validates but has no ``sub`` claim → 401 ``invalid token``.
+    """Token validates but has no ``sub`` claim  401 ``invalid token``.
 
     The lifecycle audit log relies on ``sub`` for the ``actor`` field;
     rejecting at this point fails closed and prevents writing audit

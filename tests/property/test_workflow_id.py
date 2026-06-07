@@ -579,12 +579,12 @@ async def test_distinct_ids_yield_distinct_executions(
     )
 
     if workflow_id_a == workflow_id_b:
-        # Same id → idempotent collapse.
+        # Same id  idempotent collapse.
         assert res_a.was_existing is False
         assert res_b.was_existing is True
         assert len(client._running) == 1
     else:
-        # Different ids → two separate executions.
+        # Different ids  two separate executions.
         assert res_a.was_existing is False
         assert res_b.was_existing is False
         assert res_a.execution_id != res_b.execution_id
@@ -653,8 +653,8 @@ async def test_helper_echoes_caller_supplied_id_on_duplicate(
 # ``(repo_slug, pr_id)`` Bitbucket tuple.  Every formatted string matches
 # **exactly one** of the two pinned regexes:
 #
-#   ^automation-jira-[A-Z][A-Z0-9_]{1,9}-\d+$
-#   ^automation-bb-[a-z0-9-]+-pr-\d+$
+# ^automation-jira-[A-Z][A-Z0-9_]{1,9}-\d+$
+# ^automation-bb-[a-z0-9-]+-pr-\d+$
 #
 # Two distinct inputs never produce the same workflow_id (injectivity is
 # preserved across the two namespaces, which are disjoint by prefix).

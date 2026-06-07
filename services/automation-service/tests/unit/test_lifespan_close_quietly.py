@@ -131,7 +131,7 @@ class TestCloseQuietlyAwaitableRaises:
         assert record.levelno == logging.WARNING
         # The log message must name the resource so an operator can
         # correlate the failure with the design's reverse-shutdown
-        # order ("temporal" → "http_client" → "pool").
+        # order ("temporal"  "http_client"  "pool").
         assert "http_client" in record.getMessage()
         # ``exc_info=True`` was requested by the helper, so the
         # captured record carries the original ``RuntimeError`` for

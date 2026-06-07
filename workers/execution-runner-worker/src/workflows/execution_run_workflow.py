@@ -17,7 +17,7 @@ This module hosts **two** Temporal workflow definitions:
   * **SSH healthcheck** - Before invoking ``ssh_run_test``, the workflow
     runs a lightweight ``ssh_healthcheck`` activity (TCP connect probe).
     If the runner is unreachable the workflow enters a "queued" retry
-    loop with exponential backoff (60s → 120s → 240s, max 30 min total).
+    loop with exponential backoff (60s  120s  240s, max 30 min total).
     An ``ssh_host_unhealthy`` audit event is emitted and a Jira bot
     comment is posted. If the runner recovers within the retry window
     the workflow proceeds normally; otherwise it fails with
@@ -33,8 +33,8 @@ This module hosts **two** Temporal workflow definitions:
 * :class:`LegacyExecutionRunWorkflow` - the legacy workflow that the
   integration tests under ``tests/integration/test_execution_runner.py``
   exercise.  Preserved here unchanged in behaviour so the existing
-  tested orchestration of ``vault_fetch_ssh_credentials`` →
-  ``ssh_connect_and_run`` → ``minio_upload_artifact`` × 3 → optional
+  tested orchestration of ``vault_fetch_ssh_credentials``
+  ``ssh_connect_and_run``  ``minio_upload_artifact`` × 3  optional
   ``ssh_cleanup`` keeps green.  The class and its Temporal-registered
   name end with ``Legacy`` so the canonical workflow can claim the
   ``"ExecutionRunWorkflow"`` Temporal name without colliding.
@@ -120,8 +120,8 @@ _NOOP_TEST_WORKFLOW_TYPE: Final[str] = "noop_test"
 #: Default command synthesised for a ``noop_test`` execution when the
 #: caller leaves :attr:`ExecutionRunWorkflowInput.command` empty.
 #: ``echo "ok"`` is intentionally trivial - the smoke-test path
-#: validates the full pipeline (webhook → AutomationWorkflow →
-#: ExecutionRunWorkflow → SSH runner → activity → Jira comment)
+#: validates the full pipeline (webhook  AutomationWorkflow
+#: ExecutionRunWorkflow  SSH runner  activity  Jira comment)
 #: without exercising any business logic on the runner.
 _NOOP_TEST_DEFAULT_COMMAND: Final[str] = 'echo "ok"'
 
@@ -356,10 +356,10 @@ class ExecutionRunWorkflow:
 
     Status mapping:
 
-    * ``exit_code == 0``                       → ``"passed"``
-    * ``exit_code != 0`` (other than timeout)  → ``"failed"``
+    * ``exit_code == 0``                        ``"passed"``
+    * ``exit_code != 0`` (other than timeout)   ``"failed"``
     * SSH/runner command timeout (signalled by the activity returning
-      ``status="timeout"``)                    → ``"timeout"``
+      ``status="timeout"``)                     ``"timeout"``
 
     ``noop_test`` smoke-flow safety net
     -----------------------------------
@@ -515,8 +515,7 @@ class ExecutionRunWorkflow:
         # storm of failing runs against a full disk - the activity
         # itself returns ``allowed=True`` on SSH failure (best-effort
         # allow) so a transient network blip cannot wedge the workflow.
-        #
-        # Gate is opt-in: when ``workspace_quota_mb`` is ``None`` (the
+        # # Gate is opt-in: when ``workspace_quota_mb`` is ``None`` (the
         # legacy path, which every existing call site exercises) the
         # workflow skips the activity invocation entirely so the
         # registered worker bundle stays optional.
@@ -528,7 +527,7 @@ class ExecutionRunWorkflow:
 
         # When ``needs_docker`` is True the workflow runs the structured
         # Docker chain
-        # (build → run → collect_logs → cleanup) instead of the single
+        # (build  run  collect_logs  cleanup) instead of the single
         # ``ssh_run_test`` invocation. Previously the ``docker_*``
         # activities were registered with the worker but no workflow
         # called them - Docker only ran if the user happened to embed
@@ -620,8 +619,8 @@ class ExecutionRunWorkflow:
     ) -> dict[str, Any]:
         """Run the structured Docker pipeline (EK2 fix).
 
-        Sequence: ``docker_daemon_healthcheck`` → ``docker_build_image``
-        → ``docker_run_container`` → ``docker_cleanup_container``. Each
+        Sequence: ``docker_daemon_healthcheck``  ``docker_build_image``
+         ``docker_run_container``  ``docker_cleanup_container``. Each
         step is a registered Temporal activity (see
         ``workers/execution-runner-worker/src/activities/docker.py``).
 
@@ -1270,9 +1269,9 @@ class LegacyExecutionRunWorkflow:
 
     Flow:
         vault_fetch_ssh_credentials
-        → ssh_connect_and_run (30min timeout, 3x retry)
-        → minio_upload_artifact (stdout.log, stderr.log, exit_code.txt)
-        → should_cleanup(policy, exit_code) → ssh_cleanup (if True)
+         ssh_connect_and_run (30min timeout, 3x retry)
+         minio_upload_artifact (stdout.log, stderr.log, exit_code.txt)
+         should_cleanup(policy, exit_code)  ssh_cleanup (if True)
 
     The workflow is deterministic: all I/O is encapsulated in activities.
     Time is obtained via ``workflow.now()``.
@@ -1406,8 +1405,7 @@ class LegacyExecutionRunWorkflow:
         # push, then **always** clean the credential up. The cleanup runs
         # from a ``finally`` block so it fires whether the push succeeded,
         # failed, or the inject step itself raised.
-        #
-        # All three of ``git_push_required`` / ``dept_id`` /
+        # # All three of ``git_push_required`` / ``dept_id`` /
         # ``git_push_branch`` must be set; otherwise the block is a
         # no-op and the legacy artifact-upload flow continues
         # untouched.  Determinism: we use ``workflow.info().workflow_id``

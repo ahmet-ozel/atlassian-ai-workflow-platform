@@ -230,7 +230,7 @@ def render_dept_switcher() -> str:
         )
         st.stop()
 
-    # Default: OIDC claim → cookie → first allowed dept.
+    # Default: OIDC claim  cookie  first allowed dept.
     default = (
         user.get("default_dept_id")
         or _read_cookie(_DEPT_COOKIE_NAME)

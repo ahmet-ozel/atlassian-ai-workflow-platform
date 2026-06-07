@@ -10,14 +10,14 @@ lines.
 Endpoints (Vault KV-v2 - see Vault docs ``secret/kv-v2``):
 
 * ``PUT  {addr}/v1/{kv_mount}/data/services/{service_name}/{key}``
-  body ``{"data": {"value": value}}`` → atomic per-key write.
+  body ``{"data": {"value": value}}``  atomic per-key write.
 * ``LIST {addr}/v1/{kv_mount}/metadata/services/{service_name}/?list=true``
-  → ``{"data": {"keys": [...]}}``; ``404`` means the prefix is empty
+   ``{"data": {"keys": [...]}}``; ``404`` means the prefix is empty
   (no first-time start has happened yet) and is **not** an error.
 * ``GET  {addr}/v1/{kv_mount}/data/services/{service_name}/{key}``
-  → ``{"data": {"data": {"value": "..."}}}``.
+   ``{"data": {"data": {"value": "..."}}}``.
 * ``DELETE {addr}/v1/{kv_mount}/data/services/{service_name}/{key}``
-  → soft-delete latest version.
+   soft-delete latest version.
 
 Authentication uses the ``X-Vault-Token`` header on every request.
 
@@ -464,8 +464,7 @@ class VaultClient:
     # ------------------------------------------------------------------
     # LLM provider credential helpers
     # ------------------------------------------------------------------
-    #
-    # Target Vault KV-v2 path: ``secret/data/llm-providers/{provider_id}/credentials``.
+    # # Target Vault KV-v2 path: ``secret/data/llm-providers/{provider_id}/credentials``.
     # Re-uses the existing ``X-Vault-Token`` header, the KV-v2 envelope shape
     # (``{"data": {...}}``), the :class:`VaultWriteError` taxonomy and the
     # 404-as-no-op delete semantics already implemented for the env-override

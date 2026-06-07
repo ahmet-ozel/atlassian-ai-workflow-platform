@@ -4,8 +4,8 @@ FastAPI HTTP service skeleton for the platform. Listens on
 port `8080` and exposes the standard liveness/readiness contract from
 the expected HTTP service contract:
 
-- `GET /healthz` → `200` with body `{"status": "ok"}`.
-- `GET /readyz` → `200` with `{"status": "ready"}` when
+- `GET /healthz`  `200` with body `{"status": "ok"}`.
+- `GET /readyz`  `200` with `{"status": "ready"}` when
   `Settings.dependencies_reachable()` returns `True`; `503` with
   `{"status": "not_ready"}` otherwise. The 503 body is ≤ 64 bytes and
   parseable as JSON whose only top-level key is `status`.
@@ -63,7 +63,7 @@ services/automation-service/
 │   ├── main.py              # FastAPI app + /healthz + /readyz
 │   ├── config.py            # Pydantic v2 Settings
 │   ├── webhooks/            # placeholder - Atlassian webhook routes
-│   ├── decision/            # placeholder - event → workflow_type routing
+│   ├── decision/            # placeholder - event  workflow_type routing
 │   └── temporal_client.py   # placeholder - Temporal client factory
 ├── migrations/              # placeholder - Alembic / SQL migrations
 ├── tests/{unit,integration,e2e}/

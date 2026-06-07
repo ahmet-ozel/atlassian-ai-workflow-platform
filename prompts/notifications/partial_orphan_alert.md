@@ -1,4 +1,4 @@
-﻿⚠️ Workflow partial - orphan branch riski
+﻿ Workflow partial - orphan branch riski
 
 **Workflow:** `{workflow_id}`
 **Departman:** `{dept_id}`

@@ -57,7 +57,7 @@ class TestVaultInitEndpoint:
     def test_vault_already_initialized_returns_409(
         self, client, mock_http_client
     ) -> None:
-        """Already initialized → 409 Conflict."""
+        """Already initialized  409 Conflict."""
         # Mock the /v1/sys/init GET check - Vault reports initialized
         init_check_response = MagicMock()
         init_check_response.status_code = 200
@@ -164,7 +164,7 @@ class TestVaultInitEndpoint:
     def test_threshold_greater_than_shares_returns_400(
         self, client, mock_http_client
     ) -> None:
-        """Threshold > shares is invalid → 400."""
+        """Threshold > shares is invalid  400."""
         response = client.post(
             "/admin/vault/init",
             json={"secret_shares": 3, "secret_threshold": 5},
@@ -177,7 +177,7 @@ class TestVaultInitEndpoint:
     def test_vault_communication_error_returns_502(
         self, client, mock_http_client
     ) -> None:
-        """Vault unreachable → 502 Bad Gateway."""
+        """Vault unreachable  502 Bad Gateway."""
         mock_http_client.get = AsyncMock(
             side_effect=httpx.ConnectError("Connection refused")
         )
@@ -191,7 +191,7 @@ class TestVaultInitEndpoint:
     def test_vault_init_failure_returns_502(
         self, client, mock_http_client
     ) -> None:
-        """Vault init PUT returns non-200 → 502."""
+        """Vault init PUT returns non-200  502."""
         # Mock the /v1/sys/init GET check - Vault is NOT initialized
         init_check_response = MagicMock()
         init_check_response.status_code = 200
@@ -247,7 +247,7 @@ class TestVaultInitEndpoint:
     def test_no_http_client_returns_503(
         self, client, mock_http_client
     ) -> None:
-        """When http_client is None → 503 Service Unavailable."""
+        """When http_client is None  503 Service Unavailable."""
         from src.main import app
 
         # Temporarily set http_client to None to simulate unavailability

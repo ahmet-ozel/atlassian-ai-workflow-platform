@@ -347,7 +347,7 @@ async def check_budget_threshold_after_insert(
                     await slack_client.send_message(
                         channel=slack_channel,
                         text=(
-                            f"⚠️ Budget alarm: Department *{dept_id}* has reached "
+                            f" Budget alarm: Department *{dept_id}* has reached "
                             f"{usage_pct:.1f}% of its monthly budget "
                             f"(${total_usd:.2f} / ${budget_cap_usd:.2f}). "
                             f"Threshold: {threshold_pct}%."
@@ -373,8 +373,8 @@ async def check_budget_threshold_after_insert(
 # These endpoints operate on the ``automation.budget_alarm_thresholds``
 # Postgres table (migration 008). They provide a per-department matrix
 # of alarm thresholds (period × scope) with RBAC enforcement:
-#   - ``admin`` role: full access to any department.
-#   - ``dept_admin`` role: self-service access to own department(s) only.
+# - ``admin`` role: full access to any department.
+# - ``dept_admin`` role: self-service access to own department(s) only.
 # ---------------------------------------------------------------------------
 
 

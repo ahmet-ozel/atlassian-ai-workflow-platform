@@ -136,7 +136,7 @@ def _build_app(
 
 
 def test_matrix_returns_all_departments_with_six_services() -> None:
-    """Empty cache → matrix lists every dept × service cell."""
+    """Empty cache  matrix lists every dept × service cell."""
 
     app, _prober, _cache = _build_app()
     client = TestClient(app)
@@ -175,16 +175,16 @@ def test_matrix_marks_unconfigured_services_as_not_configured() -> None:
 
     by_id = {d["dept_id"]: d for d in body["departments"]}
 
-    # HR has no llm_overrides → llm = not_configured.
+    # HR has no llm_overrides  llm = not_configured.
     assert by_id["hr"]["services"]["llm"]["status"] == "not_configured"
-    # Legal has no llm_overrides → same.
+    # Legal has no llm_overrides  same.
     assert by_id["legal"]["services"]["llm"]["status"] == "not_configured"
-    # Payment has llm_overrides → unknown until probed.
+    # Payment has llm_overrides  unknown until probed.
     assert by_id["payment"]["services"]["llm"]["status"] == "unknown"
 
 
 def test_matrix_returns_cached_results_when_available() -> None:
-    """Cached row → matrix surfaces it verbatim."""
+    """Cached row  matrix surfaces it verbatim."""
 
     cache = InMemoryCapabilityProbeStore()
     app, _prober, _cache = _build_app(store=cache)
@@ -263,7 +263,7 @@ def test_single_probe_for_unconfigured_service_skips_prober() -> None:
     app, prober, _cache = _build_app()
     client = TestClient(app)
 
-    # HR has no llm_overrides → llm probe is not_configured.
+    # HR has no llm_overrides  llm probe is not_configured.
     response = client.post("/api/v1/departments/hr/probe/llm")
 
     assert response.status_code == 200, response.text
@@ -310,7 +310,7 @@ def test_ssh_probe_runs_when_runner_env_flag_exists(
 
 
 def test_single_probe_unknown_dept_returns_404() -> None:
-    """Unknown dept_id → 404."""
+    """Unknown dept_id  404."""
 
     app, _prober, _cache = _build_app()
     client = TestClient(app)
@@ -320,7 +320,7 @@ def test_single_probe_unknown_dept_returns_404() -> None:
 
 
 def test_single_probe_unsupported_service_returns_400() -> None:
-    """Service outside the enum → 400 with stable detail."""
+    """Service outside the enum  400 with stable detail."""
 
     app, _prober, _cache = _build_app()
     client = TestClient(app)
@@ -334,7 +334,7 @@ def test_single_probe_unsupported_service_returns_400() -> None:
 
 
 def test_single_probe_503_when_prober_unwired() -> None:
-    """Prober slot ``None`` → 503 with prober_unavailable reason."""
+    """Prober slot ``None``  503 with prober_unavailable reason."""
 
     app = FastAPI()
     app.include_router(capabilities_router)
@@ -351,7 +351,7 @@ def test_single_probe_503_when_prober_unwired() -> None:
 
 
 def test_single_probe_502_when_prober_raises() -> None:
-    """Prober raises → 502 with stable error code, plus cached row."""
+    """Prober raises  502 with stable error code, plus cached row."""
 
     cache = InMemoryCapabilityProbeStore()
     app, prober, _cache = _build_app(store=cache)

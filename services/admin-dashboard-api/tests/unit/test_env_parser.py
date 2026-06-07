@@ -178,7 +178,7 @@ def test_comment_buffer_does_not_leak_across_assignments() -> None:
 
 
 def test_comment_without_leading_space_is_preserved_verbatim() -> None:
-    """``#hello`` → ``hello`` (no space to strip)."""
+    """``#hello``  ``hello`` (no space to strip)."""
 
     fields = parse_env_example("#hello\nKEY=value\n")
     assert fields[0].comment == "hello"

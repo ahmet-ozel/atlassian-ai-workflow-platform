@@ -807,8 +807,8 @@ def _inject_session_state() -> None:
 
 
 _USER_NAV_PAGES: tuple[tuple[str, str, str], ...] = (
-    ("🔑", "Credentials", "pages/0_credentials.py"),
-    ("💬", "Chat", "pages/1_chat.py"),
+    ("", "Credentials", "pages/0_credentials.py"),
+    ("", "Chat", "pages/1_chat.py"),
     ("🆕", "Task Creator", "pages/2_task_creator.py"),
 )
 
@@ -919,21 +919,21 @@ def _render_empty_credentials_banner() -> None:
     """
 
     st.warning(
-        "🔑 **Önce credential bağlamanız gerekiyor.**\n\n"
+        " **Önce credential bağlamanız gerekiyor.**\n\n"
         "Token'lar yalnızca aktif Streamlit oturumunda Vault'ta saklanır. "
         "Chat ve task creator credential bağlanmadan çalışmaz.",
-        icon="⚠️",
+        icon="",
     )
     page_link = getattr(st, "page_link", None)
     if callable(page_link):
         page_link(
             "pages/0_credentials.py",
-            label="Credentials sayfasına git →",
-            icon="🔑",
+            label="Credentials sayfasına git ",
+            icon="",
         )
     else:  # pragma: no cover - legacy Streamlit fallback
         st.markdown(
-            "➡️ Sol menüden **0_credentials** sayfasını açın."
+            " Sol menüden **0_credentials** sayfasını açın."
         )
 
 
@@ -958,7 +958,7 @@ def main() -> None:
         "AI Bot Platform",
         "Atlassian araçlarınızla konuşan, görev oluşturan ve "
         "iş akışlarını yöneten yapay zekâ asistanı.",
-        icon="🤖",
+        icon="",
     )
 
 # Empty-credentials gate. Surfaced *before* the rest of the
@@ -976,7 +976,7 @@ def main() -> None:
     col1.metric("Departman", active_dept)
     col2.metric(
         "Credential",
-        "✅ Bağlı" if _has_bound_credentials() else "⏳ Bekliyor",
+        " Bağlı" if _has_bound_credentials() else " Bekliyor",
     )
     col3.metric(
         "Bağlı servis",
@@ -986,8 +986,8 @@ def main() -> None:
     section_header("Sayfalar", "soldaki menüden seçin")
 
     pages_data = [
-        ("🔑", "Credentials", "Atlassian token'larınızı bağlayın", "pages/0_credentials.py"),
-        ("💬", "Chat", "AI ile konuşun, soru sorun", "pages/1_chat.py"),
+        ("", "Credentials", "Atlassian token'larınızı bağlayın", "pages/0_credentials.py"),
+        ("", "Chat", "AI ile konuşun, soru sorun", "pages/1_chat.py"),
         ("🆕", "Task Creator", "Jira task description taslağı hazırlayın", "pages/2_task_creator.py"),
     ]
 
@@ -1007,7 +1007,7 @@ def main() -> None:
                 )
                 page_link = getattr(st, "page_link", None)
                 if callable(page_link):
-                    page_link(page, label="Aç →", icon=None)
+                    page_link(page, label="Aç ", icon=None)
                 else:
                     st.markdown(f"`{page}`")
 

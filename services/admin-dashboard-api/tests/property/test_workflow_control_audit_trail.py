@@ -246,9 +246,9 @@ def _configure_outcome(
 def _expected_http_status(*, action: Action, outcome: Outcome) -> int:
     """Return the HTTP status the router should produce.
 
-    * ``"ok"``     → 200
-    * ``"denied"`` → 404 (``WorkflowNotFoundError`` from describe)
-    * ``"error"``  → for ``cancel`` / ``signal`` the *describe* succeeds
+    * ``"ok"``      200
+    * ``"denied"``  404 (``WorkflowNotFoundError`` from describe)
+    * ``"error"``   for ``cancel`` / ``signal`` the *describe* succeeds
       and the mutation raises :class:`WorkflowControlError`, which the
       endpoint maps to 502. For ``retry`` the same shape applies.
     """
@@ -392,7 +392,7 @@ def _assert_audit_invariants(
 
 
 # ---------------------------------------------------------------------------
-#  - exactly one workflow_control audit event per action
+# - exactly one workflow_control audit event per action
 # ---------------------------------------------------------------------------
 
 
@@ -453,7 +453,7 @@ def test_every_control_action_emits_one_audit_event(
 
 
 # ---------------------------------------------------------------------------
-#  - happy-path action_kind / result mapping is total
+# - happy-path action_kind / result mapping is total
 # ---------------------------------------------------------------------------
 
 
@@ -505,7 +505,7 @@ def test_happy_path_audit_records_action_kind_and_ok_result(
 
 
 # ---------------------------------------------------------------------------
-#  - denied path always emits one denied event (no double-write)
+# - denied path always emits one denied event (no double-write)
 # ---------------------------------------------------------------------------
 
 

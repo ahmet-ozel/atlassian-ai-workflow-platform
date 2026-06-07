@@ -18,10 +18,10 @@ This file pins four invariants:
 3. **Determinism.**  Calling the helper twice on the same input
    (with a deterministic callback) produces the same returned action
    on both calls so replay-time reasoning about the offload is sound.
-4. **``format_final_jira_comment`` line presence rules.**  The ``✅``
-   line is omitted when ``critical_done`` is empty; the ``⚠️`` line
-   is omitted when ``best_effort_failed`` is empty; both empty →
-   empty string; both populated → ✅ then ⚠️ in fixed order.
+4. **``format_final_jira_comment`` line presence rules.**  The ````
+   line is omitted when ``critical_done`` is empty; the ```` line
+   is omitted when ``best_effort_failed`` is empty; both empty
+   empty string; both populated   then  in fixed order.
 
 Hypothesis is used to drive the size-cap properties across a wide
 range of payload shapes and sizes.  Tests below the cap use small
@@ -103,7 +103,7 @@ _VALID_IDX: Final = st.integers(min_value=0, max_value=999)
 
 # OutputAction kind/severity pair - drawn from the closed vocabulary
 # documented in :mod:`temporal_shared.messages`.  We sample (kind,
-# severity) pairs so the dataclass invariant (kind ↔ severity) holds
+# severity) pairs so the dataclass invariant (kind  severity) holds
 # for every generated action; the cap helper preserves both fields and
 # does not partition by severity, but feeding it bogus data would
 # distract from the property under test.
@@ -165,7 +165,7 @@ _OVERSIZED_PAYLOAD: Final = st.integers(
 
 
 class TestRedirectIdentityBelowCap:
-    """Payload ≤ 1 MiB → action returned unchanged, callback not invoked."""
+    """Payload ≤ 1 MiB  action returned unchanged, callback not invoked."""
 
     @settings(
         max_examples=100,
@@ -224,7 +224,7 @@ class TestRedirectIdentityBelowCap:
 
 
 class TestRedirectReplacementAboveCap:
-    """Payload > 1 MiB → action replaced, callback invoked exactly once."""
+    """Payload > 1 MiB  action replaced, callback invoked exactly once."""
 
     @settings(
         # Few examples - each one materialises a > 1 MiB string, so we
@@ -324,7 +324,7 @@ class TestRedirectReplacementAboveCap:
 
 
 class TestRedirectDeterminism:
-    """Same input + deterministic callback → same redirected action."""
+    """Same input + deterministic callback  same redirected action."""
 
     @settings(
         max_examples=10,
@@ -438,14 +438,14 @@ class TestFormatFinalJiraCommentInvariants:
         """Empty failed list emits no warning line.
 
         With ``best_effort_failed`` empty the formatter must not
-        emit the ``⚠️`` prefix anywhere in the result regardless of
+        emit the ```` prefix anywhere in the result regardless of
         the critical-step content (or its absence).  When
         ``critical_done`` is also empty the result is the empty
-        string; otherwise it begins with the ✅ prefix.
+        string; otherwise it begins with the  prefix.
         """
         result = format_final_jira_comment(critical_done, [])
 
-        # ⚠️ prefix never appears.
+        # prefix never appears.
         assert FINAL_COMMENT_BEST_EFFORT_PREFIX not in result
 
         # Filter out the empty-name defensive drop applied by the
@@ -466,9 +466,9 @@ class TestFormatFinalJiraCommentInvariants:
         """Empty critical list emits no success line.
 
         With ``critical_done`` empty the formatter must not emit
-        the ✅ prefix.  When ``best_effort_failed`` is non-empty
+        the  prefix.  When ``best_effort_failed`` is non-empty
         (after the empty-name defensive drop) the result starts
-        with the ⚠️ prefix; otherwise it is the empty string.
+        with the  prefix; otherwise it is the empty string.
         """
         result = format_final_jira_comment([], best_effort_failed)
 
@@ -503,7 +503,7 @@ class TestFormatFinalJiraCommentInvariants:
 
         When both lists carry at least one non-empty name the
         formatter emits two lines separated by ``\\n`` with the
-        ``✅`` line first and the ``⚠️`` line second - the order
+        ```` line first and the ```` line second - the order
         pinned verbatim by the requirement text.
         """
         result = format_final_jira_comment(
@@ -514,7 +514,7 @@ class TestFormatFinalJiraCommentInvariants:
         lines = result.split("\n")
         assert len(lines) == 2
 
-        # Order: ✅ first, ⚠️ second.
+        # Order:  first,  second.
         assert lines[0].startswith(FINAL_COMMENT_CRITICAL_PREFIX)
         assert lines[1].startswith(FINAL_COMMENT_BEST_EFFORT_PREFIX)
 
@@ -695,7 +695,7 @@ class TestPublicConstants:
     def test_final_comment_prefixes_use_real_glyphs(self) -> None:
         """Emoji and Turkish prose are preserved.
 
-        The runtime values must be the real ✅ and ⚠️ glyphs (not
+        The runtime values must be the real  and  glyphs (not
         the escape sequences) and must contain the Turkish dotted-i
         / s-cedilla characters from the expected text.
         """

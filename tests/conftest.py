@@ -300,7 +300,7 @@ COMPONENT_MANIFEST: tuple[ComponentSpec, ...] = (
             "LOG_LEVEL",
             "NEXT_PUBLIC_ADMIN_API_BASE_URL",
         ),
-        client_source_id=None,  # browser → BFF, no X-Client-Source from UI
+        client_source_id=None,  # browser  BFF, no X-Client-Source from UI
     ),
 )
 
@@ -574,7 +574,7 @@ FORBIDDEN_PATHS: tuple[str, ...] = (
 #: The exact set of service names the parsed ``infra/docker-compose.yml``
 #: must equal. This includes the profile-gated ``task-intake-service``
 #: (the invariant ensures the gating predicate). ``vllm`` is intentionally
-#: NOT in this set - 
+#: NOT in this set -
 #:
 #: ``admin-dashboard-ui`` is the Compose service name for the
 #: ``admin-dashboard`` Component.

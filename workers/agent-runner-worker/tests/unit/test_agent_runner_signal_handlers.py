@@ -10,7 +10,7 @@ Validates the signal-handler wiring:
        ``fix_re_test_protected``) without re-advancing ``iter_count``.
     3. ``[explain]`` cache hit serves the cached answer with no iter
        advance and queues ``explain_cache_hit`` audit.
-    4. ``[needs_info]`` streak → ``out_of_scope`` once the cap is hit.
+    4. ``[needs_info]`` streak  ``out_of_scope`` once the cap is hit.
     5. iter==3 banner - ``_iter_warning_pending`` arms exactly once the
        first time ``iter_count`` crosses :data:`ITER_WARNING_THRESHOLD`;
        a fourth advance does not re-arm.
@@ -238,7 +238,7 @@ class TestCommentAddedKeywordRouting:
             )
         )
 
-        # Cold cache → iter advances and the explain payload is staged
+        # Cold cache  iter advances and the explain payload is staged
         # for the body's next loop turn.
         assert wf._iteration_state.iter_count == before + 1
         assert wf._pending_explain_diff_hash == "diff-9"
@@ -295,7 +295,7 @@ class TestCommentAddedKeywordRouting:
             )
         )
 
-        # No fix trigger time recorded → routed through the plain path.
+        # No fix trigger time recorded  routed through the plain path.
         assert wf._iteration_state.last_fix_trigger_at == before_fix_at
 
 
@@ -448,7 +448,7 @@ class TestExplainCacheHit:
                 )
             },
         )
-        # Step past the 5-minute TTL → cache miss.
+        # Step past the 5-minute TTL  cache miss.
         patched_workflow_now.advance(EXPLAIN_CACHE_TTL + timedelta(seconds=1))
 
         before = wf._iteration_state.iter_count
@@ -465,7 +465,7 @@ class TestExplainCacheHit:
 
 
 # ---------------------------------------------------------------------------
-# 4. ``[needs_info]`` streak → out_of_scope
+# 4. ``[needs_info]`` streak  out_of_scope
 # ---------------------------------------------------------------------------
 
 
@@ -501,7 +501,7 @@ class TestNeedsInfoStreak:
         )
         assert wf._iteration_state.needs_info_streak == 2
 
-        # A plain reply provides direction → streak resets to 0.
+        # A plain reply provides direction  streak resets to 0.
         wf.comment_added(
             CommentAddedSignal(
                 comment_text="here's the answer", actor_account_id="user-1"

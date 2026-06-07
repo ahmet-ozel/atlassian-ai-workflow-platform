@@ -236,7 +236,7 @@ class TestListSshRunners:
         assert len(body["runners"]) == 3
 
     def test_returns_empty_list(self) -> None:
-        """No runners → empty list with zero active count."""
+        """No runners  empty list with zero active count."""
         pool = _FakePool(fetch_results=[[]])
         app = _build_app(pool=pool)
         client = TestClient(app)
@@ -247,7 +247,7 @@ class TestListSshRunners:
         assert body["active_runners"] == 0
 
     def test_returns_503_when_pool_unwired(self) -> None:
-        """Missing pg_pool → 503."""
+        """Missing pg_pool  503."""
         app = _build_app(pool=None)
         client = TestClient(app)
         res = client.get("/admin/ssh-runners")
@@ -289,7 +289,7 @@ class TestCreateSshRunner:
         assert vault.writes[0]["key"] == "active"
 
     def test_returns_409_on_duplicate(self) -> None:
-        """Duplicate runner_id → 409."""
+        """Duplicate runner_id  409."""
         pool = _FakePool(fetchval_result=1)  # Runner exists
         vault = _FakeVaultClient()
         app = _build_app(pool=pool, vault=vault)
@@ -307,7 +307,7 @@ class TestCreateSshRunner:
         assert res.status_code == 409
 
     def test_returns_502_on_vault_failure(self) -> None:
-        """Vault write failure → 502."""
+        """Vault write failure  502."""
         pool = _FakePool(fetchval_result=None)
         vault = _FakeVaultClient(should_fail=True)
         app = _build_app(pool=pool, vault=vault)
@@ -325,7 +325,7 @@ class TestCreateSshRunner:
         assert res.status_code == 502
 
     def test_returns_503_when_vault_unwired(self) -> None:
-        """Missing vault_client → 503."""
+        """Missing vault_client  503."""
         pool = _FakePool(fetchval_result=None)
         app = _build_app(pool=pool, vault=None)
         client = TestClient(app)
@@ -364,7 +364,7 @@ class TestUpdateSshRunner:
         assert body["status"] == "disabled"
 
     def test_returns_404_when_not_found(self) -> None:
-        """Runner not found → 404."""
+        """Runner not found  404."""
         pool = _FakePool(fetchrow_result=None)
         app = _build_app(pool=pool)
         client = TestClient(app)
@@ -375,7 +375,7 @@ class TestUpdateSshRunner:
         assert res.status_code == 404
 
     def test_returns_422_on_invalid_status(self) -> None:
-        """Invalid status value → 422."""
+        """Invalid status value  422."""
         pool = _FakePool(fetchrow_result=_make_runner_row())
         app = _build_app(pool=pool)
         client = TestClient(app)
@@ -408,7 +408,7 @@ class TestListDeptSshRunners:
         assert len(body["runners"]) == 2
 
     def test_returns_empty_when_no_assignments(self) -> None:
-        """No assignments → empty list."""
+        """No assignments  empty list."""
         pool = _FakePool(fetch_results=[[]])
         app = _build_app(pool=pool)
         client = TestClient(app)
@@ -477,7 +477,7 @@ class TestUpdateDeptSshRunners:
         assert "dept_ssh_runner_unassigned" in actions
 
     def test_returns_400_on_missing_runners(self) -> None:
-        """Non-existent runner_ids → 400."""
+        """Non-existent runner_ids  400."""
         # First fetch: validate runner_ids - returns only runner-01
         pool = _FakePool(
             fetch_results=[

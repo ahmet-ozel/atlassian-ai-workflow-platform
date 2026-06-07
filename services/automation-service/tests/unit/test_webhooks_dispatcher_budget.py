@@ -326,7 +326,7 @@ def _budget_audit_events(audit: _DispatcherAuditLogger) -> list[AuditEvent]:
 
 
 # ===========================================================================
-# Tests: cap not exceeded → workflow proceeds normally
+# Tests: cap not exceeded  workflow proceeds normally
 # ===========================================================================
 
 
@@ -373,12 +373,12 @@ class TestCapNotExceeded:
 
 
 # ===========================================================================
-# Tests: dept_weekly cap exceeded → 429 + no workflow start
+# Tests: dept_weekly cap exceeded  429 + no workflow start
 # ===========================================================================
 
 
 class TestDeptWeeklyCapExceeded:
-    """Department weekly cap reached → HTTP 429 + audit + Jira comment."""
+    """Department weekly cap reached  HTTP 429 + audit + Jira comment."""
 
     @pytest.mark.asyncio
     async def test_returns_budget_exceeded_429(self) -> None:
@@ -463,12 +463,12 @@ class TestDeptWeeklyCapExceeded:
 
 
 # ===========================================================================
-# Tests: user_weekly cap exceeded → 429
+# Tests: user_weekly cap exceeded  429
 # ===========================================================================
 
 
 class TestUserWeeklyCapExceeded:
-    """Per-user weekly cap reached for the same dept → HTTP 429."""
+    """Per-user weekly cap reached for the same dept  HTTP 429."""
 
     @pytest.mark.asyncio
     async def test_returns_budget_exceeded_for_user_weekly(self) -> None:
@@ -501,12 +501,12 @@ class TestUserWeeklyCapExceeded:
 
 
 # ===========================================================================
-# Tests: dept_monthly cap exceeded → 429
+# Tests: dept_monthly cap exceeded  429
 # ===========================================================================
 
 
 class TestDeptMonthlyCapExceeded:
-    """Department monthly cap reached → HTTP 429."""
+    """Department monthly cap reached  HTTP 429."""
 
     @pytest.mark.asyncio
     async def test_returns_budget_exceeded_for_dept_monthly(self) -> None:
@@ -535,7 +535,7 @@ class TestDeptMonthlyCapExceeded:
 
 
 # ===========================================================================
-# Tests: 90% warning threshold → workflow proceeds + Jira warning
+# Tests: 90% warning threshold  workflow proceeds + Jira warning
 # ===========================================================================
 
 
@@ -574,7 +574,7 @@ class TestWarningThreshold:
 
 
 # ===========================================================================
-# Tests: undefined dept_id → configuration_error
+# Tests: undefined dept_id  configuration_error
 # ===========================================================================
 
 

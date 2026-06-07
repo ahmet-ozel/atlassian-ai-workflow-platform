@@ -87,7 +87,7 @@ _logger = logging.getLogger(__name__)
 # Constants
 # ---------------------------------------------------------------------------
 
-#: Closed set of supported workflow_type values. Matches 
+#: Closed set of supported workflow_type values. Matches
 #: and the ``WORKFLOW_TYPE_CAPABILITIES`` source of truth in
 #: ``temporal_shared.capabilities`` (with the ``research_summary_jira``
 #: alias used by the chat assistant).
@@ -438,7 +438,7 @@ def get_prompt_path() -> Path:
 
 
 # ---------------------------------------------------------------------------
-# Hot-reload prompt cache 
+# Hot-reload prompt cache
 # ---------------------------------------------------------------------------
 
 
@@ -764,7 +764,7 @@ def _extract_dept_defaults(dept_config: dict[str, Any]) -> _DeptDefaults:
 
 
 # ---------------------------------------------------------------------------
-# LLM result → TaskAnalysisResult
+# LLM result  TaskAnalysisResult
 # ---------------------------------------------------------------------------
 
 
@@ -970,7 +970,7 @@ def _build_invalid_workflow_comment(
     """Build the Jira rejection comment for an invalid workflow_type."""
     allowed = ", ".join(sorted(VALID_WORKFLOW_TYPES))
     return (
-        f"❌ Görev (`{issue_key}`) reddedildi: geçersiz workflow_type "
+        f" Görev (`{issue_key}`) reddedildi: geçersiz workflow_type "
         f"`{bad_value}`.\n\n"
         f"Geçerli değerler:\n{allowed}\n\n"
         "Lütfen task description'ını veya YAML front-matter bloğunu "
@@ -983,13 +983,13 @@ def _build_needs_info_comment(missing: list[str], issue_key: str) -> str:
     if missing:
         bullets = "\n".join(f"• {field}" for field in missing)
         body = (
-            "🤖 Görevi başlatabilmem için aşağıdaki bilgilere ihtiyacım var:\n\n"
+            " Görevi başlatabilmem için aşağıdaki bilgilere ihtiyacım var:\n\n"
             f"{bullets}\n\n"
             "Lütfen bu yorumun altına bilgileri yazın."
         )
     else:
         body = (
-            "🤖 Görev tanımı yetersiz, devam edebilmem için ek bilgi "
+            " Görev tanımı yetersiz, devam edebilmem için ek bilgi "
             "gerekiyor. Lütfen bu yorumun altına detayları yazın."
         )
     return body
@@ -1020,7 +1020,7 @@ def _build_missing_execution_command_comment(
 def _build_downgrade_comment(original: str, issue_key: str) -> str:
     """Notify the reporter that web_search was disabled and we downgraded."""
     return (
-        f"ℹ️ Görev (`{issue_key}`) `{original}` olarak istenmişti ancak "
+        f"ℹ Görev (`{issue_key}`) `{original}` olarak istenmişti ancak "
         "departman için web araması devre dışı. Görev `research_basic` "
         "olarak çalıştırılacak (yalnızca dahili bilgi)."
     )
@@ -1046,7 +1046,7 @@ def _build_frontmatter_warning_comment(
  """
     bullets = "\n".join(f"• {err}" for err in parse_errors)
     return (
-        f"⚠️ Görev (`{issue_key}`) açıklamasındaki YAML override "
+        f" Görev (`{issue_key}`) açıklamasındaki YAML override "
         "bloğunda geçersiz alanlar tespit edildi:\n\n"
         f"{bullets}\n\n"
         "Bu alanlar yok sayılacak ve departman varsayılanları "
@@ -1062,7 +1062,7 @@ def _build_epic_needs_subtasks_comment(issue_key: str) -> str:
  reporter to add subtasks or confirm they want the Epic split.
  """
     return (
-        f"🤖 Bu Epic (`{issue_key}`) için subtask eklemediniz - "
+        f" Bu Epic (`{issue_key}`) için subtask eklemediniz - "
         "ayrı task'lara bölmek mi istersiniz?\n\n"
         "Lütfen Epic'e subtask ekleyin veya bu yorumun altına "
         "nasıl ilerlememi istediğinizi yazın."
@@ -1070,7 +1070,7 @@ def _build_epic_needs_subtasks_comment(issue_key: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Epic auto-detect 
+# Epic auto-detect
 # ---------------------------------------------------------------------------
 
 
@@ -1110,7 +1110,7 @@ def _get_epic_subtasks(input: TaskAnalysisInput) -> list[dict[str, Any]]:
 def _result_for_epic_multi_step(input: TaskAnalysisInput) -> TaskAnalysisResult:
     """Build a deterministic ``multi_step`` result for an Epic with subtasks.
 
- Implements - Epic + non-empty subtask list →
+ Implements - Epic + non-empty subtask list
  ``workflow_type="multi_step"``, ``confidence=1.0``,
  ``source="epic_auto_detect"``, ``accepted=True``.
 
@@ -1147,7 +1147,7 @@ def _result_for_epic_multi_step(input: TaskAnalysisInput) -> TaskAnalysisResult:
 def _result_for_epic_needs_subtasks() -> TaskAnalysisResult:
     """Build a ``needs_info`` result for an Epic with no subtasks.
 
- Implements - Epic + empty subtask list →
+ Implements - Epic + empty subtask list
  ``status="needs_info"``, ``missing_fields=["subtasks"]``,
  ``source="epic_auto_detect"``.
  """
@@ -1227,7 +1227,7 @@ async def analyze_task(input: TaskAnalysisInput) -> TaskAnalysisResult:
     dept_defaults = _extract_dept_defaults(input.dept_config)
 
     # ------------------------------------------------------------------
-    # Step 1: YAML front-matter 
+    # Step 1: YAML front-matter
     # ------------------------------------------------------------------
     parsed_fm = _try_parse_frontmatter(input.description)
 
@@ -1257,9 +1257,9 @@ async def analyze_task(input: TaskAnalysisInput) -> TaskAnalysisResult:
 
     # ------------------------------------------------------------------
     # Priority invariant:
-    # 1. Front-matter with workflow_type → use it (highest priority)
+    # 1. Front-matter with workflow_type  use it (highest priority)
     # 2. Epic auto-detect (no front-matter workflow_type + issuetype=Epic)
-    # → deterministic multi_step
+    # deterministic multi_step
     # 3. LLM analysis (fallback for everything else)
     # The elif chain below guarantees that Epic auto-detect NEVER
     # overrides an explicit front-matter workflow_type.
@@ -1278,7 +1278,7 @@ async def analyze_task(input: TaskAnalysisInput) -> TaskAnalysisResult:
         )
     elif _is_epic_issue(input):
         # ------------------------------------------------------------------
-        # Step 1b: Epic auto-detect 
+        # Step 1b: Epic auto-detect
         # ------------------------------------------------------------------
         # When the issue is an Epic and no YAML front-matter specifies
         # a workflow_type, we bypass the LLM entirely and deterministically
@@ -1311,12 +1311,12 @@ async def analyze_task(input: TaskAnalysisInput) -> TaskAnalysisResult:
         return result
     else:
         # ------------------------------------------------------------------
-        # Step 2: LLM analysis 
+        # Step 2: LLM analysis
         # ------------------------------------------------------------------
         result = await _run_llm_analysis(input, dept_defaults)
 
     # ------------------------------------------------------------------
-    # Step 3: Validate workflow_type 
+    # Step 3: Validate workflow_type
     # ------------------------------------------------------------------
     if (
         result.workflow_type is None
@@ -1341,7 +1341,7 @@ async def analyze_task(input: TaskAnalysisInput) -> TaskAnalysisResult:
         )
 
     # ------------------------------------------------------------------
-    # Step 4: Web-search downgrade 
+    # Step 4: Web-search downgrade
     # ------------------------------------------------------------------
     original_wf = result.workflow_type
     result = _apply_web_search_downgrade(result, dept_defaults)
@@ -1376,7 +1376,7 @@ async def analyze_task(input: TaskAnalysisInput) -> TaskAnalysisResult:
         )
 
     # ------------------------------------------------------------------
-    # Step 5: Confidence gate 
+    # Step 5: Confidence gate
     # ------------------------------------------------------------------
     if result.confidence < CONFIDENCE_THRESHOLD:
         activity.logger.info(

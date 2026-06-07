@@ -8,9 +8,9 @@ Covers the three explicit environment and claim-extraction behaviors:
    contract.
 2. ``AUTH_PROVIDER=local`` selects the dev bypass without requiring
    any of the OIDC_* variables.
-3. ``extract_auth_context`` maps ``sub`` → ``actor_id``, the
-   ``role`` / ``roles`` / ``groups`` claim → ``actor_role`` and the
-   ``dept_ids`` / ``departments`` claim → ``dept_ids``.
+3. ``extract_auth_context`` maps ``sub``  ``actor_id``, the
+   ``role`` / ``roles`` / ``groups`` claim  ``actor_role`` and the
+   ``dept_ids`` / ``departments`` claim  ``dept_ids``.
 
 These tests intentionally avoid network I/O - every call path
 operates on plain dicts.

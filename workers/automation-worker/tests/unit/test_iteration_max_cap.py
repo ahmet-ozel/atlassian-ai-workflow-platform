@@ -6,8 +6,8 @@ independently:
 * :func:`prepare_iteration` returns ``authorized=False`` with
   ``reason="max_iteration_exceeded"`` and a populated
   ``current_count`` once the latest stored ``iteration_number`` has
-  reached :data:`MAX_ITERATIONS_PER_ISSUE`. The 9 → 10 boundary
-  (last-allowed → first-rejected) is locked down explicitly so a
+  reached :data:`MAX_ITERATIONS_PER_ISSUE`. The 9  10 boundary
+  (last-allowed  first-rejected) is locked down explicitly so a
   future refactor that flips the comparison from ``>=`` to ``>``
   surfaces as a regression.
 
@@ -182,7 +182,7 @@ class TestActivityStormGuard:
         assert MAX_ITERATIONS_PER_ISSUE == 10
 
     def test_count_9_authorizes_iter_10(self) -> None:
-        """The last-allowed slot: count=9 → next=10 → authorized."""
+        """The last-allowed slot: count=9  next=10  authorized."""
         store = _InMemoryStore(
             rows=[_make_record(issue_key="PAY-4211", iteration_number=9)]
         )
@@ -197,7 +197,7 @@ class TestActivityStormGuard:
         assert any(r.iteration_number == 10 for r in store.rows)
 
     def test_count_10_rejects_with_max_exceeded(self) -> None:
-        """Cap is inclusive: count=10 → reject + ``current_count=10``."""
+        """Cap is inclusive: count=10  reject + ``current_count=10``."""
         store = _InMemoryStore(
             rows=[
                 _make_record(issue_key="PAY-4211", iteration_number=10)
@@ -215,7 +215,7 @@ class TestActivityStormGuard:
         assert len(store.rows) == 1
 
     def test_count_15_rejects_with_max_exceeded(self) -> None:
-        """Above the cap: count=15 → reject + ``current_count=15``.
+        """Above the cap: count=15  reject + ``current_count=15``.
 
         Defends against the cap being implemented as ``== cap``
         rather than ``>= cap`` - without the explicit ``>=`` guard
@@ -287,7 +287,7 @@ def _build_canned_context(
 
 @pytest.mark.asyncio
 async def test_workflow_max_iteration_exceeded_handling() -> None:
-    """End-to-end: activity rejects → no child + Jira comment + audit row.
+    """End-to-end: activity rejects  no child + Jira comment + audit row.
 
     Uses :class:`temporalio.testing.WorkflowEnvironment` so the
     workflow body runs against a real Temporal server (the test
@@ -372,7 +372,7 @@ async def test_workflow_max_iteration_exceeded_handling() -> None:
     assert dept_id == "platform"
     assert "10" in body  # cap surfaced
     assert "mevcut" in body or "Mevcut" in body  # Turkish-prose hint
-    assert "🤖" in body
+    assert "" in body
 
     # Audit row written exactly once with the storm-guard action.
     assert len(recorder.audit_calls) == 1

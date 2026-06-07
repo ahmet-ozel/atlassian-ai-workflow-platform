@@ -1,4 +1,4 @@
-﻿"""Slack → Jira task adapter.
+﻿"""Slack  Jira task adapter.
 
 Exposes ``POST /webhooks/inbound/slack`` - the public surface that
 Slack's incoming-webhook / Events API delivers to. The chain mirrors
@@ -15,7 +15,7 @@ trigger types:
    :class:`SlackSignatureVerifier`. The verifier resolves the
    per-dept signing secret from Vault and uses
    :func:`verify_slack_signature` under the hood. A missing or stale
-   signature → 401 ``unauthorized`` + audit ``inbound_slack_hmac_failed``.
+   signature  401 ``unauthorized`` + audit ``inbound_slack_hmac_failed``.
 5. Extract the user mention text and build an
    :class:`InboundTaskRequest`.
 6. Start an idempotent ``AutomationWorkflow`` via

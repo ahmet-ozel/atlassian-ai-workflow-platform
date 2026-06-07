@@ -194,7 +194,7 @@ class TestCheck:
     async def test_new_event_passes(
         self, dedup: EventDedup, mock_pool: AsyncMock
     ) -> None:
-        """New event_id → insert + pass to next stage."""
+        """New event_id  insert + pass to next stage."""
         # _exists returns None (not found)
         mock_pool._conn.fetchrow.return_value = None
         # _insert succeeds
@@ -210,7 +210,7 @@ class TestCheck:
     async def test_duplicate_event_drops(
         self, dedup: EventDedup, mock_pool: AsyncMock
     ) -> None:
-        """Existing event_id → drop with reason 'duplicate'."""
+        """Existing event_id  drop with reason 'duplicate'."""
         # _exists returns a row (found)
         mock_pool._conn.fetchrow.return_value = {"?column?": 1}
 
@@ -224,7 +224,7 @@ class TestCheck:
     async def test_db_write_failure_passes_through(
         self, dedup: EventDedup, mock_pool: AsyncMock
     ) -> None:
-        """DB write failure → pass through with at-least-once semantics."""
+        """DB write failure  pass through with at-least-once semantics."""
         # _exists returns None (not found)
         mock_pool._conn.fetchrow.return_value = None
         # _insert raises an exception
@@ -240,7 +240,7 @@ class TestCheck:
     async def test_db_read_failure_passes_through(
         self, dedup: EventDedup, mock_pool: AsyncMock
     ) -> None:
-        """DB read failure → pass through with at-least-once semantics."""
+        """DB read failure  pass through with at-least-once semantics."""
         # _exists raises an exception
         mock_pool._conn.fetchrow.side_effect = ConnectionError("DB connection lost")
 

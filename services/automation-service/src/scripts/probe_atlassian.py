@@ -25,9 +25,9 @@ For every ``(department_id, service)`` pair that has a row in
 3. Issues a single authenticated ``GET`` against the canonical "who
    am I?" endpoint for the service:
 
-   * Jira         → ``GET <base>/rest/api/3/myself``
-   * Confluence   → ``GET <base>/wiki/rest/api/user/current``
-   * Bitbucket    → ``GET <base>/2.0/user``
+   * Jira          ``GET <base>/rest/api/3/myself``
+   * Confluence    ``GET <base>/wiki/rest/api/user/current``
+   * Bitbucket     ``GET <base>/2.0/user``
 
    Authentication uses HTTP Basic with the secret's ``username`` +
    ``personal_token`` fields, mirroring the Atlassian REST API
@@ -39,9 +39,9 @@ For every ``(department_id, service)`` pair that has a row in
 Exit contract
 -------------
 
-* All probes succeed → process exits with status ``0`` and no output
+* All probes succeed  process exits with status ``0`` and no output
   on stderr.
-* One or more probes fail → process exits with status ``1``; for each
+* One or more probes fail  process exits with status ``1``; for each
   failure exactly one line is written to stderr in the format::
 
     dept=<dept_id> service=<service> reason=<short reason>
@@ -388,7 +388,7 @@ async def _run(env: Mapping[str, str]) -> int:
         return 1
 
     if not rows:
-        # No registered bots → nothing to probe. The probe is
+        # No registered bots  nothing to probe. The probe is
         # informational only; an empty table is not a failure
         # condition (a brand-new install will exercise this branch).
         return 0

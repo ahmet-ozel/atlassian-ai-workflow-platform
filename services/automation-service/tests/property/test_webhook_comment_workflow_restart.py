@@ -90,7 +90,7 @@ class _FakeStore:
     project_key_to_dept: dict[str, str]
     dept_with_jira_credential: set[str]
     processed_events: set[str]
-    # dept_id → retrigger_eligible statuses (None = use default)
+    # dept_id  retrigger_eligible statuses (None = use default)
     dept_retrigger_config: dict[str, list[str] | None]
 
 
@@ -386,7 +386,7 @@ _ACTOR_ID = st.sampled_from(_NON_BOT_IDS)  # actor is never a bot (loop-guard)
 
 @st.composite
 def _scenario_workflow_exists(draw: st.DrawFn) -> dict[str, Any]:
-    """Scenario A: workflow exists → signal_forwarded."""
+    """Scenario A: workflow exists  signal_forwarded."""
     issue_num = draw(_ISSUE_NUMBER)
     issue_key = f"{_PROJECT_KEY}-{issue_num}"
     actor_id = draw(_ACTOR_ID)
@@ -405,7 +405,7 @@ def _scenario_workflow_exists(draw: st.DrawFn) -> dict[str, Any]:
 
 @st.composite
 def _scenario_restart(draw: st.DrawFn) -> dict[str, Any]:
-    """Scenario B: no workflow + eligible status + bot assignee → restarted."""
+    """Scenario B: no workflow + eligible status + bot assignee  restarted."""
     issue_num = draw(_ISSUE_NUMBER)
     issue_key = f"{_PROJECT_KEY}-{issue_num}"
     actor_id = draw(_ACTOR_ID)
@@ -439,7 +439,7 @@ def _scenario_restart(draw: st.DrawFn) -> dict[str, Any]:
 
 @st.composite
 def _scenario_ignored(draw: st.DrawFn) -> dict[str, Any]:
-    """Scenario C: no workflow + (ineligible status OR non-bot assignee) → ignored."""
+    """Scenario C: no workflow + (ineligible status OR non-bot assignee)  ignored."""
     issue_num = draw(_ISSUE_NUMBER)
     issue_key = f"{_PROJECT_KEY}-{issue_num}"
     actor_id = draw(_ACTOR_ID)
@@ -496,7 +496,7 @@ class TestWebhookCommentDecisionDeterminism:
     @given(_any_scenario)
     @pytest.mark.asyncio
     async def test_decision_is_deterministic(self, scenario: dict[str, Any]) -> None:
-        """Same inputs → same outcome on every invocation."""
+        """Same inputs  same outcome on every invocation."""
         issue_key: str = scenario["issue_key"]
         actor_id: str = scenario["actor_id"]
         comment_text: str = scenario["comment_text"]
@@ -596,7 +596,7 @@ class TestWebhookCommentTemporalCallInvariants:
     async def test_signal_forwarded_calls_signal_workflow(
         self, scenario: dict[str, Any]
     ) -> None:
-        """Existing workflow → ``signal_workflow`` called."""
+        """Existing workflow  ``signal_workflow`` called."""
         store = _fresh_store()
         pool = _FakePoolWithDeptConfig(store)
         temporal = _FakeTemporalClient(workflow_exists=True)
@@ -622,7 +622,7 @@ class TestWebhookCommentTemporalCallInvariants:
     async def test_restart_calls_signal_with_start(
         self, scenario: dict[str, Any]
     ) -> None:
-        """Restart → ``signal_with_start`` called."""
+        """Restart  ``signal_with_start`` called."""
         store = _fresh_store(retrigger_statuses=scenario["retrigger_statuses"])
         pool = _FakePoolWithDeptConfig(store)
         temporal = _FakeTemporalClient(workflow_exists=False)
@@ -650,7 +650,7 @@ class TestWebhookCommentTemporalCallInvariants:
     async def test_ignored_makes_no_temporal_calls(
         self, scenario: dict[str, Any]
     ) -> None:
-        """Ignored outcome → no Temporal calls."""
+        """Ignored outcome  no Temporal calls."""
         store = _fresh_store()
         pool = _FakePoolWithDeptConfig(store)
         temporal = _FakeTemporalClient(workflow_exists=False)

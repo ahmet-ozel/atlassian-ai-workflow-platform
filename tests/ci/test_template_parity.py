@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 from jinja2 import BaseLoader, Environment, TemplateSyntaxError
 
-# platform/ root (tests/ci/ → tests/ → platform/)
+# platform/ root (tests/ci/  tests/  platform/)
 _PLATFORM_ROOT = Path(__file__).resolve().parent.parent.parent
 
 # minimum template set - relative to platform/prompts/

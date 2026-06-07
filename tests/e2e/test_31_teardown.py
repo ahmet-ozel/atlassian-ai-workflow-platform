@@ -5,7 +5,7 @@ Validates that `make down` gracefully stops all containers, exits cleanly,
 and preserves named volumes for data persistence across restarts.
 
 Verification steps:
-1. Execute `make down` → assert exit 0 within 60s
+1. Execute `make down`  assert exit 0 within 60s
 2. Assert `docker compose ps -q` returns empty
 3. Assert named volumes still exist (pg_data, minio_data, agent_workspace)
 4. Emit evidence JSON

@@ -15,7 +15,7 @@ import enum
 class StepStatus(str, enum.Enum):
     """Status of a workflow step in the Multi-Step Orchestrator.
 
-    Valid transitions: pending → running → completed | failed.
+    Valid transitions: pending  running  completed | failed.
     """
 
     PENDING = "pending"

@@ -10,13 +10,13 @@ into one of those four shapes.
 
 Mapping rules (kept aligned with the design's "Error taxonomy" table):
 
-* ``extra_forbidden`` (Pydantic) → ``extra_fields_not_allowed`` with
+* ``extra_forbidden`` (Pydantic)  ``extra_fields_not_allowed`` with
   the offending ``fields`` list (R8.4, R2.8).
-* ``literal_error`` on ``provider_type`` → ``unsupported_provider_type``
+* ``literal_error`` on ``provider_type``  ``unsupported_provider_type``
   with the offending value and the ``PROVIDER_TYPES`` allow-list (R2.6).
-* ``missing`` → ``validation_failed`` with the ``missing_fields`` list
+* ``missing``  ``validation_failed`` with the ``missing_fields`` list
   (R2.5).
-* Anything else → ``validation_failed`` with a single ``{field, reason}``
+* Anything else  ``validation_failed`` with a single ``{field, reason}``
   pair (covers numeric bounds, ``HttpUrl`` scheme errors, etc.).
 
 The handler returns a deterministic JSON body and a fixed HTTP 422 so

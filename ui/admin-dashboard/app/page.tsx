@@ -2,13 +2,11 @@
 
 /**
  * Admin Dashboard Home - Setup Wizard.
- *
- * Guides operators through platform bring-up step-by-step. When the
+ * * Guides operators through platform bring-up step-by-step. When the
  * wizard reaches the final step ("add_first_department"), the page
  * redirects to ``/departments?wizard=1`` so the departments page can
  * open the "Yeni Departman Ekle" modal in wizard mode.
- *
- * Requirements: 5.4
+ * * Requirements: 5.4
  */
 
 import { useRouter, useSearchParams } from "next/navigation";
@@ -139,7 +137,7 @@ function HomePageInner() {
     return (
       <div className="stack stack--lg">
         <section className="hero">
-          <h1>✅ Kurulum tamamlandı</h1>
+          <h1> Kurulum tamamlandı</h1>
           <p>
             Platform hazır. End-user arayüzünü açarak ekipler için ilk
             görevi başlatabilir veya servisleri yönetmeye geçebilirsiniz.
@@ -151,14 +149,14 @@ function HomePageInner() {
               target="_blank"
               rel="noopener noreferrer"
             >
-              🚀 Streamlit&apos;i aç
+               Streamlit&apos;i aç
             </a>
             <button
               type="button"
               className="btn btn--ghost btn--lg"
               onClick={() => router.push("/services")}
             >
-              🧩 Servisleri yönet
+               Servisleri yönet
             </button>
           </div>
         </section>
@@ -166,17 +164,17 @@ function HomePageInner() {
         <div className="stat-grid">
           <a href="/departments" className="stat-card card--hover" style={{ textDecoration: "none" }}>
             <div className="stat-card__label">Departmanlar</div>
-            <div className="stat-card__value">🏢</div>
+            <div className="stat-card__value"></div>
             <div className="stat-card__delta">Bot kullanıcı ve kanal yapılandırması</div>
           </a>
           <a href="/operations" className="stat-card card--hover" style={{ textDecoration: "none" }}>
             <div className="stat-card__label">Operasyonlar</div>
-            <div className="stat-card__value">⚡</div>
+            <div className="stat-card__value"></div>
             <div className="stat-card__delta">Runner kuyruğu ve canlı durum</div>
           </a>
           <a href="/costs" className="stat-card card--hover" style={{ textDecoration: "none" }}>
             <div className="stat-card__label">Maliyetler</div>
-            <div className="stat-card__value">💰</div>
+            <div className="stat-card__value"></div>
             <div className="stat-card__delta">Bütçe alarmları ve trend</div>
           </a>
         </div>
@@ -216,7 +214,7 @@ function HomePageInner() {
           <p>Adımlar okunamadı.</p>
         </section>
         <div className="banner banner--danger">
-          <span className="banner__icon">⚠️</span>
+          <span className="banner__icon"></span>
           <div className="banner__body">
             <strong>Bağlantı hatası</strong>
             <div className="text-sm">{error}</div>
@@ -240,7 +238,7 @@ function HomePageInner() {
   return (
     <div className="stack stack--lg">
       <section className="hero">
-        <h1>Platforma hoş geldin 👋</h1>
+        <h1>Platforma hoş geldin </h1>
         <p>
           Kullanmaya başlamak için aşağıdaki adımları sırayla tamamlayın.
           Her adım bağımsız çalışır; istediğiniz zaman yenileyip devam
@@ -260,7 +258,7 @@ function HomePageInner() {
             <div className="card__sub">Sıradaki adım vurgulanır.</div>
           </div>
           <button type="button" className="btn btn--sm btn--ghost" onClick={fetchStatus}>
-            🔄 Yenile
+             Yenile
           </button>
         </div>
         <div className="card__body">
@@ -279,7 +277,7 @@ function HomePageInner() {
                   }${isFailed ? " is-failed" : ""}`}
                 >
                   <span className="step__indicator">
-                    {isDone ? "✓" : isFailed ? "!" : idx + 1}
+                    {isDone ? "" : isFailed ? "!" : idx + 1}
                   </span>
                   <div className="step__body">
                     <span className="step__title">{meta.label}</span>

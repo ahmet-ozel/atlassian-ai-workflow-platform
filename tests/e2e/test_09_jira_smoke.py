@@ -84,7 +84,7 @@ def _scenario_result(
 class TestJiraSmoke:
     """Jira CRUD smoke tests via REST API with real credentials.
 
-    Tests execute in order: create → search → comment → transition → delete.
+    Tests execute in order: create  search  comment  transition  delete.
     Each test records its result for evidence emission.
     """
 

@@ -10,9 +10,9 @@ shape invariants:
 1. **Multi-stage**: ≥ 2 ``FROM`` directives, with the first
  stage explicitly named ``builder`` (``FROM <image> AS builder``).
 2. **Base image matches runtime**:
- - ``c.runtime == "python"`` → every ``FROM`` references
+ - ``c.runtime == "python"``  every ``FROM`` references
  ``python:3.12-slim`` (or a ``python:3.12.x-slim`` patch variant).
- - ``c.runtime == "node"`` → every ``FROM`` references a
+ - ``c.runtime == "node"``  every ``FROM`` references a
  ``node:20-*`` LTS variant.
 3. **Non-root runtime**: the runtime stage contains either
  ``useradd -u 10001... appuser`` or ``adduser -D -u 10001... appuser``

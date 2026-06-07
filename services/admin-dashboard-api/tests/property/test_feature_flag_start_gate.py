@@ -2,11 +2,11 @@
 Feature-Flag Start Gate Determinism (Q12)**
 For any manifest entry ``E`` and ``feature_flags`` table state ``F``,
 ``LifecycleService.start(E.name)`` at Step 1.5:
-- ``E.feature_flag_dependency`` empty → flag check passes, normal flow continues.
+- ``E.feature_flag_dependency`` empty  flag check passes, normal flow continues.
 - All flags in ``E.feature_flag_dependency`` are ``enabled=true`` in ``F``
-  → flag check passes, normal flow continues (200 / state="running").
+   flag check passes, normal flow continues (200 / state="running").
 - At least one flag in ``E.feature_flag_dependency`` is ``enabled=false``
-  or absent from ``F`` → ``FeatureFlagDisabledError(blocking_flag=<name>)``
+  or absent from ``F``  ``FeatureFlagDisabledError(blocking_flag=<name>)``
   raised + ``service_start_blocked_feature_flag`` audit + HTTP 409.
 When multiple flags are disabled, ``blocking_flag`` is deterministically
 the **first** disabled flag in manifest order.
@@ -182,7 +182,7 @@ class _FakeFeatureFlagReader:
 
     Mirrors the pattern from ``tests/unit/test_lifecycle_service.py``.
     Missing keys are absent from the returned dict so
-    ``_check_feature_flags`` exercises the "missing row → disabled" branch.
+    ``_check_feature_flags`` exercises the "missing row  disabled" branch.
     """
 
     flags: dict[str, bool] = field(default_factory=dict)
@@ -279,7 +279,7 @@ _FLAG_NAMES_STRATEGY = st.lists(
 
 
 # ---------------------------------------------------------------------------
-#  - empty feature_flag_dependency → gate is a no-op
+# - empty feature_flag_dependency  gate is a no-op
 # ---------------------------------------------------------------------------
 
 
@@ -323,7 +323,7 @@ def test_empty_flag_dependency_skips_gate(tmp_path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-#  - all flags enabled → start succeeds (200 / state="running")
+# - all flags enabled  start succeeds (200 / state="running")
 # ---------------------------------------------------------------------------
 
 
@@ -337,7 +337,7 @@ def test_all_flags_enabled_allows_start(
     flag_names: tuple[str, ...],
     tmp_path: Path,
 ) -> None:
-    """- all flags enabled → start proceeds normally.
+    """- all flags enabled  start proceeds normally.
     For any non-empty ``flag_names`` tuple where every flag is
     ``enabled=true`` in the reader, ``start`` must succeed with
     ``state="running"`` and no ``service_start_blocked_feature_flag``
@@ -387,7 +387,7 @@ def test_all_flags_enabled_allows_start(
 
 
 # ---------------------------------------------------------------------------
-#  - at least one flag disabled → FeatureFlagDisabledError + 409
+# - at least one flag disabled  FeatureFlagDisabledError + 409
 # ---------------------------------------------------------------------------
 
 
@@ -469,7 +469,7 @@ def test_any_disabled_flag_blocks_start(
 
 
 # ---------------------------------------------------------------------------
-#  - missing flag row treated as disabled
+# - missing flag row treated as disabled
 # ---------------------------------------------------------------------------
 
 
@@ -483,7 +483,7 @@ def test_missing_flag_row_treated_as_disabled(
     flag_names: tuple[str, ...],
     tmp_path: Path,
 ) -> None:
-    """- flag absent from feature_flags table → treated as disabled.
+    """- flag absent from feature_flags table  treated as disabled.
     When the reader returns an empty dict (zero rows from
     ``shared.feature_flags``), every flag in ``feature_flag_dependency``
     is treated as disabled. The first flag in manifest order becomes
@@ -533,7 +533,7 @@ def test_missing_flag_row_treated_as_disabled(
 
 
 # ---------------------------------------------------------------------------
-#  - multiple disabled flags → first in manifest order wins
+# - multiple disabled flags  first in manifest order wins
 # ---------------------------------------------------------------------------
 
 
@@ -554,7 +554,7 @@ def test_multiple_disabled_flags_first_manifest_order_wins(
     flag_names: tuple[str, ...],
     tmp_path: Path,
 ) -> None:
-    """- multiple disabled flags → blocking_flag is first in manifest order.
+    """- multiple disabled flags  blocking_flag is first in manifest order.
     When all flags are disabled, ``blocking_flag`` must be the first
     flag in the manifest's ``feature_flag_dependency`` tuple - not the
     first alphabetically or by any other ordering."""
@@ -604,7 +604,7 @@ def test_multiple_disabled_flags_first_manifest_order_wins(
 
 
 # ---------------------------------------------------------------------------
-# same input → same outcome (idempotency)
+# same input  same outcome (idempotency)
 # ---------------------------------------------------------------------------
 
 
@@ -623,7 +623,7 @@ def test_start_gate_is_deterministic(
     all_enabled: bool,
     tmp_path: Path,
 ) -> None:
-    """same input → same outcome.
+    """same input  same outcome.
     Calling ``start`` twice with the same flag state must produce the
     same outcome (both succeed or both raise ``FeatureFlagDisabledError``
     with the same ``blocking_flag``). This confirms the gate is a pure

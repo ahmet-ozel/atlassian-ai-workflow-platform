@@ -185,7 +185,7 @@ async def test_get_incomplete_secret() -> None:
         vault_secrets={
             "secret/data/bots/payment/jira": {
                 "url": "https://mycompany.atlassian.net",
-                "username": "",  # empty → incomplete
+                "username": "",  # empty  incomplete
                 "personal_token": "token123",
             }
         }
@@ -396,7 +396,7 @@ async def test_list_dept_bots_caching() -> None:
     first = await resolver.list_dept_bots()
     second = await resolver.list_dept_bots()
 
-    assert first is second  # same object reference → cached
+    assert first is second  # same object reference  cached
 
 
 @pytest.mark.asyncio
@@ -580,7 +580,7 @@ async def test_drift_detection_emits_audit_on_rotation() -> None:
     vault.versions[org_path] = (secret_v2, "2025-01-01T13:00:00.000000Z")
     advance(_CACHE_TTL + timedelta(seconds=1))
 
-    # Refresh: drift detected → audit emitted.
+    # Refresh: drift detected  audit emitted.
     second = await resolver.get("payment", "jira")
     assert second.personal_token == "v2-token"
     assert len(audit.events) == 1
@@ -627,7 +627,7 @@ async def test_drift_detection_silent_when_created_time_unchanged() -> None:
     advance(_CACHE_TTL + timedelta(seconds=1))
     await resolver.get("payment", "jira")
 
-    # Same created_time → no rotation event.
+    # Same created_time  no rotation event.
     assert audit.events == []
 
 

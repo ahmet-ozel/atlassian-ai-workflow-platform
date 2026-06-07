@@ -4,7 +4,7 @@ spec. Two scenarios are parametrised:
   rolls back cleanly and no row survives.
 * ``rollback_raises=True`` - the Vault write raises AND the asyncpg
   ROLLBACK itself raises; the service still surfaces
-  :class:`VaultWriteFailed` (→ 502) and logs
+  :class:`VaultWriteFailed` ( 502) and logs
   ``llm_provider_rollback_failed`` at ERROR with the provider_id +
   exception class on the log record."""
 
@@ -56,7 +56,7 @@ def _payload(api_key: str) -> _ProviderCreateInput:
 )
 @settings(max_examples=100, deadline=None)
 def test_vault_write_failure_leaves_no_row(api_key: str) -> None:
-    """The Vault write raises → no row exists for the provider_id."""
+    """The Vault write raises  no row exists for the provider_id."""
 
     async def _go() -> None:
         service, pool, _, _, _ = build_service(
@@ -86,7 +86,7 @@ def test_rollback_failure_still_surfaces_502(
     api_key: str,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """Rollback raising MUST NOT mask the VaultWriteFailed → 502 contract.
+    """Rollback raising MUST NOT mask the VaultWriteFailed  502 contract.
 
     The service logs ``llm_provider_rollback_failed`` at ERROR with the
     provider_id and the exception class name so an operator can

@@ -71,8 +71,8 @@ def bb_url(path: str) -> str:
 class TestBitbucketSmoke:
     """Bitbucket Cloud lifecycle smoke test via REST API 2.0.
 
-    Executes a full lifecycle: get repo → create branch → commit file →
-    open PR → decline PR → delete branch. Uses Bearer token auth.
+    Executes a full lifecycle: get repo  create branch  commit file
+    open PR  decline PR  delete branch. Uses Bearer token auth.
     """
 
     # Shared state across test methods (populated sequentially)

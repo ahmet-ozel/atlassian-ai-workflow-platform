@@ -50,13 +50,13 @@ _TASK_QUEUE = task_queue_for(_WORKFLOW_NAME)
 
 #: Bot comment posted when a task is handed over between departments.
 _DEPT_HANDOVER_COMMENT = (
-    "🤖 Bu task {old_dept} → {new_dept}'e devredildi. "
+    " Bu task {old_dept}  {new_dept}'e devredildi. "
     "Önceki çalışma iptal edildi, yeni dept context'i ile başlatıldı."
 )
 
 #: Bot comment posted when the assigned bot's dept has insufficient capabilities.
 _CAPABILITY_DENIED_COMMENT = (
-    "🤖 Otomasyon başlatılamadı: bu departman için eksik yetenek(ler): {missing}. "
+    " Otomasyon başlatılamadı: bu departman için eksik yetenek(ler): {missing}. "
     "Lütfen sistem yöneticinize başvurun."
 )
 
@@ -180,7 +180,7 @@ async def handle_issue_assigned(
     payload:
         Parsed JSON body of the webhook.
     dept_resolver:
-        Resolves project_key → department.
+        Resolves project_key  department.
     workflow_client:
         Temporal workflow client for starting/cancelling workflows.
     jira_commenter:
@@ -265,7 +265,7 @@ async def handle_issue_assigned(
         )
         return {"status": "bad_request", "reason": "webhook_dept_unresolved"}
 
-    # If assignee is a bot from a different dept → dept handover.
+    # If assignee is a bot from a different dept  dept handover.
     if is_bot_assignee and assignee_dept_id and assignee_dept_id != dept_id:
         return await _handle_dept_handover(
             issue_key=issue_key,

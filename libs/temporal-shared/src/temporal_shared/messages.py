@@ -350,11 +350,11 @@ class IterationState:
         acceptance, or ``None`` if no ``[fix]`` has fired yet.  Used
         for the 60-second debounce window.
     test_results_by_diff_hash:
-        Mapping of diff hash → ``ExecutionRunWorkflowOutput.status``
+        Mapping of diff hash  ``ExecutionRunWorkflowOutput.status``
         from prior test runs.  ``[fix]`` re-test protection
-        consults this map: identical diff → skip re-execution.
+        consults this map: identical diff  skip re-execution.
     explain_cache:
-        Mapping of PR-diff hash → cached ``[explain]`` answer with
+        Mapping of PR-diff hash  cached ``[explain]`` answer with
         an issued-at timestamp.  Used for the 5-minute TTL
         cooldown + cache.
     needs_info_streak:
@@ -837,9 +837,9 @@ class ExecutionRunWorkflowInput:
     #: layer.
     workspace_quota_mb: float | None = None
     #: When ``True`` the workflow runs the Docker chain -
-    #: ``docker_daemon_healthcheck`` →
-    #: ``docker_build_image`` → ``docker_run_container`` →
-    #: ``docker_collect_logs`` → ``docker_cleanup_container`` - instead
+    #: ``docker_daemon_healthcheck``
+    #: ``docker_build_image``  ``docker_run_container``
+    #: ``docker_collect_logs``  ``docker_cleanup_container`` - instead
     #: of the single ``ssh_run_test`` activity. Sourced from the
     #: analyser's ``needs_docker`` flag and propagated through
     #: ``AutomationWorkflow._child_args`` so a Jira task tagged with

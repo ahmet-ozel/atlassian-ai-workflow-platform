@@ -99,7 +99,7 @@ def _drive(coro_factory) -> None:
 
 
 def _activity_dispatcher(children: Any) -> AsyncMock:
-    """Resolve ``execute_activity``; ``jira_list_epic_children`` → children."""
+    """Resolve ``execute_activity``; ``jira_list_epic_children``  children."""
 
     async def _fake(*args, **kwargs):
         name = args[0] if args else kwargs.get("activity")
@@ -228,7 +228,7 @@ class TestMultiStepSubtaskFailure:
             {"key": "SUB-2", "summary": "second"},
         ]
         activity_mock = _activity_dispatcher(children)
-        # First child is denied by the gateway → Epic must stop.
+        # First child is denied by the gateway  Epic must stop.
         child_mock = AsyncMock(return_value={"decision": "denied"})
 
         async def _run() -> None:

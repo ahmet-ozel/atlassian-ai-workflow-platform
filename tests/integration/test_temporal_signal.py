@@ -220,9 +220,7 @@ async def test_new_comment_signal_drives_loop_increment_and_reanalysis() -> None
 
 # ===========================================================================
 # AgentRunner ``comment_added`` signal coverage
-#
-
-#
+# #
 # The tests below pin the design contract that ``comment_added`` signals
 # routed through :class:`AgentRunnerWorkflow`:
 #
@@ -326,7 +324,7 @@ def _agent_runner_temporal_env_available() -> bool:
 
     try:
         from temporalio.testing import WorkflowEnvironment  # noqa: F401
-    except Exception:  # noqa: BLE001 - any import failure → skip.
+    except Exception:  # noqa: BLE001 - any import failure  skip.
         return False
     return True
 
@@ -675,13 +673,13 @@ async def test_five_comments_flip_workflow_to_out_of_scope() -> None:
 
  Trace (with ``iteration=3`` / ``max_iter=5``):
 
- * run initial advance → ``iter_count=3`` (banner armed)
- * banner activity parks the body → barrier holds the body
+ * run initial advance  ``iter_count=3`` (banner armed)
+ * banner activity parks the body  barrier holds the body
  * signal 1 (signal-with-start) buffered, handler advances
- → ``iter_count=4``
+  ``iter_count=4``
  * signals 2-5 queued via handle.signal
- * barrier releases - handlers fire → 4→5 (signal 2),
- 5→cap (signal 3 flips
+ * barrier releases - handlers fire  45 (signal 2),
+ 5cap (signal 3 flips
  ``_out_of_scope``),
  signals 4-5 see
  ``_out_of_scope=True`` and
@@ -808,7 +806,7 @@ async def test_five_comments_flip_workflow_to_out_of_scope() -> None:
 
 
 # ---------------------------------------------------------------------------
-# 3. ``[needs_info]`` keyword does not advance iter_count 
+# 3. ``[needs_info]`` keyword does not advance iter_count
 # ---------------------------------------------------------------------------
 
 
@@ -823,12 +821,12 @@ async def test_needs_info_keyword_does_not_advance_iter() -> None:
 
  Trace (with ``iteration=3`` / ``max_iter=5``):
 
- * run initial advance → ``iter_count=3``,
+ * run initial advance  ``iter_count=3``,
  ``needs_info_streak=0``
- * banner activity parks the body → barrier holds
- * signal 1 ``[needs_info] please clarify`` → ``iter_count=3``,
+ * banner activity parks the body  barrier holds
+ * signal 1 ``[needs_info] please clarify``  ``iter_count=3``,
  ``needs_info_streak=1``
- * signal 2 ``[needs_info] please clarify`` → ``iter_count=3``,
+ * signal 2 ``[needs_info] please clarify``  ``iter_count=3``,
  ``needs_info_streak=2``
  * streak still below cap of 3 - workflow exits ``status="completed"``
  with ``is_out_of_scope=False``.

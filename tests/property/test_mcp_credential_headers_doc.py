@@ -1,4 +1,4 @@
-﻿"""Parity property test: ``mcp-credential-headers.md`` ↔ Python constants.
+﻿"""Parity property test: ``mcp-credential-headers.md``  Python constants.
 
 The doc at ``platform/docs/api-contracts/mcp-credential-headers.md`` is the
 canonical contract for every header name a caller must set when talking to
@@ -33,7 +33,7 @@ import pytest
 # ---------------------------------------------------------------------------
 
 _THIS = Path(__file__).resolve()
-_PLATFORM_ROOT = _THIS.parents[2]  # platform/tests/property/<file>.py → platform/
+_PLATFORM_ROOT = _THIS.parents[2]  # platform/tests/property/<file>.py  platform/
 
 _DOC_PATH = _PLATFORM_ROOT / "docs" / "api-contracts" / "mcp-credential-headers.md"
 _BITBUCKET_ENV_PATH = (
@@ -141,7 +141,7 @@ def mcp_client_source() -> str:
 
 
 # ---------------------------------------------------------------------------
-# Doc → contract assertions
+# Doc  contract assertions
 # ---------------------------------------------------------------------------
 
 
@@ -182,7 +182,7 @@ def test_doc_does_not_invent_undocumented_atlassian_headers(doc_text: str) -> No
 
 
 # ---------------------------------------------------------------------------
-# Doc → Bitbucket env constants parity (5 headers)
+# Doc  Bitbucket env constants parity (5 headers)
 # ---------------------------------------------------------------------------
 
 
@@ -216,7 +216,7 @@ def test_bitbucket_env_module_defines_each_header_constant(
 
 
 # ---------------------------------------------------------------------------
-# Doc → Jira/Confluence dependency-resolver parity
+# Doc  Jira/Confluence dependency-resolver parity
 # ---------------------------------------------------------------------------
 
 
@@ -247,7 +247,7 @@ def test_dependencies_module_consults_each_documented_header(
 
 
 # ---------------------------------------------------------------------------
-# Doc → mcp_client X-Client-Source parity
+# Doc  mcp_client X-Client-Source parity
 # ---------------------------------------------------------------------------
 
 

@@ -135,7 +135,7 @@ def format_research_summary_jira_comment(
     artifact and threading the URI back).
 
     The renderer never raises on degenerate input - empty summary
-    plus empty sources yields ``("🤖 Araştırma sonucu boş döndü.", None)``
+    plus empty sources yields ``(" Araştırma sonucu boş döndü.", None)``
     so the bot's Jira comment is always intelligible.
     """
 
@@ -166,9 +166,9 @@ def format_research_summary_jira_comment(
         # routes every URL-bearing source into overflow does not get
         # mistaken for an empty firecrawl run; otherwise the MinIO
         # offload sentinel would be dropped silently.
-        return ("🤖 Araştırma sonucu boş döndü.", None)
+        return (" Araştırma sonucu boş döndü.", None)
 
-    parts: list[str] = ["🤖 Araştırma özeti"]
+    parts: list[str] = [" Araştırma özeti"]
     if truncated_summary:
         parts.append("")
         parts.append(truncated_summary)
@@ -182,7 +182,7 @@ def format_research_summary_jira_comment(
     if has_overflow:
         parts.append("")
         parts.append(
-            "ℹ️ Tam içerik uzun olduğu için MinIO'ya yazıldı; aşağıdaki "
+            "ℹ Tam içerik uzun olduğu için MinIO'ya yazıldı; aşağıdaki "
             "bağlantıdan inceleyebilirsiniz."
         )
         # The URI itself is appended by the workflow body once the

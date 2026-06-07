@@ -1,4 +1,4 @@
-﻿"""Email → Jira task adapter.
+﻿"""Email  Jira task adapter.
 
 Polls an IMAP mailbox at a fixed cadence and creates a Jira task per
 accepted message. Configured by the ``EMAIL_INBOUND_ADDRESS`` env var

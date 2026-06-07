@@ -11,7 +11,7 @@ Hypothesis-driven exercise of :class:`prompts.loader.PromptLoader`:
     :class:`PromptTemplateError`.
 (d) ``validate_template_format`` rejects unbalanced single ``{``
     while accepting the documented ``{{`` / ``}}`` escapes.
-(e) Determinism: same file + same vars ⇒ same render output.
+(e) Determinism: same file + same vars  same render output.
 """
 
 from __future__ import annotations

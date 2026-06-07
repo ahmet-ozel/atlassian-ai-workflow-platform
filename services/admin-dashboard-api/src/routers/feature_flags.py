@@ -20,7 +20,7 @@ Storage
 * Global state: ``shared.feature_flags`` (Postgres, declared in
   ``infra/postgres/init/20_ops.sql``). The schema migration is
   already shipped - this task does **not** add a new migration.
-* Per-department overrides: ``platform/config/departments.json`` →
+* Per-department overrides: ``platform/config/departments.json``
   each department's ``feature_flag_overrides`` ``{flag_name: bool}``
   map (declared in ``departments.schema.json``). Same JSON file the
   runtime CRUD endpoints in :mod:`.routers.departments` mutate.

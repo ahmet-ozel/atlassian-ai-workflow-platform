@@ -2,18 +2,18 @@
 
 Covers the four execution paths plumbed into ``_execute_output_actions``:
 
-    1. Successful critical + best_effort → every dispatch activity is
+    1. Successful critical + best_effort  every dispatch activity is
        invoked, no compensation chain runs, and the final Jira summary
        is composed via
        :func:`temporal_shared.output_size_cap.format_final_jira_comment`.
-    2. Failed critical → the workflow body raises
+    2. Failed critical  the workflow body raises
        :class:`_OutputActionCriticalFailure`, the cancel /
        compensation branch runs ``compensation_chain_run``, and the
        run terminates with the ``failed`` status.
-    3. Failed best_effort → the workflow completes (no compensation),
+    3. Failed best_effort  the workflow completes (no compensation),
        :attr:`AgentRunnerWorkflow._output_actions_partial` carries the
        failed action kinds, and the final summary names them.
-    4. Oversized payload → :func:`redirect_oversized_payload` calls
+    4. Oversized payload  :func:`redirect_oversized_payload` calls
        the MinIO offload activity and the rewritten payload reaching
        the dispatch activity carries the canonical
        ``s3://`` URI in its ``minio_uri`` key.
@@ -162,7 +162,7 @@ def _activity_dispatcher(
 ) -> AsyncMock:
     """Return an ``AsyncMock`` resolving ``execute_activity`` calls.
 
-    *routes* maps activity name → return value (or a callable
+    *routes* maps activity name  return value (or a callable
     returning a value, or a callable raising an exception).  Names
     not in *routes* return ``None``.  When *record* is provided each
     call is appended verbatim so tests can assert on the exact
@@ -267,7 +267,7 @@ class TestSuccessfulOutputActions:
         """``run`` composes the final summary via ``format_final_jira_comment``.
 
         When every output action succeeds the summary line carries the
-        ✅ prefix (``FINAL_COMMENT_CRITICAL_PREFIX``) plus the kinds
+         prefix (``FINAL_COMMENT_CRITICAL_PREFIX``) plus the kinds
         of the completed critical actions in dispatch order.
         """
 
@@ -310,13 +310,13 @@ class TestSuccessfulOutputActions:
 
         assert output.status == "completed"
         # The final summary is the format_final_jira_comment shape:
-        # leading ✅ prefix + the completed critical kinds.
+        # leading  prefix + the completed critical kinds.
         assert output.summary.startswith(FINAL_COMMENT_CRITICAL_PREFIX)
         assert "jira_comment" in output.summary
 
 
 # ---------------------------------------------------------------------------
-# 2. Failed critical → compensation triggered
+# 2. Failed critical  compensation triggered
 # ---------------------------------------------------------------------------
 
 
@@ -383,7 +383,7 @@ class TestCriticalFailureTriggersCompensation:
             payload=(("repo", "r"),),
         )
         inp = _make_input(output_actions=(action,))
-        # No prior commit recorded → no branch fallback available.
+        # No prior commit recorded  no branch fallback available.
         assert wf._last_commit_branch is None
 
         record: list[tuple[str, tuple, dict]] = []
@@ -440,7 +440,7 @@ class TestCriticalFailureTriggersCompensation:
             (a, kw) for name, a, kw in record if name == "bitbucket_open_pr"
         ]
         assert len(pr_calls) == 1
-        # execute_activity is called as (name, args=[...]) → kwargs["args"].
+        # execute_activity is called as (name, args=[...])  kwargs["args"].
         pr_args = pr_calls[0][1]["args"]
         # args = [repo, source_branch, target_branch, title, desc, dept]
         assert pr_args[1] == "ai/PAY-9"
@@ -508,7 +508,7 @@ class TestCriticalFailureTriggersCompensation:
 
 
 # ---------------------------------------------------------------------------
-# 3. Failed best_effort → workflow completes with partial failure
+# 3. Failed best_effort  workflow completes with partial failure
 # ---------------------------------------------------------------------------
 
 
@@ -603,7 +603,7 @@ class TestBestEffortFailure:
 
         assert output.status == "completed_with_partial_failure"
         # Final summary uses ``format_final_jira_comment``: the
-        # ✅ line lists the completed critical kinds, the ⚠️ line
+        # line lists the completed critical kinds, the  line
         # carries the failed best-effort entries.
         assert FINAL_COMMENT_CRITICAL_PREFIX in output.summary
         assert FINAL_COMMENT_BEST_EFFORT_PREFIX in output.summary
@@ -613,7 +613,7 @@ class TestBestEffortFailure:
 
 
 # ---------------------------------------------------------------------------
-# 4. Oversized payload → MinIO redirection
+# 4. Oversized payload  MinIO redirection
 # ---------------------------------------------------------------------------
 
 

@@ -79,7 +79,7 @@ PAGE_TITLE_MAX_LENGTH: Final[int] = 255
 #: Stored as a module constant so the property test can assert the
 #: literal substring is present in the output verbatim.
 PROVENANCE_FOOTER_TEXT_TR: Final[str] = (
-    "🤖 Bu sayfa AI asistanı yardımıyla yazılmıştır. Kaynak: {jira_issue_link}"
+    " Bu sayfa AI asistanı yardımıyla yazılmıştır. Kaynak: {jira_issue_link}"
 )
 
 
@@ -306,7 +306,7 @@ def compute_provenance_footer(jira_issue_link: str) -> str:
 
     The footer body reads:
 
-        🤖 Bu sayfa AI asistanı yardımıyla yazılmıştır. Kaynak:
+         Bu sayfa AI asistanı yardımıyla yazılmıştır. Kaynak:
         ``{jira_issue_link}``
 
     Confluence's storage format renders the standard HTML5
@@ -347,7 +347,7 @@ def compute_provenance_footer(jira_issue_link: str) -> str:
     >>> footer = compute_provenance_footer(
     ...     "https://acme.atlassian.net/browse/PAY-4211"
     ... )
-    >>> "🤖" in footer
+    >>> "" in footer
     True
     >>> "https://acme.atlassian.net/browse/PAY-4211" in footer
     True
@@ -390,20 +390,16 @@ def compute_provenance_footer(jira_issue_link: str) -> str:
     body_line = PROVENANCE_FOOTER_TEXT_TR.format(jira_issue_link=cleaned)
 
     # Multi-line markdown block:
-    #
-    #   <details>
-    #   <summary>🤖 AI provenance</summary>
-    #
-    #   > 🤖 Bu sayfa AI asistanı yardımıyla yazılmıştır. Kaynak: {link}
-    #
-    #   </details>
-    #
-    # The blank lines around the blockquote are required for Confluence
+    # #   <details>
+    # <summary> AI provenance</summary>
+    # #   >  Bu sayfa AI asistanı yardımıyla yazılmıştır. Kaynak: {link}
+    # #   </details>
+    # # The blank lines around the blockquote are required for Confluence
     # to render the Markdown body inside ``<details>`` as a quote
     # rather than as adjacent inline text.
     return (
         "<details>\n"
-        "<summary>🤖 AI provenance</summary>\n"
+        "<summary> AI provenance</summary>\n"
         "\n"
         f"> {body_line}\n"
         "\n"

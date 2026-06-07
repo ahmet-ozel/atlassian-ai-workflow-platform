@@ -11,7 +11,7 @@ Repository contract:
     claim(delivery_id, provider) -> bool
         INSERT ... ON CONFLICT DO NOTHING into automation.processed_events.
         Returns True iff this is the first insert (the caller owns the
-        webhook → workflow start path); False iff the row already exists
+        webhook  workflow start path); False iff the row already exists
         (the caller emits a ``duplicate_event_dropped`` HTTP 200).
 
     is_processed(delivery_id) -> bool
@@ -25,7 +25,7 @@ SHALL roll back the ``processed_events`` row so the webhook provider's
 retry can re-claim the same ``delivery_id``. The repo does NOT own
 the rollback transaction itself - it exposes the explicit
 :meth:`release` helper which the handler calls inside its except
-block. Tests cover the ``claim → release → claim`` round-trip.
+block. Tests cover the ``claim  release  claim`` round-trip.
 
 Schema reference: ``platform/infra/postgres/11_workflows.sql`` block
 1 (``automation.processed_events``):
@@ -160,14 +160,14 @@ class ProcessedEventsRepo:
 
         Returns:
             ``True`` when a fresh row was inserted (this caller owns
-            the webhook → workflow start path); ``False`` when the
+            the webhook  workflow start path); ``False`` when the
             same ``delivery_id`` was already claimed (replay).
 
         Raises:
             asyncpg.PostgresError: Propagated unchanged on
                 connection / query failures so the webhook handler
                 can map them to the right HTTP status (constraint
-                violations → 400, transient pool errors → 503).
+                violations  400, transient pool errors  503).
         """
 
         async with self._pool.acquire() as conn:
@@ -222,7 +222,7 @@ class ProcessedEventsRepo:
         The operation is itself idempotent - releasing a
         ``delivery_id`` that was already released (or never claimed)
         is a no-op and returns ``False``. Tests cover the
-        round-trip ``claim → release → claim → True`` invariant.
+        round-trip ``claim  release  claim  True`` invariant.
 
         Args:
             delivery_id: The id originally passed to :meth:`claim`.

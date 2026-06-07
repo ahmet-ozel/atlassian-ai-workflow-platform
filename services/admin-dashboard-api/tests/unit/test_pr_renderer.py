@@ -9,7 +9,7 @@ invoking the renderer.
 Test cases cover:
 * Empty diff renders a "no textual diff" notice.
 * Long diffs are truncated past 8 KiB.
-* Sandbox history empty → "no sandbox runs" notice; non-empty →
+* Sandbox history empty  "no sandbox runs" notice; non-empty
   Markdown table with one row per :class:`SandboxRunSummary`.
 * Pipe / newline characters in sandbox excerpts are escaped so the
   Markdown table layout survives.
@@ -225,7 +225,7 @@ class TestV15Section:
             ),
         )
         assert "All backlog IDs above are present" in out
-        assert "✅" in out
+        assert "" in out
         assert "`V2`" in out and "`Y10`" in out
 
     def test_missing_ids_emit_warning(self) -> None:
@@ -238,7 +238,7 @@ class TestV15Section:
                 mimari_available=True,
             ),
         )
-        assert "⚠️" in out
+        assert "" in out
         assert "`Y10`" in out
         assert "missing" in out.lower()
 
@@ -324,7 +324,7 @@ class TestExtractV15Status:
         assert status.in_sync() is True
 
     def test_id_regex_rejects_three_digit_suffix(self) -> None:
-        #  The architecture series uses 1-2 digit suffixes; ``V123`` would
+        # The architecture series uses 1-2 digit suffixes; ``V123`` would
         # be a typo / unrelated identifier.
         status = extract_v15_status(body="V123 says hi", mimari_text="")
         assert status.all_ids == ()

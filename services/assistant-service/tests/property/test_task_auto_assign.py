@@ -37,7 +37,7 @@ def test_resolve_returns_configured_id(bot_id: str | None) -> None:
     bot_id=st.from_regex(r"[a-z0-9]{8,32}", fullmatch=True),
 )
 def test_active_with_bot_id_assigns(bot_id: str) -> None:
-    """When checked + bot_id present → assigned to bot."""
+    """When checked + bot_id present  assigned to bot."""
     config = {"bot_account_id": bot_id}
     result = get_auto_assign_decision(True, config)
     assert result.assigned_to_bot is True
@@ -50,7 +50,7 @@ def test_active_with_bot_id_assigns(bot_id: str) -> None:
     has_bot=st.booleans(),
 )
 def test_unchecked_never_assigns(has_bot: bool) -> None:
-    """When unchecked → never assigned regardless of config."""
+    """When unchecked  never assigned regardless of config."""
     config = {"bot_account_id": "abc123"} if has_bot else {}
     result = get_auto_assign_decision(False, config)
     assert result.assigned_to_bot is False
@@ -60,7 +60,7 @@ def test_unchecked_never_assigns(has_bot: bool) -> None:
 @settings(max_examples=50, deadline=None)
 @given(extra=st.text(max_size=20))
 def test_active_without_bot_id_warns(extra: str) -> None:
-    """Checked + no bot_id → warning, no assignment."""
+    """Checked + no bot_id  warning, no assignment."""
     config = {"other_field": extra}
     result = get_auto_assign_decision(True, config)
     assert result.assigned_to_bot is False

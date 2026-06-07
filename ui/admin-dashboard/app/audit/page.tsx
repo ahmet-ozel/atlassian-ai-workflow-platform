@@ -3,17 +3,15 @@
 /**
  * Audit panel.
  * + `gereksinim.txt` G9 E3 iyileştirmesi.
- *
- * Loki + archive-flag enrichment search surface. Calls
+ * * Loki + archive-flag enrichment search surface. Calls
  * /admin/audit/search; displays a unified result list with archive
  * restore links.
- *
- * E3 eklentisi: spec satır 27 "servis/seviye/departman bazında
+ * * E3 eklentisi: spec satır 27 "servis/seviye/departman bazında
  * filtrelenir" gereği üç filtre eklendi:
- *   - Servis (client_source) - server-side param
- *   - trace_id - server-side param (tek request'i servisler arası izleme)
- *   - Seviye (level) - sonuç satırlarına client-side uygulanır
- *     (audit-search endpoint'i ``level`` query param'ı tanımıyor).
+ * - Servis (client_source) - server-side param
+ * - trace_id - server-side param (tek request'i servisler arası izleme)
+ * - Seviye (level) - sonuç satırlarına client-side uygulanır
+ * (audit-search endpoint'i ``level`` query param'ı tanımıyor).
  */
 
 import { useMemo, useState } from "react";
@@ -207,7 +205,7 @@ export default function AuditPage(): JSX.Element {
             </div>
             <div className="field" style={{ alignSelf: "end" }}>
               <button type="submit" className="btn btn--primary" disabled={loading}>
-                {loading ? <span className="spinner" /> : "🔎"} Ara
+                {loading ? <span className="spinner" /> : ""} Ara
               </button>
             </div>
           </form>
@@ -216,7 +214,7 @@ export default function AuditPage(): JSX.Element {
 
       {error && (
         <div className="banner banner--danger">
-          <span className="banner__icon">⚠️</span>
+          <span className="banner__icon"></span>
           <div className="banner__body">{error}</div>
         </div>
       )}
@@ -236,7 +234,7 @@ export default function AuditPage(): JSX.Element {
         <div className="card__body card__body--flush">
           {!searched ? (
             <div className="empty">
-              <div className="empty__icon">📜</div>
+              <div className="empty__icon"></div>
               <div className="empty__title">Aramaya hazır</div>
               <div className="muted">
                 Filtreleri doldurun ve &quot;Ara&quot; düğmesine basın.
@@ -244,7 +242,7 @@ export default function AuditPage(): JSX.Element {
             </div>
           ) : visibleHits.length === 0 ? (
             <div className="empty">
-              <div className="empty__icon">🔍</div>
+              <div className="empty__icon"></div>
               <div className="empty__title">Eşleşme bulunamadı</div>
             </div>
           ) : (
@@ -269,7 +267,7 @@ export default function AuditPage(): JSX.Element {
                       <span
                         className={`badge ${h.archived ? "badge--warn" : "badge--success"}`}
                       >
-                        {h.archived ? "📦 archive" : "🟢 live"}
+                        {h.archived ? " archive" : " live"}
                       </span>
                     </td>
                     <td>

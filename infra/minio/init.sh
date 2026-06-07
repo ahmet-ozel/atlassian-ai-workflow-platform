@@ -6,49 +6,49 @@
 # -------
 # Idempotently provisions the MinIO buckets the platform requires:
 #
-#   * ``ai-runs``       — execution artifacts (pre-existing convention,
-#                         created lazily by execution-runner-worker via
-#                         _ensure_bucket_exists; declared here for
-#                         single-source-of-truth visibility).
-#   * ``audit-archive`` — daily-partitioned audit log archive populated
-#                         by the AuditPruneWorkflow's
-#                         ``archive_audit_to_minio`` activity.
-#                         Layout: ``audit-archive/{Y}/{M}/{D}/audit-N.jsonl.gz``
-#                         used by archive search and retention workflows.
+# * ``ai-runs``       — execution artifacts (pre-existing convention,
+# created lazily by execution-runner-worker via
+# _ensure_bucket_exists; declared here for
+# single-source-of-truth visibility).
+# * ``audit-archive`` — daily-partitioned audit log archive populated
+# by the AuditPruneWorkflow's
+# ``archive_audit_to_minio`` activity.
+# Layout: ``audit-archive/{Y}/{M}/{D}/audit-N.jsonl.gz``
+# used by archive search and retention workflows.
 #
 # Usage
 # -----
 # Run **after** the ``minio`` Compose service is healthy. Two modes:
 #
-#   1. From the host (default — connects to MinIO on http://localhost:9000):
-#        bash platform/infra/minio/init.sh
+# 1. From the host (default — connects to MinIO on http://localhost:9000):
+# bash platform/infra/minio/init.sh
 #
-#   2. From inside any container on the compose network:
-#        MINIO_ENDPOINT=minio:9000 bash /workspace/infra/minio/init.sh
+# 2. From inside any container on the compose network:
+# MINIO_ENDPOINT=minio:9000 bash /workspace/infra/minio/init.sh
 #
 # The script auto-detects the bootstrap method:
 #
-#   * If ``mc`` (the MinIO client) is on PATH it is used (idiomatic +
-#     supports object-lock / lifecycle when production hardening lands).
-#   * Otherwise the script falls back to the S3-compatible HTTP API via
-#     ``curl`` with AWS Signature V4 — no extra runtime requirement
-#     beyond ``curl`` and ``openssl`` (both ubiquitous on dev machines
-#     and the busybox-based Compose images).
+# * If ``mc`` (the MinIO client) is on PATH it is used (idiomatic +
+# supports object-lock / lifecycle when production hardening lands).
+# * Otherwise the script falls back to the S3-compatible HTTP API via
+# ``curl`` with AWS Signature V4 — no extra runtime requirement
+# beyond ``curl`` and ``openssl`` (both ubiquitous on dev machines
+# and the busybox-based Compose images).
 #
 # Environment variables
 # ---------------------
-#   MINIO_ENDPOINT       Host:port the script reaches MinIO on
-#                        (default: localhost:9000).
-#   MINIO_USE_SSL        ``true`` to use https:// (default: false).
-#   MINIO_ROOT_USER      Access key (default: minio).
-#   MINIO_ROOT_PASSWORD  Secret key (default: miniosecret_dev_only).
-#   AUDIT_ARCHIVE_BUCKET Override the bucket name (default: audit-archive).
+# MINIO_ENDPOINT       Host:port the script reaches MinIO on
+# (default: localhost:9000).
+# MINIO_USE_SSL        ``true`` to use https:// (default: false).
+# MINIO_ROOT_USER      Access key (default: minio).
+# MINIO_ROOT_PASSWORD  Secret key (default: miniosecret_dev_only).
+# AUDIT_ARCHIVE_BUCKET Override the bucket name (default: audit-archive).
 #
 # Exit codes
 # ----------
-#   0  All required buckets exist (created or already present).
-#   1  MinIO unreachable, credentials missing, or bucket creation
-#      failed for a reason other than "already exists".
+# 0  All required buckets exist (created or already present).
+# 1  MinIO unreachable, credentials missing, or bucket creation
+# failed for a reason other than "already exists".
 #
 # Idempotency
 # -----------
@@ -59,10 +59,10 @@
 # --------------------------------------------------
 # Object-lock + lifecycle policies are NOT applied in this dev-mode
 # bootstrap. Production deployments should:
-#   * Create ``audit-archive`` with ``--with-lock`` and apply a
-#     ``COMPLIANCE`` retention of ≥ RETENTION_DAYS days
-#     (immutability — write-once retention).
-#   * Apply a transition lifecycle to a cold tier after N days.
+# * Create ``audit-archive`` with ``--with-lock`` and apply a
+# ``COMPLIANCE`` retention of ≥ RETENTION_DAYS days
+# (immutability — write-once retention).
+# * Apply a transition lifecycle to a cold tier after N days.
 # See ``platform/infra/minio/README.md`` for the production checklist.
 # =============================================================================
 

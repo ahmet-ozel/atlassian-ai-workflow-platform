@@ -33,7 +33,7 @@ primitives - ``workflow.now``, ``workflow.execute_activity``,
 child workflow step), **5.3** (step state tracking), **5.4** (output
 passing), **5.5** (retry with exponential backoff), **5.6** (error
 report on exhausted retries), **5.7** (timing metadata), **5.8** (output
-actions on completion), **5.9** (output passing failure → retry),
+actions on completion), **5.9** (output passing failure  retry),
 **5.10** (timeout enforcement), **12.3** (Epic subtask iteration with
 progress comments), **12.4** (stop on subtask failure).
 """
@@ -195,7 +195,7 @@ class MultiStepWorkflow:
     async def run(self, inp: MultiStepInput) -> MultiStepResult:
         """Execute the multi-step workflow."""
 
-        # 1. Validate step count 
+        # 1. Validate step count
         step_count = len(inp.steps)
         if step_count < MIN_STEPS or step_count > MAX_STEPS:
             error_msg = (
@@ -210,7 +210,7 @@ class MultiStepWorkflow:
             await self._post_jira_comment(
                 inp.issue_key,
                 inp.dept_id,
-                f"❌ Multi-step iş akışı başlatılamadı: {error_msg}",
+                f" Multi-step iş akışı başlatılamadı: {error_msg}",
             )
             return MultiStepResult(
                 success=False,
@@ -227,7 +227,7 @@ class MultiStepWorkflow:
         workflow_start = workflow.now()
         previous_output: dict[str, Any] = {}
 
-        # 2. Execute steps sequentially 
+        # 2. Execute steps sequentially
         for idx, step_def in enumerate(inp.steps):
             step_result = await self._execute_step_with_retries(
                 step_def=step_def,
@@ -244,7 +244,7 @@ class MultiStepWorkflow:
                     workflow_end - workflow_start
                 ).total_seconds()
 
-                # Post error report to Jira 
+                # Post error report to Jira
                 await self._post_error_report(
                     inp=inp,
                     step_result=step_result,
@@ -258,7 +258,7 @@ class MultiStepWorkflow:
                     total_duration_seconds=total_duration,
                 )
 
-            # Pass output to next step 
+            # Pass output to next step
             previous_output = self._extract_output(step_result)
 
         # 3. All steps completed - execute output_actions (Req 5.8)
@@ -298,12 +298,12 @@ class MultiStepWorkflow:
         last_error: str | None = None
 
         while retry_count <= step_def.max_retries:
-            # Mark step as running 
+            # Mark step as running
             start_time = workflow.now()
 
             try:
                 # Build child workflow input by merging step input_data
-                # with previous step output 
+                # with previous step output
                 child_input = {
                     **step_def.input_data,
                     "previous_step_output": previous_output,
@@ -329,7 +329,7 @@ class MultiStepWorkflow:
                     ),
                 )
 
-                # Step completed successfully 
+                # Step completed successfully
                 end_time = workflow.now()
                 duration = (end_time - start_time).total_seconds()
 
@@ -363,8 +363,7 @@ class MultiStepWorkflow:
                 )
 
                 # If we have retries left, apply exponential backoff
-                # 
-                if retry_count < step_def.max_retries:
+                # if retry_count < step_def.max_retries:
                     backoff_idx = min(
                         retry_count, len(RETRY_BACKOFF_INTERVALS) - 1
                     )
@@ -372,7 +371,7 @@ class MultiStepWorkflow:
                     await workflow.sleep(timedelta(seconds=backoff_seconds))
                     retry_count += 1
                 else:
-                    # All retries exhausted 
+                    # All retries exhausted
                     return StepResult(
                         step_name=step_def.name,
                         status="failed",
@@ -405,7 +404,7 @@ class MultiStepWorkflow:
  """
 
         error_report = (
-            f"❌ Multi-step iş akışı başarısız oldu.\n\n"
+            f" Multi-step iş akışı başarısız oldu.\n\n"
             f"• Başarısız adım: {step_result.step_name}\n"
             f"• Hata nedeni: {step_result.error or 'Bilinmeyen hata'}\n"
             f"• Deneme sayısı: {step_result.retry_count + 1}\n"
@@ -486,7 +485,7 @@ class MultiStepWorkflow:
 
 
 # ---------------------------------------------------------------------------
-# Epic Subtask Orchestration 
+# Epic Subtask Orchestration
 # ---------------------------------------------------------------------------
 
 #: Default timeout for each subtask child workflow execution.
@@ -607,7 +606,7 @@ class EpicSubtaskWorkflow:
             await self._post_jira_comment(
                 inp.epic_issue_key,
                 inp.dept_id,
-                "⚠️ Epic'te işlenecek subtask bulunamadı.",
+                " Epic'te işlenecek subtask bulunamadı.",
             )
             return EpicSubtaskResult(
                 success=False,
@@ -663,7 +662,7 @@ class EpicSubtaskWorkflow:
 
                 # Post progress comment to parent Epic.
                 progress_comment = (
-                    f"🤖 {completed_count}/{total} subtask tamamlandı"
+                    f" {completed_count}/{total} subtask tamamlandı"
                 )
                 await self._post_jira_comment(
                     inp.epic_issue_key, inp.dept_id, progress_comment
@@ -683,7 +682,7 @@ class EpicSubtaskWorkflow:
                 )
 
                 fail_comment = (
-                    f"❌ Subtask {subtask.issue_key} fail oldu - "
+                    f" Subtask {subtask.issue_key} fail oldu - "
                     f"Epic durduruldu"
                 )
                 await self._post_jira_comment(

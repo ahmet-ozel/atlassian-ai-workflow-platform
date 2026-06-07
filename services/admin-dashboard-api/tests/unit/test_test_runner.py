@@ -263,7 +263,7 @@ class TestRunTestsEndpoint:
             yield c
 
     def test_unknown_service_returns_404(self, client) -> None:
-        """Unknown service → 404."""
+        """Unknown service  404."""
         response = client.post(
             "/admin/services/nonexistent-service-xyz/test",
         )

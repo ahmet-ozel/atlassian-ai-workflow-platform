@@ -3,7 +3,7 @@
 The dispatch policy implemented here:
 
 * :func:`NotificationService.notify_workflow_completion` is **success-gated**
-  (`dept.notify_on_success == False` ⇒ no-op for non-failure outcomes) and
+  (`dept.notify_on_success == False`  no-op for non-failure outcomes) and
   **failure-mandatory** (every ``status == "failed"`` workflow notifies the
   dept's Slack channel regardless of dept config).
 * Each dispatch attempt writes one row to ``shared.notification_log`` whose

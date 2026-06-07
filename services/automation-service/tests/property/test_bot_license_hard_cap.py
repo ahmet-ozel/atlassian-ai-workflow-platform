@@ -5,10 +5,10 @@ and usage state ``(curr_concurrent, curr_daily, curr_monthly_usd)`` pairs,
 ``enforce_license_cap(dept_id)`` behaviour satisfies:
 
 (a) **Allow**: ``curr_concurrent < max_concurrent`` AND ``curr_daily < max_daily``
-    AND ``curr_monthly_usd < max_monthly_token_usd`` → call is a no-op (workflow
+    AND ``curr_monthly_usd < max_monthly_token_usd``  call is a no-op (workflow
     start is permitted).
 
-(b) **Reject**: at least one limit is met or exceeded (``>= max``) →
+(b) **Reject**: at least one limit is met or exceeded (``>= max``)
     ``BotLicenseCapExceededError`` is raised + ``bot_license_cap_exceeded``
     audit is emitted + the error carries the correct ``limit_type``,
     ``current``, and ``max`` values.
@@ -18,7 +18,7 @@ and usage state ``(curr_concurrent, curr_daily, curr_monthly_usd)`` pairs,
     reaches the cap, no decrease in *other* dimensions can flip the
     decision back to "allowed" for that dimension.
 
-(d) **Deterministic check order**: ``concurrent`` → ``daily`` →
+(d) **Deterministic check order**: ``concurrent``  ``daily``
     ``monthly_token``. The *first* exceeded limit is reported; subsequent
     limits are not evaluated.
 
@@ -91,7 +91,7 @@ class _FakeConnection:
 
         # Cap loader query (fetch_cap_for_dept)
         if "from automation.departments" in q and "bot_license_caps" in q:
-            # Return NULL license_id → default cap will be used
+            # Return NULL license_id  default cap will be used
             return {
                 "license_id": self._state.license_id,
                 "max_concurrent_workflows": None,
@@ -325,7 +325,7 @@ class TestRejectWhenAtOrOverCap:
         max_concurrent: int,
         curr_concurrent: int,
     ) -> None:
-        """Concurrent usage >= max_concurrent → BotLicenseCapExceededError."""
+        """Concurrent usage >= max_concurrent  BotLicenseCapExceededError."""
         curr_concurrent = max(curr_concurrent, max_concurrent)  # ensure >= cap
 
         pool, cap = _make_pool_and_cap(
@@ -363,7 +363,7 @@ class TestRejectWhenAtOrOverCap:
         max_daily: int,
         curr_daily: int,
     ) -> None:
-        """Daily usage >= max_daily → BotLicenseCapExceededError (concurrent OK)."""
+        """Daily usage >= max_daily  BotLicenseCapExceededError (concurrent OK)."""
         curr_daily = max(curr_daily, max_daily)  # ensure >= cap
 
         pool, cap = _make_pool_and_cap(
@@ -400,7 +400,7 @@ class TestRejectWhenAtOrOverCap:
         max_monthly_usd: Decimal,
         curr_monthly_usd: Decimal,
     ) -> None:
-        """Monthly token cost >= max → BotLicenseCapExceededError (others OK)."""
+        """Monthly token cost >= max  BotLicenseCapExceededError (others OK)."""
         curr_monthly_usd = max(curr_monthly_usd, max_monthly_usd)  # ensure >= cap
 
         pool, cap = _make_pool_and_cap(
@@ -428,12 +428,12 @@ class TestRejectWhenAtOrOverCap:
         assert audit.events[0].payload["limit_type"] == "monthly_token"
 
 # ---------------------------------------------------------------------------
-# Deterministic check order: concurrent → daily → monthly_token
+# Deterministic check order: concurrent  daily  monthly_token
 # ---------------------------------------------------------------------------
 
 
 class TestDeterministicCheckOrder:
-    """``limit_type`` check order is concurrent → daily → monthly_token.
+    """``limit_type`` check order is concurrent  daily  monthly_token.
 
     When multiple limits are simultaneously exceeded, the *first* one in
     the canonical order is reported.
@@ -551,7 +551,7 @@ class TestDeterministicCheckOrder:
 
 
 class TestMonotonicity:
-    """Monotonicity: the allowed → rejected transition is one-way.
+    """Monotonicity: the allowed  rejected transition is one-way.
 
     For a fixed cap, if usage N is rejected, then usage N+1 must also be
     rejected (for the same dimension). The decision never flips back from

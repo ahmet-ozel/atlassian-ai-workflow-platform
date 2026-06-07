@@ -532,7 +532,7 @@ def test_start_plan_returns_topological_will_start_and_already_running() -> None
 
 
 def test_start_plan_404_when_unknown_service() -> None:
-    """Unknown service → 404 before the orchestrator allocates any state."""
+    """Unknown service  404 before the orchestrator allocates any state."""
 
     stub = _StubLifecycleService(
         raise_on_start_plan=UnknownServiceError("ghost"),
@@ -721,7 +721,7 @@ def test_start_502_on_audit_unreachable_carries_correlation_id() -> None:
 
 
 def test_start_502_on_compose_failure_carries_correlation_id() -> None:
-    """Compose non-zero exit → 502 + correlation_id."""
+    """Compose non-zero exit  502 + correlation_id."""
 
     failing_result = ComposeResult(
         exit_code=1, stdout="", stderr="boom", argv=("docker", "compose", "up")
@@ -776,7 +776,7 @@ def test_stop_returns_200_with_state_and_noop() -> None:
 
 
 def test_stop_idempotent_returns_noop_true() -> None:
-    """Already-stopped → ``noop=True``."""
+    """Already-stopped  ``noop=True``."""
 
     cid = uuid4()
     stub = _StubLifecycleService(
@@ -1199,7 +1199,7 @@ def test_get_logs_returns_lines_array_by_default() -> None:
 
 
 def test_get_logs_validates_tail_range() -> None:
-    """``tail`` ∈ [1, 1000]; out-of-range → 422."""
+    """``tail`` ∈ [1, 1000]; out-of-range  422."""
 
     stub = _StubLifecycleService()
     client = TestClient(_build_app(stub))
@@ -1270,7 +1270,7 @@ def test_get_health_returns_snapshot() -> None:
 
 
 def test_get_health_returns_unhealthy_snapshot_with_body() -> None:
-    """Non-200 status → ``unhealthy``; body surfaced."""
+    """Non-200 status  ``unhealthy``; body surfaced."""
 
     entry = _entry()
     stub = _StubLifecycleService(
@@ -1360,7 +1360,7 @@ def test_probe_returns_200_with_failed_credentials_status() -> None:
 
 
 def test_probe_404_on_unknown_service() -> None:
-    """Unknown service → 404 Not Found."""
+    """Unknown service  404 Not Found."""
 
     stub = _StubLifecycleService()
     client = TestClient(_build_app(stub))
@@ -1371,7 +1371,7 @@ def test_probe_404_on_unknown_service() -> None:
 
 
 def test_probe_502_on_audit_unreachable() -> None:
-    """AuditUnreachableError → 502 + correlation_id."""
+    """AuditUnreachableError  502 + correlation_id."""
 
     entry = _entry(name="automation-service")
     slot = LifecycleStateCache(name="automation-service")

@@ -266,7 +266,7 @@ class TestRenderPdfEndToEnd:
                     "<p>Özet metni - çğıöşü ÇĞİÖŞÜ.</p>"
                     "<ul><li>Bir madde</li><li>İkinci madde</li></ul>"
                 ),
-                "footer": "🤖 AI provenance",
+                "footer": " AI provenance",
             },
         )
         assert out.startswith(PDF_MAGIC)

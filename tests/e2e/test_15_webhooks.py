@@ -6,8 +6,8 @@ automation-service via a tunnel (ngrok or cloudflared) exposing localhost.
 
 Flow:
 1. Provision a tunnel (ngrok or cloudflared) exposing localhost:80
-2. Subscribe a Jira webhook → create issue → assert delivery within 30s
-3. Subscribe a Bitbucket webhook → push commit → assert delivery within 30s
+2. Subscribe a Jira webhook  create issue  assert delivery within 30s
+3. Subscribe a Bitbucket webhook  push commit  assert delivery within 30s
 4. Verify audit_events contains webhook.jira.received and webhook.bitbucket.received
 5. Emit e2e-evidence/15-webhooks.json
 
@@ -275,8 +275,8 @@ class TestWebhookDelivery:
 
     Tests execute in order:
     1. Provision tunnel
-    2. Subscribe Jira webhook → create issue → assert delivery
-    3. Subscribe Bitbucket webhook → push commit → assert delivery
+    2. Subscribe Jira webhook  create issue  assert delivery
+    3. Subscribe Bitbucket webhook  push commit  assert delivery
     4. Verify audit_events
     5. Emit evidence
     """

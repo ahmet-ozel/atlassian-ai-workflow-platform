@@ -24,10 +24,10 @@ covered by the existing replay-determinism integration tests.
   explicit MinIO references the gateway synthesises ``bucket`` /
   ``key`` from the runner's stdout URI so the executor's MinIO
   pipeline can stream the artifact to Jira.
-* ExecutionRun fail (``exit_code != 0``) → publish branch still
+* ExecutionRun fail (``exit_code != 0``)  publish branch still
   fires because the SSH activity uploads stdout/stderr even when the
   command exits non-zero.
-* The ``OutputActionKind`` → :class:`ActionType` mapping covers every
+* The ``OutputActionKind``  :class:`ActionType` mapping covers every
   kind the description parser allows, and unknown kinds raise
   :class:`ValueError` so the publish branch can skip them gracefully.
 """
@@ -140,7 +140,7 @@ class _FakeChildHandle:
 
 
 class TestKindToActionType:
-    """The kind → ActionType map covers every description-parser kind."""
+    """The kind  ActionType map covers every description-parser kind."""
 
     def test_jira_comment_maps_to_jira_comment(self) -> None:
         assert (
@@ -256,7 +256,7 @@ class TestSplitMinioUri:
 
 
 class TestPayloadToParams:
-    """``OutputAction.payload`` (tuple-of-pairs) → executor params dict."""
+    """``OutputAction.payload`` (tuple-of-pairs)  executor params dict."""
 
     def test_round_trips_simple_payload(self) -> None:
         payload = (("body", "Done"), ("issue_key", "OPS-1"))
@@ -708,8 +708,8 @@ class TestPublishBranchActivityFailureIsBestEffort:
 # Temporal sandbox); instead we assert that the static branch in
 # ``run`` is wired against ``analysis.output_actions``:
 #
-#   * the new ``elif`` block names the helper symbol, and
-#   * the helper's existence + signature match the call site.
+# * the new ``elif`` block names the helper symbol, and
+# * the helper's existence + signature match the call site.
 
 
 class TestRunBodyWiring:

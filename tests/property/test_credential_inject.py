@@ -21,8 +21,8 @@ This module uses Hypothesis to verify the following invariants of
  or reverted to their original values if they did.
 
 4. **Service routing**: The correct header prefix is used for each
- service literal (jira → X-Atlassian-Jira-*, bitbucket →
- X-Atlassian-Bitbucket-*, confluence → X-Atlassian-Confluence-*).
+ service literal (jira  X-Atlassian-Jira-*, bitbucket
+ X-Atlassian-Bitbucket-*, confluence  X-Atlassian-Confluence-*).
 
 5. **Missing credential rejection**: When the resolver returns an
  incomplete credential (any of url, username, personal_token is
@@ -428,8 +428,8 @@ def test_correct_header_prefix_per_service(
 
 
 
- jira → X-Atlassian-Jira-*, bitbucket → X-Atlassian-Bitbucket-*,
- confluence → X-Atlassian-Confluence-*.
+ jira  X-Atlassian-Jira-*, bitbucket  X-Atlassian-Bitbucket-*,
+ confluence  X-Atlassian-Confluence-*.
  """
     resolver = FakeCredentialResolver(cred)
     expected_prefix = _HEADER_PREFIX[service]
@@ -619,15 +619,15 @@ def test_idempotent_double_injection_restores_correctly(
 
 
 # ===========================================================================
-# invariant - Atomik departman ekleme + plain-text sızıntı yasağı 
+# invariant - Atomik departman ekleme + plain-text sızıntı yasağı
 # ===========================================================================
 #
 #
 # invariant extends this module with the plain-text leak invariants of the
 # atomic department-create flow described in
 # `//design.md`` §"Atomic Department
-# Create" and the invariant row of the design's invariant → Test mapping
-# table (P6 → ``test_credential_inject.py`` extended + new
+# Create" and the invariant row of the design's invariant  Test mapping
+# table (P6  ``test_credential_inject.py`` extended + new
 # ``test_dept_atomic_create.py``).
 #
 # The five sub-properties below pin one invariant each. They share a single
@@ -870,7 +870,7 @@ def _build_create_request(plain_token: str) -> _CreateRequest:
     """Build a single-bot Jira-only:class:`DepartmentCreateRequest`.
 
  We restrict the request to a single Jira bot so the test exercises
- the full staging → probe → DB → promotion sequence with the
+ the full staging  probe  DB  promotion sequence with the
  smallest moving parts. The other services follow the same code
  path; covering one is sufficient for the secrecy invariant and
  keeps the property's wall-clock time bounded.
@@ -1330,7 +1330,7 @@ def test_p6e_token_bytearray_is_zeroed_after_run(plain_token: str) -> None:
 
 
 # ===========================================================================
-# invariant - Credential resolve önceliği: per-user > org-default 
+# invariant - Credential resolve önceliği: per-user > org-default
 # ===========================================================================
 #
 #
@@ -1339,17 +1339,17 @@ def test_p6e_token_bytearray_is_zeroed_after_run(plain_token: str) -> None:
 #
 # 1. Per-user override - ``vault:atlassian/_user_session/<session_id>/<service>``
 # 2. Org-default bot - ``vault:atlassian/<dept_id>/<service>``
-# 3. Neither present →:class:`CredentialMissing`
+# 3. Neither present :class:`CredentialMissing`
 # (``error_code == "credential_missing"``)
 #
 # We test the full 2x2 truth table of
 # ``(per_user_present, org_default_present)`` against random
 # ``(session_id, dept_id, service)`` triples to lock down:
 #
-# P15a - (True, True) → output comes from the per-user path.
-# P15b - (True, False) → output still comes from the per-user path.
-# P15c - (False, True) → output comes from the org-default path.
-# P15d - (False, False) → ``CredentialMissing`` (a.k.a.
+# P15a - (True, True)  output comes from the per-user path.
+# P15b - (True, False)  output still comes from the per-user path.
+# P15c - (False, True)  output comes from the org-default path.
+# P15d - (False, False)  ``CredentialMissing`` (a.k.a.
 # ``credential_missing``) is raised; the resolver attempts both
 # paths in order and never returns a payload.
 #
@@ -1462,7 +1462,7 @@ _P15_ORG_SECRET: _Mapping[str, str] = {
 
 
 # ---------------------------------------------------------------------------
-# invariant - (per_user=True, org_default=True) → per-user wins
+# invariant - (per_user=True, org_default=True)  per-user wins
 # ---------------------------------------------------------------------------
 
 
@@ -1506,7 +1506,7 @@ def test_p15a_user_present_org_present_returns_user(
 
 
 # ---------------------------------------------------------------------------
-# invariant - (per_user=True, org_default=False) → per-user wins
+# invariant - (per_user=True, org_default=False)  per-user wins
 # ---------------------------------------------------------------------------
 
 
@@ -1539,7 +1539,7 @@ def test_p15b_user_present_org_absent_returns_user(
 
 
 # ---------------------------------------------------------------------------
-# invariant - (per_user=False, org_default=True) → org-default wins
+# invariant - (per_user=False, org_default=True)  org-default wins
 # ---------------------------------------------------------------------------
 
 
@@ -1577,7 +1577,7 @@ def test_p15c_user_absent_org_present_returns_org(
 
 
 # ---------------------------------------------------------------------------
-# invariant - (per_user=False, org_default=False) → credential_missing
+# invariant - (per_user=False, org_default=False)  credential_missing
 # ---------------------------------------------------------------------------
 
 
@@ -1590,7 +1590,7 @@ def test_p15c_user_absent_org_present_returns_org(
 def test_p15d_user_absent_org_absent_raises_credential_missing(
     session_id: str, dept_id: str, service: _P15Service
 ) -> None:
-    """invariant - both paths missing → ``credential_missing`` raised.
+    """invariant - both paths missing  ``credential_missing`` raised.
 
 
  """
@@ -1656,9 +1656,9 @@ def test_p15e_lookup_order_is_user_then_org_default(
  * The org-default path is read **only** when the per-user lookup
  missed (i.e. the resolver does not over-fetch).
  * The returned ``source`` matches the boolean inputs:
- - per_user_present → ``"user_session"``
- - else org_default_present → ``"org_default"``
- - else → ``CredentialMissing``
+ - per_user_present  ``"user_session"``
+ - else org_default_present  ``"org_default"``
+ - else  ``CredentialMissing``
  """
 
     user_path = _p15_build_user_session_path(session_id, service)

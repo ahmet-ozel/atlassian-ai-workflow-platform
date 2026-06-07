@@ -86,7 +86,7 @@ SAMPLE_ENV_VALUE_A: str = "this-value-must-never-touch-the-db"
 SAMPLE_ENV_KEY_B: str = "REDIS_DATABASES"
 SAMPLE_ENV_VALUE_B: str = "16-also-secret-from-audit"
 
-#: Wall-clock timeout for the start → running poll.
+#: Wall-clock timeout for the start  running poll.
 START_TO_RUNNING_TIMEOUT_SECONDS: float = 60.0
 
 
@@ -489,8 +489,8 @@ def test_audit_round_trip_and_audit_or_rollback_and_deferred_write(
         client.post_stop(TARGET_SERVICE)
 
         # ------------------------------------------------------------------
-        # Scenario 2: audit-or-rollback 
-        # Pause Postgres → /start → expect 502 + redis NOT running.
+        # Scenario 2: audit-or-rollback
+        # Pause Postgres  /start  expect 502 + redis NOT running.
         # ------------------------------------------------------------------
         _docker_pause(postgres_container)
         try:
@@ -520,7 +520,7 @@ def test_audit_round_trip_and_audit_or_rollback_and_deferred_write(
             _wait_for_postgres_ready()
 
         # ------------------------------------------------------------------
-        # Scenario 3: deferred-write 
+        # Scenario 3: deferred-write
         # Compose succeeds (Postgres up at precheck + pending-row time),
         # then the post-Compose audit row hits a paused Postgres.
         # ------------------------------------------------------------------
@@ -552,7 +552,7 @@ def test_audit_round_trip_and_audit_or_rollback_and_deferred_write(
         # Outcome may legitimately be either:
         # * 502 (the pause hit before the precheck/pending-row insert)
         # * 202 with audit_write_deferred=true (the pause hit between
-        # Compose success and the final audit row - 
+        # Compose success and the final audit row -
         # * 202 with audit_write_deferred=false (timing missed; rare on
         # the warm host but possible).
         # The test PASSES on any of those because all three are valid

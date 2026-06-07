@@ -285,16 +285,16 @@ class BurstWindow:
 
         The decision rules are:
 
-        * No open window for ``issue_key`` → open one anchored at
+        * No open window for ``issue_key``  open one anchored at
           ``now``, store ``payload``, and return
           ``"coalesce_emit"``. The caller dispatches immediately.
         * Open window exists AND ``now - window_start <
-          window_seconds`` → drop the delivery, append
+          window_seconds``  drop the delivery, append
           ``delivery_id`` to the buffer's ``dropped_delivery_ids``,
           replace the buffered payload with ``payload``, and return
           ``"coalesce_dropped"``. The caller does **not** dispatch.
         * Open window exists BUT it has already expired (``now -
-          window_start >= window_seconds``) → close the stale window
+          window_start >= window_seconds``)  close the stale window
           (its contents are discarded - the caller is expected to
           have flushed it via :meth:`flush_window` before this point;
           if not, the design accepts the trade-off that an unflushed

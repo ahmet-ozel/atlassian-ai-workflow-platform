@@ -3,8 +3,7 @@
 /**
  * `/admin/llm-providers` - operator surface for the LLM provider
  * management spec (Requirements 14.1, 14.2, 14.4 - 14.8).
- *
- * Owns the `providers` state and re-fetches after every mutation/test
+ * * Owns the `providers` state and re-fetches after every mutation/test
  * so the table stays in sync with the backend. Composes
  * `<ProviderTable>`, `<ProviderModal>` and `<DeleteConfirm>` into a
  * single CRUD screen; the inline test action calls the saved-test

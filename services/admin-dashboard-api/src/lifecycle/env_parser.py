@@ -93,11 +93,11 @@ def _strip_quotes(value: str) -> str:
 def _strip_comment_prefix(line: str) -> str:
     """Drop the leading ``#`` (and one optional following space) of a comment line.
 
-    ``# foo``  → ``foo``
-    ``#foo``   → ``foo``
-    ``#  foo`` → `` foo`` (only one space is stripped - the rest is
+    ``# foo``   ``foo``
+    ``#foo``    ``foo``
+    ``#  foo``  `` foo`` (only one space is stripped - the rest is
     preserved verbatim to keep manually-indented comment blocks intact).
-    ``##``     → ``#``
+    ``##``      ``#``
     """
 
     # Caller has verified ``line`` starts with ``#``; trim that one char,
@@ -145,7 +145,7 @@ def parse_env_example(text: str) -> list[EnvField]:
         # produced by Windows editors; strip it defensively.
         line = raw_line.rstrip("\r")
 
-        # Rule 3: blank line → reset the comment buffer.
+        # Rule 3: blank line  reset the comment buffer.
         if line.strip() == "":
             comment_buffer = []
             continue

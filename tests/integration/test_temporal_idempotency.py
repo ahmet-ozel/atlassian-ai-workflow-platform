@@ -23,7 +23,7 @@ the **same workflow ID** and assert the SDK raises
 ``WorkflowAlreadyStartedError``. This is the exact exception the
 webhook handler catches to emit its duplicate response.
 
-The handler-side mapping (exception → 200 duplicate JSON) already has
+The handler-side mapping (exception  200 duplicate JSON) already has
 its own unit-test coverage in
 ``services/automation-service/tests/unit/test_temporal_client.py``;
 this integration test pins the SDK contract that makes that mapping
@@ -88,7 +88,7 @@ def _temporal_test_env_available() -> bool:
 
     try:  # noqa: SIM105 - explicit branch keeps the intent legible.
         from temporalio.testing import WorkflowEnvironment  # noqa: F401
-    except Exception:  # noqa: BLE001 - any import failure → skip.
+    except Exception:  # noqa: BLE001 - any import failure  skip.
         return False
     return True
 

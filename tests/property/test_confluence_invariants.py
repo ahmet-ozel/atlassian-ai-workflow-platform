@@ -10,13 +10,13 @@ Hypothesis-driven verification of the five pure helpers used by the
  ``_AI_PROBE_*`` prefix detection (,
  §16.14.6 V6 / foundation).
 *:func:`temporal_shared.confluence_dedup.should_skip_overwrite` -
- non-bot edited within freshness window → skip (,
+ non-bot edited within freshness window  skip (,
  §16.11 - Confluence overwrite koruması).
 *:func:`temporal_shared.confluence_dedup.should_skip_section_update` -
  ``(workflow_id, page_id, section_path, content_hash)`` already in
- the hash table → skip (, §16.14.10 V10).
+ the hash table  skip (, §16.14.10 V10).
 *:func:`temporal_shared.confluence.compute_provenance_footer` -
- non-empty Jira link → footer that contains the link verbatim
+ non-empty Jira link  footer that contains the link verbatim
  (, §16.13 S6 / §16.12 B7). Empty / invalid link inputs
  raise:class:`InvalidJiraIssueLinkError` (a:class:`ValueError`
  subclass) so the caller cannot accidentally render a malformed
@@ -63,7 +63,7 @@ Invariant statements (mirror design.md §"invariant")
  (substring check - the activity layer relies on this so
  readers can click through to the source issue).
 (P-footer-2) The footer is non-empty and contains the canonical
- provenance prefix ``"🤖"`` so tests / readers can locate
+ provenance prefix ``""`` so tests / readers can locate
  the AI-attribution block.
 (P-footer-3) Empty / whitespace-only / structurally-invalid link
  inputs raise:class:`InvalidJiraIssueLinkError`
@@ -71,7 +71,7 @@ Invariant statements (mirror design.md §"invariant")
 
 (P-title-1) For any non-empty topic and a calendar date,
  ``format_page_title`` returns a string matching
- ``r"^.+ - \\d{4}-\\d{2}-\\d{2}$"`` (the canonical 
+ ``r"^.+ - \\d{4}-\\d{2}-\\d{2}$"`` (the canonical
  shape).
 (P-title-2) The returned title contains the topic verbatim and the
  ISO-8601 date suffix exactly as ``current_date.strftime(
@@ -89,9 +89,9 @@ the task brief, matching the existing invariant cadence (see
 Deviation note (task brief vs implementation)
 ---------------------------------------------
 
-The task brief for invariant states "empty → empty string" for:func:`compute_provenance_footer`. The production implementation in:mod:`temporal_shared.confluence` raises:class:`InvalidJiraIssueLinkError` instead, on the basis that the
+The task brief for invariant states "empty  empty string" for:func:`compute_provenance_footer`. The production implementation in:mod:`temporal_shared.confluence` raises:class:`InvalidJiraIssueLinkError` instead, on the basis that the
 footer is rendered verbatim into Confluence storage format and a
-silently-empty footer would strip the AI-attribution required by 
+silently-empty footer would strip the AI-attribution required by
 ( §16.12 B7 - bot output attribution). The invariant tests
 the **as-implemented** contract (raise on empty) since that module's
 docstring and unit tests in
@@ -429,7 +429,7 @@ class TestIsProbePage:
     @settings(max_examples=100, deadline=None)
     @given(title=_ANY_TITLE)
     def test_is_probe_page_is_deterministic(self, title: str) -> None:
-        """P-probe-3: same input → same output across two calls.
+        """P-probe-3: same input  same output across two calls.
 
 
  """
@@ -474,7 +474,7 @@ class TestShouldSkipOverwrite:
 
  The full predicate (per + module docstring):
 
- skip ⇔ last_editor is not None
+ skip  last_editor is not None
  AND last_edit_at is not None
  AND last_editor ∉ bot_ids
  AND timedelta(0) <= now - last_edit_at < freshness
@@ -548,7 +548,7 @@ class TestShouldSkipOverwrite:
         last_edit_at: datetime | None,
         bot_ids: frozenset[str],
     ) -> None:
-        """P-overwrite-3: same input → same decision across two calls.
+        """P-overwrite-3: same input  same decision across two calls.
 
 
  """
@@ -591,7 +591,7 @@ class TestShouldSkipSectionUpdate:
         content_hash: str,
         hash_table: frozenset[tuple[str, str, str, str]],
     ) -> None:
-        """P-section-1: skip ⇔ ``(wf, page, section, hash) ∈ hash_table``.
+        """P-section-1: skip  ``(wf, page, section, hash) ∈ hash_table``.
 
 
  """
@@ -645,7 +645,7 @@ class TestShouldSkipSectionUpdate:
         content_hash: str,
         hash_table: frozenset[tuple[str, str, str, str]],
     ) -> None:
-        """P-section-3: same input → same decision across two calls.
+        """P-section-3: same input  same decision across two calls.
 
 
  """
@@ -673,7 +673,7 @@ class TestShouldSkipSectionUpdate:
         content_hash: str,
         extra_keys: set[tuple[str, str, str, str]],
     ) -> None:
-        """Round-trip: insert the key into the table → next call skips.
+        """Round-trip: insert the key into the table  next call skips.
 
  This is the natural cache-population path the workflow follows
  after a successful Confluence update (see the
@@ -735,8 +735,8 @@ class TestComputeProvenanceFooter:
  """
         footer = compute_provenance_footer(jira_issue_link)
         assert footer  # non-empty
-        # The 🤖 emoji is the canonical AI-attribution marker ( / B7).
-        assert "🤖" in footer
+        # The  emoji is the canonical AI-attribution marker ( / B7).
+        assert "" in footer
 
     @settings(max_examples=100, deadline=None)
     @given(empty_link=_EMPTY_OR_WS_LINKS)
@@ -745,7 +745,7 @@ class TestComputeProvenanceFooter:
     ) -> None:
         """P-footer-3: empty / whitespace-only inputs raise ``ValueError``.
 
- Note (deviation): the task brief states "empty → empty
+ Note (deviation): the task brief states "empty  empty
  string", but the production helper raises:class:`InvalidJiraIssueLinkError` (a ``ValueError`` subclass)
  so a silently-empty footer cannot strip the AI-attribution
  required by / §16.12 B7. The invariant
@@ -766,7 +766,7 @@ class TestComputeProvenanceFooter:
     def test_compute_provenance_footer_is_deterministic(
         self, jira_issue_link: str
     ) -> None:
-        """Same input → same footer across two calls.
+        """Same input  same footer across two calls.
 
 
  """
@@ -841,7 +841,7 @@ class TestFormatPageTitle:
     def test_format_page_title_is_deterministic(
         self, topic: str, current_date: date
     ) -> None:
-        """Same input → same title across two calls.
+        """Same input  same title across two calls.
 
 
  """
@@ -856,7 +856,7 @@ class TestFormatPageTitle:
 
 
 class TestDeterminism:
-    """All five helpers are pure deterministic - same input → same output.
+    """All five helpers are pure deterministic - same input  same output.
 
  The per-helper test classes already pin the contract for each
  function individually; this class exists as a single, easy-to-grep

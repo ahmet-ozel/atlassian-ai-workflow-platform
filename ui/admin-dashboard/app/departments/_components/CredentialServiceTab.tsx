@@ -3,37 +3,31 @@
 /**
  * CredentialServiceTab - single-service tab body inside the dept
  * credential modal.
- *
- * Rendered three times by :file:`CredentialModal.tsx` (one per
+ * * Rendered three times by :file:`CredentialModal.tsx` (one per
  * Atlassian service: ``jira``, ``confluence``, ``bitbucket``). The
  * tab owns the form state for *its* service only; the modal owns
  * the active-tab selector and the dept-level refresh.
- *
- * Form fields mirror the
+ * * Form fields mirror the
  * ``POST /admin/departments/{id}/credentials/{service}`` body
  * (services/automation-service/src/routers/dept_credentials.py
- * → :func:`add_or_update_credential`):
- *
- * * ``url`` - required, plain text.
+ * :func:`add_or_update_credential`):
+ * * * ``url`` - required, plain text.
  * * ``username`` - required, plain text.
  * * ``personal_token`` - required for save, ``<input type=password>``,
- *   never echoed back from the server (write-only).
+ * never echoed back from the server (write-only).
  * * ``account_id`` - read-only; populated by a successful probe.
  * * ``deployment`` - optional dropdown rendered only for bitbucket.
- *
- * Buttons:
- *
- * * ``Test (Probe)`` - calls
- *   ``POST /admin/departments/{id}/probe?service={service}`` and
- *   updates the green ✅ / red ❌ badge from the response.
+ * * Buttons:
+ * * * ``Test (Probe)`` - calls
+ * ``POST /admin/departments/{id}/probe?service={service}`` and
+ * updates the green  / red  badge from the response.
  * * ``Kaydet``      - calls
- *   ``POST /admin/departments/{id}/credentials/{service}`` and, on
- *   success, asks the modal to close + refetch.
+ * ``POST /admin/departments/{id}/credentials/{service}`` and, on
+ * success, asks the modal to close + refetch.
  * * ``Sil``         - calls
- *   ``DELETE /admin/departments/{id}/credentials/{service}`` after
- *   a confirm prompt; refetches on success.
- *
- * The component is intentionally pure - it never owns the modal
+ * ``DELETE /admin/departments/{id}/credentials/{service}`` after
+ * a confirm prompt; refetches on success.
+ * * The component is intentionally pure - it never owns the modal
  * lifecycle or the dept fetch; the parent ``CredentialModal``
  * passes ``onSaved`` / ``onRemoved`` callbacks so the catalog can
  * refetch the dept detail after each mutation lands.
@@ -509,7 +503,7 @@ export default function CredentialServiceTab({
           }}
           aria-label="No probe result yet"
         >
-          ⚪ Not probed yet
+           Not probed yet
         </span>
       );
     }
@@ -530,7 +524,7 @@ export default function CredentialServiceTab({
           aria-label="Probe succeeded"
           data-testid="probe-badge-ok"
         >
-          ✅ Connected
+           Connected
           {probeBadge.account_id ? ` · ${probeBadge.account_id}` : ""}
         </span>
       );
@@ -551,7 +545,7 @@ export default function CredentialServiceTab({
         aria-label="Probe failed"
         data-testid="probe-badge-failed"
       >
-        ❌ Failed
+         Failed
       </span>
     );
   }, [probeBadge]);
@@ -646,8 +640,7 @@ export default function CredentialServiceTab({
                 title="Sensitive - never echoed back from the server"
                 style={{ marginLeft: "0.4rem", color: "#b00" }}
               >
-                *
-              </span>
+                * </span>
             </span>
             <input
               type="password"

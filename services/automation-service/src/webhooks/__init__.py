@@ -4,7 +4,7 @@ This package contains the webhook processing pipeline and individual
 stage implementations for handling Atlassian webhook events.
 
 Main components:
-- WebhookPipeline: Sequential orchestrator (dedup → loop_guard → dispatcher)
+- WebhookPipeline: Sequential orchestrator (dedup  loop_guard  dispatcher)
 - WebhookPayload: Normalized webhook event representation
 - StageResult / PipelineResult: Stage and pipeline outcome models
 - PipelineStage: Protocol for implementing pipeline stages

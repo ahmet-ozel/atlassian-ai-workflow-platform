@@ -154,7 +154,7 @@ def _llm_payload(confidence: float) -> str:
             "timeout_seconds": 1800,
             "web_search": False,
             "output_actions": [
-                {"type": "jira_comment", "payload": {"body": "✅ Done."}},
+                {"type": "jira_comment", "payload": {"body": " Done."}},
             ],
             "confidence": confidence,
             "missing_fields": ["repo"] if confidence < CONFIDENCE_THRESHOLD else [],
@@ -196,7 +196,7 @@ class TestConfidenceThresholdProperty:
         fake_commenter: _FakeCommenter,
         confidence: float,
     ) -> None:
-        """For all c in [0,1]: c < 0.7 ⇒ needs_info; c ≥ 0.7 ⇒ ready.
+        """For all c in [0,1]: c < 0.7  needs_info; c ≥ 0.7  ready.
 
         """
         # Reset call/comment history for this example so a single
@@ -218,7 +218,7 @@ class TestConfidenceThresholdProperty:
         assert result.workflow_type == "code_change_with_test"
 
         if confidence < CONFIDENCE_THRESHOLD:
-            # Below threshold ⇒ needs_info, not ready.
+            # Below threshold  needs_info, not ready.
             assert result.status == "needs_info", (
                 f"confidence={confidence!r} should route to needs_info "
                 f"(threshold={CONFIDENCE_THRESHOLD}), got {result.status!r}"
@@ -231,7 +231,7 @@ class TestConfidenceThresholdProperty:
             assert issue_key == "PAY-42"
             assert dept_id == "payments"
         else:
-            # At or above threshold ⇒ ready.
+            # At or above threshold  ready.
             assert result.status == "ready", (
                 f"confidence={confidence!r} should proceed (ready) "
                 f"(threshold={CONFIDENCE_THRESHOLD}), got {result.status!r}"

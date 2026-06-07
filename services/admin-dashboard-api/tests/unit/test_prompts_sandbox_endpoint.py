@@ -616,9 +616,9 @@ class TestSandboxRunPersistence:
         assert "RETURNING id" in sql
         # Column order mirrors the migration:
         # (prompt_path, draft_branch, sample_input, prompt_body_hash,
-        #  response_text, token_in, token_out, cost_usd, passed, actor_id)
+        # response_text, token_in, token_out, cost_usd, passed, actor_id)
         assert args[0] == "prompts/assistant_chat.md"
-        # Inline body → sentinel, not NULL (column is NOT NULL).
+        # Inline body  sentinel, not NULL (column is NOT NULL).
         assert args[1] == "__inline_body__"
         assert args[2] == "explain"
         assert args[3] == hashlib.sha256(SEED_BODY.encode("utf-8")).hexdigest()

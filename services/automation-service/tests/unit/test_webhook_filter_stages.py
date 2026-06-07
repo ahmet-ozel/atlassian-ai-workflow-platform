@@ -211,7 +211,7 @@ class TestVerifyHmacStage:
         """HMAC failure short-circuits before ``resolve_dept`` is consulted.
 
         The router relies on this ordering: a forged signature must
-        not leak the project_key → dept_id mapping (or the absence
+        not leak the project_key  dept_id mapping (or the absence
         thereof) via differential responses.
 
         """
@@ -337,7 +337,7 @@ class TestLoopGuardActorIdStage:
     """``_stage_loop_guard`` drops events whose actor is in the bot union."""
 
     def test_actor_matching_bot_drops_with_loop_guard_dropped(self) -> None:
-        """Actor-id ∈ bot_account_ids() → drop with ``loop_guard_dropped``.
+        """Actor-id ∈ bot_account_ids()  drop with ``loop_guard_dropped``.
 
         """
 
@@ -443,7 +443,7 @@ class TestLoopGuardRegexFallbackStage:
     """``[bot:`` regex fallback fires only when ``actor_account_id`` is None."""
 
     def test_actor_none_with_bot_prefix_drops(self) -> None:
-        """No actor + body starts with ``[bot:`` → drop with regex reason.
+        """No actor + body starts with ``[bot:``  drop with regex reason.
 
         """
 
@@ -483,7 +483,7 @@ class TestLoopGuardRegexFallbackStage:
         assert decision.reason == REASON_LOOP_GUARD_REGEX_DROPPED
 
     def test_actor_none_without_bot_prefix_passes(self) -> None:
-        """No actor + body without ``[bot:`` → pass through.
+        """No actor + body without ``[bot:``  pass through.
 
         """
 
@@ -497,7 +497,7 @@ class TestLoopGuardRegexFallbackStage:
         assert decision.action == "pass"
 
     def test_actor_none_with_none_body_passes(self) -> None:
-        """No actor + no body text → pass through.
+        """No actor + no body text  pass through.
 
         Some Atlassian system events ship neither an actor nor a
         comment body (e.g. lifecycle hooks). The chain must let them
@@ -587,7 +587,7 @@ class TestLoopGuardRegexFallbackStage:
 
 
 class TestEvaluateStageOrdering:
-    """The chain runs verify → resolve → loop in that fixed order."""
+    """The chain runs verify  resolve  loop in that fixed order."""
 
     def test_hmac_runs_before_dept_resolve(self) -> None:
         """HMAC failure surfaces even when no dept is configured.

@@ -7,7 +7,7 @@ Validates that the Confluence space discovery fix works correctly:
 - The CONF-SPACE scenario passes using the discover_space() strategy
 
 Verification steps:
-1. Run Confluence smoke test → assert CONF-SPACE passes
+1. Run Confluence smoke test  assert CONF-SPACE passes
 2. Verify dynamic space discovery works without manual creation
 3. Emit evidence JSON
 

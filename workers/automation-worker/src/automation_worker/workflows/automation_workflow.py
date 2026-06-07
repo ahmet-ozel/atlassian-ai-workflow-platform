@@ -17,7 +17,7 @@ Responsibilities:
  itself raises.
 3. Capability gate - translate the LLM-selected
  ``workflow_type`` to the simple-vocabulary capability set via:func:`temporal_shared.capabilities.required_capabilities`, then
- compare against ``inp.available_capabilities`` with:func:`missing_capabilities`. Missing capability → ``decision="denied"``
+ compare against ``inp.available_capabilities`` with:func:`missing_capabilities`. Missing capability  ``decision="denied"``
  plus an audit-action / Jira comment activity call, then return.
 4. ``branch_pattern_rules`` routing - for code-change /
  pr_review workflows the workflow asks an activity for the
@@ -133,8 +133,7 @@ with workflow.unsafe.imports_passed_through():
     # The workflow body therefore only consumes the structured
     #:class:`TaskAnalysisResult` envelope; it does NOT post the same
     # comments a second time.
-    #
-    # ``TaskAnalysisInput`` / ``TaskAnalysisResult`` live inside the
+    # # ``TaskAnalysisInput`` / ``TaskAnalysisResult`` live inside the
     # activity module (rather than ``temporal_shared.messages``) because
     # they are activity-private types - the workflow only needs to hold
     # the dataclass shapes for its return-type hints, not import the
@@ -197,8 +196,8 @@ _NEEDS_INFO_MAX_ITERATIONS: Final[int] = 3
 #: Activity that posts the captured ``noop_test`` stdout / exit code as
 #: a Jira comment after the child:class:`ExecutionRunWorkflow`
 #: completes. Wired into the gateway's child-await branch so
-#: the smoke-test path verifies the full pipeline (webhook →
-#: AutomationWorkflow → ExecutionRunWorkflow → SSH runner → Jira
+#: the smoke-test path verifies the full pipeline (webhook
+#: AutomationWorkflow  ExecutionRunWorkflow  SSH runner  Jira
 #: comment) without involving the LLM. The activity body lives in
 #::mod:`automation_worker.activities.noop_test`.
 _ACT_NOOP_TEST_POST_RESULT: Final[str] = "noop_test_post_result"
@@ -225,7 +224,7 @@ _ACT_DISPATCH_NOTIFICATION: Final[str] = "dispatch_notification"
 #: The activity itself enforces a per-action 30 s timeout
 #: (``ACTION_TIMEOUT_SECONDS``) and a 20-action batch ceiling
 #: (``MAX_ACTIONS_PER_BATCH``); 20 × 30 s = 600 s plus headroom for
-#: artifact downloads / MCP retries → 15 minutes is a safe upper
+#: artifact downloads / MCP retries  15 minutes is a safe upper
 #: bound that mirrors:data:`workflow_helpers._OUTPUT_ACTIONS_TIMEOUT`.
 _OUTPUT_ACTIONS_TIMEOUT: Final[timedelta] = timedelta(minutes=15)
 
@@ -293,7 +292,7 @@ _NOTIFICATION_DISPATCH_RETRY: Final[RetryPolicy] = RetryPolicy(
 
 
 # ---------------------------------------------------------------------------
-# Workflow-type → child workflow routing table
+# Workflow-type  child workflow routing table
 # ---------------------------------------------------------------------------
 #
 # Each workflow type is assigned to one of two child workflows:
@@ -382,7 +381,7 @@ class _AutomationStop:
 def _format_ack_comment() -> str:
     """Initial acknowledgement comment posted on the Jira issue."""
 
-    return "🤖 Task alındı, otomasyon hattı analiz ediyor..."
+    return " Task alındı, otomasyon hattı analiz ediyor..."
 
 
 def _format_missing_caps_comment(
@@ -392,7 +391,7 @@ def _format_missing_caps_comment(
 
     listed = ", ".join(sorted(missing))
     return (
-        f"⛔ Eksik capability - '{workflow_type}' iş akışı için "
+        f" Eksik capability - '{workflow_type}' iş akışı için "
         f"şu servis(ler) tanımlı değil: {listed}. "
         f"Lütfen departman bot kimlik bilgilerini tamamladıktan sonra "
         f"görevi tekrar atayın."
@@ -403,7 +402,7 @@ def _format_unknown_workflow_type_comment(workflow_type: str) -> str:
     """Unknown workflow type denial - surfaces the LLM mistake."""
 
     return (
-        f"⛔ Bilinmeyen workflow_type '{workflow_type}'. "
+        f" Bilinmeyen workflow_type '{workflow_type}'. "
         "Görev otomasyon hattı tarafından reddedildi."
     )
 
@@ -417,7 +416,7 @@ def _format_branch_rule_denied_comment(
 
     matched = decision.matched_glob or "?"
     return (
-        f"⛔ '{branch}' branch'i üzerinde '{workflow_type}' iş akışına "
+        f" '{branch}' branch'i üzerinde '{workflow_type}' iş akışına "
         f"izin verilmiyor (kural: {matched}, sebep: {decision.reason}). "
         "Lütfen branch'ı veya iş akışını gözden geçirin."
     )
@@ -427,7 +426,7 @@ def _format_analysis_failed_comment(reason: str) -> str:
     """LLM analysis failure comment."""
 
     return (
-        f"❌ Görev analizi başarısız: {reason}. Lütfen issue açıklamasını "
+        f" Görev analizi başarısız: {reason}. Lütfen issue açıklamasını "
         "netleştirip yeniden atayın."
     )
 
@@ -448,7 +447,7 @@ def _format_needs_info_comment(questions: tuple[str, ...]) -> str:
         body = "• Lütfen görevle ilgili eksik detayları belirtin."
 
     return (
-        "🤖 Görevi başlatabilmem için aşağıdaki bilgilere ihtiyacım "
+        " Görevi başlatabilmem için aşağıdaki bilgilere ihtiyacım "
         "var:\n\n"
         f"{body}\n\n"
         "Lütfen bu yorumun altına bilgileri yazın; otomatik olarak "
@@ -475,7 +474,7 @@ def _format_needs_info_loop_cap_comment() -> str:
     """Loop-cap comment posted when re-analysis cannot lift confidence."""
 
     return (
-        "🛑 Görev analizi birkaç iterasyon sonra hâlâ düşük güven "
+        " Görev analizi birkaç iterasyon sonra hâlâ düşük güven "
         "üretti, otomatik işleme kapatıldı. Lütfen görev tanımını "
         "netleştirip yeniden atayın."
     )
@@ -498,8 +497,7 @@ class AutomationWorkflow:
 
     def __init__(self) -> None:
         # Signal-driven state for the needs_info loop (-).
-        #
-        # ``_pending_comment_body`` carries the Turkish reply text the
+        # # ``_pending_comment_body`` carries the Turkish reply text the
         # webhook dispatcher forwarded via the ``info_received`` signal
         # (see:func:`platform.services.automation-service.src.webhooks.
         # dispatcher.WebhookDispatcher._signal_workflow`). The flag
@@ -507,8 +505,7 @@ class AutomationWorkflow:
         # the run body resets it before each ``wait_condition`` so a
         # spurious wake-up from a previous iteration cannot leak into
         # the next.
-        #
-        # Both attributes are simple Python primitives - Temporal's
+        # # Both attributes are simple Python primitives - Temporal's
         # determinism contract treats writes inside signal handlers
         # the same as writes inside ``run`` (the SDK records them in
         # the workflow event history), so we can read them from
@@ -573,12 +570,10 @@ class AutomationWorkflow:
         )
 
         # 2. Task analysis (-,,).
-        #
-        # The new ``analyze_task`` activity is the **first** action
+        # # The new ``analyze_task`` activity is the **first** action
         # the workflow takes after the ack comment. It owns the
         # full analyser pipeline:
-        #
-        # a. ``prepare_task_analysis_input`` - fetches the Jira
+        # # a. ``prepare_task_analysis_input`` - fetches the Jira
         # issue text + dept config and builds a
         #:class:`TaskAnalysisInput`. Failure here is fatal
         # (we cannot reason about a workflow we can't read).
@@ -592,8 +587,7 @@ class AutomationWorkflow:
         # description_parser warning) are posted by the
         # activity itself - the workflow body only reads the
         # resulting:class:`TaskAnalysisResult`.
-        #
-        # Hot-reload of ``platform/prompts/task_analysis.md``
+        # # Hot-reload of ``platform/prompts/task_analysis.md``
         # is provided by the ``PromptCache`` *inside* the
         # activity (mtime-aware). The workflow always issues a
         # fresh ``execute_activity`` call workflow start, so
@@ -769,14 +763,13 @@ class AutomationWorkflow:
         # The gateway otherwise treats dispatch as its responsibility,
         # with each child reporting
         # its own outcome. The smoke-test path (-)
-        # verifies the full pipeline (webhook → AutomationWorkflow →
-        # ExecutionRunWorkflow → SSH runner → Jira comment) end-to-end,
+        # verifies the full pipeline (webhook  AutomationWorkflow
+        # ExecutionRunWorkflow  SSH runner  Jira comment) end-to-end,
         # so the gateway awaits the:class:`ExecutionRunWorkflow`
         # child and, on success, posts the captured stdout / exit code
         # back to the triggering Jira issue via the
         # ``noop_test_post_result`` activity.
-        #
-        # All other workflow types (code change / pr_review /
+        # # All other workflow types (code change / pr_review /
         # confluence / research / multi_step / remote_ssh_test_only)
         # remain dispatch-and-forget so the gateway holds no long
         # workflow slot.
@@ -796,16 +789,14 @@ class AutomationWorkflow:
             # ``confluence_page`` to capture results) the gateway
             # awaits the child:class:`ExecutionRunWorkflow` so it
             # can:
-            #
-            # * synthesise MinIO bucket/key params for any
+            # # * synthesise MinIO bucket/key params for any
             # ``jira_attachment`` action that did not carry them
             # explicitly (so the executor can stream stdout /
             # stderr from MinIO without the analyser knowing the
             # workflow_id ahead of time), and
             # * dispatch the resulting:class:`ExecutionBatchInput`
             # to the ``execute_output_actions`` activity.
-            #
-            # Empty:attr:`LlmAnalysisResult.output_actions` keeps
+            # # Empty:attr:`LlmAnalysisResult.output_actions` keeps
             # the dispatch-and-forget contract verbatim - this branch
             # is opt-in by the analyser (/ Description Parser
             # ``output:`` block), so existing remote_ssh_test_only
@@ -925,11 +916,11 @@ class AutomationWorkflow:
 
  Branching contract (,):
 
- * ``accepted=False`` and ``status="rejected"`` → return an:class:`_AutomationStop` with ``decision="denied"`` and
+ * ``accepted=False`` and ``status="rejected"``  return an:class:`_AutomationStop` with ``decision="denied"`` and
  ``failure_reason="task_analysis_rejected"``. The activity
  has already posted the explanation comment to Jira; we
  only need to record the audit row and end the workflow.
- * ``status="needs_info"`` → enter the signal-driven wait
+ * ``status="needs_info"``  enter the signal-driven wait
  loop. The webhook dispatcher emits ``info_received`` when
  a non-bot user replies (/ - wiring).
  On signal the helper re-runs steps 1 + 2 with the new
@@ -939,7 +930,7 @@ class AutomationWorkflow:
  ``loop_cap_reached``. The signal flag and pending body
  live on the same workflow attributes used by the legacy:meth:`_handle_needs_info_loop` so the dispatcher's
  existing wiring keeps working without changes.
- * ``status="ready"`` → return the:class:`TaskAnalysisResult` together with the distilled:class:`DescriptionOverride`.
+ * ``status="ready"``  return the:class:`TaskAnalysisResult` together with the distilled:class:`DescriptionOverride`.
 
  Hot-reload: the prompt cache lives inside:func:`automation_worker.activities.task_analyzer.analyze_task`
  and is mtime-aware. Each workflow start issues a fresh
@@ -1480,8 +1471,8 @@ class AutomationWorkflow:
  ``noop_test`` is the **only** workflow type for which the
  gateway opts in to awaiting its child - every other type is
  dispatch-and-forget. The smoke-test path proves the full
- pipeline (webhook → AutomationWorkflow → ExecutionRunWorkflow
- → SSH runner → Jira comment) without any LLM or code-change
+ pipeline (webhook  AutomationWorkflow  ExecutionRunWorkflow
+  SSH runner  Jira comment) without any LLM or code-change
  logic, so that newly-onboarded depts can verify end-to-end
  connectivity.
 
@@ -2126,8 +2117,8 @@ class AutomationWorkflow:
         # however, is a smoke test for newly-onboarded depts: the
         # gateway synthesises a deterministic
         # ``echo "noop_test ok: {issue_key}"`` so the full pipeline
-        # (webhook → AutomationWorkflow → ExecutionRunWorkflow → SSH
-        # runner → Jira comment) can be exercised without any LLM
+        # (webhook  AutomationWorkflow  ExecutionRunWorkflow  SSH
+        # runner  Jira comment) can be exercised without any LLM
         # involvement. The synthesised command is replay-safe - it
         # depends only on the issue key, which is part of the
         # workflow input and therefore stable across replays.
@@ -2213,7 +2204,7 @@ class AutomationWorkflow:
 
         # Pass the analyser's ``needs_docker`` flag through to the
         # child so ExecutionRunWorkflow runs the
-        # docker_* chain (build → run → collect_logs → cleanup) instead
+        # docker_* chain (build  run  collect_logs  cleanup) instead
         # of a single ssh_run_test invocation. The flag itself comes
         # from TaskAnalysisResult via the to_llm_analysis_result bridge.
         needs_docker = bool(getattr(analysis, "needs_docker", False))
@@ -2347,9 +2338,9 @@ class AutomationWorkflow:
 
  Decision table:
 
- * ``status == "failed"`` ⇒ Slack send is **mandatory**
+ * ``status == "failed"``  Slack send is **mandatory**
  regardless of ``inp.notify_on_success``.
- * ``status ∈ {"completed", "partial"}`` ⇒ success-gated; the
+ * ``status ∈ {"completed", "partial"}``  success-gated; the
  dispatcher short-circuits to a no-op when
  ``notify_on_success == False``.
  """

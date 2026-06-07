@@ -6,9 +6,9 @@ This test exercises the full ``ExecutionRunWorkflow`` lifecycle against
 in-memory MinIO substitute (no Docker required). The flow under test:
 
  vault_fetch_ssh_credentials
- → ssh_connect_and_run (timeout, retry policy provided by workflow)
- → minio_upload_artifact × 3 (stdout.log, stderr.log, exit_code.txt)
- → should_cleanup(policy, exit_code) → ssh_cleanup (if True)
+  ssh_connect_and_run (timeout, retry policy provided by workflow)
+  minio_upload_artifact × 3 (stdout.log, stderr.log, exit_code.txt)
+  should_cleanup(policy, exit_code)  ssh_cleanup (if True)
 
 Test scope decision
 -------------------
@@ -103,9 +103,9 @@ class _ActivityCallLog:
 
 # (cleanup_policy, exit_code, expected_cleanup, scenario_name)
 # Mirrors the should_cleanup truth table:
-# always × any → cleanup
-# on_success × 0 → cleanup, × !=0 → no cleanup
-# never × any → no cleanup
+# always × any  cleanup
+# on_success × 0  cleanup, × !=0  no cleanup
+# never × any  no cleanup
 _CLEANUP_MATRIX: list[tuple[str, int, bool, str]] = [
     ("always", 0, True, "always_with_zero_exit"),
     ("always", 7, True, "always_with_nonzero_exit"),
@@ -245,7 +245,7 @@ async def test_execution_run_cleanup_matrix(
     # ----- Assertions --------------------------------------------------
 
     # The activity-call sequence is exact:
-    # vault → ssh → upload × 3 → (cleanup?)
+    # vault  ssh  upload × 3  (cleanup?)
     names = log.names()
     assert names[0] == "vault_fetch_ssh_credentials", names
     assert names[1] == "ssh_connect_and_run", names
@@ -431,7 +431,7 @@ async def test_ssh_connect_retries_on_transient_failure() -> None:
     )
     # The workflow completed successfully despite the transient failure.
     assert result.exit_code == 0
-    # Cleanup ran (on_success × exit_code=0 → True).
+    # Cleanup ran (on_success × exit_code=0  True).
     assert result.cleanup_performed is True
     # Three artifact uploads still happened.
     assert len(fake_minio.objects) == 3

@@ -60,7 +60,7 @@ def test_one_failure_does_not_block_others(channels: list[str]) -> None:
 @settings(max_examples=50, deadline=None)
 @given(channel_count=st.integers(min_value=1, max_value=5))
 def test_n_channels_n_results(channel_count: int) -> None:
-    """N channels → exactly N results."""
+    """N channels  exactly N results."""
     channels = [f"ch-{i}" for i in range(channel_count)]
     results = asyncio.run(_dispatch_to_all(channels, set()))
     assert len(results) == channel_count

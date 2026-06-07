@@ -112,7 +112,7 @@ _PAYLOAD_HASH = st.text(
     max_size=64,
 )
 
-#: A bounded UTC datetime range. We pick an absolute window (2020 →
+#: A bounded UTC datetime range. We pick an absolute window (2020
 #: 2030) so all generated timestamps share a single tzinfo and direct
 #: ``<`` / ``>=`` comparisons are well-defined.
 _DT_MIN = datetime(2020, 1, 1, tzinfo=timezone.utc)
@@ -160,7 +160,7 @@ class _FakeConnection:
     async def execute(self, query: str, *args: Any) -> str:
         normalised = " ".join(query.split()).lower()
         # The exact statement issued by cleanup_expired() is:
-        #   DELETE FROM automation.processed_events WHERE expires_at < $1
+        # DELETE FROM automation.processed_events WHERE expires_at < $1
         if (
             "delete from automation.processed_events" in normalised
             and "where expires_at <" in normalised
@@ -245,7 +245,7 @@ class TestCleanupDecisionTruthTable:
     def test_always_returns_true_for_any_exit_code(
         self, exit_code: int
     ) -> None:
-        """``("always", any)`` → ``True``."""
+        """``("always", any)``  ``True``."""
         assert should_cleanup("always", exit_code) is True
 
     @_PROFILE
@@ -253,11 +253,11 @@ class TestCleanupDecisionTruthTable:
     def test_never_returns_false_for_any_exit_code(
         self, exit_code: int
     ) -> None:
-        """``("never", any)`` → ``False``."""
+        """``("never", any)``  ``False``."""
         assert should_cleanup("never", exit_code) is False
 
     def test_on_success_with_zero_exit_returns_true(self) -> None:
-        """``("on_success", 0)`` → ``True``."""
+        """``("on_success", 0)``  ``True``."""
         assert should_cleanup("on_success", 0) is True
 
     @_PROFILE
@@ -265,7 +265,7 @@ class TestCleanupDecisionTruthTable:
     def test_on_success_with_nonzero_exit_returns_false(
         self, exit_code: int
     ) -> None:
-        """``("on_success", != 0)`` → ``False``."""
+        """``("on_success", != 0)``  ``False``."""
         assert should_cleanup("on_success", exit_code) is False
 
     @_PROFILE

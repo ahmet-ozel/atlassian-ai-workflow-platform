@@ -2,7 +2,7 @@
 
 Shared Temporal constants and pure-function helpers for the platform.
 
-This package is the **single source of truth** for the workflow-type →
+This package is the **single source of truth** for the workflow-type
 capability mapping and the capability-gate algebra defined in
 the shared capability model.
 Other services and workers import these symbols rather than redefining
@@ -23,11 +23,11 @@ the closed vocabulary `{"jira_read", "jira_write", "bitbucket_read",
 Pure function (no I/O). Returns the capability set a department holds
 based on:
 
-1. `bot.jira` has credential → `jira_read`, `jira_write`.
-2. `bot.bitbucket` has credential → `bitbucket_read`, `bitbucket_write`.
-3. `bot.confluence` has credential → `confluence_read`, `confluence_write`.
-4. Any `SSH_HOST_<n>` key in `env` → `execution`.
-5. `dept.web_search_enabled` and `env["FIRECRAWL_ENABLED"] == "true"` →
+1. `bot.jira` has credential  `jira_read`, `jira_write`.
+2. `bot.bitbucket` has credential  `bitbucket_read`, `bitbucket_write`.
+3. `bot.confluence` has credential  `confluence_read`, `confluence_write`.
+4. Any `SSH_HOST_<n>` key in `env`  `execution`.
+5. `dept.web_search_enabled` and `env["FIRECRAWL_ENABLED"] == "true"`
    `web_search`.
 
 `SSH_RUNNER_DEPT_PINNING_ENABLED` and `SSH_DEPT_QUOTA_ENABLED` are *not*
@@ -55,7 +55,7 @@ from temporal_shared import (
 
 required = WORKFLOW_TYPE_CAPABILITIES["code_change_with_test"]
 # frozenset({"jira_read", "jira_write", "bitbucket_read",
-#            "bitbucket_write", "execution"})
+# "bitbucket_write", "execution"})
 
 decision = gate("code_change_with_test", department, env)
 if not decision.allowed:

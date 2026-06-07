@@ -19,9 +19,9 @@ This file exercises the
    :meth:`AgentRunnerWorkflow._firecrawl_scrape_with_grace` triages
    the outcome:
 
-   * ``{"kind": "egress_blocked"}`` → graceful 403 path:
+   * ``{"kind": "egress_blocked"}``  graceful 403 path:
      post a Jira comment naming the blocked domain and continue.
-   * ``{"kind": "success", "body": {...}}`` → harvest content +
+   * ``{"kind": "success", "body": {...}}``  harvest content +
      bookkeeping (title/url/accessed_at) for the Confluence body.
 
 5. ``confluence_create_page`` - render the body via
@@ -92,7 +92,7 @@ def _temporal_env_available() -> bool:
 
     try:
         from temporalio.testing import WorkflowEnvironment  # noqa: F401
-    except Exception:  # noqa: BLE001 - any import failure → skip.
+    except Exception:  # noqa: BLE001 - any import failure  skip.
         return False
     return True
 
@@ -371,8 +371,8 @@ def _output_to_dict(result: Any) -> dict[str, Any]:
 
 # ---------------------------------------------------------------------------
 # 1. Happy path with one egress-blocked URL - Confluence page created
-#    with allowlisted source rendered in the body, blocked domain
-#    surfaced via best-effort Jira comment.
+# with allowlisted source rendered in the body, blocked domain
+# surfaced via best-effort Jira comment.
 # ---------------------------------------------------------------------------
 
 
@@ -574,8 +574,7 @@ async def test_research_publish_confluence_happy_path_with_egress_blocked_url() 
     )
 
     # 5. Terminal output - non-failure status + page id surfaces.
-    #
-    # The brief asks for ``status="completed"``; production behaviour
+    # # The brief asks for ``status="completed"``; production behaviour
     # is to surface :data:`AgentRunnerStatus` ``completed_with_partial_failure``
     # when the run records a partial-failure marker - and the
     # graceful blocked-source path *does* record ``firecrawl_blocked:<url>`` so
@@ -625,7 +624,7 @@ async def test_research_publish_confluence_no_sources_graceful_degradation() -> 
     * Skip ``confluence_create_page`` entirely - there is no source
       content to publish.
     * Post a Turkish best-effort Jira comment naming the situation:
-      "🤖 Araştırma için kullanılabilir bir kaynak bulunamadı".
+      " Araştırma için kullanılabilir bir kaynak bulunamadı".
     * Mark the run with a non-failure status (``"completed"`` or
       ``"completed_with_partial_failure"`` when the
       ``research_no_sources`` marker is recorded). No source is a
@@ -707,8 +706,7 @@ async def test_research_publish_confluence_no_sources_graceful_degradation() -> 
     # 4. Terminal output - graceful degradation: non-failure status,
     # failure_reason None, partial_failure_actions carries the
     # ``research_no_sources`` marker.
-    #
-    # The brief asks for ``status="completed"``; production behaviour
+    # # The brief asks for ``status="completed"``; production behaviour
     # is to surface :data:`AgentRunnerStatus` ``completed_with_partial_failure``
     # when the run records the ``research_no_sources`` partial
     # failure. Both statuses are non-failure - accept either so a

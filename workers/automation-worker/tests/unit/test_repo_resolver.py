@@ -223,7 +223,7 @@ class TestStructuredFieldPriority:
         self,
         fake_llm_parser: _FakeLLMParser,
     ) -> None:
-        """Empty string structured field → falls through to LLM parse."""
+        """Empty string structured field  falls through to LLM parse."""
         fake_llm_parser.response = {
             "repo_url": "org/backend-api",
             "confidence": 0.95,
@@ -238,7 +238,7 @@ class TestStructuredFieldPriority:
         self,
         fake_llm_parser: _FakeLLMParser,
     ) -> None:
-        """None structured field → falls through to LLM parse."""
+        """None structured field  falls through to LLM parse."""
         fake_llm_parser.response = {
             "repo_url": "org/frontend-app",
             "confidence": 0.9,
@@ -253,7 +253,7 @@ class TestStructuredFieldPriority:
         self,
         fake_llm_parser: _FakeLLMParser,
     ) -> None:
-        """Whitespace-only structured field → falls through to LLM parse."""
+        """Whitespace-only structured field  falls through to LLM parse."""
         fake_llm_parser.response = {
             "repo_url": "org/infra-tools",
             "confidence": 0.85,
@@ -277,7 +277,7 @@ class TestRepoValidation:
         self,
         fake_jira_commenter: _FakeJiraCommenter,
     ) -> None:
-        """Repo not in mappings → reject + comment."""
+        """Repo not in mappings  reject + comment."""
         inp = _make_input(structured_field_value="org/unknown-repo")
         result = asyncio.run(resolve_repo_field(inp))
 
@@ -300,7 +300,7 @@ class TestRepoValidation:
         fake_llm_parser: _FakeLLMParser,
         fake_jira_commenter: _FakeJiraCommenter,
     ) -> None:
-        """LLM-parsed repo not in mappings → reject."""
+        """LLM-parsed repo not in mappings  reject."""
         fake_llm_parser.response = {
             "repo_url": "org/secret-repo",
             "confidence": 0.95,
@@ -320,7 +320,7 @@ class TestRepoValidation:
         self,
         fake_jira_commenter: _FakeJiraCommenter,
     ) -> None:
-        """Empty repo_mappings → any repo value is rejected."""
+        """Empty repo_mappings  any repo value is rejected."""
         inp = _make_input(
             structured_field_value="org/backend-api",
             repo_mappings=[],
@@ -357,7 +357,7 @@ class TestLLMParsing:
         self,
         fake_llm_parser: _FakeLLMParser,
     ) -> None:
-        """Confidence >= 0.8 → accept."""
+        """Confidence >= 0.8  accept."""
         fake_llm_parser.response = {
             "repo_url": "org/backend-api",
             "confidence": 0.9,
@@ -376,7 +376,7 @@ class TestLLMParsing:
         fake_jira_commenter: _FakeJiraCommenter,
         fake_jira_transitioner: _FakeJiraTransitioner,
     ) -> None:
-        """Confidence < 0.8 → ask user via comment."""
+        """Confidence < 0.8  ask user via comment."""
         fake_llm_parser.response = {
             "repo_url": "org/backend-api",
             "confidence": 0.6,
@@ -397,7 +397,7 @@ class TestLLMParsing:
         fake_llm_parser: _FakeLLMParser,
         fake_jira_commenter: _FakeJiraCommenter,
     ) -> None:
-        """Confidence exactly at threshold (0.8) is below threshold → ask user.
+        """Confidence exactly at threshold (0.8) is below threshold  ask user.
 
         Values below 0.8 trigger asking. Exactly 0.8 should
         be accepted (>= 0.8 is the acceptance condition).
@@ -419,7 +419,7 @@ class TestLLMParsing:
         fake_llm_parser: _FakeLLMParser,
         fake_jira_commenter: _FakeJiraCommenter,
     ) -> None:
-        """No repo parsed from description → ask user."""
+        """No repo parsed from description  ask user."""
         fake_llm_parser.response = {
             "repo_url": None,
             "confidence": 0.0,
@@ -436,7 +436,7 @@ class TestLLMParsing:
         fake_llm_parser: _FakeLLMParser,
         fake_jira_commenter: _FakeJiraCommenter,
     ) -> None:
-        """LLM parse exception → ask user, return error."""
+        """LLM parse exception  ask user, return error."""
         fake_llm_parser.error = RuntimeError("LLM service unavailable")
         inp = _make_input(structured_field_value=None)
         result = asyncio.run(resolve_repo_field(inp))
@@ -461,7 +461,7 @@ class TestNeedsInfoTransition:
         fake_llm_parser: _FakeLLMParser,
         fake_jira_transitioner: _FakeJiraTransitioner,
     ) -> None:
-        """Confidence < 0.8 → transition to needs_info."""
+        """Confidence < 0.8  transition to needs_info."""
         fake_llm_parser.response = {
             "repo_url": "org/backend-api",
             "confidence": 0.5,

@@ -1,4 +1,4 @@
-"""Top-level :class:`AutomationWorkflow` Temporal workflow.
+﻿"""Top-level :class:`AutomationWorkflow` Temporal workflow.
 
 This workflow is the orchestrator for a single Jira- or Bitbucket-
 triggered automation run. It is started by ``automation-service`` after
@@ -10,7 +10,7 @@ Responsibilities::
     1. Best-effort acknowledgement comment on the Jira issue.
     2. Fetch the issue via ``jira_get_issue``.
     3. Run ``llm_analyze_task`` to derive the workflow_type / output_actions.
-    4. **Capability Phase 2** — verify the department has *all* services
+    4. **Capability Phase 2** - verify the department has *all* services
        required by the chosen workflow_type. The check uses pure helpers
        from :mod:`temporal_shared.capabilities` against ``inp.available_capabilities``
        so it stays deterministic without an extra activity round-trip.
@@ -33,7 +33,7 @@ Determinism contract:
 * ``workflow.now()`` is the only time source.
 * ``workflow.sleep(...)`` and ``workflow.wait_condition(...)`` are the only
   scheduling primitives.
-* No ``random`` / ``uuid`` / ``os.environ`` / direct I/O — every side effect
+* No ``random`` / ``uuid`` / ``os.environ`` / direct I/O - every side effect
   goes through an ``@activity.defn`` activity.
 * Activity modules are imported under the
   ``workflow.unsafe.imports_passed_through()`` sandbox escape hatch.
@@ -66,7 +66,7 @@ with workflow.unsafe.imports_passed_through():
     )
     from temporal_shared.identifiers import agent_workflow_id
 
-    # Activity name strings only — calling activities by name keeps the
+    # Activity name strings only - calling activities by name keeps the
     # workflow body decoupled from the activity modules' httpx imports.
     # We still import the data-class types we *send* to / *receive* from
     # activities so the workflow can construct/destructure them.
@@ -126,7 +126,7 @@ class AutomationInput:
     issue_key:
         Jira issue key (e.g. ``"PAY-4211"``). For Bitbucket-PR-triggered
         runs this is the Jira key linked to the PR (or ``"BB-{pr_id}"``
-        when no link exists — the webhook handler decides).
+        when no link exists - the webhook handler decides).
     department_id:
         Department slug for credential resolution and routing.
     available_capabilities:
@@ -208,7 +208,7 @@ class NewCommentSignal:
     comment_text:
         Plain-text body of the new comment.
     actor_account_id:
-        Atlassian account ID of the commenter — useful for the loop-guard
+        Atlassian account ID of the commenter - useful for the loop-guard
         when the workflow itself comments via the bot account. (The webhook
         handler usually drops bot comments before forwarding, but defending
         in depth keeps the workflow robust.)
@@ -250,7 +250,7 @@ def _format_missing_caps_comment(workflow_type: str, missing: set[str]) -> str:
 
     listed = ", ".join(sorted(missing))
     return (
-        f"⛔ Eksik capability — '{workflow_type}' iş akışı için "
+        f"⛔ Eksik capability - '{workflow_type}' iş akışı için "
         f"şu servis(ler) tanımlı değil: {listed}. "
         f"Lütfen departman bot kimlik bilgilerini tamamladıktan sonra "
         f"görevi tekrar atayın."
@@ -262,7 +262,7 @@ def _format_completion_comment(
 ) -> str:
     """Return the Turkish completion summary comment body."""
 
-    suffix = f" — {child_summary}" if child_summary else ""
+    suffix = f" - {child_summary}" if child_summary else ""
     return f"✅ Tamamlandı ({workflow_type}){suffix}."
 
 
@@ -282,7 +282,7 @@ def _format_failure_comment(workflow_type: str, reason: str) -> str:
 
 @workflow.defn(name="AutomationWorkflow")
 class AutomationWorkflow:
-    """Top-level orchestrator workflow — see module docstring."""
+    """Top-level orchestrator workflow - see module docstring."""
 
     def __init__(self) -> None:
         # Pending question posted to Jira when confidence == "low";
@@ -293,7 +293,7 @@ class AutomationWorkflow:
 
         # Number of LLM re-analyses triggered by ``new_comment`` signals.
         # The first analysis is *not* counted (it is iteration 1 by default
-        # — counter increments only on signal-driven reruns).
+        # - counter increments only on signal-driven reruns).
         self._loop_count: int = 0
 
         # Append-only conversation buffer of comments received via signals,
@@ -312,7 +312,7 @@ class AutomationWorkflow:
 
         Stores the comment text in the conversation buffer and flips the
         edge flag the wait-condition predicate observes. The signal handler
-        intentionally does *no* I/O — all it does is mutate workflow state.
+        intentionally does *no* I/O - all it does is mutate workflow state.
         """
 
         # Accept either a NewCommentSignal dataclass or the raw dict shape
@@ -346,12 +346,12 @@ class AutomationWorkflow:
 
     @workflow.run
     async def run(self, inp: AutomationInput) -> AutomationResult:
-        # The Temporal workflow info object is deterministic — its
+        # The Temporal workflow info object is deterministic - its
         # ``workflow_id`` is derived from the start request, not the clock.
         parent_workflow_id = workflow.info().workflow_id
 
         # 1. Best-effort acknowledgement comment. Wrapped in a try/except so
-        #    a failed ack never aborts the run — the issue may have been
+        #    a failed ack never aborts the run - the issue may have been
         #    deleted between webhook receipt and workflow start.
         try:
             await workflow.execute_activity(
@@ -364,9 +364,9 @@ class AutomationWorkflow:
                 start_to_close_timeout=_SHORT_TIMEOUT,
                 retry_policy=_DEFAULT_RETRY,
             )
-        except Exception:  # noqa: BLE001 — best-effort
+        except Exception:  # noqa: BLE001 - best-effort
             workflow.logger.warning(
-                "jira_add_comment ack failed for %s — continuing anyway",
+                "jira_add_comment ack failed for %s - continuing anyway",
                 inp.issue_key,
             )
 
@@ -375,7 +375,7 @@ class AutomationWorkflow:
         # workflow to progress.
         await self._update_work_item_status(parent_workflow_id, "running")
 
-        # 2. Fetch the Jira issue. Failure here is fatal — without issue
+        # 2. Fetch the Jira issue. Failure here is fatal - without issue
         #    data the LLM cannot analyse the task.
         try:
             issue_data = await workflow.execute_activity(
@@ -436,7 +436,7 @@ class AutomationWorkflow:
         )
         if isinstance(analysis, AutomationResult):
             # Helper short-circuited (capability missing / loop cap /
-            # 7d timeout) — return its terminal result directly.
+            # 7d timeout) - return its terminal result directly.
             return analysis
 
         # 6. Dispatch child AgentRunnerWorkflow.
@@ -486,9 +486,9 @@ class AutomationWorkflow:
                 start_to_close_timeout=_SHORT_TIMEOUT,
                 retry_policy=_DEFAULT_RETRY,
             )
-        except Exception:  # noqa: BLE001 — comment best-effort
+        except Exception:  # noqa: BLE001 - comment best-effort
             workflow.logger.warning(
-                "jira_add_comment (completion) failed for %s — continuing",
+                "jira_add_comment (completion) failed for %s - continuing",
                 inp.issue_key,
             )
 
@@ -499,9 +499,9 @@ class AutomationWorkflow:
                 start_to_close_timeout=_SHORT_TIMEOUT,
                 retry_policy=_DEFAULT_RETRY,
             )
-        except Exception:  # noqa: BLE001 — transition best-effort
+        except Exception:  # noqa: BLE001 - transition best-effort
             workflow.logger.warning(
-                "jira_transition_issue (Done) failed for %s — continuing",
+                "jira_transition_issue (Done) failed for %s - continuing",
                 inp.issue_key,
             )
 
@@ -541,7 +541,7 @@ class AutomationWorkflow:
             try:
                 required = required_capabilities(analysis.workflow_type)
             except KeyError:
-                # ``multi_step`` or unknown workflow type — parser should
+                # ``multi_step`` or unknown workflow type - parser should
                 # have rejected this, but guard anyway.
                 return await self._fail(
                     parent_workflow_id=parent_workflow_id,
@@ -590,7 +590,7 @@ class AutomationWorkflow:
                     start_to_close_timeout=_SHORT_TIMEOUT,
                     retry_policy=_DEFAULT_RETRY,
                 )
-            except Exception:  # noqa: BLE001 — comment best-effort
+            except Exception:  # noqa: BLE001 - comment best-effort
                 workflow.logger.warning(
                     "jira_add_comment (needs_info) failed for %s",
                     inp.issue_key,
@@ -634,7 +634,7 @@ class AutomationWorkflow:
                     ),
                 )
 
-            # Signal woke us up — increment, re-analyse with the new
+            # Signal woke us up - increment, re-analyse with the new
             # comment context, then loop back to the capability check.
             self._loop_count += 1
             self._new_comment_received = False
@@ -682,7 +682,7 @@ class AutomationWorkflow:
                 start_to_close_timeout=_SHORT_TIMEOUT,
                 retry_policy=_DEFAULT_RETRY,
             )
-        except Exception:  # noqa: BLE001 — comment best-effort
+        except Exception:  # noqa: BLE001 - comment best-effort
             workflow.logger.warning(
                 "jira_add_comment (failure) failed for %s", inp.issue_key
             )
@@ -695,7 +695,7 @@ class AutomationWorkflow:
                     start_to_close_timeout=_SHORT_TIMEOUT,
                     retry_policy=_DEFAULT_RETRY,
                 )
-            except Exception:  # noqa: BLE001 — transition best-effort
+            except Exception:  # noqa: BLE001 - transition best-effort
                 workflow.logger.warning(
                     "jira_transition_issue (Blocked) failed for %s",
                     inp.issue_key,
@@ -719,7 +719,7 @@ class AutomationWorkflow:
         The activity itself enforces the state-machine invariant
         directly. If the update fails (DB unavailable, transition
         rejected because of an unexpected concurrent write) we log and
-        continue — the workflow's terminal status is the source of truth
+        continue - the workflow's terminal status is the source of truth
         for downstream observers; the DB row eventually reconciles.
         """
 
@@ -730,7 +730,7 @@ class AutomationWorkflow:
                 start_to_close_timeout=_SHORT_TIMEOUT,
                 retry_policy=_DEFAULT_RETRY,
             )
-        except Exception:  # noqa: BLE001 — DB update best-effort
+        except Exception:  # noqa: BLE001 - DB update best-effort
             workflow.logger.warning(
                 "update_work_item_status(%s -> %s) failed",
                 workflow_id,
@@ -745,7 +745,7 @@ class AutomationWorkflow:
 
         The two activities use *different* ``IssueData`` dataclasses
         (jira.IssueData has more fields than llm.IssueData). This method
-        is pure — no I/O, no time. Accepts duck-typed inputs so tests
+        is pure - no I/O, no time. Accepts duck-typed inputs so tests
         can pass plain objects/dicts.
         """
 
@@ -769,7 +769,7 @@ class AutomationWorkflow:
         """Append the conversation history to the issue description.
 
         Concatenates received comments (newest last) into the description
-        so the LLM has full context on the next iteration. Pure — no time,
+        so the LLM has full context on the next iteration. Pure - no time,
         no random.
         """
 

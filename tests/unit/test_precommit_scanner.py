@@ -1,16 +1,16 @@
-"""Unit tests for the ``precommit_scanner`` activity.
+﻿"""Unit tests for the ``precommit_scanner`` activity.
 
 Validates four scanner invariants:
 
-1. **Clean diff → pass** — a diff with no secret patterns returns
+1. **Clean diff → pass** - a diff with no secret patterns returns
    ``ScanResult(decision="pass", matched_patterns=())``.
-2. **AWS access key → block** — an injected ``AKIA...`` literal is
+2. **AWS access key → block** - an injected ``AKIA...`` literal is
    detected, returns ``decision="block"`` with ``"aws_access_key"``
    in ``matched_patterns``.
-3. **Atlassian API token → block** — an injected ``ATATT3x...``
+3. **Atlassian API token → block** - an injected ``ATATT3x...``
    literal is detected, returns ``decision="block"`` with
    ``"atlassian_api_token"`` in ``matched_patterns``.
-4. **Determinism** — ``precommit_scanner(diff) == precommit_scanner(diff)``
+4. **Determinism** - ``precommit_scanner(diff) == precommit_scanner(diff)``
    for any diff: the same input always yields the same
    :class:`ScanResult`.
 
@@ -18,7 +18,7 @@ The activity itself lives under
 ``platform/workers/agent-runner-worker/src/activities/precommit_scan.py``.
 The Temporal worker package layout (``src.activities.*``) is not on
 ``pytest.ini``'s ``pythonpath``, so this module wires the worker
-``src/`` directory onto :data:`sys.path` before importing — mirroring
+``src/`` directory onto :data:`sys.path` before importing - mirroring
 the pattern used by the worker's own
 ``tests/unit/test_precommit_scan.py``.
 """
@@ -33,7 +33,7 @@ from typing import Any
 import pytest
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — make ``src.activities.precommit_scan`` importable
+# sys.path bootstrap - make ``src.activities.precommit_scan`` importable
 # ---------------------------------------------------------------------------
 #
 # ``platform/pytest.ini`` only registers ``libs/*/src`` on ``pythonpath``;
@@ -59,7 +59,7 @@ from src.activities.precommit_scan import (  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
-# Test 1 — clean diff → pass
+# Test 1 - clean diff → pass
 # ---------------------------------------------------------------------------
 
 
@@ -91,7 +91,7 @@ class TestCleanDiffPasses:
 
 
 # ---------------------------------------------------------------------------
-# Test 2 — injected AWS key → block + ``aws_access_key`` matched
+# Test 2 - injected AWS key → block + ``aws_access_key`` matched
 # ---------------------------------------------------------------------------
 
 
@@ -117,7 +117,7 @@ class TestAwsAccessKeyIsBlocked:
 
 
 # ---------------------------------------------------------------------------
-# Test 3 — injected Atlassian token → block + ``atlassian_api_token`` matched
+# Test 3 - injected Atlassian token → block + ``atlassian_api_token`` matched
 # ---------------------------------------------------------------------------
 
 
@@ -144,7 +144,7 @@ class TestAtlassianApiTokenIsBlocked:
 
 
 # ---------------------------------------------------------------------------
-# Test 4 — determinism: same diff → identical ScanResult
+# Test 4 - determinism: same diff → identical ScanResult
 # ---------------------------------------------------------------------------
 
 
@@ -172,7 +172,7 @@ class TestScanIsDeterministic:
         first = scan_diff(diff)
         second = scan_diff(diff)
         assert first == second
-        # Frozen dataclass field-by-field equality (defensive — equal
+        # Frozen dataclass field-by-field equality (defensive - equal
         # dataclasses can still differ on identity / field ordering
         # subtleties; this catches accidental tuple reordering).
         assert first.decision == second.decision
@@ -216,7 +216,7 @@ class TestScanIsDeterministic:
 
 
 # ---------------------------------------------------------------------------
-# Sanity — audit constant exposed for downstream dashboards
+# Sanity - audit constant exposed for downstream dashboards
 # ---------------------------------------------------------------------------
 
 

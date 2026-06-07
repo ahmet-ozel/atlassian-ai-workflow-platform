@@ -1,14 +1,14 @@
-"""Bot info endpoint for the Task Creator assignee card.
+﻿"""Bot info endpoint for the Task Creator assignee card.
 
 Exposes ``GET /api/dept/{id}/bot-info`` which returns the department's
 display name and a list of registered bots with their service type,
 username, account_id, and probe status.
 
 Data sources:
-  - ``automation.departments`` — department display_name.
-  - ``automation.department_bots`` — per-service bot registrations
+  - ``automation.departments`` - department display_name.
+  - ``automation.department_bots`` - per-service bot registrations
     (service, username, account_id).
-  - ``shared.capability_probes`` — latest probe result per
+  - ``shared.capability_probes`` - latest probe result per
     (dept_id, service) pair (probe_status, probed_at).
 
 The endpoint is consumed by the Streamlit Task Creator page to render
@@ -31,7 +31,7 @@ _LOG = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# Database protocol — duck-typed for testability
+# Database protocol - duck-typed for testability
 # ---------------------------------------------------------------------------
 
 

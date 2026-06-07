@@ -1,4 +1,4 @@
-# Runbook: Getting Started — İlk Açılış Akışı
+﻿# Runbook: Getting Started - İlk Açılış Akışı
 
 > **Audience:** Platform `admin` rolü (yeni kurulumda first operator); CI / debug senaryolarında DevOps.
 > **Scope:** `platform/` deposunu klonlayan bir operatörün, makineyi sıfırdan ayağa kaldırıp ilk task'ı açabilir hale gelmesi. Compose stack'in **bootstrap-only** (admin-dashboard + bağımlılıkları) modda başlatılması, admin-dashboard üzerinden Setup Wizard akışı, ardından kalan servislerin sırayla aktive edilmesi.
@@ -8,17 +8,17 @@
 
 Platform iki açılış moduna sahiptir:
 
-- **Bootstrap-only (default — production-go şartı):** `make boot` yalnızca dört bootstrap servisini açar — `postgres`, `vault`, `admin-dashboard-api`, `admin-dashboard-ui`. Geri kalan tüm servisler (`atlassian-mcp`, `automation-service`, `assistant-service`, `agent-runner-worker`, `execution-runner-worker`, `firecrawl`, `streamlit-ui`, vb.) `profiles:` anahtarı ile gated'dir ve admin-dashboard'daki **Setup Wizard** üzerinden kullanıcı kontrolü ile açılır. Bu, ilk açılışta operatörün credential'ları girmeden 12 servisi paralel başlatma yükünü ve "yanlış sırada başlatma" risklerini ortadan kaldırır.
+- **Bootstrap-only (default - production-go şartı):** `make boot` yalnızca dört bootstrap servisini açar - `postgres`, `vault`, `admin-dashboard-api`, `admin-dashboard-ui`. Geri kalan tüm servisler (`atlassian-mcp`, `automation-service`, `assistant-service`, `agent-runner-worker`, `execution-runner-worker`, `firecrawl`, `streamlit-ui`, vb.) `profiles:` anahtarı ile gated'dir ve admin-dashboard'daki **Setup Wizard** üzerinden kullanıcı kontrolü ile açılır. Bu, ilk açılışta operatörün credential'ları girmeden 12 servisi paralel başlatma yükünü ve "yanlış sırada başlatma" risklerini ortadan kaldırır.
 - **Tüm servisler (CI / debug):** `make up-all` `config/services.manifest.json` dosyasından `--profile` listesini türetip her şeyi tek seferde açar. Yalnızca CI testlerinde, smoke test'lerde veya tüm stack'i hızlıca debug ederken kullanılır.
 
 Bu runbook **bootstrap-only** akışını kanonik kabul eder; `make up-all` yalnızca §6'da bir alternatif olarak tanımlanır.
 
 İlgili referanslar:
 
-- [`platform/Makefile`](../../Makefile) — `boot`, `up`, `up-all` hedeflerinin tanımı.
-- [`platform/scripts/up.sh`](../../scripts/up.sh) ve [`platform/scripts/up.ps1`](../../scripts/up.ps1) — make olmayan host'lar için eşdeğer wrapper'lar.
-- [`platform/infra/docker-compose.yml`](../../infra/docker-compose.yml) — boot bundle servisleri (`profiles:` anahtarı taşımayanlar) ve profile-gated servisler.
-- [`platform/config/services.manifest.json`](../../config/services.manifest.json) — profile listesinin single source of truth'u.
+- [`platform/Makefile`](../../Makefile) - `boot`, `up`, `up-all` hedeflerinin tanımı.
+- [`platform/scripts/up.sh`](../../scripts/up.sh) ve [`platform/scripts/up.ps1`](../../scripts/up.ps1) - make olmayan host'lar için eşdeğer wrapper'lar.
+- [`platform/infra/docker-compose.yml`](../../infra/docker-compose.yml) - boot bundle servisleri (`profiles:` anahtarı taşımayanlar) ve profile-gated servisler.
+- [`platform/config/services.manifest.json`](../../config/services.manifest.json) - profile listesinin single source of truth'u.
 
 ## 2. Prerequisites
 
@@ -51,7 +51,7 @@ cd platform
 .\scripts\up.ps1 boot
 ```
 
-Beklenen davranış: **dört container** çalışır durumda olur — başka servis açılmaz.
+Beklenen davranış: **dört container** çalışır durumda olur - başka servis açılmaz.
 
 #### 3.1.1 Verify
 
@@ -69,7 +69,7 @@ platform-admin-...-api  admin-dashboard-api     Up        0.0.0.0:8082->8082/tcp
 platform-admin-...-ui   admin-dashboard-ui      Up        0.0.0.0:3000->3000/tcp
 ```
 
-`atlassian-mcp`, `automation-service`, `agent-runner-worker`, `execution-runner-worker`, `assistant-service`, `firecrawl`, `opencode-sidecar`, `streamlit-ui` listede **görünmemelidir** — bu servisler profile-gated'tir ve henüz açılmamıştır.
+`atlassian-mcp`, `automation-service`, `agent-runner-worker`, `execution-runner-worker`, `assistant-service`, `firecrawl`, `opencode-sidecar`, `streamlit-ui` listede **görünmemelidir** - bu servisler profile-gated'tir ve henüz açılmamıştır.
 
 > **Eğer profile-gated bir servis listede görünüyorsa:** `make boot` yerine yanlışlıkla `make up-all` çağırmış olabilirsin. Önce `make down` ile kapat, sonra `make boot` ile tekrar dene.
 
@@ -132,7 +132,7 @@ Beklenen: yedi adımın hepsi `status='completed'`.
 
 | Komut | Davranış |
 |---|---|
-| `make boot` | Boot bundle'ı başlat (default — postgres, vault, admin-dashboard). |
+| `make boot` | Boot bundle'ı başlat (default - postgres, vault, admin-dashboard). |
 | `make up` | `make boot` alias'ı (geriye dönük uyum). |
 | `make ps` | Çalışan servisleri listele (boot bundle'ı ve aktif profile'ları içerir). |
 | `make logs` | Aktif servislerin log'larını tail et (`Ctrl-C` ile çık). |
@@ -169,7 +169,7 @@ veya POSIX shell'de:
 |---|---|---|
 | `make boot` sonrası 5'ten fazla servis listede | Yanlışlıkla `make up-all` çağrıldı veya eski stack hâlâ ayakta | `make down` çalıştır, sonra `make boot` ile sadece bootstrap servisleri aç. |
 | `admin-dashboard-ui` `health: starting` durumundan çıkmıyor | Next.js ilk build cache'i olmadığı için 30-60 sn sürebilir | Bekle; 2 dakikadan uzun sürerse `docker compose logs admin-dashboard-ui` ile build hatasını incele. |
-| Setup Wizard adım 4 (`mcp_server`) `failed` | `atlassian-mcp` profile'ı açılırken healthcheck timeout (`MCP gateway 8090 not responding`) | `docker compose logs atlassian-mcp` — Atlassian credential'ları `.env`'de eksik olabilir; `MCP_BASE_URL` ve ilgili token'ları doldur, ardından retry. |
+| Setup Wizard adım 4 (`mcp_server`) `failed` | `atlassian-mcp` profile'ı açılırken healthcheck timeout (`MCP gateway 8090 not responding`) | `docker compose logs atlassian-mcp` - Atlassian credential'ları `.env`'de eksik olabilir; `MCP_BASE_URL` ve ilgili token'ları doldur, ardından retry. |
 | Setup Wizard adım 7 (`add_first_department`) `Probe failed` | Bot Atlassian credential'ı geçersiz veya `account_id` resolve edilemedi | Modal'da gösterilen probe hata mesajını oku; credential'ı düzelt veya `account_id`'yi manuel olarak Atlassian admin panelinden al. Auto-probe sonrası tekrar dene. |
 | `make up-all` ile başlatınca da bir servis `unhealthy` | Profile-gated servisin bağımlılıkları (örn. `postgres`, `temporal`) henüz hazır değil | Compose `depends_on` zinciri healthcheck-aware'dır; 1-2 dakika bekle. Hâlâ unhealthy ise `docker compose logs <service>` ile root cause'a bak. |
 | Port 3000 / 8082 / 8200 / 5432 çakışıyor | Host'ta başka uygulama portu tutuyor | Çakışan uygulamayı kapat veya `infra/docker-compose.dev.yml` içinde port mapping'i değiştir. |
@@ -207,7 +207,7 @@ make down
 
 ## İlgili Referanslar
 
-- [`platform/Makefile`](../../Makefile) — `boot`, `up`, `up-all` hedef tanımları.
-- [`platform/scripts/up.sh`](../../scripts/up.sh) ve [`platform/scripts/up.ps1`](../../scripts/up.ps1) — make olmayan host'lar için wrapper.
-- [`platform/infra/docker-compose.yml`](../../infra/docker-compose.yml) — boot bundle (profilesiz) ve profile-gated servis tanımları.
-- [`platform/config/services.manifest.json`](../../config/services.manifest.json) — profile listesi single source of truth.
+- [`platform/Makefile`](../../Makefile) - `boot`, `up`, `up-all` hedef tanımları.
+- [`platform/scripts/up.sh`](../../scripts/up.sh) ve [`platform/scripts/up.ps1`](../../scripts/up.ps1) - make olmayan host'lar için wrapper.
+- [`platform/infra/docker-compose.yml`](../../infra/docker-compose.yml) - boot bundle (profilesiz) ve profile-gated servis tanımları.
+- [`platform/config/services.manifest.json`](../../config/services.manifest.json) - profile listesi single source of truth.

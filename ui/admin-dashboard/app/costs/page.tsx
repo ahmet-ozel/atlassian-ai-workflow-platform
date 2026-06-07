@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * Costs panel.
@@ -158,7 +158,7 @@ function CostsOverviewTab(): JSX.Element {
         <div className="stat-card">
           <div className="stat-card__label">Departman toplamı</div>
           <div className="stat-card__value num">${dept?.total_usd ?? "0.00"}</div>
-          <div className="stat-card__delta">{dept?.dept_id ?? "—"}</div>
+          <div className="stat-card__delta">{dept?.dept_id ?? "-"}</div>
         </div>
         <div className="stat-card">
           <div className="stat-card__label">Kullanıcı sayısı</div>
@@ -480,7 +480,7 @@ function BudgetAlarmsTab(): JSX.Element {
                           )
                         }
                         style={{ width: 160 }}
-                        aria-label={`Eşik yüzdesi — ${PERIOD_LABELS[t.period]} ${SCOPE_LABELS[t.scope]}`}
+                        aria-label={`Eşik yüzdesi - ${PERIOD_LABELS[t.period]} ${SCOPE_LABELS[t.scope]}`}
                       />
                       <span className="badge badge--brand num" style={{ minWidth: 50, justifyContent: "center" }}>
                         %{t.threshold_pct}
@@ -510,7 +510,7 @@ function BudgetAlarmsTab(): JSX.Element {
                   <td className="muted text-sm">
                     {t.last_alarmed_at
                       ? new Date(t.last_alarmed_at).toLocaleString("tr-TR")
-                      : "—"}
+                      : "-"}
                   </td>
                 </tr>
               ))}

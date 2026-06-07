@@ -1,9 +1,9 @@
-"""Probe-artifact persistence — partial-orphan handling (task 6.3).
+﻿"""Probe-artifact persistence - partial-orphan handling (task 6.3).
 
 The :class:`automation_service.probe.ProbeRunner` returns a
 :class:`automation_service.probe.ProbeResult` whose ``state`` is
 ``"partial_orphan"`` when the write probe created an artifact but
-failed to delete it (R5.3). The runner itself is DB-agnostic — it
+failed to delete it (R5.3). The runner itself is DB-agnostic - it
 emits the artifact descriptor on
 ``ProbeResult.artifact`` and lets the caller decide how to persist
 it. This module ships the canonical INSERT helper so the admin
@@ -48,7 +48,7 @@ async def persist_partial_orphan(
         result: The :class:`ProbeResult` returned by
             :meth:`ProbeRunner.run`.
         conn: An open :class:`db_shared.AsyncConnection` (already
-            inside a ``with_dept_session`` block — this helper does
+            inside a ``with_dept_session`` block - this helper does
             not start its own transaction).
         fallback_artifact: Optional override used when ``result``
             carries the ``"partial_orphan"`` state but the runner

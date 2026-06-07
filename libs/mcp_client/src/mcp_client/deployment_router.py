@@ -1,10 +1,10 @@
-"""Bitbucket deployment router.
+﻿"""Bitbucket deployment router.
 
 Bitbucket Cloud and Bitbucket Data Center expose distinct MCP tools
 for the same logical operation (eg. opening a pull request). Each
 department's ``departments.json`` configuration carries a single
-``bot.bitbucket.deployment`` field with one of two literal values —
-``"cloud"`` or ``"server"`` — and this module is the **single source
+``bot.bitbucket.deployment`` field with one of two literal values -
+``"cloud"`` or ``"server"`` - and this module is the **single source
 of truth** for translating that field into the concrete MCP tool
 name.
 
@@ -52,7 +52,7 @@ _PR_CREATE_TOOL_BY_DEPLOYMENT: Final[Mapping[str, str]] = MappingProxyType(
 
 
 # ---------------------------------------------------------------------------
-# select_pr_create_tool — deployment → MCP tool name
+# select_pr_create_tool - deployment → MCP tool name
 # ---------------------------------------------------------------------------
 
 
@@ -67,8 +67,8 @@ def select_pr_create_tool(deployment: Literal["cloud", "server"]) -> str:
     Args:
         deployment: The foundation ``BotEntry.deployment`` literal.
             Must be either ``"cloud"`` or ``"server"``. Any other
-            value — including ``None``, an empty string, or a
-            misspelled variant such as ``"Cloud"`` — raises
+            value - including ``None``, an empty string, or a
+            misspelled variant such as ``"Cloud"`` - raises
             :class:`KeyError`. Callers that need to tolerate a missing
             field should default it to a known value *before* invoking
             this function so the mapping stays exhaustive.
@@ -91,7 +91,7 @@ def select_pr_create_tool(deployment: Literal["cloud", "server"]) -> str:
         'bitbucket_create_pull_request_dc'
 
     Notes:
-        The function intentionally has **no** default branch — silently
+        The function intentionally has **no** default branch - silently
         falling back to ``"cloud"`` would mask a misconfigured
         ``departments.json`` and let a workflow open a Cloud-style PR
         against a Data Center instance. Failing fast surfaces the

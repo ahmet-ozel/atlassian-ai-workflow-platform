@@ -1,4 +1,4 @@
-"""HTTP client factory that stamps every outgoing request with ``X-Client-Source``.
+﻿"""HTTP client factory that stamps every outgoing request with ``X-Client-Source``.
 
 This module is the single point that creates :class:`httpx.AsyncClient`
 instances used for MCP and Firecrawl calls across the platform. All outgoing traffic carries the caller Component's identity
@@ -10,7 +10,7 @@ time using the trace_id installed on the calling task's
 :mod:`contextvars` context by :class:`observability.TraceMiddleware`
 (in services) or :func:`observability.set_trace_id` (in workers).
 The injection runs as an :class:`httpx` request event hook so the
-header value is resolved *per request* — that way a single long-lived
+header value is resolved *per request* - that way a single long-lived
 client constructed in startup wiring still emits a fresh trace_id for
 each fan-out activity, instead of pinning the trace_id captured at
 construction time.
@@ -18,7 +18,7 @@ construction time.
 When :mod:`observability` is not importable (e.g. local development
 without the workspace lib), the hook falls back to a no-op so the
 factory remains usable.  Callers that pass an explicit
-``X-Trace-Id`` header continue to win — the hook never overwrites a
+``X-Trace-Id`` header continue to win - the hook never overwrites a
 caller-supplied value, mirroring the convention used for other
 correlation identifiers.
 """
@@ -79,7 +79,7 @@ def _build_trace_request_hook(
 
     The hook is implemented as an ``async def`` because
     :class:`httpx.AsyncClient` ``await``s every event hook returned
-    from its ``event_hooks`` mapping — synchronous callables raise
+    from its ``event_hooks`` mapping - synchronous callables raise
     ``TypeError: object NoneType can't be used in 'await' expression``
     at request time.
 
@@ -130,7 +130,7 @@ def make_mcp_client(
     wins on key collision so callers cannot accidentally spoof
     another Component's identity.  Caller-supplied ``X-Trace-Id``
     headers (set on the request object itself) are preserved by the
-    hook — that path is reserved for explicit retry / replay
+    hook - that path is reserved for explicit retry / replay
     scenarios where the operator wants to pin a specific trace.
 
     Parameters
@@ -145,7 +145,7 @@ def make_mcp_client(
         Additional keyword arguments forwarded to
         :class:`httpx.AsyncClient`. The ``headers`` argument, if provided,
         is merged with the factory header (factory wins on collision).
-        ``event_hooks`` is also honoured — caller-supplied request /
+        ``event_hooks`` is also honoured - caller-supplied request /
         response hooks are merged with the factory's trace-id
         injector so callers can layer their own observability
         without losing trace propagation.
@@ -170,7 +170,7 @@ def make_mcp_client(
             del merged_headers[existing_key]
     merged_headers[_CLIENT_SOURCE_HEADER] = client_source
 
-    # Compose event hooks — preserve any caller-supplied hooks and
+    # Compose event hooks - preserve any caller-supplied hooks and
     # append the trace-id injector.  ``httpx`` expects a mapping with
     # ``"request"`` / ``"response"`` keys, each mapped to a list of
     # callables.

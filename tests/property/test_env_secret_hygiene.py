@@ -1,4 +1,4 @@
-"""invariant for `.env.example` secret hygiene.
+﻿"""invariant for `.env.example` secret hygiene.
 
 
 invariant: No real secrets in any ``.env.example``.
@@ -67,7 +67,7 @@ def _discover_env_example_files() -> tuple[Path, ...]:
  declared in:data:`COMPONENT_MANIFEST`.
 
  The manifest is used (rather than a recursive glob) so the test
- fails loudly when a Component's example file goes missing — that
+ fails loudly when a Component's example file goes missing - that
  failure mode is already covered by invariant, but enumerating
  via the manifest makes the secret-hygiene test resilient to
  accidental new ``.env.example`` files appearing under, for
@@ -118,7 +118,7 @@ def _parse_env_file(path: Path) -> tuple[EnvLine, ...]:
     """Yield every ``KEY=VALUE`` line in ``path``.
 
  Blank lines and comment-only lines (those whose first non-whitespace
- character is ``#``) are skipped — they cannot carry a secret.
+ character is ``#``) are skipped - they cannot carry a secret.
  Trailing newline characters are stripped from the raw value but no
  inline-comment trimming is performed: the project does not write
  inline ``#...`` after assignments, and stripping them here would
@@ -185,14 +185,14 @@ _ALLOWLIST_PATTERNS: tuple[re.Pattern[str], ...] = (
     # Bounded to a reasonable URL character set so it cannot swallow
     # arbitrary opaque blobs that happen to contain ``://``.
     re.compile(r"^[a-zA-Z][a-zA-Z0-9+.\-]*://[A-Za-z0-9_:./%@\-]+$"),
-    # Booleans (case-insensitive — both ``true``/``false`` and
+    # Booleans (case-insensitive - both ``true``/``false`` and
     # ``True``/``False`` styles are accepted by Compose).
     re.compile(r"^(sectioni:true|false)$"),
     # Pure integers (ports, retry counts, timeouts).
     re.compile(r"^[0-9]+$"),
     # Absolute POSIX file paths (e.g. ``/var/lib/...``).
     re.compile(r"^/[A-Za-z0-9_./\-]+$"),
-    # Kebab / snake / dot identifiers — accepts both lowercase
+    # Kebab / snake / dot identifiers - accepts both lowercase
     # (``mock``, ``automation-service``, ``agent-runner``) and the
     # uppercase log-level / env-name style (``INFO``, ``DEBUG``) and
     # version-style identifiers (``qwen2.5-coder``).
@@ -209,7 +209,7 @@ _DENYLIST_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
         "base64-looking blob (32+ chars)",
         re.compile(r"^[A-Za-z0-9+/]{32,}={0,2}$"),
     ),
-    # JWT prefix — the unpadded base64 encoding of ``{"`` is ``eyJ``,
+    # JWT prefix - the unpadded base64 encoding of ``{"`` is ``eyJ``,
     # which every JWT header starts with.
     (
         "JWT-looking value (eyJ...)",
@@ -225,7 +225,7 @@ _DENYLIST_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
         "GitLab PAT (glpat-...)",
         re.compile(r"^glpat-[A-Za-z0-9_\-]{16,}$"),
     ),
-    # UUID v1–v5 (no braces, lowercase or uppercase hex).
+    # UUID v1-v5 (no braces, lowercase or uppercase hex).
     (
         "UUID",
         re.compile(
@@ -339,7 +339,7 @@ def test_every_env_example_has_at_least_one_assignment() -> None:
 
 
 # ---------------------------------------------------------------------------
-# invariant — secret hygiene per assignment
+# invariant - secret hygiene per assignment
 # ---------------------------------------------------------------------------
 
 
@@ -349,7 +349,7 @@ def test_every_env_example_has_at_least_one_assignment() -> None:
     ids=[_line_id(line) for line in _ALL_ENV_LINES],
 )
 def test_env_example_value_is_placeholder_not_secret(line: EnvLine) -> None:
-    """invariant — every ``KEY=VALUE`` value is a placeholder, not a secret.
+    """invariant - every ``KEY=VALUE`` value is a placeholder, not a secret.
 
 
 
@@ -384,13 +384,13 @@ def test_env_example_value_is_placeholder_not_secret(line: EnvLine) -> None:
         f"Value for {line.key} in {line.file_relpath}:{line.line_number} "
         f"matches denylist pattern '{violation}': {line.value!r}. "
         f"Per the operational rule, ``.env.example`` MUST NOT carry "
-        f"real secrets — replace this value with a placeholder before "
+        f"real secrets - replace this value with a placeholder before "
         f"committing."
     )
 
 
 # ---------------------------------------------------------------------------
-# invariant — 
+# invariant - 
 # ---------------------------------------------------------------------------
 #
 #
@@ -463,13 +463,13 @@ _property9_secret_value = st.one_of(
 )
 
 
-# Strategy for benign placeholder shapes — every draw MUST pass the
+# Strategy for benign placeholder shapes - every draw MUST pass the
 # allowlist *and* miss the denylist.
 _property9_placeholder_value = st.one_of(
     st.just(""),  # empty placeholder.
     st.sampled_from(sorted(_KNOWN_DEV_CREDENTIALS)),
     st.sampled_from(["change-me", "change-me-please", "<set-by-vault>"]),
-    # ``vault:`` ref — bounded path of slash-separated identifiers.
+    # ``vault:`` ref - bounded path of slash-separated identifiers.
     st.lists(
         st.text(
             alphabet=string.ascii_letters + string.digits + "_-",
@@ -508,7 +508,7 @@ _property9_placeholder_value = st.one_of(
     suppress_health_check=[HealthCheck.too_slow],
 )
 def test_property9_denylist_rejects_known_secret_shapes(value: str) -> None:
-    """invariant — every plausible secret shape is rejected.
+    """invariant - every plausible secret shape is rejected.
 
 
 
@@ -519,11 +519,11 @@ def test_property9_denylist_rejects_known_secret_shapes(value: str) -> None:
  * either ``_matches_allowlist(value)`` returns ``False``;
  * or ``_denylist_violation(value)`` returns a non-``None`` label.
 
- The disjunction is what enforces the contract — a value can pass
+ The disjunction is what enforces the contract - a value can pass
  the allowlist (e.g. a UUID looks like a kebab identifier under a
  permissive regex) yet still fail because it hits the denylist.
  Either way, the line is flagged for the operator with a precise
- reason — failed test reports the file/line/key,
+ reason - failed test reports the file/line/key,
  here generalised to value/reason).
  """
 
@@ -549,7 +549,7 @@ def test_property9_denylist_rejects_known_secret_shapes(value: str) -> None:
     suppress_health_check=[HealthCheck.too_slow],
 )
 def test_property9_allowlist_accepts_placeholder_shapes(value: str) -> None:
-    """invariant — every placeholder shape passes the gate.
+    """invariant - every placeholder shape passes the gate.
 
 
 

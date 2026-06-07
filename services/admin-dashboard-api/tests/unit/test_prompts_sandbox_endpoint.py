@@ -1,4 +1,4 @@
-"""HTTP tests for ``POST /admin/prompts/{path:path}/sandbox-test``.
+﻿"""HTTP tests for ``POST /admin/prompts/{path:path}/sandbox-test``.
 
 Covers the sandbox-test endpoint:
 
@@ -164,7 +164,7 @@ class _RecordingCostTracker:
 
 
 # ---------------------------------------------------------------------------
-# Fake asyncpg pool — records the INSERT against ``prompt_sandbox_runs``
+# Fake asyncpg pool - records the INSERT against ``prompt_sandbox_runs``
 # so tests can assert the row contents without standing up Postgres.
 # ---------------------------------------------------------------------------
 
@@ -291,7 +291,7 @@ class TestSandboxTestWithBody:
         assert body["invoked_at"] == fixed_time.isoformat()
         assert body["model"] == "qwen2.5-coder"
         assert body["provider"] == "vllm"
-        # The isolation contract — every sandbox response carries
+        # The isolation contract - every sandbox response carries
         # cost_tag="sandbox" so the admin UI can render the badge.
         assert body["cost_tag"] == "sandbox"
 
@@ -493,7 +493,7 @@ class TestSandboxTestValidation:
         )
 
         assert response.status_code == 422
-        # The LLM was NOT invoked — the developer gets a fast,
+        # The LLM was NOT invoked - the developer gets a fast,
         # deterministic feedback loop without paying for a sandbox
         # call that would have failed deeper in the stack.
         assert llm.calls == []
@@ -626,7 +626,7 @@ class TestSandboxRunPersistence:
         assert args[5] == 42  # token_in
         assert args[6] == 7   # token_out
         assert args[7] == Decimal("0.012345")
-        assert args[8] is True  # passed — successful sandbox run
+        assert args[8] is True  # passed - successful sandbox run
         assert args[9] == "alice"  # actor_id from OIDC sub
 
     def test_insert_carries_branch_when_branch_provided(
@@ -708,7 +708,7 @@ class TestSandboxRunPersistence:
 
 class TestSandboxRunPersistenceDegrades:
     """When the asyncpg pool is missing or the INSERT fails the
-    endpoint still returns the LLM result — the persisted record is
+    endpoint still returns the LLM result - the persisted record is
     a best-effort enabler for the promote endpoint.
     """
 
@@ -718,7 +718,7 @@ class TestSandboxRunPersistenceDegrades:
         llm = _RecordingLlm()
         tracker = _RecordingCostTracker()
         sandbox = PromptSandbox(llm=llm, cost_tracker=tracker)
-        # Note: pool=None — the dependency override returns None and
+        # Note: pool=None - the dependency override returns None and
         # the helper short-circuits.
         client = TestClient(_build_app(git_repo, sandbox, pool=None))
 
@@ -776,6 +776,6 @@ class TestSandboxRunPersistenceDegrades:
             json={"sample_input": "u", "body": SEED_BODY},
         )
 
-        # Endpoint must NOT 5xx — sandbox response is still surfaced.
+        # Endpoint must NOT 5xx - sandbox response is still surfaced.
         assert response.status_code == 200
         assert response.json()["sandbox_run_id"] is None

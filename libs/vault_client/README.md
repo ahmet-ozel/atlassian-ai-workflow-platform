@@ -1,4 +1,4 @@
-# vault_client
+﻿# vault_client
 
 Pluggable Vault KV-v2 client used by every service that resolves
 credentials from `vault:<...>` references:
@@ -9,9 +9,9 @@ credentials from `vault:<...>` references:
 - `VaultClient` `Protocol` defining `read`, `write`, `delete`,
   `rotate_ssh_key`, `rotate_webhook_secret`.
 - Two pluggable backends:
-  - `HashicorpBackend` — real Hashicorp Vault HTTP (KV-v2,
+  - `HashicorpBackend` - real Hashicorp Vault HTTP (KV-v2,
     `data/<path>` semantics).
-  - `LocalDevBackend` — file-backed development store using
+  - `LocalDevBackend` - file-backed development store using
     libsodium (`pynacl.secret.SecretBox`) authenticated encryption.
     Plain-text writes are **rejected**.
 - `make_client(env)` factory that selects the backend from the
@@ -32,7 +32,7 @@ src/vault_client/
 ├── client.py               # VaultClient Protocol + dataclasses
 ├── hashicorp_backend.py    # real Vault HTTP (KV v2)
 ├── local_dev_backend.py    # libsodium encrypted file backend
-└── factory.py              # make_client(env) — VAULT_BACKEND-driven
+└── factory.py              # make_client(env) - VAULT_BACKEND-driven
 ```
 
 ## Standalone build & run
@@ -89,7 +89,7 @@ path = VaultPath.parse(ref)
 | Constant | Path Pattern | Owner | Content | TTL |
 |---|---|---|---|---|
 | `USER_SESSION_PATH_TEMPLATE` | `vault:atlassian/_user_session/{session_id}/{service}` | `assistant-service` (write), `automation-service` (read) | Per-user session credential: Streamlit user's own Atlassian token, scoped to the active session | session lifetime; deleted on logout, 24h cron sweep for orphans |
-| `USER_PERSISTED_PATH_TEMPLATE` | `vault:atlassian/_user_persisted/{user_id}/{service}` | `streamlit-ui` (PIN-encrypted client-side) | Opt-in "remember me" persistence; ciphertext only — bytes are AES-encrypted with a PIN-derived key before write | 30 days (matches signed cookie TTL) |
+| `USER_PERSISTED_PATH_TEMPLATE` | `vault:atlassian/_user_persisted/{user_id}/{service}` | `streamlit-ui` (PIN-encrypted client-side) | Opt-in "remember me" persistence; ciphertext only - bytes are AES-encrypted with a PIN-derived key before write | 30 days (matches signed cookie TTL) |
 | `NOTIFICATION_SMTP_PATH` | `vault:notifications/smtp/credential` | `notification_service` | SMTP server credentials for outbound email | rotation-driven (no fixed TTL) |
 | `NOTIFICATION_SLACK_PATH_TEMPLATE` | `vault:notifications/{dept_id}/slack` | `notification_service` | Per-department Slack webhook URL | rotation-driven (no fixed TTL) |
 

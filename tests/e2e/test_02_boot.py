@@ -1,4 +1,4 @@
-"""
+﻿"""
 Test 02: Boot_Bundle startup and healthcheck validation.
 
 Validates that `make boot` brings up the four core services (postgres, vault,
@@ -104,7 +104,7 @@ def all_services_healthy(status_map: dict[str, dict]) -> bool:
         if state != "running":
             return False
         if health not in ("healthy", ""):
-            # Some services may not have healthcheck defined — accept empty
+            # Some services may not have healthcheck defined - accept empty
             # But if health is "unhealthy" or "starting", not ready yet
             if health in ("unhealthy", "starting"):
                 return False
@@ -191,14 +191,14 @@ class TestBootBundle:
             last_status_map = parse_service_status(services_json)
 
             if all_services_healthy(last_status_map):
-                # All services are healthy — record in stack state
+                # All services are healthy - record in stack state
                 for svc_name in BOOT_BUNDLE_SERVICES:
                     stack_state.mark_running(svc_name, "healthy")
                 return  # Test passes
 
             time.sleep(POLL_INTERVAL_SECONDS)
 
-        # Timeout reached — capture logs and fail
+        # Timeout reached - capture logs and fail
         elapsed = time.time() - start_time
         failure_logs = capture_failure_logs(platform_root, evidence_collector)
 

@@ -1,7 +1,7 @@
-"""Unit tests for ``src.routers.capabilities``.
+﻿"""Unit tests for ``src.routers.capabilities``.
 The router exposes two endpoints:
-* ``GET /api/v1/departments/capabilities`` — read the cached matrix.
-* ``POST /api/v1/departments/{dept_id}/probe/{service}`` — re-run one probe.
+* ``GET /api/v1/departments/capabilities`` - read the cached matrix.
+* ``POST /api/v1/departments/{dept_id}/probe/{service}`` - re-run one probe.
 These tests inject:
 * A :class:`_FakeProber` that records every call and lets each test
   script the response per ``(dept_id, service)`` pair.
@@ -10,7 +10,7 @@ These tests inject:
   bypassed while still exercising the FastAPI request pipeline
   through :class:`fastapi.testclient.TestClient`.
 The tests do **not** depend on the asyncpg-backed cache adapter from
-— the router is wired against the
+- the router is wired against the
 :class:`SupportsCapabilityProbeStore` protocol so the in-memory variant
 is enough to verify routing / serialisation."""
 
@@ -131,7 +131,7 @@ def _build_app(
 
 
 # ---------------------------------------------------------------------------
-# GET /api/v1/departments/capabilities — matrix endpoint
+# GET /api/v1/departments/capabilities - matrix endpoint
 # ---------------------------------------------------------------------------
 
 
@@ -160,7 +160,7 @@ def test_matrix_returns_all_departments_with_six_services() -> None:
 
 def test_matrix_marks_unconfigured_services_as_not_configured() -> None:
     """When the dept config doesn't declare a service, the cell is
-    ``not_configured`` — even without a cached row .
+    ``not_configured`` - even without a cached row .
     The bundled ``config/departments.json`` declares a non-empty
     ``credential_ref`` under ``bot.{jira,bitbucket,confluence}`` for
     every dept and an ``llm_overrides`` block for ``payment`` only.
@@ -216,7 +216,7 @@ def test_matrix_returns_cached_results_when_available() -> None:
 
 
 def test_matrix_endpoint_does_not_call_prober() -> None:
-    """The GET endpoint reads cache only — no fresh probes ."""
+    """The GET endpoint reads cache only - no fresh probes ."""
 
     app, prober, _cache = _build_app()
     client = TestClient(app)
@@ -226,7 +226,7 @@ def test_matrix_endpoint_does_not_call_prober() -> None:
 
 
 # ---------------------------------------------------------------------------
-# POST /api/v1/departments/{dept_id}/probe/{service} — single probe
+# POST /api/v1/departments/{dept_id}/probe/{service} - single probe
 # ---------------------------------------------------------------------------
 
 

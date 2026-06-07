@@ -1,18 +1,18 @@
-"""Remote-SSH runner — workspace path derivation + dual-slot key fallback.
+﻿"""Remote-SSH runner - workspace path derivation + dual-slot key fallback.
 
 Scope of this module
 --------------------
 
 Two responsibilities:
 
-1. **Workspace path derivation** — any code in the remote-SSH runner
+1. **Workspace path derivation** - any code in the remote-SSH runner
    that needs to know **where** a task's workspace is on the remote host
    must go through :func:`derive_workspace_path` so that the workspace
    layout ``{settings.runner_base_path}/{issue_key}/iter-{iter_n}`` is
-   derived in exactly one place —
+   derived in exactly one place -
    :func:`runners.workspace_path.build_workspace_path`.
 
-2. **Dual-slot SSH key fallback** — when establishing an SSH connection,
+2. **Dual-slot SSH key fallback** - when establishing an SSH connection,
    the runner tries the ``active`` Vault slot first. If the connection fails
    with ``Permission denied`` (paramiko ``AuthenticationException``), it falls
    back to the ``previous`` slot. If both slots fail, an
@@ -25,7 +25,7 @@ Why a thin wrapper instead of inlining ``build_workspace_path``?
   so call sites cannot accidentally pass a wrong ``base`` (e.g.
   hard-coding ``/var/ai-runner``, which would silently desync from a
   ``RUNNER_BASE_PATH`` override).
-* It gives a single grep target — ``derive_workspace_path`` — for the
+* It gives a single grep target - ``derive_workspace_path`` - for the
   next person who has to audit "every place the SSH runner builds a
   remote path".
 * The validation contract (``InvalidIssueKeyError``,
@@ -81,7 +81,7 @@ def derive_workspace_path(
     :func:`runners.workspace_path.build_workspace_path` that binds the
     ``base`` argument to :attr:`Settings.runner_base_path` (the
     ``RUNNER_BASE_PATH`` env var, with ``SSH_BASE_PATH`` as a deprecated
-    alias — see :mod:`src.config`).
+    alias - see :mod:`src.config`).
 
     Args:
         issue_key: Jira-style task key (e.g. ``PAY-4211``). Validated by
@@ -216,7 +216,7 @@ def _try_connect_with_key(
 ) -> None:
     """Attempt an SSH connection with the given private key (blocking).
 
-    This function performs only the authentication handshake — it does
+    This function performs only the authentication handshake - it does
     NOT execute any commands. It is used to validate that a key is
     accepted by the remote host.
 
@@ -325,7 +325,7 @@ class SSHDualSlotConnector:
 
         Non-authentication errors (network unreachable, timeout, etc.)
         from the active slot are raised immediately without attempting
-        the previous slot — those failures are not key-related.
+        the previous slot - those failures are not key-related.
 
         Args:
             runner_id: Runner identifier for Vault path resolution.
@@ -347,7 +347,7 @@ class SSHDualSlotConnector:
         # --- Step 1: Read active slot ---
         active_key = self._slot_reader.read_active_private_key(runner_id)
         if not active_key:
-            # No active key at all — this is a configuration error,
+            # No active key at all - this is a configuration error,
             # not a rotation scenario. Emit audit and raise.
             active_error = "active slot is empty or missing"
             previous_key = self._slot_reader.read_previous_private_key(runner_id)
@@ -389,13 +389,13 @@ class SSHDualSlotConnector:
             active_error = str(active_exc)
             logger.warning(
                 "SSH active slot authentication failed for runner=%s "
-                "host=%s: %s — trying previous slot",
+                "host=%s: %s - trying previous slot",
                 runner_id,
                 host,
                 active_error,
             )
         except Exception:
-            # Non-authentication error (network, timeout, etc.) —
+            # Non-authentication error (network, timeout, etc.) -
             # raise immediately, this is not a key rotation issue.
             raise
 
@@ -403,7 +403,7 @@ class SSHDualSlotConnector:
         previous_key = self._slot_reader.read_previous_private_key(runner_id)
         if not previous_key:
             logger.error(
-                "SSH previous slot is empty for runner=%s — "
+                "SSH previous slot is empty for runner=%s - "
                 "both slots failed",
                 runner_id,
             )
@@ -416,7 +416,7 @@ class SSHDualSlotConnector:
             _try_connect_with_key(host, port, user, previous_key, timeout)
             logger.info(
                 "SSH previous slot succeeded for runner=%s host=%s "
-                "(active slot was rejected — rotation in progress?)",
+                "(active slot was rejected - rotation in progress?)",
                 runner_id,
                 host,
             )
@@ -480,7 +480,7 @@ class SSHDualSlotConnector:
                 action="ssh_key_both_slots_failed",
                 payload=payload,
             )
-        except Exception:  # noqa: BLE001 — audit is best-effort
+        except Exception:  # noqa: BLE001 - audit is best-effort
             logger.warning(
                 "Failed to emit ssh_key_both_slots_failed audit for "
                 "runner=%s (best-effort, continuing)",

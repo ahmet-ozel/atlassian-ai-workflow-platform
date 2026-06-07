@@ -1,4 +1,4 @@
-"""invariant 7 — ``[explain]`` keyword family: cooldown + TTL cache.
+﻿"""invariant 7 - ``[explain]`` keyword family: cooldown + TTL cache.
 
 
 
@@ -26,7 +26,7 @@ For the cache-write helper:func:`_state_record_explain_answer`:
 
  (P4) The returned state has ``pr_diff_hash`` mapped to an:class:`ExplainCacheEntry` with the supplied ``answer`` and
  ``issued_at == now``.
- (P5) Idempotence under repeated writes with the same arguments —
+ (P5) Idempotence under repeated writes with the same arguments -
  calling it twice in a row leaves the cache mapping the same
  hash to the same entry value (no growth, no churn).
  (P6) The input ``state`` is never mutated; the returned state is a
@@ -53,7 +53,7 @@ The current ``IterationState.explain_cache`` is an unbounded
 exercise the eviction property;:func:`test_lru_overflow_evicts_oldest`
 is therefore guarded with a runtime check that skips the test when the
 module is absent. Once ships the test will run automatically
-— no rewrite required.
+- no rewrite required.
 """
 
 from __future__ import annotations
@@ -71,7 +71,7 @@ from hypothesis import strategies as st
 
 
 # ---------------------------------------------------------------------------
-# ``sys.path`` bootstrap — mirrors ``test_token_cap_fail_fast.py`` so
+# ``sys.path`` bootstrap - mirrors ``test_token_cap_fail_fast.py`` so
 # this file remains importable from a bare ``python -m pytest`` even
 # when the workspace ``pytest.ini`` ``pythonpath`` is not active.
 #
@@ -97,7 +97,7 @@ for _src in _REQUIRED_SRC_DIRS:
         sys.path.insert(0, _src_str)
 
 
-# noqa: E402 below — imports follow the sys.path bootstrap above.
+# noqa: E402 below - imports follow the sys.path bootstrap above.
 
 from agent_runner.workflows.agent_runner_workflow import (  # noqa: E402
     EXPLAIN_CACHE_HIT_AUDIT_ACTION,
@@ -115,14 +115,14 @@ from temporal_shared.messages import (  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
-# Anchors — fixed clock used by every Hypothesis run so the generated
+# Anchors - fixed clock used by every Hypothesis run so the generated
 # ``now`` values stay inside a sensible window relative to the cache
 # entries' ``issued_at``.
 # ---------------------------------------------------------------------------
 
 #: UTC anchor for the deterministic ``workflow.now`` stub. Tests that
 #: vary ``now`` add a strategy-supplied:class:`timedelta` to this
-#: value; the absolute base is irrelevant to the invariants — only the
+#: value; the absolute base is irrelevant to the invariants - only the
 #: difference ``now - issued_at`` matters.
 _ANCHOR: datetime = datetime(2026, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
 
@@ -138,7 +138,7 @@ _DELTA_BOUND_SECONDS: int = int(EXPLAIN_CACHE_TTL.total_seconds() * 2)
 # ---------------------------------------------------------------------------
 
 
-#: PR-diff hashes — short ASCII tokens. Empty string is excluded from
+#: PR-diff hashes - short ASCII tokens. Empty string is excluded from
 #: the *positive* lookup strategy because P2 fixes the empty-hash
 #: behaviour separately.
 _diff_hashes: st.SearchStrategy[str] = st.text(
@@ -150,7 +150,7 @@ _diff_hashes: st.SearchStrategy[str] = st.text(
     max_size=12,
 )
 
-#: Cache-entry answers — non-empty strings. The body never inspects
+#: Cache-entry answers - non-empty strings. The body never inspects
 #: the answer text in the helper under test; we still pick something
 #: short and printable so failure messages stay readable.
 _answers: st.SearchStrategy[str] = st.text(min_size=1, max_size=64)
@@ -188,7 +188,7 @@ def _iteration_states_with_cache(
 
  The cache is a finite mapping (0..6 entries) of distinct diff
  hashes to entries with strategy-derived ``issued_at`` values.
- Other state fields are left at their defaults — the helper under
+ Other state fields are left at their defaults - the helper under
  test only inspects ``explain_cache``.
  """
 
@@ -208,7 +208,7 @@ def _iteration_states_with_cache(
 
 
 # ---------------------------------------------------------------------------
-# P1..P3 — pure helper ``_explain_should_skip_llm``
+# P1..P3 - pure helper ``_explain_should_skip_llm``
 # ---------------------------------------------------------------------------
 
 
@@ -298,7 +298,7 @@ class TestExplainShouldSkipLlm:
     ) -> None:
         """invariant: identical inputs ⇒ identical output.
 
- Pure helper — no clock, no randomness — so two consecutive
+ Pure helper - no clock, no randomness - so two consecutive
  calls with the same arguments must return the same value.
 
 
@@ -310,7 +310,7 @@ class TestExplainShouldSkipLlm:
         assert first is second
 
     # ------------------------------------------------------------------
-    # Concrete regression anchors — pin the boundary behaviour on
+    # Concrete regression anchors - pin the boundary behaviour on
     # specific inputs so an off-by-one in the ``< TTL`` comparison is
     # caught deterministically.
     # ------------------------------------------------------------------
@@ -373,7 +373,7 @@ class TestExplainShouldSkipLlm:
 
 
 # ---------------------------------------------------------------------------
-# P4..P6 — pure helper ``_state_record_explain_answer``
+# P4..P6 - pure helper ``_state_record_explain_answer``
 # ---------------------------------------------------------------------------
 
 
@@ -432,7 +432,7 @@ class TestStateRecordExplainAnswer:
         """invariant: writing the same triple twice is a no-op.
 
  Two consecutive writes with identical arguments must produce
- equivalent caches — the second write does not duplicate the
+ equivalent caches - the second write does not duplicate the
  key, does not bump the entry, and does not grow the mapping
  beyond the first write's footprint.
 
@@ -493,7 +493,7 @@ class TestStateRecordExplainAnswer:
 
 
 # ---------------------------------------------------------------------------
-# P7, P8 — signal handler ``_apply_explain_signal``
+# P7, P8 - signal handler ``_apply_explain_signal``
 # ---------------------------------------------------------------------------
 
 
@@ -597,7 +597,7 @@ def _states_with_cache_miss_below_cap(
 
 
 class TestApplyExplainSignal:
-    """Signal-handler dispatch — cache hit vs miss (P7, P8)."""
+    """Signal-handler dispatch - cache hit vs miss (P7, P8)."""
 
     @settings(
         max_examples=100,
@@ -684,7 +684,7 @@ class TestApplyExplainSignal:
 
 
 # ---------------------------------------------------------------------------
-# LRU ``maxsize=32`` overflow — gated on ``temporal_shared.iteration``
+# LRU ``maxsize=32`` overflow - gated on ``temporal_shared.iteration``
 # ---------------------------------------------------------------------------
 
 
@@ -694,7 +694,7 @@ def test_lru_overflow_evicts_oldest_when_iteration_module_lands() -> None:
  The brief for references an LRU cache with
  ``maxsize=32`` whose overflow behaviour evicts the least-recently
  inserted entry. The current ``IterationState.explain_cache`` is a
- plain ``Mapping`` without a bound — the bounded LRU helper is
+ plain ``Mapping`` without a bound - the bounded LRU helper is
  scheduled to land in:mod:`temporal_shared.iteration`). Until that module ships we
  cannot exercise the eviction property; the test skips with a
  precise reason so the invariant stays green and the
@@ -715,7 +715,7 @@ def test_lru_overflow_evicts_oldest_when_iteration_module_lands() -> None:
     try:
         from temporal_shared.iteration import (  # type: ignore[import-not-found]
             EXPLAIN_CACHE_MAXSIZE,
-            explain_should_skip_llm,  # noqa: F401 — protocol check
+            explain_should_skip_llm,  # noqa: F401 - protocol check
             record_explain_answer,
         )
     except ImportError as exc:

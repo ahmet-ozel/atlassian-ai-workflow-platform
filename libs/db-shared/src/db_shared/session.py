@@ -1,4 +1,4 @@
-"""Tenant-aware Postgres session helpers (``with_dept_session`` / ``bind_actor``).
+﻿"""Tenant-aware Postgres session helpers (``with_dept_session`` / ``bind_actor``).
 
 This module materialises the ``db-shared`` connection helper.
 
@@ -20,7 +20,7 @@ asyncpg connection surface. Production code injects an asyncpg
 ``Connection`` (or a SQLAlchemy ``AsyncConnection`` adapter); tests
 inject an in-memory fake without pulling Postgres into the test path.
 A more developer-friendly :func:`with_dept_session` overload accepts a
-DSN string and lazily acquires an asyncpg connection — this path is
+DSN string and lazily acquires an asyncpg connection - this path is
 only exercised when ``asyncpg`` is installed in the runtime
 environment.
 
@@ -164,7 +164,7 @@ class AuthContext(Protocol):
 
 
 # ---------------------------------------------------------------------------
-# bind_actor — derive (role, dept_id) from an AuthContext
+# bind_actor - derive (role, dept_id) from an AuthContext
 # ---------------------------------------------------------------------------
 
 
@@ -177,17 +177,17 @@ def bind_actor(
 
     The helper enforces the tenant binding rule:
 
-    * **dept_admin** — automatically scoped to the single department
+    * **dept_admin** - automatically scoped to the single department
       they own. Passing an explicit ``dept_id`` is allowed only when
       it matches the actor's owned department; any other value raises
       :class:`PermissionError` so a malicious / buggy caller cannot
       widen the visible row set.
-    * **admin / system** — no department binding. ``dept_id`` is
+    * **admin / system** - no department binding. ``dept_id`` is
       preserved when explicitly provided (eg. an admin acting *on
       behalf of* a department), otherwise returns ``None`` so the
       RLS policy's ``current_setting('app.current_role') = 'admin'``
       branch matches.
-    * **viewer / lead** — multi-tenant read roles. ``dept_id`` MUST
+    * **viewer / lead** - multi-tenant read roles. ``dept_id`` MUST
       be supplied explicitly and MUST be one of the actor's owned
       departments; otherwise :class:`PermissionError` is raised.
 
@@ -217,7 +217,7 @@ def bind_actor(
     if role == "dept_admin":
         # ``dept_admin`` is automatically scoped to the dept_id it owns.
         # We refuse to guess if the caller
-        # owns zero or multiple departments — that's a configuration
+        # owns zero or multiple departments - that's a configuration
         # bug, not a runtime decision.
         if len(owned) != 1:
             raise ValueError(
@@ -236,7 +236,7 @@ def bind_actor(
         return role, owned_dept
 
     if role in ("admin", "system"):
-        # Global roles. ``dept_id`` is optional — when omitted, the
+        # Global roles. ``dept_id`` is optional - when omitted, the
         # RLS policy's ``current_role = 'admin'`` branch unlocks the
         # full table; when provided (eg. an admin clicking into a
         # specific department's view), we validate the format and
@@ -259,7 +259,7 @@ def bind_actor(
 
 
 # ---------------------------------------------------------------------------
-# with_dept_session — async context manager
+# with_dept_session - async context manager
 # ---------------------------------------------------------------------------
 
 
@@ -283,7 +283,7 @@ async def with_dept_session(
     can identify the caller. The values are interpolated through
     asyncpg's positional parameter binding (``$1`` / ``$2``) so the
     helper is **not** vulnerable to SQL injection even if a caller
-    forwards an unsanitised string — additionally we validate the
+    forwards an unsanitised string - additionally we validate the
     role against :data:`ALLOWED_ROLES` and the dept_id against the
     schema regex before opening the transaction.
 
@@ -291,7 +291,7 @@ async def with_dept_session(
     pair: the transaction commits when the ``async with`` block exits
     cleanly, and rolls back if the body raises. ``SET LOCAL`` is
     transaction-scoped, so the GUCs are automatically reverted on
-    either path — there is no leakage to subsequent work on the same
+    either path - there is no leakage to subsequent work on the same
     connection.
 
     Args:
@@ -359,7 +359,7 @@ async def with_dept_session(
         )
         yield connection
     except BaseException:
-        # ``ROLLBACK`` is best-effort — if the connection is already
+        # ``ROLLBACK`` is best-effort - if the connection is already
         # broken (eg. asyncpg raised ``ConnectionDoesNotExistError``)
         # we still want the original exception to propagate.
         try:
@@ -410,7 +410,7 @@ async def with_actor_session(
         connection: An :class:`AsyncConnection` to wrap.
         dept_id: Optional explicit department override (only honoured
             for the ``admin`` / ``system`` roles; ``dept_admin``
-            actors are auto-scoped — see :func:`bind_actor`).
+            actors are auto-scoped - see :func:`bind_actor`).
 
     Yields:
         The active transaction's connection.

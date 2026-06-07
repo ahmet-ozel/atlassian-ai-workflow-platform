@@ -1,13 +1,13 @@
-"""``CostTracker`` — idempotent insert into ``shared.cost_tracking``.
+﻿"""``CostTracker`` - idempotent insert into ``shared.cost_tracking``.
 
 The tracker is the single point through which every LLM-consuming service writes cost
 rows; it owes its callers two invariants:
 
-1. **Idempotency** — two ``record`` calls with the same ``activity_id``
+1. **Idempotency** - two ``record`` calls with the same ``activity_id``
    produce exactly one row. Enforced by the Postgres
    ``UNIQUE(activity_id)`` constraint (``20_ops.sql``) plus
    ``INSERT ... ON CONFLICT (activity_id) DO NOTHING``.
-2. **Schema discipline** — ``cost_tag``, ``provider`` and the
+2. **Schema discipline** - ``cost_tag``, ``provider`` and the
    non-negative invariants on ``token_in`` / ``token_out`` /
    ``cost_usd`` are validated at the application layer too so the
    ``CHECK`` constraints never surface as opaque
@@ -118,7 +118,7 @@ class CostTracker:
             list-backed fake). Either :meth:`insert` or
             :meth:`insert_with_on_conflict` is consulted (see
             :meth:`record`).
-        audit: Audit emitter — receives ``cost_tracking_duplicate_dropped``
+        audit: Audit emitter - receives ``cost_tracking_duplicate_dropped``
             on every conflict drop. ``None`` disables the emit (used
             by services that already audit the cost activity itself).
     """
@@ -135,7 +135,7 @@ class CostTracker:
         Returns:
             ``True`` if a new row landed, ``False`` if an earlier call
             with the same ``activity_id`` already wrote a row
-            (idempotent retry — the store's ``ON CONFLICT DO NOTHING``
+            (idempotent retry - the store's ``ON CONFLICT DO NOTHING``
             consumed the duplicate).
 
         Raises:

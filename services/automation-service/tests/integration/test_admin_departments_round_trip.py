@@ -1,4 +1,4 @@
-"""Integration test — admin departments POST/GET round trip.
+﻿"""Integration test - admin departments POST/GET round trip.
 
 Use the existing Compose harness for ``automation-service`` +
 ``postgres`` + ``vault`` + ``temporal`` (defined in
@@ -29,7 +29,7 @@ from pathlib import Path
 import pytest
 
 
-# The Compose file lives at ``platform/infra/docker-compose.yml`` —
+# The Compose file lives at ``platform/infra/docker-compose.yml`` -
 # resolved relative to the workspace root so the test is launchable
 # from anywhere in the tree.
 _COMPOSE_FILE_REL: str = "infra/docker-compose.yml"
@@ -77,7 +77,7 @@ def test_admin_departments_round_trip_compose(
 ) -> None:
     """``POST /admin/departments`` returns 201; ``GET`` lists the new dept.
 
-    Skipped by default — set ``--run-docker`` to bring up the Compose
+    Skipped by default - set ``--run-docker`` to bring up the Compose
     stack and run the smoke test against a live ``automation-service``
     container with real Postgres + Vault + Temporal backends.
 
@@ -119,7 +119,7 @@ def test_admin_departments_round_trip_compose(
     # duplicating the harness bootstrap.
     pytest.skip(
         "Compose-harness round trip is delivered by "
-        "``platform/tests/integration/`` — this placeholder marks the "
+        "``platform/tests/integration/`` - this placeholder marks the "
         "covered by the wider Compose smoke suite "
         "rather than duplicating the harness bootstrap here."
     )

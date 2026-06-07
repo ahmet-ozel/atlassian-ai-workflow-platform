@@ -1,4 +1,4 @@
-"""Invariant test: Needs-info timeout enforcement.
+﻿"""Invariant test: Needs-info timeout enforcement.
 
 Feature:,.
 
@@ -18,7 +18,7 @@ consumes: ``workflow.execute_activity`` (string-named activities),
 ``workflow.wait_condition``, ``workflow.logger``, and
 ``workflow.info``. The fake ``wait_condition`` deterministically
 raises:class:`TimeoutError` to emulate the 24h Temporal timer firing
-without any signal arriving — Hypothesis explores the input space
+without any signal arriving - Hypothesis explores the input space
 (initial workflow_type, dept id, issue key, question count) while the
 post-conditions are pinned to the spec contract:
 
@@ -54,7 +54,7 @@ from typing import Any
 from hypothesis import HealthCheck, given, settings, strategies as st
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — match the convention used by sibling Invariant tests.
+# sys.path bootstrap - match the convention used by sibling Invariant tests.
 # ---------------------------------------------------------------------------
 
 _WORKER_ROOT: Path = Path(__file__).resolve().parents[2]
@@ -79,7 +79,7 @@ from temporal_shared.messages import (  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
-# Deterministic fakes — mirror the Temporal workflow primitives the
+# Deterministic fakes - mirror the Temporal workflow primitives the
 # needs_info loop consumes. Only the methods actually called in the
 # loop body are implemented; anything else trips a clear AssertionError
 # so the test surface stays auditable.
@@ -109,18 +109,18 @@ class _FakeWorkflow:
 
  Implements the four primitives the needs_info loop calls:
 
- * ``execute_activity(name, *args,...)`` — records the call and
+ * ``execute_activity(name, *args,...)`` - records the call and
  returns ``None`` for fire-and-forget activities (jira comment,
  transition, audit_write). ``llm_analyze_task`` would also be
- routed here but the timeout branch never reaches it — the
+ routed here but the timeout branch never reaches it - the
  ``wait_condition`` raises:class:`TimeoutError` first.
- * ``wait_condition(predicate, *, timeout=...)`` — captures the
+ * ``wait_condition(predicate, *, timeout=...)`` - captures the
  requested timeout and unconditionally raises:class:`TimeoutError`. This is the deterministic emulation of
  "24h elapsed without an ``info_received`` signal".
- * ``logger`` — a plain stdlib logger so
+ * ``logger`` - a plain stdlib logger so
  ``workflow.logger.warning(...)`` calls in the workflow body do
  not blow up.
- * ``info`` — returns a:class:`_FakeWorkflowInfo` with a stable
+ * ``info`` - returns a:class:`_FakeWorkflowInfo` with a stable
  ``workflow_id``; the loop only reads ``workflow_id`` indirectly
  via the higher-level ``run`` body, so the value is supplied
  for completeness rather than correctness.
@@ -148,7 +148,7 @@ class _FakeWorkflow:
         **_kwargs: Any,
     ) -> Any:
         # The workflow body uses ``execute_activity(name, args=[...])``
-        # — the ``args`` keyword is the canonical Temporal SDK pattern.
+        # - the ``args`` keyword is the canonical Temporal SDK pattern.
         # Capture it as the first positional argument list so test
         # assertions can index into it the same way the workflow's
         # activity implementations would. Fall back to whatever
@@ -225,7 +225,7 @@ _WORKFLOW_TYPES: tuple[str, ...] = (
     "noop_test",
 )
 
-# Issue key strategy — Atlassian-style ``PROJECT-<int>`` slugs.
+# Issue key strategy - Atlassian-style ``PROJECT-<int>`` slugs.
 _issue_keys = st.builds(
     lambda proj, num: f"{proj}-{num}",
     proj=st.text(
@@ -236,7 +236,7 @@ _issue_keys = st.builds(
     num=st.integers(min_value=1, max_value=99999),
 )
 
-# Department slug — lowercase ASCII to match real dept ids in
+# Department slug - lowercase ASCII to match real dept ids in
 # ``departments.json`` / capability table.
 _dept_ids = st.text(
     alphabet=st.characters(min_codepoint=ord("a"), max_codepoint=ord("z")),
@@ -244,7 +244,7 @@ _dept_ids = st.text(
     max_size=20,
 )
 
-# Clarification questions list — the loop is only entered when at
+# Clarification questions list - the loop is only entered when at
 # least one is present (low confidence + non-empty needs_info).
 _questions = st.lists(
     st.text(min_size=1, max_size=80),
@@ -259,7 +259,7 @@ _questions = st.lists(
 
 
 class TestNeedsInfoTimeoutProperty:
-    """**** — 24h needs_info timeout enforcement.
+    """**** - 24h needs_info timeout enforcement.
 
  **"""
 
@@ -326,7 +326,7 @@ class TestNeedsInfoTimeoutProperty:
         assert result.decision == "failed"
         assert result.failure_reason == "needs_info_timeout"
         assert result.workflow_type == workflow_type
-        # The stop envelope's missing_capabilities is empty — the
+        # The stop envelope's missing_capabilities is empty - the
         # timeout is unrelated to capability gating.
         assert result.missing_capabilities == ()
         # The summary mentions the iteration that hit the timeout so
@@ -337,7 +337,7 @@ class TestNeedsInfoTimeoutProperty:
         assert "stale" in result.summary
 
         # ----- Wait timeout matches the 7-day spec contract ----------------
-        # — the wait_condition was
+        # - the wait_condition was
         # invoked with exactly 7 days, not 24 hours / seconds / weeks.
         assert fake.last_wait_timeout == _NEEDS_INFO_TIMEOUT
         assert fake.last_wait_timeout == timedelta(days=7)
@@ -366,7 +366,7 @@ class TestNeedsInfoTimeoutProperty:
 
         # The Jira comment surface includes the timeout comment;
         # _format_needs_info_timeout_comment locks the canonical
-        # Turkish wording (— "7 gün").
+        # Turkish wording (- "7 gün").
         comment_bodies = [
             call.args[1]
             for call in fake.calls
@@ -405,14 +405,14 @@ class TestNeedsInfoTimeoutConstants:
     """Lock the timeout / cap constants the Invariant test relies on.
 
  These are deterministic example tests that complement the
- Hypothesis-driven property — if either constant drifts the
+ Hypothesis-driven property - if either constant drifts the
  property's contract changes meaningfully and operators must be
  notified.
 
  **"""
 
     def test_timeout_is_exactly_seven_days(self) -> None:
-        # — exactly 7 days (was 24h
+        # - exactly 7 days (was 24h
         # before the parity bump).
         assert _NEEDS_INFO_TIMEOUT == timedelta(days=7)
         # And not, e.g. 7 hours / 7 weeks / 168 minutes.

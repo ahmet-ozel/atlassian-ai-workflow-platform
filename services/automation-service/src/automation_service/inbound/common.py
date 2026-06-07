@@ -1,4 +1,4 @@
-"""Shared types and pure helpers for the inbound channel adapters.
+﻿"""Shared types and pure helpers for the inbound channel adapters.
 
 This module is the deterministic core of the Slack and email
 adapters: it owns the signature verification helpers, the workflow-id
@@ -10,11 +10,11 @@ tests belongs here.
 Module-level invariants
 -----------------------
 
-1. **No I/O** — every public callable is a pure function or a
+1. **No I/O** - every public callable is a pure function or a
    structural protocol. Side effects (HTTP, IMAP, audit, Temporal)
    are pushed onto the injected collaborators in
    :class:`InboundContext`.
-2. **No secret material in errors** — exception messages and audit
+2. **No secret material in errors** - exception messages and audit
    payloads never contain HMAC secrets, raw signatures, raw email
    bodies or Slack tokens. Slack signatures are short-lived and
    redacted by the ``http_shared`` filter, but the helpers here
@@ -110,7 +110,7 @@ class InboundTaskRequest:
     :func:`auto_assign_workflow_input` to produce the Temporal input.
 
     Attributes:
-        channel: ``"slack"`` or ``"email"`` — emitted into audit
+        channel: ``"slack"`` or ``"email"`` - emitted into audit
             payloads and workflow inputs so downstream activities
             know which surface produced the request.
         external_id: Stable, channel-provided identifier used to
@@ -119,7 +119,7 @@ class InboundTaskRequest:
             Two retries from the same channel/external_id collapse
             onto a single Temporal execution.
         dept_id: Department resolved by :class:`InboundDeptResolver`.
-            Empty values are not allowed — the adapter must reject
+            Empty values are not allowed - the adapter must reject
             requests it cannot map to a department.
         actor_handle: A redacted, channel-specific actor identifier
             (Slack ``user_id``, email ``From:`` local-part). Used in
@@ -141,7 +141,7 @@ class InboundTaskRequest:
     title_hint: str | None = None
 
     def __post_init__(self) -> None:
-        # Defensive structural validation — adapters should already
+        # Defensive structural validation - adapters should already
         # have produced a well-formed value; rejecting bad shapes
         # here makes the failure mode obvious during integration.
         if self.channel not in ("slack", "email"):
@@ -210,7 +210,7 @@ class SlackSignatureVerifier(Protocol):
 
 
 # ---------------------------------------------------------------------------
-# InboundContext — bag of dependencies populated from app.state
+# InboundContext - bag of dependencies populated from app.state
 # ---------------------------------------------------------------------------
 
 
@@ -259,7 +259,7 @@ def build_inbound_workflow_id(channel: InboundChannel, external_id: str) -> str:
     resulting id is safe for Temporal (which forbids whitespace and
     a small set of control characters).
 
-    Determinism — the same ``(channel, external_id)`` always yields
+    Determinism - the same ``(channel, external_id)`` always yields
     the same workflow id, so retries collapse onto a single
     execution under :func:`start_workflow_idempotent`.
 
@@ -281,7 +281,7 @@ def build_inbound_workflow_id(channel: InboundChannel, external_id: str) -> str:
     # separator.
     normalised = re.sub(r"[^A-Za-z0-9]+", "-", external_id).strip("-").lower()
     if not normalised:
-        # All characters were replaced — fall back to a hash so the id
+        # All characters were replaced - fall back to a hash so the id
         # remains deterministic and non-empty.
         normalised = hashlib.sha256(external_id.encode("utf-8")).hexdigest()[:16]
     return f"automation-inbound-{channel}-{normalised}"
@@ -294,10 +294,10 @@ def auto_assign_workflow_input(req: InboundTaskRequest) -> dict[str, Any]:
     ``AutomationWorkflow`` accepts it) but flips two flags that mark
     the request as coming through the *standard task-creator path*:
 
-    * ``auto_assign=True`` — Y1: the workflow assigns the resulting
+    * ``auto_assign=True`` - Y1: the workflow assigns the resulting
       Jira issue to the bot account automatically (the user did not
       go through the Streamlit Task Creator manually).
-    * ``smart_defaults=True`` — Y10: the workflow runs the
+    * ``smart_defaults=True`` - Y10: the workflow runs the
       single-question task-creation prompt and fills in any missing
       fields from the dept defaults instead of asking the user
       multiple clarifying questions.
@@ -307,7 +307,7 @@ def auto_assign_workflow_input(req: InboundTaskRequest) -> dict[str, Any]:
     Jira-webhook-originated ones (eg. notification templates may
     differ).
 
-    The function is pure and does not depend on the request clock —
+    The function is pure and does not depend on the request clock -
     callers that need a timestamp should populate it from
     :attr:`InboundContext.now_fn`.
     """
@@ -355,7 +355,7 @@ def verify_slack_signature(
 
     The function returns ``False`` for any structural problem
     (missing/invalid timestamp, malformed signature header, secret
-    of zero length) instead of raising — callers always emit the
+    of zero length) instead of raising - callers always emit the
     same audit event (``inbound_slack_hmac_failed``) regardless of
     failure cause, so distinguishing the reasons here would only
     leak information about the verification chain.
@@ -366,7 +366,7 @@ def verify_slack_signature(
         Slack signing secret. Must be the ``bytes`` form (UTF-8); the
         Vault adapter is responsible for encoding.
     timestamp:
-        Value of the ``X-Slack-Request-Timestamp`` header — a
+        Value of the ``X-Slack-Request-Timestamp`` header - a
         Unix-epoch integer as ASCII.
     raw_body:
         The exact request body as received over the wire (no
@@ -415,7 +415,7 @@ def extract_slack_command_text(raw_text: str) -> str:
     helper removes that prefix and surrounding whitespace so the
     downstream task-creator prompt sees the user's actual request.
 
-    The function is whitespace-tolerant and idempotent — passing an
+    The function is whitespace-tolerant and idempotent - passing an
     already-stripped message returns it unchanged.
 
     >>> extract_slack_command_text("<@U07ABCDEF> open a ticket for the API")

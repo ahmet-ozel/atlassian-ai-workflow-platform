@@ -1,4 +1,4 @@
-"""``ActiveWorkflowsRouter`` (`platform gap-fill work` active workflow wiring).
+﻿"""``ActiveWorkflowsRouter`` (`platform gap-fill work` active workflow wiring).
 
 **Covers 19.4** (and exposes data backing rule 19.1, rule 19.2).
 
@@ -23,16 +23,16 @@ Response (HTTP 200)::
         "source": "postgres"
     }
 
-* ``active`` — current count of ``status='running'`` rows in
+* ``active`` - current count of ``status='running'`` rows in
   ``automation.work_items`` for the dept.
-* ``max_concurrent_workflows`` — the cap from
+* ``max_concurrent_workflows`` - the cap from
   ``departments.json``-mirrored ``config_json.max_concurrent_workflows``.
   ``null`` when the dept has no per-dept cap (the global license-tier
   cap from rule 16 still applies; this endpoint does not surface that).
-* ``saturation`` — ``active / max_concurrent_workflows`` as a float
+* ``saturation`` - ``active / max_concurrent_workflows`` as a float
   in ``[0, 1]``, or ``null`` when the cap is unset. Rounded to 2
   decimals.
-* ``source`` — currently always ``"postgres"`` because the Temporal
+* ``source`` - currently always ``"postgres"`` because the Temporal
   Visibility API requires a ``DeptId`` search attribute that is not
   yet registered on the namespace. When that lands the helper will
   switch to ``"temporal"`` automatically; the field is exposed so
@@ -47,7 +47,7 @@ unauthenticated callers.
 
 When ``app.state.pg_pool`` is ``None`` (ops pool wiring failed
 during lifespan) the endpoint returns ``HTTP 503`` with
-``reason="pg_pool_unavailable"`` — the same shape used by other
+``reason="pg_pool_unavailable"`` - the same shape used by other
 admin operations routers (costs, feature_flags). The caller can
 retry once the operator restores the Postgres pool.
 """
@@ -121,7 +121,7 @@ class ActiveWorkflowsResponse(BaseModel):
     source: str = Field(
         ...,
         description=(
-            "Counter source — \"postgres\" today; will become "
+            "Counter source - \"postgres\" today; will become "
             "\"temporal\" once DeptId search attribute is registered."
         ),
     )
@@ -137,7 +137,7 @@ def _load_dept_max_concurrent(dept_id: str) -> int | None:
 
     Reads ``departments.json`` directly. Returns ``None`` when the
     dept does not declare a cap or when the config file cannot be
-    parsed (we degrade gracefully rather than 500'ing — the count
+    parsed (we degrade gracefully rather than 500'ing - the count
     is still useful even without a cap).
     """
 

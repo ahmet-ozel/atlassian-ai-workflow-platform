@@ -1,4 +1,4 @@
-"""Dev-secret boot guard (Y1).
+﻿"""Dev-secret boot guard (Y1).
 
 The base ``infra/docker-compose.yml`` ships dev-only credentials
 (``ai_dev_only``, ``dev-token-not-for-prod``,
@@ -45,7 +45,7 @@ DEV_SECRET_SENTINELS: Final[Mapping[str, tuple[str, ...]]] = {
     "VAULT_DEV_ROOT_TOKEN_ID": ("dev-token-not-for-prod",),
     "MINIO_ROOT_PASSWORD": ("miniosecret_dev_only",),
     # ``local`` AuthProvider on automation-service accepts any non-empty
-    # bearer token — useful for dev but a security hole in production.
+    # bearer token - useful for dev but a security hole in production.
     "AUTH_PROVIDER": ("local",),
 }
 
@@ -56,7 +56,7 @@ class DevSecretDetectedError(RuntimeError):
     Attributes
     ----------
     matches : dict[str, str]
-        ``{env_var: value}`` of every detected dev sentinel — useful
+        ``{env_var: value}`` of every detected dev sentinel - useful
         for the audit log and the operator-facing error message.
     """
 
@@ -75,7 +75,7 @@ def detect_dev_secrets(
 ) -> dict[str, str]:
     """Return every env var whose value matches a sentinel.
 
-    Pure function — does no I/O, accepts an explicit env mapping for
+    Pure function - does no I/O, accepts an explicit env mapping for
     testability. ``env=None`` falls back to ``os.environ``.
     """
     source: Mapping[str, str] = env if env is not None else os.environ

@@ -1,4 +1,4 @@
-"""Property-based tests for trace ID propagation completeness.
+﻿"""Property-based tests for trace ID propagation completeness.
 
 Behavior
 --------
@@ -18,7 +18,7 @@ For ANY inbound HTTP request that flows through the platform, the same
   :func:`http_shared.make_mcp_client` while the request handler is
   active.
 
-This test does NOT need a live cluster — it exercises the in-process
+This test does NOT need a live cluster - it exercises the in-process
 middleware + http_shared client + observability ``set_trace_id``
 wiring already in place. We drive a
 request through ``automation_service.app.create_app()`` test client,
@@ -31,16 +31,16 @@ Strategies
 The Hypothesis search space covers three trace_id input regimes that
 cover the expected input regimes:
 
-1. **Inbound UUID-shape trace_id** — UUIDv4 / UUIDv7 strings supplied
+1. **Inbound UUID-shape trace_id** - UUIDv4 / UUIDv7 strings supplied
    in ``X-Trace-Id``. These MUST be preserved end-to-end.
-2. **Empty / missing inbound header** — the middleware MUST generate
+2. **Empty / missing inbound header** - the middleware MUST generate
    a fresh UUIDv7 and propagate it through the chain.
-3. **Invalid / malformed inbound header** — the middleware MUST
+3. **Invalid / malformed inbound header** - the middleware MUST
    discard the malformed value, generate a fresh UUIDv7, and
    propagate that fresh value.
 
-For each regime we then simulate the *next hop* — outbound MCP /
-Firecrawl / admin-side calls — by constructing an
+For each regime we then simulate the *next hop* - outbound MCP /
+Firecrawl / admin-side calls - by constructing an
 ``httpx.MockTransport`` and asserting the trace_id captured by the
 transport equals the trace_id observed at the inbound boundary.
 
@@ -77,7 +77,7 @@ from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — make automation-service / observability / http_shared
+# sys.path bootstrap - make automation-service / observability / http_shared
 # importable without an editable install. Mirrors
 # ``test_webhook_predicates.py``.
 # ---------------------------------------------------------------------------
@@ -108,14 +108,14 @@ from observability import (  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
-# UUIDv7 layout — matches the regex shipped by ``observability.trace``
+# UUIDv7 layout - matches the regex shipped by ``observability.trace``
 # ---------------------------------------------------------------------------
 
 _UUIDV7_RE = re.compile(
     r"^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
 )
 
-# A generic UUID matcher (any version) — the middleware preserves
+# A generic UUID matcher (any version) - the middleware preserves
 # inbound UUIDs regardless of version.
 _ANY_UUID_RE = re.compile(
     r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
@@ -124,7 +124,7 @@ _ANY_UUID_RE = re.compile(
 
 
 # ---------------------------------------------------------------------------
-# Hypothesis strategies — three inbound trace_id regimes
+# Hypothesis strategies - three inbound trace_id regimes
 # ---------------------------------------------------------------------------
 
 
@@ -144,7 +144,7 @@ def _uuid_v7_strategy() -> st.SearchStrategy[str]:
 
 
 def _valid_inbound_trace_strategy() -> st.SearchStrategy[str]:
-    """Union of UUIDv4 / UUIDv7 — any UUID-shape value is preserved."""
+    """Union of UUIDv4 / UUIDv7 - any UUID-shape value is preserved."""
     return st.one_of(_uuid_v4_strategy(), _uuid_v7_strategy())
 
 
@@ -152,7 +152,7 @@ def _invalid_inbound_trace_strategy() -> st.SearchStrategy[str]:
     """Generate strings that are NOT valid UUIDs.
 
     These trigger the middleware's ``is_valid_trace_id`` rejection
-    branch — the inbound value is discarded and a fresh UUIDv7 is
+    branch - the inbound value is discarded and a fresh UUIDv7 is
     generated.  ``filter`` keeps the search space honest by
     discarding accidental UUID-shape draws.
     """
@@ -171,14 +171,14 @@ def _empty_or_missing_strategy() -> st.SearchStrategy[str | None]:
     """Generate the "no inbound trace_id" regime.
 
     ``None`` means the header is omitted entirely.  ``""`` means the
-    header is present but empty — both branches MUST end up with a
+    header is present but empty - both branches MUST end up with a
     freshly-generated UUIDv7.
     """
     return st.sampled_from([None, ""])
 
 
 # ---------------------------------------------------------------------------
-# Helpers — drive a request and capture the trace_id at every hop
+# Helpers - drive a request and capture the trace_id at every hop
 # ---------------------------------------------------------------------------
 
 
@@ -192,14 +192,14 @@ def _run_with_inbound_trace(
     tuple
         ``(response_header, contextvars_inside_handler, mcp_outbound_header)``
 
-        * ``response_header`` — the ``X-Trace-Id`` value echoed back
+        * ``response_header`` - the ``X-Trace-Id`` value echoed back
           on the response (always non-empty).
-        * ``contextvars_inside_handler`` — the value
+        * ``contextvars_inside_handler`` - the value
           :func:`observability.get_trace_id` returns from inside the
           request handler.  ``None`` when the route did not capture
           it (always set in this test, but we surface ``None`` so
           assertion failures are precise about which hop diverged).
-        * ``mcp_outbound_header`` — the ``X-Trace-Id`` header captured
+        * ``mcp_outbound_header`` - the ``X-Trace-Id`` header captured
           by the ``httpx.MockTransport`` for an outbound MCP call
           fired *from inside the request handler*.  ``None`` when no
           outbound call was issued.
@@ -222,7 +222,7 @@ def _run_with_inbound_trace(
         # 2. Issue an outbound "MCP call" through the canonical
         #    factory and capture the X-Trace-Id header on the wire.
         #    The factory's request hook reads from the same
-        #    contextvars slot — the captured value MUST equal the
+        #    contextvars slot - the captured value MUST equal the
         #    one we read directly above.
         outbound_captured: list[httpx.Request] = []
 
@@ -261,7 +261,7 @@ def _run_with_inbound_trace(
     assert resp.status_code == 200, resp.text
     response_trace = resp.headers.get(TRACE_HEADER)
     assert response_trace is not None, (
-        f"automation-service did not echo {TRACE_HEADER} on the response — "
+        f"automation-service did not echo {TRACE_HEADER} on the response - "
         f"TraceMiddleware not wired? response.headers={dict(resp.headers)!r}"
     )
 
@@ -322,7 +322,7 @@ def test_property10_valid_inbound_trace_id_propagates_unchanged(
         f"inbound={inbound!r}, outbound={outbound_trace!r}"
     )
 
-    # All three observation points agree by transitivity — pin that
+    # All three observation points agree by transitivity - pin that
     # explicitly so a regression in any one hop reports a precise diff.
     assert response_trace == context_trace == outbound_trace
 
@@ -378,7 +378,7 @@ def test_property10_invalid_inbound_triggers_fresh_uuidv7_chain(
         inbound
     )
 
-    # The generated value must be a fresh UUIDv7 — distinct from the
+    # The generated value must be a fresh UUIDv7 - distinct from the
     # malformed inbound by construction.
     assert response_trace != inbound, (
         "TraceMiddleware leaked a malformed inbound trace_id onto "
@@ -401,7 +401,7 @@ def test_property10_invalid_inbound_triggers_fresh_uuidv7_chain(
 
 
 # ---------------------------------------------------------------------------
-# Concrete regression anchors — pin the three input regimes by example
+# Concrete regression anchors - pin the three input regimes by example
 # ---------------------------------------------------------------------------
 
 
@@ -422,7 +422,7 @@ def test_property10_invalid_inbound_triggers_fresh_uuidv7_chain(
 def test_property10_anchor_valid_uuid_propagates(
     inbound: str, description: str
 ) -> None:
-    """Concrete anchor — a known-good UUID flows unchanged through every hop."""
+    """Concrete anchor - a known-good UUID flows unchanged through every hop."""
 
     response_trace, context_trace, outbound_trace = _run_with_inbound_trace(
         inbound
@@ -434,7 +434,7 @@ def test_property10_anchor_valid_uuid_propagates(
 
 
 def test_property10_anchor_missing_header_triggers_uuidv7() -> None:
-    """Concrete anchor — no inbound header → fresh UUIDv7 throughout."""
+    """Concrete anchor - no inbound header → fresh UUIDv7 throughout."""
 
     response_trace, context_trace, outbound_trace = _run_with_inbound_trace(
         None
@@ -446,10 +446,10 @@ def test_property10_anchor_missing_header_triggers_uuidv7() -> None:
 
 
 def test_property10_anchor_empty_header_triggers_uuidv7() -> None:
-    """Concrete anchor — empty inbound header → fresh UUIDv7 throughout.
+    """Concrete anchor - empty inbound header → fresh UUIDv7 throughout.
 
     The middleware treats ``X-Trace-Id: `` (empty value) the same as
-    a missing header — both fall through to the
+    a missing header - both fall through to the
     :func:`generate_trace_id` branch.
     """
 
@@ -463,11 +463,11 @@ def test_property10_anchor_empty_header_triggers_uuidv7() -> None:
 
 
 def test_property10_anchor_invalid_header_discarded() -> None:
-    """Concrete anchor — malformed inbound header is discarded.
+    """Concrete anchor - malformed inbound header is discarded.
 
     ``"not-a-uuid"`` fails :func:`is_valid_trace_id` so the
     middleware falls through to the :func:`generate_trace_id`
-    branch — the response carries a UUIDv7, NOT the malformed input.
+    branch - the response carries a UUIDv7, NOT the malformed input.
     """
 
     response_trace, context_trace, outbound_trace = _run_with_inbound_trace(
@@ -481,7 +481,7 @@ def test_property10_anchor_invalid_header_discarded() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Negation property — outside the request scope the contextvars slot
+# Negation property - outside the request scope the contextvars slot
 # does NOT leak the request's trace_id (per-request
 # isolation).
 # ---------------------------------------------------------------------------
@@ -493,7 +493,7 @@ def test_property10_context_does_not_leak_outside_request() -> None:
     After the request completes, a fresh observation of
     :func:`observability.get_trace_id` from the test thread MUST NOT
     return the request-scoped trace_id.  This is the negation half
-    of the isolation check — without it, two concurrent requests would
+    of the isolation check - without it, two concurrent requests would
     cross-contaminate trace_ids.
     """
 
@@ -507,7 +507,7 @@ def test_property10_context_does_not_leak_outside_request() -> None:
     assert response_trace == "018f7d4d-5f8c-7c4d-92ab-1f6f5a4d9b34"
 
     # Outside the request scope the contextvars slot is back to the
-    # default empty string — TraceMiddleware uses
+    # default empty string - TraceMiddleware uses
     # :meth:`ContextVar.reset` to undo its set in a ``finally`` block.
     assert get_trace_id() == "", (
         f"TraceMiddleware leaked the request trace_id past the "
@@ -516,7 +516,7 @@ def test_property10_context_does_not_leak_outside_request() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Outbound MCP propagation — fresh client per request
+# Outbound MCP propagation - fresh client per request
 # ---------------------------------------------------------------------------
 
 
@@ -529,7 +529,7 @@ def test_property10_outbound_trace_reflects_per_request_value() -> None:
     Construct a single :func:`make_mcp_client` *outside* any request
     scope, then drive two requests with different inbound trace_ids
     and observe that each outbound MCP call carries the per-request
-    trace_id — never the construction-time empty value or the
+    trace_id - never the construction-time empty value or the
     previous request's value.
     """
 

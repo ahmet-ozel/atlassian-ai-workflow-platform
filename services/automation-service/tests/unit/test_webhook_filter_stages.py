@@ -1,4 +1,4 @@
-"""Unit tests for stages of :class:`WebhookFilterChain`.
+﻿"""Unit tests for stages of :class:`WebhookFilterChain`.
 
 This test module pins the behaviour of the three filter-chain stages
 used by the webhook workflow:
@@ -66,7 +66,7 @@ from automation_service.webhook_filters import (  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
-# Helpers — minimal callback set for chains under test
+# Helpers - minimal callback set for chains under test
 # ---------------------------------------------------------------------------
 
 
@@ -116,7 +116,7 @@ def _make_event(
 ) -> WebhookEvent:
     """Build a :class:`WebhookEvent` with safe Jira defaults.
 
-    The defaults match a typical ``jira:issue_created`` payload — the
+    The defaults match a typical ``jira:issue_created`` payload - the
     callers override individual fields for the negative cases (missing
     actor, bot actor, ``[bot:`` body text, etc.).
     """
@@ -159,7 +159,7 @@ class TestVerifyHmacStage:
 
         decision = chain.evaluate(event)
 
-        # No drop fired — the chain reaches the default ``filter_chain_pass``
+        # No drop fired - the chain reaches the default ``filter_chain_pass``
         # because every other stage's callback also returns the no-op
         # default. Pinning the action is sufficient; the precise reason
         # is a stability detail covered by the dedicated stage tests.
@@ -273,7 +273,7 @@ class TestResolveDeptStage:
         """Bitbucket events are dispatched to the same callback shape.
 
         The chain does not care whether the dept is keyed by
-        ``project_key`` or ``repo_slug`` — both dialects flow through
+        ``project_key`` or ``repo_slug`` - both dialects flow through
         the same ``resolve_dept`` callback, which inspects the event
         and returns the appropriate dept_id.
 
@@ -304,7 +304,7 @@ class TestResolveDeptStage:
 
         A bot self-action against an unregistered project should
         surface as ``webhook_dept_unresolved`` (the actionable
-        operator signal) rather than ``loop_guard_dropped`` — the
+        operator signal) rather than ``loop_guard_dropped`` - the
         latter would silently swallow the misconfiguration.
 
         """
@@ -372,7 +372,7 @@ class TestLoopGuardActorIdStage:
 
         A fresh install has no departments, hence no bot accounts. The
         loop guard must not silently drop every webhook in this state
-        — this startup invariant carries through.
+        - this startup invariant carries through.
 
         """
 
@@ -401,7 +401,7 @@ class TestLoopGuardActorIdStage:
             ),
         )
         # The actor is the research-bot but the dept resolves to
-        # payments — cross-dept self-action.
+        # payments - cross-dept self-action.
         event = _make_event(actor_account_id="research-bot")
 
         decision = chain.evaluate(event)
@@ -582,7 +582,7 @@ class TestLoopGuardRegexFallbackStage:
 
 
 # ---------------------------------------------------------------------------
-# Stage ordering — composition properties
+# Stage ordering - composition properties
 # ---------------------------------------------------------------------------
 
 
@@ -619,7 +619,7 @@ class TestEvaluateStageOrdering:
         """Actor-id check beats body-text scan when both could match.
 
         When the actor IS in the bot registry AND the body starts
-        with ``[bot:``, only the actor-id reason should fire — the
+        with ``[bot:``, only the actor-id reason should fire - the
         regex fallback exists specifically for the case where the
         actor is missing.
 

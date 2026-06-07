@@ -1,4 +1,4 @@
-"""invariant 6 — ``[fix]`` keyword family: debounce + diff-hash dedup.
+﻿"""invariant 6 - ``[fix]`` keyword family: debounce + diff-hash dedup.
 
 
 
@@ -7,20 +7,20 @@ Invariant statement
 
 For any hypothesis-generated tuple
 ``(state, current_diff_hash, now, last_fix_trigger_at)`` the
-``AgentRunnerWorkflow`` ``[fix]`` family — composed of the pure
+``AgentRunnerWorkflow`` ``[fix]`` family - composed of the pure
 helpers:func:`agent_runner_workflow._is_fix_debounced` and:func:`agent_runner_workflow._fix_should_skip_retest` plus the signal
-handler:meth:`AgentRunnerWorkflow._apply_fix_signal` — SHALL satisfy:
+handler:meth:`AgentRunnerWorkflow._apply_fix_signal` - SHALL satisfy:
 
-(P1) **Debounce** — ``_is_fix_debounced(state, now)`` returns ``True``
+(P1) **Debounce** - ``_is_fix_debounced(state, now)`` returns ``True``
  iff ``state.last_fix_trigger_at`` is not ``None`` AND
  ``now - last_fix_trigger_at < FIX_DEBOUNCE_WINDOW`` (60 seconds).
  (T6).
 
-(P2) **Diff-hash dedup** — ``_fix_should_skip_retest(state,
+(P2) **Diff-hash dedup** - ``_fix_should_skip_retest(state,
  diff_hash)`` returns ``True`` iff ``diff_hash`` is non-empty AND
  ``diff_hash in state.test_results_by_diff_hash``. (T1).
 
-(P3) **Signal handler — debounce path** — When the debounce window is
+(P3) **Signal handler - debounce path** - When the debounce window is
  active, the handler:
 
  - leaves the workflow ``_iteration_state`` unchanged (no
@@ -29,7 +29,7 @@ handler:meth:`AgentRunnerWorkflow._apply_fix_signal` — SHALL satisfy:
  - leaves ``_pending_fix_diff_hash`` unchanged,
  - returns without raising..
 
-(P4) **Signal handler — re-test protection path** — When the debounce
+(P4) **Signal handler - re-test protection path** - When the debounce
  window is **not** active AND the current ``diff_hash`` is in the
  test-results cache, the handler:
 
@@ -41,7 +41,7 @@ handler:meth:`AgentRunnerWorkflow._apply_fix_signal` — SHALL satisfy:
  - clears ``_pending_fix_diff_hash`` (no child re-test is
  requested)..
 
-(P5) **Signal handler — fresh-diff path** — When the debounce window
+(P5) **Signal handler - fresh-diff path** - When the debounce window
  is **not** active AND the current ``diff_hash`` is **not** in the
  test-results cache, the handler:
 
@@ -50,14 +50,14 @@ handler:meth:`AgentRunnerWorkflow._apply_fix_signal` — SHALL satisfy:
  - sets ``_pending_fix_diff_hash`` to the supplied diff hash,
  - queues NO ``[fix]``-family audit row. transition path.
 
-(P6) **Sequential ``[fix]`` semantics** — A three-step sequence
+(P6) **Sequential ``[fix]`` semantics** - A three-step sequence
  ``debounced → re_test_protected → fresh_diff`` produces a single
  terminal state where:
 
  - ``iter_count`` advanced by exactly one (only the third call
  took an iteration),
  - ``last_fix_trigger_at`` equals the wall-clock time of the
- *last* accepted ``[fix]`` (the third one — the second call's
+ *last* accepted ``[fix]`` (the third one - the second call's
  re-test path also writes the trigger time, but the third
  overwrites it),
  - the audit queue contains, in order, exactly
@@ -67,14 +67,14 @@ handler:meth:`AgentRunnerWorkflow._apply_fix_signal` — SHALL satisfy:
 Not in scope
 ------------
 
-* The webhook-side ``[fix]`` regex match — owned by
+* The webhook-side ``[fix]`` regex match - owned by
  ``test_webhook_predicates.py`` (invariant).
 * The ``ExecutionRunWorkflow`` child dispatch and its
- ``test_results_by_diff_hash`` cache write — owned by the
+ ``test_results_by_diff_hash`` cache write - owned by the
  ``code_change_with_test`` body and exercised by the
  unit tests under
  ``platform/workers/agent-runner-worker/tests/unit/``.
-* Replay determinism of the workflow body — owned by invariant
+* Replay determinism of the workflow body - owned by invariant
  (``test_workflow_determinism_static.py`` /
  ``test_workflow_determinism_replay.py``).
 
@@ -85,14 +85,14 @@ The signal handler tests instantiate ``AgentRunnerWorkflow`` as a
 plain Python object. The handler's only Temporal dependency is
 ``workflow.now`` which we monkey-patch onto a deterministic clock
 via:func:`monkeypatch.setattr` on the ``temporalio.workflow`` module
-attribute — the same pattern used by the worker's own unit-test
+attribute - the same pattern used by the worker's own unit-test
 suite at
 ``platform/workers/agent-runner-worker/tests/unit/test_agent_runner_signal_handlers.py``.
 
 Hypothesis runs each property at ``max_examples=100`` with
 ``deadline=None`` (the handler is fast but pytest's default
 deadline trips on debug builds and CI cold-starts). Generators
-constrain the input space intelligently — e.g. ``test_results_by_diff_hash``
+constrain the input space intelligently - e.g. ``test_results_by_diff_hash``
 is drawn from a small alphabet so the dedup hit / miss branches are
 both well-covered without astronomically improbable collisions.
 """
@@ -112,7 +112,7 @@ from hypothesis import strategies as st
 from temporalio import workflow as _temporal_workflow
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — workers and shared libs are not pip-installed
+# sys.path bootstrap - workers and shared libs are not pip-installed
 # inside the test environment, so we expose their source trees the
 # same way the existing invariant under ``tests/property/`` do
 # (mirrors ``test_workflow_determinism_replay.py``,
@@ -136,7 +136,7 @@ for _candidate in (_AGENT_RUNNER_SRC, _TEMPORAL_SHARED_SRC, _MCP_CLIENT_SRC):
         sys.path.insert(0, _str)
 
 
-# noqa: E402 below — imports must follow the sys.path bootstrap.
+# noqa: E402 below - imports must follow the sys.path bootstrap.
 
 from agent_runner.workflows.agent_runner_workflow import (  # noqa: E402
     FIX_DEBOUNCE_AUDIT_ACTION,
@@ -162,7 +162,7 @@ from temporal_shared.messages import IterationState  # noqa: E402
 _ANCHOR_NOW: datetime = datetime(2026, 5, 14, 12, 0, 0, tzinfo=timezone.utc)
 
 
-# Diff hash alphabet — kept small so the dedup hit / miss branches
+# Diff hash alphabet - kept small so the dedup hit / miss branches
 # are both well-covered. Hypothesis would otherwise spend most of its
 # budget on hashes that never collide with any pre-seeded entry.
 _DIFF_HASH_ALPHABET: tuple[str, ...] = (
@@ -228,7 +228,7 @@ def _now_strategy() -> st.SearchStrategy[datetime]:
 
  Constrained to ``[anchor, anchor + 10 minutes]`` so the
  pre-condition ``now >= last_fix_trigger_at`` is *not* always true
- — the debounce predicate must still produce the correct result
+ - the debounce predicate must still produce the correct result
  when ``now < last_fix_trigger_at`` (the workflow guards against
  this by treating ``last_fix_trigger_at`` as an opaque marker, not
  a clock anchor).
@@ -250,7 +250,7 @@ def _iteration_state_strategy(
  When ``True`` ``iter_count`` is allowed to reach:data:`MAX_ITER` so the cap-reached branch can be exercised.
  When ``False`` (default) ``iter_count`` stays strictly below
  the cap so ``_should_advance_iter`` always returns
- ``advance=True`` — keeping the focus on the ``[fix]``-family
+ ``advance=True`` - keeping the focus on the ``[fix]``-family
  invariants without the iter-cap branch interfering.
  """
 
@@ -292,7 +292,7 @@ def _patched_workflow_now(fixed_now: datetime) -> Iterator[None]:
         yield
     finally:
         if original is sentinel:
-            # ``workflow.now`` was not previously defined — remove the
+            # ``workflow.now`` was not previously defined - remove the
             # attribute we added so the module returns to its initial
             # shape.
             try:
@@ -318,7 +318,7 @@ def _build_workflow(initial_state: IterationState) -> AgentRunnerWorkflow:
 
 
 # ---------------------------------------------------------------------------
-# invariant — debounce predicate matches the 60-second window
+# invariant - debounce predicate matches the 60-second window
 # ---------------------------------------------------------------------------
 
 
@@ -341,7 +341,7 @@ def test_is_fix_debounced_matches_60s_window(
     actual = _is_fix_debounced(state, now)
 
     if last_fix_at is None:
-        # No prior ``[fix]`` recorded — debounce never fires.
+        # No prior ``[fix]`` recorded - debounce never fires.
         expected = False
     else:
         expected = (now - last_fix_at) < FIX_DEBOUNCE_WINDOW
@@ -353,7 +353,7 @@ def test_is_fix_debounced_matches_60s_window(
 
 
 # ---------------------------------------------------------------------------
-# invariant — re-test guard matches diff-hash cache membership
+# invariant - re-test guard matches diff-hash cache membership
 # ---------------------------------------------------------------------------
 
 
@@ -376,7 +376,7 @@ def test_fix_should_skip_retest_matches_cache_membership(
     actual = _fix_should_skip_retest(state, diff_hash or "")
 
     if not diff_hash:
-        # Empty / None hash short-circuits the predicate to False —
+        # Empty / None hash short-circuits the predicate to False -
         # the workflow still treats it as a fresh test request.
         expected = False
     else:
@@ -389,7 +389,7 @@ def test_fix_should_skip_retest_matches_cache_membership(
 
 
 # ---------------------------------------------------------------------------
-# invariant — signal handler debounce path leaves state untouched
+# invariant - signal handler debounce path leaves state untouched
 # ---------------------------------------------------------------------------
 
 
@@ -424,12 +424,12 @@ def test_apply_fix_signal_debounced_keeps_state_unchanged(
 
         wf._apply_fix_signal(text="[fix]", diff_hash=diff_hash)
 
-    # State invariants — handler must not mutate iteration state.
+    # State invariants - handler must not mutate iteration state.
     assert wf._iteration_state.iter_count == iter_before
     assert wf._iteration_state.last_fix_trigger_at == last_fix_before
     assert wf._pending_fix_diff_hash == pending_fix_before
 
-    # Audit invariants — exactly one debounce audit row queued, and
+    # Audit invariants - exactly one debounce audit row queued, and
     # the re-test-protected audit is *not* present.
     assert (
         wf._pending_audit_actions.count(FIX_DEBOUNCE_AUDIT_ACTION) == 1
@@ -440,7 +440,7 @@ def test_apply_fix_signal_debounced_keeps_state_unchanged(
 
 
 # ---------------------------------------------------------------------------
-# invariant — re-test guard path skips iter and queues the audit
+# invariant - re-test guard path skips iter and queues the audit
 # ---------------------------------------------------------------------------
 
 
@@ -466,7 +466,7 @@ def test_apply_fix_signal_retest_protected_skips_iter(
  Validates (T1).
  """
 
-    # Force the debounce window inactive — anchor last_fix_trigger_at
+    # Force the debounce window inactive - anchor last_fix_trigger_at
     # well outside the 60s window. ``None`` would also work but we
     # prefer an explicit far-past anchor so the re-test path is the
     # *only* reason the handler short-circuits.
@@ -488,7 +488,7 @@ def test_apply_fix_signal_retest_protected_skips_iter(
 
         wf._apply_fix_signal(text="[fix] please rerun", diff_hash=diff_hash)
 
-    # Iter unchanged — the cached test result is reused.
+    # Iter unchanged - the cached test result is reused.
     assert wf._iteration_state.iter_count == iter_before
 
     # Trigger time *is* recorded so the next ``[fix]`` is subject to
@@ -505,13 +505,13 @@ def test_apply_fix_signal_retest_protected_skips_iter(
     )
     assert FIX_DEBOUNCE_AUDIT_ACTION not in wf._pending_audit_actions
 
-    # No pending fix diff — the workflow body must not re-dispatch
+    # No pending fix diff - the workflow body must not re-dispatch
     # the ExecutionRunWorkflow child for this diff.
     assert wf._pending_fix_diff_hash is None
 
 
 # ---------------------------------------------------------------------------
-# invariant — fresh-diff path advances iter and arms re-test
+# invariant - fresh-diff path advances iter and arms re-test
 # ---------------------------------------------------------------------------
 
 
@@ -536,7 +536,7 @@ def test_apply_fix_signal_fresh_diff_advances_iter(
  """
 
     # Strip the diff hash from the cache so the re-test guard does
-    # NOT fire — we want to land on the fresh-diff branch every time.
+    # NOT fire - we want to land on the fresh-diff branch every time.
     cache = {k: v for k, v in cache_seed.items() if k != diff_hash}
 
     state = IterationState(
@@ -559,7 +559,7 @@ def test_apply_fix_signal_fresh_diff_advances_iter(
     # The fresh diff is staged for the next iteration body.
     assert wf._pending_fix_diff_hash == diff_hash
 
-    # No ``[fix]``-family audit row queued — the fresh-diff path is
+    # No ``[fix]``-family audit row queued - the fresh-diff path is
     # the only branch that consumes a real iteration and therefore
     # neither short-circuit audit fires.
     assert FIX_DEBOUNCE_AUDIT_ACTION not in wf._pending_audit_actions
@@ -572,7 +572,7 @@ def test_apply_fix_signal_fresh_diff_advances_iter(
 
 
 # ---------------------------------------------------------------------------
-# invariant — sequential ``[fix]`` semantics (debounced → protected → new)
+# invariant - sequential ``[fix]`` semantics (debounced → protected → new)
 # ---------------------------------------------------------------------------
 
 
@@ -591,9 +591,9 @@ def test_sequential_fix_debounced_protected_then_new_iter(
 ) -> None:
     """A three-step ``[fix]`` sequence
 
- (1) debounce_dropped — fired inside the 60s window
- (2) re_test_protected — same diff hash as the cached test
- (3) new ExecutionRunWorkflow — fresh diff hash, window expired
+ (1) debounce_dropped - fired inside the 60s window
+ (2) re_test_protected - same diff hash as the cached test
+ (3) new ExecutionRunWorkflow - fresh diff hash, window expired
 
  produces a single terminal state where ``iter_count`` advanced by
  exactly one and the audit queue contains, in order, exactly
@@ -606,7 +606,7 @@ def test_sequential_fix_debounced_protected_then_new_iter(
     # the fresh-diff branch. Hypothesis filtering keeps the strategy
     # space dense without throwing away meaningful examples.
     if cached_diff == fresh_diff:
-        # Bias the fresh diff to a deterministic alternative — keeps
+        # Bias the fresh diff to a deterministic alternative - keeps
         # the example shrinkable while preserving the invariant.
         fresh_diff = next(
             h for h in _DIFF_HASH_ALPHABET if h != cached_diff
@@ -654,13 +654,13 @@ def test_sequential_fix_debounced_protected_then_new_iter(
             text="[fix] try the new patch", diff_hash=fresh_diff
         )
 
-    # Iter advanced by exactly one across the whole sequence — only
+    # Iter advanced by exactly one across the whole sequence - only
     # step (3) consumed an iteration.
     assert wf._iteration_state.iter_count == iter_count_seed + 1
     assert wf._iteration_state.last_fix_trigger_at == fresh_now
     assert wf._pending_fix_diff_hash == fresh_diff
 
-    # Audit queue is unchanged — step (3) on the fresh-diff path queues
+    # Audit queue is unchanged - step (3) on the fresh-diff path queues
     # NO ``[fix]``-family audit row (the iter advance itself is the
     # observable side effect).
     assert wf._pending_audit_actions == [

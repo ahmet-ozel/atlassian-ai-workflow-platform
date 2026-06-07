@@ -1,4 +1,4 @@
-"""
+﻿"""
 Pre-flight checks for Docker Desktop, resource allocation, port availability,
 and Node.js/Playwright versions.
 
@@ -319,6 +319,6 @@ class TestPreflightEvidence:
             data=evidence_data,
         )
 
-        # This test always passes — it's for evidence collection.
+        # This test always passes - it's for evidence collection.
         # The actual assertions are in the other test classes above.
         assert True

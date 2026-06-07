@@ -1,4 +1,4 @@
-"""Unit tests for :mod:`http_shared.redaction`.
+﻿"""Unit tests for :mod:`http_shared.redaction`.
 
 The :class:`RedactionFilter` is the *log-call site* half of the
 secret-hygiene story. ``test_log_redaction.py`` covers
@@ -14,7 +14,7 @@ five concrete redaction patterns:
 
 Each pattern is exercised through three surfaces:
 
-* :func:`redact_text` — the pure helper; smoke-tests the regex set.
+* :func:`redact_text` - the pure helper; smoke-tests the regex set.
 * :class:`RedactionFilter` mutating ``LogRecord.msg`` for f-string
   / pre-rendered log calls.
 * :class:`RedactionFilter` mutating ``record.args`` for
@@ -53,7 +53,7 @@ def isolated_logger(request: pytest.FixtureRequest) -> Iterator[logging.Logger]:
     Each test gets its own logger name (derived from the test's
     nodeid) so handlers / filters never bleed across tests. The
     logger is ``propagate=False`` so the root logger's handlers
-    don't double-emit — we want to assert *exactly* what the test
+    don't double-emit - we want to assert *exactly* what the test
     handler captures.
     """
     logger = logging.getLogger(f"test.redaction.{request.node.name}")
@@ -81,7 +81,7 @@ def _attach_capture(
 
 
 # ---------------------------------------------------------------------------
-# redact_text — pure helper
+# redact_text - pure helper
 # ---------------------------------------------------------------------------
 
 
@@ -118,7 +118,7 @@ class TestRedactText:
 
     def test_bearer_token_in_authorization_header(self) -> None:
         # Both the ``Authorization`` line *and* the bare ``Bearer`` form
-        # collapse to a single sentinel — we don't care which pattern
+        # collapse to a single sentinel - we don't care which pattern
         # matched first as long as the token bytes are gone.
         out = redact_text("Authorization: Bearer abc.def.ghi")
         assert "abc.def.ghi" not in out
@@ -208,12 +208,12 @@ class TestRedactText:
 
 
 # ---------------------------------------------------------------------------
-# RedactionFilter — record.msg path (no args)
+# RedactionFilter - record.msg path (no args)
 # ---------------------------------------------------------------------------
 
 
 class TestRedactionFilterMsgOnly:
-    """``logger.info(f"...{token}")`` — secret arrives via ``record.msg``."""
+    """``logger.info(f"...{token}")`` - secret arrives via ``record.msg``."""
 
     def test_msg_is_redacted_in_place(
         self, isolated_logger: logging.Logger
@@ -226,7 +226,7 @@ class TestRedactionFilterMsgOnly:
         out = buf.getvalue()
         for leaked in ("abc123", "tok-xyz", "hunter2"):
             assert leaked not in out
-        # ``secret=`` value 'h' is one char but still must be masked —
+        # ``secret=`` value 'h' is one char but still must be masked -
         # this is the regression case for ``\S+`` greedy matching.
         assert "secret=h\n" not in out
         assert REDACTION_PLACEHOLDER in out
@@ -258,12 +258,12 @@ class TestRedactionFilterMsgOnly:
 
 
 # ---------------------------------------------------------------------------
-# RedactionFilter — record.args path (% formatting)
+# RedactionFilter - record.args path (% formatting)
 # ---------------------------------------------------------------------------
 
 
 class TestRedactionFilterArgs:
-    """``logger.info("got %s", token)`` — secret arrives via ``record.args``."""
+    """``logger.info("got %s", token)`` - secret arrives via ``record.args``."""
 
     def test_string_arg_is_redacted(
         self, isolated_logger: logging.Logger
@@ -341,7 +341,7 @@ class TestRedactionFilterArgs:
 
 
 # ---------------------------------------------------------------------------
-# install_redaction_filter — wiring helper
+# install_redaction_filter - wiring helper
 # ---------------------------------------------------------------------------
 
 
@@ -373,7 +373,7 @@ class TestInstallRedactionFilter:
             loggers=[isolated_logger], attach_to_root=False
         )
         # Second call with a *different* filter instance still works
-        # — both filters are idempotent so the redaction is unchanged.
+        # - both filters are idempotent so the redaction is unchanged.
         install_redaction_filter(
             loggers=[isolated_logger], attach_to_root=False
         )
@@ -383,7 +383,7 @@ class TestInstallRedactionFilter:
         isolated_logger.info("password=hunter2")
         out = buf.getvalue()
         # Even with two filters stacked the output is a single redacted
-        # line — the placeholder is opaque to every pattern.
+        # line - the placeholder is opaque to every pattern.
         assert out.count(REDACTION_PLACEHOLDER) == 1
         assert "hunter2" not in out
 

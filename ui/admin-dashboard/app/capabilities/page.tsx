@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * Capability matrix page.
@@ -422,12 +422,12 @@ function DetailRows({ cell }: { cell: ProbeCell }): JSX.Element {
         {cell.error ? (
           <code style={{ wordBreak: "break-word" }}>{cell.error}</code>
         ) : (
-          <span className="faint">—</span>
+          <span className="faint">-</span>
         )}
       </Row>
       <Row label="Gecikme">{formatLatency(cell.latency_ms)}</Row>
       <Row label="Son test">
-        {cell.probed_at ? <code className="text-xs">{cell.probed_at}</code> : <span className="faint">—</span>}
+        {cell.probed_at ? <code className="text-xs">{cell.probed_at}</code> : <span className="faint">-</span>}
       </Row>
     </dl>
   );

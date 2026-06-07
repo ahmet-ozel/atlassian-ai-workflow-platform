@@ -1,21 +1,21 @@
-"""Unit tests for ``AgentRunnerWorkflow`` ``code_change_*`` flows.
+﻿"""Unit tests for ``AgentRunnerWorkflow`` ``code_change_*`` flows.
 
 Covers the four execution paths plumbed into ``_dispatch_workflow_type``:
 
-    1. ``code_change_with_test`` happy path — verifies the activity
+    1. ``code_change_with_test`` happy path - verifies the activity
        sequence (``set_assignee_to_bot`` → ``precommit_scanner`` →
        ``bitbucket_commit_via_git`` → child ``ExecutionRunWorkflow`` →
        ``bitbucket_create_pull_request_cloud`` → ``jira_add_comment``
        with the PR link).
-    2. ``code_change_commit_only`` — same prefix as above but does
+    2. ``code_change_commit_only`` - same prefix as above but does
        NOT invoke any PR-creation activity nor the
        ``ExecutionRunWorkflow`` child; the Jira comment carries the
        branch link plus a diff summary.
-    3. ``pr_review`` dedup — a second invocation with the same
+    3. ``pr_review`` dedup - a second invocation with the same
        finding hash does NOT post a duplicate ``bitbucket_add_pr_comment``.
-    4. ``precommit_scanner`` block path — workflow fails with the
+    4. ``precommit_scanner`` block path - workflow fails with the
        stable ``precommit_secret_leak_blocked`` failure reason.
-    5. ``branch_pattern_rules`` deny — ``code_change_commit_only`` on
+    5. ``branch_pattern_rules`` deny - ``code_change_commit_only`` on
        ``hotfix/*`` short-circuits to ``out_of_scope``.
 
 The tests drive the body methods directly (``_handle_code_change_*``,
@@ -41,7 +41,7 @@ from temporalio import workflow as _temporal_workflow
 from temporalio.exceptions import ApplicationError
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — mirrors ``test_agent_runner_signal_handlers.py``.
+# sys.path bootstrap - mirrors ``test_agent_runner_signal_handlers.py``.
 # ---------------------------------------------------------------------------
 
 _WORKER_ROOT: Path = Path(__file__).resolve().parents[2]
@@ -57,7 +57,7 @@ for _candidate in (_SRC_DIR, _TEMPORAL_SHARED_SRC, _MCP_CLIENT_SRC):
     if _candidate.is_dir() and _str not in sys.path:
         sys.path.insert(0, _str)
 
-# noqa: E402 below — import after sys.path bootstrap.
+# noqa: E402 below - import after sys.path bootstrap.
 
 from agent_runner.workflows.agent_runner_workflow import (  # noqa: E402
     AgentRunnerWorkflow,
@@ -347,7 +347,7 @@ class TestCodeChangeWithTest:
         asyncio.run(_drive())
 
         called_names = [c.args[0] for c in activity_mock.call_args_list]
-        # Crucial invariant — failed tests mean NO PR creation.
+        # Crucial invariant - failed tests mean NO PR creation.
         assert "bitbucket_create_pull_request_cloud" not in called_names
         assert "bitbucket_create_pull_request_dc" not in called_names
         # And a failure-summary comment was posted.
@@ -475,7 +475,7 @@ class TestCodeChangeWithTest:
 
 
 # ---------------------------------------------------------------------------
-# 2. ``code_change_commit_only`` — no PR creation, no test child
+# 2. ``code_change_commit_only`` - no PR creation, no test child
 # ---------------------------------------------------------------------------
 
 
@@ -539,7 +539,7 @@ class TestCodeChangeCommitOnly:
     def test_diff_summary_cached_across_iterations(
         self, make_wf, patched_workflow_now
     ) -> None:
-        """Second commit with same hash hits the cache — comment carries
+        """Second commit with same hash hits the cache - comment carries
         the cached summary and no extra LLM call is invoked."""
 
         wf = make_wf()
@@ -582,7 +582,7 @@ class TestCodeChangeCommitOnly:
 
         asyncio.run(_drive())
 
-        # Cache value remained — the cache hit served the comment.
+        # Cache value remained - the cache hit served the comment.
         assert wf._diff_summary_cache["deadbeef"] == "cached diff summary"
 
 
@@ -659,7 +659,7 @@ class TestPrReviewDedup:
         assert len(first_comment_calls) == 1
         assert "H1" in wf._previous_findings
 
-        # Second run — same workflow instance.
+        # Second run - same workflow instance.
         review_state["current"] = review_second
         mock_second = _activity_dispatcher(activity_routes_first)
 
@@ -684,7 +684,7 @@ class TestPrReviewDedup:
             for c in mock_second.call_args_list
             if c.args[0] == "bitbucket_add_pr_comment"
         ]
-        # Only the ``H2`` comment is posted — ``H1`` is suppressed.
+        # Only the ``H2`` comment is posted - ``H1`` is suppressed.
         assert len(second_comment_calls) == 1
         body_arg = second_comment_calls[0].kwargs.get(
             "args"
@@ -747,7 +747,7 @@ class TestPrecommitBlock:
 
 
 # ---------------------------------------------------------------------------
-# 5. ``branch_pattern_rules`` deny — out_of_scope short-circuit
+# 5. ``branch_pattern_rules`` deny - out_of_scope short-circuit
 # ---------------------------------------------------------------------------
 
 
@@ -787,7 +787,7 @@ class TestBranchPatternRulesDeny:
         asyncio.run(_drive())
 
         called_names = [c.args[0] for c in activity_mock.call_args_list]
-        # Assignee + audit_emit fired — but no commit / PR.
+        # Assignee + audit_emit fired - but no commit / PR.
         assert "set_assignee_to_bot" in called_names
         assert "bitbucket_commit_via_git" not in called_names
         # Audit row carries the rule's reason token.

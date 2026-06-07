@@ -1,4 +1,4 @@
-"""End-to-end integration test for the ``research_publish_confluence`` flow.
+﻿"""End-to-end integration test for the ``research_publish_confluence`` flow.
 
 Scenario
 --------
@@ -9,10 +9,10 @@ This file exercises the
 (time-skipping) Temporal cluster. The body is the one defined in
 :meth:`AgentRunnerWorkflow._handle_research_publish_confluence`:
 
-1. ``set_assignee_to_bot`` — claim the Jira issue.
-2. ``jira_build_issue_link`` — resolve the canonical Jira URL so the
+1. ``set_assignee_to_bot`` - claim the Jira issue.
+2. ``jira_build_issue_link`` - resolve the canonical Jira URL so the
    provenance footer can deep-link back to the originating task.
-3. ``firecrawl_search`` — enumerate candidate URLs from the analysis
+3. ``firecrawl_search`` - enumerate candidate URLs from the analysis
    query.
 4. For every candidate URL: ``firecrawl_scrape`` is invoked. The
    workflow's
@@ -24,10 +24,10 @@ This file exercises the
    * ``{"kind": "success", "body": {...}}`` → harvest content +
      bookkeeping (title/url/accessed_at) for the Confluence body.
 
-5. ``confluence_create_page`` — render the body via
+5. ``confluence_create_page`` - render the body via
    :func:`temporal_shared.research.format_research_publish_confluence_body`,
    append the provenance footer, and write the page.
-6. ``jira_add_comment`` — best-effort completion comment.
+6. ``jira_add_comment`` - best-effort completion comment.
 
 The integration test stubs every activity above with
 ``@activity.defn``-registered fakes, captures every call in an
@@ -59,7 +59,7 @@ import pytest
 
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — agent-runner-worker tree + temporal-shared.
+# sys.path bootstrap - agent-runner-worker tree + temporal-shared.
 # Mirrors ``test_e2e_confluence_doc_create.py``.
 # ---------------------------------------------------------------------------
 
@@ -83,7 +83,7 @@ for _candidate in (
 
 
 # ---------------------------------------------------------------------------
-# Skip gate — mirrors the predicate in ``test_e2e_confluence_doc_create.py``.
+# Skip gate - mirrors the predicate in ``test_e2e_confluence_doc_create.py``.
 # ---------------------------------------------------------------------------
 
 
@@ -92,7 +92,7 @@ def _temporal_env_available() -> bool:
 
     try:
         from temporalio.testing import WorkflowEnvironment  # noqa: F401
-    except Exception:  # noqa: BLE001 — any import failure → skip.
+    except Exception:  # noqa: BLE001 - any import failure → skip.
         return False
     return True
 
@@ -117,7 +117,7 @@ async def _start_time_skipping_or_skip() -> Any:
 
     try:
         env_cm = await WorkflowEnvironment.start_time_skipping()
-    except Exception as exc:  # noqa: BLE001 — surface as skip.
+    except Exception as exc:  # noqa: BLE001 - surface as skip.
         pytest.skip(f"temporalio test environment not available: {exc}")
     async with env_cm as env:
         yield env
@@ -161,13 +161,13 @@ class ActivityCallLog:
 # Stub fixtures
 # ---------------------------------------------------------------------------
 
-#: Stub Jira issue link returned by ``jira_build_issue_link`` —
+#: Stub Jira issue link returned by ``jira_build_issue_link`` -
 #: matches the format the workflow's
 #: :func:`compute_provenance_footer` validator accepts so the footer
 #: renders verbatim into the page body.
 _STUB_JIRA_LINK: str = "https://jira.example.com/browse/SEC-1"
 
-#: Stub Confluence page id surfaced by ``confluence_create_page`` —
+#: Stub Confluence page id surfaced by ``confluence_create_page`` -
 #: the workflow stashes this in ``_latest_confluence_page_id`` and the
 #: terminal :class:`AgentRunnerWorkflowOutput` round-trips it on
 #: ``confluence_page_id``.
@@ -203,25 +203,25 @@ def _make_activities(
 
     Activities registered:
 
-    * ``set_assignee_to_bot`` — claim step (no return value).
-    * ``jira_build_issue_link`` — returns :data:`_STUB_JIRA_LINK`
+    * ``set_assignee_to_bot`` - claim step (no return value).
+    * ``jira_build_issue_link`` - returns :data:`_STUB_JIRA_LINK`
       (HTTPS URL pointing at a synthetic Jira issue) so the
       provenance footer renders against a known link string.
-    * ``firecrawl_search`` — returns ``{"results": search_results}``
+    * ``firecrawl_search`` - returns ``{"results": search_results}``
       so the workflow's
       :meth:`AgentRunnerWorkflow._extract_firecrawl_urls` lifts the
       list verbatim.
-    * ``firecrawl_scrape`` — triages each URL: hosts whose hostname
+    * ``firecrawl_scrape`` - triages each URL: hosts whose hostname
       ends in any entry of ``blocked_hosts`` return
       ``{"kind": "egress_blocked"}``; everything else returns
       ``{"kind": "success", "body": {"content": _STUB_ARTICLE_BODY,
       "title": _STUB_ARTICLE_TITLE}}``.
-    * ``confluence_create_page`` — returns the
+    * ``confluence_create_page`` - returns the
       ``{"page_id", "url"}`` shape the workflow's extractor consumes.
-    * ``jira_add_comment`` — best-effort completion and graceful
+    * ``jira_add_comment`` - best-effort completion and graceful
       403 messages (recorded so the test can assert the blocked
       domain comment fired).
-    * ``audit_emit`` — best-effort audit row sink.
+    * ``audit_emit`` - best-effort audit row sink.
 
     Every wrapper records the call in ``log`` so the assertions can
     inspect call counts and payload shapes.
@@ -247,7 +247,7 @@ def _make_activities(
     @activity.defn(name="firecrawl_scrape")
     async def _firecrawl_scrape(*args: Any, **kwargs: Any) -> dict[str, Any]:
         log.record("firecrawl_scrape", args, kwargs)
-        # Activity signature: (url, dept_id) — first positional arg is
+        # Activity signature: (url, dept_id) - first positional arg is
         # the URL the workflow wants to scrape.
         url = str(args[0]) if args else ""
         # Match by hostname suffix so a single blocked domain catches
@@ -370,7 +370,7 @@ def _output_to_dict(result: Any) -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
-# 1. Happy path with one egress-blocked URL — Confluence page created
+# 1. Happy path with one egress-blocked URL - Confluence page created
 #    with allowlisted source rendered in the body, blocked domain
 #    surfaced via best-effort Jira comment.
 # ---------------------------------------------------------------------------
@@ -391,7 +391,7 @@ async def test_research_publish_confluence_happy_path_with_egress_blocked_url() 
 
     1. ``firecrawl_search`` fires exactly once with the analysis
        title as the query.
-    2. ``firecrawl_scrape`` fires three times — once per URL in the
+    2. ``firecrawl_scrape`` fires three times - once per URL in the
        search result, regardless of egress outcome (the workflow
        MUST attempt every candidate so the audit trail records the
        block).
@@ -408,7 +408,7 @@ async def test_research_publish_confluence_happy_path_with_egress_blocked_url() 
        non-failure status (``"completed"`` or
        ``"completed_with_partial_failure"`` when the
        graceful blocked-source marker is recorded), ``failure_reason is None``,
-       and ``confluence_page_id == _STUB_PAGE_ID`` — confirming the
+       and ``confluence_page_id == _STUB_PAGE_ID`` - confirming the
        workflow's ``_latest_confluence_page_id`` field round-tripped
        through the output dataclass.
     """
@@ -485,7 +485,7 @@ async def test_research_publish_confluence_happy_path_with_egress_blocked_url() 
         f"so the audit trail records the egress outcome; got {scraped_urls!r}"
     )
 
-    # 3. Graceful 403 — at least one jira_add_comment names the
+    # 3. Graceful 403 - at least one jira_add_comment names the
     # blocked domain with the Turkish "izinli değil" phrase. We grep
     # against every recorded comment body (positional arg index 1)
     # so a future refactor that splits the message into multiple
@@ -529,7 +529,7 @@ async def test_research_publish_confluence_happy_path_with_egress_blocked_url() 
     assert isinstance(page_body_arg, str)
 
     # The allowlisted URLs must surface in the rendered "## Kaynaklar"
-    # block. The blocked URL must NOT appear — the scrape was
+    # block. The blocked URL must NOT appear - the scrape was
     # gracefully degraded and never harvested into the formatter
     # input.
     assert _ALLOWED_URL_1 in page_body_arg, (
@@ -565,7 +565,7 @@ async def test_research_publish_confluence_happy_path_with_egress_blocked_url() 
     assert "<details>" in page_body_arg
     assert "</details>" in page_body_arg
 
-    # Page title format — ``{topic} - {YYYY-MM-DD}`` via the shared
+    # Page title format - ``{topic} - {YYYY-MM-DD}`` via the shared
     # ``format_page_title`` formatter.
     assert isinstance(page_title_arg, str)
     assert page_title_arg.startswith("KVKK Yönetmelik Araştırma - "), (
@@ -573,11 +573,11 @@ async def test_research_publish_confluence_happy_path_with_egress_blocked_url() 
         f"got {page_title_arg!r}"
     )
 
-    # 5. Terminal output — non-failure status + page id surfaces.
+    # 5. Terminal output - non-failure status + page id surfaces.
     #
     # The brief asks for ``status="completed"``; production behaviour
     # is to surface :data:`AgentRunnerStatus` ``completed_with_partial_failure``
-    # when the run records a partial-failure marker — and the
+    # when the run records a partial-failure marker - and the
     # graceful blocked-source path *does* record ``firecrawl_blocked:<url>`` so
     # operators can count blocked-URL runs from the audit table. We
     # therefore accept either non-failure terminal status here; the
@@ -611,7 +611,7 @@ async def test_research_publish_confluence_happy_path_with_egress_blocked_url() 
 
 
 # ---------------------------------------------------------------------------
-# 2. Empty search result — graceful degradation, no Confluence write
+# 2. Empty search result - graceful degradation, no Confluence write
 # ---------------------------------------------------------------------------
 
 
@@ -622,20 +622,20 @@ async def test_research_publish_confluence_no_sources_graceful_degradation() -> 
     """Drive ``research_publish_confluence`` against a ``firecrawl_search``
     that returns an empty result list. The workflow MUST:
 
-    * Skip ``confluence_create_page`` entirely — there is no source
+    * Skip ``confluence_create_page`` entirely - there is no source
       content to publish.
     * Post a Turkish best-effort Jira comment naming the situation:
       "🤖 Araştırma için kullanılabilir bir kaynak bulunamadı".
     * Mark the run with a non-failure status (``"completed"`` or
       ``"completed_with_partial_failure"`` when the
       ``research_no_sources`` marker is recorded). No source is a
-      graceful degradation, not a failure — the operator can supply
+      graceful degradation, not a failure - the operator can supply
       a different topic or extend the allowlist.
     * Surface ``"research_no_sources"`` in
       :attr:`AgentRunnerWorkflowOutput.partial_failure_actions` so
       observability dashboards can count the degraded runs.
 
-    No ``firecrawl_scrape`` invocations are expected — the workflow
+    No ``firecrawl_scrape`` invocations are expected - the workflow
     short-circuits the for-loop when the search yields no candidates.
     """
 
@@ -669,7 +669,7 @@ async def test_research_publish_confluence_no_sources_graceful_degradation() -> 
 
     # ----- Assertions -------------------------------------------------
 
-    # 1. The search activity fires once and returns nothing — the
+    # 1. The search activity fires once and returns nothing - the
     # workflow MUST short-circuit without scraping anything.
     assert log.count("firecrawl_search") == 1
     assert log.count("firecrawl_scrape") == 0, (
@@ -678,7 +678,7 @@ async def test_research_publish_confluence_no_sources_graceful_degradation() -> 
         f"(call log: {log.names()!r})"
     )
 
-    # 2. confluence_create_page MUST NOT be called — the workflow
+    # 2. confluence_create_page MUST NOT be called - the workflow
     # has nothing useful to publish.
     assert log.count("confluence_create_page") == 0, (
         f"confluence_create_page must not fire when no sources are "
@@ -704,14 +704,14 @@ async def test_research_publish_confluence_no_sources_graceful_degradation() -> 
         f"{comment_bodies!r}"
     )
 
-    # 4. Terminal output — graceful degradation: non-failure status,
+    # 4. Terminal output - graceful degradation: non-failure status,
     # failure_reason None, partial_failure_actions carries the
     # ``research_no_sources`` marker.
     #
     # The brief asks for ``status="completed"``; production behaviour
     # is to surface :data:`AgentRunnerStatus` ``completed_with_partial_failure``
     # when the run records the ``research_no_sources`` partial
-    # failure. Both statuses are non-failure — accept either so a
+    # failure. Both statuses are non-failure - accept either so a
     # future tightening of the classification (e.g. clean
     # ``"completed"`` for the empty-source path) does not regress
     # this test.

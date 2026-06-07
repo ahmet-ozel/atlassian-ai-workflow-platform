@@ -1,4 +1,4 @@
-"""Unit tests for ``src.routers.operations`` .
+﻿"""Unit tests for ``src.routers.operations`` .
 The router is exercised through :class:`fastapi.testclient.TestClient`
 against an in-memory stub asyncpg pool. The ``require_admin`` dependency
 is overridden with a permissive stub for the happy paths.
@@ -51,7 +51,7 @@ from src.routers.operations import (  # noqa: E402
 
 
 class _FakeRecord(dict):
-    """Minimal asyncpg Record stub — behaves like a dict."""
+    """Minimal asyncpg Record stub - behaves like a dict."""
 
     def __getitem__(self, key: str) -> Any:
         return super().__getitem__(key)
@@ -125,7 +125,7 @@ def _make_app(
 
 
 # ---------------------------------------------------------------------------
-# Tests — pool unavailable
+# Tests - pool unavailable
 # ---------------------------------------------------------------------------
 
 
@@ -141,7 +141,7 @@ def test_license_503_when_pool_unavailable() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Tests — empty database
+# Tests - empty database
 # ---------------------------------------------------------------------------
 
 
@@ -182,7 +182,7 @@ def test_license_empty_when_no_caps() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Tests — named license tier
+# Tests - named license tier
 # ---------------------------------------------------------------------------
 
 
@@ -229,7 +229,7 @@ def test_license_returns_named_tier() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Tests — percent_used calculation
+# Tests - percent_used calculation
 # ---------------------------------------------------------------------------
 
 
@@ -313,7 +313,7 @@ def test_percent_used_is_max_of_three_dimensions() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Tests — default sentinel ordering
+# Tests - default sentinel ordering
 # ---------------------------------------------------------------------------
 
 
@@ -352,7 +352,7 @@ def test_default_sentinel_is_last_in_sorted_output() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Tests — dept_admin returns empty when no dept_ids claim
+# Tests - dept_admin returns empty when no dept_ids claim
 # ---------------------------------------------------------------------------
 
 

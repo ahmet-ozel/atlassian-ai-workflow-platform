@@ -1,9 +1,9 @@
-"use client";
+﻿"use client";
 
 /**
- * RunnerQueueCard — SSH runner queue/quota visibility widget.
+ * RunnerQueueCard - SSH runner queue/quota visibility widget.
  *
- * Displays a summary card: "Aktif: N/quota — Kuyrukta: M — Ortalama bekleme: Tdk"
+ * Displays a summary card: "Aktif: N/quota - Kuyrukta: M - Ortalama bekleme: Tdk"
  * with color thresholds (%80 yellow, %95 red).
  *
  * Below the summary, a workspace table lists each active/queued workspace
@@ -83,7 +83,7 @@ function getCardColor(ratio: number): { bg: string; border: string; text: string
 }
 
 function formatDate(dateStr: string | null | undefined): string {
-  if (!dateStr) return "—";
+  if (!dateStr) return "-";
   try {
     return new Date(dateStr).toLocaleString("tr-TR");
   } catch {
@@ -214,7 +214,7 @@ export default function RunnerQueueCard(): JSX.Element {
         setQueueStatus(data);
       } else {
         const body = await statusRes.text();
-        setError(`Queue status: HTTP ${statusRes.status} — ${body.slice(0, 200)}`);
+        setError(`Queue status: HTTP ${statusRes.status} - ${body.slice(0, 200)}`);
       }
 
       if (workspacesRes.ok) {
@@ -307,7 +307,7 @@ export default function RunnerQueueCard(): JSX.Element {
       );
       if (!res.ok) {
         const body = await res.text();
-        setError(`Cancel failed: HTTP ${res.status} — ${body.slice(0, 200)}`);
+        setError(`Cancel failed: HTTP ${res.status} - ${body.slice(0, 200)}`);
       } else {
         // Remove from local list
         setWorkspaces((prev) => prev.filter((w) => w.issue_key !== issueKey));
@@ -369,11 +369,11 @@ export default function RunnerQueueCard(): JSX.Element {
             <span style={metricStyle}>
               Aktif: {queueStatus.active_count}/{queueStatus.max_concurrent_global}
             </span>
-            <span style={{ color: cardColor.text }}>—</span>
+            <span style={{ color: cardColor.text }}>-</span>
             <span style={metricStyle}>
               Kuyrukta: {queueStatus.queued_count}
             </span>
-            <span style={{ color: cardColor.text }}>—</span>
+            <span style={{ color: cardColor.text }}>-</span>
             <span style={metricStyle}>
               Ortalama bekleme: {formatWaitTime(queueStatus.avg_wait_seconds)}
             </span>
@@ -420,7 +420,7 @@ export default function RunnerQueueCard(): JSX.Element {
                   <td style={tdStyle}>
                     <code style={{ fontSize: "0.85rem" }}>{ws.issue_key}</code>
                   </td>
-                  <td style={tdStyle}>{ws.dept_id ?? "—"}</td>
+                  <td style={tdStyle}>{ws.dept_id ?? "-"}</td>
                   <td style={tdStyle}>
                     <span style={statusBadge(ws.status)}>
                       {ws.status === "running"

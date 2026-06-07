@@ -1,4 +1,4 @@
-"""CI gate — Task Creation Prompt kanonik bölüm başlıkları doğrulaması.
+﻿"""CI gate - Task Creation Prompt kanonik bölüm başlıkları doğrulaması.
 
 
 `prompts/task_creation_assistant.md` dosyasının 'te tanımlanan kanonik
@@ -21,10 +21,10 @@ _PLATFORM_ROOT = Path(__file__).resolve().parent.parent.parent
 
 _CANONICAL_PATH = _PLATFORM_ROOT / "prompts" / "task_creation_assistant.md"
 
-# kanonik bölüm başlıkları — sıralı
+# kanonik bölüm başlıkları - sıralı
 # Her biri markdown heading olarak (## veya daha derin) bulunmalı.
 # Regex pattern'leri heading metninin ilgili anahtar kelimeyi İÇERMESİNİ arar;
-# heading'de ek açıklama metni olabilir (ör. "STANDALONE MOD (...) — Z2").
+# heading'de ek açıklama metni olabilir (ör. "STANDALONE MOD (...) - Z2").
 _CANONICAL_SECTIONS = [
     (r"##\s+ROL\b", "ROL"),
     (r"##\s+ZORUNLU\s+OUTPUT\s+FORMATI", "ZORUNLU OUTPUT FORMATI"),

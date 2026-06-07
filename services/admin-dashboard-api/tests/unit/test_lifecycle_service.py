@@ -1,13 +1,13 @@
-"""Unit tests for ``src.lifecycle.service.LifecycleService``.
+﻿"""Unit tests for ``src.lifecycle.service.LifecycleService``.
 These tests exercise the orchestrator as a black box against fake
 :class:`AuditWriter`, :class:`VaultClient`, :class:`ComposeRunner`,
 and :class:`HealthProbe` collaborators. The fakes record every call
-so we can assert ordering invariants — particularly the audit-or-
+so we can assert ordering invariants - particularly the audit-or-
 rollback semantics and the
 ``state="starting"``-before-response transition.
 Coverage matrix
 ---------------
-* ``start`` happy path — Vault writes per-key, audit precheck → pending
+* ``start`` happy path - Vault writes per-key, audit precheck → pending
   row → Compose up → health probe → success row.
 * ``start`` failures:
   - ``FormSchemaMismatchError`` on missing form key.
@@ -16,7 +16,7 @@ Coverage matrix
   - ``AuditUnreachableError`` when audit precheck fails.
   - ``VaultWriteError`` when a per-key Vault write fails.
   - ``ComposeFailureError`` when Compose ``up`` exits non-zero.
-  - Health probe timeout — final state is ``failed``.
+  - Health probe timeout - final state is ``failed``.
 * ``stop`` idempotent behaviour.
 * ``run_tests`` 409 semantics:
   - Service not running.
@@ -395,7 +395,7 @@ def _entries_with_flag_gate(
     """Manifest fixture for the feature-flag start gate tests.
     Mirrors :func:`_entries` but tags ``automation-service`` with
     ``feature_flag_dependency=flag_names`` so the gate runs before
-    form validation. Order of the tuple matters — the first disabled
+    form validation. Order of the tuple matters - the first disabled
     flag in manifest order is the deterministic ``blocking_flag``
     returned by the exception."""
 
@@ -498,7 +498,7 @@ class _AdvancingClock:
     """Clock that returns a UTC datetime advancing by ``step`` per call.
 
     Used by the streak-alert tests to defeat the
-    ``HEALTH_POLL_INTERVAL_SECONDS / 2`` cache TTL — every call returns
+    ``HEALTH_POLL_INTERVAL_SECONDS / 2`` cache TTL - every call returns
     a moment far enough in the future that the cache always misses.
     """
 
@@ -554,7 +554,7 @@ def _entries_with_chain() -> tuple[ManagedServiceEntry, ...]:
     * ``automation-service`` → ``atlassian-mcp``, ``postgres`` (external).
     * ``atlassian-mcp`` → ``firecrawl``, ``vault`` (external).
     * ``firecrawl``, ``admin-dashboard-api`` are leaves.
-    * ``admin-dashboard-api`` is unrelated to the chain — included so
+    * ``admin-dashboard-api`` is unrelated to the chain - included so
       the plan does *not* leak unrelated services into ``will_start``.
 
     The external deps (``postgres``, ``vault``) are intentionally not
@@ -607,12 +607,12 @@ def _entries_with_chain() -> tuple[ManagedServiceEntry, ...]:
 def test_compute_start_plan_topological_order_with_external_deps_filtered(
     tmp_path: Path,
 ) -> None:
-    """— dependencies appear *before* dependents; externals dropped.
+    """- dependencies appear *before* dependents; externals dropped.
     The post-order DFS over the dependency graph guarantees
     ``firecrawl`` lands before ``atlassian-mcp`` (its dependent) and
     ``automation-service`` (the root) lands last. The external
-    dependencies ``postgres`` and ``vault`` — present in
-    ``depends_on_services`` but not as manifest entries — must NOT
+    dependencies ``postgres`` and ``vault`` - present in
+    ``depends_on_services`` but not as manifest entries - must NOT
     appear in either output bucket because the lifecycle service
     cannot start them."""
 
@@ -635,7 +635,7 @@ def test_compute_start_plan_topological_order_with_external_deps_filtered(
 
 
 def test_compute_start_plan_already_running_filtered(tmp_path: Path) -> None:
-    """— services already in ``running`` are partitioned into
+    """- services already in ``running`` are partitioned into
     ``already_running`` and excluded from ``will_start`` so the UI
     can communicate the idempotent skip behaviour to the operator."""
 
@@ -784,7 +784,7 @@ def test_compute_start_plan_diamond_dependency_no_duplicates(
 
 
 # ---------------------------------------------------------------------------
-# start — happy path
+# start - happy path
 # ---------------------------------------------------------------------------
 
 
@@ -879,7 +879,7 @@ def test_start_state_is_starting_before_compose_returns(tmp_path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# start — form schema mismatch
+# start - form schema mismatch
 # ---------------------------------------------------------------------------
 
 
@@ -1075,7 +1075,7 @@ def test_start_llm_vllm_requires_vllm_api_key(tmp_path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# start — audit precheck failure
+# start - audit precheck failure
 # ---------------------------------------------------------------------------
 
 
@@ -1107,7 +1107,7 @@ def test_start_audit_precheck_fail_short_circuits(tmp_path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# start — vault failure
+# start - vault failure
 # ---------------------------------------------------------------------------
 
 
@@ -1130,7 +1130,7 @@ def test_start_vault_write_fail_aborts_before_compose(tmp_path: Path) -> None:
 
     # Audit precheck still ran .
     assert audit.precheck_calls == 1
-    # Pending audit row was NOT written — Vault failed first.
+    # Pending audit row was NOT written - Vault failed first.
     assert audit.write_calls == []
     # Compose never invoked.
     assert compose.up_calls == []
@@ -1139,7 +1139,7 @@ def test_start_vault_write_fail_aborts_before_compose(tmp_path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# start — compose failure
+# start - compose failure
 # ---------------------------------------------------------------------------
 
 
@@ -1179,7 +1179,7 @@ def test_start_compose_up_fail_marks_failed_and_writes_failed_audit(
 
 
 # ---------------------------------------------------------------------------
-# start — health probe timeout
+# start - health probe timeout
 # ---------------------------------------------------------------------------
 
 
@@ -1205,7 +1205,7 @@ def test_start_health_probe_timeout_marks_failed(tmp_path: Path) -> None:
     assert response.state == "failed"
     assert svc.state_cache["automation-service"].state == "failed"
 
-    # Compose still ran (Compose was successful — the failure is health).
+    # Compose still ran (Compose was successful - the failure is health).
     assert len(compose.up_calls) == 1
 
     # Final audit row says outcome=failed.
@@ -1214,7 +1214,7 @@ def test_start_health_probe_timeout_marks_failed(tmp_path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# stop — idempotent
+# stop - idempotent
 # ---------------------------------------------------------------------------
 
 
@@ -1277,7 +1277,7 @@ def test_stop_running_service_invokes_compose(tmp_path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-#  record_purge_vault_blocked — the project
+#  record_purge_vault_blocked - the project
 # ---------------------------------------------------------------------------
 
 
@@ -1339,13 +1339,13 @@ def test_record_purge_vault_blocked_unknown_service_raises(
     with pytest.raises(UnknownServiceError):
         asyncio.run(run())
 
-    # No audit row written — helper short-circuited on the
+    # No audit row written - helper short-circuited on the
     # ``_require_entry`` lookup.
     assert audit.write_with_retry_calls == []
 
 
 # ---------------------------------------------------------------------------
-#  stop + purge_vault — the project
+#  stop + purge_vault - the project
 # ---------------------------------------------------------------------------
 
 
@@ -1413,7 +1413,7 @@ def test_stop_purge_vault_true_happy_path_deletes_all_keys(
     * Audit chain is ``[stop(success), vault_overrides_purged(success)]``
       with ``deleted_paths_count`` matching the original key count.
     * The HTTP-shape :class:`StopResponse` reports the canonical
-      success state — the purge is a *side* effect, not a status
+      success state - the purge is a *side* effect, not a status
       modifier."""
 
     workspace = _build_workspace(tmp_path)
@@ -1456,7 +1456,7 @@ def test_stop_purge_vault_true_happy_path_deletes_all_keys(
 
     # LIST ran exactly once (single Vault round-trip).
     assert vault.list_calls == ["automation-service"]
-    # DELETE ran once per key — order matches the dict iteration
+    # DELETE ran once per key - order matches the dict iteration
     # order Python guarantees for insertion-ordered dicts.
     assert len(vault.delete_calls) == 3
     assert {key for _, key in vault.delete_calls} == {
@@ -1571,7 +1571,7 @@ def test_stop_purge_vault_true_list_failure_partial_audit(
             actor="ops",
         )
 
-    # The exception MUST NOT propagate — best-effort purge.
+    # The exception MUST NOT propagate - best-effort purge.
     response = asyncio.run(run())
     assert response.state == "stopped"
     assert response.noop is False
@@ -1582,7 +1582,7 @@ def test_stop_purge_vault_true_list_failure_partial_audit(
     # LIST was attempted; nothing was DELETE'd because LIST failed.
     assert vault.list_calls == ["automation-service"]
     assert vault.delete_calls == []
-    # Stored override survives — we couldn't enumerate it.
+    # Stored override survives - we couldn't enumerate it.
     assert vault.stored["automation-service"] == {"PORT": "8080"}
 
     # Audit chain: stop(success) → vault_purge_partial_failure(failed).
@@ -1696,7 +1696,7 @@ def test_stop_purge_vault_true_skipped_on_idempotent_path(
 
     # Compose was NOT invoked (idempotent path).
     assert compose.stop_calls == []
-    # Vault was also NOT invoked — no purge on the idempotent path.
+    # Vault was also NOT invoked - no purge on the idempotent path.
     assert vault.list_calls == []
     assert vault.delete_calls == []
     assert vault.stored["automation-service"] == {"PORT": "8080"}
@@ -1754,7 +1754,7 @@ def test_stop_purge_vault_true_compose_failure_skips_vault_purge(
     with pytest.raises(ComposeFailureError):
         asyncio.run(run())
 
-    # Vault was never touched — Compose failure short-circuited.
+    # Vault was never touched - Compose failure short-circuited.
     assert vault.list_calls == []
     assert vault.delete_calls == []
     assert vault.stored["automation-service"] == {"PORT": "8080"}
@@ -1766,7 +1766,7 @@ def test_stop_purge_vault_true_compose_failure_skips_vault_purge(
 
 
 # ---------------------------------------------------------------------------
-# run_tests — 409 semantics
+# run_tests - 409 semantics
 # ---------------------------------------------------------------------------
 
 
@@ -1862,7 +1862,7 @@ def test_run_tests_running_service_returns_summary(tmp_path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# logs — redaction
+# logs - redaction
 # ---------------------------------------------------------------------------
 
 
@@ -1926,7 +1926,7 @@ def test_logs_no_redaction_when_no_sensitive_keys(tmp_path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# health_of — streak alert
+# health_of - streak alert
 # ---------------------------------------------------------------------------
 
 
@@ -1966,7 +1966,7 @@ def test_health_of_streak_alert_emitted_once_at_threshold(tmp_path: Path) -> Non
         await svc.health_of(name="automation-service")
         # Hitting the threshold here.
         await svc.health_of(name="automation-service")
-        # Past the threshold — must NOT emit a second alert.
+        # Past the threshold - must NOT emit a second alert.
         await svc.health_of(name="automation-service")
 
     asyncio.run(run())
@@ -2038,7 +2038,7 @@ def test_health_of_recovers_resets_streak(tmp_path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# list_summaries — cache TTL returns stale snapshots as None
+# list_summaries - cache TTL returns stale snapshots as None
 # ---------------------------------------------------------------------------
 
 
@@ -2061,12 +2061,12 @@ def test_list_summaries_returns_summary_per_manifest_entry(tmp_path: Path) -> No
 
 
 # ---------------------------------------------------------------------------
-# start — feature-flag gate
+# start - feature-flag gate
 # ---------------------------------------------------------------------------
 
 
 def test_start_no_op_when_no_feature_flag_dependency(tmp_path: Path) -> None:
-    """baseline — empty ``feature_flag_dependency`` skips the gate.
+    """baseline - empty ``feature_flag_dependency`` skips the gate.
     No reader is wired, no SELECT is issued, and the start proceeds
     unchanged. The default ``_entries`` manifest leaves the field
     empty, so this is the "fall through" branch."""
@@ -2091,7 +2091,7 @@ def test_start_no_op_when_no_feature_flag_dependency(tmp_path: Path) -> None:
 
 
 def test_start_proceeds_when_all_flags_enabled(tmp_path: Path) -> None:
-    """— every required flag enabled → start runs to ``running``."""
+    """- every required flag enabled → start runs to ``running``."""
 
     workspace = _build_workspace(tmp_path)
     reader = _FakeFeatureFlagReader(
@@ -2115,7 +2115,7 @@ def test_start_proceeds_when_all_flags_enabled(tmp_path: Path) -> None:
 
     # Exactly one SELECT against shared.feature_flags .
     assert reader.calls == [["FEATURE_FLAG_TASK_INTAKE_ENABLED"]]
-    # No block audit row — only the canonical pending + success rows.
+    # No block audit row - only the canonical pending + success rows.
     assert len(compose.up_calls) == 1
     block_actions = [
         e.action
@@ -2126,7 +2126,7 @@ def test_start_proceeds_when_all_flags_enabled(tmp_path: Path) -> None:
 
 
 def test_start_blocked_when_single_flag_disabled(tmp_path: Path) -> None:
-    """— disabled flag → 409 path, ``blocking_flag`` is the name."""
+    """- disabled flag → 409 path, ``blocking_flag`` is the name."""
 
     workspace = _build_workspace(tmp_path)
     reader = _FakeFeatureFlagReader(
@@ -2169,7 +2169,7 @@ def test_start_blocked_when_single_flag_disabled(tmp_path: Path) -> None:
 
 
 def test_start_blocked_when_flag_row_missing(tmp_path: Path) -> None:
-    """— flag absent from ``shared.feature_flags`` → treated as disabled.
+    """- flag absent from ``shared.feature_flags`` → treated as disabled.
     Catches manifest typos (``FEATURE_FLAG_TASK_INTAK``) before they
     can corrupt audit history."""
 
@@ -2202,7 +2202,7 @@ def test_start_blocked_when_flag_row_missing(tmp_path: Path) -> None:
 def test_start_blocking_flag_is_first_disabled_in_manifest_order(
     tmp_path: Path,
 ) -> None:
-    """determinism — multiple disabled flags → manifest order wins.
+    """determinism - multiple disabled flags → manifest order wins.
     The lifecycle handler iterates ``feature_flag_dependency`` in
     insertion order so the first disabled
     flag is the deterministic ``blocking_flag``."""
@@ -2239,7 +2239,7 @@ def test_start_blocking_flag_is_first_disabled_in_manifest_order(
 
 
 def test_start_proceeds_when_no_reader_wired(tmp_path: Path) -> None:
-    """Boot-time / unit-test branch — no reader → gate is inert.
+    """Boot-time / unit-test branch - no reader → gate is inert.
 
     Mirrors the production wiring window where ``app.state.pg_pool``
     is not yet ready (Postgres still booting). Rather than refusing
@@ -2296,7 +2296,7 @@ def test_start_proceeds_when_no_reader_wired(tmp_path: Path) -> None:
 # subprocess.TimeoutExpired → credentials_status="failed"; failed audit;
 #                             exit_code=-1 sentinel in audit payload.
 #
-# In every case the lifecycle ``state`` MUST remain ``"running"`` —
+# In every case the lifecycle ``state`` MUST remain ``"running"`` -
 # probe failure does not alter the start outcome. The helper is wired
 # into ``_do_start`` between ``_wait_for_healthy`` and the final audit
 # plus response.
@@ -2434,7 +2434,7 @@ def test_step_9_5_nonzero_exit_marks_credentials_failed_and_truncates_stderr(
     stderr in ``credentials_probe_detail`` (truncation), and emits one
     ``service_connectivity_probe_failed`` audit row with
     ``outcome="failed"``. The lifecycle ``state`` MUST remain
-    ``"running"`` — a probe failure is informational only and does
+    ``"running"`` - a probe failure is informational only and does
     not flip the start outcome."""
 
     import subprocess

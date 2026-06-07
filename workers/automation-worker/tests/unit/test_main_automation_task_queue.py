@@ -1,4 +1,4 @@
-"""Unit tests for ``automation_worker.main`` boot script.
+﻿"""Unit tests for ``automation_worker.main`` boot script.
 
 Validates the **single-queue-per-worker** invariant of
 the worker boot path:
@@ -12,7 +12,7 @@ the worker boot path:
       ``"AutomationWorkflow"`` (i.e. ``"automation-tq"``).
     * The ``Worker(...)`` call registers the canonical workflow set
       for this worker (``AutomationWorkflow``, ``BotBranchRetention``,
-      ``AuditPruneWorkflow``) — note ``AuditPruneWorkflow`` is the
+      ``AuditPruneWorkflow``) - note ``AuditPruneWorkflow`` is the
       preserved registration; this test asserts it is **not lost** when
       the worker registration changes.
 
@@ -34,7 +34,7 @@ import pytest
 
 
 # ---------------------------------------------------------------------------
-# ``sys.path`` bootstrapping — the worker package ships under
+# ``sys.path`` bootstrapping - the worker package ships under
 # ``src/automation_worker/`` (mirrors ``hatchling`` ``packages = ["src/automation_worker"]``).
 # ---------------------------------------------------------------------------
 
@@ -45,7 +45,7 @@ if str(_SRC_DIR) not in sys.path:
 
 
 # ---------------------------------------------------------------------------
-# Module-level constant tests — exercise the public surface of the
+# Module-level constant tests - exercise the public surface of the
 # boot script (the ``AUTOMATION_TASK_QUEUE`` constant materialised at
 # import time).
 # ---------------------------------------------------------------------------
@@ -74,7 +74,7 @@ class TestModuleLevelTaskQueueConstant:
 
 
 # ---------------------------------------------------------------------------
-# AST-level tests — inspect the ``Worker(...)`` call site without
+# AST-level tests - inspect the ``Worker(...)`` call site without
 # instantiating Temporal so the assertions hold even on hosts that
 # do not ship the ``temporalio`` SDK.
 # ---------------------------------------------------------------------------
@@ -132,7 +132,7 @@ class TestWorkerConstructorCallSite:
 
     def test_task_queue_kwarg_resolves_via_registry(self) -> None:
         """The ``task_queue=`` keyword must resolve through
-        ``task_queue_for("AutomationWorkflow")`` — either directly
+        ``task_queue_for("AutomationWorkflow")`` - either directly
         or via a module-level constant whose RHS is the same call.
         """
 
@@ -151,7 +151,7 @@ class TestWorkerConstructorCallSite:
             self._assert_constant_resolves_to_task_queue_for(
                 tree, value.id, "AutomationWorkflow"
             )
-        else:  # pragma: no cover — defensive
+        else:  # pragma: no cover - defensive
             pytest.fail(
                 "task_queue= kwarg must be either a direct call to "
                 "task_queue_for(...) or a module-level constant; "
@@ -202,7 +202,7 @@ class TestWorkerConstructorCallSite:
         )
 
     def test_no_hardcoded_queue_string_in_worker_call(self) -> None:
-        """The ``task_queue=`` kwarg must not be a string literal — that
+        """The ``task_queue=`` kwarg must not be a string literal - that
         would bypass the registry and break the single-source-of-truth
         invariant.
         """
@@ -210,7 +210,7 @@ class TestWorkerConstructorCallSite:
         (call,) = _find_worker_calls(_parse_main_module())
         value = _kwarg(call, "task_queue")
         assert not isinstance(value, ast.Constant), (
-            "task_queue= must not be a hardcoded string literal — use "
+            "task_queue= must not be a hardcoded string literal - use "
             "task_queue_for(...) from temporal_shared.workflow_registry"
         )
 

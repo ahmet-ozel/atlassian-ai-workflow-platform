@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * Servis Kataloğu sayfası.
@@ -175,7 +175,7 @@ function FeatureFlagDisabledModal({ blockingFlag, onClose }: FeatureFlagDisabled
 // --------------------------------------------------------------------------
 
 function formatTimestamp(value: string | null | undefined): string {
-  if (!value) return "—";
+  if (!value) return "-";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleString();
@@ -513,7 +513,7 @@ export default function ServicesPage() {
 
   const lastRefreshedLabel = useMemo(() => {
     if (state.kind === "ok") return formatTimestamp(state.lastRefreshed.toISOString());
-    return "—";
+    return "-";
   }, [state]);
 
   const stats = useMemo(() => {

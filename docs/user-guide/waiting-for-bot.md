@@ -1,4 +1,4 @@
-# Bot'u Beklerken
+﻿# Bot'u Beklerken
 
 > Task açıldı, bot çalışıyor. Ne anda ne göreceksin, ne kadar süre normal?
 
@@ -15,7 +15,7 @@
               - "Test geçti: 12/12"
               - "Confluence sayfası güncellendi: <link>"
 sonunda───  🤖 "✅ Tamamlandı." veya
-            🤖 "❌ Hata aldım — ..."  veya
+            🤖 "❌ Hata aldım - ..."  veya
             🤖 "❓ Şu bilgiye ihtiyacım var: ..."
 ```
 
@@ -23,13 +23,13 @@ sonunda───  🤖 "✅ Tamamlandı." veya
 
 5 saniye içinde *"Task alındı"* comment'i görmediysen:
 
-1. **Assignee'yi kontrol et** — Jira'da issue assignee'si gerçekten bot kullanıcısı mı?
+1. **Assignee'yi kontrol et** - Jira'da issue assignee'si gerçekten bot kullanıcısı mı?
    (`payment-ai-bot` gibi bir hesap)
-2. **Issue'nun durumunu kontrol et** — Bot sadece "To Do", "Open", "In Progress"
+2. **Issue'nun durumunu kontrol et** - Bot sadece "To Do", "Open", "In Progress"
    durumundaki issue'ları alır. "Done", "Closed", "Resolved" ise webhook'u görmezden gelir.
-3. **Departman eşleşmesi** — Issue'nun project key'i bir departmana atanmış mı? Atanmamışsa
+3. **Departman eşleşmesi** - Issue'nun project key'i bir departmana atanmış mı? Atanmamışsa
    bot sessiz fail eder. AI Admin'e haber ver.
-4. **30 saniye bekle** — webhook gecikmesi olabilir. Hâlâ yoksa AI Admin Slack kanalı.
+4. **30 saniye bekle** - webhook gecikmesi olabilir. Hâlâ yoksa AI Admin Slack kanalı.
 
 > **Not:** Atlassian webhook'larında nadir kayıp olabiliyor. Sistem `automation-service`
 > her 5 dakikada bir "atanmış ama webhook gelmemiş" task'ları tarar ve eksik webhook'ları
@@ -55,17 +55,17 @@ sonunda───  🤖 "✅ Tamamlandı." veya
 
 Bot 30+ dakika tahmin etti ama sen 10 dakika bekleyebilecek durumdasın:
 
-- **İptal et** — Jira'da `[cancel]` yazarak comment ekle. Bot temiz şekilde durur,
+- **İptal et** - Jira'da `[cancel]` yazarak comment ekle. Bot temiz şekilde durur,
   branch'i siler, commit etmez.
-- **Workflow'u izle** — Streamlit "Workflows" sayfası → bot şu an hangi step'te?
-- **Maliyet endişesi** — bot tahmini maliyetin %70'ine ulaşırsa zaten sana onay sorar.
+- **Workflow'u izle** - Streamlit "Workflows" sayfası → bot şu an hangi step'te?
+- **Maliyet endişesi** - bot tahmini maliyetin %70'ine ulaşırsa zaten sana onay sorar.
 
 ## Bot Soru Sorduğunda
 
 Bot bazen `🤖 Şu bilgiye ihtiyacım var: ...` der. Bu durumda:
 
 1. **Comment ile cevap ver** (Jira'ya). Bot 7 güne kadar bekler.
-2. Cevap bot'u tatmin etmezse tekrar sorar (max 5 kez — sonra `[fix]` döngüsünü
+2. Cevap bot'u tatmin etmezse tekrar sorar (max 5 kez - sonra `[fix]` döngüsünü
    sonlandırır).
 3. Cevap vermek istemiyorsan: `[cancel]` yazarak iptal et.
 
@@ -80,8 +80,8 @@ sözleşme imzalama gibi. Bot bunları reddeder ve alternatif önerir. Detay:
 
 ## Beklerken Başka Task'lar Aç
 
-Bir task'ı bot'a atadıktan sonra başka task'lar da açabilirsin — bot paralel çalışır.
-Ancak departmanına concurrency limit'i tanımlıdır (default 5 paralel iş —
+Bir task'ı bot'a atadıktan sonra başka task'lar da açabilirsin - bot paralel çalışır.
+Ancak departmanına concurrency limit'i tanımlıdır (default 5 paralel iş -
 departman config'inde değiştirilebilir). Limit aşılırsa bot kuyruğa alır, biri bitince
 sıradaki başlar.
 
@@ -90,10 +90,10 @@ sıradaki başlar.
 `✅ Tamamlandı` comment'inde şunlar olur:
 
 - Yapılan iş özeti
-- PR linki (varsa) — **draft** olarak açılır, sen merge edersin
+- PR linki (varsa) - **draft** olarak açılır, sen merge edersin
 - Confluence sayfa linki (varsa)
 - Test sonuçları (varsa)
-- Provenance footer (gizli — `🔎` simgesine tıklayarak aç)
+- Provenance footer (gizli - `🔎` simgesine tıklayarak aç)
 
 > **Önemli:** Bot **asla merge etmez**. PR'ı incele, gerekiyorsa düzeltme iste,
 > uygunsa kendin merge et. [Detay: SSS](faq.md#bot-pr’ı-merge-edebilir-mi).

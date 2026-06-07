@@ -1,4 +1,4 @@
-"""LLM call path whitelist checks.
+﻿"""LLM call path whitelist checks.
 
 
 
@@ -6,7 +6,7 @@ LLM subset rule: repository
 altındaki her ``.py`` kaynak dosyası için LLM kütüphane çağrıları
 (``openai``, ``anthropic``, ``llm_orchestrator`` import'ları) yalnızca
 ``services/assistant-service/`` ve ``workers/agent-runner-worker/``
-ağaçlarında — ve bu kütüphanelerin kendi tanım yerleri olan
+ağaçlarında - ve bu kütüphanelerin kendi tanım yerleri olan
 ``libs/llm-orchestrator/`` ve test project'ları (``tests/unit/``,
 ``tests/integration/``, ``tests/property/``, ``tests/fixtures/``)
 içinde bulunur. Diğer her path ihlali sayılır.
@@ -18,7 +18,7 @@ same ``_path_whitelist`` helper, but ``test_llm_call_paths.py``:
 * runs the LLM scanner against the live tree and asserts zero
  findings,
 * uses Hypothesis to sample one source file at a time and confirm
- the per-file rule — same shrinking pattern as the broader
+ the per-file rule - same shrinking pattern as the broader
  path checks in ``test_path_coverage.py``,
 * exercises the scanner against synthetic source snippets so the
  detection rules stay locked in independent of the production
@@ -82,7 +82,7 @@ def test_no_llm_imports_outside_whitelist() -> None:
         whitelist=tuple(LLM_WHITELIST) + SHARED_TEST_FIXTURE_WHITELIST,
     )
     assert not findings, (
-        "the operational rule violation — LLM library import found outside "
+        "the operational rule violation - LLM library import found outside "
         "assistant-service / agent-runner-worker / llm-orchestrator. "
         "Route every LLM call through libs/llm-orchestrator and import "
         "it only from those two services.\n"
@@ -91,7 +91,7 @@ def test_no_llm_imports_outside_whitelist() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Hypothesis property — per-file rule
+# Hypothesis property - per-file rule
 # ---------------------------------------------------------------------------
 
 
@@ -126,7 +126,7 @@ def test_per_file_no_llm_findings(path: Path) -> None:
  kaynak dosyası için LLM scanner boş döner.
 
  Sampling-then-asserting gives Hypothesis tight shrinking when a
- regression slips in — the failing example is the single offending
+ regression slips in - the failing example is the single offending
  file rather than an aggregate across the tree.
  """
 
@@ -150,7 +150,7 @@ def test_llm_source_corpus_is_non_empty() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Scanner self-tests — synthetic source snippets
+# Scanner self-tests - synthetic source snippets
 # ---------------------------------------------------------------------------
 
 
@@ -311,7 +311,7 @@ class TestLlmCallPathScannerSelfChecks:
         self, tmp_path: Path
     ) -> None:
         """Sabit ``"openai"`` string literali (config key, log mesajı,
- provider seçici) flag'lenmez — yalnızca import edilen modül
+ provider seçici) flag'lenmez - yalnızca import edilen modül
  adları kontrol edilir.
  """
 

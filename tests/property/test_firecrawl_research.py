@@ -1,4 +1,4 @@
-"""Firecrawl egress and research output behavior.
+﻿"""Firecrawl egress and research output behavior.
 
 
 
@@ -11,10 +11,10 @@ shipped by ``platform/libs/temporal-shared/src/temporal_shared/research.py``
 the workflow registry:
 
 *:func:`temporal_shared.research.format_research_publish_confluence_body`
- — renders the body of a Confluence page produced by the
+ - renders the body of a Confluence page produced by the
  ``research_publish_confluence`` workflow.
 *:func:`temporal_shared.research.format_research_summary_jira_comment`
- — renders the Jira comment posted by the ``research_summary_jira``
+ - renders the Jira comment posted by the ``research_summary_jira``
  workflow plus an optional MinIO sentinel for the offload path.
 
 Why the egress predicate is **not** retested here
@@ -27,7 +27,7 @@ truth (:func:`mcp_client.firecrawl.effective_allowlist`); duplicating
 the egress matrix here would only invite drift. We add a single
 sentinel test in:class:`TestEgressAllowlistCoverage` that pins the
 allowlist set algebra so a regression *anywhere* in either property
-file is visible from this one too — and we leave a TODO for the
+file is visible from this one too - and we leave a TODO for the
 post-flight 403 → Jira
 fallback predicate, which still lives inside the activity layer.
 
@@ -42,7 +42,7 @@ Every source URL passed in ``sources`` appears **at least
  once** in the rendered body. Duplicate URLs in the input list
  may render multiple times; the workflow body owns the dedup
  decision before calling this helper, so the property only
- asserts presence — never absence — of a URL.
+ asserts presence - never absence - of a URL.
 
 ``format_research_publish_confluence_body`` is **deterministic
  and pure**: two consecutive calls with the same arguments
@@ -51,7 +51,7 @@ Every source URL passed in ``sources`` appears **at least
 
 ``format_research_publish_confluence_body`` returns the bare
  ``content`` (no ``## Kaynaklar`` header) when every source
- lacks a usable URL — a graceful degradation guard so the bot
+ lacks a usable URL - a graceful degradation guard so the bot
  never publishes a dangling sources block.
 
 ``format_research_summary_jira_comment(summary, sources)``
@@ -63,7 +63,7 @@ Every source URL passed in ``sources`` appears **at least
 ``format_research_summary_jira_comment`` returns
  ``minio_uri is None`` when the rendered comment fits within
  ``max_words`` *and* the rendered sources list fits within
- ``max_sources`` (the "happy path" — fits inline).
+ ``max_sources`` (the "happy path" - fits inline).
 
 ``format_research_summary_jira_comment`` returns the pinned
  ``minio_uri`` sentinel whenever the summary exceeds
@@ -124,7 +124,7 @@ DEFAULT_MAX_SOURCES: Final[int] = 5
 
 
 # ---------------------------------------------------------------------------
-# Hypothesis strategies — sources, content, allowlist tuples
+# Hypothesis strategies - sources, content, allowlist tuples
 # ---------------------------------------------------------------------------
 
 #: Small closed set of canonical research-friendly hostnames. Keeping
@@ -164,7 +164,7 @@ _TITLES: Final[st.SearchStrategy[str]] = st.text(
     ),
     min_size=1,
     max_size=40,
-).map(lambda s: s.strip()).filter(lambda s: bool(s) and "—" not in s)
+).map(lambda s: s.strip()).filter(lambda s: bool(s) and "-" not in s)
 
 
 # Access-date: ISO-8601 ``YYYY-MM-DD`` from a tight calendar range so
@@ -197,7 +197,7 @@ def _sources(draw: st.DrawFn, min_size: int = 0, max_size: int = 8) -> list[dict
     return out
 
 
-#: Body content: 0–5000 ASCII chars, possibly multi-paragraph. We do
+#: Body content: 0-5000 ASCII chars, possibly multi-paragraph. We do
 #: not constrain the alphabet beyond printable ASCII so the property
 #: also exercises whitespace and newline handling inside the renderer.
 _CONTENT: Final[st.SearchStrategy[str]] = st.text(
@@ -235,7 +235,7 @@ class TestConfluenceBodyFormatter:
  """
         body = format_research_publish_confluence_body(content, sources)
         # The renderer rstrips trailing whitespace on the content
-        # before composing the sources block — assert the canonical
+        # before composing the sources block - assert the canonical
         # form is present rather than the raw input.
         assert content.rstrip() in body or content == ""
 
@@ -266,7 +266,7 @@ class TestConfluenceBodyFormatter:
 
  When ``accessed_at`` is provided, the renderer must include
  it next to the URL so the published page carries provenance
- metadata ( — "her kaynak için başlık + URL + erişim tarihi").
+ metadata ( - "her kaynak için başlık + URL + erişim tarihi").
  """
         body = format_research_publish_confluence_body(content, sources)
         for source in sources:
@@ -378,7 +378,7 @@ class TestJiraSummaryFormatter:
  the URL-bearing source count fits in ``max_sources``, the
  renderer SHALL NOT offload to MinIO.
  """
-        # Pre-conditions for the "fits" branch — assert via Python
+        # Pre-conditions for the "fits" branch - assert via Python
         # rather than a Hypothesis ``assume`` because the strategy
         # already constrains both sides.
         assert _word_count(summary) <= DEFAULT_MAX_WORDS
@@ -452,7 +452,7 @@ class TestJiraSummaryFormatter:
 
  Same URL fed twice (with otherwise identical fields) must
  render the same line shape. The formatter is required to be
- idempotent under duplicate input — the workflow body owns
+ idempotent under duplicate input - the workflow body owns
  the *logical* dedup decision before calling this helper, but
  the renderer must not produce structurally-different lines
  for the same URL.
@@ -463,7 +463,7 @@ class TestJiraSummaryFormatter:
         comment, _ = format_research_summary_jira_comment(
             summary, with_dup, max_words=DEFAULT_MAX_WORDS, max_sources=DEFAULT_MAX_SOURCES + 5
         )
-        # The duplicate URL appears in the rendered comment — the
+        # The duplicate URL appears in the rendered comment - the
         # renderer does not pre-dedup by design (workflow body's job).
         url_count = comment.count(first["url"])
         assert url_count >= 2, (

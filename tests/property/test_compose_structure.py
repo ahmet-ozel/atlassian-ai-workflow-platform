@@ -1,4 +1,4 @@
-"""invariant for Compose stack structural consistency.
+﻿"""invariant for Compose stack structural consistency.
 
 
 14.2, 14.3, 14.4, 16.2, 17.4
@@ -7,31 +7,31 @@ invariant: Compose stack structural consistency.
 The parsed ``infra/docker-compose.yml`` SHALL satisfy *all* of the
 following invariants:
 
-1. **Service coverage** — the set of compose service names equals:data:`EXPECTED_COMPOSE_SERVICES` and SHALL NOT contain ``vllm``, invariant).
-2. **Worker port-isolation** — for every Component with
+1. **Service coverage** - the set of compose service names equals:data:`EXPECTED_COMPOSE_SERVICES` and SHALL NOT contain ``vllm``, invariant).
+2. **Worker port-isolation** - for every Component with
  ``c.type == "temporal_worker"``, the compose service's ``ports``
  list is empty, invariant).
-3. **Task-intake profile gating** — ``task-intake-service`` is the
+3. **Task-intake profile gating** - ``task-intake-service`` is the
  only service whose ``profiles`` field equals ``["task-intake"]``;
  every other service has an absent or empty ``profiles`` field, invariant).
-4. **HTTP healthcheck shape** — for every HTTP service Component plus
+4. **HTTP healthcheck shape** - for every HTTP service Component plus
  ``atlassian-mcp``, ``healthcheck.test`` references the service's
  ``/healthz`` endpoint, ``interval`` parses to a seconds value in
  ``[5, 30]``, and ``retries <= 3``, invariant).
-5. **Named volumes** — the top-level ``volumes:`` block contains at
+5. **Named volumes** - the top-level ``volumes:`` block contains at
  least ``pg_data``, ``minio_data``, ``agent_workspace`` and each
  volume is mounted at exactly the expected paths
  (``pg_data:/var/lib/postgresql/data`` on ``postgres``;
  ``minio_data:/data`` on ``minio``;
  ``agent_workspace:/tmp/workspace`` on **both**
  ``agent-runner-worker`` and ``opencode-sidecar``), invariant).
-6. **Dependency graph acyclicity + manifest superset** — the directed
+6. **Dependency graph acyclicity + manifest superset** - the directed
  graph built from ``depends_on`` is acyclic, and for every Component
  ``c`` the compose service's ``depends_on`` is a superset of
  ``c.depends_on`` from the manifest,
  14.4, invariant). The Compose service for the
  ``admin-dashboard`` Component is named ``admin-dashboard-ui``.
-7. **Atlassian MCP reuse** — ``services["atlassian-mcp"].build`` equals
+7. **Atlassian MCP reuse** - ``services["atlassian-mcp"].build`` equals
  ``../services/atlassian_mcp_bitbucket`` and the service carries no
  ``image:`` override.
 
@@ -238,12 +238,12 @@ def _has_cycle(graph: dict[str, tuple[str, ...]]) -> tuple[str, ...] | None:
 
 
 # ---------------------------------------------------------------------------
-# Invariant 1 — service set coverage (invariant,
+# Invariant 1 - service set coverage (invariant,
 # ---------------------------------------------------------------------------
 
 
 def test_compose_service_set_matches_expected(compose_doc: dict[str, Any]) -> None:
-    """invariant — the Compose service set equals the expected set.
+    """invariant - the Compose service set equals the expected set.
 
 
  """
@@ -267,7 +267,7 @@ def test_compose_service_set_matches_expected(compose_doc: dict[str, Any]) -> No
 
 
 # ---------------------------------------------------------------------------
-# Invariant 2 — Temporal workers publish no ports (invariant)
+# Invariant 2 - Temporal workers publish no ports (invariant)
 # ---------------------------------------------------------------------------
 
 
@@ -278,7 +278,7 @@ def test_compose_service_set_matches_expected(compose_doc: dict[str, Any]) -> No
 )
 @given(component=st.sampled_from(TEMPORAL_WORKERS))
 def test_temporal_workers_have_no_ports(component: ComponentSpec) -> None:
-    """invariant — temporal workers MUST NOT publish ports.
+    """invariant - temporal workers MUST NOT publish ports.
 
 
  """
@@ -298,14 +298,14 @@ def test_temporal_workers_have_no_ports(component: ComponentSpec) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Invariant 3 — task-intake profile gating (invariant)
+# Invariant 3 - task-intake profile gating (invariant)
 # ---------------------------------------------------------------------------
 
 
 def test_task_intake_is_only_profile_gated_service(
     compose_doc: dict[str, Any],
 ) -> None:
-    """invariant — ``task-intake-service`` retains its legacy profile gate.
+    """invariant - ``task-intake-service`` retains its legacy profile gate.
 
 
 
@@ -320,7 +320,7 @@ def test_task_intake_is_only_profile_gated_service(
  ``compose_service_name``, so most application services are now
  profile-gated too.
 
- The retained invariant — and the one this test still enforces — is
+ The retained invariant - and the one this test still enforces - is
  that ``task-intake-service`` MUST keep the legacy ``"task-intake"``
  label so existing ``docker compose --profile task-intake`` workflows
  continue to start the intake service. The complementary
@@ -342,7 +342,7 @@ def test_task_intake_is_only_profile_gated_service(
 
 
 # ---------------------------------------------------------------------------
-# Invariant 4 — HTTP healthcheck shape (invariant)
+# Invariant 4 - HTTP healthcheck shape (invariant)
 # ---------------------------------------------------------------------------
 
 
@@ -362,7 +362,7 @@ _HEALTHCHECK_TARGETS: tuple[tuple[str, int], ...] = tuple(
 def test_http_healthcheck_shape(
     compose_doc: dict[str, Any], service_name: str, container_port: int
 ) -> None:
-    """invariant — HTTP healthcheck targets ``/healthz`` with bounded interval.
+    """invariant - HTTP healthcheck targets ``/healthz`` with bounded interval.
 
 
  """
@@ -414,7 +414,7 @@ def test_http_healthcheck_shape(
 
 
 # ---------------------------------------------------------------------------
-# Invariant 5 — top-level volumes (invariant)
+# Invariant 5 - top-level volumes (invariant)
 # ---------------------------------------------------------------------------
 
 
@@ -430,7 +430,7 @@ _VOLUME_MOUNTS: tuple[tuple[str, str, str], ...] = (
 
 
 def test_compose_declares_named_volumes(compose_doc: dict[str, Any]) -> None:
-    """invariant (a) — top-level volumes block declares the trio.
+    """invariant (a) - top-level volumes block declares the trio.
 
 
  """
@@ -457,7 +457,7 @@ def test_named_volume_mount_points(
     service_name: str,
     mount_path: str,
 ) -> None:
-    """invariant (b) — every named volume mounts at the expected path.
+    """invariant (b) - every named volume mounts at the expected path.
 
 
  """
@@ -471,7 +471,7 @@ def test_named_volume_mount_points(
     found = False
     for entry in raw_volumes:
         if isinstance(entry, str):
-            # Short syntax: ``<source>:<target>[:<flags>]`` — split on
+            # Short syntax: ``<source>:<target>[:<flags>]`` - split on
             # ':' but only consider the first two components so trailing
             # ``:ro`` flags do not break the equality check.
             parts = entry.split(":")
@@ -492,12 +492,12 @@ def test_named_volume_mount_points(
 
 
 # ---------------------------------------------------------------------------
-# Invariant 6 — depends_on DAG: acyclic + manifest-superset (invariant)
+# Invariant 6 - depends_on DAG: acyclic + manifest-superset (invariant)
 # ---------------------------------------------------------------------------
 
 
 def test_compose_depends_on_is_acyclic(compose_doc: dict[str, Any]) -> None:
-    """invariant (a) — ``depends_on`` graph is acyclic.
+    """invariant (a) - ``depends_on`` graph is acyclic.
 
 
  """
@@ -532,11 +532,11 @@ _COMPOSE_PACKAGED_COMPONENTS: tuple[ComponentSpec, ...] = tuple(
 )
 @given(component=st.sampled_from(_COMPOSE_PACKAGED_COMPONENTS))
 def test_compose_depends_on_superset_of_manifest(component: ComponentSpec) -> None:
-    """invariant (b) — Compose ``depends_on`` ⊇ manifest ``depends_on``.
+    """invariant (b) - Compose ``depends_on`` ⊇ manifest ``depends_on``.
 
  The check is restricted to Components that ship as a Compose service
  (``streamlit-app`` is a published Component but is consumed
- standalone, not packaged into Compose — see:data:`EXPECTED_COMPOSE_SERVICES`).
+ standalone, not packaged into Compose - see:data:`EXPECTED_COMPOSE_SERVICES`).
 
 
  """
@@ -562,7 +562,7 @@ def test_compose_depends_on_superset_of_manifest(component: ComponentSpec) -> No
 
 
 # ---------------------------------------------------------------------------
-# Invariant 7 — atlassian-mcp build context (invariant)
+# Invariant 7 - atlassian-mcp build context (invariant)
 # ---------------------------------------------------------------------------
 
 
@@ -630,7 +630,7 @@ def test_atlassian_mcp_builds_from_bitbucket_gateway_with_no_image(
 # ``timeout < interval``.
 #
 # 5. Every Compose service whose corresponding manifest entry has
-# ``kind=sidecar`` MUST NOT declare a top-level ``ports:`` key —
+# ``kind=sidecar`` MUST NOT declare a top-level ``ports:`` key -
 # sidecars are reachable only via the Compose-internal network
 # through ``expose:``.
 # ===========================================================================
@@ -712,12 +712,12 @@ _NO_HEALTH_KINDS: frozenset[str] = frozenset({"worker", "sidecar", "ui"})
 
 
 # ---------------------------------------------------------------------------
-# invariant (a) — Manifest declares at least the 10 canonical entries
+# invariant (a) - Manifest declares at least the 10 canonical entries
 # ---------------------------------------------------------------------------
 
 
 def test_foundation_manifest_includes_all_canonical_entries() -> None:
-    """invariant (a) — manifest is a superset of the canonical 10.
+    """invariant (a) - manifest is a superset of the canonical 10.
 
 
 
@@ -743,7 +743,7 @@ def test_foundation_manifest_includes_all_canonical_entries() -> None:
 
 
 # ---------------------------------------------------------------------------
-# invariant (b) — Every manifest entry's ``kind`` is in the canonical enum
+# invariant (b) - Every manifest entry's ``kind`` is in the canonical enum
 # ---------------------------------------------------------------------------
 
 
@@ -756,12 +756,12 @@ def test_foundation_manifest_includes_all_canonical_entries() -> None:
 def test_foundation_manifest_kind_is_in_canonical_enum(
     entry: dict[str, Any],
 ) -> None:
-    """invariant (b) — manifest ``kind`` ∈ {infra, http_service, worker, sidecar, ui}.
+    """invariant (b) - manifest ``kind`` ∈ {infra, http_service, worker, sidecar, ui}.
 
 
 
  The ``kind`` enum includes ``sidecar`` and ``ui``. No other value is
- permitted — this test rejects any drift with a
+ permitted - this test rejects any drift with a
  deterministic failure message naming the offending entry.
  """
 
@@ -774,7 +774,7 @@ def test_foundation_manifest_kind_is_in_canonical_enum(
 
 
 # ---------------------------------------------------------------------------
-# invariant (c) — health_endpoint nullness aligns with kind
+# invariant (c) - health_endpoint nullness aligns with kind
 # ---------------------------------------------------------------------------
 
 
@@ -787,12 +787,12 @@ def test_foundation_manifest_kind_is_in_canonical_enum(
 def test_foundation_manifest_health_endpoint_matches_kind(
     entry: dict[str, Any],
 ) -> None:
-    """invariant (c) — ``health_endpoint`` is null iff kind ∈ no-HTTP set.
+    """invariant (c) - ``health_endpoint`` is null iff kind ∈ no-HTTP set.
 
 
 
  Workers, sidecars, and UI components do not expose an HTTP health
- surface at the Compose boundary — "worker crash →
+ surface at the Compose boundary - "worker crash →
  Temporal redelegate"). HTTP services and infra services MUST
  declare a non-empty path starting with ``/``.
  """
@@ -816,7 +816,7 @@ def test_foundation_manifest_health_endpoint_matches_kind(
 
 
 # ---------------------------------------------------------------------------
-# invariant (d) — Healthcheck shape across the Compose stack
+# invariant (d) - Healthcheck shape across the Compose stack
 # ---------------------------------------------------------------------------
 
 
@@ -825,7 +825,7 @@ def _iter_compose_healthchecks(
 ) -> list[tuple[str, dict[str, Any]]]:
     """Return ``(service_name, healthcheck_block)`` for every service that
  declares a healthcheck. Services without a ``healthcheck:`` are
- skipped — the property only applies where one is declared
+ skipped - the property only applies where one is declared
  conditions on "WHEN a Compose service declares a
  healthcheck").
  """
@@ -854,7 +854,7 @@ _FOUNDATION_HEALTHCHECK_TARGETS: tuple[tuple[str, dict[str, Any]], ...] = tuple(
 def test_foundation_healthcheck_shape_bounds(
     service_name: str, healthcheck: dict[str, Any]
 ) -> None:
-    """invariant (d) — healthcheck interval, retries and timeout bounds.
+    """invariant (d) - healthcheck interval, retries and timeout bounds.
 
 
 
@@ -872,7 +872,7 @@ def test_foundation_healthcheck_shape_bounds(
  the new ``timeout < interval`` invariant.
  """
 
-    # Interval — REQUIRED for any healthcheck block we score.
+    # Interval - REQUIRED for any healthcheck block we score.
     raw_interval = healthcheck.get("interval")
     assert raw_interval is not None, (
         f"{service_name}: healthcheck.interval MUST be declared "
@@ -885,7 +885,7 @@ def test_foundation_healthcheck_shape_bounds(
         f"= {interval_seconds}s"
     )
 
-    # Retries — REQUIRED, integer, ≤ 3.
+    # Retries - REQUIRED, integer, ≤ 3.
     retries = healthcheck.get("retries")
     assert isinstance(retries, int), (
         f"{service_name}: healthcheck.retries must be an int "
@@ -896,7 +896,7 @@ def test_foundation_healthcheck_shape_bounds(
         f"(the operational rule, invariant); got {retries}"
     )
 
-    # Timeout — OPTIONAL, but if present MUST be < interval.
+    # Timeout - OPTIONAL, but if present MUST be < interval.
     raw_timeout = healthcheck.get("timeout")
     if raw_timeout is not None:
         timeout_seconds = _parse_duration_seconds(raw_timeout)
@@ -909,7 +909,7 @@ def test_foundation_healthcheck_shape_bounds(
 
 
 # ---------------------------------------------------------------------------
-# invariant (e) — Sidecar services MUST NOT declare ``ports:``
+# invariant (e) - Sidecar services MUST NOT declare ``ports:``
 # ---------------------------------------------------------------------------
 
 
@@ -938,7 +938,7 @@ _FOUNDATION_SIDECAR_NAMES: tuple[str, ...] = _sidecar_compose_names()
 def test_foundation_sidecar_does_not_publish_host_ports(
     compose_doc: dict[str, Any], sidecar_name: str
 ) -> None:
-    """invariant (e) — sidecar Compose services MUST NOT publish host ports.
+    """invariant (e) - sidecar Compose services MUST NOT publish host ports.
 
 
 
@@ -964,7 +964,7 @@ def test_foundation_sidecar_does_not_publish_host_ports(
         f"present; got {type(ports).__name__} ({ports!r})"
     )
     assert ports == [], (
-        f"sidecar {sidecar_name!r}: MUST NOT publish host ports — "
+        f"sidecar {sidecar_name!r}: MUST NOT publish host ports - "
         f"sidecars are Compose-internal only (the operational rule, "
         f"invariant); got ports={ports!r}"
     )

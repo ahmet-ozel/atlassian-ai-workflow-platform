@@ -1,4 +1,4 @@
-"""End-user cost / quota widget.
+﻿"""End-user cost / quota widget.
 
 The Streamlit sidebar shows the running user / dept cost vs. weekly cap
 so the user understands their remaining budget before triggering an
@@ -51,7 +51,7 @@ def _format_usd(value: Decimal | None) -> str:
     """Render a USD amount as ``$X.YY`` with two-decimal precision."""
 
     if value is None:
-        return "—"
+        return "-"
     return f"${value.quantize(Decimal('0.01'))}"
 
 
@@ -83,7 +83,7 @@ def render_cost_widget() -> None:
 
     try:
         data: Mapping[str, object] = api.get_me() or {}
-    except Exception as exc:  # noqa: BLE001 — informational only
+    except Exception as exc:  # noqa: BLE001 - informational only
         st.sidebar.caption(f"Cost widget okunamadı: {exc}")
         return
 

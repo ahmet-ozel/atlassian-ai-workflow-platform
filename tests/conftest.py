@@ -1,19 +1,19 @@
-"""Shared pytest fixtures for the workspace test suite.
+﻿"""Shared pytest fixtures for the workspace test suite.
 
 This module is the single source of truth that every property test under
 ``tests/property/`` parameterises against. It exposes four data
 structures and one fixture that model the workspace contract:
 
-- ``COMPONENT_MANIFEST`` — the 8 in-scope Components. Each row carries
+- ``COMPONENT_MANIFEST`` - the 8 in-scope Components. Each row carries
  enough metadata to drive the component property tests.
-- ``REQUIRED_PATHS`` — relative paths every Component of a given
+- ``REQUIRED_PATHS`` - relative paths every Component of a given
  ``ComponentType`` must have, plus infra/config/root path lists.
-- ``FORBIDDEN_PATHS`` — paths the project *must not* produce.
-- ``EXPECTED_COMPOSE_SERVICES`` — the service names that the parsed
+- ``FORBIDDEN_PATHS`` - paths the project *must not* produce.
+- ``EXPECTED_COMPOSE_SERVICES`` - the service names that the parsed
  ``infra/docker-compose.yml`` must equal under the invariant, including
  ``task-intake-service`` (profile-gated) and ``automation-worker``
  (added for the workflow topology).
-- ``repo_root`` fixture — workspace root ``Path`` used by every
+- ``repo_root`` fixture - workspace root ``Path`` used by every
  filesystem-walking property test.
 
 It also injects each shared library's ``src/`` directory onto
@@ -71,7 +71,7 @@ for _src in _LIB_SRC_DIRS:
 # import ...``). Python's import system can only resolve ONE ``src``
 # package at a time, so listing every service ``src/`` here would
 # REGRESS the collection state (each service has overlapping module
-# names — ``src/config.py``, ``src/main.py`` exist in 6 services).
+# names - ``src/config.py``, ``src/main.py`` exist in 6 services).
 #
 # The minimum-correctness compromise: this top-level conftest stays
 # free of service-src manipulations. Tests that legitimately need a
@@ -80,10 +80,10 @@ for _src in _LIB_SRC_DIRS:
 # import time so the rest of the suite keeps collecting.
 #
 # Per-service unit tests run from the service's own ``tests/`` tree
-# (which already work — see ``services/admin-dashboard-api/tests/``,
+# (which already work - see ``services/admin-dashboard-api/tests/``,
 # ``workers/automation-worker/tests/``). Properly closing the
 # cross-service collection gap requires renaming each ``src`` to a
-# unique top-level package (``admin_dashboard_api`` etc.) — tracked.
+# unique top-level package (``admin_dashboard_api`` etc.) - tracked.
 
 
 # ---------------------------------------------------------------------------
@@ -125,7 +125,7 @@ class ComponentSpec:
 #: the invariant).
 _HTTP_BASE_ENV: tuple[str, ...] = ("PORT", "LOG_LEVEL")
 
-#: Full LLM provider block — required by every LLM-consuming Component
+#: Full LLM provider block - required by every LLM-consuming Component
 #: regardless of the currently configured provider .
 _LLM_ENV_BLOCK: tuple[str, ...] = (
     "LLM_PROVIDER",
@@ -474,7 +474,7 @@ REQUIRED_PATHS_BY_NAME: dict[str, tuple[str, ...]] = {
 #: Workspace-relative paths required by the repository contract.
 #: the invariant iterates over this list in addition to the per-Component set.
 INFRA_AND_LIB_REQUIRED_PATHS: tuple[str, ...] = (
-    # Shared libraries — every package ships a manifest, src tree, README
+    # Shared libraries - every package ships a manifest, src tree, README
     # .
     "libs/http-shared/pyproject.toml",
     "libs/http-shared/src/http_shared/__init__.py",
@@ -574,7 +574,7 @@ FORBIDDEN_PATHS: tuple[str, ...] = (
 #: The exact set of service names the parsed ``infra/docker-compose.yml``
 #: must equal. This includes the profile-gated ``task-intake-service``
 #: (the invariant ensures the gating predicate). ``vllm`` is intentionally
-#: NOT in this set — 
+#: NOT in this set - 
 #:
 #: ``admin-dashboard-ui`` is the Compose service name for the
 #: ``admin-dashboard`` Component.
@@ -735,7 +735,7 @@ __all__ = [
 # continue running.
 
 def pytest_collectreport(report):
-    """Handle collection errors gracefully — skip problematic files."""
+    """Handle collection errors gracefully - skip problematic files."""
     if report.outcome == "failed":
         import warnings
         warnings.warn(

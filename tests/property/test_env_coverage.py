@@ -1,4 +1,4 @@
-"""invariant for environment variable coverage.
+﻿"""invariant for environment variable coverage.
 
 
 invariant: Environment variable coverage.
@@ -7,38 +7,38 @@ Every Component declared in:data:`COMPONENT_MANIFEST` must have its
 ``required_env`` set fully covered by the union of:
 
 * ``<component.path>/.env.example`` (Component_Env_Example,
- — Standalone_Mode), and
+ - Standalone_Mode), and
 * ``./.env.example`` at the workspace root (Root_Env_Example,
- — Compose_Stack default lookup or per-service
+ - Compose_Stack default lookup or per-service
  ``env_file:`` directives).
 
 Both files are dotenv-formatted; this test parses their LHS keys and
 treats the variable as "covered" when it appears in either file. The
 two-file model is intentional and explicitly documented in the design
 (``§"Ortam Değişkeni Modeli"``): duplication between the local and
-root files is not a DRY violation — each file serves a different
+root files is not a DRY violation - each file serves a different
 deployment mode.
 
 Layered checks
 --------------
 
-1. **Union coverage (5a)** — for every Component × every
+1. **Union coverage (5a)** - for every Component × every
  ``v ∈ c.required_env``, ``v`` appears as an LHS key in either the
  Component's local ``.env.example`` or the root ``.env.example``.
-2. **HTTP service local minimum (5b)** — ``PORT`` and ``LOG_LEVEL`` are
+2. **HTTP service local minimum (5b)** - ``PORT`` and ``LOG_LEVEL`` are
  always present in the *local* ``.env.example`` of every
  ``http_service`` Component, regardless of whether the root file
  carries them.
-3. **LLM block (5c)** — every Component whose ``required_env`` contains
+3. **LLM block (5c)** - every Component whose ``required_env`` contains
  ``LLM_PROVIDER`` (an "LLM consumer") has the full 5-variable LLM
  block (``LLM_PROVIDER``, ``VLLM_BASE_URL``, ``LLM_MODEL_NAME``,
  ``OPENAI_API_KEY``, ``ANTHROPIC_API_KEY``) covered by the local +
  root union.
-4. **MCP / Firecrawl block (5d)** — every Component whose
+4. **MCP / Firecrawl block (5d)** - every Component whose
  ``required_env`` mentions ``MCP_BASE_URL`` or ``FIRECRAWL_BASE_URL``
  has both URLs covered by the local + root union,
  16.5 for the task-intake / web-ingestion path).
-5. **CLIENT_SOURCE optionality (5e)** — ``CLIENT_SOURCE`` is *never*
+5. **CLIENT_SOURCE optionality (5e)** - ``CLIENT_SOURCE`` is *never*
  listed in ``required_env``: each Component has a
  compile-time default ``client_source_id``; the env override is
  optional). This invariant is asserted directly so a future
@@ -125,7 +125,7 @@ def _root_env_keys() -> frozenset[str]:
 # sample directly via ``st.sampled_from``)
 # ---------------------------------------------------------------------------
 
-#: Full LLM provider block — says every LLM consumer
+#: Full LLM provider block - says every LLM consumer
 #: must carry the complete 5-variable block regardless of the currently
 #: configured ``LLM_PROVIDER`` (so switching providers only flips one
 #: env value, never requires editing the file's *shape*).
@@ -161,7 +161,7 @@ _MCP_FIRECRAWL_CONSUMERS: tuple[ComponentSpec, ...] = tuple(
 
 
 # ---------------------------------------------------------------------------
-# invariant — required_env is covered by local ∪ root
+# invariant - required_env is covered by local ∪ root
 # ---------------------------------------------------------------------------
 
 
@@ -172,7 +172,7 @@ _MCP_FIRECRAWL_CONSUMERS: tuple[ComponentSpec, ...] = tuple(
 )
 @given(component=st.sampled_from(COMPONENT_MANIFEST))
 def test_required_env_covered_by_local_or_root(component: ComponentSpec) -> None:
-    """invariant — every required env var is covered locally or at root.
+    """invariant - every required env var is covered locally or at root.
 
  For each Component × each ``v ∈ component.required_env``, the
  variable must appear as an LHS key in either the local
@@ -195,7 +195,7 @@ def test_required_env_covered_by_local_or_root(component: ComponentSpec) -> None
 
 
 # ---------------------------------------------------------------------------
-# invariant — HTTP services carry PORT and LOG_LEVEL *locally*
+# invariant - HTTP services carry PORT and LOG_LEVEL *locally*
 # ---------------------------------------------------------------------------
 
 
@@ -208,13 +208,13 @@ def test_required_env_covered_by_local_or_root(component: ComponentSpec) -> None
 def test_http_services_have_port_and_log_level_locally(
     component: ComponentSpec,
 ) -> None:
-    """invariant — local-minimum for HTTP services.
+    """invariant - local-minimum for HTTP services.
 
  Every ``http_service`` Component MUST declare ``PORT`` and
  ``LOG_LEVEL`` in its *own* ``.env.example``, not just in the root
  file. This guarantees a Standalone_Mode container started with
  ``docker run --env-file.env`` always knows which port to bind and
- at what log level — without depending on the Compose-level root
+ at what log level - without depending on the Compose-level root
  ``.env``.
  """
 
@@ -227,7 +227,7 @@ def test_http_services_have_port_and_log_level_locally(
 
 
 # ---------------------------------------------------------------------------
-# invariant — LLM consumers carry the full 5-variable LLM block
+# invariant - LLM consumers carry the full 5-variable LLM block
 # ---------------------------------------------------------------------------
 
 
@@ -238,12 +238,12 @@ def test_http_services_have_port_and_log_level_locally(
 )
 @given(component=st.sampled_from(_LLM_CONSUMERS))
 def test_llm_consumers_have_full_llm_block(component: ComponentSpec) -> None:
-    """invariant — full LLM block coverage.
+    """invariant - full LLM block coverage.
 
  Every Component that consumes the LLM provider abstraction (i.e.
  has ``LLM_PROVIDER`` in ``required_env``) must have the complete
- 5-variable LLM block — ``LLM_PROVIDER``, ``VLLM_BASE_URL``,
- ``LLM_MODEL_NAME``, ``OPENAI_API_KEY``, ``ANTHROPIC_API_KEY`` —
+ 5-variable LLM block - ``LLM_PROVIDER``, ``VLLM_BASE_URL``,
+ ``LLM_MODEL_NAME``, ``OPENAI_API_KEY``, ``ANTHROPIC_API_KEY`` -
  covered by the local + root union. The block stays *shape-stable*
  across providers so flipping ``LLM_PROVIDER`` between supported providers
  ``vllm`` / ``openai`` / ``anthropic`` is a one-line change.
@@ -261,7 +261,7 @@ def test_llm_consumers_have_full_llm_block(component: ComponentSpec) -> None:
 
 
 # ---------------------------------------------------------------------------
-# invariant — MCP / Firecrawl consumers carry both base URLs
+# invariant - MCP / Firecrawl consumers carry both base URLs
 # ---------------------------------------------------------------------------
 
 
@@ -274,7 +274,7 @@ def test_llm_consumers_have_full_llm_block(component: ComponentSpec) -> None:
 def test_mcp_firecrawl_consumers_have_both_base_urls(
     component: ComponentSpec,
 ) -> None:
-    """invariant — dual-URL coverage.
+    """invariant - dual-URL coverage.
 
  Components that talk to either upstream (``atlassian-mcp`` or
  ``firecrawl``) must have both ``MCP_BASE_URL`` and
@@ -298,7 +298,7 @@ def test_mcp_firecrawl_consumers_have_both_base_urls(
 
 
 # ---------------------------------------------------------------------------
-# invariant — CLIENT_SOURCE is optional
+# invariant - CLIENT_SOURCE is optional
 # ---------------------------------------------------------------------------
 
 
@@ -309,9 +309,9 @@ def test_mcp_firecrawl_consumers_have_both_base_urls(
 )
 @given(component=st.sampled_from(COMPONENT_MANIFEST))
 def test_client_source_is_optional(component: ComponentSpec) -> None:
-    """invariant — ``CLIENT_SOURCE`` MUST NOT be required.
+    """invariant - ``CLIENT_SOURCE`` MUST NOT be required.
 
- says ``CLIENT_SOURCE`` is an *optional* override —
+ says ``CLIENT_SOURCE`` is an *optional* override -
  each Component carries a compile-time default
  (``client_source_id`` in:data:`COMPONENT_MANIFEST`) that takes
  effect when the env var is absent. A regression that demotes
@@ -322,7 +322,7 @@ def test_client_source_is_optional(component: ComponentSpec) -> None:
  The check is straightforward: ``CLIENT_SOURCE`` MUST NOT appear in
  the Component's ``required_env``. Whether the variable happens to
  be *defined* in the local or root ``.env.example`` is irrelevant
- to this property — its presence or absence MUST NOT cause this
+ to this property - its presence or absence MUST NOT cause this
  test to fail.
  """
 

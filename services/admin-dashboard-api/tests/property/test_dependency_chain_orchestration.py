@@ -1,4 +1,4 @@
-"""Dependency Chain Orchestration (Q11).
+﻿"""Dependency Chain Orchestration (Q11).
 Dependency Chain Topological Order (Q11)**
 For any randomly generated acyclic dependency graph (max depth 3),
 ``start(root)`` must call ``compose.up`` in topological order
@@ -891,7 +891,7 @@ def test_dependency_failure_isolation_parametric(
 #   * Cycles in the dependency graph (which manifest-time validation
 #     normally rejects but unit tests bypass by constructing fake
 #     ManagedServiceEntry instances directly) are caught at runtime by the
-#     same depth guard — recursion grows the path until length >= 3 and the
+#     same depth guard - recursion grows the path until length >= 3 and the
 #     guard fires deterministically.
 
 
@@ -1052,7 +1052,7 @@ def test_depth_guard_rejects_random_dags_exceeding_max_depth(
     wrapping it through the recursive ``_start_dependencies`` boundary)
     and a ``dependency_chain_max_depth_exceeded`` audit row must be
     written. The branching siblings off the spine do *not* prevent the
-    guard from firing — the guard depends purely on path length, not
+    guard from firing - the guard depends purely on path length, not
     fan-out."""
     graph = data.draw(_dag_with_longest_path_strategy(depth=depth))
     assert _longest_path_depth(graph, "root-svc") == depth, (
@@ -1198,7 +1198,7 @@ def test_cycles_in_dependency_graph_rejected_by_depth_guard(
         f"all audit actions: {[e.action for e in audit.write_with_retry_calls]!r}"
     )
     # The recursion path on which the guard fires must include the cycle's
-    # repeated visit to the same node — so its length is exactly
+    # repeated visit to the same node - so its length is exactly
     # MAX_DEPENDENCY_DEPTH = 3 at the moment of firing.
     first = depth_rows[0]
     rec_path = first.details_json.get("recursion_path", [])

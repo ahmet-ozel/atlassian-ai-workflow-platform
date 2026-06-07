@@ -1,4 +1,4 @@
-"""Unit tests for ``src.decision.credential_resolver``.
+﻿"""Unit tests for ``src.decision.credential_resolver``.
 
 Tests exercise the CredentialResolver against in-memory fakes for both
 Vault and asyncpg, verifying:
@@ -21,7 +21,7 @@ from typing import Any
 import pytest
 
 # ---------------------------------------------------------------------------
-# Path setup — allow importing from the service src directory
+# Path setup - allow importing from the service src directory
 # ---------------------------------------------------------------------------
 _SERVICE_ROOT = Path(__file__).resolve().parents[2] / "src"
 _LIBS_ROOT = Path(__file__).resolve().parents[4] / "libs" / "http-shared" / "src"
@@ -227,7 +227,7 @@ async def test_get_user_scope_reads_session_path_only() -> None:
     holds org-shaped credential_refs) when resolving a user scope, even
     if a row exists for the (dept_id, service) pair. The DB rows from
     ``_DEPT_BOT_ROWS`` would point at ``secret/data/bots/payment/jira``
-    — a non-user path — and reading from there would be a cross-scope
+    - a non-user path - and reading from there would be a cross-scope
     leak (uyumluluk Q7 R2.3).
     """
     user_path = "secret/atlassian/_user_session/sess-abc/jira"
@@ -470,7 +470,7 @@ class _CapturingAuditLogger:
 
 
 def _build_clock(start: datetime) -> tuple[Any, Any]:
-    """Return ``(clock, advance)`` — clock callable + helper to advance it."""
+    """Return ``(clock, advance)`` - clock callable + helper to advance it."""
     state = {"now": start}
 
     def clock() -> datetime:
@@ -695,7 +695,7 @@ async def test_cached_entry_dataclass_shape() -> None:
 async def test_legacy_vault_without_metadata_disables_drift_audit() -> None:
     """Backends without ``read_with_metadata`` still cache but skip drift."""
     # _FakeVaultClient defined at the top of this file does NOT
-    # expose ``read_with_metadata`` — it mirrors the legacy
+    # expose ``read_with_metadata`` - it mirrors the legacy
     # protocol surface.
     vault = _FakeVaultClient(
         secrets={

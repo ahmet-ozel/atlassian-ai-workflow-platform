@@ -1,4 +1,4 @@
-"""Shared Streamlit theme + chrome injector.
+﻿"""Shared Streamlit theme + chrome injector.
 
 Applies a consistent visual layer across every page in the
 Streamlit app:
@@ -10,8 +10,8 @@ Streamlit app:
   ``st.expander``, ``st.dataframe``, ``st.alert``);
 * helper functions for page hero, section header and KPI rows.
 
-Pages call :func:`apply_theme` once near the top — typically right
-after ``st.set_page_config`` — and the rest of the page renders
+Pages call :func:`apply_theme` once near the top - typically right
+after ``st.set_page_config`` - and the rest of the page renders
 with the same look-and-feel as the admin dashboard.
 
 The CSS is injected via ``st.markdown(..., unsafe_allow_html=True)``
@@ -192,7 +192,7 @@ h3 { font-size: 1.05rem !important; }
   cursor: not-allowed;
 }
 
-/* Secondary button styling — Streamlit kind="secondary" */
+/* Secondary button styling - Streamlit kind="secondary" */
 .stButton > button[kind="secondary"] {
   background: var(--bg-elev) !important;
   color: var(--fg) !important;
@@ -485,7 +485,7 @@ pre {
 def apply_theme() -> None:
     """Inject the global theme stylesheet into the current page.
 
-    Idempotent — safe to call from every page module. Streamlit
+    Idempotent - safe to call from every page module. Streamlit
     renders the ``<style>`` tag once per page render.
     """
     if st.session_state.get("_theme_applied_once") is True:

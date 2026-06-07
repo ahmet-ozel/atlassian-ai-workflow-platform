@@ -1,4 +1,4 @@
-"""invariant — Compose bootstrap minimal footprint.
+﻿"""invariant - Compose bootstrap minimal footprint.
 
 
 
@@ -18,7 +18,7 @@ purely structural assertion on the parsed Compose document::
 
  {svc | svc has no/empty 'profiles:'} == Boot_Bundle
 
-This test does not invoke the Docker daemon — it parses the YAML and
+This test does not invoke the Docker daemon - it parses the YAML and
 checks the equality. The companion integration test under
 ``tests/integration/test_boot_bundle.py`` covers the runtime side
 (actually running ``compose up --wait`` and probing the four services).
@@ -31,7 +31,7 @@ manifest is parsed independently of the Python loader (which currently
 applies a strict JSON Schema that does not yet whitelist the
 ``smoke_test_command`` extension field) so this test stays decoupled
 from upstream loader changes. We assert that every non-Boot_Bundle
-manifest entry declares a non-empty string ``compose_profile`` — that
+manifest entry declares a non-empty string ``compose_profile`` - that
 property is what makes ``docker compose --profile {compose_profile}
 up -d`` deterministically resolvable from the dashboard UI.
 
@@ -39,7 +39,7 @@ Strategy
 --------
 * The Compose document is parsed once at import time so the per-example
  Hypothesis cost is the property check itself, not YAML parsing.
-* Hypothesis explores **mutations** of the parsed document — for each
+* Hypothesis explores **mutations** of the parsed document - for each
  example we synthesise a "candidate Compose" by either (a) flipping a
  profile-gated service into the default-profile-set, (b) flipping a
  Boot_Bundle service into a profile-gated state, or (c) adding a new
@@ -77,13 +77,13 @@ if str(_TESTS_DIR) not in sys.path:
 
 
 # ---------------------------------------------------------------------------
-# Boot_Bundle definition —
+# Boot_Bundle definition -
 # ---------------------------------------------------------------------------
 
 #: Exact set of services that ``docker compose -f
 #: infra/docker-compose.yml up -d`` (no ``--profile`` flag) MUST start
 #: per / invariant. The set is
-#: intentionally tiny — admin Setup Wizard activates everything else
+#: intentionally tiny - admin Setup Wizard activates everything else
 #: on demand via ``docker compose --profile {compose_profile} up -d``.
 BOOT_BUNDLE: frozenset[str] = frozenset(
     {
@@ -96,7 +96,7 @@ BOOT_BUNDLE: frozenset[str] = frozenset(
 
 
 # ---------------------------------------------------------------------------
-# Compose / manifest fixture — single read per session
+# Compose / manifest fixture - single read per session
 # ---------------------------------------------------------------------------
 
 _WORKSPACE_ROOT: Path = Path(__file__).resolve().parents[2]
@@ -137,7 +137,7 @@ def _load_manifest() -> dict[str, Any] | None:
  applies a JSON Schema that does not yet whitelist newer extension
  fields like ``smoke_test_command``) so this invariant stays
  decoupled from upstream schema-evolution work. Returns ``None`` if
- the manifest is absent — the manifest is optional for invariant
+ the manifest is absent - the manifest is optional for invariant
  on its own; if present the manifest cross-check kicks in.
  """
 
@@ -158,7 +158,7 @@ _MANIFEST_DOC: dict[str, Any] | None = _load_manifest()
 
 
 # ---------------------------------------------------------------------------
-# Helpers — profile-shape normalisation
+# Helpers - profile-shape normalisation
 # ---------------------------------------------------------------------------
 
 
@@ -167,15 +167,15 @@ def _profiles_of(service: dict[str, Any]) -> list[str] | None:
 
  Compose YAML lets ``profiles`` be:
 
- * **Absent** — the service is included in the default ``up -d``.
- * **An explicit empty list** (``profiles: []``) — semantically
+ * **Absent** - the service is included in the default ``up -d``.
+ * **An explicit empty list** (``profiles: []``) - semantically
  identical to absent for default-profile-set inclusion.
- * **A non-empty list of strings** — the service is *only* included
+ * **A non-empty list of strings** - the service is *only* included
  when one of those profile names is activated.
 
  We return ``None`` for the absent case and a list (possibly empty)
  otherwise so callers can distinguish "no directive" from "directive
- present but empty" in error messages — invariant collapses both
+ present but empty" in error messages - invariant collapses both
  into "default-profile-set member" so the distinction does not
  affect the equality check itself.
  """
@@ -220,18 +220,18 @@ def _default_profile_set(services: dict[str, dict[str, Any]]) -> frozenset[str]:
 
 
 # ---------------------------------------------------------------------------
-# invariant (canonical) — Boot_Bundle equals the default-profile set
+# invariant (canonical) - Boot_Bundle equals the default-profile set
 # ---------------------------------------------------------------------------
 
 
 def test_compose_default_profile_set_equals_boot_bundle() -> None:
-    """invariant — exactly the Boot_Bundle is in the default-profile set.
+    """invariant - exactly the Boot_Bundle is in the default-profile set.
 
 
 
  A bare ``docker compose -f infra/docker-compose.yml up -d`` MUST
  start ``admin-dashboard-ui``, ``admin-dashboard-api``, ``postgres``,
- and ``vault`` — and nothing else. Equivalently: those four (and
+ and ``vault`` - and nothing else. Equivalently: those four (and
  only those four) services have an absent or empty ``profiles:``
  directive.
  """
@@ -264,7 +264,7 @@ def test_compose_default_profile_set_equals_boot_bundle() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Concrete regression anchors — Boot_Bundle membership (parametrize)
+# Concrete regression anchors - Boot_Bundle membership (parametrize)
 # ---------------------------------------------------------------------------
 
 
@@ -274,7 +274,7 @@ def test_compose_default_profile_set_equals_boot_bundle() -> None:
     ids=sorted(BOOT_BUNDLE),
 )
 def test_boot_bundle_anchor_default_profile_set(boot_service: str) -> None:
-    """Concrete anchor — every Boot_Bundle service is in the default set.
+    """Concrete anchor - every Boot_Bundle service is in the default set.
 
  Each member of ``BOOT_BUNDLE`` MUST be declared in Compose AND
  its ``profiles:`` field MUST be absent or empty. Pinning each
@@ -301,7 +301,7 @@ def test_boot_bundle_anchor_default_profile_set(boot_service: str) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Concrete anchor — every non-Boot_Bundle service IS profile-gated
+# Concrete anchor - every non-Boot_Bundle service IS profile-gated
 # ---------------------------------------------------------------------------
 
 
@@ -316,7 +316,7 @@ _NON_BOOT_BUNDLE_COMPOSE_SERVICES: tuple[str, ...] = tuple(
     ids=_NON_BOOT_BUNDLE_COMPOSE_SERVICES,
 )
 def test_non_boot_bundle_services_are_profile_gated(service_name: str) -> None:
-    """Concrete anchor — every non-Boot_Bundle Compose service is profile-gated.
+    """Concrete anchor - every non-Boot_Bundle Compose service is profile-gated.
 
  The complement of the Boot_Bundle within the Compose ``services:``
  mapping MUST declare a non-empty ``profiles:`` list. Equivalently:
@@ -341,7 +341,7 @@ def test_non_boot_bundle_services_are_profile_gated(service_name: str) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Manifest cross-reference — non-Boot_Bundle entries declare compose_profile
+# Manifest cross-reference - non-Boot_Bundle entries declare compose_profile
 # ---------------------------------------------------------------------------
 
 
@@ -387,7 +387,7 @@ _MANIFEST_NON_BOOT_BUNDLE: tuple[dict[str, Any], ...] = (
 def test_manifest_non_boot_bundle_compose_profile_is_non_empty_string(
     entry: dict[str, Any],
 ) -> None:
-    """invariant (manifest side) — non-Boot_Bundle entries declare a compose_profile.
+    """invariant (manifest side) - non-Boot_Bundle entries declare a compose_profile.
 
 
  for compose_profile lookup).
@@ -421,7 +421,7 @@ def test_manifest_non_boot_bundle_compose_profile_is_non_empty_string(
 
 
 # ---------------------------------------------------------------------------
-# Hypothesis — mutation property
+# Hypothesis - mutation property
 # ---------------------------------------------------------------------------
 
 
@@ -480,7 +480,7 @@ def _candidate_with_promoted_profile_service(
     return candidate
 
 
-# Mutation generator — Hypothesis picks one of three mutation kinds and
+# Mutation generator - Hypothesis picks one of three mutation kinds and
 # a target service. ``one_of`` keeps the strategy a flat enum; we then
 # branch in the test body based on ``kind`` to dispatch the right
 # helper. ``max_examples=30`` is plenty given the candidate space is
@@ -507,7 +507,7 @@ _MUTATION_KIND = st.sampled_from(("add_extra", "demote_boot", "promote_gated"))
 def test_property20_mutations_violate_boot_bundle_equality(
     kind: str, extra_name: str, target_index: int
 ) -> None:
-    """invariant (mutation) — any structural mutation breaks the equality.
+    """invariant (mutation) - any structural mutation breaks the equality.
 
 
 
@@ -516,26 +516,26 @@ def test_property20_mutations_violate_boot_bundle_equality(
  the resulting default-profile set DOES NOT equal the Boot_Bundle
  (unless the mutation was a no-op, which we filter out
  deterministically). This codifies the contract "invariant is
- fragile — any drift breaks it".
+ fragile - any drift breaks it".
 
  Mutations
  ---------
- * ``add_extra`` — inserts a new profile-less service named
+ * ``add_extra`` - inserts a new profile-less service named
  ``extra_name``. The mutation is a no-op when ``extra_name``
  collides with an existing Boot_Bundle service; we filter that
  out by requiring the synthesised name to be fresh.
- * ``demote_boot`` — strips a Boot_Bundle service out of the
+ * ``demote_boot`` - strips a Boot_Bundle service out of the
  default-profile set by giving it a ``profiles:`` gate. The
  mutation is never a no-op (Boot_Bundle services have no profile
  gate by invariant).
- * ``promote_gated`` — drops the ``profiles:`` directive from a
+ * ``promote_gated`` - drops the ``profiles:`` directive from a
  non-Boot_Bundle service so it enters the default-profile set.
  The mutation is never a no-op when the chosen target is in fact
  profile-gated in the canonical document, which we require.
  """
 
     canonical = _default_profile_set(_COMPOSE_SERVICES)
-    # Sanity — the canonical document MUST satisfy invariant for
+    # Sanity - the canonical document MUST satisfy invariant for
     # the mutation logic below to be meaningful. This is the same
     # check as the canonical test above; running it here too avoids
     # a misleading failure mode where Hypothesis flags the canonical
@@ -543,11 +543,11 @@ def test_property20_mutations_violate_boot_bundle_equality(
     assert canonical == BOOT_BUNDLE, (
         f"canonical compose document violates invariant "
         f"({canonical!r} != {BOOT_BUNDLE!r}); fix the canonical "
-        f"failure first — see test_compose_default_profile_set_equals_boot_bundle"
+        f"failure first - see test_compose_default_profile_set_equals_boot_bundle"
     )
 
     if kind == "add_extra":
-        # Skip name collisions — adding an "admin-dashboard-ui" again
+        # Skip name collisions - adding an "admin-dashboard-ui" again
         # would just shadow the original entry without changing the
         # default-profile set.
         if extra_name in _COMPOSE_SERVICES or extra_name in BOOT_BUNDLE:
@@ -592,7 +592,7 @@ def test_property20_mutations_violate_boot_bundle_equality(
         )
     )
     if not profile_gated_services:
-        # Edge case — the Compose document somehow has no
+        # Edge case - the Compose document somehow has no
         # profile-gated services. The earlier non_boot_bundle anchor
         # would already have failed; treat this Hypothesis example as
         # vacuous so we do not double-report.

@@ -1,4 +1,4 @@
-"""Unit tests for cookie_manager module.
+﻿"""Unit tests for cookie_manager module.
 
 Tests sign/verify with known values, TTL expiry behavior,
 and invalid signature handling.
@@ -100,13 +100,13 @@ class TestVerifyCookie:
         assert result == department
 
     def test_verify_returns_none_for_wrong_secret(self):
-        """verify_cookie returns None when secret doesn't match — Req 10.5."""
+        """verify_cookie returns None when secret doesn't match - Req 10.5."""
         signed = sign_cookie("engineering", "correct-secret")
         result = verify_cookie(signed, "wrong-secret")
         assert result is None
 
     def test_verify_returns_none_for_tampered_value(self):
-        """verify_cookie returns None when value portion is tampered — Req 10.5."""
+        """verify_cookie returns None when value portion is tampered - Req 10.5."""
         signed = sign_cookie("engineering", "secret")
         value_b64, sig_b64 = signed.split(".")
 
@@ -118,7 +118,7 @@ class TestVerifyCookie:
         assert result is None
 
     def test_verify_returns_none_for_tampered_signature(self):
-        """verify_cookie returns None when signature is tampered — Req 10.5."""
+        """verify_cookie returns None when signature is tampered - Req 10.5."""
         signed = sign_cookie("engineering", "secret")
         value_b64, sig_b64 = signed.split(".")
 
@@ -171,7 +171,7 @@ class TestReadWriteDepartmentCookie:
     """Tests for read/write department cookie with mocked streamlit."""
 
     def test_write_department_cookie_calls_writer_with_ttl(self):
-        """write_department_cookie passes 30-day TTL to cookie writer — Req 10.4."""
+        """write_department_cookie passes 30-day TTL to cookie writer - Req 10.4."""
         import streamlit as st
 
         mock_writer = MagicMock()
@@ -221,7 +221,7 @@ class TestReadWriteDepartmentCookie:
         del os.environ["COOKIE_SECRET"]
 
     def test_read_department_cookie_returns_none_for_invalid_signature(self):
-        """read_department_cookie returns None for tampered cookie — Req 10.5."""
+        """read_department_cookie returns None for tampered cookie - Req 10.5."""
         import os
 
         import streamlit as st

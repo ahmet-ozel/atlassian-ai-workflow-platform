@@ -1,4 +1,4 @@
-"""Service Test Results API endpoints.
+﻿"""Service Test Results API endpoints.
 
 Provides structured test result parsing and **persistent** history
 tracking.
@@ -26,7 +26,7 @@ router = APIRouter(prefix="/api/v1/services", tags=["test-results"])
 
 MAX_TEST_HISTORY = 20
 MAX_ERROR_LENGTH = 500
-#: Last N bytes of stdout persisted with each run — bounded so a chatty
+#: Last N bytes of stdout persisted with each run - bounded so a chatty
 #: pytest run does not bloat the row.
 OUTPUT_TAIL_BYTES = 4096
 
@@ -175,7 +175,7 @@ async def record_test_run(
             row["id"] = record["id"]
             row["created_at"] = record["created_at"].isoformat()
             return row
-        except Exception as exc:  # noqa: BLE001 — degrade to memory store
+        except Exception as exc:  # noqa: BLE001 - degrade to memory store
             _logger.warning(
                 "record_test_run: DB insert failed for %s, "
                 "falling back to in-memory store: %s",
@@ -266,7 +266,7 @@ async def get_test_history(service_name: str, request: Request) -> dict[str, Any
                 "total_runs": len(runs),
                 "source": "postgres",
             }
-        except Exception as exc:  # noqa: BLE001 — degrade to memory store
+        except Exception as exc:  # noqa: BLE001 - degrade to memory store
             _logger.warning(
                 "get_test_history: DB read failed for %s: %s",
                 service_name,

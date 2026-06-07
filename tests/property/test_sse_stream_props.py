@@ -1,4 +1,4 @@
-"""Property-based tests for SSE event stream completeness.
+﻿"""Property-based tests for SSE event stream completeness.
 
 *For any* sequence of test output lines (stdout/stderr), the SSE stream
 SHALL emit exactly one event per line in the original order. No lines
@@ -37,7 +37,7 @@ from hypothesis import strategies as st
 
 
 # ---------------------------------------------------------------------------
-# SSE streaming generator — mirrors production implementation
+# SSE streaming generator - mirrors production implementation
 # ---------------------------------------------------------------------------
 
 
@@ -100,7 +100,7 @@ async def _stream_subprocess_sse(command: str, cwd: str) -> AsyncIterator[bytes]
 # Strategies
 # ---------------------------------------------------------------------------
 
-# Generate printable line content (no newlines, no null bytes — those would
+# Generate printable line content (no newlines, no null bytes - those would
 # be swallowed by readline or cause encoding issues). We use text that
 # doesn't contain \n or \r so each generated string maps to exactly one
 # output line from the subprocess.
@@ -222,14 +222,14 @@ def test_sse_stream_completeness(lines: list[str], exit_code: int) -> None:
         # Parse frames into data lines and done event
         data_lines, done_event = _parse_sse_frames(frames)
 
-    # Exactly one SSE event per line — no drops
+    # Exactly one SSE event per line - no drops
         assert len(data_lines) == len(lines), (
             f"Expected {len(lines)} data events, got {len(data_lines)}. "
             f"Input lines: {lines!r}, "
             f"Received data events: {data_lines!r}"
         )
 
-    # Original order preserved — no reorders
+    # Original order preserved - no reorders
         assert data_lines == lines, (
             f"SSE data lines do not match original order.\n"
             f"Expected: {lines!r}\n"

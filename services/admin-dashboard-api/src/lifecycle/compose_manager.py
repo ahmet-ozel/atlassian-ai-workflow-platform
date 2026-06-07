@@ -1,4 +1,4 @@
-"""Compose Bootstrap Manager — profile-level Docker Compose orchestration.
+﻿"""Compose Bootstrap Manager - profile-level Docker Compose orchestration.
 
 The admin-dashboard-api drives the Setup Wizard by activating Compose
 *profiles* for managed service groups on demand. This module is
@@ -19,7 +19,7 @@ Why a separate module?
   per-service ``up`` / ``stop`` calls and is wired into the heavy
   :class:`LifecycleService` state machine. The Setup Wizard needs a
   *lighter* entry point that operates on Compose profiles directly
-  and persists to a different table — overloading ``ComposeRunner``
+  and persists to a different table - overloading ``ComposeRunner``
   would blur the separation of concerns between profile-level and
   service-level orchestration.
 * The subprocess-invocation patterns are deliberately mirrored
@@ -36,12 +36,12 @@ in migration ``006_platform_completion_tables.sql``. Rows owned by
 this module use the key prefix ``started_profile:`` so they coexist
 with the Setup Wizard's step rows (``vault``, ``postgresql``, ...).
 
-* ``step_name`` — ``f"started_profile:{profile}"``
-* ``status``    — ``"running"`` after a successful ``start_service``;
+* ``step_name`` - ``f"started_profile:{profile}"``
+* ``status``    - ``"running"`` after a successful ``start_service``;
                   the row is deleted on ``stop_service`` so the
                   ``list_started_profiles`` set is the canonical
                   source of truth for "what should auto-start on boot".
-* ``config_data`` — JSON blob ``{"profile": ..., "started_at": ...,
+* ``config_data`` - JSON blob ``{"profile": ..., "started_at": ...,
                     "services": [...]}`` so the operator can audit
                     *what* came up under a given profile without
                     re-querying Compose.
@@ -72,7 +72,7 @@ from typing import Any, Final, Mapping, Protocol, Sequence
 import httpx
 
 # ---------------------------------------------------------------------------
-# Subprocess hardening — mirrors compose_runner._ALLOWED_HOST_ENV_KEYS
+# Subprocess hardening - mirrors compose_runner._ALLOWED_HOST_ENV_KEYS
 # ---------------------------------------------------------------------------
 
 #: Host env keys the spawned ``docker compose`` process is allowed to
@@ -115,7 +115,7 @@ _HEALTH_REQUEST_TIMEOUT_SECONDS: Final[float] = 5.0
 #: Compose plugin filling memory.
 _PS_OUTPUT_BYTE_LIMIT: Final[int] = 1024 * 1024  # 1 MiB
 
-#: Persistence row prefix — see module docstring "Persistence model".
+#: Persistence row prefix - see module docstring "Persistence model".
 _STARTED_PROFILE_PREFIX: Final[str] = "started_profile:"
 
 
@@ -219,13 +219,13 @@ class InvalidProfileError(ValueError):
     """Raised when a profile name fails the
     :data:`_PROFILE_PATTERN` validation.
 
-    Routed to ``422 Unprocessable Entity`` upstream — operator
+    Routed to ``422 Unprocessable Entity`` upstream - operator
     supplied a malformed name, the request never reaches Compose.
     """
 
 
 # ---------------------------------------------------------------------------
-# Persistence — StartedProfileStore
+# Persistence - StartedProfileStore
 # ---------------------------------------------------------------------------
 
 
@@ -266,13 +266,13 @@ class AsyncpgStartedProfileStore:
     ``step_name = f"started_profile:{profile}"``. The columns map
     cleanly:
 
-    * ``status``       — ``"running"`` (the row's lifecycle marker;
+    * ``status``       - ``"running"`` (the row's lifecycle marker;
                          deletion handles the inverse transition).
-    * ``config_data``  — JSON ``{"profile", "services", "started_at"}``.
-    * ``completed_at`` — wall-clock timestamp of the start, so audit
+    * ``config_data``  - JSON ``{"profile", "services", "started_at"}``.
+    * ``completed_at`` - wall-clock timestamp of the start, so audit
                          queries can answer "when did this profile
                          come up" without parsing JSON.
-    * ``updated_at``   — refreshed by ``DEFAULT NOW()`` on every
+    * ``updated_at``   - refreshed by ``DEFAULT NOW()`` on every
                          upsert.
 
     The ``ON CONFLICT`` clause makes ``record_started`` idempotent
@@ -411,12 +411,12 @@ class ComposeManager:
     http_client:
         :class:`httpx.AsyncClient` used by :meth:`check_health` for
         the per-service health-endpoint poll. The manager does **not**
-        own the client — callers manage its lifecycle (open at
+        own the client - callers manage its lifecycle (open at
         startup in ``main.lifespan``, close on shutdown).
     store:
         Optional :class:`StartedProfileStore` for persistence
         for auto-start after restart. When ``None``, ``start_service`` /
-        ``stop_service`` skip the persistence write — useful in unit
+        ``stop_service`` skip the persistence write - useful in unit
         tests that don't exercise the auto-restart path.
     health_base_url_template:
         Format string used by :meth:`check_health` to build the URL
@@ -500,7 +500,7 @@ class ComposeManager:
         On success, persists the activation in
         :class:`StartedProfileStore`. On non-zero
         exit, raises :class:`ComposeManagerError` and does **not**
-        write the persistence row — the operator can retry without
+        write the persistence row - the operator can retry without
         having to reconcile a stale "running" record.
 
         Parameters
@@ -549,7 +549,7 @@ class ComposeManager:
 
         # Persist *after* a successful start so a failure leaves no
         # ghost row. We list the running services right now and
-        # snapshot the names — operators reading the audit row can
+        # snapshot the names - operators reading the audit row can
         # see what came up under this profile without re-querying
         # Compose.
         services_under_profile: list[str] = []
@@ -559,7 +559,7 @@ class ComposeManager:
                 services_under_profile = [svc.name for svc in running]
             except ComposeManagerError:
                 # Persistence still proceeds with an empty service list
-                # — the row's primary purpose is auto-restart, and
+                # - the row's primary purpose is auto-restart, and
                 # losing the service-name audit detail is preferable
                 # to dropping the auto-restart entry entirely.
                 services_under_profile = []
@@ -591,7 +591,7 @@ class ComposeManager:
         On success, removes the persistence row so the profile is no
         longer auto-restarted on boot. On non-zero exit, raises
         :class:`ComposeManagerError` and leaves the persistence row
-        intact — a partial stop should not silently un-register the
+        intact - a partial stop should not silently un-register the
         profile.
         """
 
@@ -648,7 +648,7 @@ class ComposeManager:
         Parameters
         ----------
         service:
-            Compose service name. Used as the hostname in the URL —
+            Compose service name. Used as the hostname in the URL -
             Docker's internal DNS resolves it within the project
             network.
         endpoint:
@@ -687,7 +687,7 @@ class ComposeManager:
                     url, timeout=request_timeout
                 )
             except httpx.HTTPError:
-                # Connection refused / DNS / timeout — fall through to
+                # Connection refused / DNS / timeout - fall through to
                 # the next polling iteration. The service may still be
                 # warming up.
                 response = None
@@ -699,7 +699,7 @@ class ComposeManager:
             if now >= deadline:
                 return False
 
-            # Sleep between polls — clamped so we never sleep past
+            # Sleep between polls - clamped so we never sleep past
             # the deadline (the next ``while True`` head check
             # handles edge cases).
             sleep_for = min(_HEALTH_POLL_INTERVAL_SECONDS, deadline - now)
@@ -851,7 +851,7 @@ def _parse_compose_ps_output(stdout: str) -> list[RunningService]:
 
     * **Array layout** (Compose v2.21+): a single JSON array of
       container objects, optionally pretty-printed.
-    * **NDJSON layout** (Compose v2.0 – v2.20): one JSON object per
+    * **NDJSON layout** (Compose v2.0 - v2.20): one JSON object per
       line, no surrounding array.
 
     We try the array layout first (``json.loads`` on the whole
@@ -880,7 +880,7 @@ def _parse_compose_ps_output(stdout: str) -> list[RunningService]:
 
     rows: list[Any]
     try:
-        # Array layout — a single JSON value spanning the whole stdout.
+        # Array layout - a single JSON value spanning the whole stdout.
         decoded = json.loads(stdout)
         if isinstance(decoded, list):
             rows = decoded
@@ -890,7 +890,7 @@ def _parse_compose_ps_output(stdout: str) -> list[RunningService]:
         else:
             rows = []
     except json.JSONDecodeError:
-        # NDJSON fallback — one JSON object per non-empty line.
+        # NDJSON fallback - one JSON object per non-empty line.
         rows = []
         for line in stdout.splitlines():
             line = line.strip()

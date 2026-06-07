@@ -1,4 +1,4 @@
-"""``AdminProxy`` — Backend-For-Frontend forwarder to automation-service.
+﻿"""``AdminProxy`` - Backend-For-Frontend forwarder to automation-service.
 
 This module implements admin proxy wiring of ``platform foundation``. The
 ``admin-dashboard-api`` service is a thin BFF that **owns no business
@@ -10,7 +10,7 @@ auth and proxying.
 
 Decision matrix:
 
-* **Global admin actions** — adding a new department
+* **Global admin actions** - adding a new department
   (``POST /admin/departments``), the setup wizard
   (``POST /admin/departments/wizard``), disabling a department
   (``POST /admin/departments/{id}/disable``), probe-artifact listing /
@@ -19,12 +19,12 @@ Decision matrix:
   (``/admin/prompts/global[/...]``) require ``role=admin``. ``dept_admin``
   is rejected with HTTP 403 + ``rbac_denied`` audit.
 
-* **Dept-scoped self-service** — credential rotation for a specific
+* **Dept-scoped self-service** - credential rotation for a specific
   department (``POST /admin/departments/{id}/credentials/rotate``)
   admits ``admin`` (always) and ``dept_admin`` whose ``dept_ids`` contain
   ``{id}``.
 
-* **Per-service dept credential CRUD + probe** — the credential management
+* **Per-service dept credential CRUD + probe** - the credential management
   endpoints
   (``POST|DELETE /admin/departments/{id}/credentials/{service}`` and
   ``POST /admin/departments/{id}/probe``) admit ``admin`` (always)
@@ -34,21 +34,21 @@ Decision matrix:
   the ``automation-service`` side, all of which carry
   ``dept_id={id}`` and ``actor_role`` of the forwarded caller:
 
-  * ``dept_credential_added`` — successful first-time write
+  * ``dept_credential_added`` - successful first-time write
     on successful first-time write.
-  * ``dept_credential_updated`` — successful overwrite of an
+  * ``dept_credential_updated`` - successful overwrite of an
     existing ``(dept_id, service)`` row.
-  * ``dept_credential_removed`` — successful idempotent delete
+  * ``dept_credential_removed`` - successful idempotent delete
     on successful idempotent delete.
-  * ``dept_credential_probed`` — read+write connectivity probe
+  * ``dept_credential_probed`` - read+write connectivity probe
     with one row per probed service.
-  * ``dept_credential_add_failed`` — staging / probe / DB / Vault
+  * ``dept_credential_add_failed`` - staging / probe / DB / Vault
     failure with a stable ``reason`` marker; also written
     on remove-path failures.
 
-  The proxy itself does **not** translate these actions — they are
+  The proxy itself does **not** translate these actions - they are
   emitted by
-  :class:`services.dept_credential_service.DeptCredentialService` —
+  :class:`services.dept_credential_service.DeptCredentialService` -
   but they round-trip through the proxy's ``X-Actor-*`` header
   stamping so the audit trail keeps the caller's actual identity
   rather than the proxy's service account.
@@ -64,7 +64,7 @@ Decision matrix:
   explicitly in :func:`classify_admin_path` before they can be
   reached by lower roles.
 
-* **Non-``/admin/*`` paths** are rejected with HTTP 404 — the proxy is
+* **Non-``/admin/*`` paths** are rejected with HTTP 404 - the proxy is
   scoped strictly to the admin surface.
 
 The proxy emits a single :class:`audit_logger.AuditEvent` with
@@ -77,7 +77,7 @@ caught and logged locally rather than re-raised.
 
 The audit logger is injected through the constructor instead of
 imported globally so unit tests can substitute an in-memory fake.
-The same goes for the outbound :class:`httpx.AsyncClient` — production
+The same goes for the outbound :class:`httpx.AsyncClient` - production
 wiring shares the process-wide client opened in
 :func:`src.main.lifespan`.
 """
@@ -99,13 +99,13 @@ logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# Headers — what we forward, what we strip
+# Headers - what we forward, what we strip
 # ---------------------------------------------------------------------------
 
 #: Hop-by-hop / connection-management headers that MUST NOT be forwarded
 #: across a proxy hop (RFC 7230 §6.1). ``transfer-encoding`` is
 #: re-computed by httpx based on the body shape, ``content-length``
-#: similarly. Stripping ``host`` is essential — the upstream needs to
+#: similarly. Stripping ``host`` is essential - the upstream needs to
 #: see its own host, not the dashboard's.
 _HOP_BY_HOP_HEADERS: frozenset[str] = frozenset(
     h.lower()
@@ -123,7 +123,7 @@ _HOP_BY_HOP_HEADERS: frozenset[str] = frozenset(
     )
 )
 
-#: ``Authorization`` is intentionally stripped at the proxy boundary —
+#: ``Authorization`` is intentionally stripped at the proxy boundary -
 #: the dashboard validated the OIDC token already and downstream
 #: automation-service trusts the proxy via a separate service-mesh /
 #: mTLS / shared secret channel configured separately via
@@ -135,7 +135,7 @@ _AUTH_HEADERS_TO_STRIP: frozenset[str] = frozenset({"authorization", "cookie"})
 
 
 # ---------------------------------------------------------------------------
-# Audit action map — actions emitted *downstream* (by automation-service)
+# Audit action map - actions emitted *downstream* (by automation-service)
 # in response to forwarded ``/admin/*`` calls. The proxy does not write
 # these rows itself (it only writes ``rbac_denied`` on a 403); the map
 # exists so reviewers can see at a glance which audit actions ride
@@ -180,7 +180,7 @@ class PathPolicy:
         required_role: The minimum :data:`auth_shared.policy.Role` that
             satisfies the policy. ``"admin"`` for global actions,
             ``"dept_admin"`` for dept-scoped routes (``admin`` always
-            satisfies that too — see :func:`auth_shared.policy.check`).
+            satisfies that too - see :func:`auth_shared.policy.check`).
         dept_id: When the route is dept-scoped, the department id
             extracted from the URL path. ``None`` for global routes.
     """
@@ -189,18 +189,18 @@ class PathPolicy:
     dept_id: str | None
 
 
-# ``/admin/departments/<id>/credentials/rotate`` — dept_admin self-service.
+# ``/admin/departments/<id>/credentials/rotate`` - dept_admin self-service.
 _RE_DEPT_ROTATE = re.compile(
     r"^/admin/departments/(?P<dept_id>[a-z][a-z0-9_-]{0,63})/credentials/rotate/?$"
 )
 
-# ``/admin/departments/<id>/disable`` — admin only because disabling a
+# ``/admin/departments/<id>/disable`` - admin only because disabling a
 # department is an organization-level lifecycle action.
 _RE_DEPT_DISABLE = re.compile(
     r"^/admin/departments/(?P<dept_id>[a-z][a-z0-9_-]{0,63})/disable/?$"
 )
 
-# ``/admin/departments/<id>[/anything]`` — dept-scoped catch-all (other
+# ``/admin/departments/<id>[/anything]`` - dept-scoped catch-all (other
 # than rotate/disable handled above). dept_admin allowed for own dept.
 _RE_DEPT_SUB = re.compile(
     r"^/admin/departments/(?P<dept_id>[a-z][a-z0-9_-]{0,63})(?:/.*)?$"
@@ -232,7 +232,7 @@ def classify_admin_path(method: str, path: str) -> PathPolicy:
     The classifier is deterministic and side-effect free; tests cover
     the matrix exhaustively. New routes added to automation-service
     MUST be classified here before they can be reached through the
-    proxy — the default branch is fail-closed at ``role=admin``.
+    proxy - the default branch is fail-closed at ``role=admin``.
 
     Args:
         method: HTTP method (``"GET"``, ``"POST"``, etc.). Currently
@@ -278,7 +278,7 @@ def classify_admin_path(method: str, path: str) -> PathPolicy:
 
     match = _RE_DEPT_DISABLE.match(canonical)
     if match is not None:
-        # Disabling a department is a global lifecycle action —
+        # Disabling a department is a global lifecycle action -
         # ``admin`` only. The dept_id is still surfaced so the audit
         # row carries the target.
         return PathPolicy(
@@ -336,7 +336,7 @@ class ProxyResponse:
     """Plain HTTP response shape returned by :meth:`AdminProxy.forward`.
 
     Returned as a dataclass (not a FastAPI :class:`Response`) so the
-    proxy stays usable from non-FastAPI call sites — the FastAPI
+    proxy stays usable from non-FastAPI call sites - the FastAPI
     router adapter wraps this into a ``Response`` at the HTTP edge.
     The body is opaque bytes; the dashboard must not interpret or
     re-encode the upstream payload.
@@ -352,14 +352,14 @@ class AdminProxy:
 
     The proxy performs three steps in order:
 
-    1. **Path classification** — :func:`classify_admin_path` resolves
+    1. **Path classification** - :func:`classify_admin_path` resolves
        the route to a :class:`PathPolicy` (required role, optional
        dept_id).
-    2. **RBAC check** — :func:`auth_shared.policy.check` decides
+    2. **RBAC check** - :func:`auth_shared.policy.check` decides
        whether ``actor`` satisfies the policy. Failures emit a single
        ``rbac_denied`` audit row and return :class:`ProxyResponse`
        with ``status_code=403``.
-    3. **Forwarding** — the request is reissued against
+    3. **Forwarding** - the request is reissued against
        ``{automation_service_url}{path}`` via the injected
        :class:`httpx.AsyncClient`. Hop-by-hop headers are stripped;
        ``Authorization`` / ``Cookie`` are stripped because the
@@ -435,7 +435,7 @@ class AdminProxy:
         try:
             policy = classify_admin_path(method, path)
         except ValueError:
-            # Non-admin paths must never reach the proxy — surface
+            # Non-admin paths must never reach the proxy - surface
             # this as 404 so an accidental mount does not leak
             # behaviour. We still emit a structured log for the
             # operator.
@@ -478,7 +478,7 @@ class AdminProxy:
         # the only ingress for these headers is this proxy (the values
         # are stripped from the inbound side via ``_filter_headers``,
         # which knows nothing about ``X-Actor-*`` so a malicious caller
-        # cannot spoof them — see ``test_x_actor_headers_overwritten``).
+        # cannot spoof them - see ``test_x_actor_headers_overwritten``).
         forwarded_headers["x-actor-id"] = actor.actor_id
         forwarded_headers["x-actor-role"] = actor.actor_role
         if policy.dept_id is not None:
@@ -538,7 +538,7 @@ class AdminProxy:
     ) -> None:
         """Best-effort write of a single ``rbac_denied`` audit row.
 
-        Failures inside the audit emit are *swallowed* — an audit DB
+        Failures inside the audit emit are *swallowed* - an audit DB
         outage MUST NOT convert the underlying 403 into a 500. The
         operator notices the missing audit row through the
         higher-level ``audit_write_deferred`` / drainer telemetry that
@@ -547,7 +547,7 @@ class AdminProxy:
 
         # ``actor.actor_role`` is one of the four AUTH_ROLES; the audit
         # table accepts the same four plus ``"system"``. The cast is
-        # safe — the OIDC layer rejects unknown roles before we ever
+        # safe - the OIDC layer rejects unknown roles before we ever
         # see them here.
         event = AuditEvent(
             actor_id=actor.actor_id,
@@ -566,7 +566,7 @@ class AdminProxy:
         )
         try:
             await self._audit.write(event)
-        except Exception as exc:  # noqa: BLE001 — best-effort write
+        except Exception as exc:  # noqa: BLE001 - best-effort write
             logger.warning(
                 "AdminProxy: rbac_denied audit write failed (HTTP 403 still "
                 "returned to caller): actor=%s path=%s err=%s",
@@ -586,12 +586,12 @@ def _filter_headers(headers: Mapping[str, str]) -> dict[str, str]:
 
     Drops:
 
-    * **Hop-by-hop headers** (RFC 7230 §6.1) — these are between two
+    * **Hop-by-hop headers** (RFC 7230 §6.1) - these are between two
       adjacent peers only.
-    * **Authorization / Cookie** — the proxy and automation-service
+    * **Authorization / Cookie** - the proxy and automation-service
       establish trust through a separate channel; forwarding the
       user's bearer token would change the trust model.
-    * **Any inbound ``X-Actor-*`` header** — those are *output* only.
+    * **Any inbound ``X-Actor-*`` header** - those are *output* only.
       A malicious caller cannot inject ``X-Actor-Role: admin`` because
       the proxy overwrites the slot after this filter runs.
     """

@@ -1,4 +1,4 @@
-"""Unit tests for the webhook endpoints.
+﻿"""Unit tests for the webhook endpoints.
 
 Exercises the end-to-end response code matrix from
 the webhook endpoints by spinning up the canonical FastAPI app, parking a hand-rolled
@@ -9,7 +9,7 @@ The collaborators (HMAC verifier, dept resolver, bot registry,
 ``processed_events`` repo, mention sets, iter counts, reporter
 resolver, Temporal client, audit logger) are all in-memory fakes so
 the tests never touch Postgres / Vault / Temporal. The chain itself
-is the real :class:`WebhookFilterChain` — keeping the chain in the
+is the real :class:`WebhookFilterChain` - keeping the chain in the
 loop ensures the endpoint correctly translates every chain verdict
 to the matching HTTP response.
 
@@ -91,7 +91,7 @@ class _FakeProcessedEventsRepo:
         self.claimed: dict[str, str] = {}
         self.released: list[str] = []
         # Hooks that tests can flip to drive the rare-race + failure
-        # paths — claim_returns_false simulates the
+        # paths - claim_returns_false simulates the
         # "another worker won the race" branch in
         # :func:`_dispatch_pass`; raise_on_release lets us confirm the
         # release-failure branch logs without breaking the response.
@@ -989,7 +989,7 @@ class TestJiraEndpointLicenseCapEnforcement:
         The chain itself rejects unresolved Jira deliveries with
         ``webhook_dept_unresolved`` *before* the dispatcher runs, so
         in practice this code path only fires for Bitbucket flows
-        where the optional resolver returned ``None`` — but the
+        where the optional resolver returned ``None`` - but the
         dispatcher must still be defensive: a missing dept_id means
         no license to check against.
         """
@@ -1006,7 +1006,7 @@ class TestJiraEndpointLicenseCapEnforcement:
             raise_for_dept="payments"
         )
 
-        # Note: no jira_resolver wired — the audit dept_id remains None
+        # Note: no jira_resolver wired - the audit dept_id remains None
         # (the chain still resolves dept internally for HMAC).
         base = _make_deps(
             chain=chain,

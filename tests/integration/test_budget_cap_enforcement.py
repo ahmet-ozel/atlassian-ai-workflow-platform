@@ -1,4 +1,4 @@
-"""Integration smoke — budget cap enforcement (ops work).
+﻿"""Integration smoke - budget cap enforcement (ops work).
 
 Exercises the workflow start endpoint with a synthetic dept whose
 ``budget_caps.weekly_usd_dept`` is below the running cost; the

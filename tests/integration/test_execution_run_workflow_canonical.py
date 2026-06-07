@@ -1,4 +1,4 @@
-"""End-to-end integration test for the canonical ``ExecutionRunWorkflow``.
+﻿"""End-to-end integration test for the canonical ``ExecutionRunWorkflow``.
 
 
 This test exercises the canonical :class:`ExecutionRunWorkflow` defined
@@ -20,7 +20,7 @@ mock the activity and verify that the workflow:
  input dataclass.
 2. Falls back to the documented ``DEFAULT_START_TO_CLOSE`` /
  ``DEFAULT_HEARTBEAT`` values when the input leaves the timeout
- overrides as ``None`` — the activity always gets a bounded
+ overrides as ``None`` - the activity always gets a bounded
  ``start_to_close_timeout`` regardless of caller configuration.
 3. Maps the activity result dict onto :class:`ExecutionRunWorkflowOutput`
  for the three terminal statuses ``"passed"`` / ``"failed"`` /
@@ -301,7 +301,7 @@ async def test_canonical_execution_run_uses_default_timeouts_when_none() -> None
     """When the input leaves ``start_to_close_timeout`` and
  ``heartbeat_timeout`` unset, the workflow MUST fall back to its
  documented defaults (``DEFAULT_START_TO_CLOSE`` /
- ``DEFAULT_HEARTBEAT``) — NOT call the activity with an open-ended
+ ``DEFAULT_HEARTBEAT``) - NOT call the activity with an open-ended
  timeout. We assert the activity completes successfully under
  the fallback configuration; an open-ended timeout would surface as
  a Temporal "start_to_close_timeout required" validation error.
@@ -349,7 +349,7 @@ async def test_canonical_execution_run_uses_default_timeouts_when_none() -> None
                 "failure_reason": None,
             }
 
-        # Sanity-check that the defaults are positive timedeltas — the
+        # Sanity-check that the defaults are positive timedeltas - the
         # workflow contract relies on this so that the activity gets a
         # bounded ``start_to_close_timeout``.
         assert DEFAULT_START_TO_CLOSE > timedelta(0)
@@ -371,7 +371,7 @@ async def test_canonical_execution_run_uses_default_timeouts_when_none() -> None
                     workdir=None,
                     environment=(),
                     artifact_minio_prefix="s3://ai-runs/default-timeouts",
-                    # Both timeouts intentionally None — exercise the
+                    # Both timeouts intentionally None - exercise the
                     # workflow's fallback path.
                     start_to_close_timeout=None,
                     heartbeat_timeout=None,
@@ -387,7 +387,7 @@ async def test_canonical_execution_run_uses_default_timeouts_when_none() -> None
                 result: ExecutionRunWorkflowOutput = await handle.result()
 
     # The activity ran exactly once and the workflow returned the
-    # canonical "passed" output dataclass — proving the fallback
+    # canonical "passed" output dataclass - proving the fallback
     # timeouts produced a valid Temporal activity invocation.
     assert len(log.calls) == 1
     assert isinstance(result, ExecutionRunWorkflowOutput)

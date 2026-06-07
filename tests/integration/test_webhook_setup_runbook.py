@@ -1,4 +1,4 @@
-"""Webhook setup runbook existence and section header checks.
+﻿"""Webhook setup runbook existence and section header checks.
 
 
 
@@ -18,7 +18,7 @@ import pytest
 # is colocated under ``tests/integration/`` because it asserts a deliverable
 # of the spec and runs in the
 # integration lane alongside the webhook gateway tests. No external services
-# (Temporal, Postgres, Vault) are touched — the test only reads the runbook
+# (Temporal, Postgres, Vault) are touched - the test only reads the runbook
 # file from disk.
 pytestmark = pytest.mark.integration
 
@@ -95,7 +95,7 @@ def test_webhook_setup_runbook_mentions_vault_secret_paths(
     """The runbook SHALL document per-dept vault secret paths."""
     assert vault_path in runbook_text, (
         f"vault secret path {vault_path!r} not documented in webhook setup runbook; "
-        "this is required by the operational rule ( §16.14.3 V3 — dept başına ayrı secret)"
+        "this is required by the operational rule ( §16.14.3 V3 - dept başına ayrı secret)"
     )
 
 

@@ -1,4 +1,4 @@
-"""firecrawl — egress-allowlisted web scrape/search wrapper.
+﻿"""firecrawl - egress-allowlisted web scrape/search wrapper.
 
 The package implements the wrapper service that fronts Firecrawl with a
 deterministic per-host egress allowlist.

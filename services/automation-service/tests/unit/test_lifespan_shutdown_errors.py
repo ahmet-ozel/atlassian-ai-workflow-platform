@@ -1,4 +1,4 @@
-"""Shutdown continues through close errors.
+﻿"""Shutdown continues through close errors.
 
 Pins the behavior that a failing close on one owned resource MUST NOT
 block the remaining closes from running, and the lifespan handler's
@@ -34,7 +34,7 @@ app_module = sys.modules["automation_service.app"]
 
 
 # ---------------------------------------------------------------------------
-# Fakes — pool whose close() raises, http_client + temporal that count calls
+# Fakes - pool whose close() raises, http_client + temporal that count calls
 # ---------------------------------------------------------------------------
 
 
@@ -106,9 +106,9 @@ async def test_shutdown_continues_through_close_errors(
     Three resources are wired so the test can verify every shutdown step
     runs exactly once:
 
-    * a pool whose ``close()`` raises ``RuntimeError`` — the canary
-    * a counting ``httpx.AsyncClient`` — must still be ``aclose()``-d
-    * a counting ``TemporalClient`` — must still be ``close()``-d
+    * a pool whose ``close()`` raises ``RuntimeError`` - the canary
+    * a counting ``httpx.AsyncClient`` - must still be ``aclose()``-d
+    * a counting ``TemporalClient`` - must still be ``close()``-d
 
     The assertion is two-fold: every closer is awaited exactly once,
     *and* the lifespan ``__aexit__`` returns without raising.

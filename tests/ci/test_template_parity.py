@@ -1,4 +1,4 @@
-"""CI gate — PDF + notification template parity: file existence & Jinja2 syntax.
+﻿"""CI gate - PDF + notification template parity: file existence & Jinja2 syntax.
 
 
 Verifies that the minimum required template set exists on disk,
@@ -16,7 +16,7 @@ from jinja2 import BaseLoader, Environment, TemplateSyntaxError
 # platform/ root (tests/ci/ → tests/ → platform/)
 _PLATFORM_ROOT = Path(__file__).resolve().parent.parent.parent
 
-# minimum template set — relative to platform/prompts/
+# minimum template set - relative to platform/prompts/
 _REQUIRED_TEMPLATES: list[str] = [
     "pdf_templates/default.html.j2",
     "notifications/slack_failure.j2",
@@ -71,7 +71,7 @@ def test_template_jinja2_syntax_valid(template_rel: str) -> None:
 
     source = path.read_text(encoding="utf-8")
 
-    # Use a permissive environment — undefined variables are OK at parse time,
+    # Use a permissive environment - undefined variables are OK at parse time,
     # we only care about structural syntax validity.
     env = Environment(loader=BaseLoader(), autoescape=False)
 

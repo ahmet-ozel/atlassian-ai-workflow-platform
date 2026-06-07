@@ -1,21 +1,21 @@
-"""Platform-completion integration helpers for ``AutomationWorkflow``.
+﻿"""Platform-completion integration helpers for ``AutomationWorkflow``.
 
 This module ships the four helper coroutines required by:doc:` <`.
 The existing:class:`automation_worker.workflows.automation_workflow.AutomationWorkflow`
-is large and battle-tested — instead of rewriting its body, the
+is large and battle-tested - instead of rewriting its body, the
 gateway workflow can call these helpers at the documented hook
 points to wire in the new components shipped by the
  spec:
 
-* multi-step orchestrator delegation (–5.10)
-* pre-workflow repo-field resolution (–9.5)
-* pre-commit approval gate (–11.8)
-* post-execution output-action batch (–3.11)
+* multi-step orchestrator delegation (-5.10)
+* pre-workflow repo-field resolution (-9.5)
+* pre-commit approval gate (-11.8)
+* post-execution output-action batch (-3.11)
 
 Determinism contract
 --------------------
 
-Every helper is **pure orchestration** — its only side effects are
+Every helper is **pure orchestration** - its only side effects are
 ``workflow.execute_activity`` and
 ``workflow.execute_child_workflow`` calls. The helpers explicitly
 do **not**:
@@ -25,7 +25,7 @@ do **not**:
 * perform any direct I/O (HTTP, Postgres, files).
 
 This keeps them safe to call from inside the Temporal workflow
-sandbox — the static AST scanner used by the determinism Invariant test treats ``workflow.execute_*`` exactly like the existing
+sandbox - the static AST scanner used by the determinism Invariant test treats ``workflow.execute_*`` exactly like the existing
 ``AutomationWorkflow`` body.
 
 Activity / workflow imports live inside
@@ -79,13 +79,13 @@ with workflow.unsafe.imports_passed_through():
 # Constants
 # ---------------------------------------------------------------------------
 
-#: Activity name string for the output-action executor (–3.11).
+#: Activity name string for the output-action executor (-3.11).
 _ACT_EXECUTE_OUTPUT_ACTIONS: Final[str] = "execute_output_actions"
 
-#: Activity name string for the repo-field resolver (–9.5).
+#: Activity name string for the repo-field resolver (-9.5).
 _ACT_RESOLVE_REPO_FIELD: Final[str] = "resolve_repo_field"
 
-#: Default timeout for the output-action batch — 20 actions × 30 s
+#: Default timeout for the output-action batch - 20 actions × 30 s
 #: per-action ceiling enforced inside the activity, plus headroom.
 _OUTPUT_ACTIONS_TIMEOUT: Final[timedelta] = timedelta(minutes=15)
 
@@ -94,7 +94,7 @@ _OUTPUT_ACTIONS_TIMEOUT: Final[timedelta] = timedelta(minutes=15)
 _REPO_RESOLVE_TIMEOUT: Final[timedelta] = timedelta(minutes=2)
 
 #: Default timeout for the approval-gate child workflow's ``run``
-#: method — the gate itself blocks for up to 4 hours
+#: method - the gate itself blocks for up to 4 hours
 #: (:data:`approval_gate.APPROVAL_TIMEOUT`); we double it as a hard
 #: ceiling so a misbehaving signal handler cannot wedge the parent.
 _APPROVAL_GATE_RUN_TIMEOUT: Final[timedelta] = timedelta(hours=8)
@@ -124,7 +124,7 @@ __all__ = (
 
 
 # ---------------------------------------------------------------------------
-# Helper 1 — multi-step delegation (–5.10)
+# Helper 1 - multi-step delegation (-5.10)
 # ---------------------------------------------------------------------------
 
 
@@ -138,7 +138,7 @@ async def maybe_run_multi_step(
 ) -> bool:
     """Delegate to:class:`MultiStepWorkflow` when the LLM picks ``multi_step``.
 
- (2–20 step plan), **5.2** (each
+ (2-20 step plan), **5.2** (each
  step runs as an independent child workflow), **5.7**, **5.8**.
 
  The helper inspects ``workflow_type`` and, only when it equals
@@ -153,7 +153,7 @@ async def maybe_run_multi_step(
  The child runs to completion before this helper returns so the
  parent workflow can observe its outcome and short-circuit the
  rest of the gateway pipeline (the parent should treat a True
- return value as "the work is done — do not dispatch further
+ return value as "the work is done - do not dispatch further
  children").
 
  Returns
@@ -167,7 +167,7 @@ async def maybe_run_multi_step(
  -----
  Determinism: only ``workflow.execute_child_workflow`` is used for
  the side effect. Empty / None ``plan`` values trigger an early
- ``False`` return without raising — the validator inside:class:`MultiStepWorkflow` would reject the input anyway, so
+ ``False`` return without raising - the validator inside:class:`MultiStepWorkflow` would reject the input anyway, so
  bouncing here keeps the parent's failure handling close to its
  own decision points.
  """
@@ -180,7 +180,7 @@ async def maybe_run_multi_step(
         # (likely an LLM analysis re-prompt) when this happens.
         workflow.logger.warning(
             "maybe_run_multi_step: workflow_type='multi_step' but no "
-            "plan provided for %s — skipping",
+            "plan provided for %s - skipping",
             issue_key,
         )
         return False
@@ -208,13 +208,13 @@ async def maybe_run_multi_step(
     )
 
     # The child runs on the same task queue as the parent gateway
-    # — task_queue_for("MultiStepWorkflow") would also work, but
+    # - task_queue_for("MultiStepWorkflow") would also work, but
     # MultiStepWorkflow is hosted inside automation-worker so we
     # keep the child colocated.
     try:
         task_queue = task_queue_for("MultiStepWorkflow")
     except KeyError:
-        # Registry has not been updated for the new workflow yet —
+        # Registry has not been updated for the new workflow yet -
         # fall back to the parent's queue so the dispatch still
         # works against the same worker pool.
         task_queue = workflow.info().task_queue
@@ -234,7 +234,7 @@ async def maybe_run_multi_step(
 
 
 # ---------------------------------------------------------------------------
-# Helper 2 — approval gate (–11.8)
+# Helper 2 - approval gate (-11.8)
 # ---------------------------------------------------------------------------
 
 
@@ -252,10 +252,10 @@ async def maybe_run_approval_gate(
 
  Reads two keys from ``dept_config``:
 
- * ``approval_required_paths`` — a list of regex patterns. When
+ * ``approval_required_paths`` - a list of regex patterns. When
  empty/missing the helper returns ``True`` immediately (the
- commit is implicitly approved —).
- * ``approvers`` — a list of authorized Jira account IDs.
+ commit is implicitly approved -).
+ * ``approvers`` - a list of authorized Jira account IDs.
 
  The pure path-matching logic and signal authorization live
  inside:class:`ApprovalGateWorkflow`; this helper's job is just
@@ -279,7 +279,7 @@ async def maybe_run_approval_gate(
 
     approval_paths = dept_config.get("approval_required_paths") or []
     if not approval_paths:
-        # Nothing to gate — the parent gateway proceeds.
+        # Nothing to gate - the parent gateway proceeds.
         return True
 
     approvers = list(dept_config.get("approvers") or [])
@@ -318,7 +318,7 @@ async def maybe_run_approval_gate(
 
 
 # ---------------------------------------------------------------------------
-# Helper 3 — output-action batch (–3.11)
+# Helper 3 - output-action batch (-3.11)
 # ---------------------------------------------------------------------------
 
 
@@ -337,14 +337,14 @@ async def execute_output_actions_post(
  Each action dict is expected to carry at least ``type`` and
  ``params`` keys; ``index`` is filled in by the helper using the
  list position so callers can build the actions in plain
- declaration order. Action types are coerced into the:class:`db_shared.enums.ActionType` enum — unknown values are
+ declaration order. Action types are coerced into the:class:`db_shared.enums.ActionType` enum - unknown values are
  skipped with a warning so a single bad action does not block
  the rest of the batch.
 
  Returns
  -------
  dict
- ``{"all_succeeded": bool, "results": [...]}`` — the:class:`ExecutionBatchResult` projected into a plain dict
+ ``{"all_succeeded": bool, "results": [...]}`` - the:class:`ExecutionBatchResult` projected into a plain dict
  so the caller can round-trip it through Temporal's data
  converter without coupling to the activity's dataclass.
  """
@@ -422,7 +422,7 @@ async def execute_output_actions_post(
 
 
 # ---------------------------------------------------------------------------
-# Helper 4 — pre-workflow repo resolution (–9.5)
+# Helper 4 - pre-workflow repo resolution (-9.5)
 # ---------------------------------------------------------------------------
 
 
@@ -448,7 +448,7 @@ async def resolve_repo_pre_workflow(
  -------
  dict
  ``{"resolved": bool, "repo_url": str | None, "confidence":
- float, "needs_user_input": bool, "error": str | None}`` —
+ float, "needs_user_input": bool, "error": str | None}`` -
  the:class:`RepoResolveResult` projected into a plain
  dict so callers can serialize it onto the parent workflow
  output without coupling to the activity's dataclass.

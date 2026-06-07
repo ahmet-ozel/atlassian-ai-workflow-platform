@@ -1,4 +1,4 @@
-"""Property test: Bot license cap monotonicity + enforcement.
+﻿"""Property test: Bot license cap monotonicity + enforcement.
 
 For any license cap ``(max_concurrent, max_daily, max_monthly_token_usd)``
 and usage state ``(curr_concurrent, curr_daily, curr_monthly_usd)`` pairs,
@@ -14,7 +14,7 @@ and usage state ``(curr_concurrent, curr_daily, curr_monthly_usd)`` pairs,
     ``current``, and ``max`` values.
 
 (c) **Monotonicity**: for a single dimension (e.g. concurrent), the
-    transition from "allowed" to "rejected" is one-way — once usage
+    transition from "allowed" to "rejected" is one-way - once usage
     reaches the cap, no decrease in *other* dimensions can flip the
     decision back to "allowed" for that dimension.
 
@@ -757,7 +757,7 @@ class TestAuditPayload:
         with pytest.raises(BotLicenseCapExceededError):
             asyncio.run(_enforce_with_cap(cap=cap, pool=pool, audit_logger=audit))
 
-        # Only one audit event — for the first exceeded limit (concurrent)
+        # Only one audit event - for the first exceeded limit (concurrent)
         assert len(audit.events) == 1
         assert audit.events[0].payload["limit_type"] == "concurrent"
 

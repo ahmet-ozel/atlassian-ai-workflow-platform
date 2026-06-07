@@ -1,4 +1,4 @@
-"""Prompt loader / renderer exception hierarchy.
+﻿"""Prompt loader / renderer exception hierarchy.
 
 These exceptions are raised by :mod:`prompts.loader`,
 :mod:`prompts.validate` and the prompt-git router when a prompt body
@@ -33,10 +33,10 @@ class PromptTemplateError(PromptError, ValueError):
 
     Triggers:
 
-    * ``body.format(**vars)`` raises :class:`KeyError` — the prompt
+    * ``body.format(**vars)`` raises :class:`KeyError` - the prompt
       references a placeholder that is not part of the
       :class:`prompts.types.PromptVars` contract.
-    * Unbalanced ``{`` or ``}`` in the body — the user forgot to
+    * Unbalanced ``{`` or ``}`` in the body - the user forgot to
       escape a literal brace as ``{{`` / ``}}``.
 
     Inherits from :class:`ValueError` so generic exception handlers

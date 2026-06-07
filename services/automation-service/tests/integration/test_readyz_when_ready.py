@@ -1,4 +1,4 @@
-"""Integration test — ``GET /readyz`` returns 200 when dependencies are reachable.
+﻿"""Integration test - ``GET /readyz`` returns 200 when dependencies are reachable.
 
 The ``/readyz`` endpoint runs :func:`probe_postgres` and
 :func:`probe_temporal` in parallel and returns 200 once both probes

@@ -1,4 +1,4 @@
-"""Unit tests for the optional Bitbucket git-push sub-flow on
+﻿"""Unit tests for the optional Bitbucket git-push sub-flow on
 :class:`LegacyExecutionRunWorkflow`.
 
 The workflow body is exercised against a real
@@ -33,7 +33,7 @@ Determinism
 
 The workflow body uses ``workflow.info().workflow_id`` for the
 credential injection input (replay-safe).  The tests assert the
-activity received that exact value rather than guessing — a
+activity received that exact value rather than guessing - a
 regression that swapped to ``os.environ`` / ``time.time()`` would
 fail the determinism check during Temporal replay.
 """
@@ -54,7 +54,7 @@ from temporalio.worker import Worker
 
 
 # ---------------------------------------------------------------------------
-# ``sys.path`` bootstrapping — mirror the pattern used by
+# ``sys.path`` bootstrapping - mirror the pattern used by
 # ``test_execution_run_workflow_noop_defaults.py`` / unit tests so the
 # in-tree ``src/`` package import resolves without an editable install.
 # ---------------------------------------------------------------------------
@@ -67,7 +67,7 @@ if str(_WORKER_ROOT) not in sys.path:
 # Module-level imports of the symbols referenced by activity-stub type
 # hints.  ``temporalio.activity.defn`` introspects each stub via
 # ``typing.get_type_hints``, which evaluates forward references against
-# the *defining module's* globals — not the enclosing function's local
+# the *defining module's* globals - not the enclosing function's local
 # scope.  Importing here ensures the stubs can declare typed
 # parameters even when the activity-decorator is applied inside a
 # pytest function body.
@@ -200,7 +200,7 @@ async def test_git_push_disabled_skips_inject_and_cleanup() -> None:
             )
 
     names = log.names()
-    # The push branch must not have fired — none of the credential
+    # The push branch must not have fired - none of the credential
     # activities are present in the call log.
     assert "inject_git_credentials" not in names, names
     assert "cleanup_git_credentials" not in names, names
@@ -225,7 +225,7 @@ async def test_git_push_success_runs_inject_push_cleanup_in_order() -> None:
     inject → push (ssh_connect_and_run #2) → cleanup, with the
     artifact uploads following.  The cleanup activity runs **inside**
     the ``finally`` block so it appears between the push and the
-    artifact uploads (the position is deterministic — we assert it
+    artifact uploads (the position is deterministic - we assert it
     explicitly).
     """
 
@@ -319,7 +319,7 @@ async def test_git_push_success_runs_inject_push_cleanup_in_order() -> None:
     #   vault → ssh#1 (test) → inject → ssh#2 (push) → cleanup → minio×3
     inject_idx = names.index("inject_git_credentials")
     cleanup_idx = names.index("cleanup_git_credentials")
-    # There are exactly two ssh_connect_and_run calls — the test
+    # There are exactly two ssh_connect_and_run calls - the test
     # command and the git push.  The second is between inject and
     # cleanup.
     ssh_indices = [i for i, n in enumerate(names) if n == "ssh_connect_and_run"]
@@ -335,7 +335,7 @@ async def test_git_push_success_runs_inject_push_cleanup_in_order() -> None:
     push_command = log.calls[ssh_indices[1]][1][0]
     assert push_command == f"git push origin {branch}"
 
-    # The inject input carries the workflow_id (replay-safe — not a
+    # The inject input carries the workflow_id (replay-safe - not a
     # fresh ``time.time()``-derived string) and the configured TTL.
     assert len(inject_inputs) == 1
     inject_input = inject_inputs[0]
@@ -363,7 +363,7 @@ async def test_git_push_failure_still_runs_cleanup() -> None:
     ``ApplicationError(GitPushFailed)`` from inside the ``try``
     branch, but the ``finally`` block still invokes
     ``cleanup_git_credentials``.  The cleanup invariant must hold even
-    when the push fails — otherwise a stale credential helper would
+    when the push fails - otherwise a stale credential helper would
     survive on the SSH runner past the workflow lifetime.
     """
 

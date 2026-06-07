@@ -1,4 +1,4 @@
-# pii-shared
+﻿# pii-shared
 
 Deterministic PII (Personally Identifiable Information) regex masker used by
 `assistant-service` (and any other consumer that handles user-provided text
@@ -9,7 +9,7 @@ The package is a *pure function* layer:
 - No I/O, no logging, no global state.
 - Same input always produces the same output (`mask(text)` is referentially
   transparent).
-- No third-party runtime dependencies — only the Python standard library.
+- No third-party runtime dependencies - only the Python standard library.
 
 ## Public API
 
@@ -26,7 +26,7 @@ masked, matches = mask("TC: 12345678901, mail: ali@example.com")
 
 | `kind`        | Pattern                                                         | Replacement                |
 | ------------- | --------------------------------------------------------------- | -------------------------- |
-| `tc_kimlik`   | `\b\d{11}\b` (11 numeric digits — pattern based, no checksum)   | `***TC_REDACTED***`        |
+| `tc_kimlik`   | `\b\d{11}\b` (11 numeric digits - pattern based, no checksum)   | `***TC_REDACTED***`        |
 | `phone_tr`    | `\b5\d{2}[ -]?\d{3}[ -]?\d{2}[ -]?\d{2}\b`                      | `***PHONE_REDACTED***`     |
 | `email`       | RFC 5322 lite `\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b` | `***EMAIL_REDACTED***`     |
 | `credit_card` | `\b(?:\d[ -]?){13,19}\b` filtered by Luhn check                 | `***CC_REDACTED***`        |

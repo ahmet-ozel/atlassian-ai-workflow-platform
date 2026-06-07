@@ -1,4 +1,4 @@
-"""Task analyzer confidence threshold gate.
+﻿"""Task analyzer confidence threshold gate.
 
 *For any* LLM analysis result with confidence < 0.7, the workflow
 enters ``needs_info`` state and does not proceed to execution.
@@ -52,7 +52,7 @@ from automation_worker.activities.task_analyzer import (  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
-# In-memory fakes — same shape as the unit-test fixtures
+# In-memory fakes - same shape as the unit-test fixtures
 # ---------------------------------------------------------------------------
 
 
@@ -90,7 +90,7 @@ _DEPT_CONFIG: dict[str, Any] = {
     "available_capabilities": ["jira_read", "jira_write"],
     "default_language": "tr",
     # Keep web_search enabled so research_with_web does NOT downgrade
-    # — but our payload uses a non-web type anyway so this is belt
+    # - but our payload uses a non-web type anyway so this is belt
     # and braces.
     "web_search_enabled": True,
     "docker_defaults": {

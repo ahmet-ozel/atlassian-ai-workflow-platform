@@ -1,4 +1,4 @@
-#
+﻿#
 # Workflow Cancel Button RBAC
 #
 """Workflow Cancel Button RBAC.
@@ -17,11 +17,11 @@ deterministically according to the RBAC matrix:
 Strategy
 --------
 Hypothesis generates random combinations of:
-1. ``role`` — one of ``{"admin", "dept_admin", "lead", "viewer", "unknown"}``.
-2. ``viewer_dept_ids`` — a frozenset of dept-id strings (0-5 elements).
-3. ``workflow_dept_id`` — a dept-id string (may or may not be in
+1. ``role`` - one of ``{"admin", "dept_admin", "lead", "viewer", "unknown"}``.
+2. ``viewer_dept_ids`` - a frozenset of dept-id strings (0-5 elements).
+3. ``workflow_dept_id`` - a dept-id string (may or may not be in
    ``viewer_dept_ids``).
-4. ``workflow_state`` — one of the known workflow states.
+4. ``workflow_state`` - one of the known workflow states.
 All sub-properties are exercised as separate ``@given`` tests so
 Hypothesis can shrink counterexamples independently.
 Implementation note
@@ -184,7 +184,7 @@ class _FakeProxy:
             if len(parts) >= 2:
                 self.cancel_calls.append(parts[-2])
 
-        # Return a dict — the cancel_workflow endpoint returns this directly.
+        # Return a dict - the cancel_workflow endpoint returns this directly.
         return {"status": "cancelled"}
 
 
@@ -252,7 +252,7 @@ _WORKFLOW_STATE_STRATEGY = st.sampled_from(
 _WORKFLOW_ID_STRATEGY = st.uuids().map(str)
 
 # ---------------------------------------------------------------------------
-#  — non-running workflow → button always disabled
+#  - non-running workflow → button always disabled
 # ---------------------------------------------------------------------------
 
 
@@ -275,7 +275,7 @@ def test_non_running_workflow_cancel_always_disabled(
     workflow_dept_id: str,
     workflow_state: str,
 ) -> None:
-    """— non-running workflow → Cancel button always disabled.
+    """- non-running workflow → Cancel button always disabled.
     For any role and any workflow state that is NOT ``"running"``, the
     Cancel button must be disabled. This is the primary guard: the
     button state is determined by ``workflow.state`` first, before any
@@ -300,7 +300,7 @@ def test_non_running_workflow_cancel_always_disabled(
     )
 
 # ---------------------------------------------------------------------------
-#  — admin role + running workflow → button always enabled
+#  - admin role + running workflow → button always enabled
 # ---------------------------------------------------------------------------
 
 
@@ -317,7 +317,7 @@ def test_admin_running_workflow_cancel_always_enabled(
     viewer_dept_ids: FrozenSet[str],
     workflow_dept_id: str,
 ) -> None:
-    """— admin role + running workflow → Cancel always enabled.
+    """- admin role + running workflow → Cancel always enabled.
     An ``admin`` can cancel any running workflow regardless of which
     dept it belongs to. The ``viewer_dept_ids`` set is irrelevant for
     the admin role."""
@@ -341,7 +341,7 @@ def test_admin_running_workflow_cancel_always_enabled(
 
 
 # ---------------------------------------------------------------------------
-#  — dept_admin in own dept + running → button enabled
+#  - dept_admin in own dept + running → button enabled
 # ---------------------------------------------------------------------------
 
 
@@ -358,7 +358,7 @@ def test_dept_admin_own_dept_running_workflow_cancel_enabled(
     viewer_dept_ids: FrozenSet[str],
     workflow_dept_id: str,
 ) -> None:
-    """— dept_admin in own dept + running → Cancel enabled.
+    """- dept_admin in own dept + running → Cancel enabled.
     A ``dept_admin`` can cancel a running workflow if and only if the
     workflow's ``dept_id`` is in their ``viewer_dept_ids`` set."""
     # Pick a dept_id that IS in the viewer set.
@@ -383,7 +383,7 @@ def test_dept_admin_own_dept_running_workflow_cancel_enabled(
     )
 
 # ---------------------------------------------------------------------------
-#  — dept_admin outside own dept + running → button disabled
+#  - dept_admin outside own dept + running → button disabled
 # ---------------------------------------------------------------------------
 
 
@@ -400,7 +400,7 @@ def test_dept_admin_outside_own_dept_running_workflow_cancel_disabled(
     viewer_dept_ids: FrozenSet[str],
     workflow_dept_id: str,
 ) -> None:
-    """— dept_admin outside own dept + running → Cancel disabled.
+    """- dept_admin outside own dept + running → Cancel disabled.
     A ``dept_admin`` must NOT be able to cancel a running workflow whose
     ``dept_id`` is NOT in their ``viewer_dept_ids`` set."""
     # Ensure the workflow dept is NOT in the viewer set.
@@ -426,7 +426,7 @@ def test_dept_admin_outside_own_dept_running_workflow_cancel_disabled(
 
 
 # ---------------------------------------------------------------------------
-#  — lead/viewer roles → button always disabled (running or not)
+#  - lead/viewer roles → button always disabled (running or not)
 # ---------------------------------------------------------------------------
 
 
@@ -447,7 +447,7 @@ def test_lead_viewer_cancel_always_disabled(
     workflow_dept_id: str,
     workflow_state: str,
 ) -> None:
-    """— lead/viewer roles → Cancel always disabled.
+    """- lead/viewer roles → Cancel always disabled.
     ``lead`` and ``viewer`` roles cannot cancel workflows regardless of
     the workflow state or dept membership. They are read-only roles."""
     decision = _cancel_rbac_decision(
@@ -470,7 +470,7 @@ def test_lead_viewer_cancel_always_disabled(
     )
 
 # ---------------------------------------------------------------------------
-#  — decision is deterministic (same inputs → same output)
+#  - decision is deterministic (same inputs → same output)
 # ---------------------------------------------------------------------------
 
 
@@ -491,7 +491,7 @@ def test_cancel_rbac_decision_is_deterministic(
     workflow_dept_id: str,
     workflow_state: str,
 ) -> None:
-    """— RBAC decision is deterministic.
+    """- RBAC decision is deterministic.
     Calling ``_cancel_rbac_decision`` twice with the same inputs must
     produce the same ``(button_enabled, http_status)`` pair. This
     confirms the decision is a pure function of its inputs with no
@@ -519,7 +519,7 @@ def test_cancel_rbac_decision_is_deterministic(
 
 
 # ---------------------------------------------------------------------------
-#  — button_enabled ↔ http_status=200 are always consistent
+#  - button_enabled ↔ http_status=200 are always consistent
 # ---------------------------------------------------------------------------
 
 
@@ -540,7 +540,7 @@ def test_button_enabled_iff_http_200(
     workflow_dept_id: str,
     workflow_state: str,
 ) -> None:
-    """— button_enabled ↔ http_status=200 are always consistent.
+    """- button_enabled ↔ http_status=200 are always consistent.
     The ``button_enabled`` flag and the ``http_status`` must always agree:
     - ``button_enabled=True`` ↔ ``http_status=200``
     - ``button_enabled=False`` ↔ ``http_status=403``
@@ -570,7 +570,7 @@ def test_button_enabled_iff_http_200(
         )
 
 # ---------------------------------------------------------------------------
-#  — cancel endpoint HTTP contract (admin path via TestClient)
+#  - cancel endpoint HTTP contract (admin path via TestClient)
 # ---------------------------------------------------------------------------
 
 
@@ -589,7 +589,7 @@ def test_admin_cancel_endpoint_returns_200(
     viewer_dept_ids: FrozenSet[str],
     workflow_dept_id: str,
 ) -> None:
-    """— admin cancel endpoint returns 200 via TestClient.
+    """- admin cancel endpoint returns 200 via TestClient.
     For an ``admin`` actor, ``POST /admin/workflows/{id}/cancel`` must
     return 200 (the proxy forwards the request and returns the upstream
     response). This exercises the full FastAPI request pipeline."""
@@ -606,7 +606,7 @@ def test_admin_cancel_endpoint_returns_200(
 
 
 # ---------------------------------------------------------------------------
-#  — full RBAC matrix exhaustive check (logic layer)
+#  - full RBAC matrix exhaustive check (logic layer)
 # ---------------------------------------------------------------------------
 
 
@@ -627,7 +627,7 @@ def test_full_rbac_matrix_is_correct(
     workflow_dept_id: str,
     workflow_state: str,
 ) -> None:
-    """— full RBAC matrix is correct for all input combinations.
+    """- full RBAC matrix is correct for all input combinations.
     This is the comprehensive matrix test. For every combination of
     ``(role, viewer_dept_ids, workflow_dept_id, workflow_state)``, the
     decision must satisfy exactly one of the four RBAC cases:

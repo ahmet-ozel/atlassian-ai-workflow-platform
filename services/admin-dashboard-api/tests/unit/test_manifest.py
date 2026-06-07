@@ -1,4 +1,4 @@
-"""Unit tests for ``src.manifest``.
+﻿"""Unit tests for ``src.manifest``.
 
 These tests validate the public manifest contract:
 * ``ManagedServiceEntry`` is frozen and exposes the seven manifest fields.
@@ -96,7 +96,7 @@ def test_load_manifest_real_workspace_returns_immutable_tuple() -> None:
     for e in entries:
         assert isinstance(e, ManagedServiceEntry)
 
-    # compose_service_name is unique — sanity check on the
+    # compose_service_name is unique - sanity check on the
     # repo-shipped manifest as well.
     names = [e.compose_service_name for e in entries]
     assert len(set(names)) == len(names)

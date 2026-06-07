@@ -1,4 +1,4 @@
-"""Admin Dashboard Setup Wizard API endpoints.
+﻿"""Admin Dashboard Setup Wizard API endpoints.
 
 Provides step-by-step guided setup for platform services.
 
@@ -63,7 +63,7 @@ async def check_add_first_department(request: Request):
     """
     pool = _get_pg_pool(request)
     if pool is None:
-        # No DB pool available — cannot verify, return current state
+        # No DB pool available - cannot verify, return current state
         step = _wizard_state["add_first_department"]
         return {"step": "add_first_department", "status": step.status.value}
 

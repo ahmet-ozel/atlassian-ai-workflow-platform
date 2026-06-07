@@ -1,4 +1,4 @@
-"""Unit tests for O5 — MCPHttpError permission-denied detection.
+﻿"""Unit tests for O5 - MCPHttpError permission-denied detection.
 
 Confluence smoke tests sporadically surface
 ``"The calling user does not have permission to view the content"`` as
@@ -15,7 +15,7 @@ from pathlib import Path
 
 
 def _ensure_worker_path() -> None:
-    """Local sys.path injection (K3-compatible) — see
+    """Local sys.path injection (K3-compatible) - see
     tests/property/test_workflow_type_parity.py for the rationale."""
     repo_root = Path(__file__).resolve().parents[2]
     src = repo_root / "workers" / "automation-worker" / "src"
@@ -63,7 +63,7 @@ def test_status_200_with_empty_detail_does_not_mark_permission() -> None:
 
 
 def test_turkish_hint_in_message() -> None:
-    """The structured hint must be human-readable Turkish — operators
+    """The structured hint must be human-readable Turkish - operators
     skimming a Jira comment shouldn't need to decode an HTTP status."""
     exc = MCPHttpError(
         "confluence_create_page",

@@ -1,4 +1,4 @@
-# `@platform/web-shared`
+﻿# `@platform/web-shared`
 
 Shared TypeScript helpers used by the web UIs in this monorepo
 (`ui/admin-dashboard` today, more later). Currently exports deeplink
@@ -26,7 +26,7 @@ npm install
 # 2. Type-check without emitting output
 npm run typecheck
 
-# 3. Build the package — emits `dist/` with `.js`, `.d.ts`, and source maps
+# 3. Build the package - emits `dist/` with `.js`, `.d.ts`, and source maps
 npm run build
 
 # 4. (Optional) Smoke-test the built output from a Node 20 REPL

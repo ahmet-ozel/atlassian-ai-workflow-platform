@@ -1,4 +1,4 @@
-"""Runner resolver activity — least-busy algorithm for multi-SSH runner pool.
+﻿"""Runner resolver activity - least-busy algorithm for multi-SSH runner pool.
 
 Provides :func:`resolve_runner`, a Temporal activity that selects the
 least-busy SSH runner assigned to a given department. The selection
@@ -144,7 +144,7 @@ async def _write_audit_event(
 ) -> None:
     """Best-effort audit event write to the admin-dashboard API.
 
-    Failure to write is logged but does not propagate — the runner
+    Failure to write is logged but does not propagate - the runner
     resolution result is more important than the audit side-effect.
     """
     url = f"{_admin_dashboard_api_url()}/api/v1/audit/events"
@@ -250,7 +250,7 @@ async def resolve_runner(dept_id: str) -> dict[str, Any]:
         await pool.close()
 
     if not runners:
-        # No active runner available — write audit and raise
+        # No active runner available - write audit and raise
         activity.logger.warning(
             "resolve_runner: no active runner assigned to dept %s", dept_id
         )

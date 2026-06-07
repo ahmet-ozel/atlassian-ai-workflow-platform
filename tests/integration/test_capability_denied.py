@@ -1,4 +1,4 @@
-"""Capability-denied webhook end-to-end integration test.
+﻿"""Capability-denied webhook end-to-end integration test.
 
 
 
@@ -15,14 +15,14 @@ empty while the webhook-layer workflow type ``noop_test`` requires
 
 The test asserts the key invariants for this denied path:
 
-1. **Workflow start is blocked** — the injected workflow client's
+1. **Workflow start is blocked** - the injected workflow client's
  ``start_workflow`` is never invoked.
-2. **HTTP response shape** — HTTP 202 with body
+2. **HTTP response shape** - HTTP 202 with body
  ``{"status": "accepted", "decision": "denied",
  "missing": [...], "issue_key": ...}``.
-3. **Jira bot comment** — a comment is posted on the issue whose body
+3. **Jira bot comment** - a comment is posted on the issue whose body
  names the missing capability and is in Turkish for operators.
-4. **Audit event** — exactly one event with
+4. **Audit event** - exactly one event with
  ``action="capability_denied"``, ``result="denied"``, the resolved
  ``dept_id`` and a ``payload`` carrying the sorted ``missing``
  capability list.
@@ -35,7 +35,7 @@ inject hand-written stubs for every collaborator (``DeptResolver``,
 ``VaultClient``, ``AuditLogger``, ``JiraCommenter``,
 ``SupportsStartWorkflow``). The pattern mirrors
 ``tests/property/test_webhook_predicates.py::TestWebhookDeptUnresolved``
-so the integration test stays self-contained — no Postgres, no Vault
+so the integration test stays self-contained - no Postgres, no Vault
 HTTP, no Temporal client. We compute a real HMAC-SHA256 signature
 against a known per-dept secret stored in the stub vault so the
 signature-verification leg succeeds and execution actually reaches
@@ -93,7 +93,7 @@ from vault_client import VaultPath  # noqa: E402
 
 @dataclass(frozen=True)
 class _StubBotSection:
-    """Empty bot section — no Jira / Bitbucket / Confluence credential.
+    """Empty bot section - no Jira / Bitbucket / Confluence credential.
 
  The capability resolver derives the empty frozenset for any dept
  whose ``bot.<svc>`` slots are all ``None``. That
@@ -301,7 +301,7 @@ def _build_app() -> tuple[
         workflow_client=workflow_client,
         jira_commenter=commenter,
         audit_logger=audit,  # type: ignore[arg-type]
-        env={},  # no SSH_HOST_*, no FIRECRAWL_ENABLED — all caps absent
+        env={},  # no SSH_HOST_*, no FIRECRAWL_ENABLED - all caps absent
         now_fn=lambda: datetime.now(timezone.utc),
     )
 

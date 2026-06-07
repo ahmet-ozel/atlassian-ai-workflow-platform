@@ -1,4 +1,4 @@
-"""State-machine tests for iteration and needs_info loop caps.
+﻿"""State-machine tests for iteration and needs_info loop caps.
 
 This module exercises :class:`AgentRunnerWorkflow`'s signal handlers
 under a Hypothesis :class:`~hypothesis.stateful.RuleBasedStateMachine`
@@ -6,21 +6,21 @@ that drives a random sequence of comment / fix / explain / needs_info
 / cancel signals. After each step the state machine asserts the three
 loop-cap invariants the spec demands:
 
-1. ``iter_count <= MAX_ITER`` always — the workflow can never advance
+1. ``iter_count <= MAX_ITER`` always - the workflow can never advance
    past the design ceiling regardless of which signals were received
    in which order (R5.1).
 2. When ``out_of_scope`` is True it is only because either
    ``iter_count >= MAX_ITER`` was reached (R5.1) or
    ``needs_info_streak >= NEEDS_INFO_MAX_STREAK`` was reached (R5.6).
 3. ``iter_warning_at_three`` is True iff the workflow ever reached
-   ``iter_count >= ITER_WARNING_THRESHOLD`` during the run (R5.7) —
+   ``iter_count >= ITER_WARNING_THRESHOLD`` during the run (R5.7) -
    once latched it stays latched, but it never flips on without
    the threshold actually being crossed.
 
 The state machine drives the workflow by calling the signal handler
 methods directly. Signals never ``await`` activities in the
-implementation — they only mutate workflow state and flip edge flags
-— so we can exercise them outside a Temporal worker once
+implementation - they only mutate workflow state and flip edge flags
+- so we can exercise them outside a Temporal worker once
 ``temporalio.workflow.now`` is stubbed with a deterministic clock.
 
 We also drain the ``_iter_warning_pending`` edge (the body normally
@@ -49,7 +49,7 @@ from hypothesis.stateful import (
 from temporalio import workflow as _temporal_workflow
 
 # ---------------------------------------------------------------------------
-# ``sys.path`` bootstrapping — the canonical workflow ships under
+# ``sys.path`` bootstrapping - the canonical workflow ships under
 # ``platform/workers/agent-runner-worker/src/agent_runner/...``. ``pytest.ini``
 # already injects every ``platform/libs/<name>/src`` onto ``sys.path``,
 # but the worker's own source tree is not pre-installed, so we add it
@@ -70,7 +70,7 @@ for _candidate in (_AGENT_RUNNER_SRC, _TEMPORAL_SHARED_SRC):
         sys.path.insert(0, _str)
 
 
-# noqa: E402 below — imports must follow the ``sys.path`` bootstrap.
+# noqa: E402 below - imports must follow the ``sys.path`` bootstrap.
 
 from agent_runner.workflows.agent_runner_workflow import (  # noqa: E402
     ITER_WARNING_THRESHOLD,
@@ -135,16 +135,16 @@ class IterationCapStateMachine(RuleBasedStateMachine):
 
     Rules
     -----
-    * :py:meth:`comment_plain` — plain comment, advances iter and
+    * :py:meth:`comment_plain` - plain comment, advances iter and
       resets ``needs_info_streak``.
-    * :py:meth:`comment_needs_info` — ``[needs_info]`` keyword
+    * :py:meth:`comment_needs_info` - ``[needs_info]`` keyword
       comment; increments the streak but does NOT advance iter
       (R5.6).
-    * :py:meth:`fix_signal` — ``[fix]`` keyword; advances iter unless
+    * :py:meth:`fix_signal` - ``[fix]`` keyword; advances iter unless
       the 60s debounce window or the diff-hash dedup blocks it.
-    * :py:meth:`explain_signal` — ``[explain]`` keyword; advances iter
+    * :py:meth:`explain_signal` - ``[explain]`` keyword; advances iter
       unless the cache hit short-circuits it.
-    * :py:meth:`cancel_signal` — cancel signal; locks out further
+    * :py:meth:`cancel_signal` - cancel signal; locks out further
       mutation (other handlers no-op once cancelled).
 
     Each rule advances the deterministic clock by a small random
@@ -171,7 +171,7 @@ class IterationCapStateMachine(RuleBasedStateMachine):
         # this clock so signal handlers consult the stub instead of
         # the real Temporal SDK call. Each state machine instance
         # gets its own clock; because state machines run sequentially
-        # within a single process, the last patch wins per instance —
+        # within a single process, the last patch wins per instance -
         # which is what we want.
         self._clock: _StubClock = _StubClock()
         _temporal_workflow.now = lambda: self._clock.value  # type: ignore[assignment]
@@ -183,7 +183,7 @@ class IterationCapStateMachine(RuleBasedStateMachine):
         # is what the production workflow observes too.
         self._wf._advance_iter_with_banner_check()
 
-        # Ghost variables — what *we* believe the workflow's history
+        # Ghost variables - what *we* believe the workflow's history
         # has been. We compute these alongside the workflow's own
         # state so the invariants can compare the latch against an
         # independently-derived ground truth.
@@ -291,7 +291,7 @@ class IterationCapStateMachine(RuleBasedStateMachine):
     def cancel_signal(self, advance_seconds: int) -> None:
         """A cancel signal latches the workflow into the cancel path.
 
-        Cancel never violates the iter cap on its own — subsequent
+        Cancel never violates the iter cap on its own - subsequent
         handlers observe ``_cancel_requested`` and short-circuit, so
         ``iter_count`` is frozen at the time of cancel.
         """
@@ -310,7 +310,7 @@ class IterationCapStateMachine(RuleBasedStateMachine):
         self._record_history()
 
     # ------------------------------------------------------------------
-    # Invariants — checked after every rule
+    # Invariants - checked after every rule
     # ------------------------------------------------------------------
 
     @invariant()
@@ -385,7 +385,7 @@ class IterationCapStateMachine(RuleBasedStateMachine):
 
 
 # ---------------------------------------------------------------------------
-# Settings — explore at least 50 examples × 30 stateful steps so the
+# Settings - explore at least 50 examples × 30 stateful steps so the
 # random signal sequences cover the cap edge densely.
 # ---------------------------------------------------------------------------
 

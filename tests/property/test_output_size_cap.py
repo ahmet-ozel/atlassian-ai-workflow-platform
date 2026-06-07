@@ -1,4 +1,4 @@
-"""Property-based tests for the output-action size cap with MinIO redirection.
+﻿"""Property-based tests for the output-action size cap with MinIO redirection.
 
 An :class:`OutputAction` whose
 JSON-encoded payload exceeds :data:`MAX_OUTPUT_BYTES` is offloaded to
@@ -29,7 +29,7 @@ payloads; tests above the cap use a single large string field whose
 length is parameterised by Hypothesis to span the boundary by a
 deterministic margin.
 
-The test never makes a real network or filesystem call — the MinIO
+The test never makes a real network or filesystem call - the MinIO
 callback is a recording stub that returns a deterministic URI built
 from its inputs.
 """
@@ -66,7 +66,7 @@ class _MinioRecorder:
     """Recording stub for the :class:`MinioCallback` protocol.
 
     Each ``__call__`` records ``(key, body)`` and returns a
-    deterministic URI derived from the key — so two calls with the
+    deterministic URI derived from the key - so two calls with the
     same key produce the same URI.
     """
 
@@ -90,7 +90,7 @@ def _run(coro):
 # Hypothesis strategies
 # ---------------------------------------------------------------------------
 
-# Workflow id strategy — the helper validates non-empty strings, so we
+# Workflow id strategy - the helper validates non-empty strings, so we
 # generate a small alphabet that is also valid in MinIO object keys to
 # avoid second-guessing the URI escape rules under test.
 _VALID_WORKFLOW_ID: Final = st.text(
@@ -101,7 +101,7 @@ _VALID_WORKFLOW_ID: Final = st.text(
 
 _VALID_IDX: Final = st.integers(min_value=0, max_value=999)
 
-# OutputAction kind/severity pair — drawn from the closed vocabulary
+# OutputAction kind/severity pair - drawn from the closed vocabulary
 # documented in :mod:`temporal_shared.messages`.  We sample (kind,
 # severity) pairs so the dataclass invariant (kind ↔ severity) holds
 # for every generated action; the cap helper preserves both fields and
@@ -119,7 +119,7 @@ _VALID_ACTION_KIND_SEVERITY: Final = st.sampled_from(
     ]
 )
 
-# Small payload strategy — total encoded size will be well below the
+# Small payload strategy - total encoded size will be well below the
 # 1 MiB cap.  We encode each generated payload through
 # :func:`measure_payload_bytes` and ``assume`` the result is small
 # enough; this keeps the strategy honest without bespoke math.
@@ -227,7 +227,7 @@ class TestRedirectReplacementAboveCap:
     """Payload > 1 MiB → action replaced, callback invoked exactly once."""
 
     @settings(
-        # Few examples — each one materialises a > 1 MiB string, so we
+        # Few examples - each one materialises a > 1 MiB string, so we
         # cap the count to keep the suite fast.  10 examples is enough
         # to exercise a range of oversize margins.
         max_examples=10,
@@ -261,7 +261,7 @@ class TestRedirectReplacementAboveCap:
           full encoded body.
         * Returns a new :class:`OutputAction` whose
           ``kind``/``severity`` mirror the input and whose payload is
-          a tuple-of-pairs exposing exactly three keys —
+          a tuple-of-pairs exposing exactly three keys -
           ``summary``, ``minio_uri``, ``size_bytes``.
         * The replacement is not the same instance as the input
           (``is not``).
@@ -319,7 +319,7 @@ class TestRedirectReplacementAboveCap:
 
 
 # ---------------------------------------------------------------------------
-# Determinism — same input twice yields the same output
+# Determinism - same input twice yields the same output
 # ---------------------------------------------------------------------------
 
 
@@ -391,7 +391,7 @@ class TestRedirectDeterminism:
 # ---------------------------------------------------------------------------
 
 
-# Strategies for the comment formatter — short ASCII strings keep the
+# Strategies for the comment formatter - short ASCII strings keep the
 # rendered output compact and the line-presence assertions sharp.
 _NAME_STR: Final = st.text(
     alphabet=st.characters(
@@ -453,7 +453,7 @@ class TestFormatFinalJiraCommentInvariants:
         non_empty = [name for name in critical_done if name]
         if non_empty:
             assert result.startswith(FINAL_COMMENT_CRITICAL_PREFIX)
-            # Single line — no separator embedded.
+            # Single line - no separator embedded.
             assert "\n" not in result
         else:
             assert result == ""
@@ -503,7 +503,7 @@ class TestFormatFinalJiraCommentInvariants:
 
         When both lists carry at least one non-empty name the
         formatter emits two lines separated by ``\\n`` with the
-        ``✅`` line first and the ``⚠️`` line second — the order
+        ``✅`` line first and the ``⚠️`` line second - the order
         pinned verbatim by the requirement text.
         """
         result = format_final_jira_comment(
@@ -529,7 +529,7 @@ class TestFormatFinalJiraCommentInvariants:
 
 
 # ---------------------------------------------------------------------------
-# Concrete examples — guard against regressions in the canonical shape
+# Concrete examples - guard against regressions in the canonical shape
 # ---------------------------------------------------------------------------
 
 
@@ -569,7 +569,7 @@ class TestFormatFinalJiraCommentExamples:
 
 
 # ---------------------------------------------------------------------------
-# Argument validation — pinned at the unit level so the property tests
+# Argument validation - pinned at the unit level so the property tests
 # can stay focused on the cap behaviour.
 # ---------------------------------------------------------------------------
 
@@ -668,7 +668,7 @@ class TestRedirectArgumentValidation:
 
 
 # ---------------------------------------------------------------------------
-# Constant pinning — guard against accidental drift of the public cap
+# Constant pinning - guard against accidental drift of the public cap
 # ---------------------------------------------------------------------------
 
 

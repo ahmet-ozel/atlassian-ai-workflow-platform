@@ -1,4 +1,4 @@
-"""Workflow → Temporal task queue registry.
+﻿"""Workflow → Temporal task queue registry.
 
 This module is the **single source of truth** for the workflow-name →
 task-queue mapping.
@@ -11,12 +11,12 @@ would silently break replay determinism.
 
 Public API
 ----------
-* :data:`WORKFLOW_TASK_QUEUES` — immutable mapping (4 entries).
-* :func:`task_queue_for` — pure function returning the queue for a
+* :data:`WORKFLOW_TASK_QUEUES` - immutable mapping (4 entries).
+* :func:`task_queue_for` - pure function returning the queue for a
   registered workflow name; raises :class:`KeyError` for unknown
   names so callers must handle the error path explicitly (no silent
   fall-through to a default queue).
-* :class:`SupportsWorkerBoot` — structural protocol that documents
+* :class:`SupportsWorkerBoot` - structural protocol that documents
   the signature worker boot scripts use when registering a worker
   with the Temporal SDK; takes a single ``task_queue`` parameter.
 
@@ -41,7 +41,7 @@ __all__ = [
 
 
 # ---------------------------------------------------------------------------
-# WORKFLOW_TASK_QUEUES — workflow-name → task-queue mapping
+# WORKFLOW_TASK_QUEUES - workflow-name → task-queue mapping
 # ---------------------------------------------------------------------------
 
 #: Workflow class name → Temporal task queue name. Wrapped in
@@ -50,17 +50,17 @@ __all__ = [
 #:
 #: Entries
 #: -------
-#: * ``"AutomationWorkflow"`` → ``"automation-tq"`` — the gateway
+#: * ``"AutomationWorkflow"`` → ``"automation-tq"`` - the gateway
 #:   workflow that receives ``signalWithStart`` from the webhook
 #:   handler and routes events to child workflows after the
 #:   capability gate.
-#: * ``"AgentRunnerWorkflow"`` → ``"agent-runner-tq"`` — hosts LLM
+#: * ``"AgentRunnerWorkflow"`` → ``"agent-runner-tq"`` - hosts LLM
 #:   and MCP activities; the iter loop, ``[fix]``/``[explain]``
 #:   cooldown, and PR/Confluence work all run here.
-#: * ``"ExecutionRunWorkflow"`` → ``"execution-runner-tq"`` — runs
+#: * ``"ExecutionRunWorkflow"`` → ``"execution-runner-tq"`` - runs
 #:   SSH/Docker test executions; isolated from the LLM workers so
 #:   agent-runner LLM bottlenecks cannot block test runs.
-#: * ``"BotBranchRetention"`` → ``"automation-tq"`` — daily cron
+#: * ``"BotBranchRetention"`` → ``"automation-tq"`` - daily cron
 #:   workflow that piggy-backs on the automation worker; defining
 #:   it in the same registry keeps the boot script declarative.
 WORKFLOW_TASK_QUEUES: Final[Mapping[str, str]] = MappingProxyType(
@@ -77,7 +77,7 @@ WORKFLOW_TASK_QUEUES: Final[Mapping[str, str]] = MappingProxyType(
 
 
 # ---------------------------------------------------------------------------
-# SupportsWorkerBoot — structural protocol for worker boot scripts
+# SupportsWorkerBoot - structural protocol for worker boot scripts
 # ---------------------------------------------------------------------------
 
 
@@ -112,7 +112,7 @@ class SupportsWorkerBoot(Protocol):
 
 
 # ---------------------------------------------------------------------------
-# task_queue_for — pure lookup helper
+# task_queue_for - pure lookup helper
 # ---------------------------------------------------------------------------
 
 
@@ -128,7 +128,7 @@ def task_queue_for(workflow_name: str) -> str:
     ----------
     workflow_name:
         Class name of the workflow (e.g. ``"AutomationWorkflow"``).
-        Case-sensitive — matches the Temporal-registered workflow
+        Case-sensitive - matches the Temporal-registered workflow
         type name.
 
     Returns

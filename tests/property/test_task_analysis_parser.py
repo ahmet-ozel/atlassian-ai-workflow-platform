@@ -1,17 +1,17 @@
-"""Tests for the LLM task-analysis JSON parser.
+﻿"""Tests for the LLM task-analysis JSON parser.
 
 For any LLM JSON response, the parser
 (``platform/workers/agent-runner-worker/src/prompts/parser.py``,
 :func:`parse_task_analysis`, raising :class:`TaskAnalysisError`) satisfies:
 
-1. **Successful parse implies whitelist** — any output of ``parse_task_analysis``
+1. **Successful parse implies whitelist** - any output of ``parse_task_analysis``
    has ``workflow_type ∈ WORKFLOW_TYPE_CAPABILITIES``.
 
-2. **Whitelist enforcement (negative)** — a ``workflow_type`` string that is
+2. **Whitelist enforcement (negative)** - a ``workflow_type`` string that is
    not in ``WORKFLOW_TYPE_CAPABILITIES.keys()`` raises
    :class:`TaskAnalysisError`.
 
-3. **Required-field enforcement** — when any of the workflow-type-specific
+3. **Required-field enforcement** - when any of the workflow-type-specific
    required fields is missing, the parser raises
    :class:`TaskAnalysisError`. The required-field list is:
 
@@ -25,11 +25,11 @@ For any LLM JSON response, the parser
    * ``multi_step``: ``{workflow_type, confidence, output_actions, children}``
    * ``noop_test``: ``{workflow_type, confidence, output_actions}``
 
-4. **Round-trip determinism** — for any payload that parses successfully,
+4. **Round-trip determinism** - for any payload that parses successfully,
    ``parse_task_analysis(format_task_analysis(t))`` returns an equivalent
    :class:`TaskAnalysis`.
 
-5. **Draft coercion** — any ``bitbucket_pr`` action has its ``draft``
+5. **Draft coercion** - any ``bitbucket_pr`` action has its ``draft``
    field coerced to ``True``.
 
 The :class:`TaskAnalysisError` symbol is the project-local equivalent of
@@ -115,7 +115,7 @@ assert set(_TYPE_SPECIFIC_REQUIRED.keys()) == set(WORKFLOW_TYPE_CAPABILITIES.key
     "Required-field map is out of sync with WORKFLOW_TYPE_CAPABILITIES."
 )
 
-#: Universal required fields — every workflow_type must carry these.
+#: Universal required fields - every workflow_type must carry these.
 _ALWAYS_REQUIRED: frozenset[str] = frozenset({
     "workflow_type", "confidence", "output_actions",
 })
@@ -224,7 +224,7 @@ def valid_task_analysis_dict(draw: st.DrawFn) -> dict:
     if "target_lang" in extras:
         result["target_lang"] = draw(st.sampled_from(["tr", "en"]))
     if "children" in extras:
-        # children for multi_step — minimal schema; we only need the
+        # children for multi_step - minimal schema; we only need the
         # field to be present.
         result["children"] = [
             {"workflow_type": draw(st.sampled_from(
@@ -314,7 +314,7 @@ class TestWorkflowTypeWhitelistRejected:
 class TestRequiredFieldsAlwaysEnforced:
     """The universal required-field set
     ``{workflow_type, confidence, output_actions}`` is enforced for every
-    workflow type — removing any one of them raises
+    workflow type - removing any one of them raises
     :class:`TaskAnalysisParseError`.
     """
 

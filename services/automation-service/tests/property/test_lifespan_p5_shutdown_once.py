@@ -1,4 +1,4 @@
-"""Shutdown closes every owned resource exactly once.
+﻿"""Shutdown closes every owned resource exactly once.
 
 For any successful run of the lifespan startup phase followed by an
 unconditional shutdown, the handler invokes ``close`` / ``aclose``
@@ -31,7 +31,7 @@ from _lifespan_fakes import (  # noqa: E402
 
 
 #: Mid-traffic actions interleaved during the ``yield`` window. Each
-#: action is a no-op (the property is structural — close-count
+#: action is a no-op (the property is structural - close-count
 #: invariance regardless of in-flight work) but the strategy still
 #: explores arbitrary orderings to catch any state leak.
 NON_FAILING_ACTIONS: tuple[str, ...] = (
@@ -49,7 +49,7 @@ async def _run_property(actions: list[str]) -> None:
         app = app_module.create_app()
         async with app_module.lifespan(app):
             for _ in actions:
-                # Mid-traffic in-flight work — no-ops here, but the
+                # Mid-traffic in-flight work - no-ops here, but the
                 # property still asserts shutdown is unaffected.
                 await asyncio.sleep(0)
 

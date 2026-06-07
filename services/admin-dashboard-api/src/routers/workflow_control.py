@@ -1,4 +1,4 @@
-"""``WorkflowControlRouter``.
+﻿"""``WorkflowControlRouter``.
 
 Admin-only Temporal workflow control surface. Lets a platform admin
 cancel a running workflow, retry a failed workflow with the same input,
@@ -8,14 +8,14 @@ filtering and pagination.
 Endpoints
 ---------
 
-* ``POST /api/v1/workflows/{workflow_id}/cancel`` — Temporal cancel
+* ``POST /api/v1/workflows/{workflow_id}/cancel`` - Temporal cancel
   signal.
-* ``POST /api/v1/workflows/{workflow_id}/retry`` — start a new workflow
+* ``POST /api/v1/workflows/{workflow_id}/retry`` - start a new workflow
   with the original ``workflow_type``, ``task_queue``, and input args
   read from the failed workflow's history.
-* ``POST /api/v1/workflows/{workflow_id}/signal`` — send a named signal
+* ``POST /api/v1/workflows/{workflow_id}/signal`` - send a named signal
   (``signal_name`` + ``payload``) to the workflow.
-* ``GET /api/v1/workflows`` — list workflows with optional ``dept_id``
+* ``GET /api/v1/workflows`` - list workflows with optional ``dept_id``
   / ``status`` filters and a ``page`` cursor; capped at 50 entries per
   page.
 
@@ -24,7 +24,7 @@ All endpoints are gated by :func:`require_admin`.
 Every mutating action emits one ``workflow_control`` audit event
 through the app's audit sink **before** the action is executed.
 Audit failures are swallowed so a Postgres hiccup
-cannot block a legitimate cancel / retry / signal — but the event
+cannot block a legitimate cancel / retry / signal - but the event
 shape mirrors the ``automation.audit_events`` row layout so the
 foundation audit pipeline can ingest the same envelope.
 
@@ -32,7 +32,7 @@ Temporal access
 ---------------
 
 The router resolves its Temporal entry point through
-``request.app.state.temporal_workflow_client`` — an object that
+``request.app.state.temporal_workflow_client`` - an object that
 implements :class:`SupportsTemporalControl` (described below). When
 the slot is ``None`` (Temporal unreachable, lifespan wiring still in
 flight) the endpoints return ``HTTP 503`` with
@@ -42,16 +42,16 @@ not ready" state instead of a stack trace.
 The :class:`SupportsTemporalControl` protocol mirrors the small set
 of operations this router needs:
 
-* ``get_workflow_description(workflow_id)`` → ``WorkflowDescription`` —
+* ``get_workflow_description(workflow_id)`` → ``WorkflowDescription`` -
   raises :class:`WorkflowNotFoundError` when the workflow is unknown.
-* ``cancel_workflow(workflow_id)`` — issue a Temporal cancel signal.
-* ``signal_workflow(workflow_id, name, payload)`` — deliver an
+* ``cancel_workflow(workflow_id)`` - issue a Temporal cancel signal.
+* ``signal_workflow(workflow_id, name, payload)`` - deliver an
   arbitrary signal.
-* ``restart_workflow(workflow_id)`` → ``RestartedWorkflow`` — read
+* ``restart_workflow(workflow_id)`` → ``RestartedWorkflow`` - read
   the original input from history and start a new workflow with the
   same ``workflow_type`` / ``task_queue`` / args.
 * ``list_workflows(dept_id, status, page, page_size, page_token)`` →
-  ``WorkflowPage`` — paginated visibility query.
+  ``WorkflowPage`` - paginated visibility query.
 
 The protocol is intentionally narrow so unit tests can ship a tiny
 in-memory stub without depending on the ``temporalio`` SDK.
@@ -218,7 +218,7 @@ class SupportsTemporalControl(Protocol):
 
     Production wires :class:`SupportsTemporalControl` against an
     adapter built on ``temporalio.client.Client``; tests inject an
-    in-memory fake. The protocol is intentionally small — every
+    in-memory fake. The protocol is intentionally small - every
     method maps 1:1 to a router endpoint so the boundary is crisp.
     """
 
@@ -302,7 +302,7 @@ router = APIRouter(
 
 
 # ---------------------------------------------------------------------------
-# Helpers — Temporal client + audit sink lookup
+# Helpers - Temporal client + audit sink lookup
 # ---------------------------------------------------------------------------
 
 
@@ -313,7 +313,7 @@ def _get_temporal_client(request: Request) -> SupportsTemporalControl:
         HTTPException(503): When the slot is ``None`` (Temporal not
             reachable, lifespan still building the client). The
             ``reason`` field tells the FE that the surface is
-            otherwise healthy — no need to render a generic 5xx page.
+            otherwise healthy - no need to render a generic 5xx page.
     """
 
     client = getattr(request.app.state, "temporal_workflow_client", None)
@@ -359,7 +359,7 @@ async def _emit_audit(
 ) -> None:
     """Write a single ``workflow_control`` audit event.
 
-    Failures are swallowed — audit hiccups must not block the
+    Failures are swallowed - audit hiccups must not block the
     underlying control action. The envelope shape mirrors the
     ``automation.audit_events`` row layout so the foundation audit
     pipeline can ingest it directly.
@@ -388,7 +388,7 @@ async def _emit_audit(
     )
     try:
         await sink.write(event)
-    except Exception as exc:  # noqa: BLE001 — audit must never block
+    except Exception as exc:  # noqa: BLE001 - audit must never block
         logger.warning(
             "workflow_control audit write failed (action=%s, wf=%s): %s",
             action_kind,
@@ -404,7 +404,7 @@ def _map_control_exception(exc: Exception, workflow_id: str) -> HTTPException:
       ``"workflow_not_found"`` ``detail`` so the FE can recognise the
       case without parsing the message.
     * :class:`WorkflowControlError` → ``502`` (upstream failure).
-    * Anything else is re-raised by the caller — FastAPI's default
+    * Anything else is re-raised by the caller - FastAPI's default
       500 handler kicks in.
     """
 
@@ -453,7 +453,7 @@ async def cancel_workflow(
 
     client = _get_temporal_client(request)
 
-    # Verify the workflow exists first — gives us a clean 404 path
+    # Verify the workflow exists first - gives us a clean 404 path
     # without needing to interpret the cancel RPC error itself.
     try:
         await client.get_workflow_description(workflow_id)
@@ -487,7 +487,7 @@ async def cancel_workflow(
         await client.cancel_workflow(workflow_id)
     except WorkflowNotFoundError as exc:
         # The describe above succeeded but the workflow disappeared
-        # between calls — surface the 404 cleanly and record the
+        # between calls - surface the 404 cleanly and record the
         # denial so the audit trail still reflects the outcome.
         await _emit_audit(
             request,
@@ -756,7 +756,7 @@ async def list_workflows(
 
     client = _get_temporal_client(request)
 
-    # Defensive cap — the Query() ``le=_MAX_PAGE_SIZE`` already enforces
+    # Defensive cap - the Query() ``le=_MAX_PAGE_SIZE`` already enforces
     # this, but the explicit ``min(...)`` keeps the contract obvious for
     # readers and protects against tests that override the dependency.
     effective_page_size = min(page_size, _MAX_PAGE_SIZE)

@@ -1,6 +1,6 @@
-"""FastAPI router tests for ``src.routers.admin_proxy`` .
+﻿"""FastAPI router tests for ``src.routers.admin_proxy`` .
 These tests wire :class:`AdminProxy` and :func:`require_auth_context`
-into a throwaway FastAPI app via dependency overrides — no real
+into a throwaway FastAPI app via dependency overrides - no real
 OIDC validator, no asyncpg pool, no upstream automation-service. The
 goal is to verify the router-level glue:
 * The catch-all path matcher covers every ``/admin/{departments,
@@ -9,7 +9,7 @@ goal is to verify the router-level glue:
   (HTTP 401) before the proxy is reached.
 * Forwarded responses bubble back through the router unchanged.
 * Non-proxied paths under ``/admin`` (specifically ``/admin/services``)
-  remain claimable by other routers — i.e. the catch-all does not
+  remain claimable by other routers - i.e. the catch-all does not
   swallow them."""
 
 from __future__ import annotations
@@ -233,7 +233,7 @@ class TestCatchAllRouting:
 
         # No router handles /admin/services in this throwaway app, so
         # FastAPI returns 404. The crucial assertion is that the
-        # proxy was NOT called — the /admin/services path is left for
+        # proxy was NOT called - the /admin/services path is left for
         # services_lifecycle to claim.
         assert response.status_code == 404
         assert proxy.calls == []

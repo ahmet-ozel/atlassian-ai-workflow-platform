@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * ExternalLinks — renders Jira issue, Bitbucket PR and Confluence page links
+ * ExternalLinks - renders Jira issue, Bitbucket PR and Confluence page links
  * extracted from the workflow's audit chain via the W3 deeplink helper.
  */
 

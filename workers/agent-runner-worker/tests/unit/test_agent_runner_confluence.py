@@ -1,28 +1,28 @@
-"""Unit tests for ``AgentRunnerWorkflow`` ``confluence_doc_*`` flows.
+﻿"""Unit tests for ``AgentRunnerWorkflow`` ``confluence_doc_*`` flows.
 
 Covers the main Confluence behaviors:
 
-    1. ``confluence_doc_create`` happy path — verifies the activity
+    1. ``confluence_doc_create`` happy path - verifies the activity
        sequence (``set_assignee_to_bot`` → ``jira_build_issue_link``
        → ``llm_generate_doc`` → ``confluence_create_page`` →
        ``jira_add_comment`` carrying the page link) and that the
        provenance footer is appended to the page body before the
        create call.
-    2. ``confluence_doc_update`` overwrite-protection skip — when
+    2. ``confluence_doc_update`` overwrite-protection skip - when
        :func:`should_skip_overwrite` fires (a non-bot user edited the
        page in the last 5 minutes) the update activity is **not**
        called, the ``confluence_overwrite_protected`` audit row is
        emitted, and a needs_info-style Jira comment is posted
        for recent human edits.
-    3. ``confluence_doc_update`` section-dedup — when a section's
+    3. ``confluence_doc_update`` section-dedup - when a section's
        content_hash is already present in the workflow's
        ``_confluence_section_hashes`` set the per-section update
        activity is skipped for that section and the
        ``confluence_section_dedup_skip`` audit row is emitted.
-    4. ``confluence_doc_update`` ``_AI_PROBE_*`` skip — a probe-titled
+    4. ``confluence_doc_update`` ``_AI_PROBE_*`` skip - a probe-titled
        page short-circuits the update path before the dedup loop
        runs; no ``confluence_update_page`` is invoked.
-    5. Provenance footer present in BOTH create and update bodies —
+    5. Provenance footer present in BOTH create and update bodies -
        the footer text from
        :func:`temporal_shared.confluence.compute_provenance_footer`
        must appear verbatim in the body passed to
@@ -35,7 +35,7 @@ The tests drive the body methods directly
 without spinning up a Temporal worker. ``temporalio.workflow``
 primitives (``execute_activity``, ``info``, ``now``) are stubbed with
 :func:`unittest.mock.patch` so the workflow body is exercised as plain
-Python — the mirroring approach already used by
+Python - the mirroring approach already used by
 ``test_agent_runner_code_change.py``.
 
 """
@@ -53,7 +53,7 @@ import pytest
 from temporalio import workflow as _temporal_workflow
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — mirrors ``test_agent_runner_code_change.py``.
+# sys.path bootstrap - mirrors ``test_agent_runner_code_change.py``.
 # ---------------------------------------------------------------------------
 
 _WORKER_ROOT: Path = Path(__file__).resolve().parents[2]
@@ -69,7 +69,7 @@ for _candidate in (_SRC_DIR, _TEMPORAL_SHARED_SRC, _MCP_CLIENT_SRC):
     if _candidate.is_dir() and _str not in sys.path:
         sys.path.insert(0, _str)
 
-# noqa: E402 below — import after sys.path bootstrap.
+# noqa: E402 below - import after sys.path bootstrap.
 
 from agent_runner.workflows.agent_runner_workflow import (  # noqa: E402
     CONFLUENCE_PROBE_PAGE_SKIPPED_AUDIT_ACTION,
@@ -203,11 +203,11 @@ def _patch_workflow_runtime(
 
     Stubs out the three Temporal primitives the body relies on:
 
-    * ``workflow.execute_activity`` — replaced with *activity_mock*.
-    * ``workflow.info`` — returns a tiny stub carrying ``workflow_id``
+    * ``workflow.execute_activity`` - replaced with *activity_mock*.
+    * ``workflow.info`` - returns a tiny stub carrying ``workflow_id``
       so :func:`should_skip_section_update` and the audit emit see a
       stable id.
-    * ``workflow.execute_child_workflow`` — replaced with a no-op
+    * ``workflow.execute_child_workflow`` - replaced with a no-op
       ``AsyncMock`` so a body that accidentally tries to start a
       child fails the test loudly via the mock's call assertion.
     """
@@ -236,7 +236,7 @@ def _activity_args(call) -> list[Any]:
     The workflow always passes activity arguments via the ``args=[...]``
     keyword so Temporal's data converter sees a homogeneous list.
     Falls back to the second positional argument when the body has
-    been called without the keyword (mostly belt-and-braces — the
+    been called without the keyword (mostly belt-and-braces - the
     workflow as written never does this).
     """
 
@@ -311,7 +311,7 @@ class TestConfluenceDocCreate:
                 f"expected {required!r} in activity sequence, got {called_names}"
             )
 
-        # Sequence invariants — assignee MUST come first; the issue
+        # Sequence invariants - assignee MUST come first; the issue
         # link must be resolved before the create call so the
         # provenance footer can be appended; jira completion comment
         # comes last.
@@ -487,7 +487,7 @@ class TestConfluenceDocUpdateOverwriteProtection:
 
         called_names = [c.args[0] for c in activity_mock.call_args_list]
 
-        # Critical invariant — no per-section update activity was
+        # Critical invariant - no per-section update activity was
         # invoked while the overwrite guard fires.
         assert "confluence_update_page" not in called_names
 
@@ -504,7 +504,7 @@ class TestConfluenceDocUpdateOverwriteProtection:
     def test_stale_human_edit_proceeds_with_update(
         self, make_wf, patched_workflow_now
     ) -> None:
-        """A human edit older than 5 minutes does NOT block — the
+        """A human edit older than 5 minutes does NOT block - the
         update path proceeds normally."""
 
         wf = make_wf()
@@ -580,7 +580,7 @@ class TestConfluenceDocUpdateSectionDedup:
             target_page_id="42",
         )
 
-        # Pre-warm the workflow's section-hash set — mimics the state
+        # Pre-warm the workflow's section-hash set - mimics the state
         # after a successful first iteration that wrote this exact
         # content.
         seen_hash = "content-hash-already-seen"
@@ -621,7 +621,7 @@ class TestConfluenceDocUpdateSectionDedup:
 
         called_names = [c.args[0] for c in activity_mock.call_args_list]
 
-        # The update activity was NOT invoked — the section was skipped.
+        # The update activity was NOT invoked - the section was skipped.
         assert "confluence_update_page" not in called_names
 
         # The dedup audit row was emitted.

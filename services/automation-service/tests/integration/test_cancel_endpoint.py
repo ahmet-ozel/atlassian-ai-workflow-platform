@@ -1,15 +1,15 @@
-"""Integration tests for ``POST /api/workflows/{workflow_id}/cancel``.
+﻿"""Integration tests for ``POST /api/workflows/{workflow_id}/cancel``.
 
 Exercises the full FastAPI router end-to-end using ``TestClient`` plus
 hand-rolled fakes for every collaborator (OIDC validator, issue
 lookup, Temporal client, audit logger). Two end-to-end paths are
 covered:
 
-* **403 path** — authenticated caller is neither the issue reporter
+* **403 path** - authenticated caller is neither the issue reporter
   nor a past assignee. The endpoint emits a single ``rbac_denied``
   audit row and responds 403; ``WorkflowHandle.cancel()`` is **not**
   called.
-* **202 path** — authenticated caller is the issue reporter (or
+* **202 path** - authenticated caller is the issue reporter (or
   a past assignee). The endpoint calls
   ``temporal_client.get_workflow_handle(workflow_id).cancel()``,
   emits a ``workflow_cancel_requested`` audit row, and responds 202
@@ -189,7 +189,7 @@ def app_with_cancel(
     audit_logger, _ = audit
 
     async def issue_lookup(workflow_id: str) -> IssueRef | None:
-        # Single workflow_id we know about — anything else => 404.
+        # Single workflow_id we know about - anything else => 404.
         if workflow_id == _WORKFLOW_ID:
             return issue_ref
         return None

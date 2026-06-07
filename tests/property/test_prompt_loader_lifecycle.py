@@ -1,4 +1,4 @@
-"""PromptLoader lifecycle property tests.
+﻿"""PromptLoader lifecycle property tests.
 
 Hypothesis-driven exercise of :class:`prompts.loader.PromptLoader`:
 
@@ -57,7 +57,7 @@ def test_validate_template_format_does_not_raise_on_arbitrary_safe_text(
         validate_template_format(safe)
     except PromptTemplateError:
         # An escaped body might still trip the unknown-placeholder
-        # check if it accidentally generates ``{{foo}}`` — we accept
+        # check if it accidentally generates ``{{foo}}`` - we accept
         # that since the property here is "the validator is total".
         pass
 

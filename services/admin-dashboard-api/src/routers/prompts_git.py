@@ -1,22 +1,22 @@
-"""REST router backing ``/admin/prompts``.
+﻿"""REST router backing ``/admin/prompts``.
 
 Implements the prompt editing endpoints:
 
-* ``GET    /admin/prompts``                   — list all tracked prompt
+* ``GET    /admin/prompts``                   - list all tracked prompt
   files with their current main-branch short SHA.
-* ``GET    /admin/prompts/{path:path}``       — read a single prompt
+* ``GET    /admin/prompts/{path:path}``       - read a single prompt
   body (defaults to the main branch; ``branch=`` override available).
-* ``POST   /admin/prompts/{path:path}/draft`` — create a fresh
+* ``POST   /admin/prompts/{path:path}/draft`` - create a fresh
   ``draft/<actor>-<ts>`` branch off main, commit the new body and
   return the draft ref.
-* ``POST   /admin/prompts/{path:path}/pr``    — open a PR from the
+* ``POST   /admin/prompts/{path:path}/pr``    - open a PR from the
   supplied draft branch into ``main``.
 
 Authentication
 --------------
 The router is gated on :func:`require_admin` (the same dependency the
 ``/admin/services`` lifecycle router uses). RBAC is intentionally
-flat — prompt edits are global concerns and only ``admin`` actors
+flat - prompt edits are global concerns and only ``admin`` actors
 may invoke any of the four endpoints. Dept-scoped prompt edits are
 out of scope for this task; the design.md table at the end of the
 "Komponent Sahipliği Özeti" lists ``/admin/prompts`` as
@@ -159,7 +159,7 @@ def _safe_relative_path(raw: str) -> str:
             detail="prompt path must not be empty",
         )
 
-    # Reject Windows drive letters and absolute POSIX paths upfront —
+    # Reject Windows drive letters and absolute POSIX paths upfront -
     # neither makes sense for a repo-relative ref.
     if raw.startswith("/") or (len(raw) >= 2 and raw[1] == ":"):
         raise HTTPException(
@@ -258,7 +258,7 @@ def _audit_event(
 def get_prompts_git_repo(request: Request) -> GitRepo:
     """Return the per-process :class:`GitRepo` singleton.
 
-    The router does not own the repo lifecycle — the lifespan hook in
+    The router does not own the repo lifecycle - the lifespan hook in
     :mod:`src.main` constructs it once via
     :func:`src.routers.prompts_git_factory.build_prompts_repo` and
     attaches it to ``app.state.prompts_repo``. When the wiring is
@@ -361,7 +361,7 @@ def get_prompts_pg_pool(request: Request) -> Any | None:
     routers also read from it). The
     dependency intentionally returns ``None`` instead of raising
     503 when the pool is missing so the sandbox-test endpoint stays
-    answerable in degraded boot states — the response simply
+    answerable in degraded boot states - the response simply
     carries ``sandbox_run_id=None`` and the follow-up promote
     endpoint will reject those calls with 404. Tests inject a fake
     via ``app.dependency_overrides[get_prompts_pg_pool]``.
@@ -400,7 +400,7 @@ async def list_prompts(
 
     The list is computed off the configured main branch (or the
     explicit ``branch=`` override) so the response always reflects
-    the production state — draft branches are deliberately not
+    the production state - draft branches are deliberately not
     surfaced here (the admin UI tracks them via the response of
     ``POST .../draft``).
     """
@@ -511,7 +511,7 @@ async def create_prompt_draft(
     2. Reject bodies larger than ``_MAX_DRAFT_BODY_BYTES``.
     3. Run ``validate_template_format(body)``. On
        failure emit ``prompt_render_failed`` and return ``422``.
-    4. Verify the path already exists on main — this router is the
+    4. Verify the path already exists on main - this router is the
        edit surface; brand-new files go through a different flow.
     5. Create ``draft/<actor>-<ts>``, ``write_file``, ``commit``.
     6. Emit ``prompt_draft_created``.
@@ -667,7 +667,7 @@ async def sandbox_test_prompt(
     The endpoint pairs a candidate prompt body with a sample user
     input and asks :class:`PromptSandbox` to issue a single LLM
     round-trip with ``cost_tag="sandbox"``. The sandbox **does not**
-    touch Atlassian — no MCP catalogue is handed to the LLM — and
+    touch Atlassian - no MCP catalogue is handed to the LLM - and
     the resulting cost row in ``shared.cost_tracking`` is filtered
     out of every dept budget aggregate by
     :class:`BudgetCapPolicy`.
@@ -681,7 +681,7 @@ async def sandbox_test_prompt(
     Steps:
 
     1. Normalise the path; reject traversal segments.
-    2. Resolve the prompt body — either from ``payload.body`` or
+    2. Resolve the prompt body - either from ``payload.body`` or
        from ``payload.branch`` (which must match the
        ``draft/<actor>-<ts>`` shape and exist locally).
     3. Validate the body's template format. A
@@ -750,7 +750,7 @@ async def sandbox_test_prompt(
         # ``body is not None`` is guaranteed by the mutual-exclusion
         # check above; the explicit assertion lets mypy follow the
         # narrowing without a ``cast``.
-        assert body is not None  # noqa: S101 — defensive, see above
+        assert body is not None  # noqa: S101 - defensive, see above
         resolved_body = body
 
     # ---- 3. Template format validation ------------------------------
@@ -777,7 +777,7 @@ async def sandbox_test_prompt(
     )
 
     # Reaching this point means :meth:`PromptSandbox.run` returned a
-    # :class:`SandboxResult` without raising — the LLM round-trip
+    # :class:`SandboxResult` without raising - the LLM round-trip
     # succeeded. ``passed=True`` is therefore the correct value for
     # the persisted row: the run is promote-eligible. (Failures
     # raise out of ``sandbox.run`` and never reach this branch, so
@@ -1515,7 +1515,7 @@ def _build_pr_description(
             sandbox_history = tuple(history_provider(draft_branch))
         except Exception as exc:  # noqa: BLE001 - history is opt-in
             logger.warning(
-                "prompt_sandbox_history(%s) raised %s — rendering "
+                "prompt_sandbox_history(%s) raised %s - rendering "
                 "PR description without sandbox table.",
                 draft_branch,
                 exc,
@@ -1535,7 +1535,7 @@ async def _safe_audit(sink: _AuditSink, event: AuditEvent) -> None:
     """Write ``event`` through ``sink`` without ever raising.
 
     Audit-write failures must never mask the underlying request
-    outcome (the same invariant the AdminProxy enforces — see
+    outcome (the same invariant the AdminProxy enforces - see
     :meth:`src.proxy.AdminProxy._emit_rbac_denied`). The router
     already returns the success / failure shape by the time this
     helper runs; a sink failure is logged and swallowed.
@@ -1543,7 +1543,7 @@ async def _safe_audit(sink: _AuditSink, event: AuditEvent) -> None:
 
     try:
         await sink.write(event)
-    except Exception as exc:  # noqa: BLE001 — never raise from audit
+    except Exception as exc:  # noqa: BLE001 - never raise from audit
         logger.warning(
             "prompts audit sink raised: action=%s actor=%s err=%s",
             event.action,
@@ -1566,7 +1566,7 @@ async def _safe_audit(sink: _AuditSink, event: AuditEvent) -> None:
 _INLINE_BODY_BRANCH_SENTINEL: str = "__inline_body__"
 
 
-#: ``cost_usd`` on the migration column is ``NUMERIC(10, 4)`` — wider
+#: ``cost_usd`` on the migration column is ``NUMERIC(10, 4)`` - wider
 #: than necessary but tighter than the ``NUMERIC(12, 6)`` used on
 #: ``shared.cost_tracking``. We pass the Decimal through asyncpg
 #: which casts it server-side, so no rounding is needed at the
@@ -1610,7 +1610,7 @@ async def _record_sandbox_run(
     Returns the inserted ``id`` as a string (UUID) when the write
     succeeds, ``None`` when the pool is missing or the INSERT
     fails. Failures are swallowed so the sandbox-test response
-    still surfaces the LLM result to the caller — the persisted
+    still surfaces the LLM result to the caller - the persisted
     record is only required for the follow-up promote endpoint
     workflow. When this helper returns ``None`` the promote
     endpoint will reject the chained call with 404.
@@ -1628,7 +1628,7 @@ async def _record_sandbox_run(
         sample_input: Sample user input forwarded to the LLM.
         prompt_body: The system prompt body that was tested.
         result: The :class:`SandboxResult` from
-            :meth:`PromptSandbox.run` — duck-typed on
+            :meth:`PromptSandbox.run` - duck-typed on
             ``response_text``, ``token_in``, ``token_out``,
             ``cost_usd``.
         passed: Whether the run is considered promote-eligible
@@ -1665,7 +1665,7 @@ async def _record_sandbox_run(
                 passed,
                 actor_id,
             )
-    except Exception as exc:  # noqa: BLE001 — soft-fail per ops policy
+    except Exception as exc:  # noqa: BLE001 - soft-fail per ops policy
         logger.warning(
             "prompt_sandbox_runs INSERT failed; sandbox response "
             "still returned to caller (prompt_path=%s actor=%s "
@@ -1678,7 +1678,7 @@ async def _record_sandbox_run(
         return None
 
     if row_id is None:
-        # Defence-in-depth — ``RETURNING id`` should always produce
+        # Defence-in-depth - ``RETURNING id`` should always produce
         # a value; if a fake or future pool returns ``None`` we
         # treat it as a failed write rather than emitting a NULL
         # ``sandbox_run_id`` that the promote endpoint cannot

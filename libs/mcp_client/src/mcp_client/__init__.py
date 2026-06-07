@@ -1,4 +1,4 @@
-"""mcp_client — MCP outbound wrapper with single-source enforcement.
+﻿"""mcp_client - MCP outbound wrapper with single-source enforcement.
 
 Re-exports the public API so callers can simply do::
 

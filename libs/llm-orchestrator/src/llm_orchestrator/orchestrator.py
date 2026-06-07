@@ -1,4 +1,4 @@
-"""``LlmOrchestrator`` — tool-call loop with retry + provider fallback.
+﻿"""``LlmOrchestrator`` - tool-call loop with retry + provider fallback.
 
 Implements the tool-call loop with activity-level token cap fail-fast,
 429 exponential backoff with three retries, and vLLM downtime fallback
@@ -22,17 +22,17 @@ through the :class:`LlmOrchestratorLike` Protocol declared in
 
 The terminal SSE events the generator may emit are:
 
-* ``done`` — the LLM finished without hitting any limit.
-* ``token_cap_exceeded`` — cumulative tokens exceeded ``token_cap``;
+* ``done`` - the LLM finished without hitting any limit.
+* ``token_cap_exceeded`` - cumulative tokens exceeded ``token_cap``;
   no further events fire after this.
-* ``rate_limit_exhausted`` — three consecutive ``RateLimitError``\\s
+* ``rate_limit_exhausted`` - three consecutive ``RateLimitError``\\s
   from the active provider; the 4th attempt
   is **never** made.
-* ``fallback_provider_active`` — a non-terminal banner event emitted
+* ``fallback_provider_active`` - a non-terminal banner event emitted
   before the orchestrator switches from the primary (vLLM) to the
   fallback provider (OpenAI). The generator continues to yield
   events from the fallback provider after this banner.
-* ``error`` — any other unhandled provider exception. The payload
+* ``error`` - any other unhandled provider exception. The payload
   carries ``{"reason": "<exception class>"}``.
 
 Tests under
@@ -218,7 +218,7 @@ class LlmOrchestrator:
         used_tokens = 0
         attempts_429 = 0
         tool_iterations = 0
-        # Mutable working history — tool_result rows are appended so
+        # Mutable working history - tool_result rows are appended so
         # the next provider call sees them.
         working_history: list[Message] = list(history)
 
@@ -277,7 +277,7 @@ class LlmOrchestrator:
                         # Forward ``tool_call`` to the consumer's
                         # write-action intercept BEFORE invoking the
                         # tool. The handler decides whether to dispatch
-                        # via ``on_tool_call`` — we surface the call as
+                        # via ``on_tool_call`` - we surface the call as
                         # an SSE event, await the consumer's callback
                         # if they choose to dispatch, and emit
                         # ``tool_result`` accordingly.
@@ -338,7 +338,7 @@ class LlmOrchestrator:
                         yield SseEvent(type="done", payload={})
                         return
 
-                # Provider stream finished without a final marker —
+                # Provider stream finished without a final marker -
                 # treat as ``done`` so callers always see a terminal
                 # event.
                 if yielded_tool_call:
@@ -364,7 +364,7 @@ class LlmOrchestrator:
                 if _is_provider_unavailable(exc):
                     # Switch to fallback when
                     # primary has been down ≥60s. Otherwise the
-                    # exception **propagates** — the oracle in
+                    # exception **propagates** - the oracle in
                     # ``test_llm_retry_fallback.py`` returns ``None``
                     # for the sub-threshold branch, asserting that no
                     # SSE terminal event fires and a Python exception
@@ -388,7 +388,7 @@ class LlmOrchestrator:
                         # NB: do NOT reset ``attempts_429`` here. The
                         # oracle in ``test_llm_retry_fallback.py`` (the
                         # ``_expected_terminal_event`` helper) carries
-                        # the counter across the switch — the invariant
+                        # the counter across the switch - the invariant
                         # is "three consecutive 429s anywhere
                         # in the run terminate", regardless of which
                         # provider produced them.
@@ -403,7 +403,7 @@ class LlmOrchestrator:
                     )
                     raise
 
-                # Anything else is a hard failure — surface as
+                # Anything else is a hard failure - surface as
                 # ``error`` SSE so the consumer can show a banner.
                 _LOG.warning(
                     "llm_orchestrator unexpected exception",
@@ -430,7 +430,7 @@ class LlmOrchestrator:
 def _serialize_tool_result(result: Any) -> str:
     """Best-effort string projection of a tool result for the audit history.
 
-    The orchestrator does not parse the result — it only forwards
+    The orchestrator does not parse the result - it only forwards
     a string-ish view to the next LLM iteration. The provider's
     own tool-call protocol is responsible for re-marshalling the
     string back into a structured payload if needed.
@@ -446,7 +446,7 @@ def _serialize_tool_result(result: Any) -> str:
             value = serialise()
             if isinstance(value, str):
                 return value
-        except Exception:  # noqa: BLE001 — fall back to repr
+        except Exception:  # noqa: BLE001 - fall back to repr
             pass
     return repr(result)
 

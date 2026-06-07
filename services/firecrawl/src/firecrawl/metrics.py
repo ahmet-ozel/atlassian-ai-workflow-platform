@@ -1,15 +1,15 @@
-"""In-process counters for the egress allowlist enforcement layer.
+﻿"""In-process counters for the egress allowlist enforcement layer.
 
-The wrapper is intentionally lightweight — there is no Prometheus client
+The wrapper is intentionally lightweight - there is no Prometheus client
 dependency yet. Counters are exposed via ``GET /metrics`` in plain text so
 they are scrape-able by any monitoring stack (Prometheus, OTel collector,
 or a simple cron job).
 
 The two named counters are part of the public observability contract:
 
-* ``firecrawl_egress_allowed_total`` — number of requests whose host
+* ``firecrawl_egress_allowed_total`` - number of requests whose host
   passed the allowlist.
-* ``firecrawl_egress_denied_total`` — number of requests rejected with
+* ``firecrawl_egress_denied_total`` - number of requests rejected with
   HTTP 403 ``egress_denied``.
 """
 

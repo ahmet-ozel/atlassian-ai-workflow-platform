@@ -1,4 +1,4 @@
-"""invariant for credential leak invariant.
+﻿"""invariant for credential leak invariant.
 
 
 
@@ -183,7 +183,7 @@ _env_paths = st.one_of(
 
 
 # ---------------------------------------------------------------------------
-# invariant: Credential leak invariant — gitignore coverage
+# invariant: Credential leak invariant - gitignore coverage
 # ---------------------------------------------------------------------------
 
 
@@ -197,7 +197,7 @@ _env_paths = st.one_of(
 )
 @given(path=_env_paths)
 def test_credential_paths_are_gitignored(path: str) -> None:
-    """invariant — every.env-pattern path is covered by.gitignore.
+    """invariant - every.env-pattern path is covered by.gitignore.
 
 
 
@@ -270,7 +270,7 @@ _SENSITIVE_PATTERNS = (".env", "credentials.md")
 )
 @given(data=st.data())
 def test_git_status_has_no_credential_files(data: st.DataObject) -> None:
-    """invariant — git status reports no credential file matches.
+    """invariant - git status reports no credential file matches.
 
 
 
@@ -319,7 +319,7 @@ def test_git_status_has_no_credential_files(data: st.DataObject) -> None:
 
 
 def test_gitignore_contains_required_credential_patterns() -> None:
-    """invariant —.gitignore contains all required credential patterns.
+    """invariant -.gitignore contains all required credential patterns.
 
 
 

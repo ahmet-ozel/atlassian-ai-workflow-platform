@@ -1,6 +1,6 @@
-"""Pure helper functions for infrastructural decisions.
+﻿"""Pure helper functions for infrastructural decisions.
 
-All functions in this module are **pure** — they perform no I/O and have
+All functions in this module are **pure** - they perform no I/O and have
 no side effects. They encode simple truth tables and coercion rules.
 
 Functions:

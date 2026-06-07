@@ -1,4 +1,4 @@
-"""Task Creator Bot Assignee Card tri-state rendering
+﻿"""Task Creator Bot Assignee Card tri-state rendering
 and graceful degradation.
 
 Background
@@ -9,11 +9,11 @@ Assignee Info Card" below the dept switcher widget. The card fetches
 data from ``GET /api/dept/{id}/bot-info`` and renders one of three
 visual states:
 
-(a) **Green badges** — All credentials present and probe status is
+(a) **Green badges** - All credentials present and probe status is
     ``"ok"`` for every bot entry. Each service shows ✅.
-(b) **Red warning** — No bot credentials at all (``bots`` list is
+(b) **Red warning** - No bot credentials at all (``bots`` list is
     empty). Shows error message + link to Credentials page.
-(c) **Yellow warning** — At least one credential exists but its probe
+(c) **Yellow warning** - At least one credential exists but its probe
     status is not ``"ok"`` (e.g. ``"failed"``, ``"timeout"``). Shows
     warning message + admin-dashboard /security deep link.
 
@@ -47,7 +47,7 @@ import httpx
 import pytest
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — expose the streamlit-app components so we can
+# sys.path bootstrap - expose the streamlit-app components so we can
 # import the bot_assignee_card module's helpers directly.
 # ---------------------------------------------------------------------------
 
@@ -80,7 +80,7 @@ _ACCOUNT_ID_DISPLAY_LEN: int = 8
 def _truncate_account_id(account_id: str | None) -> str:
     """Return first 8 chars + ellipsis, or placeholder if empty."""
     if not account_id:
-        return "—"
+        return "-"
     if len(account_id) <= _ACCOUNT_ID_DISPLAY_LEN:
         return account_id
     return f"{account_id[:_ACCOUNT_ID_DISPLAY_LEN]}…"
@@ -99,11 +99,11 @@ def determine_card_state(
     """Determine the visual state of the bot assignee card.
 
     Returns one of:
-        - "unavailable" — data is None (API unreachable)
-        - "no_credentials" — bots list is empty (red warning)
-        - "probe_failure" — at least one bot has probe_status != "ok"
+        - "unavailable" - data is None (API unreachable)
+        - "no_credentials" - bots list is empty (red warning)
+        - "probe_failure" - at least one bot has probe_status != "ok"
           and != "not_probed" (yellow warning)
-        - "all_ok" — all bots have probe_status == "ok" (green badges)
+        - "all_ok" - all bots have probe_status == "ok" (green badges)
 
     This mirrors the branching logic in ``render_bot_assignee_card``.
     """
@@ -232,7 +232,7 @@ _probe_failure_bot_info = st.builds(
 
 
 # ---------------------------------------------------------------------------
-# Task Creator Assignee Card — Green Badges (State A)
+# Task Creator Assignee Card - Green Badges (State A)
 # ---------------------------------------------------------------------------
 
 
@@ -311,7 +311,7 @@ class TestAssigneeCardAllOk:
 
 
 # ---------------------------------------------------------------------------
-# Task Creator Assignee Card — Red Warning (State B)
+# Task Creator Assignee Card - Red Warning (State B)
 # ---------------------------------------------------------------------------
 
 
@@ -362,7 +362,7 @@ class TestAssigneeCardNoCredentials:
 
 
 # ---------------------------------------------------------------------------
-# Task Creator Assignee Card — Yellow Warning (State C)
+# Task Creator Assignee Card - Yellow Warning (State C)
 # ---------------------------------------------------------------------------
 
 
@@ -536,8 +536,8 @@ class TestAssigneeCardEdgeCases:
 
     def test_truncate_account_id_empty(self) -> None:
         """Empty account_id returns placeholder."""
-        assert _truncate_account_id("") == "—"
-        assert _truncate_account_id(None) == "—"
+        assert _truncate_account_id("") == "-"
+        assert _truncate_account_id(None) == "-"
 
     def test_probe_badge_ok(self) -> None:
         """Probe status 'ok' returns green badge."""
@@ -629,7 +629,7 @@ def simulate_render_bot_identity_card(data: dict[str, Any] | None) -> dict[str, 
         }
 
     account_id: str = jira_bot.get("account_id", "")
-    username: str = jira_bot.get("username", "—")
+    username: str = jira_bot.get("username", "-")
     probe_status: str = jira_bot.get("probe_status", "not_probed")
     badge: str = _identity_get_probe_badge(probe_status)
 
@@ -843,7 +843,7 @@ class TestBotInfoCardRenderingCompleteness:
 
 
 # ---------------------------------------------------------------------------
-# Task Creator Assignee Card — State Exhaustiveness
+# Task Creator Assignee Card - State Exhaustiveness
 # ---------------------------------------------------------------------------
 
 
@@ -1177,7 +1177,7 @@ class TestBotInfoGracefulDegradation:
 
             result = render_bot_identity_card(dept_id, api_base)
 
-            # Task Creator remains functional — returns None (assignee empty)
+            # Task Creator remains functional - returns None (assignee empty)
             assert result is None
 
             # Warning message displayed
@@ -1265,11 +1265,11 @@ class TestBotInfoGracefulDegradation:
 
             result = render_bot_identity_card("payment-dept", "http://localhost:8081")
 
-            # Returns None — Task Creator uses this to decide assignee pre-fill
+            # Returns None - Task Creator uses this to decide assignee pre-fill
             # None means "don't pre-fill" → field remains empty but usable
             assert result is None
 
-            # The function does NOT raise — it degrades gracefully
+            # The function does NOT raise - it degrades gracefully
             # st.warning is called (not st.error or st.exception)
             mock_st.warning.assert_called()
             mock_st.error.assert_not_called()

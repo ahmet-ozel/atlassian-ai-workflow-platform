@@ -1,4 +1,4 @@
-"""Integration smoke — cascade healthcheck (`ops work` the implementation).
+﻿"""Integration smoke - cascade healthcheck (`ops work` the implementation).
 
 Drives ``/admin/healthcheck/aggregate`` and asserts the response
 shape carries ``services`` (mapping of name → status) and

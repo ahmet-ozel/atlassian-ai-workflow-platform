@@ -1,5 +1,5 @@
-"""
-Test 04: Setup Wizard Steps 1-3 — Vault, PostgreSQL, Temporal.
+﻿"""
+Test 04: Setup Wizard Steps 1-3 - Vault, PostgreSQL, Temporal.
 
 Validates that the Playwright MCP browser automation can click through the
 first three infrastructure steps of the Setup Wizard, each step transitions
@@ -343,7 +343,7 @@ class TestWizardStep1Vault:
         completion = _wait_for_step_completion(step_info["name"], step_info["timeout"])
 
         if not completion["completed"]:
-            # Step didn't complete via API polling — this may be expected
+            # Step didn't complete via API polling - this may be expected
             # if the wizard requires Playwright MCP browser interaction.
             # Record the state for evidence and skip with explanation.
             pytest.skip(

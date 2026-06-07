@@ -1,4 +1,4 @@
-"""Credential Injector activity module for the execution-runner-worker.
+﻿"""Credential Injector activity module for the execution-runner-worker.
 
 Provides :func:`inject_git_credentials` and :func:`cleanup_git_credentials`,
 Temporal activities that manage Bitbucket git credentials on the SSH runner.
@@ -15,7 +15,7 @@ Credential Masking:
     log filter.
 
 Retry Policy (caller-configured):
-    max 2 retries, 5s backoff — applied via Temporal RetryPolicy on the
+    max 2 retries, 5s backoff - applied via Temporal RetryPolicy on the
     activity options in the calling workflow.
 """
 
@@ -682,7 +682,7 @@ async def cleanup_git_credentials(workflow_id: str) -> None:
             elapsed,
             exc.cause,
         )
-    except Exception as exc:  # noqa: BLE001 — best-effort cleanup
+    except Exception as exc:  # noqa: BLE001 - best-effort cleanup
         elapsed = time.monotonic() - cleanup_start
         activity.logger.warning(
             "Credential cleanup unexpected error for workflow=%s "

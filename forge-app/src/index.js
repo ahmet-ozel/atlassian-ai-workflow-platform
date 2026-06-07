@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Forge function entrypoint for the AI Bot Task add-on.
  *
  * This is an intentionally minimal placeholder. The real implementation
@@ -6,11 +6,11 @@
  *
  * Two handlers are exported:
  *
- *   handler             — main entrypoint registered by `function.ai-bot-task-handler`.
+ *   handler             - main entrypoint registered by `function.ai-bot-task-handler`.
  *                         Today it just echoes the Forge invocation context so the
  *                         add-on can be installed and smoke-tested end-to-end.
  *
- *   populateHedefRepo   — option-resolver for the `Hedef Repo` custom field.
+ *   populateHedefRepo   - option-resolver for the `Hedef Repo` custom field.
  *                         The dropdown options are department-specific and must
  *                         be loaded at runtime from the platform's department
  *                         configuration. The placeholder returns an empty list

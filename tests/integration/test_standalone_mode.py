@@ -1,4 +1,4 @@
-"""Integration smoke test: Standalone Mode build and run for one HTTP service
+﻿"""Integration smoke test: Standalone Mode build and run for one HTTP service
 and one Temporal worker.
 
 Validates the Standalone Mode guarantees:
@@ -46,7 +46,7 @@ For the **HTTP service**:
  port (8080 is taken by ``automation-service`` in the stack itself).
 4. Poll ``GET http://localhost:18080/healthz`` until it returns 200
  within a bounded timeout. The endpoint is the only contract the
- project guarantees in isolation — ``/readyz`` would also return
+ project guarantees in isolation - ``/readyz`` would also return
  200 today because ``Settings.dependencies_reachable`` is a stub
   that returns ``True`` unconditionally; future dependency checks can tighten
  this once the readiness probe wires up real dependency checks.
@@ -218,7 +218,7 @@ def _docker_build(component_dir: Path, image_tag: str) -> subprocess.CompletedPr
     """``docker build -t <image_tag> .`` inside ``component_dir``.
 
  The build context is the Component directory itself (no parent
- traversal) — Standalone Mode (the invariant) requires that
+ traversal) - Standalone Mode (the invariant) requires that
  ``docker build .`` works from inside the Component folder without
  any ``..`` escape.
  """

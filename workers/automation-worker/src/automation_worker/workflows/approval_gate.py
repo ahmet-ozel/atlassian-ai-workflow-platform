@@ -1,11 +1,11 @@
-"""``ApprovalGateWorkflow`` — signal-based approval waiting mechanism.
+﻿"""``ApprovalGateWorkflow`` - signal-based approval waiting mechanism.
 
 Implements a Temporal workflow that blocks commit operations when
 modified files match department-configured ``approval_required_paths``
 regex patterns. The workflow waits for an authorized user to signal
 ``[approve]`` or ``[reject]`` via Jira comment, with a 4-hour timeout.
 
-Responsibilities (design.md §8 "Approval Gate" and –11.8):
+Responsibilities (design.md §8 "Approval Gate" and -11.8):
 
 1. Match commit file paths against ``approval_required_paths`` regex
  patterns from department configuration.
@@ -22,7 +22,7 @@ Responsibilities (design.md §8 "Approval Gate" and –11.8):
 9. Log all events to audit log (event type, matched paths, approver).
 
 Determinism contract: The workflow body uses only Temporal-deterministic
-primitives — ``workflow.now``, ``workflow.execute_activity``,
+primitives - ``workflow.now``, ``workflow.execute_activity``,
 signal handlers, and ``workflow.wait_condition``. No ``random`` /
 ``uuid.uuid4`` / ``os.environ`` / direct I/O.
 
@@ -48,7 +48,7 @@ from temporalio.common import RetryPolicy
 # Constants
 # ---------------------------------------------------------------------------
 
-#: Timeout for the approval gate — 4 hours.
+#: Timeout for the approval gate - 4 hours.
 APPROVAL_TIMEOUT: Final[timedelta] = timedelta(hours=4)
 
 #: Activity name for posting Jira comments.
@@ -130,7 +130,7 @@ def match_approval_paths(
  pattern. Uses ``re.search`` so patterns can match anywhere in
  the file path.
 
- This is a pure function — no side effects, deterministic output..
+ This is a pure function - no side effects, deterministic output..
  """
 
     if not approval_required_paths or not commit_files:
@@ -189,7 +189,7 @@ def _format_approval_request_comment(matched_paths: list[str]) -> str:
 
     paths_list = "\n".join(f"  • `{p}`" for p in matched_paths)
     return (
-        "🔒 **Onay Gerekli — Hassas Dosya Değişikliği**\n\n"
+        "🔒 **Onay Gerekli - Hassas Dosya Değişikliği**\n\n"
         "Aşağıdaki dosyalar onay gerektiren yollarda değişiklik "
         "içermektedir:\n\n"
         f"{paths_list}\n\n"
@@ -270,10 +270,10 @@ class ApprovalGateWorkflow:
         # Parse the decision from the comment text
         parsed = parse_approval_decision(decision)
         if parsed is None:
-            # Comment doesn't contain [approve] or [reject] — ignore
+            # Comment doesn't contain [approve] or [reject] - ignore
             return
 
-        # Check authorization — only process from authorized approvers
+        # Check authorization - only process from authorized approvers
         # The approvers list is set during run and accessed here.
         # Since signals can arrive before run sets _approvers,
         # we store the signal data and let the wait_condition in run
@@ -290,7 +290,7 @@ class ApprovalGateWorkflow:
  3. If no matches, skip check and continue.
  4. Post Jira comment with matched paths.
  5. Log "requested" event to audit.
- 6. Wait for signal or timeout (–11.6).
+ 6. Wait for signal or timeout (-11.6).
  7. Process result and log event.
  """
 
@@ -298,7 +298,7 @@ class ApprovalGateWorkflow:
         if not inp.approval_required_paths:
             workflow.logger.info(
                 "ApprovalGateWorkflow: No approval_required_paths "
-                "configured for dept %s — skipping approval check.",
+                "configured for dept %s - skipping approval check.",
                 inp.dept_id,
             )
             return ApprovalGateResult(
@@ -313,11 +313,11 @@ class ApprovalGateWorkflow:
             inp.commit_files, inp.approval_required_paths
         )
 
-        # No matches — no approval needed, continue directly
+        # No matches - no approval needed, continue directly
         if not matched_paths:
             workflow.logger.info(
                 "ApprovalGateWorkflow: No files matched "
-                "approval_required_paths for %s — continuing.",
+                "approval_required_paths for %s - continuing.",
                 inp.issue_key,
             )
             return ApprovalGateResult(
@@ -359,7 +359,7 @@ class ApprovalGateWorkflow:
             if not is_authorized_approver(
                 self._decision_user_id or "", inp.approvers
             ):
-                # Unauthorized — reset and keep waiting
+                # Unauthorized - reset and keep waiting
                 workflow.logger.info(
                     "ApprovalGateWorkflow: Ignoring signal from "
                     "unauthorized user %s for %s.",
@@ -417,7 +417,7 @@ class ApprovalGateWorkflow:
         decision = self._decision
 
         if decision == "approve":
-            #: Approved — continue workflow
+            #: Approved - continue workflow
             workflow.logger.info(
                 "ApprovalGateWorkflow: Approved by %s for %s.",
                 approver_id,
@@ -447,7 +447,7 @@ class ApprovalGateWorkflow:
             )
 
         else:
-            #: Rejected — cancel workflow
+            #: Rejected - cancel workflow
             workflow.logger.info(
                 "ApprovalGateWorkflow: Rejected by %s for %s.",
                 approver_id,
@@ -495,7 +495,7 @@ class ApprovalGateWorkflow:
         except Exception:  # noqa: BLE001
             workflow.logger.warning(
                 "ApprovalGateWorkflow: jira_add_comment failed for %s "
-                "— continuing",
+                "- continuing",
                 issue_key,
             )
 
@@ -529,7 +529,7 @@ class ApprovalGateWorkflow:
         except Exception:  # noqa: BLE001
             workflow.logger.warning(
                 "ApprovalGateWorkflow: audit_write failed for %s "
-                "(event=%s) — continuing",
+                "(event=%s) - continuing",
                 issue_key,
                 event_type,
             )

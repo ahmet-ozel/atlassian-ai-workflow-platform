@@ -1,4 +1,4 @@
-"""Unit tests for ``temporal_shared.confluence_dedup``.
+﻿"""Unit tests for ``temporal_shared.confluence_dedup``.
 
 Validates the pure skip-decision predicates
 :func:`should_skip_section_update`, :func:`should_skip_overwrite`,
@@ -98,7 +98,7 @@ class TestSkipDecisionShape:
         """
 
         Conversely, the proceed branch must not carry an audit
-        action — successful writes are audited by the activity, not
+        action - successful writes are audited by the activity, not
         by this skip path.
         """
         with pytest.raises(ValueError, match="must not carry an audit_event"):
@@ -107,7 +107,7 @@ class TestSkipDecisionShape:
     def test_skip_decision_is_frozen(self) -> None:
         """
 
-        Frozen dataclass — assignment after construction must raise.
+        Frozen dataclass - assignment after construction must raise.
         """
         decision = SkipDecision(skip=False, audit_event=None)
         with pytest.raises(Exception):  # FrozenInstanceError subclasses Exception
@@ -115,7 +115,7 @@ class TestSkipDecisionShape:
 
 
 # ---------------------------------------------------------------------------
-# should_skip_section_update — happy paths
+# should_skip_section_update - happy paths
 # ---------------------------------------------------------------------------
 
 
@@ -132,7 +132,7 @@ class TestShouldSkipSectionUpdate:
     def test_unrelated_entries_do_not_match(self) -> None:
         """
 
-        The four-tuple is the natural key — a different page id /
+        The four-tuple is the natural key - a different page id /
         section path / hash must not falsely dedup.
         """
         table = {
@@ -219,19 +219,19 @@ class TestShouldSkipSectionUpdate:
         """
 
         Calling twice with the same inputs produces the same
-        :class:`SkipDecision`.  The hash table is read-only — the
+        :class:`SkipDecision`.  The hash table is read-only - the
         caller is responsible for inserting after a successful write.
         """
         table: set[tuple[str, str, str, str]] = set()
         first = should_skip_section_update(*self._KEY, table)
         second = should_skip_section_update(*self._KEY, table)
         assert first == second == SkipDecision(skip=False, audit_event=None)
-        # The hash table is untouched — inserts are the caller's job.
+        # The hash table is untouched - inserts are the caller's job.
         assert table == set()
 
 
 # ---------------------------------------------------------------------------
-# should_skip_overwrite — happy paths
+# should_skip_overwrite - happy paths
 # ---------------------------------------------------------------------------
 
 
@@ -274,7 +274,7 @@ class TestShouldSkipOverwrite:
         """
 
         An edit older than the 5-minute window is no longer
-        considered "ongoing collaboration" — the bot proceeds.
+        considered "ongoing collaboration" - the bot proceeds.
         """
         decision = should_skip_overwrite(
             last_editor_account_id="human-1",
@@ -350,7 +350,7 @@ class TestShouldSkipOverwrite:
         """
 
         Generators are accepted (the helper freezes them internally
-        before the membership check) — the workflow may pass a lazy
+        before the membership check) - the workflow may pass a lazy
         view over ``departments.json``.
         """
         decision = should_skip_overwrite(
@@ -492,7 +492,7 @@ class TestIsProbePage:
     def test_close_but_not_prefix(self) -> None:
         """
 
-        Titles that contain the prefix mid-string must not match —
+        Titles that contain the prefix mid-string must not match -
         only the start matters.
         """
         assert is_probe_page("Notes on _AI_PROBE_1234_DELETE_ME") is False
@@ -504,7 +504,7 @@ class TestIsProbePage:
         """
 
         ``None`` and other non-string inputs return ``False`` rather
-        than raising — the helper is used inline in filter chains.
+        than raising - the helper is used inline in filter chains.
         """
         assert is_probe_page(None) is False  # type: ignore[arg-type]
 
@@ -534,7 +534,7 @@ class TestPurity:
         forbidden = ("import time", "import random", "import uuid")
         for needle in forbidden:
             assert needle not in source, (
-                f"confluence_dedup must not import {needle!r} — it would "
+                f"confluence_dedup must not import {needle!r} - it would "
                 "break replay determinism when invoked from a Temporal "
                 "workflow."
             )

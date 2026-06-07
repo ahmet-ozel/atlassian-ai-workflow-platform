@@ -1,4 +1,4 @@
-"""Unit tests for the ``ExecutionRunWorkflow`` output_actions wire-in
+﻿"""Unit tests for the ``ExecutionRunWorkflow`` output_actions wire-in
 inside :class:`AutomationWorkflow`.
 
 The gateway ``AutomationWorkflow`` dispatches
@@ -18,7 +18,7 @@ behind ``workflow.execute_activity`` / ``start_child_workflow`` and is
 covered by the existing replay-determinism integration tests.
 
 * Empty :attr:`LlmAnalysisResult.output_actions` keeps the legacy
-  dispatch-and-forget contract — the gateway never awaits the child
+  dispatch-and-forget contract - the gateway never awaits the child
   (regression guard).
 * When the analyser surfaces a ``jira_attachment`` action with no
   explicit MinIO references the gateway synthesises ``bucket`` /
@@ -43,7 +43,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — mirror ``test_output_actions.py``.
+# sys.path bootstrap - mirror ``test_output_actions.py``.
 # ---------------------------------------------------------------------------
 
 _WORKER_ROOT: Path = Path(__file__).resolve().parents[2]
@@ -118,14 +118,14 @@ def _make_output(
 class _FakeChildHandle:
     """Awaitable that yields a pre-canned child workflow result.
 
-    Mirrors the surface of Temporal's :class:`ChildWorkflowHandle` —
+    Mirrors the surface of Temporal's :class:`ChildWorkflowHandle` -
     we only need ``__await__`` for the helper under test."""
 
     def __init__(self, result: Any | None = None, exc: Exception | None = None):
         self._result = result
         self._exc = exc
 
-    def __await__(self):  # noqa: D401 — Temporal handle protocol
+    def __await__(self):  # noqa: D401 - Temporal handle protocol
         async def _resolve() -> Any:
             if self._exc is not None:
                 raise self._exc
@@ -246,7 +246,7 @@ class TestSplitMinioUri:
 
     def test_uri_without_slash_falls_back_to_default(self) -> None:
         # ``s3://just-a-bucket`` (no key path) is malformed for our
-        # purposes — the helper should fall back to the deterministic
+        # purposes - the helper should fall back to the deterministic
         # key rather than producing an empty / undefined key.
         bucket, key = AutomationWorkflow._split_minio_uri(  # noqa: SLF001
             "s3://just-a-bucket", fallback_key="fallback/key"
@@ -406,7 +406,7 @@ class TestPublishBranchSynthesisesMinIORefs:
         self, patched_workflow: dict[str, Any]
     ) -> None:
         # When the analyser already supplied bucket + key the gateway
-        # must not stomp on them — the executor receives the literal
+        # must not stomp on them - the executor receives the literal
         # caller payload.
         wf = AutomationWorkflow()
         actions = (
@@ -443,7 +443,7 @@ class TestPublishBranchSynthesisesMinIORefs:
         self, patched_workflow: dict[str, Any]
     ) -> None:
         # Operators wanting to attach stderr instead of stdout opt in
-        # via ``key_name`` — the gateway honours that hint when
+        # via ``key_name`` - the gateway honours that hint when
         # synthesising the MinIO ref.
         wf = AutomationWorkflow()
         actions = (
@@ -559,7 +559,7 @@ class TestPublishBranchOnExitCodeFailure:
 
 
 class TestPublishBranchRegressionGuard:
-    """Empty actions tuple is the regression guard — no awaits, no
+    """Empty actions tuple is the regression guard - no awaits, no
     activity calls (existing dispatch-and-forget behaviour stays
     verbatim)."""
 
@@ -615,7 +615,7 @@ class TestPublishBranchHandlesUnmappedKinds:
         batch: ExecutionBatchInput = (
             patched_workflow["execute_activity"].await_args.kwargs["args"][0]
         )
-        # Only the jira_comment survived — slack_notify dropped.
+        # Only the jira_comment survived - slack_notify dropped.
         assert len(batch.actions) == 1
         assert batch.actions[0].type is ActionType.JIRA_COMMENT
         assert batch.actions[0].index == 1  # original analyser index
@@ -624,7 +624,7 @@ class TestPublishBranchHandlesUnmappedKinds:
         self, patched_workflow: dict[str, Any]
     ) -> None:
         # When every action gets dropped during translation the
-        # gateway must not dispatch an empty batch — the executor
+        # gateway must not dispatch an empty batch - the executor
         # would still post the audit summary even with zero results.
         wf = AutomationWorkflow()
         actions = (
@@ -654,7 +654,7 @@ class TestPublishBranchHandlesUnmappedKinds:
 
 
 class TestPublishBranchActivityFailureIsBestEffort:
-    """An executor activity failure must not crash the gateway — the
+    """An executor activity failure must not crash the gateway - the
     decision stays ``dispatched`` because the child *was* dispatched."""
 
     def test_activity_exception_swallowed(
@@ -700,7 +700,7 @@ class TestPublishBranchActivityFailureIsBestEffort:
 
 
 # ===========================================================================
-# 3. Integration with run() — the dispatch branch only awaits when
+# 3. Integration with run() - the dispatch branch only awaits when
 # analysis.output_actions is non-empty.
 # ===========================================================================
 #
@@ -720,7 +720,7 @@ class TestRunBodyWiring:
         assert asyncio.iscoroutinefunction(helper)
 
     def test_run_body_calls_publish_helper_for_remote_ssh(self) -> None:
-        # AST-style guard — the call site must reference the helper
+        # AST-style guard - the call site must reference the helper
         # by name so a refactor to a different method name surfaces
         # immediately as a test failure rather than a silent regression.
         source = Path(automation_workflow_mod.__file__).read_text(
@@ -741,7 +741,7 @@ class TestRunBodyWiring:
         # The ``elif`` is gated on ``analysis.output_actions`` so an
         # analyser that surfaced no actions keeps the legacy
         # dispatch-and-forget contract.  The textual guard is good
-        # enough — the runtime regression test above proves the
+        # enough - the runtime regression test above proves the
         # guard fires for the empty-tuple case.
         source = Path(automation_workflow_mod.__file__).read_text(
             encoding="utf-8"
@@ -755,7 +755,7 @@ class TestRunBodyWiring:
         # execute_output_actions must be referenced via a string name
         # (workflow.execute_activity("execute_output_actions", ...))
         # so the workflow module never imports the activity callable
-        # at module scope — keeps the determinism contract intact.
+        # at module scope - keeps the determinism contract intact.
         source = Path(automation_workflow_mod.__file__).read_text(
             encoding="utf-8"
         )

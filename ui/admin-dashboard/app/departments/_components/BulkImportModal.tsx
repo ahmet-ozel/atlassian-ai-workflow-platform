@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 /**
- * BulkImportModal — Modal for bulk-importing departments from a JSON file.
+ * BulkImportModal - Modal for bulk-importing departments from a JSON file.
  *
  * Features:
  * - File upload (JSON format matching `departments.schema.json`)
@@ -122,7 +122,7 @@ function getStatusIcon(status: DeptResult["status"]): string {
     case "skipped":
       return "⚠️";
     default:
-      return "—";
+      return "-";
   }
 }
 
@@ -224,7 +224,7 @@ export default function BulkImportModal({
       const res = await fetch(url, {
         method: "POST",
         body: formData,
-        // No Content-Type header — browser sets multipart boundary automatically
+        // No Content-Type header - browser sets multipart boundary automatically
       });
 
       setHttpStatus(res.status);
@@ -554,7 +554,7 @@ export default function BulkImportModal({
                               : "#374151",
                       }}
                     >
-                      {r.reason ?? "—"}
+                      {r.reason ?? "-"}
                     </td>
                   </tr>
                 ))}

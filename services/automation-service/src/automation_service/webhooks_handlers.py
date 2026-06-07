@@ -1,4 +1,4 @@
-"""Jira webhook handlers.
+﻿"""Jira webhook handlers.
 
 Implements the explicit Jira webhook endpoints:
 
@@ -25,7 +25,7 @@ The chain is the canonical four-step sequence:
 
 3. **Capability gate**: :func:`temporal_shared.gate` is consulted with
    the resolved ``Department`` and the workflow type (``noop_test`` for
-   issue-created — the lightest gate possible at the webhook layer;
+   issue-created - the lightest gate possible at the webhook layer;
    the in-workflow analyzer later refines the workflow_type per the
    design's two-phase capability check). If the gate denies, the
    handler posts a bot comment to the Jira issue listing the missing
@@ -167,7 +167,7 @@ class DeptResolver(Protocol):
     The runtime implementation reads from the ``automation.departments``
     Postgres table joined with ``automation.department_project_keys``;
     tests inject a deterministic mapping. Returns ``None`` when no
-    department is configured for *project_key* — the handler treats
+    department is configured for *project_key* - the handler treats
     this as :ref:`webhook_dept_unresolved <webhook-dept-unresolved>`.
     """
 
@@ -186,7 +186,7 @@ class JiraCommenter(Protocol):
     """Post a bot comment on a Jira issue (best-effort).
 
     The capability-denied path uses this to leave a human-readable
-    message on the source issue (design Workflow Başlatma Akışı —
+    message on the source issue (design Workflow Başlatma Akışı -
     "Jira'ya bot yorumu"). Failures are caught and audited by the
     handler; they never escalate to a non-200 response.
     """
@@ -197,7 +197,7 @@ class JiraCommenter(Protocol):
 
 
 # ---------------------------------------------------------------------------
-# WebhookContext — bag of dependencies populated from app.state
+# WebhookContext - bag of dependencies populated from app.state
 # ---------------------------------------------------------------------------
 
 
@@ -353,7 +353,7 @@ def _build_workflow_id(event_type: str, issue_key: str) -> str:
     occasionally arrive with non-canonical key shapes (eg. lowercase
     in fixtures), and rejecting them at the webhook layer with HTTP
     400 is harsher than just falling back to a normalised id. The
-    invariant we care about is *idempotency* — two deliveries for the
+    invariant we care about is *idempotency* - two deliveries for the
     same ``(event_type, issue_key)`` produce the same workflow id, and
     that holds with this simple formatter.
     """
@@ -371,8 +371,8 @@ def _is_bot_actor(
 ) -> tuple[bool, str | None]:
     """Return ``(is_bot, dept_id_of_match)`` for the actor.
 
-    A match against *any* registered bot — regardless of dept or
-    service — triggers the loop guard.
+    A match against *any* registered bot - regardless of dept or
+    service - triggers the loop guard.
     """
 
     if not actor_id:
@@ -491,7 +491,7 @@ async def _process_jira_webhook(
     # field.
     body_event_type = payload.get("webhookEvent")
     if isinstance(body_event_type, str) and body_event_type and body_event_type != expected_event:
-        # Soft-warning only — log once and continue. Mismatches happen
+        # Soft-warning only - log once and continue. Mismatches happen
         # in dev when curl-based fixtures are reused across endpoints.
         logger.info(
             "webhook_event_type_mismatch",
@@ -551,7 +551,7 @@ async def _process_jira_webhook(
         )
     except ValueError:
         # ``verify_webhook_hmac`` raises ``ValueError`` for unsupported
-        # providers — should not happen here because we hard-code
+        # providers - should not happen here because we hard-code
         # ``_PROVIDER_JIRA``, but defending against accidental
         # regressions costs nothing.
         hmac_ok = False

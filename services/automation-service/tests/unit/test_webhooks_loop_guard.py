@@ -1,4 +1,4 @@
-"""Unit tests for the webhook pipeline LoopGuard stage.
+﻿"""Unit tests for the webhook pipeline LoopGuard stage.
 
 Tests cover:
 - R2.1: Bot account detection via department_bot_identity
@@ -19,7 +19,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 # ---------------------------------------------------------------------------
-# Path setup — ensure src/ is importable
+# Path setup - ensure src/ is importable
 # ---------------------------------------------------------------------------
 import sys
 from pathlib import Path
@@ -157,7 +157,7 @@ def make_guard(fixed_clock, bot_ids):
 
 
 # ---------------------------------------------------------------------------
-# Tests: R2.1 — Bot account detection
+# Tests: R2.1 - Bot account detection
 # ---------------------------------------------------------------------------
 
 
@@ -216,7 +216,7 @@ class TestBotDetection:
 
 
 # ---------------------------------------------------------------------------
-# Tests: R2.2 — DROP + audit log
+# Tests: R2.2 - DROP + audit log
 # ---------------------------------------------------------------------------
 
 
@@ -248,7 +248,7 @@ class TestAuditLogging:
 
 
 # ---------------------------------------------------------------------------
-# Tests: R2.3 — Approval Gate exemption
+# Tests: R2.3 - Approval Gate exemption
 # ---------------------------------------------------------------------------
 
 
@@ -347,7 +347,7 @@ class TestApprovalGateExemption:
 
 
 # ---------------------------------------------------------------------------
-# Tests: R2.4 — Storm detection
+# Tests: R2.4 - Storm detection
 # ---------------------------------------------------------------------------
 
 

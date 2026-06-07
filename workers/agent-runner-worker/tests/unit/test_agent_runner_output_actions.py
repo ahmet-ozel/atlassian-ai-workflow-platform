@@ -1,4 +1,4 @@
-"""Unit tests for ``AgentRunnerWorkflow`` output_actions execution.
+﻿"""Unit tests for ``AgentRunnerWorkflow`` output_actions execution.
 
 Covers the four execution paths plumbed into ``_execute_output_actions``:
 
@@ -53,7 +53,7 @@ for _candidate in (_SRC_DIR, _TEMPORAL_SHARED_SRC, _MCP_CLIENT_SRC):
     if _candidate.is_dir() and _str not in sys.path:
         sys.path.insert(0, _str)
 
-# noqa: E402 — imports after sys.path bootstrap.
+# noqa: E402 - imports after sys.path bootstrap.
 
 from agent_runner.workflows.agent_runner_workflow import (  # noqa: E402
     OUTPUT_ACTION_CRITICAL_FAILED_REASON,
@@ -100,7 +100,7 @@ def patched_workflow_logger(monkeypatch: pytest.MonkeyPatch):
 
     ``temporalio.workflow.logger`` raises
     :class:`temporalio.workflow._NotInWorkflowEventLoopError` when
-    ``isEnabledFor`` is called outside a real workflow event loop —
+    ``isEnabledFor`` is called outside a real workflow event loop -
     which is exactly the situation in these unit tests.  Substituting
     a stdlib logger keeps the workflow code path intact while letting
     the body methods run as plain async coroutines.
@@ -341,7 +341,7 @@ class TestCriticalFailureTriggersCompensation:
         )
         inp = _make_input(output_actions=actions)
 
-        # ``bitbucket_open_pr`` fails — should short-circuit the rest.
+        # ``bitbucket_open_pr`` fails - should short-circuit the rest.
         record: list[tuple[str, tuple, dict]] = []
         activity_mock = _activity_dispatcher(
             {
@@ -665,7 +665,7 @@ class TestOversizedPayloadRedirected:
             "jira_add_comment"
         )
 
-        # The activity arguments carry the rewritten payload — the
+        # The activity arguments carry the rewritten payload - the
         # ``body`` key is gone, replaced by ``summary`` /
         # ``minio_uri`` / ``size_bytes``.
         jira_calls = [
@@ -673,7 +673,7 @@ class TestOversizedPayloadRedirected:
         ]
         assert len(jira_calls) == 1
         args, kwargs = jira_calls[0]
-        # ``args`` from execute_activity is ``(activity_name,)`` — the
+        # ``args`` from execute_activity is ``(activity_name,)`` - the
         # actual activity arguments live under ``kwargs['args']``.
         forwarded = kwargs["args"]
         assert forwarded[0] == "PAY-1"
@@ -721,7 +721,7 @@ class TestPartitionHelper:
 
     def test_partition_rejects_unknown_kind(self) -> None:
         # Pass a bogus kind via __dict__ surgery so the dataclass
-        # constructor does not block us — Literal types are not
+        # constructor does not block us - Literal types are not
         # enforced at runtime, but this also lets the test keep
         # working if Literal validation lands later.
         bad = OutputAction.__new__(OutputAction)

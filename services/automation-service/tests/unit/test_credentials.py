@@ -1,4 +1,4 @@
-"""Unit tests for ``automation_service.credentials.CredentialResolver``.
+﻿"""Unit tests for ``automation_service.credentials.CredentialResolver``.
 
 Covers the priority rule where a per-user credential takes precedence
 over the org-default; both missing surfaces ``CredentialMissing`` with
@@ -17,7 +17,7 @@ locked down for both directions:
 +------------+-------------+----------------------------+
 
 The tests deliberately use a tiny in-memory ``VaultReader`` rather
-than mocking the full ``vault_client`` package — the resolver's
+than mocking the full ``vault_client`` package - the resolver's
 contract is *only* the structural ``read(path) -> Mapping`` slice,
 and exercising that slice directly keeps the test honest.
 """
@@ -31,7 +31,7 @@ from typing import Mapping
 import pytest
 
 # ---------------------------------------------------------------------------
-# Path setup — make the in-tree ``src`` importable without an install.
+# Path setup - make the in-tree ``src`` importable without an install.
 # Mirrors the bootstrap in test_app.py / test_credential_resolver.py.
 #
 # We expose **both** the service root (so ``import src.config`` resolves

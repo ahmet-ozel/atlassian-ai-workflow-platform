@@ -1,4 +1,4 @@
-"""Service_Manifest loader for the admin-dashboard-api Control_Plane.
+﻿"""Service_Manifest loader for the admin-dashboard-api Control_Plane.
 
 This module is the single entry point used by ``src/main.py`` and
 :class:`LifecycleService` to load and validate the
@@ -65,7 +65,7 @@ class ManagedServiceEntry:
     accidental mutation.
 
     ``depends_on_services`` and ``feature_flag_dependency`` default to
-    empty tuples when the JSON field is absent — the JSON Schema marks
+    empty tuples when the JSON field is absent - the JSON Schema marks
     them optional with ``default: []``, but consumers always see a tuple
     here.
 
@@ -124,7 +124,7 @@ def _validate_schema(payload: object, schema: object) -> None:
     errors = sorted(validator.iter_errors(payload), key=lambda e: list(e.absolute_path))
     if errors:
         # Build a readable, deterministic error message that lists every
-        # violation. ``absolute_path`` is a deque — render it as a JSON
+        # violation. ``absolute_path`` is a deque - render it as a JSON
         # pointer-ish path for operator-friendly diagnostics.
         rendered = []
         for err in errors:
@@ -176,7 +176,7 @@ def _check_no_dependency_cycles(services: list[dict]) -> None:
     over the intra-manifest portion of the dependency graph. External
     dependencies that reference Boot_Bundle / infra components which do
     not appear as manifest entries (e.g. ``postgres``, ``vault``,
-    ``temporal``, ``atlassian_mcp_bitbucket``) are skipped — they cannot
+    ``temporal``, ``atlassian_mcp_bitbucket``) are skipped - they cannot
     participate in a cycle by definition since they are not nodes in this
     graph.
     """

@@ -1,4 +1,4 @@
-# Runbook: Forge Add-On Deployment (`AI Bot Task` issue type)
+﻿# Runbook: Forge Add-On Deployment (`AI Bot Task` issue type)
 
 > **Audience:** Platform `admin` rolü; Atlassian organizasyon admin'i (Jira Cloud) ve Forge developer hesabı sahibi.
 > **Scope:** [`platform/forge-app/`](../forge-app/) skeleton'ının Atlassian Forge platformuna deploy edilmesi ve `FEATURE_FLAG_FORGE_ADDON_ENABLED` opt-in flag'i ile devreye alınması.
@@ -19,10 +19,10 @@ Kurulum kuralları:
 
 İlgili dosyalar:
 
-- [`platform/forge-app/manifest.yml`](../forge-app/manifest.yml) — modül tanımları (`jira:issueType`, `jira:customField`, `function`).
-- [`platform/forge-app/src/index.js`](../forge-app/src/index.js) — Forge function entrypoint (placeholder + `populateHedefRepo` resolver).
-- [`platform/forge-app/package.json`](../forge-app/package.json) — `@forge/api` ve `@forge/cli` pin'leri.
-- [`platform/forge-app/README.md`](../forge-app/README.md) — quick-start özeti (bu runbook'a link verir).
+- [`platform/forge-app/manifest.yml`](../forge-app/manifest.yml) - modül tanımları (`jira:issueType`, `jira:customField`, `function`).
+- [`platform/forge-app/src/index.js`](../forge-app/src/index.js) - Forge function entrypoint (placeholder + `populateHedefRepo` resolver).
+- [`platform/forge-app/package.json`](../forge-app/package.json) - `@forge/api` ve `@forge/cli` pin'leri.
+- [`platform/forge-app/README.md`](../forge-app/README.md) - quick-start özeti (bu runbook'a link verir).
 
 ## 2. Prerequisites
 
@@ -139,7 +139,7 @@ forge uninstall --site <your-instance>.atlassian.net --product jira
 
 Uninstall sonrası `AI Bot Task` issue type ve custom field'lar Jira UI'sından kaybolur. Rollback için manifest veya kod değişikliği gerekmez; sadece flag (Adım 5) `false`'a çekilir.
 
-## 5. Opt-in flag — `FEATURE_FLAG_FORGE_ADDON_ENABLED`
+## 5. Opt-in flag - `FEATURE_FLAG_FORGE_ADDON_ENABLED`
 
 Forge add-on'un site'a kurulu olması platformun onu **kullandığı** anlamına gelmez. Runtime davranışını `automation.feature_flags` tablosundaki `FEATURE_FLAG_FORGE_ADDON_ENABLED` satırı kontrol eder; default `false`.
 
@@ -230,7 +230,7 @@ Beklenen: Asistan `task-creation-assistant-prompt.md` template'ini render eder; 
 
 Adım 5.1 ile flag'i `true`'ya çektikten sonra aynı talebi tekrar gönder. Beklenen: Asistan kullanıcıyı Jira `AI Bot Task` issue type'ına yönlendiren bir mesaj döner (template render edilmez):
 
-> "Bu departmanda 'AI Bot Task' issue type'ı kurulu. Jira'da yeni issue açarken type olarak onu seçin — zorunlu alanlar form olarak gelir."
+> "Bu departmanda 'AI Bot Task' issue type'ı kurulu. Jira'da yeni issue açarken type olarak onu seçin - zorunlu alanlar form olarak gelir."
 
 (Tam mesaj için bkz. [`task-creation-assistant-prompt.md` § Forge Add-On (Opsiyonel)](task-creation-assistant-prompt.md).)
 
@@ -275,6 +275,6 @@ Forge add-on versiyonu `package.json` `version` alanı ile yönetilir. Major ver
 
 ## İlgili Referanslar
 
-- [`platform/forge-app/manifest.yml`](../forge-app/manifest.yml) — modül tanımları.
-- [`platform/forge-app/README.md`](../forge-app/README.md) — quick-start özeti (bu runbook'a link verir).
-- [`platform/prompts/task_creation_assistant.md`](../prompts/task_creation_assistant.md) — flag kapalı default davranış (Markdown template).
+- [`platform/forge-app/manifest.yml`](../forge-app/manifest.yml) - modül tanımları.
+- [`platform/forge-app/README.md`](../forge-app/README.md) - quick-start özeti (bu runbook'a link verir).
+- [`platform/prompts/task_creation_assistant.md`](../prompts/task_creation_assistant.md) - flag kapalı default davranış (Markdown template).

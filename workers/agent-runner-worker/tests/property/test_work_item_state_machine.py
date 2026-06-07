@@ -1,4 +1,4 @@
-"""Tests for the ``automation.work_items`` status state machine.
+﻿"""Tests for the ``automation.work_items`` status state machine.
 
 Work item state-machine allowed edges.
 
@@ -15,7 +15,7 @@ edges of the directed graph ``G_status`` with vertex set
 Plus self-loops (``s → s`` for every status, modelling idempotent
 re-writes from retried activities).
 
-Every other ordered pair is forbidden — most notably:
+Every other ordered pair is forbidden - most notably:
 
 * ``pending → completed`` (must transit ``running`` first),
 * any outgoing edge from a terminal state (``completed → *``,
@@ -25,18 +25,18 @@ Every other ordered pair is forbidden — most notably:
 The function under test, :func:`validate_work_item_transition`, is a
 pure helper extracted from the Temporal activity
 :func:`update_work_item_status` so this property suite does *not* need
-Postgres or a Temporal worker — the activity wraps the same validator
+Postgres or a Temporal worker - the activity wraps the same validator
 in a transactional ``UPDATE`` (see ``src/activities/work_item.py``).
 
 The properties asserted below:
 
-1. **Allowed edges** — every forward edge in the design's edge set is
+1. **Allowed edges** - every forward edge in the design's edge set is
    accepted by the validator (no false negatives).
-2. **Self-loops** — every status transitions to itself without raising
+2. **Self-loops** - every status transitions to itself without raising
    (idempotent write contract).
-3. **Forbidden edges** — every other ordered pair drawn from the four
+3. **Forbidden edges** - every other ordered pair drawn from the four
    valid statuses raises :class:`InvalidWorkItemTransition`.
-4. **Sequence invariant** — for any randomly generated sequence of
+4. **Sequence invariant** - for any randomly generated sequence of
    ``(from_status, to_status)`` pairs over the full 4×4 space, the
    validator's accept/reject decision agrees with the explicit
    allowed-edge predicate computed from the design specification.
@@ -74,7 +74,7 @@ _SRC_DIR = _WORKER_ROOT / "src"
 if str(_SRC_DIR) not in sys.path:
     sys.path.insert(0, str(_SRC_DIR))
 
-from activities.work_item import (  # noqa: E402  — sys.path bootstrap above
+from activities.work_item import (  # noqa: E402  - sys.path bootstrap above
     WORK_ITEM_STATUSES,
     InvalidWorkItemTransition,
     is_valid_work_item_transition,
@@ -86,7 +86,7 @@ from activities.work_item import (  # noqa: E402  — sys.path bootstrap above
 # Specification: the exact allowed-edge set
 # ---------------------------------------------------------------------------
 
-#: Forward edges (excluding self-loops) — the four allowed non-trivial
+#: Forward edges (excluding self-loops) - the four allowed non-trivial
 #: transitions. Hard-coded here rather than imported from the
 #: implementation so the test independently re-states the design
 #: contract; if a future refactor accidentally relaxes the validator,
@@ -124,7 +124,7 @@ def _is_allowed_edge_per_spec(from_status: str, to_status: str) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# Sanity checks — these guard against regressions in the test fixtures
+# Sanity checks - these guard against regressions in the test fixtures
 # themselves (so a bug in the spec mirror doesn't make the property pass
 # vacuously).
 # ---------------------------------------------------------------------------
@@ -352,7 +352,7 @@ def test_unknown_source_status_is_always_rejected(
     """Any ``from_status`` outside the canonical set is rejected.
 
     Defends against a corrupt row sneaking past the schema CHECK and
-    being read by the activity — even if Postgres somehow returned an
+    being read by the activity - even if Postgres somehow returned an
     unknown status, the validator MUST refuse to write a new one.
     """
 
@@ -362,7 +362,7 @@ def test_unknown_source_status_is_always_rejected(
 
 
 # ---------------------------------------------------------------------------
-# Anchor example — the canonical happy-path lifecycle
+# Anchor example - the canonical happy-path lifecycle
 # ---------------------------------------------------------------------------
 
 
@@ -406,5 +406,5 @@ def test_terminal_states_have_no_outgoing_edges() -> None:
                 validate_work_item_transition(terminal, target)
 
 
-if __name__ == "__main__":  # pragma: no cover  — convenience entry point
+if __name__ == "__main__":  # pragma: no cover  - convenience entry point
     sys.exit(pytest.main([__file__, "-v"]))

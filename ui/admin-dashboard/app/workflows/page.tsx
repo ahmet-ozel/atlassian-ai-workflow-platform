@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * Workflows panel.
@@ -90,7 +90,7 @@ export default function WorkflowsPage(): JSX.Element {
             <h1>İş akışları</h1>
             <p className="page-header__lede">
               Temporal üzerinde çalışan workflow&apos;ları izleyin. iter≥3
-              yüksek tekrarı işaretler — yeniden kapsam belirleme önerilir.
+              yüksek tekrarı işaretler - yeniden kapsam belirleme önerilir.
             </p>
           </div>
           <div className="page-header__actions">
@@ -188,7 +188,7 @@ export default function WorkflowsPage(): JSX.Element {
                         </td>
                         <td className="text-sm">{r.workflow_type}</td>
                         <td className="text-sm">
-                          {r.dept_id ? <code>{r.dept_id}</code> : <span className="muted">—</span>}
+                          {r.dept_id ? <code>{r.dept_id}</code> : <span className="muted">-</span>}
                         </td>
                         <td>
                           <span className={`badge ${badgeClass}`}>
@@ -199,7 +199,7 @@ export default function WorkflowsPage(): JSX.Element {
                           {iter >= 3 ? (
                             <span
                               className="badge badge--warn"
-                              title="iter≥3 — yeniden kapsam belirlensin mi?"
+                              title="iter≥3 - yeniden kapsam belirlensin mi?"
                             >
                               {iter}
                             </span>

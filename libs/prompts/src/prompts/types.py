@@ -1,4 +1,4 @@
-"""Prompt template variable contract — :class:`PromptVars` value object.
+﻿"""Prompt template variable contract - :class:`PromptVars` value object.
 
 The schema defines the prompt variables used by chat rendering:
 
@@ -15,15 +15,15 @@ hand-roll the substitution call.
 Rationale
 ---------
 
-* ``frozen=True`` — :class:`PromptVars` flows through hot-reload,
+* ``frozen=True`` - :class:`PromptVars` flows through hot-reload,
   audit and SSE pipelines as a value object. Freezing it prevents an
   accidental in-place mutation between the moment the prompt is
   rendered and the moment its ``prompt_version`` lands in the audit
   payload.
-* ``slots=True`` — keeps the per-render allocation cheap; the chat
+* ``slots=True`` - keeps the per-render allocation cheap; the chat
   handler instantiates one ``PromptVars`` per SSE message.
 * Immutable container types (``tuple``, ``frozenset``) on the two
-  collection fields — ``frozen=True`` only protects the dataclass'
+  collection fields - ``frozen=True`` only protects the dataclass'
   *attribute bindings*, not nested mutables. Using immutable
   collections makes the whole value transitively hashable so it can
   appear in caches and logs without surprises.
@@ -31,7 +31,7 @@ Rationale
   ``departments.json`` schema field; a typo at the call site is
   caught at type-check time rather than only when the LLM produces
   an unexpected reply.
-* No defaults — every placeholder is
+* No defaults - every placeholder is
   mandatory. Forcing callers to populate each field explicitly is
   the cheapest way to keep the rendered system prompt deterministic
   across departments.
@@ -57,7 +57,7 @@ __all__ = [
 
 #: The two languages a prompt may default to. Mirrors the
 #: ``default_language`` field on ``departments.json`` and the
-#: ``Literal["tr", "en"]`` annotation on :class:`PromptVars` — kept as
+#: ``Literal["tr", "en"]`` annotation on :class:`PromptVars` - kept as
 #: a named alias so the rendering pipeline and any downstream
 #: validators can reference the same vocabulary.
 PromptLanguage = Literal["tr", "en"]
@@ -89,7 +89,7 @@ class PromptVars:
     """Frozen value object carrying the five mandatory template vars.
 
     A :class:`PromptVars` instance is the only thing the rendering
-    layer accepts — :class:`PromptLoader.render` calls
+    layer accepts - :class:`PromptLoader.render` calls
     :func:`inject_template_vars` with this dataclass, and
     :func:`validate_template_format` cross-checks every
     placeholder discovered in a prompt body against
@@ -109,8 +109,8 @@ class PromptVars:
             (subset of ``{"jira", "bitbucket", "confluence",
             "execution", "web_search"}``). Stored as a
             ``frozenset`` so prompt bodies that ``join`` or iterate
-            the value see a deterministic — though intentionally
-            unordered — collection.
+            the value see a deterministic - though intentionally
+            unordered - collection.
         default_language: ``"tr"`` or ``"en"``. Drives the LLM's
             reply locale; a typo here would silently switch the
             user's experience, so the type system pins the closed
@@ -150,13 +150,13 @@ def inject_template_vars(body: str, vars: PromptVars) -> str:
        ``audit_events.payload.prompt_vars`` field shaped exactly the
        expected way.
 
-    The helper does **not** raise a custom error type yet — that is
+    The helper does **not** raise a custom error type yet - that is
     ``PromptTemplateError`` lives in ``prompts.validate``. Until then, a missing placeholder
     propagates the underlying ``KeyError`` from ``str.format``, which
     is the behaviour the loader expects to catch and convert.
 
     Args:
-        body: Raw prompt body — typically the contents of a
+        body: Raw prompt body - typically the contents of a
             ``prompts/<name>.md`` file. Curly-brace literals must be
             escaped as ``{{`` / ``}}``;
             ``validate_template_format`` enforces this at boot.
@@ -177,7 +177,7 @@ def inject_template_vars(body: str, vars: PromptVars) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Cache row — internal to PromptLoader
+# Cache row - internal to PromptLoader
 # ---------------------------------------------------------------------------
 
 
@@ -188,10 +188,10 @@ class _PromptEntry:
     Captures the three pieces of information ``PromptLoader`` keeps
     per cached prompt:
 
-    * ``body`` — the raw markdown read from disk.
-    * ``mtime`` — last-modification timestamp used by the 30-second
+    * ``body`` - the raw markdown read from disk.
+    * ``mtime`` - last-modification timestamp used by the 30-second
       hot-reload poll.
-    * ``git_hash`` — short commit hash that produced the body, written
+    * ``git_hash`` - short commit hash that produced the body, written
       to the audit row as ``prompt_version``. Falls
       back to ``"unknown"`` when ``git`` is unavailable.
 

@@ -1,6 +1,6 @@
-"""SSH runner healthcheck activity (Requirement — SSH host downtime fallback).
+﻿"""SSH runner healthcheck activity (Requirement - SSH host downtime fallback).
 
-Provides :func:`ssh_healthcheck` — a lightweight Temporal activity that
+Provides :func:`ssh_healthcheck` - a lightweight Temporal activity that
 performs a TCP connect probe against the configured SSH runner host. The
 canonical :class:`ExecutionRunWorkflow` calls this activity at the start
 of its ``run`` method to detect an unreachable runner *before* committing
@@ -10,7 +10,7 @@ When the probe fails the workflow transitions to a "queued" state with
 exponential backoff retries (max 30 minutes), posts a Jira bot comment
 informing the user, and emits an ``ssh_host_unhealthy`` audit event.
 
-The probe is intentionally minimal — a raw TCP socket connect to
+The probe is intentionally minimal - a raw TCP socket connect to
 ``SSH_HOST:SSH_PORT_DEFAULT`` with a short timeout. It does NOT
 authenticate or execute commands; it only validates network reachability.
 
@@ -21,7 +21,7 @@ The platform runs **exactly one** SSH runner host. ``SSH_HOST`` is the
 canonical environment variable. ``SSH_HOST_1`` (and the legacy slots
 ``SSH_HOST_2`` / ``SSH_HOST_3``) are accepted as **deprecated aliases**
 for backwards compatibility with existing deployments; new deployments
-MUST set ``SSH_HOST``. There is no per-department SSH host override —
+MUST set ``SSH_HOST``. There is no per-department SSH host override -
 all departments share the same runner under ``RUNNER_BASE_PATH``.
 """
 
@@ -94,11 +94,11 @@ def _resolve_ssh_host(input: SSHHealthcheckInput | None = None) -> tuple[str, in
 
     Resolution order (single-runner canonical contract):
 
-    1. ``SSH_HOST`` — canonical, single source of truth.
-    2. ``SSH_HOST_1`` — deprecated legacy alias kept for backwards
+    1. ``SSH_HOST`` - canonical, single source of truth.
+    2. ``SSH_HOST_1`` - deprecated legacy alias kept for backwards
        compatibility with existing deployments. Logged as a deprecation
        warning when consulted without ``SSH_HOST`` set.
-    3. ``localhost`` — final fallback.
+    3. ``localhost`` - final fallback.
 
     ``SSH_HOST_2`` / ``SSH_HOST_3`` are **ignored**; the platform runs
     exactly one runner. New deployments MUST use ``SSH_HOST``.
@@ -126,7 +126,7 @@ def _resolve_connect_timeout() -> float:
     """Read ``SSH_CONNECT_TIMEOUT_S`` from environment (default 15s).
 
     The healthcheck uses a shorter timeout than the full SSH activity
-    to fail fast — capped at the configured connect timeout.
+    to fail fast - capped at the configured connect timeout.
     """
     raw = os.environ.get("SSH_CONNECT_TIMEOUT_S", "15")
     try:
@@ -160,7 +160,7 @@ async def ssh_healthcheck(
     """Lightweight TCP probe against the SSH runner host.
 
     Returns a serialisable dict matching :class:`SSHHealthcheckResult`.
-    The activity never raises — a failed probe is communicated via
+    The activity never raises - a failed probe is communicated via
     ``healthy=False`` in the result so the workflow can branch on it
     deterministically.
 

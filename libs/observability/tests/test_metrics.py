@@ -1,4 +1,4 @@
-"""Unit tests for the observability metric registry.
+﻿"""Unit tests for the observability metric registry.
 
 These are *example-based* sanity checks that lock in the public
 contract of the package: which collectors exist, which label sets they
@@ -20,7 +20,7 @@ from observability import METRIC_NAMES, Metrics, metrics, registry, render
 
 
 def test_metrics_is_frozen_dataclass() -> None:
-    """`metrics` cannot be monkey-patched at runtime — locks the catalogue."""
+    """`metrics` cannot be monkey-patched at runtime - locks the catalogue."""
     try:
         metrics.workflow_execution_duration_seconds = "nope"  # type: ignore[misc]
     except (AttributeError, Exception):
@@ -37,7 +37,7 @@ def test_metric_names_match_dataclass_fields() -> None:
 def test_metric_names_are_unique_and_ordered() -> None:
     """METRIC_NAMES is the canonical ordering and contains no duplicates."""
     assert len(METRIC_NAMES) == len(set(METRIC_NAMES))
-    # Histograms first, then counters, then gauges — matches the design
+    # Histograms first, then counters, then gauges - matches the design
     # narrative in metrics.py docstring.
     assert METRIC_NAMES[0] == "workflow_execution_duration_seconds"
     assert METRIC_NAMES[1] == "mcp_latency_seconds"

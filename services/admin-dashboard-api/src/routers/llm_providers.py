@@ -1,17 +1,17 @@
-"""``/admin/llm-providers`` + ``/admin/departments/{id}/llm-provider`` routers.
+﻿"""``/admin/llm-providers`` + ``/admin/departments/{id}/llm-provider`` routers.
 
 Implements the design's "Components › routers/llm_providers.py" section:
 two thin sibling routers under the ``llm-providers`` tag, gated by
 :func:`auth.dependencies.require_admin`.
 
-The handlers carry no business logic — every operation delegates to
+The handlers carry no business logic - every operation delegates to
 :class:`llm_providers.service.ProviderService`, which is built per
 request from the lifespan-managed collaborators on ``app.state``:
 
-* ``app.state.pg_pool`` — :class:`asyncpg.Pool`
-* ``app.state.vault_client`` — :class:`VaultClient`
-* ``app.state.http_client`` — :class:`httpx.AsyncClient`
-* ``app.state.audit_logger`` — audit sink (``AsyncpgAuditSink`` in
+* ``app.state.pg_pool`` - :class:`asyncpg.Pool`
+* ``app.state.vault_client`` - :class:`VaultClient`
+* ``app.state.http_client`` - :class:`httpx.AsyncClient`
+* ``app.state.audit_logger`` - audit sink (``AsyncpgAuditSink`` in
   production, ``LoggingAuditSink`` in tests)
 
 Errors raised by the service layer translate one-to-one into the
@@ -153,7 +153,7 @@ async def create_provider(
     claims: AuthClaims = Depends(require_admin),
     service: ProviderService = Depends(_service_dep),
 ) -> LLMProviderConfigDTO:
-    """``POST /admin/llm-providers`` — create a new provider."""
+    """``POST /admin/llm-providers`` - create a new provider."""
 
     try:
         return await service.create(
@@ -169,7 +169,7 @@ async def create_provider(
 async def list_providers(
     service: ProviderService = Depends(_service_dep),
 ) -> list[LLMProviderConfigDTO]:
-    """``GET /admin/llm-providers`` — list every provider."""
+    """``GET /admin/llm-providers`` - list every provider."""
 
     return await service.list_providers()
 
@@ -180,7 +180,7 @@ async def get_model_capabilities(model: str) -> dict[str, Any]:
 
     Returns ``{"model": str, "reasoning_effort": bool, "verbosity": bool}``
     so the provider form can show the tuning inputs only for models that
-    accept them. Pure lookup — no DB / Vault access, no side effects.
+    accept them. Pure lookup - no DB / Vault access, no side effects.
     """
 
     caps = model_capabilities(model)
@@ -192,7 +192,7 @@ async def get_provider(
     provider_id: UUID,
     service: ProviderService = Depends(_service_dep),
 ) -> LLMProviderConfigDTO:
-    """``GET /admin/llm-providers/{id}`` — single provider."""
+    """``GET /admin/llm-providers/{id}`` - single provider."""
 
     dto = await service.get_provider(provider_id)
     if dto is None:
@@ -213,7 +213,7 @@ async def update_provider(
     claims: AuthClaims = Depends(require_admin),
     service: ProviderService = Depends(_service_dep),
 ) -> LLMProviderConfigDTO:
-    """``PUT /admin/llm-providers/{id}`` — partial update."""
+    """``PUT /admin/llm-providers/{id}`` - partial update."""
 
     try:
         dto = await service.update(provider_id, patch, actor_id=claims.sub)
@@ -238,7 +238,7 @@ async def delete_provider(
     claims: AuthClaims = Depends(require_admin),
     service: ProviderService = Depends(_service_dep),
 ) -> JSONResponse:
-    """``DELETE /admin/llm-providers/{id}`` — delete with referential check."""
+    """``DELETE /admin/llm-providers/{id}`` - delete with referential check."""
 
     try:
         deleted = await service.delete(provider_id, actor_id=claims.sub)
@@ -280,7 +280,7 @@ async def test_saved_provider(
     claims: AuthClaims = Depends(require_admin),
     service: ProviderService = Depends(_service_dep),
 ) -> dict[str, Any]:
-    """``POST /admin/llm-providers/{id}/test`` — test a persisted provider.
+    """``POST /admin/llm-providers/{id}/test`` - test a persisted provider.
 
     The body must be the empty ``{}`` envelope; the
     :class:`SavedTestRequest` model's ``extra="forbid"`` config
@@ -298,7 +298,7 @@ async def test_unsaved_provider(
     claims: AuthClaims = Depends(require_admin),
     service: ProviderService = Depends(_service_dep),
 ) -> dict[str, Any]:
-    """``POST /admin/llm-providers/test`` — test an unsaved provider config."""
+    """``POST /admin/llm-providers/test`` - test an unsaved provider config."""
 
     result = await service.test_unsaved(payload, actor_id=claims.sub)
     return result.model_dump(mode="json")
@@ -314,7 +314,7 @@ async def get_dept_llm_provider(
     dept_id: str,
     service: ProviderService = Depends(_service_dep),
 ) -> DeptOverrideDTO:
-    """``GET /admin/departments/{dept_id}/llm-provider`` — read the override."""
+    """``GET /admin/departments/{dept_id}/llm-provider`` - read the override."""
 
     return await service.get_override(dept_id)
 
@@ -326,7 +326,7 @@ async def set_dept_llm_provider(
     claims: AuthClaims = Depends(require_admin),
     service: ProviderService = Depends(_service_dep),
 ) -> DeptOverrideDTO:
-    """``PUT /admin/departments/{dept_id}/llm-provider`` — pin / unpin.
+    """``PUT /admin/departments/{dept_id}/llm-provider`` - pin / unpin.
 
     Body shape: ``{"provider_id": "<uuid>" | null}``. Passing ``null``
     deletes the override; passing a UUID upserts. Returns 422 when the
@@ -360,7 +360,7 @@ async def set_dept_llm_provider(
 # ---------------------------------------------------------------------------
 
 
-from pydantic import BaseModel, ConfigDict  # noqa: E402 — small local model
+from pydantic import BaseModel, ConfigDict  # noqa: E402 - small local model
 
 
 class _DeptOverrideUpdate(BaseModel):

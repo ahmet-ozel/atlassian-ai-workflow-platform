@@ -1,4 +1,4 @@
-"""Pydantic-settings configuration for the admin-dashboard-api service.
+﻿"""Pydantic-settings configuration for the admin-dashboard-api service.
 
 This module provides a single :class:`Settings` class that reads the
 service's environment variables. Real dependency probing is intentionally
@@ -12,20 +12,20 @@ In addition to the baseline keys (``PORT``, ``LOG_LEVEL``,
 used by manifest loading, Compose orchestration, health polling, and
 prompt sync wiring:
 
-* ``WORKSPACE_ROOT`` — workspace folder containing ``config/``,
+* ``WORKSPACE_ROOT`` - workspace folder containing ``config/``,
   ``infra/`` and ``services/``. Defaults to four levels above this
   module so ``python -m src.main`` works from a checked-out workspace
   without an explicit override.
-* ``SERVICES_MANIFEST_PATH`` — workspace-relative path to the
+* ``SERVICES_MANIFEST_PATH`` - workspace-relative path to the
   Service_Manifest JSON document.
-* ``COMPOSE_FILE`` — workspace-relative path to the base Compose file
+* ``COMPOSE_FILE`` - workspace-relative path to the base Compose file
   used by :class:`ComposeRunner` subprocess invocations.
-* ``MANIFEST_REFRESH_SECONDS`` — in-memory manifest cache TTL.
-* ``HEALTH_POLL_INTERVAL_SECONDS`` — cadence of the background
+* ``MANIFEST_REFRESH_SECONDS`` - in-memory manifest cache TTL.
+* ``HEALTH_POLL_INTERVAL_SECONDS`` - cadence of the background
   ``/healthz`` poll loop.
-* ``HEALTH_READY_TIMEOUT_SECONDS`` — max wait after ``compose up``
+* ``HEALTH_READY_TIMEOUT_SECONDS`` - max wait after ``compose up``
   before declaring a service ``failed``.
-* ``HEALTH_FAIL_STREAK_THRESHOLD`` — consecutive unhealthy polls that
+* ``HEALTH_FAIL_STREAK_THRESHOLD`` - consecutive unhealthy polls that
   trigger a single ``health_streak_alert`` audit entry.
 """
 
@@ -44,7 +44,7 @@ def _default_workspace_root() -> Path:
     ``services/admin-dashboard-api/src/config.py`` → ``parents[3]`` is
     the workspace root that contains ``config/``, ``infra/`` and
     ``services/``. The fallback only kicks in when the operator does
-    not set ``WORKSPACE_ROOT`` — in production Compose passes the
+    not set ``WORKSPACE_ROOT`` - in production Compose passes the
     correct path via the env file.
     """
     try:
@@ -109,7 +109,7 @@ class Settings(BaseSettings):
         ),
     )
 
-    # --- AdminProxy (admin proxy wiring — platform foundation) ----------
+    # --- AdminProxy (admin proxy wiring - platform foundation) ----------
     # ``AUTOMATION_SERVICE_URL`` is the base URL of automation-service,
     # which owns every ``/admin/*`` endpoint forwarded by
     # :class:`src.proxy.AdminProxy`. The default
@@ -123,7 +123,7 @@ class Settings(BaseSettings):
     # --- Deployment profile ----------------------------------------
     # ``DEPLOYMENT_PROFILE`` identifies the runtime environment for
     # admin-only safety guards. The lifecycle stop endpoint refuses
-    # ``purge_vault=true`` when this resolves to ``"production"`` —
+    # ``purge_vault=true`` when this resolves to ``"production"`` -
     # the dev-only Vault override purge is a developer escape hatch
     # and must never apply on a production cluster.
     # The value is matched case-insensitively in the router; common

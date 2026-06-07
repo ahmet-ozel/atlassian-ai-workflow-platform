@@ -1,4 +1,4 @@
-"""FastAPI router tests for ``src.routers.prompts_git``.
+﻿"""FastAPI router tests for ``src.routers.prompts_git``.
 
 These tests wire the PromptsGitRouter into a throwaway FastAPI app
 with a real on-disk git repository (created in a ``tmp_path`` fixture)
@@ -13,7 +13,7 @@ router-level glue end-to-end:
   (``prompt_draft_created``, ``prompt_pr_opened``,
   ``prompt_render_failed``, ``prompt_pr_conflict``).
 
-The tests do **not** monkey-patch the underlying ``GitRepo`` — they
+The tests do **not** monkey-patch the underlying ``GitRepo`` - they
 construct a real one against a fresh repo. This catches regressions
 in the GitPython integration layer without relying on heavy mocks.
 """
@@ -306,7 +306,7 @@ class TestCreateDraft:
         assert body["branch"].startswith("draft/alice-")
         assert len(body["short_hash"]) == 7
 
-        # The change is on the draft branch only — main is unchanged.
+        # The change is on the draft branch only - main is unchanged.
         assert (
             git_repo.read_file(
                 "prompts/assistant_chat.md", branch="main"
@@ -346,7 +346,7 @@ class TestCreateDraft:
         )
 
         assert response.status_code == 422, response.text
-        # No git mutation was performed — main is intact and no
+        # No git mutation was performed - main is intact and no
         # ``draft/`` branch was created.
         assert git_repo.read_file(
             "prompts/assistant_chat.md", branch="main"

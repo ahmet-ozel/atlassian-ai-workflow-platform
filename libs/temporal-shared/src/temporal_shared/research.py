@@ -1,8 +1,8 @@
-"""Research output formatters.
+﻿"""Research output formatters.
 
 Pure-Python renderers consumed by the ``research_*`` workflow types
 (``research_publish_confluence`` and ``research_summary_jira``).  The
-module owns *only* the rendering — the workflow body is responsible
+module owns *only* the rendering - the workflow body is responsible
 for invoking firecrawl, picking sources, and translating
 ``EgressBlocked`` outcomes into Jira comments.
 
@@ -14,7 +14,7 @@ A *source* is an opaque mapping carrying at least these keys:
     ``title``: Human-readable title of the source (required).
     ``url``:   Canonical URL (required; rendered verbatim).
     ``accessed_at``: ISO-8601 date string (``YYYY-MM-DD``) of the
-        scrape; optional — when missing the renderer omits the
+        scrape; optional - when missing the renderer omits the
         ``erişim tarihi`` clause for that source.
 
 The mapping form is preserved (rather than upgraded to a
@@ -38,7 +38,7 @@ def _coerce_source(source: Any) -> tuple[str, str, str | None]:
 
     Accepts either a mapping (``dict``-like) or an object exposing the
     same attributes; returns a tuple of strings (with ``accessed_at``
-    optional). Empty / missing fields collapse to empty strings — the
+    optional). Empty / missing fields collapse to empty strings - the
     caller decides whether to render or skip the entry.
     """
 
@@ -70,7 +70,7 @@ def format_research_publish_confluence_body(
 
         ## Kaynaklar
 
-        1. {title} — {url} — erişim tarihi {YYYY-MM-DD}
+        1. {title} - {url} - erişim tarihi {YYYY-MM-DD}
         2. ...
 
     Sources without a usable ``url`` are skipped so the rendered list
@@ -85,9 +85,9 @@ def format_research_publish_confluence_body(
         if not url:
             continue
         label = title or url
-        line = f"{index}. {label} — {url}"
+        line = f"{index}. {label} - {url}"
         if accessed:
-            line = f"{line} — erişim tarihi {accessed}"
+            line = f"{line} - erişim tarihi {accessed}"
         rendered_sources.append(line)
 
     if not rendered_sources:
@@ -106,7 +106,7 @@ def _truncate_words(text: str, max_words: int) -> tuple[str, bool]:
     """Truncate ``text`` to at most ``max_words`` whitespace-separated tokens.
 
     Returns ``(truncated_text, was_truncated)``.  The whitespace
-    splitter is intentionally permissive — Jira renders the result
+    splitter is intentionally permissive - Jira renders the result
     unchanged so collapsing runs of whitespace is acceptable for a
     summary preview.
     """
@@ -134,7 +134,7 @@ def format_research_summary_jira_comment(
     (the workflow body is responsible for actually writing the
     artifact and threading the URI back).
 
-    The renderer never raises on degenerate input — empty summary
+    The renderer never raises on degenerate input - empty summary
     plus empty sources yields ``("🤖 Araştırma sonucu boş döndü.", None)``
     so the bot's Jira comment is always intelligible.
     """
@@ -151,16 +151,16 @@ def format_research_summary_jira_comment(
         if not url:
             continue
         label = title or url
-        line = f"{index}. {label} — {url}"
+        line = f"{index}. {label} - {url}"
         if accessed:
-            line = f"{line} — erişim tarihi {accessed}"
+            line = f"{line} - erişim tarihi {accessed}"
         if len(rendered_sources) < max_sources:
             rendered_sources.append(line)
         else:
             overflow_sources.append(line)
 
     if not truncated_summary and not rendered_sources and not overflow_sources:
-        # Defensive — empty firecrawl run still leaves a coherent
+        # Defensive - empty firecrawl run still leaves a coherent
         # bot message in Jira.  We also require ``overflow_sources``
         # to be empty so a tight ``max_sources`` cap (e.g. 0/1) that
         # routes every URL-bearing source into overflow does not get

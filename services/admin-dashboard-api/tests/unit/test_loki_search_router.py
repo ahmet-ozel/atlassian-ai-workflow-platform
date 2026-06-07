@@ -1,10 +1,10 @@
-"""Unit tests for ``src.routers.loki_search``.
+﻿"""Unit tests for ``src.routers.loki_search``.
 Two surfaces are exercised:
-1. ``GET /admin/audit/search?trace_id=...`` — the existing audit search
+1. ``GET /admin/audit/search?trace_id=...`` - the existing audit search
    proxy gains a ``trace_id`` filter that is forwarded to Loki when the
    client supports it and re-applied client-side as a defence-in-depth
    safety net.
-2. ``GET /api/v1/workflows/{workflow_id}/logs?trace_id=...`` — the new
+2. ``GET /api/v1/workflows/{workflow_id}/logs?trace_id=...`` - the new
    workflow-scoped log filter that builds a LogQL stream selector and
    forwards to ``LokiClient``. The endpoint is the backend half of
    ; the FE integration is tracked separately.
@@ -123,7 +123,7 @@ class _LokiClientWithQueryRange:
 
 
 class _ExplodingLokiClient:
-    """Loki stub that always raises — exercises the soft-fail branch."""
+    """Loki stub that always raises - exercises the soft-fail branch."""
 
     async def query_range(self, **kwargs: Any) -> Any:
         raise RuntimeError("loki down")
@@ -159,7 +159,7 @@ def _build_workflow_logs_app(*, loki: Any) -> FastAPI:
 
 
 # ---------------------------------------------------------------------------
-# /admin/audit/search?trace_id=... — extension to existing endpoint
+# /admin/audit/search?trace_id=... - extension to existing endpoint
 # ---------------------------------------------------------------------------
 
 
@@ -228,7 +228,7 @@ def test_audit_search_falls_back_when_legacy_client_rejects_trace_id() -> None:
 
 
 # ---------------------------------------------------------------------------
-# /api/v1/workflows/{wf_id}/logs — new endpoint
+# /api/v1/workflows/{wf_id}/logs - new endpoint
 # ---------------------------------------------------------------------------
 
 

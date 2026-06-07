@@ -1,4 +1,4 @@
-"""Runtime Atlassian probe client used by automation-service."""
+﻿"""Runtime Atlassian probe client used by automation-service."""
 
 from __future__ import annotations
 
@@ -363,7 +363,7 @@ class AtlassianProbeClient:
         return list(values) if isinstance(values, list) else []
 
     # ------------------------------------------------------------------
-    # Bitbucket — PO Review / orphan-branch read-only scanners
+    # Bitbucket - PO Review / orphan-branch read-only scanners
     # ------------------------------------------------------------------
 
     async def bitbucket_scan_pull_requests(
@@ -423,7 +423,7 @@ class AtlassianProbeClient:
         """Return branches projected into the orphan-branch scan shape.
 
         Each mapping carries ``name`` and ``last_commit_at`` (UTC
-        ``datetime`` or ``None``) — the keys the PO Review API shim's
+        ``datetime`` or ``None``) - the keys the PO Review API shim's
         `_project_branches` helper consumes.
         """
 

@@ -1,11 +1,11 @@
-"""Behavioral tests for ``LifecycleService.stop`` idempotency.
+﻿"""Behavioral tests for ``LifecycleService.stop`` idempotency.
 
 For any sequence of actions drawn from ``["start", "stop", "stop",
 "stop", "restart"]`` (with extra weight on ``stop`` so the strategy
 exercises consecutive stop calls aggressively), the lifecycle service
 SHALL satisfy the following invariants:
 
-1. **No raise.** Every action in the trace returns normally — no
+1. **No raise.** Every action in the trace returns normally - no
    ``Exception`` propagates out of :meth:`LifecycleService.stop` for
    any input sequence (the fakes are configured so Compose / Vault /
    Audit / Health all succeed unconditionally).
@@ -17,7 +17,7 @@ SHALL satisfy the following invariants:
    the *state* must converge to ``"stopped"``.
 3. **One audit row per action.** The fake :class:`AuditWriter`
    records exactly ``len(actions)`` rows in
-   ``write_with_retry_calls`` — one per attempted action — for any
+   ``write_with_retry_calls`` - one per attempted action - for any
    trace of length 1..10. This ensures every attempted action records
    an audit entry.
 
@@ -112,7 +112,7 @@ class _FakeAuditWriter:
 
 @dataclass
 class _FakeVaultClient:
-    """In-memory Vault stub — KV writes succeed and round-trip on read."""
+    """In-memory Vault stub - KV writes succeed and round-trip on read."""
 
     writes: list[tuple[str, str, str]] = field(default_factory=list)
     stored: dict[str, dict[str, str]] = field(default_factory=dict)
@@ -401,7 +401,7 @@ def test_stop_is_idempotent(actions: list[str], tmp_path_factory: Any) -> None:
 
     # Sanity: when the slot is already ``stopped`` the implementation
     # must short-circuit and never invoke ``compose.stop``. Count how
-    # many consecutive trailing ``stop`` actions we have — only the
+    # many consecutive trailing ``stop`` actions we have - only the
     # first one (if the prior state was non-stopped) calls Compose; the
     # rest must be no-ops.
     trailing_stops = 0
@@ -455,7 +455,7 @@ def test_stop_when_already_stopped_returns_noop(tmp_path: Path) -> None:
 
     # No Compose invocation when state was already ``stopped``.
     assert compose.stop_calls == []
-    # Two write_with_retry rows — one per attempted stop.
+    # Two write_with_retry rows - one per attempted stop.
     assert len(audit.write_with_retry_calls) == 2
 
 

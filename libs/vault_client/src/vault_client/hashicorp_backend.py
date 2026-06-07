@@ -1,11 +1,11 @@
-"""Hashicorp Vault HTTP backend (KV v2 mount).
+﻿"""Hashicorp Vault HTTP backend (KV v2 mount).
 
 Implements :class:`vault_client.client.VaultClient` against a real
 Hashicorp Vault server speaking the KV-v2 API. ``vault:atlassian/...``
 references are translated to ``<mount>/data/atlassian/...`` HTTP paths,
 matching the design note in ``design.md`` §"Araştırma Notları".
 
-This module deliberately keeps the surface area minimal — it exposes
+This module deliberately keeps the surface area minimal - it exposes
 only the protocol methods plus the constructor parameters. Higher-level
 concerns (retries, circuit breakers, request signing) live in caller
 code; the property test (``test_vault_backends.py``) injects a fake
@@ -36,7 +36,7 @@ class HashicorpBackend(VaultClient):
             ``"https://vault.internal:8200"``.
         token: Vault token used for the ``X-Vault-Token`` header.
         mount: KV-v2 mount path. Defaults to ``"secret"``.
-        client: Optional pre-configured :class:`httpx.Client` — useful
+        client: Optional pre-configured :class:`httpx.Client` - useful
             for tests that wire an :class:`httpx.MockTransport`.
         timeout: Per-request HTTP timeout in seconds. Default: 5.0.
     """

@@ -1,4 +1,4 @@
-"""Legacy uvicorn entry point — re-exports the canonical FastAPI app.
+﻿"""Legacy uvicorn entry point - re-exports the canonical FastAPI app.
 
 The canonical FastAPI application now lives under
 :mod:`automation_service.app`. This module is kept as a thin re-export

@@ -1,4 +1,4 @@
-"""LLM response boundary handling.
+﻿"""LLM response boundary handling.
 
 *For any* LLM response that exceeds ``LLM_MAX_TOKENS_OUTPUT`` tokens,
 the SSE stream SHALL terminate with a final event containing
@@ -67,7 +67,7 @@ from src.chat.handler import (  # noqa: E402
 # Strategies
 # ---------------------------------------------------------------------------
 
-#: Strategy for max_tokens_output — small values to keep tests fast.
+#: Strategy for max_tokens_output - small values to keep tests fast.
 #: We use values between 1 and 200 to represent the configured cap.
 _max_tokens_output = st.integers(min_value=1, max_value=200)
 
@@ -76,7 +76,7 @@ _max_tokens_output = st.integers(min_value=1, max_value=200)
 #: The excess is between 1 and 500 tokens above the cap.
 _excess_tokens = st.integers(min_value=1, max_value=500)
 
-#: Strategy for timeout_s — small values (1-5 seconds) for testing.
+#: Strategy for timeout_s - small values (1-5 seconds) for testing.
 _timeout_s = st.integers(min_value=1, max_value=3)
 
 #: Strategy for the number of token events before exceeding the cap.
@@ -101,7 +101,7 @@ class _StubPromptLoader:
 
 @dataclass
 class _RecordingAudit:
-    """In-memory audit sink — captures every event written."""
+    """In-memory audit sink - captures every event written."""
 
     events: list[AuditEvent] = field(default_factory=list)
 

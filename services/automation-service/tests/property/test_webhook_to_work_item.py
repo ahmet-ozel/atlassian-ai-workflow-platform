@@ -1,9 +1,9 @@
-"""Property tests for the Jira webhook → ``work_items`` post-condition.
+﻿"""Property tests for the Jira webhook → ``work_items`` post-condition.
 
 Webhook → ``work_items`` post-condition:
 
 For any well-formed Jira webhook payload ``p`` whose six pre-conditions
-hold simultaneously —
+hold simultaneously -
 
   1. valid HMAC signature against the dept's secret,
   2. payload hash NOT already in ``automation.processed_events``,
@@ -14,7 +14,7 @@ hold simultaneously —
   6. capability gate Phase 1 passes (department exists for the
      ``project_key`` AND has a Jira bot credential),
 
-— after the handler returns ``200 status:accepted``, *all* of the
+- after the handler returns ``200 status:accepted``, *all* of the
 following hold:
 
   • ``automation.processed_events`` has *exactly one* row whose
@@ -37,7 +37,7 @@ inserted into ``work_items``.
 Both legs of the disjunction are tested with the same Hypothesis
 composite generator, parameterised by which (if any) pre-condition is
 intentionally violated. All Postgres and Temporal interactions go
-through in-memory fakes — no real database or Temporal cluster is
+through in-memory fakes - no real database or Temporal cluster is
 required.
 """
 
@@ -353,13 +353,13 @@ _BOT_ACCOUNT_IDS: tuple[str, ...] = (
 )
 
 #: Project keys with a configured department mapping AND a Jira
-#: credential — i.e. capability gate Phase 1 passes for these.
+#: credential - i.e. capability gate Phase 1 passes for these.
 _PROJECT_KEYS_WITH_CAPABILITY: dict[str, str] = {
     "PAY": "payment",
     "PLAT": "platform",
 }
 
-#: Project keys that have a department mapping but NO Jira credential —
+#: Project keys that have a department mapping but NO Jira credential -
 #: capability gate denies. (For these tests we don't strictly need this
 #: case to be distinct from "no mapping at all", but exercising both
 #: paths gives Hypothesis more shrinking surface.)
@@ -427,7 +427,7 @@ _WORKFLOW_START_EVENTS: tuple[str, ...] = (
 )
 
 #: Event types that route() classifies as "ignored" (representative
-#: subset — the property only needs *one* unsupported example per run).
+#: subset - the property only needs *one* unsupported example per run).
 _UNSUPPORTED_EVENTS: tuple[str, ...] = (
     "jira:issue_deleted",
     "jira:project_archived",

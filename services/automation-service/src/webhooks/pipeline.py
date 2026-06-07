@@ -1,4 +1,4 @@
-"""Webhook Pipeline orchestrator — sequential stage execution.
+﻿"""Webhook Pipeline orchestrator - sequential stage execution.
 
 Implements the ``WebhookPipeline`` class that runs incoming webhook
 payloads through a strict dedup → loop_guard → dispatcher order.
@@ -230,7 +230,7 @@ class WebhookPipeline:
             try:
                 result = await stage.check(payload)
             except Exception as exc:
-                # Stage raised an unexpected error — log and treat as pass
+                # Stage raised an unexpected error - log and treat as pass
                 # to maintain at-least-once semantics
                 _logger.error(
                     "pipeline_stage_error",
@@ -270,7 +270,7 @@ class WebhookPipeline:
                     trace_id=trace_id,
                 )
 
-        # All stages passed — this shouldn't normally happen because
+        # All stages passed - this shouldn't normally happen because
         # the dispatcher stage should return a terminal action
         # (workflow_started, signaled, etc.)
         final_action = (
@@ -410,7 +410,7 @@ def _derive_event_id(payload: dict[str, Any]) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Stage Adapters — bridge component-specific types to PipelineStage Protocol
+# Stage Adapters - bridge component-specific types to PipelineStage Protocol
 # ---------------------------------------------------------------------------
 #
 # The three pipeline components (``EventDedup``, ``LoopGuard``,
@@ -423,7 +423,7 @@ def _derive_event_id(payload: dict[str, Any]) -> str:
 # pipeline payload into the component's input, runs the component, and
 # maps the component result back to a :class:`StageResult`.
 #
-# The translation is intentionally lossless — the raw payload bytes,
+# The translation is intentionally lossless - the raw payload bytes,
 # headers, and metadata fields all flow through so audit rows emitted
 # from inside the components carry the same identifiers the pipeline
 # attached at extraction time.
@@ -450,7 +450,7 @@ class DedupStage:
         # We always have ``payload.headers`` (lowercased) thanks to
         # :func:`extract_webhook_payload`. Raw bytes are not strictly
         # required because the dedup ID is derived from header or
-        # body fields — we pass an empty bytes literal to satisfy the
+        # body fields - we pass an empty bytes literal to satisfy the
         # dataclass.
         dedup_payload = DedupPayload(
             headers=dict(payload.headers),
@@ -671,7 +671,7 @@ async def post_jira_webhook_pipeline(request: Request) -> JSONResponse:
     (a :class:`WebhookPipeline`). If not wired, returns 503.
 
     Returns 200 for all successfully processed webhooks (whether passed,
-    dropped, or dispatched) — Atlassian expects 200 to acknowledge receipt.
+    dropped, or dispatched) - Atlassian expects 200 to acknowledge receipt.
     """
     # Retrieve the pipeline from app state
     pipeline: WebhookPipeline | None = getattr(

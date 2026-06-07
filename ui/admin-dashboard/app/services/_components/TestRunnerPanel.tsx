@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 /**
- * TestRunnerPanel — Real-time SSE test runner with terminal-like output.
+ * TestRunnerPanel - Real-time SSE test runner with terminal-like output.
  *
  * Frontend component for
  * ``POST /admin/services/{service_name}/test?stream=true``.
@@ -105,7 +105,7 @@ export default function TestRunnerPanel({
     }
   }, [lines]);
 
-  // Handle user scroll — disable auto-scroll if user scrolls up
+  // Handle user scroll - disable auto-scroll if user scrolls up
   const handleTerminalScroll = useCallback(() => {
     if (!terminalRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = terminalRef.current;
@@ -138,7 +138,7 @@ export default function TestRunnerPanel({
         const text = await response.text().catch(() => "");
         setLines((prev) => [
           ...prev,
-          `Error: HTTP ${response.status} — ${text || "Request failed"}`,
+          `Error: HTTP ${response.status} - ${text || "Request failed"}`,
         ]);
         setStatus("failed");
         return;
@@ -161,7 +161,7 @@ export default function TestRunnerPanel({
         const { done, value } = await reader.read();
 
         if (done) {
-          // Stream ended — process any remaining buffer
+          // Stream ended - process any remaining buffer
           if (sseBuffer.trim()) {
             const { events } = parseSSEChunk(sseBuffer, "\n\n");
             for (const event of events) {
@@ -212,14 +212,14 @@ export default function TestRunnerPanel({
             setStatus("failed");
             receivedDone = true;
           } else {
-            // Regular data event — append line
+            // Regular data event - append line
             setLines((prev) => [...prev, event.data]);
           }
         }
       }
     } catch (err: unknown) {
       if (err instanceof DOMException && err.name === "AbortError") {
-        // User cancelled — this is expected
+        // User cancelled - this is expected
         setStatus("cancelled");
       } else {
         // Unexpected disconnect
@@ -284,7 +284,7 @@ export default function TestRunnerPanel({
         {/* Header */}
         <div style={headerStyle}>
           <h2 style={{ margin: 0, fontSize: "1.1rem" }}>
-            Run Tests — {serviceName}
+            Run Tests - {serviceName}
           </h2>
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
             {/* Status badge */}

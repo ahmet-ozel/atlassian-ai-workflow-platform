@@ -1,5 +1,5 @@
-"""
-Test 10: Confluence real API smoke test — space and page CRUD.
+﻿"""
+Test 10: Confluence real API smoke test - space and page CRUD.
 
 Validates that the Confluence REST API can be reached with real credentials
 and that page create, update, and delete operations work correctly.
@@ -48,7 +48,7 @@ def confluence_api_url(base_url: str, path: str) -> str:
 
     Handles both ``https://x.atlassian.net`` (root) and
     ``https://x.atlassian.net/wiki`` (already includes the /wiki
-    prefix) — appending an extra /wiki produces a 404 HTML page.
+    prefix) - appending an extra /wiki produces a 404 HTML page.
     """
     base = base_url.rstrip("/")
     if not path.startswith("/"):
@@ -271,9 +271,9 @@ def delete_page(
         if resp.status_code in (200, 204):
             result["success"] = True
         elif resp.status_code == 403:
-            # Delete may be banned/forbidden — skip gracefully
+            # Delete may be banned/forbidden - skip gracefully
             result["skipped"] = True
-            result["error"] = "Delete forbidden (403) — skipping"
+            result["error"] = "Delete forbidden (403) - skipping"
         else:
             result["error"] = resp.text[:500]
     except httpx.HTTPError as exc:
@@ -287,7 +287,7 @@ def delete_page(
 # ---------------------------------------------------------------------------
 
 class TestConfluenceSmoke:
-    """Confluence real API smoke test — space and page CRUD.
+    """Confluence real API smoke test - space and page CRUD.
 
     Uses httpx with Basic Auth to call Confluence REST API directly.
     Implements dynamic space discovery (R22 fix) to avoid hardcoded space keys.
@@ -337,7 +337,7 @@ class TestConfluenceSmoke:
         """
         space_key = getattr(self.__class__, "_space_key", None)
         if space_key is None:
-            pytest.skip("CONF-SPACE did not discover a space — cannot create page")
+            pytest.skip("CONF-SPACE did not discover a space - cannot create page")
 
         auth = make_auth(credentials.confluence_username, credentials.confluence_api_token)
         timestamp = int(time.time())
@@ -390,7 +390,7 @@ class TestConfluenceSmoke:
         current_version = getattr(self.__class__, "_page_version", None)
 
         if page_id is None:
-            pytest.skip("CONF-CREATE did not produce a page — cannot update")
+            pytest.skip("CONF-CREATE did not produce a page - cannot update")
 
         auth = make_auth(credentials.confluence_username, credentials.confluence_api_token)
         updated_body = (
@@ -446,7 +446,7 @@ class TestConfluenceSmoke:
         page_id = getattr(self.__class__, "_page_id", None)
 
         if page_id is None:
-            pytest.skip("CONF-CREATE did not produce a page — cannot delete")
+            pytest.skip("CONF-CREATE did not produce a page - cannot delete")
 
         auth = make_auth(credentials.confluence_username, credentials.confluence_api_token)
 
@@ -461,7 +461,7 @@ class TestConfluenceSmoke:
         # Determine verdict
         if result["skipped"]:
             verdict = "skipped"
-            # Deletion is banned — this is acceptable per R10.4
+            # Deletion is banned - this is acceptable per R10.4
         elif result["success"]:
             verdict = "pass"
             # Verify deletion by trying to GET the page
@@ -483,7 +483,7 @@ class TestConfluenceSmoke:
                         f"CONF-DELETE: Page still accessible with status '{status}'"
                     )
             except httpx.HTTPError:
-                pass  # Network error during verification — acceptable
+                pass  # Network error during verification - acceptable
         else:
             verdict = "fail"
             # Only fail if it's not a permission issue

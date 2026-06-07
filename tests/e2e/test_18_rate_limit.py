@@ -1,4 +1,4 @@
-"""
+﻿"""
 Test 18: Rate-limited API response handling (R18).
 
 Validates that the system handles HTTP 429 rate-limit responses gracefully:
@@ -150,7 +150,7 @@ def _make_call_with_backoff(endpoint: str = "/healthz", max_attempts: int = MAX_
         result["responses"].append(call_result)
 
         if call_result["status_code"] == 429:
-            # Rate limited — apply exponential backoff
+            # Rate limited - apply exponential backoff
             result["backoff_delays"].append(backoff)
             time.sleep(backoff)
             backoff *= 2  # Exponential backoff
@@ -221,7 +221,7 @@ class TestRateLimitHandling:
         """
         result = _make_call_with_backoff("/healthz", max_attempts=MAX_RETRY_ATTEMPTS)
 
-        # Either success (2xx) or structured error (4xx) — never crash (5xx)
+        # Either success (2xx) or structured error (4xx) - never crash (5xx)
         assert result["final_status"] is not None, (
             "Should receive a final response after backoff attempts"
         )
@@ -271,7 +271,7 @@ class TestRateLimitHandling:
                 ind in logs.lower() for ind in rate_limit_indicators
             )
 
-            # This is informational — if no 429 was triggered, we can't
+            # This is informational - if no 429 was triggered, we can't
             # assert log entries exist
             if not has_rate_limit_log:
                 pytest.skip(
@@ -281,7 +281,7 @@ class TestRateLimitHandling:
                     f"the HTTP client level without logging."
                 )
         else:
-            # No rate limiting occurred — the API didn't throttle us
+            # No rate limiting occurred - the API didn't throttle us
             pytest.skip(
                 f"No HTTP 429 responses received from {RAPID_CALL_COUNT} "
                 f"rapid calls. Rate limiting may not be configured or "

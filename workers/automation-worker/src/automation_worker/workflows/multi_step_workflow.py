@@ -1,13 +1,13 @@
-"""``MultiStepWorkflow`` — sequential multi-step orchestrator.
+﻿"""``MultiStepWorkflow`` - sequential multi-step orchestrator.
 
-Orchestrates complex tasks by splitting them into 2–20 sequential
+Orchestrates complex tasks by splitting them into 2-20 sequential
 child workflows. Each step runs as an independent child workflow;
 the output of step N is passed as input to step N+1.
 
 Responsibilities (design.md §5 "Multi-Step Orchestrator" and
-–5.10):
+-5.10):
 
-1. Validate step count (2–20 inclusive).
+1. Validate step count (2-20 inclusive).
 2. Execute steps sequentially as child workflows.
 3. Pass output from step N to step N+1.
 4. Apply retry policy with exponential backoff (5s, 10s, 20s) on
@@ -19,17 +19,17 @@ Responsibilities (design.md §5 "Multi-Step Orchestrator" and
  ``execute_output_actions`` activity.
 8. On failure after retries exhausted, post error report to Jira.
 
-Additionally provides ``EpicSubtaskWorkflow`` — an Epic-aware
+Additionally provides ``EpicSubtaskWorkflow`` - an Epic-aware
 orchestrator that iterates an Epic's subtask list, starts a child
 ``AutomationWorkflow`` for each subtask, posts progress comments
 to the parent Epic, and stops on first failure.
 
 Determinism contract: The workflow body uses only Temporal-deterministic
-primitives — ``workflow.now``, ``workflow.execute_activity``,
+primitives - ``workflow.now``, ``workflow.execute_activity``,
 ``workflow.start_child_workflow``. No ``random`` / ``uuid.uuid4`` /
 ``os.environ`` / direct I/O.
 
-(2–20 step plan), **5.2** (independent
+(2-20 step plan), **5.2** (independent
 child workflow step), **5.3** (step state tracking), **5.4** (output
 passing), **5.5** (retry with exponential backoff), **5.6** (error
 report on exhausted retries), **5.7** (timing metadata), **5.8** (output
@@ -143,7 +143,7 @@ class MultiStepInput:
  Attributes:
  issue_key: The Jira issue key for context and error reporting.
  dept_id: Department identifier for credential resolution.
- steps: List of step definitions (2–20 steps).
+ steps: List of step definitions (2-20 steps).
  workflow_id: Parent workflow identifier for tracing.
  output_actions: Optional list of output actions to execute
  after all steps complete.
@@ -184,7 +184,7 @@ class MultiStepResult:
 class MultiStepWorkflow:
     """Sequential multi-step orchestrator workflow.
 
- Executes 2–20 steps sequentially as child workflows, passing
+ Executes 2-20 steps sequentially as child workflows, passing
  output from each step to the next. Applies retry policy with
  exponential backoff on failure. Tracks timing metadata for each
  step. On completion, executes output_actions. On failure, posts
@@ -218,7 +218,7 @@ class MultiStepWorkflow:
                 error=error_msg,
             )
 
-        # Initialize step results (— pending state)
+        # Initialize step results (- pending state)
         step_results: list[StepResult] = [
             StepResult(step_name=step.name, status="pending")
             for step in inp.steps
@@ -261,7 +261,7 @@ class MultiStepWorkflow:
             # Pass output to next step 
             previous_output = self._extract_output(step_result)
 
-        # 3. All steps completed — execute output_actions (Req 5.8)
+        # 3. All steps completed - execute output_actions (Req 5.8)
         workflow_end = workflow.now()
         total_duration = (workflow_end - workflow_start).total_seconds()
 
@@ -440,7 +440,7 @@ class MultiStepWorkflow:
         except Exception as exc:  # noqa: BLE001
             workflow.logger.warning(
                 "MultiStepWorkflow: execute_output_actions failed "
-                "for %s: %s — continuing",
+                "for %s: %s - continuing",
                 inp.issue_key,
                 exc,
             )
@@ -460,7 +460,7 @@ class MultiStepWorkflow:
         except Exception:  # noqa: BLE001
             workflow.logger.warning(
                 "MultiStepWorkflow: jira_add_comment failed for %s "
-                "— continuing",
+                "- continuing",
                 issue_key,
             )
 
@@ -584,7 +584,7 @@ class EpicSubtaskResult:
 
 @workflow.defn(name="EpicSubtaskWorkflow")
 class EpicSubtaskWorkflow:
-    """Epic subtask orchestrator — iterates subtasks sequentially.
+    """Epic subtask orchestrator - iterates subtasks sequentially.
 
  For each subtask in the Epic, starts a child ``AutomationWorkflow``
  and posts progress comments to the parent Epic. On first subtask
@@ -670,7 +670,7 @@ class EpicSubtaskWorkflow:
                 )
 
             except Exception as exc:  # noqa: BLE001
-                # Subtask failed — post failure comment and stop
+                # Subtask failed - post failure comment and stop
                 #.
                 error_msg = str(exc)
                 step_results.append(
@@ -683,7 +683,7 @@ class EpicSubtaskWorkflow:
                 )
 
                 fail_comment = (
-                    f"❌ Subtask {subtask.issue_key} fail oldu — "
+                    f"❌ Subtask {subtask.issue_key} fail oldu - "
                     f"Epic durduruldu"
                 )
                 await self._post_jira_comment(
@@ -692,7 +692,7 @@ class EpicSubtaskWorkflow:
 
                 workflow.logger.warning(
                     "EpicSubtaskWorkflow: subtask %s failed for "
-                    "Epic %s: %s — stopping remaining subtasks",
+                    "Epic %s: %s - stopping remaining subtasks",
                     subtask.issue_key,
                     inp.epic_issue_key,
                     error_msg,
@@ -744,6 +744,6 @@ class EpicSubtaskWorkflow:
         except Exception:  # noqa: BLE001
             workflow.logger.warning(
                 "EpicSubtaskWorkflow: jira_add_comment failed for %s "
-                "— continuing",
+                "- continuing",
                 issue_key,
             )

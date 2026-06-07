@@ -1,4 +1,4 @@
-"""Shared singletons are shared across containers.
+﻿"""Shared singletons are shared across containers.
 
 For any successful run of the lifespan startup phase, the asyncpg
 pool, Vault client and AuditLogger instances reachable through every
@@ -76,7 +76,7 @@ async def _run_property() -> None:
             assert app.state.webhook_v2.workflow_client is shared_temporal
             assert app.state.webhook_v2.vault is shared_vault
 
-            # Pool sanity — connection_factory closes over the shared pool
+            # Pool sanity - connection_factory closes over the shared pool
             assert callable(app.state.connection_factory)
 
             # Make sure the pool reference on app.state matches the fake

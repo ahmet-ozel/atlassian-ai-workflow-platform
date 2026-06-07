@@ -1,4 +1,4 @@
-"""Unit tests for ``automation_service.app._close_quietly``.
+﻿"""Unit tests for ``automation_service.app._close_quietly``.
 
 During lifespan shutdown the helper must close every owned resource on
 a best-effort basis. A failing close on one resource MUST NOT block the
@@ -8,18 +8,18 @@ that names the resource and carries the full traceback.
 
 Three branches are exercised here:
 
-* **Success** — ``coro_factory()`` returns an awaitable that completes
+* **Success** - ``coro_factory()`` returns an awaitable that completes
   normally. The helper awaits it, returns ``None`` and emits no log
   records.
-* **Awaitable raises** — ``coro_factory()`` returns an awaitable that
+* **Awaitable raises** - ``coro_factory()`` returns an awaitable that
   raises :class:`RuntimeError`. The helper catches the exception
   inside its ``try/except``, logs at WARNING with the resource name
   and ``exc_info=True``, and never re-raises.
-* **``coro_factory`` itself raises** — the *factory* call raises
+* **``coro_factory`` itself raises** - the *factory* call raises
   :class:`AttributeError` (the documented "no-close" case for the
   :class:`TemporalClient` wrapper). Because the call lives inside
   the helper's ``try`` block, the exception is captured by the same
-  WARNING log path and never propagates out — shutdown continues.
+  WARNING log path and never propagates out - shutdown continues.
 """
 
 from __future__ import annotations
@@ -119,7 +119,7 @@ class TestCloseQuietlyAwaitableRaises:
             raise RuntimeError("boom")
 
         with caplog.at_level(logging.WARNING, logger=_LOGGER_NAME):
-            # The call must NOT raise — that is the whole contract.
+            # The call must NOT raise - that is the whole contract.
             result = await _close_quietly("http_client", _broken_close)
 
         assert result is None
@@ -150,7 +150,7 @@ class TestCloseQuietlyFactoryRaises:
     handle simply does not expose a ``close``/``aclose`` method. The
     spec requires the AttributeError raised by the *factory* call
     (i.e. attribute lookup on a missing method) to be captured
-    inside the helper's ``try`` block — so that the lifespan keeps
+    inside the helper's ``try`` block - so that the lifespan keeps
     walking its reverse-shutdown list instead of unwinding through
     ``finally``.
     """
@@ -161,7 +161,7 @@ class TestCloseQuietlyFactoryRaises:
     ) -> None:
         def _missing_close() -> "object":
             # Simulates ``temporal.close`` resolving to a real method
-            # whose invocation immediately fails with AttributeError —
+            # whose invocation immediately fails with AttributeError -
             # the same shape :class:`AttributeError` would take if the
             # caller had passed a wrapper that does not expose a
             # close coroutine factory at all.

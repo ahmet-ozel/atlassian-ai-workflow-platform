@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 /**
- * CreateDepartmentModal — Modal for creating a new department.
+ * CreateDepartmentModal - Modal for creating a new department.
  *
  * In wizard mode (`wizardMode=true`), the modal shows a two-step flow:
  * 1. Create the department (id + display name)
@@ -256,13 +256,13 @@ export default function CreateDepartmentModal({
       if (serviceResult && serviceResult.status === "ok") {
         setProbeStatus("ok");
         setProbeAccountId(serviceResult.account_id);
-        // Probe passed — wizard can complete
+        // Probe passed - wizard can complete
       } else {
         setProbeStatus("failed");
         setCredError(
           serviceResult?.error
             ? `Bağlantı testi başarısız: ${serviceResult.error}`
-            : "Bağlantı testi başarısız — credential bilgilerini kontrol edin.",
+            : "Bağlantı testi başarısız - credential bilgilerini kontrol edin.",
         );
       }
     } catch (err) {

@@ -1,4 +1,4 @@
-"""Unit tests for :class:`src.config.Settings.runner_base_path`.
+﻿"""Unit tests for :class:`src.config.Settings.runner_base_path`.
 
 ``RUNNER_BASE_PATH`` is the canonical env var; ``SSH_BASE_PATH`` is preserved
 as a deprecated alias for backwards compatibility. The Hypothesis-based
@@ -94,7 +94,7 @@ class TestRunnerBasePathAliasResolution:
     def test_case_insensitive_canonical_env_var(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        # SettingsConfigDict(case_sensitive=False) — confirm the lower-
+        # SettingsConfigDict(case_sensitive=False) - confirm the lower-
         # case form is also recognised so misconfigured shells don't
         # silently fall through to the default.
         _clear_env(monkeypatch)

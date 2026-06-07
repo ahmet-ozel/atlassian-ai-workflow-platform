@@ -1,4 +1,4 @@
-"""``POST /auth/bootstrap`` — one-time admin user creation endpoint.
+﻿"""``POST /auth/bootstrap`` - one-time admin user creation endpoint.
 
 This router exposes the bootstrap token consumption flow described in
 behavior 2. The endpoint is intentionally **unauthenticated** because
@@ -72,7 +72,7 @@ class BootstrapSuccessResponse(BaseModel):
 
 # ``secrets.token_urlsafe(32)`` produces a 43-character base64url string.
 # We accept tokens that are base64url-safe characters (A-Z, a-z, 0-9, -, _)
-# with a reasonable length range (32–64 chars) to allow for future changes
+# with a reasonable length range (32-64 chars) to allow for future changes
 # in token generation while rejecting obviously malformed input.
 _TOKEN_PATTERN = re.compile(r"^[A-Za-z0-9_\-]{32,64}$")
 
@@ -80,7 +80,7 @@ _TOKEN_PATTERN = re.compile(r"^[A-Za-z0-9_\-]{32,64}$")
 def _is_valid_token_format(token: str) -> bool:
     """Check whether the token matches the expected format.
 
-    Returns ``True`` for well-formed base64url tokens of 32–64 chars.
+    Returns ``True`` for well-formed base64url tokens of 32-64 chars.
     Returns ``False`` for empty strings, tokens with invalid characters,
     or tokens outside the expected length range.
     """
@@ -119,7 +119,7 @@ def _get_db_pool(request: Request):
         201: {"description": "Admin user created successfully"},
         400: {"description": "Invalid token format"},
         401: {"description": "Token expired or already used"},
-        410: {"description": "Bootstrap disabled — OIDC is active"},
+        410: {"description": "Bootstrap disabled - OIDC is active"},
         503: {"description": "Database unavailable"},
     },
 )
@@ -129,7 +129,7 @@ async def bootstrap_admin(
 ) -> BootstrapSuccessResponse:
     """Consume a one-time bootstrap token to create the first admin user.
 
-    This endpoint is unauthenticated by design — it exists to bootstrap
+    This endpoint is unauthenticated by design - it exists to bootstrap
     the very first admin before OIDC is configured.
 
     """
@@ -141,7 +141,7 @@ async def bootstrap_admin(
     # ---- 1. Check if OIDC is configured (behavior 2.5) ----
     if await bootstrap_service.is_oidc_configured():
         logger.info(
-            "bootstrap attempt rejected — OIDC provider is active"
+            "bootstrap attempt rejected - OIDC provider is active"
         )
         raise HTTPException(
             status_code=status.HTTP_410_GONE,
@@ -151,7 +151,7 @@ async def bootstrap_admin(
     # ---- 2. Validate token format (behavior 2.3) ----
     if not _is_valid_token_format(body.token):
         logger.warning(
-            "bootstrap attempt rejected — invalid token format"
+            "bootstrap attempt rejected - invalid token format"
         )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -168,7 +168,7 @@ async def bootstrap_admin(
 
     if not consumed:
         logger.warning(
-            "bootstrap attempt rejected — token expired or already used"
+            "bootstrap attempt rejected - token expired or already used"
         )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -180,7 +180,7 @@ async def bootstrap_admin(
 
     async with db_pool.acquire() as conn:
         # Create the admin user in the auth schema.
-        # The table may not exist yet in all environments — we use
+        # The table may not exist yet in all environments - we use
         # a CREATE TABLE IF NOT EXISTS guard so the bootstrap flow
         # works even on a fresh database where only the
         # bootstrap_tokens migration has run.

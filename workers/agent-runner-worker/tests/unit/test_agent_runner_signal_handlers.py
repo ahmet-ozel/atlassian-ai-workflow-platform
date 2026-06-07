@@ -1,8 +1,8 @@
-"""Unit tests for ``AgentRunnerWorkflow`` signal handlers and helpers.
+﻿"""Unit tests for ``AgentRunnerWorkflow`` signal handlers and helpers.
 
 Validates the signal-handler wiring:
 
-    1. ``comment_added`` keyword routing — ``[fix]`` /  ``[explain]`` /
+    1. ``comment_added`` keyword routing - ``[fix]`` /  ``[explain]`` /
        ``[needs_info]`` markers dispatch to the matching internal
        handler; plain comments fall through to the iter-advance path.
     2. ``[fix]`` debounce + diff-hash dedup branches each queue the
@@ -11,7 +11,7 @@ Validates the signal-handler wiring:
     3. ``[explain]`` cache hit serves the cached answer with no iter
        advance and queues ``explain_cache_hit`` audit.
     4. ``[needs_info]`` streak → ``out_of_scope`` once the cap is hit.
-    5. iter==3 banner — ``_iter_warning_pending`` arms exactly once the
+    5. iter==3 banner - ``_iter_warning_pending`` arms exactly once the
        first time ``iter_count`` crosses :data:`ITER_WARNING_THRESHOLD`;
        a fourth advance does not re-arm.
     6. :class:`TokenCapExceededError` is non-retryable with the stable
@@ -20,7 +20,7 @@ Validates the signal-handler wiring:
        it pre-flight (no activity call) when ``input_tokens`` exceeds
        :data:`MAX_ACTIVITY_TOKEN_CAP`.
 
-The tests exercise the signal handlers as plain Python methods —
+The tests exercise the signal handlers as plain Python methods -
 :meth:`AgentRunnerWorkflow.comment_added` and friends are bound
 methods that mutate workflow state but do not themselves ``await``
 activities, so they remain testable outside a Temporal worker once
@@ -43,7 +43,7 @@ from temporalio import workflow as _temporal_workflow
 from temporalio.exceptions import ApplicationError
 
 # ---------------------------------------------------------------------------
-# ``sys.path`` bootstrapping — the canonical workflow ships under
+# ``sys.path`` bootstrapping - the canonical workflow ships under
 # ``src/agent_runner/`` (mirrors ``hatchling`` ``packages = ["src",
 # "src/agent_runner"]``) and pulls ``temporal_shared.*`` from the
 # foundation lib package.
@@ -61,7 +61,7 @@ for _candidate in (_SRC_DIR, _TEMPORAL_SHARED_SRC):
     if _candidate.is_dir() and _str not in sys.path:
         sys.path.insert(0, _str)
 
-# noqa: E402 below — import after sys.path bootstrap.
+# noqa: E402 below - import after sys.path bootstrap.
 
 from agent_runner.workflows.agent_runner_workflow import (  # noqa: E402
     EXPLAIN_CACHE_HIT_AUDIT_ACTION,
@@ -325,7 +325,7 @@ class TestFixDebounceAndDedup:
         )
 
         # Second ``[fix]`` 30s later (well within the 60s window) is
-        # silently dropped — no iter advance, audit row queued.
+        # silently dropped - no iter advance, audit row queued.
         patched_workflow_now.advance(timedelta(seconds=30))
         wf.fix_triggered(
             FixTriggeredSignal(comment_text="[fix]", diff_hash="H2")
@@ -348,7 +348,7 @@ class TestFixDebounceAndDedup:
             FixTriggeredSignal(comment_text="[fix]", diff_hash="H1")
         )
 
-        # Iter is unchanged — re-test was protected.
+        # Iter is unchanged - re-test was protected.
         assert wf._iteration_state.iter_count == 1
         assert (
             FIX_RETEST_PROTECTED_AUDIT_ACTION in wf._pending_audit_actions
@@ -512,7 +512,7 @@ class TestNeedsInfoStreak:
 
 
 # ---------------------------------------------------------------------------
-# 5. iter==3 banner — fires exactly once
+# 5. iter==3 banner - fires exactly once
 # ---------------------------------------------------------------------------
 
 
@@ -615,7 +615,7 @@ class TestMaybePostIterWarningBanner:
 
 
 # ---------------------------------------------------------------------------
-# 6. Token cap (T13) — non-retryable + workflow helper pre-flight
+# 6. Token cap (T13) - non-retryable + workflow helper pre-flight
 # ---------------------------------------------------------------------------
 
 
@@ -691,7 +691,7 @@ class TestExecuteLlmActivityTokenCap:
         assert excinfo.value.activity_name == "llm_analyze_task"
         assert excinfo.value.input_tokens == MAX_ACTIVITY_TOKEN_CAP + 1
         assert excinfo.value.non_retryable is True
-        # The activity itself was NEVER invoked — cap is pre-flight.
+        # The activity itself was NEVER invoked - cap is pre-flight.
         called_names = [c.args[0] for c in execute_activity.call_args_list]
         assert "llm_analyze_task" not in called_names
         # The audit row was emitted before raising so the trail

@@ -1,4 +1,4 @@
-"""invariant for Open_Issue schema validity.
+﻿"""invariant for Open_Issue schema validity.
 
 
 
@@ -80,7 +80,7 @@ _valid_entry_strategy = st.fixed_dictionaries({
     "recommended_action": _valid_recommended_actions,
 })
 
-# Invalid strategies — each violates exactly one constraint
+# Invalid strategies - each violates exactly one constraint
 _invalid_severity = st.text(min_size=1, max_size=20).filter(
     lambda s: s not in SEVERITY_VALUES
 )

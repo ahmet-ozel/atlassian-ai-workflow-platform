@@ -1,4 +1,4 @@
-"""Integration test: AutomationWorkflow ``new_comment`` signal flow.
+﻿"""Integration test: AutomationWorkflow ``new_comment`` signal flow.
 
 
 Scenario
@@ -228,7 +228,7 @@ async def test_new_comment_signal_drives_loop_increment_and_reanalysis() -> None
 #
 # 1. advance the iteration counter on a plain comment;
 # 2. flip the workflow into ``out_of_scope`` once :data:`MAX_ITER` is
-# exhausted — and never call ``compensation_chain_run``,
+# exhausted - and never call ``compensation_chain_run``,
 # because natural termination must NOT trigger compensation
 # without triggering compensation;
 # 3. honour the ``[needs_info]`` keyword routing by bumping the streak
@@ -239,7 +239,7 @@ async def test_new_comment_signal_drives_loop_increment_and_reanalysis() -> None
 # all participate. Activities the workflow body invokes are stubbed by
 # small ``@activity.defn`` wrappers that record every call in a shared
 # :class:`ActivityCallLog`. ``compensation_chain_run`` is registered
-# *defensively* — these tests must never call it; a recorded
+# *defensively* - these tests must never call it; a recorded
 # invocation would catch a regression where natural termination
 # leaks into the compensation path.
 #
@@ -254,7 +254,7 @@ async def test_new_comment_signal_drives_loop_increment_and_reanalysis() -> None
 # ``wait_condition`` on the very first turn (the run-body's initial
 # ``_advance_iter_with_banner_check`` flips ``_signal_pending=True``)
 # so by the time a post-start ``handle.signal(...)`` reaches the
-# server the workflow has already returned — under
+# server the workflow has already returned - under
 # ``start_time_skipping`` the seven-day wait is collapsed to zero
 # wall-clock time.
 #
@@ -264,7 +264,7 @@ async def test_new_comment_signal_drives_loop_increment_and_reanalysis() -> None
 # banner edge; the body then awaits the ``jira_add_comment`` activity
 # inside :meth:`AgentRunnerWorkflow._maybe_post_iter_warning_banner`.
 # The stub ``jira_add_comment`` activity blocks on an
-# :class:`asyncio.Event` (``chain_may_finish``) — while it blocks the
+# :class:`asyncio.Event` (``chain_may_finish``) - while it blocks the
 # workflow body is parked inside the activity, signals fired via
 # :meth:`handle.signal` reach the server cleanly, queue against the
 # workflow's signal handlers, and are processed in the *next*
@@ -285,7 +285,7 @@ from pathlib import Path as _ArPath
 
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — agent-runner-worker tree, temporal-shared, mcp_client.
+# sys.path bootstrap - agent-runner-worker tree, temporal-shared, mcp_client.
 # Mirrors the bootstrap used by ``test_temporal_cancel_compensation.py``.
 # ---------------------------------------------------------------------------
 
@@ -326,7 +326,7 @@ def _agent_runner_temporal_env_available() -> bool:
 
     try:
         from temporalio.testing import WorkflowEnvironment  # noqa: F401
-    except Exception:  # noqa: BLE001 — any import failure → skip.
+    except Exception:  # noqa: BLE001 - any import failure → skip.
         return False
     return True
 
@@ -349,7 +349,7 @@ async def _ar_start_time_skipping_or_skip() -> Any:
 
     try:
         env_cm = await WorkflowEnvironment.start_time_skipping()
-    except Exception as exc:  # noqa: BLE001 — surface as skip.
+    except Exception as exc:  # noqa: BLE001 - surface as skip.
         pytest.skip(f"temporalio test environment not available: {exc}")
     async with env_cm as env:
         yield env
@@ -384,7 +384,7 @@ class ActivityCallLog:
 
 
 # ---------------------------------------------------------------------------
-# Activity stub factory — slow-banner sync barrier
+# Activity stub factory - slow-banner sync barrier
 # ---------------------------------------------------------------------------
 
 
@@ -408,12 +408,12 @@ def _make_agent_runner_activities(
  the signals it wants delivered). While the workflow body is
  parked inside this activity await, queued
  ``handle.signal(...)`` calls land on the workflow without racing
- the legacy fallback's signal-wait timeout — the SDK delivers
+ the legacy fallback's signal-wait timeout - the SDK delivers
  them as part of the next workflow task once the activity
  returns.
 
  ``compensation_chain_run`` is registered *defensively*: these
- tests must never invoke it ( — natural termination must NOT
+ tests must never invoke it ( - natural termination must NOT
  trigger compensation). A recorded invocation would catch a
  regression in that branch.
 
@@ -447,7 +447,7 @@ def _make_agent_runner_activities(
                 chain_may_finish.wait(), timeout=10.0
             )
         except _ar_asyncio.TimeoutError:
-            # Bounded wait — release the activity so the workflow
+            # Bounded wait - release the activity so the workflow
             # can complete and the test can collect its result.
             pass
         return None
@@ -471,12 +471,12 @@ def _make_agent_runner_input(
 
  ``workflow_type="noop_test"`` falls through to the workflow body's
  legacy signal-wait fallback in
- :meth:`AgentRunnerWorkflow._dispatch_workflow_type` — the natural
+ :meth:`AgentRunnerWorkflow._dispatch_workflow_type` - the natural
  surface for ``comment_added`` signal handling. The default
  ``iteration=3`` matches
  :data:`agent_runner.workflows.agent_runner_workflow.ITER_WARNING_THRESHOLD`
  so the run-body's initial advance arms the iter==3 banner edge,
- parking the body inside the slow ``jira_add_comment`` activity —
+ parking the body inside the slow ``jira_add_comment`` activity -
  this is the sync barrier the tests use to deliver post-start
  signals deterministically.
  """
@@ -563,7 +563,7 @@ async def test_comment_added_signal_advances_iter_count() -> None:
 
  The post-condition pinned by this test is the spec contract from
  the brief: ``iter_count >= 2`` after a plain ``comment_added``
- signal — i.e. the signal handler successfully advances the
+ signal - i.e. the signal handler successfully advances the
  counter end-to-end through a real Temporal cluster.
  """
 
@@ -611,7 +611,7 @@ async def test_comment_added_signal_advances_iter_count() -> None:
             )
 
             # Wait until the workflow body parks inside the banner
-            # activity — that is the moment when post-start signals
+            # activity - that is the moment when post-start signals
             # can be delivered without racing the legacy signal-wait
             # fallback timeout.
             await _ar_asyncio.wait_for(
@@ -635,7 +635,7 @@ async def test_comment_added_signal_advances_iter_count() -> None:
         f"{iter_count} (state={iter_state!r})"
     )
 
-    # The plain comment is below the cap — workflow must NOT be
+    # The plain comment is below the cap - workflow must NOT be
     # in ``out_of_scope`` after a single advance.
     assert out_of_scope is False, (
         f"is_out_of_scope must be False after one signal at "
@@ -680,7 +680,7 @@ async def test_five_comments_flip_workflow_to_out_of_scope() -> None:
  * signal 1 (signal-with-start) buffered, handler advances
  → ``iter_count=4``
  * signals 2-5 queued via handle.signal
- * barrier releases — handlers fire → 4→5 (signal 2),
+ * barrier releases - handlers fire → 4→5 (signal 2),
  5→cap (signal 3 flips
  ``_out_of_scope``),
  signals 4-5 see
@@ -691,7 +691,7 @@ async def test_five_comments_flip_workflow_to_out_of_scope() -> None:
  with ``status="out_of_scope"``.
 
  The cap MUST hold (``iter_count <= MAX_ITER=5``) and
- ``compensation_chain_run`` MUST NOT have run — natural
+ ``compensation_chain_run`` MUST NOT have run - natural
  termination (iter cap, ``out_of_scope``) is distinct from cancel;
  only cancel runs the compensation chain.
  """
@@ -726,7 +726,7 @@ async def test_five_comments_flip_workflow_to_out_of_scope() -> None:
             inp = _make_agent_runner_input(
                 issue_key="PAY-5102", iteration=3, max_iter=5
             )
-            # First signal — race-free via signal-with-start so the
+            # First signal - race-free via signal-with-start so the
             # handler is buffered for the workflow's first tick.
             handle = await env.client.start_workflow(
                 AgentRunnerWorkflow.__name__,
@@ -736,7 +736,7 @@ async def test_five_comments_flip_workflow_to_out_of_scope() -> None:
                 start_signal="comment_added",
                 start_signal_args=[
                     CommentAddedSignal(
-                        comment_text="comment 1 — devam et",
+                        comment_text="comment 1 - devam et",
                         actor_account_id="user-1",
                     )
                 ],
@@ -749,7 +749,7 @@ async def test_five_comments_flip_workflow_to_out_of_scope() -> None:
                 chain_started.wait(), timeout=10.0
             )
 
-            # Signals 2-5 — fired back-to-back. The Temporal server
+            # Signals 2-5 - fired back-to-back. The Temporal server
             # batches signals queued before the workflow's next
             # workflow-task runs, so all four typically land in the
             # same task as signal 1 once the barrier releases.
@@ -758,16 +758,16 @@ async def test_five_comments_flip_workflow_to_out_of_scope() -> None:
                     await handle.signal(
                         AgentRunnerWorkflow.comment_added,
                         CommentAddedSignal(
-                            comment_text=f"comment {i} — devam et",
+                            comment_text=f"comment {i} - devam et",
                             actor_account_id="user-1",
                         ),
                     )
                 except Exception:  # noqa: BLE001 - post-completion no-op
-                    # Defensive — the workflow may have already
+                    # Defensive - the workflow may have already
                     # completed in some SDK versions.
                     pass
 
-            # Release the barrier — signals fire in order, advancing
+            # Release the barrier - signals fire in order, advancing
             # iter_count up to MAX_ITER and then flipping
             # ``_out_of_scope``.
             chain_may_finish.set()
@@ -787,7 +787,7 @@ async def test_five_comments_flip_workflow_to_out_of_scope() -> None:
     )
 
     iter_count = _ar_extract_iter_count(iter_state)
-    # The cap clamps iter_count at MAX_ITER=5 — the signal whose
+    # The cap clamps iter_count at MAX_ITER=5 - the signal whose
     # ``_should_advance_iter`` returns advance=False leaves
     # ``iter_count`` untouched while flipping ``_out_of_scope``.
     assert iter_count <= MAX_ITER, (
@@ -800,7 +800,7 @@ async def test_five_comments_flip_workflow_to_out_of_scope() -> None:
         f"(result={result!r})"
     )
 
-    # — natural termination must NOT trigger compensation.
+    # - natural termination must NOT trigger compensation.
     assert log.count("compensation_chain_run") == 0, (
         f"compensation_chain_run must not run on natural termination "
         f"(MAX_ITER); call log: {log.names()!r}"
@@ -830,7 +830,7 @@ async def test_needs_info_keyword_does_not_advance_iter() -> None:
  ``needs_info_streak=1``
  * signal 2 ``[needs_info] please clarify`` → ``iter_count=3``,
  ``needs_info_streak=2``
- * streak still below cap of 3 — workflow exits ``status="completed"``
+ * streak still below cap of 3 - workflow exits ``status="completed"``
  with ``is_out_of_scope=False``.
 
  The first signal lands via signal-with-start; the second via
@@ -888,7 +888,7 @@ async def test_needs_info_keyword_does_not_advance_iter() -> None:
                 chain_started.wait(), timeout=10.0
             )
 
-            # Second ``[needs_info]`` signal — queued while the
+            # Second ``[needs_info]`` signal - queued while the
             # body is parked in the banner activity barrier.
             try:
                 await handle.signal(
@@ -912,7 +912,7 @@ async def test_needs_info_keyword_does_not_advance_iter() -> None:
     # ----- Assertions -------------------------------------------------
 
     iter_count = _ar_extract_iter_count(iter_state)
-    # — ``[needs_info]`` does NOT advance ``iter_count``. Only
+    # - ``[needs_info]`` does NOT advance ``iter_count``. Only
     # the run-body's initial ``_advance_iter_with_banner_check`` runs,
     # leaving the counter at the seed value of 3.
     assert iter_count == 3, (
@@ -932,7 +932,7 @@ async def test_needs_info_keyword_does_not_advance_iter() -> None:
         f"(state={iter_state!r})"
     )
 
-    # Streak still below the cap of 3 — workflow must NOT be
+    # Streak still below the cap of 3 - workflow must NOT be
     # ``out_of_scope`` after at most 2 needs_info signals.
     assert out_of_scope is False, (
         f"is_out_of_scope must be False with needs_info_streak<3; "

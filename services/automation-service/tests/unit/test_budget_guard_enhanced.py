@@ -1,11 +1,11 @@
-"""Unit tests for the enhanced Budget Guard.
+﻿"""Unit tests for the enhanced Budget Guard.
 
 Tests cover:
-* :func:`check_budget` — pre-workflow check with 90% threshold warnings
-* :func:`pre_llm_budget_guard` — inline guard before LLM calls
-* :func:`get_budget_usage_snapshot` — Admin Dashboard data exposure
-* :func:`configuration_error_response` — undefined dept_id handling
-* :class:`BudgetCheckResult` — dataclass invariants
+* :func:`check_budget` - pre-workflow check with 90% threshold warnings
+* :func:`pre_llm_budget_guard` - inline guard before LLM calls
+* :func:`get_budget_usage_snapshot` - Admin Dashboard data exposure
+* :func:`configuration_error_response` - undefined dept_id handling
+* :class:`BudgetCheckResult` - dataclass invariants
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ from typing import Any
 import pytest
 
 # ---------------------------------------------------------------------------
-# Path setup — mirrors test_budget_policy.py
+# Path setup - mirrors test_budget_policy.py
 # ---------------------------------------------------------------------------
 
 _AUTOMATION_ROOT = Path(__file__).resolve().parents[2]

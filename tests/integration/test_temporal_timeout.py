@@ -1,4 +1,4 @@
-"""Integration test: AutomationWorkflow ``needs_info`` 7-day timeout.
+﻿"""Integration test: AutomationWorkflow ``needs_info`` 7-day timeout.
 
 Scenario
 --------
@@ -17,7 +17,7 @@ the wait condition has been entered), then advance virtual time by 8
 days and assert the workflow completes with the expected terminal
 state.
 
-Activities are mocked so the test is hermetic — no real Atlassian /
+Activities are mocked so the test is hermetic - no real Atlassian /
 Postgres / LLM provider is contacted.
 """
 

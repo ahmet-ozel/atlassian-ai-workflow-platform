@@ -1,4 +1,4 @@
-"""Budget alarm threshold behavior.
+﻿"""Budget alarm threshold behavior.
 
 Background
 ----------
@@ -226,7 +226,7 @@ _channel_strategy = st.sampled_from(["slack", "email", "teams"])
 
 _threshold_pct_strategy = st.integers(min_value=1, max_value=99)
 
-# Budget cap values — always positive to avoid division by zero
+# Budget cap values - always positive to avoid division by zero
 _cap_strategy = st.decimals(
     min_value=Decimal("10"),
     max_value=Decimal("10000"),
@@ -741,12 +741,12 @@ class TestConsecutiveEnforceDeduplication:
             clock=now,
         )
 
-        # First call — alarm should fire
+        # First call - alarm should fire
         decision1 = asyncio.run(policy.enforce(dept_id=dept_id, user_id=None))
         assert decision1.allowed is True
         assert len(dispatcher.calls) == 1
 
-        # Second call — alarm should NOT fire (already alarmed in period)
+        # Second call - alarm should NOT fire (already alarmed in period)
         decision2 = asyncio.run(policy.enforce(dept_id=dept_id, user_id=None))
         assert decision2.allowed is True
         # Still only 1 alarm total

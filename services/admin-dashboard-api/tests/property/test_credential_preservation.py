@@ -1,5 +1,5 @@
-"""— Update preserves credentials when api_key is omitted.
-NOT touch Vault — the persisted credential survives verbatim. When
+﻿"""- Update preserves credentials when api_key is omitted.
+NOT touch Vault - the persisted credential survives verbatim. When
 ``api_key`` is present, the new value lands in Vault and the
 post-update payload's ``api_key`` equals the patch value while every
 other persisted credential field is preserved."""

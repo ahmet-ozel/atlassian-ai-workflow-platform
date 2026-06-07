@@ -32,7 +32,7 @@ import StateBadge, {
 } from "../_components/StateBadge";
 
 // ---------------------------------------------------------------------------
-// Wire types — kept in sync with src/routers/_models.py (Pydantic v2).
+// Wire types - kept in sync with src/routers/_models.py (Pydantic v2).
 // ---------------------------------------------------------------------------
 
 type ServiceKind = "http_service" | "worker" | "ui" | "infra";
@@ -89,7 +89,7 @@ type ErrorEnvelope = {
 // ---------------------------------------------------------------------------
 
 function formatTimestamp(value: string | null | undefined): string {
-  if (!value) return "—";
+  if (!value) return "-";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleString();
@@ -98,10 +98,10 @@ function formatTimestamp(value: string | null | undefined): string {
 /**
  * Extract the LLM provider + model a service is configured to use from
  * its manifest form-schema. Returns ``null`` when the service has no
- * LLM fields (e.g. postgres, vault, atlassian-mcp) — those services do
+ * LLM fields (e.g. postgres, vault, atlassian-mcp) - those services do
  * not talk to a model, so no "model" row is shown for them.
  *
- * NOTE: there is no standalone "AI model" service — each service that
+ * NOTE: there is no standalone "AI model" service - each service that
  * needs an LLM receives the provider/model + key in its own Start
  * modal. This surfaces that per-service configuration so operators can
  * see at a glance which model a given service runs on.
@@ -118,8 +118,8 @@ function extractServiceModel(
   const model = byKey("LLM_MODEL_NAME");
   if (!provider && !model) return null;
   return {
-    provider: provider ?? "—",
-    model: model ?? "—",
+    provider: provider ?? "-",
+    model: model ?? "-",
   };
 }
 
@@ -459,7 +459,7 @@ export default function ServiceDetailPage({ params }: PageProps) {
                 {state.detail.health_endpoint ? (
                   <code>{state.detail.health_endpoint}</code>
                 ) : (
-                  <span style={{ color: "#9ca3af" }}>—</span>
+                  <span style={{ color: "#9ca3af" }}>-</span>
                 )}
               </dd>
               <dt style={dtStyle}>Test komutu</dt>
@@ -467,7 +467,7 @@ export default function ServiceDetailPage({ params }: PageProps) {
                 {state.detail.test_command ? (
                   <code>{state.detail.test_command}</code>
                 ) : (
-                  <span style={{ color: "#9ca3af" }}>—</span>
+                  <span style={{ color: "#9ca3af" }}>-</span>
                 )}
               </dd>
               <dt style={dtStyle}>Son başlatma</dt>

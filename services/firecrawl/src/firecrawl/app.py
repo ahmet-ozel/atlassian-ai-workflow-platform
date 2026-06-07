@@ -1,4 +1,4 @@
-"""FastAPI app exposing the egress-allowlisted scrape/search surface.
+﻿"""FastAPI app exposing the egress-allowlisted scrape/search surface.
 
 The app is intentionally minimal: it owns the HTTP/JSON envelope and the
 audit/metric side-effects but defers the *decision* to
@@ -219,7 +219,7 @@ async def _forward_or_fetch(
     (the default in the dev profile and in unit tests), the wrapper does a
     minimal ``httpx`` GET on the target URL and returns a JSON envelope so
     callers don't have to special-case dev. The pass-through behaviour is
-    not the load-bearing piece of this task — the egress check above is —
+    not the load-bearing piece of this task - the egress check above is -
     so the response shape is intentionally simple.
     """
 

@@ -1,4 +1,4 @@
-"""Shared helpers for AutomationWorkflow integration tests.
+﻿"""Shared helpers for AutomationWorkflow integration tests.
 
 The five integration tests under ``tests/integration/test_temporal_*.py`` and
 ``test_capability_denied.py`` all spin up a temporal time-skipping
@@ -10,22 +10,22 @@ state-machine branch.
 To keep each scenario file small and focused on its assertions, the
 common support code lives here:
 
-- ``ensure_worker_on_sys_path`` — prepend the ``agent-runner-worker``
+- ``ensure_worker_on_sys_path`` - prepend the ``agent-runner-worker``
  directory to ``sys.path`` so ``from src.workflows...`` imports resolve
  without first installing the worker package.
-- ``StubAgentRunnerWorkflow`` — a tiny ``@workflow.defn(name=...)``
+- ``StubAgentRunnerWorkflow`` - a tiny ``@workflow.defn(name=...)``
  child workflow that just returns the string passed in. It satisfies
  ``AutomationWorkflow.execute_child_workflow("AgentRunnerWorkflow", ...)``
  for tests that drive the workflow through to completion. The
  scenarios that fail before the child dispatch step still register it
  to keep the worker bootstrap uniform.
-- ``make_default_activities`` — returns the canonical bag of pure
+- ``make_default_activities`` - returns the canonical bag of pure
  no-op acknowledgement activities (jira_add_comment,
  jira_transition_issue, update_work_item_status, jira_get_issue) plus
  a ``CallLog`` capturing every invocation by name. Each scenario
  layers its own ``llm_analyze_task`` mock on top so the LLM behaviour
  is the only differing element across tests.
-- ``CallLog`` — append-only list of ``(activity_name, args)`` tuples
+- ``CallLog`` - append-only list of ``(activity_name, args)`` tuples
  the activity wrappers append to. Tests use this to assert e.g. that
  the timeout-comment was posted exactly once or that the LLM was
  re-run after a signal.
@@ -115,7 +115,7 @@ def make_default_activities(
  passes to ``execute_activity("name", ...)``. Every call appends to
  ``log`` so tests can assert on the call sequence without re-mocking.
 
- LLM analysis is *not* included here — each scenario binds its own
+ LLM analysis is *not* included here - each scenario binds its own
  ``llm_analyze_task`` mock to drive the state machine into the
  branch under test.
  """

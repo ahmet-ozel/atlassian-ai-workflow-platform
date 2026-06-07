@@ -1,7 +1,7 @@
-"""Credential masking in logs.
+﻿"""Credential masking in logs.
 
 For any credential value retrieved from Vault, it never appears as plain text
-in any log output produced by the Credential_Injector — only masked as "***".
+in any log output produced by the Credential_Injector - only masked as "***".
 
 This property test uses Hypothesis to generate random credential strings and
 verifies that after adding a credential to the :class:`CredentialMaskingFilter`

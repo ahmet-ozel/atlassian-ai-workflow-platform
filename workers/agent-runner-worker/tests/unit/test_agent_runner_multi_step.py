@@ -1,15 +1,15 @@
-"""Unit tests for ``AgentRunnerWorkflow`` ``multi_step`` (Epic) flow.
+﻿"""Unit tests for ``AgentRunnerWorkflow`` ``multi_step`` (Epic) flow.
 
 Covers the Epic fan-out handler ``_handle_multi_step``:
 
-    1. Happy path — an Epic with two children fans out to one child
+    1. Happy path - an Epic with two children fans out to one child
        ``AutomationWorkflow`` per subtask (sequentially), posts a
        progress comment per completed subtask and a final completion
        comment, and threads the parent's capability envelope into each
        child input.
-    2. Empty Epic — no children yields a guidance comment, an
+    2. Empty Epic - no children yields a guidance comment, an
        ``epic_no_subtasks`` failure reason, and no child dispatch.
-    3. Subtask failure — a child whose gateway result reports
+    3. Subtask failure - a child whose gateway result reports
        ``decision="denied"`` stops the fan-out with an
        ``epic_subtask_failed`` reason and skips the remaining subtasks.
 
@@ -30,7 +30,7 @@ from temporalio import workflow as _temporal_workflow
 
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — mirrors ``test_agent_runner_research.py``.
+# sys.path bootstrap - mirrors ``test_agent_runner_research.py``.
 # ---------------------------------------------------------------------------
 
 _WORKER_ROOT: Path = Path(__file__).resolve().parents[2]

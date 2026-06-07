@@ -1,4 +1,4 @@
-# firecrawl — Egress-Allowlisted Web Search/Scrape Service
+﻿# firecrawl - Egress-Allowlisted Web Search/Scrape Service
 
 Self-hosted Firecrawl-compatible web scraping/search service with **egress
 allowlist enforcement**.

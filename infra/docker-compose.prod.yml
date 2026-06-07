@@ -1,5 +1,5 @@
-# =============================================================================
-# infra/docker-compose.prod.yml — production override
+﻿# =============================================================================
+# infra/docker-compose.prod.yml - production override
 # =============================================================================
 # Production override: the base compose ships dev-only
 # defaults (``POSTGRES_PASSWORD=ai_dev_only``,
@@ -7,11 +7,11 @@
 # ``AUTH_PROVIDER=local``). This override file:
 #
 #   1. Requires production credentials to be supplied via the
-#      environment — no dev defaults are inherited. ``docker compose``
+#      environment - no dev defaults are inherited. ``docker compose``
 #      will refuse to start a service whose required variable is unset.
 #   2. Forces ``AUTH_PROVIDER=oidc`` (the canonical production auth
-#      provider) on automation-service. The dev ``local`` bypass — which
-#      accepts any non-empty bearer token — is disabled.
+#      provider) on automation-service. The dev ``local`` bypass - which
+#      accepts any non-empty bearer token - is disabled.
 #   3. Switches Vault out of ``-dev`` mode and onto persistent storage.
 #      A full unseal flow is documented in
 #      ``docs/runbooks/vault-production.md`` (Y2 follow-up).
@@ -25,18 +25,18 @@
 #     up -d
 #
 # The Makefile's ``prod`` target wires this file alongside the base.
-# Never run ``make boot`` or ``make up-all`` in production — they layer
+# Never run ``make boot`` or ``make up-all`` in production - they layer
 # the dev override which re-introduces the bind-mount source dirs and
 # the dev secrets fallback.
 # =============================================================================
 
 services:
   # ──────────────────────────────────────────────────────────────────────
-  # Postgres — explicit required credentials, no dev fallback.
+  # Postgres - explicit required credentials, no dev fallback.
   # ──────────────────────────────────────────────────────────────────────
   postgres:
     environment:
-      # ``${POSTGRES_PASSWORD:?must be set in production}`` — Compose
+      # ``${POSTGRES_PASSWORD:?must be set in production}`` - Compose
       # syntax: bash-style "required" expansion. Absent variable aborts
       # the ``up`` with a clear error before any container starts.
       POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER must be set in production}
@@ -44,7 +44,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB must be set in production}
 
   # ──────────────────────────────────────────────────────────────────────
-  # Vault — production mode (no -dev, persistent storage). See
+  # Vault - production mode (no -dev, persistent storage). See
   # docs/runbooks/vault-production.md for the init+unseal flow.
   # ──────────────────────────────────────────────────────────────────────
   vault:
@@ -52,7 +52,7 @@ services:
     # -dev which keeps secrets in memory (data lost on restart). The
     # production image runs ``vault server`` against a config file
     # mounted at /vault/config/config.hcl describing the raft (or
-    # file) storage backend. The container starts SEALED — operators
+    # file) storage backend. The container starts SEALED - operators
     # must run ``vault operator init`` once, then unseal on every
     # restart (or use auto-unseal via cloud KMS).
     command:
@@ -62,7 +62,7 @@ services:
         chown -R vault:vault /vault/data
         exec su-exec vault vault server -config=/vault/config/config.hcl
     environment:
-      # Drop the dev root token entirely — production token comes from
+      # Drop the dev root token entirely - production token comes from
       # ``vault operator init``'s output and lives in operator-managed
       # secret storage, not env.
       VAULT_DEV_ROOT_TOKEN_ID: ""
@@ -84,7 +84,7 @@ services:
       start_period: 30s
 
   # ──────────────────────────────────────────────────────────────────────
-  # MinIO — required root password.
+  # MinIO - required root password.
   # ──────────────────────────────────────────────────────────────────────
   minio:
     environment:
@@ -92,12 +92,12 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD must be set in production}
 
   # ──────────────────────────────────────────────────────────────────────
-  # automation-service — OIDC mandatory in production.
+  # automation-service - OIDC mandatory in production.
   # ──────────────────────────────────────────────────────────────────────
   automation-service:
     environment:
       # Force OIDC even if .env still carries AUTH_PROVIDER=local. The
-      # dev ``local`` bypass accepts any non-empty bearer token — never
+      # dev ``local`` bypass accepts any non-empty bearer token - never
       # acceptable in production. The credential-guard (extended for
       # Y1) refuses boot if AUTH_PROVIDER=local slips through.
       AUTH_PROVIDER: ${AUTH_PROVIDER:-oidc}
@@ -109,7 +109,7 @@ services:
       PLATFORM_ENV: production
 
   # ──────────────────────────────────────────────────────────────────────
-  # admin-dashboard-api — production startup guard.
+  # admin-dashboard-api - production startup guard.
   # ──────────────────────────────────────────────────────────────────────
   admin-dashboard-api:
     environment:
@@ -119,7 +119,7 @@ services:
       # already the existing trigger; Y1 only extends the DEV_DEFAULTS
       # list to cover AUTH_PROVIDER=local and VAULT_DEV_ROOT_TOKEN_ID.
       PLATFORM_ENV: production
-    # Drop the docker socket bind mount in production — the admin
+    # Drop the docker socket bind mount in production - the admin
     # dashboard restarting containers from inside the network is a
     # dev-only convenience documented in the base compose.
     volumes:

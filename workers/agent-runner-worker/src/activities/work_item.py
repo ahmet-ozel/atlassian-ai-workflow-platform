@@ -1,14 +1,14 @@
-"""Work-item state-machine activities for AutomationWorkflow / AgentRunnerWorkflow.
+﻿"""Work-item state-machine activities for AutomationWorkflow / AgentRunnerWorkflow.
 
 This module owns the canonical state machine for ``automation.work_items``
 rows and exposes:
 
-- :class:`InvalidWorkItemTransition` — raised when callers attempt a
+- :class:`InvalidWorkItemTransition` - raised when callers attempt a
   status transition that is not in the allowed-edge set.
-- :func:`validate_work_item_transition` — a *pure* helper (no DB, no
+- :func:`validate_work_item_transition` - a *pure* helper (no DB, no
   Temporal runtime) that enforces the state-machine contract. This is
   the entry point exercised by state-machine tests.
-- :func:`update_work_item_status` — a Temporal activity that issues the
+- :func:`update_work_item_status` - a Temporal activity that issues the
   ``UPDATE automation.work_items SET status = ...`` statement, but only
   after the same pure validator has accepted the transition.
 
@@ -114,7 +114,7 @@ def is_valid_work_item_transition(from_status: str, to_status: str) -> bool:
         return False
     if from_status == to_status:
         # Self-loops are always allowed for valid statuses (idempotent
-        # update — the workflow may re-issue the same status if a Temporal
+        # update - the workflow may re-issue the same status if a Temporal
         # activity is retried after the row has already been updated).
         return True
     return (from_status, to_status) in _FORWARD_EDGES
@@ -216,7 +216,7 @@ async def update_work_item_status(
             validate_work_item_transition(current_status, new_status)
 
             # Self-loop is a no-op write but we still UPDATE so
-            # ``updated_at`` advances — that gives operators a freshness
+            # ``updated_at`` advances - that gives operators a freshness
             # signal without changing the observable status path.
             await conn.execute(
                 "UPDATE automation.work_items "

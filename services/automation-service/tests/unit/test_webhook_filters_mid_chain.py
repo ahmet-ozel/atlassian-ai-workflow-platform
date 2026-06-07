@@ -1,4 +1,4 @@
-"""Unit tests for mid-chain stages of :class:`WebhookFilterChain`.
+﻿"""Unit tests for mid-chain stages of :class:`WebhookFilterChain`.
 
 This module pins the behaviour of the filter-chain stages that run
 between the verifier stages and the burst-debounce stage:
@@ -71,7 +71,7 @@ from automation_service.webhook_filters import (  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
-# Helpers — minimal callback set for chains under test
+# Helpers - minimal callback set for chains under test
 # ---------------------------------------------------------------------------
 
 
@@ -293,7 +293,7 @@ class TestStreamlitBypassStage:
         Without the bypass, an unauthorised commenter at iter > 1
         would be dropped with ``comment_ignored_unauthorized_actor``.
         The bypass tag is what lets the Streamlit UI proxy a comment
-        on the user's behalf — it must short-circuit Y6.
+        on the user's behalf - it must short-circuit Y6.
 
         """
 
@@ -428,7 +428,7 @@ class TestReplayDedupStage:
         """A duplicate event drops before the mention-filter stage runs.
 
         We assert short-circuit by counting calls into the
-        ``iter_count_for`` callback — the mention-filter stage is
+        ``iter_count_for`` callback - the mention-filter stage is
         the first stage past replay-dedup that consults it. A
         duplicate-dropped event must never reach the mention filter.
 
@@ -522,7 +522,7 @@ class TestMentionFilterStage:
         """iter > 1 + actor None → drop (no actor cannot be mentioned).
 
         The Y6 predicate's "actor not in mention_set" branch fires
-        when the actor is missing entirely — we cannot match a
+        when the actor is missing entirely - we cannot match a
         ``None`` against any account id, so the comment is treated
         as unauthorised.
 
@@ -551,7 +551,7 @@ class TestMentionFilterStage:
             iter_count_for=lambda i: 5,  # would trigger Y6 if scope mismatched
             mention_set_for=lambda i: frozenset({"alice"}),
         )
-        # ``jira:issue_created`` — out of Y6 scope.
+        # ``jira:issue_created`` - out of Y6 scope.
         event = _make_event(
             event_type="jira:issue_created",
             actor_account_id="random-third-party",
@@ -653,7 +653,7 @@ class TestMentionFilterFirstIterException:
     """``_stage_mention_filter`` honours Z6 for iter == 1 + reporter actors.
 
     Z6 lets the issue reporter trigger the bot on the very first
-    iteration without first having to be mentioned by the bot —
+    iteration without first having to be mentioned by the bot -
     which would be impossible because the bot has not yet commented.
     The exception is folded into the mention-filter stage so its
     precedence over Y6 is structural rather than wiring-dependent.
@@ -686,7 +686,7 @@ class TestMentionFilterFirstIterException:
         Z6 specifically requires actor == reporter. Other commenters
         at iter 1 still pass (Y6 only enforces from iter 2 onward),
         but they should NOT get the ``mention_filter_first_iter_exception``
-        audit reason — that label is reserved for the reporter.
+        audit reason - that label is reserved for the reporter.
 
         """
 
@@ -797,7 +797,7 @@ class TestMentionFilterFirstIterException:
 
 
 # ---------------------------------------------------------------------------
-# Stage ordering — composition properties
+# Stage ordering - composition properties
 # ---------------------------------------------------------------------------
 
 
@@ -842,7 +842,7 @@ class TestMidChainStageOrdering:
         With both stages firing (``is_processed`` True AND iter > 1 +
         unauthorised actor), the chain produces ``duplicate_event_dropped``.
         Operators want to know the event was a duplicate of a real
-        prior delivery, not that the actor was unauthorised — the
+        prior delivery, not that the actor was unauthorised - the
         former is more actionable for diagnosing webhook retry storms.
 
         """
@@ -861,7 +861,7 @@ class TestMidChainStageOrdering:
     def test_mention_filter_runs_only_after_dedup_clears(self) -> None:
         """mention_filter sees the event only when replay_dedup falls through.
 
-        We assert this by counting calls into ``iter_count_for`` —
+        We assert this by counting calls into ``iter_count_for`` -
         only mention_filter consults it. With ``is_processed`` True,
         the count must stay zero; flipping ``is_processed`` to False
         bumps the count to exactly 1.
@@ -900,7 +900,7 @@ class TestMidChainStageOrdering:
 
         A duplicate event MUST still drop on dedup even when Z6
         would otherwise apply (iter == 1 + actor == reporter).
-        Z6's purpose is to bypass Y6, not to bypass the dedup table —
+        Z6's purpose is to bypass Y6, not to bypass the dedup table -
         a duplicate delivery is a wasteful workflow signal regardless
         of who authored the original.
 

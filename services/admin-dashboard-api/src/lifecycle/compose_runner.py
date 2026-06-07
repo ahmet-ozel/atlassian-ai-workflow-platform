@@ -1,10 +1,10 @@
-"""Subprocess wrapper around the ``docker compose`` CLI.
+﻿"""Subprocess wrapper around the ``docker compose`` CLI.
 
 This module is the **only** code path inside the admin-dashboard
 control plane that shells out to ``docker compose``. Every public
 method assembles an explicit ``argv`` list and hands it to
 :func:`asyncio.create_subprocess_exec` with ``shell=False`` so the
-operating system is responsible for argument tokenisation — there is
+operating system is responsible for argument tokenisation - there is
 no intermediate shell that could expand metacharacters from
 manifest-supplied or operator-supplied strings.
 
@@ -33,8 +33,8 @@ from typing import AsyncIterator, Mapping, Sequence
 #: process is allowed to inherit. Anything else (including
 #: ``VAULT_TOKEN``, ``OPENAI_API_KEY``, the operator's shell history,
 #: ...) must stay on the API host. The intent is *not* to fully
-#: sandbox the child — Docker still has access to its own credential
-#: helpers — but to make sure that no host secret leaks into the
+#: sandbox the child - Docker still has access to its own credential
+#: helpers - but to make sure that no host secret leaks into the
 #: managed service's environment by way of subprocess inheritance.
 #:
 #: * ``PATH`` is required so Linux/macOS/Windows can locate the
@@ -127,7 +127,7 @@ class ComposeRunner:
     compose_file:
         Absolute (or workspace-relative) path to the Compose file the
         runner should pin every command to via ``-f``. Validated in
-        :func:`load_manifest` upstream — this class trusts the value.
+        :func:`load_manifest` upstream - this class trusts the value.
     workspace_root:
         Workspace root path. Stored so callers can confirm the runner never
         writes inside it (no ``.env`` files,
@@ -164,7 +164,7 @@ class ComposeRunner:
 
         Only the keys in :data:`_ALLOWED_HOST_ENV_KEYS` are forwarded
         from :data:`os.environ`; everything else is dropped. Callers
-        layer ``env_overrides`` on top of the returned dict — the
+        layer ``env_overrides`` on top of the returned dict - the
         scrub deliberately runs *before* the override step so a
         manifest-driven override always wins over a host-side leak of
         the same key.
@@ -185,7 +185,7 @@ class ComposeRunner:
             for key, value in env_overrides.items():
                 # The values are passed through verbatim. Validation /
                 # masking lives in LifecycleService and the form layer
-                # — by the time a value reaches the runner it has
+                # - by the time a value reaches the runner it has
                 # already been schema-checked against the
                 # ``.env.example`` LHS set.
                 env[key] = value
@@ -204,7 +204,7 @@ class ComposeRunner:
         """Spawn ``argv`` with ``shell=False`` and capture stdout/stderr.
 
         The argv list is forwarded **as-is** to
-        :func:`asyncio.create_subprocess_exec`. No shell is involved —
+        :func:`asyncio.create_subprocess_exec`. No shell is involved -
         there is no opportunity for ``$(...)``, ``;``, ``|``, ``&&``
         or any other metacharacter to be re-interpreted.
         """
@@ -290,7 +290,7 @@ class ComposeRunner:
         ``rm -fv`` on a per-service basis.
         """
 
-        # No env_overrides for stop — there are no Component-defined
+        # No env_overrides for stop - there are no Component-defined
         # variables to inject when tearing a service down.
         env = self._build_env(None)
 
@@ -313,7 +313,7 @@ class ComposeRunner:
         ]
         rm_result = await self._run(rm_argv, env=env)
         # Surface the rm result so callers can inspect the final argv.
-        # rm failures are reported the same way as stop failures —
+        # rm failures are reported the same way as stop failures -
         # the operator gets a 502 with the failing argv in the audit
         # detail.
         return self._raise_on_failure(rm_result, action="rm")
@@ -359,7 +359,7 @@ class ComposeRunner:
         logs`` exits and returns a :class:`ComposeResult`. When
         ``follow=True`` the runner appends ``--follow`` and returns an
         async iterator that yields decoded stdout lines as they arrive
-        — the caller is responsible for cancelling the iterator (and
+        - the caller is responsible for cancelling the iterator (and
         thus the subprocess) when the SSE client disconnects.
         """
 
@@ -418,7 +418,7 @@ class ComposeRunner:
                     proc.terminate()
                 except ProcessLookupError:
                     pass
-                # Best-effort wait — avoid leaking zombies.
+                # Best-effort wait - avoid leaking zombies.
                 try:
                     await asyncio.wait_for(proc.wait(), timeout=5)
                 except asyncio.TimeoutError:  # pragma: no cover - defensive

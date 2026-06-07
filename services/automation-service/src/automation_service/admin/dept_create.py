@@ -1,4 +1,4 @@
-"""Atomic department create orchestrator.
+﻿"""Atomic department create orchestrator.
 
 Implements the atomic department creation flow:
 
@@ -21,7 +21,7 @@ Implements the atomic department creation flow:
   encrypts the at-rest value; the Hashicorp backend never persists
   plain-text by construction).
 
-The orchestrator is **HTTP-framework-agnostic** — the FastAPI router
+The orchestrator is **HTTP-framework-agnostic** - the FastAPI router
 in :mod:`automation_service.admin.router` is the thin shim that
 parses the request, runs the orchestrator, and translates the
 :class:`DepartmentCreateResult` / raised exceptions into HTTP status
@@ -56,13 +56,13 @@ Sequence:
 
 The plain-text token NEVER appears in:
 
-* response body — :class:`DepartmentCreateResult` does not carry it.
-* logs — only the dept_id, request_id, service names and audit
+* response body - :class:`DepartmentCreateResult` does not carry it.
+* logs - only the dept_id, request_id, service names and audit
   outcomes are logged. The token is held in a ``bytearray`` and
   zeroed before the function returns.
-* DB rows — ``automation.department_bots.credential_ref`` stores the
+* DB rows - ``automation.department_bots.credential_ref`` stores the
   **Vault path**, not the value.
-* Vault staging key — the value is encrypted at rest by the local-dev
+* Vault staging key - the value is encrypted at rest by the local-dev
   backend (libsodium ``SecretBox``) and is never written in
   plain-text by the Hashicorp backend.
 """
@@ -196,7 +196,7 @@ class DepartmentCreateRequest:
     property tests.
 
     Attributes:
-        dept_id: Department identifier — must match the
+        dept_id: Department identifier - must match the
             ``Department.id`` schema regex (validation is delegated
             to ``db_shared`` when the GUC is set).
         display_name: Human-readable name.
@@ -213,7 +213,7 @@ class DepartmentCreateRequest:
         config_json: Verbatim mirror of the corresponding
             ``departments.json`` entry, persisted into the
             ``departments.config_json`` JSONB column. The orchestrator
-            never reads or mutates this — it is opaque metadata.
+            never reads or mutates this - it is opaque metadata.
         bots: One :class:`_BotCredential` per service the department
             authenticates as. At least one entry is required (mirrors
             the schema ``bot.anyOf`` constraint).
@@ -309,7 +309,7 @@ def _looks_like_duplicate(exc: BaseException) -> bool:
 
 
 class DepartmentCreateOrchestrator:
-    """Atomic department create — Vault staging + DB transaction.
+    """Atomic department create - Vault staging + DB transaction.
 
     Args:
         vault: Pluggable :class:`VaultClient`. The orchestrator only
@@ -325,7 +325,7 @@ class DepartmentCreateOrchestrator:
         clock: Optional UTC-now factory for deterministic timestamps
             in tests. Defaults to :func:`datetime.now`.
 
-    The instance is stateless across calls — every ``run`` builds its
+    The instance is stateless across calls - every ``run`` builds its
     own fresh staging + transaction lifecycle.
     """
 
@@ -413,7 +413,7 @@ class DepartmentCreateOrchestrator:
 
         # 2. Run probes against the staged credentials. The probe
         #    runner reads the in-memory token bytes via the
-        #    :class:`ResolvedCredential` payload — Vault has the same
+        #    :class:`ResolvedCredential` payload - Vault has the same
         #    value, but reaching back into Vault for the probe would
         #    add a needless round trip on every create call.
         try:
@@ -447,7 +447,7 @@ class DepartmentCreateOrchestrator:
             self._best_effort_delete_staging(staging_paths.values())
             await self._audit_duplicate(request, actor_id, actor_role)
             raise
-        except Exception as exc:  # noqa: BLE001 — re-raised below
+        except Exception as exc:  # noqa: BLE001 - re-raised below
             self._best_effort_delete_staging(staging_paths.values())
             await self._audit_create_failed(
                 request,
@@ -461,7 +461,7 @@ class DepartmentCreateOrchestrator:
             )
             raise
 
-        # 4. Successful path — emit a single ``dept_created`` audit
+        # 4. Successful path - emit a single ``dept_created`` audit
         #    row carrying the actor's role for the audit
         #    actor_role-mandatory invariant.
         await self._audit.write(
@@ -612,7 +612,7 @@ class DepartmentCreateOrchestrator:
                 f"{type(exc).__name__}"
             ) from exc
 
-        # The intermediate ``str`` is immutable — rebind the local so
+        # The intermediate ``str`` is immutable - rebind the local so
         # it goes out of scope at function return. The canonical copy
         # is now in Vault (encrypted at rest by the local-dev
         # backend; never persisted in plain-text by Hashicorp).
@@ -628,7 +628,7 @@ class DepartmentCreateOrchestrator:
         The probe runner accepts a :class:`ResolvedCredential` rather
         than reading from Vault, so we can hand it the same bytes we
         just wrote. The plain-text bytes have already been zeroed in
-        :meth:`_write_staging_credential` — but we kept ``url`` and
+        :meth:`_write_staging_credential` - but we kept ``url`` and
         ``username`` on the request, and the probe runner only
         actually needs the token through the Atlassian client, which
         is mocked in these tests.
@@ -692,7 +692,7 @@ class DepartmentCreateOrchestrator:
         # ``app.current_dept_id`` / ``app.current_role`` GUCs so RLS
         # admits the writes. We open the session as ``"system"`` (the
         # orchestrator runs server-side, not on behalf of a single
-        # tenant) — RLS will let us write the new departments row
+        # tenant) - RLS will let us write the new departments row
         # because the policy admits ``current_role = 'admin'`` (and
         # ``"system"`` is treated equivalently by the policy's
         # ``OR`` branch using the current_setting check).
@@ -761,7 +761,7 @@ class DepartmentCreateOrchestrator:
         """INSERT INTO automation.departments and return ``created_at``.
 
         The CONFLICT path (duplicate id) raises asyncpg's
-        ``UniqueViolationError`` — :meth:`run` translates that into
+        ``UniqueViolationError`` - :meth:`run` translates that into
         :class:`DepartmentAlreadyExistsError` so the router returns
         HTTP 409.
         """
@@ -876,7 +876,7 @@ class DepartmentCreateOrchestrator:
         delete. If the ``write`` fails the staging key is still
         present and the caller will delete it during rollback. If the
         ``delete`` fails the key remains under ``_staging/`` and a
-        background sweeper will pick it up — it does not block the
+        background sweeper will pick it up - it does not block the
         successful promotion.
         """
 
@@ -908,7 +908,7 @@ class DepartmentCreateOrchestrator:
         The orchestrator delegates to the module-private
         :func:`_zero_bytearray` helper so test suites can monkey-patch
         either side independently. Tokens that are not :class:`bytearray`
-        instances are left alone — :meth:`_validate_request` already
+        instances are left alone - :meth:`_validate_request` already
         rejects non-bytearray tokens, so this defensive guard only
         matters for the probe-failure path where the request may have
         been cloned by the caller for diagnostics.
@@ -925,7 +925,7 @@ class DepartmentCreateOrchestrator:
         """Delete every *path* under ``_staging/``; never raises.
 
         Called on the rollback / failure paths. We swallow individual
-        delete failures and log them — leaving a staging key behind
+        delete failures and log them - leaving a staging key behind
         is far less harmful than re-raising and masking the original
         error that triggered the rollback.
         """
@@ -995,7 +995,7 @@ def _zero_bytearray(buf: bytearray) -> None:
     Python guarantees in-place mutation of ``bytearray``, so this
     actually clears the underlying buffer. The intermediate ``str``
     we materialise during the Vault write is immutable and cannot be
-    wiped — keeping its lifetime to the single Vault call is the
+    wiped - keeping its lifetime to the single Vault call is the
     best-effort guarantee we can offer in pure CPython.
     """
 

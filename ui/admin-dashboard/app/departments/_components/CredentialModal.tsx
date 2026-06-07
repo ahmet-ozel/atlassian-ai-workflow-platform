@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 /**
- * CredentialModal — 3-tab credential management modal for a single
+ * CredentialModal - 3-tab credential management modal for a single
  * department.
  *
  * Tabs:
@@ -114,7 +114,7 @@ async function safeReadDetail(res: Response): Promise<string> {
 }
 
 // ---------------------------------------------------------------------------
-// Inline styles — match StartFormModal (services pages)
+// Inline styles - match StartFormModal (services pages)
 // ---------------------------------------------------------------------------
 
 const overlayStyle: React.CSSProperties = {
@@ -182,7 +182,7 @@ export default function CredentialModal({
   }, [fetchDetail]);
 
   // -------------------------------------------------------------------------
-  // Modal ergonomics — Escape closes, backdrop click closes.
+  // Modal ergonomics - Escape closes, backdrop click closes.
   // -------------------------------------------------------------------------
 
   useEffect(() => {

@@ -1,14 +1,14 @@
-"""Startup-time validation hooks for the automation-service.
+﻿"""Startup-time validation hooks for the automation-service.
 
 This module owns the boot-time invariants the design document
-classifies under "fail-fast" — checks that must surface as a process
+classifies under "fail-fast" - checks that must surface as a process
 exit before any HTTP request lands. Each function is async so it can
 be awaited from the FastAPI lifespan handler with the same DB pool
 the rest of the service uses.
 
 Startup checks:
 
-* :func:`validate_account_id_consistency` — when a department row
+* :func:`validate_account_id_consistency` - when a department row
   carries both a manually configured ``account_id`` and an
   ``auto_fetched_account_id`` returned by the read probe, the two
   values MUST be byte-equal. Otherwise the service refuses to start
@@ -17,7 +17,7 @@ Startup checks:
 
 Best-effort enrichment:
 
-* :func:`auto_probe_missing_account_ids` — best-effort startup hook
+* :func:`auto_probe_missing_account_ids` - best-effort startup hook
   that queries ``automation.department_bots`` for rows where
   ``account_id IS NULL OR account_id = ''``, runs an Atlassian read
   probe for each, and upserts the resolved ``account_id`` back into
@@ -60,7 +60,7 @@ _LOG = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# Process-level probe cache — 5 minute TTL
+# Process-level probe cache - 5 minute TTL
 # ---------------------------------------------------------------------------
 
 _PROBE_CACHE_TTL_SECONDS: int = 300  # 5 minutes
@@ -111,7 +111,7 @@ class DeptAccountIdRow:
 
     Attributes:
         dept_id: Department id (``departments.id`` column).
-        service: Atlassian surface — ``"jira"``, ``"bitbucket"``,
+        service: Atlassian surface - ``"jira"``, ``"bitbucket"``,
             ``"confluence"``.
         manual_account_id: ``account_id`` value taken from
             ``departments.json`` / ``automation.department_bots``.
@@ -186,7 +186,7 @@ def compare_account_ids(
 
     The function is intentionally tiny so the callers (admin
     endpoint, startup hook, probe runner) all agree on the same
-    notion of "consistent". Whitespace is **not** stripped — leading
+    notion of "consistent". Whitespace is **not** stripped - leading
     or trailing spaces in either value indicate operator error and
     must surface as a mismatch.
     """
@@ -207,7 +207,7 @@ def find_account_id_mismatches(
             the list in their error frames.
 
     Returns:
-        Tuple of :class:`AccountIdMismatch` — empty when every row
+        Tuple of :class:`AccountIdMismatch` - empty when every row
         is consistent.
     """
 
@@ -245,7 +245,7 @@ def format_mismatch_error_message(
 
 
 # ---------------------------------------------------------------------------
-# Source readers (Protocol — keeps the validator backend-agnostic)
+# Source readers (Protocol - keeps the validator backend-agnostic)
 # ---------------------------------------------------------------------------
 
 
@@ -275,7 +275,7 @@ async def validate_account_id_consistency(
     Called by the FastAPI lifespan handler before the service starts
     accepting traffic. On the first inconsistency the
     helper raises :class:`AccountIdMismatchError` whose message lists
-    every offending row — supplying both values verbatim so the
+    every offending row - supplying both values verbatim so the
     operator can diff without round-tripping logs.
 
     Args:
@@ -309,7 +309,7 @@ class DeptBotMissingRow:
 
     Attributes:
         dept_id: Department identifier.
-        service: Atlassian surface — ``"jira"``, ``"bitbucket"``,
+        service: Atlassian surface - ``"jira"``, ``"bitbucket"``,
             ``"confluence"``.
         credential_ref: Vault path for the credential
             (e.g. ``vault:atlassian/<dept>/<service>``).
@@ -359,7 +359,7 @@ class BotIdentityProber(Protocol):
     ) -> str | None:
         """Probe Atlassian and return the account_id, or None on failure.
 
-        The implementation MUST NOT raise — failures are signalled by
+        The implementation MUST NOT raise - failures are signalled by
         returning ``None``. Any exception that escapes is caught by
         the caller and treated as a probe failure.
         """
@@ -385,7 +385,7 @@ class AccountIdWriter(Protocol):
     ) -> None:
         """UPDATE automation.department_bots SET account_id = ...
 
-        The implementation should be idempotent — writing the same
+        The implementation should be idempotent - writing the same
         value twice is a no-op.
         """
         ...  # pragma: no cover - protocol
@@ -419,7 +419,7 @@ async def auto_probe_missing_account_ids(
     ``automation.department_bots`` row where ``account_id IS NULL OR
     account_id = ''``, this function:
 
-    1. Checks the process-level cache — if the same ``(dept_id,
+    1. Checks the process-level cache - if the same ``(dept_id,
        service)`` was probed within the last 5 minutes, skips.
     2. Calls the prober to resolve the account_id via Atlassian API.
     3. On success: writes the account_id to the DB, caches the result,
@@ -427,7 +427,7 @@ async def auto_probe_missing_account_ids(
     4. On failure: caches the failure (to avoid re-probe), emits
        ``bot_account_id_probe_failed`` audit.
 
-    This function **never raises** — all errors are caught and logged.
+    This function **never raises** - all errors are caught and logged.
     Service startup is never blocked by probe failures.
 
     .. important:: **Invariant: idempotent config**
@@ -435,7 +435,7 @@ async def auto_probe_missing_account_ids(
        Probe results are written **only** to the
        ``automation.department_bot_identity`` Postgres table via the
        :class:`AccountIdWriter` protocol.  ``config/departments.json``
-       is **never** modified by this function — existing
+       is **never** modified by this function - existing
        ``account_id: ""`` entries in the JSON file remain untouched.
        This preserves the idempotent-config invariant: the JSON file
        is the operator's static declaration; runtime-resolved values
@@ -471,7 +471,7 @@ async def auto_probe_missing_account_ids(
     )
 
     for row in rows:
-        # Check cache — skip if recently probed.
+        # Check cache - skip if recently probed.
         cached = _cache_get(row.dept_id, row.service)
         if cached is not _MISS:
             _LOG.debug(
@@ -500,7 +500,7 @@ async def auto_probe_missing_account_ids(
             )
 
         if account_id:
-            # Success path — upsert + audit
+            # Success path - upsert + audit
             try:
                 await writer.upsert_account_id(
                     dept_id=row.dept_id,
@@ -566,7 +566,7 @@ async def auto_probe_missing_account_ids(
                 account_id[:8] + "..." if len(account_id) > 8 else account_id,
             )
         else:
-            # Failure path — audit + cache
+            # Failure path - audit + cache
             error_msg = "probe_returned_none"
             _cache_put(row.dept_id, row.service, None)
             results.append(AutoProbeResult(

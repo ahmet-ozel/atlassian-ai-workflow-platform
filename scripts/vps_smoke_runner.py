@@ -1,6 +1,6 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
-VPS Smoke Runner — Atlassian MCP CRUD smoke tests (B4).
+VPS Smoke Runner - Atlassian MCP CRUD smoke tests (B4).
 
 Runs 18 scenarios against the Atlassian_MCP gateway (port 8090):
   - Jira: 5 scenarios (R10)
@@ -106,7 +106,7 @@ class MCPClient:
         except (json.JSONDecodeError, TypeError):
             pass
 
-        # Parse SSE format — extract last data line
+        # Parse SSE format - extract last data line
         last_data = ""
         for line in text.splitlines():
             if line.startswith("data: "):
@@ -162,7 +162,7 @@ class MCPClient:
                 self._initialized = True
                 print(f"[MCP] Session initialized (session_id={self._session_id[:8]}...)")
             else:
-                print(f"[MCP] Initialize failed: HTTP {resp.status_code} — {resp.text[:200]}")
+                print(f"[MCP] Initialize failed: HTTP {resp.status_code} - {resp.text[:200]}")
         except Exception as e:
             print(f"[MCP] Initialize error: {e}")
 
@@ -339,7 +339,7 @@ def write_evidence(filename: str, data: list[dict[str, Any]]) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Jira Smoke Tests — R10 (5 scenarios)
+# Jira Smoke Tests - R10 (5 scenarios)
 # ---------------------------------------------------------------------------
 
 def run_jira_scenarios(client: MCPClient) -> list[dict[str, Any]]:
@@ -536,7 +536,7 @@ def run_jira_scenarios(client: MCPClient) -> list[dict[str, Any]]:
 
 
 # ---------------------------------------------------------------------------
-# Confluence Smoke Tests — R11 (4 scenarios)
+# Confluence Smoke Tests - R11 (4 scenarios)
 # ---------------------------------------------------------------------------
 
 def run_confluence_scenarios(client: MCPClient) -> list[dict[str, Any]]:
@@ -764,7 +764,7 @@ def run_confluence_scenarios(client: MCPClient) -> list[dict[str, Any]]:
         if tool in banned:
             results.append(build_entry(
                 scenario, NA, 0, 0, tool, args, "",
-                f"tool '{tool}' in MCP_BANNED_TOOLS — soft-delete restriction is intentional, NOT a failure",
+                f"tool '{tool}' in MCP_BANNED_TOOLS - soft-delete restriction is intentional, NOT a failure",
             ))
         else:
             resp = client.call_tool(tool, args)
@@ -815,7 +815,7 @@ def run_confluence_scenarios(client: MCPClient) -> list[dict[str, Any]]:
 
 
 # ---------------------------------------------------------------------------
-# Bitbucket Smoke Tests — R12 (9 scenarios + cross-token)
+# Bitbucket Smoke Tests - R12 (9 scenarios + cross-token)
 # ---------------------------------------------------------------------------
 
 def run_bitbucket_scenarios(
@@ -830,7 +830,7 @@ def run_bitbucket_scenarios(
 
     Args:
         client: MCPClient instance.
-        token_mode: "selected" or "alternate" — recorded in evidence.
+        token_mode: "selected" or "alternate" - recorded in evidence.
 
     Requirements: R12.1, R12.2, R12.3, R12.4, R12.5, R12.6, R12.7, R12.8, R12.9, R12.10, R12.11
     """
@@ -843,7 +843,7 @@ def run_bitbucket_scenarios(
     available_tools = client.list_tools()
     bb_tools = [t for t in available_tools if "bitbucket" in t.lower()]
     if not bb_tools:
-        # No Bitbucket tools available — mark all scenarios as n/a
+        # No Bitbucket tools available - mark all scenarios as n/a
         bb_scenarios = [
             ("BB-1", "bitbucket_get_repository"),
             ("BB-2", "bitbucket_create_branch"),
@@ -857,7 +857,7 @@ def run_bitbucket_scenarios(
         for scenario, tool in bb_scenarios:
             results.append(build_entry(
                 scenario, NA, 0, 0, tool, {}, "",
-                "No Bitbucket tools available in MCP server — Bitbucket integration not configured",
+                "No Bitbucket tools available in MCP server - Bitbucket integration not configured",
                 token_mode=token_mode,
             ))
         print("  [INFO] No Bitbucket tools found in MCP server. All BB scenarios marked n/a.")
@@ -1037,7 +1037,7 @@ def run_bitbucket_scenarios(
     if chain_broken or "pr_id" not in state:
         results.append(build_entry(
             scenario, MANUAL_PENDING, 0, 0, tool, args, "",
-            "chain broken — no pr_id available",
+            "chain broken - no pr_id available",
             token_mode=token_mode,
         ))
     else:
@@ -1089,7 +1089,7 @@ def run_bitbucket_scenarios(
     if chain_broken or "pr_id" not in state:
         results.append(build_entry(
             scenario, MANUAL_PENDING, 0, 0, tool, args, "",
-            "chain broken — no pr_id available",
+            "chain broken - no pr_id available",
             token_mode=token_mode,
         ))
     else:
@@ -1122,7 +1122,7 @@ def run_bitbucket_scenarios(
     if chain_broken or "pr_id" not in state:
         results.append(build_entry(
             scenario, MANUAL_PENDING, 0, 0, tool, args, "",
-            "chain broken — no pr_id available",
+            "chain broken - no pr_id available",
             token_mode=token_mode,
         ))
     else:
@@ -1156,7 +1156,7 @@ def run_bitbucket_scenarios(
                 ))
                 _log_bb_issue(scenario, f"BB-7: PR state='{pr_state}', expected DECLINED", token_mode)
             else:
-                # Decline succeeded but follow-up get failed — accept as pass
+                # Decline succeeded but follow-up get failed - accept as pass
                 results.append(build_entry(
                     scenario, PASS, resp["http_status"], resp["latency_ms"],
                     tool, args, resp["raw_response"],
@@ -1249,7 +1249,7 @@ def run_bitbucket_cross_token(
     BB-9: Cross-token parity check (R12.9).
 
     Re-executes BB-1, BB-4, BB-5 with alternate token mode.
-    The alternate token is configured via the token_selector — this function
+    The alternate token is configured via the token_selector - this function
     assumes the MCP server has been reconfigured to use the alternate token
     (or uses a separate client pointing to the alternate-token MCP instance).
 
@@ -1263,7 +1263,7 @@ def run_bitbucket_cross_token(
     available_tools = client.list_tools()
     bb_tools = [t for t in available_tools if "bitbucket" in t.lower()]
     if not bb_tools:
-        # No Bitbucket tools — mark cross-token scenarios as n/a
+        # No Bitbucket tools - mark cross-token scenarios as n/a
         cross_scenarios = [
             "BB-9 (BB-1 cross-token)",
             "BB-9 (BB-4 cross-token)",
@@ -1272,7 +1272,7 @@ def run_bitbucket_cross_token(
         for scenario in cross_scenarios:
             results.append(build_entry(
                 scenario, NA, 0, 0, "N/A", {}, "",
-                "No Bitbucket tools available in MCP server — cross-token test skipped",
+                "No Bitbucket tools available in MCP server - cross-token test skipped",
                 token_mode=token_mode,
             ))
         print("  [INFO] No Bitbucket tools found. Cross-token scenarios marked n/a.")
@@ -1404,7 +1404,7 @@ def run_bitbucket_cross_token(
         else:
             results.append(build_entry(
                 scenario, MANUAL_PENDING, 0, 0, tool, {"pull_request_id": "N/A"}, "",
-                "cross-token BB-5 skipped — no pr_id from BB-4",
+                "cross-token BB-5 skipped - no pr_id from BB-4",
                 token_mode=token_mode,
             ))
 
@@ -1421,19 +1421,19 @@ def run_bitbucket_cross_token(
             "name": cross_branch,
         })
     else:
-        # Branch creation failed for cross-token — mark BB-4 and BB-5 as pending
+        # Branch creation failed for cross-token - mark BB-4 and BB-5 as pending
         scenario = "BB-9 (BB-4 cross-token)"
         results.append(build_entry(
             scenario, MANUAL_PENDING, 0, 0,
             "bitbucket_create_pull_request", {}, "",
-            "cross-token BB-4 skipped — branch creation failed",
+            "cross-token BB-4 skipped - branch creation failed",
             token_mode=token_mode,
         ))
         scenario = "BB-9 (BB-5 cross-token)"
         results.append(build_entry(
             scenario, MANUAL_PENDING, 0, 0,
             "bitbucket_get_pull_request_diff", {}, "",
-            "cross-token BB-5 skipped — branch creation failed",
+            "cross-token BB-5 skipped - branch creation failed",
             token_mode=token_mode,
         ))
 
@@ -1619,7 +1619,7 @@ def _log_integration_issue(requirement_id: str, scenario_id: str, summary: str) 
 def main() -> int:
     """Run all smoke test suites and write evidence files."""
     print("=" * 60)
-    print("VPS Smoke Runner — Atlassian MCP CRUD Smoke Tests")
+    print("VPS Smoke Runner - Atlassian MCP CRUD Smoke Tests")
     print(f"MCP Endpoint: {MCP_ENDPOINT}")
     print(f"Timestamp: {datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')}")
     print("=" * 60)
@@ -1645,7 +1645,7 @@ def main() -> int:
     _print_summary("Bitbucket (selected token)", bitbucket_results)
 
     # --- Bitbucket Cross-Token BB-9 (R12.9) ---
-    print("\n--- Bitbucket Cross-Token Tests (R12.9 — BB-9) ---")
+    print("\n--- Bitbucket Cross-Token Tests (R12.9 - BB-9) ---")
     cross_token_results = run_bitbucket_cross_token(client)
     # Merge cross-token results into bitbucket evidence
     all_bb_results = bitbucket_results + cross_token_results
@@ -1655,7 +1655,7 @@ def main() -> int:
     # R12.10: Check if selected-token run has ≥1 fail → critical Open_Issue
     selected_failures = [r for r in bitbucket_results if r["verdict"] == FAIL]
     if selected_failures:
-        print(f"\n[CRITICAL] Selected-token run has {len(selected_failures)} failure(s) — R12.10 triggered")
+        print(f"\n[CRITICAL] Selected-token run has {len(selected_failures)} failure(s) - R12.10 triggered")
 
     # --- Summary ---
     all_results = jira_results + confluence_results + all_bb_results
@@ -1676,7 +1676,7 @@ def _print_summary(suite: str, results: list[dict[str, Any]]) -> None:
     """Print a quick summary table for a suite."""
     for r in results:
         icon = {"pass": "✓", "fail": "✗", "n/a": "○", "manual_pending": "?"}
-        print(f"  {icon.get(r['verdict'], '?')} {r['scenario']}: {r['verdict']} — {r['evidence_excerpt'][:80]}")
+        print(f"  {icon.get(r['verdict'], '?')} {r['scenario']}: {r['verdict']} - {r['evidence_excerpt'][:80]}")
 
 
 if __name__ == "__main__":

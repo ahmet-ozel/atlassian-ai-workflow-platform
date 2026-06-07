@@ -1,7 +1,7 @@
-"""Thin GitPython wrapper used by ``PromptsGitRouter``.
+﻿"""Thin GitPython wrapper used by ``PromptsGitRouter``.
 
 The wrapper exposes only the operations the prompt CRUD / PR flow
-needs — it deliberately does not try to be a generic VCS client. The
+needs - it deliberately does not try to be a generic VCS client. The
 small surface keeps tests focused and prevents accidental writes to
 ``main`` (every mutation goes through a draft branch).
 
@@ -28,7 +28,7 @@ operates on a *named branch* without touching whatever the underlying
 1. Resolves the target branch to a commit SHA (creating the branch
    from ``main`` if requested).
 2. Reads / writes file content via the in-memory index of that
-   branch — no working-tree mutation.
+   branch - no working-tree mutation.
 3. Commits the new tree directly onto the branch ref using
    :class:`git.Tree` / :class:`git.IndexFile.write_tree` so the
    working directory the dev has open in their IDE never flickers.
@@ -66,7 +66,7 @@ except ImportError as exc:  # pragma: no cover - exercised only on broken env
 
 # Tuple of exceptions GitPython can raise when a ref / commit cannot
 # be resolved. ``rev_parse`` raises ``BadName`` / ``BadObject`` from
-# ``gitdb`` — those are NOT subclasses of GitPython's own exception
+# ``gitdb`` - those are NOT subclasses of GitPython's own exception
 # hierarchy, so we have to catch the union explicitly.
 _REF_RESOLUTION_ERRORS = (GitCommandError, ValueError, BadName, BadObject)
 
@@ -130,16 +130,16 @@ class GitRepo:
     The class is intentionally narrow: every method maps onto exactly
     one of the steps the :class:`PromptsGitRouter` performs:
 
-    * :meth:`read_file`                 — `GET /admin/prompts/{path}`
-    * :meth:`list_files`                — `GET /admin/prompts` (filter
+    * :meth:`read_file`                 - `GET /admin/prompts/{path}`
+    * :meth:`list_files`                - `GET /admin/prompts` (filter
       by extension).
-    * :meth:`create_branch_from_main`   — `POST .../draft` step 1.
-    * :meth:`write_file`                — `POST .../draft` step 2.
-    * :meth:`commit`                    — `POST .../draft` step 3.
-    * :meth:`diff`                      — `POST .../pr` step 1
+    * :meth:`create_branch_from_main`   - `POST .../draft` step 1.
+    * :meth:`write_file`                - `POST .../draft` step 2.
+    * :meth:`commit`                    - `POST .../draft` step 3.
+    * :meth:`diff`                      - `POST .../pr` step 1
       (description renderer input).
     * :meth:`branch_exists` /
-      :meth:`resolve_branch_sha`        — guard helpers used by the
+      :meth:`resolve_branch_sha`        - guard helpers used by the
       router for idempotent reads.
 
     The wrapper does NOT touch the working directory of the underlying
@@ -302,7 +302,7 @@ class GitRepo:
             BranchAlreadyExistsError: When a local branch with that
                 name already exists. The router should pick a fresh
                 ``draft/<actor>-<ts>`` name and retry.
-            BranchNotFoundError: When ``main_branch`` is missing — a
+            BranchNotFoundError: When ``main_branch`` is missing - a
                 misconfigured clone.
         """
 
@@ -406,7 +406,7 @@ class GitRepo:
 
         # Build a fresh index from the parent tree, override the staged
         # paths, write the tree and commit it. ``IndexFile.from_tree``
-        # produces an in-memory index seeded with the parent's tree —
+        # produces an in-memory index seeded with the parent's tree -
         # the on-disk index of the repo is left alone. We then mutate
         # ``index.entries`` in place (the IndexFile API exposes it as
         # a public dict) and call ``write_tree()`` to materialise.
@@ -488,7 +488,7 @@ class GitRepo:
         """Return ``True`` when merging ``branch`` into ``against`` would conflict.
 
         Performs a ``git merge-tree`` (no-touch merge dry-run). The
-        method is read-only — neither branch is modified.
+        method is read-only - neither branch is modified.
 
         Raises :class:`BranchNotFoundError` when either branch is
         missing. On unexpected GitPython failures the underlying
@@ -532,7 +532,7 @@ class GitRepo:
         """Return ``path`` as a POSIX-style relative path with no leading slash."""
 
         cleaned = path.replace("\\", "/").lstrip("/")
-        # Reject path traversal — the router already validates this,
+        # Reject path traversal - the router already validates this,
         # but a defence-in-depth check here keeps the lib safe to use
         # from non-router callers.
         if ".." in cleaned.split("/"):
@@ -548,7 +548,7 @@ class GitRepo:
         rather than ``git hash-object`` so the call is in-process and
         does not rely on subprocess stdin (which doesn't accept
         BytesIO on Windows). The result is byte-for-byte identical
-        to what ``hash-object -w --stdin`` would produce — git's
+        to what ``hash-object -w --stdin`` would produce - git's
         blob hash is deterministic.
         """
 
@@ -572,7 +572,7 @@ class GitRepo:
 
         from git.index.typ import BaseIndexEntry, CE_STAGESHIFT
 
-        # Remove any existing entry at this path (any stage) — git
+        # Remove any existing entry at this path (any stage) - git
         # indexes can carry stage 1/2/3 entries during merges, but for
         # our flat write-then-commit flow stage 0 is the only valid
         # outcome.

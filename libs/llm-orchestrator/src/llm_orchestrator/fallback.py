@@ -1,4 +1,4 @@
-"""LLM Provider Factory with automatic fallback switching.
+﻿"""LLM Provider Factory with automatic fallback switching.
 
 Provides a resilient
 LLM completion interface that automatically switches between primary
@@ -348,7 +348,7 @@ class FallbackLLMProviderFactory:
                     },
                 )
 
-        # All retries exhausted — switch to fallback
+        # All retries exhausted - switch to fallback
         error_reason = (
             f"HTTP {last_error.status_code} after "
             f"{_MAX_5XX_RETRIES} attempts"
@@ -452,7 +452,7 @@ class FallbackLLMProviderFactory:
                 self._delayed_health_probe()
             )
         except RuntimeError:
-            # No running event loop — skip scheduling (test environment)
+            # No running event loop - skip scheduling (test environment)
             _LOG.debug("No running event loop; skipping health probe schedule")
 
     async def _delayed_health_probe(self) -> None:

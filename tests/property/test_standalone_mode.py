@@ -1,4 +1,4 @@
-"""Behavioral test for Standalone Mode preconditions.
+﻿"""Behavioral test for Standalone Mode preconditions.
 
 Every Component declared in :data:`COMPONENT_MANIFEST` must satisfy the
 filesystem-level invariants that make Standalone Mode viable from inside
@@ -48,7 +48,7 @@ from conftest import COMPONENT_MANIFEST, WORKSPACE_ROOT, ComponentSpec  # noqa: 
 
 
 # ---------------------------------------------------------------------------
-# Helpers — README heading normalization, COPY scanner, .gitignore check
+# Helpers - README heading normalization, COPY scanner, .gitignore check
 # ---------------------------------------------------------------------------
 
 
@@ -101,7 +101,7 @@ _COPY_NAKED_DOTDOT_RE = re.compile(
 # Matches the standalone token ``..`` between path separators or at
 # string boundaries. Used to confirm that a ``..`` occurrence really
 # is a parent-directory escape (e.g. ``../foo``) rather than a token
-# embedded inside another identifier (e.g. ``foo..bar`` — not a valid
+# embedded inside another identifier (e.g. ``foo..bar`` - not a valid
 # path segment but we want the test to be conservative).
 _PARENT_ESCAPE_RE = re.compile(r"(?:^|[\s/=])\.\.(?:[\s/]|$)")
 
@@ -143,7 +143,7 @@ def _gitignore_blocks_env(gitignore_text: str) -> bool:
     """True when the ``.gitignore`` text matches a recognised .env rule."""
 
     for raw in gitignore_text.splitlines():
-        # Skip negations (``!.env.example`` etc.) and comments — they
+        # Skip negations (``!.env.example`` etc.) and comments - they
         # are exemptions, not the protective rules we're looking for.
         stripped = raw.strip()
         if not stripped or stripped.startswith("#") or stripped.startswith("!"):

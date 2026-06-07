@@ -1,4 +1,4 @@
-"""``HealthcheckAggregator`` cascade router.
+﻿"""``HealthcheckAggregator`` cascade router.
 
 Aggregates the per-service healthcheck status into a single
 ``CascadeReport`` consumed by the admin-dashboard ``/services``
@@ -70,10 +70,10 @@ class HealthcheckAggregator:
 
     The aggregator is dependency-injected with two collaborators:
 
-    * ``probe_state`` — a callable returning ``Mapping[str, str]``
+    * ``probe_state`` - a callable returning ``Mapping[str, str]``
       from service name to raw status. Production wires this to
       :class:`HealthProbe`; tests inject a dict.
-    * ``manifest_loader`` — a callable returning the parsed
+    * ``manifest_loader`` - a callable returning the parsed
       ``services.manifest.json`` dict so the cascade rule can read
       ``depends_on_services``.
 

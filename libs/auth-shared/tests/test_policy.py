@@ -1,4 +1,4 @@
-"""Unit tests for :mod:`auth_shared.policy` (RBAC guard helpers).
+﻿"""Unit tests for :mod:`auth_shared.policy` (RBAC guard helpers).
 
 Covers the four-role decision matrix for the
 ``requires(role, dept_id=None)`` decorator/guard helper:
@@ -7,7 +7,7 @@ Covers the four-role decision matrix for the
   "dept_admin"}``.
 * The viewer→lead→admin precedence holds for guards that only
   require global roles.
-* ``required_role="admin"`` is global-only — ``dept_admin`` is
+* ``required_role="admin"`` is global-only - ``dept_admin`` is
   rejected for global actions.
 * ``dept_admin`` may perform dept-scoped operations on its own
   dept_id but is denied for any other dept.
@@ -61,7 +61,7 @@ def _ctx(role: str, *dept_ids: str, actor_id: str = "user-1") -> AuthContext:
 
 class TestRoleEnumeration:
     def test_role_runtime_mirror_matches_literal(self) -> None:
-        # Exactly the four RBAC roles — no ``"system"``,
+        # Exactly the four RBAC roles - no ``"system"``,
         # which is an audit-only role attached to background events
         # (see audit_logger.event.AuditRole) and is not a valid
         # ``actor_role`` for an authenticated request.
@@ -76,7 +76,7 @@ class TestRoleEnumeration:
 
 
 # ---------------------------------------------------------------------------
-# check() — the decision core
+# check() - the decision core
 # ---------------------------------------------------------------------------
 
 
@@ -119,7 +119,7 @@ class TestCheckGlobalRoles:
         self, actor_role: str, allowed: bool
     ) -> None:
         # Global actions (new dept, global prompt, SSH runner config)
-        # are admin-only — dept_admin is denied.
+        # are admin-only - dept_admin is denied.
         if allowed:
             check(_ctx(actor_role), "admin")
         else:
@@ -203,7 +203,7 @@ class TestIsAllowed:
 
 
 # ---------------------------------------------------------------------------
-# requires() — decorator surface
+# requires() - decorator surface
 # ---------------------------------------------------------------------------
 
 
@@ -274,7 +274,7 @@ class TestRequiresDecorator:
 
     def test_decorator_dept_id_arg_is_resolved_at_call_time(self) -> None:
         # dept_admin rotates *its own* department's credentials
-        # — the dept comes from the path parameter, not a static arg.
+        # - the dept comes from the path parameter, not a static arg.
         @requires("dept_admin", dept_id_arg="dept_id")
         def rotate(actor: AuthContext, dept_id: str) -> str:
             return f"rotated:{dept_id}"
@@ -323,7 +323,7 @@ class TestRequiresDecorator:
 
 
 # ---------------------------------------------------------------------------
-# requires_role() — imperative spelling
+# requires_role() - imperative spelling
 # ---------------------------------------------------------------------------
 
 

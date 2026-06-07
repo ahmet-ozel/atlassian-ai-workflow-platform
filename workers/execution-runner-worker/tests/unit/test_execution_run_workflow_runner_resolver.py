@@ -1,4 +1,4 @@
-"""Unit tests for the runner_resolver integration in
+﻿"""Unit tests for the runner_resolver integration in
 :class:`ExecutionRunWorkflow`.
 
 The canonical :class:`ExecutionRunWorkflow` invokes the ``resolve_runner``
@@ -14,14 +14,14 @@ input ``runner_id`` verbatim.
 Scenarios covered
 -----------------
 
-1. ``runner_id`` is set explicitly — ``resolve_runner`` is NOT called,
+1. ``runner_id`` is set explicitly - ``resolve_runner`` is NOT called,
    workflow uses the input runner_id directly.
-2. ``department_id`` is empty — ``resolve_runner`` is NOT called.
-3. ``department_id`` is set AND ``runner_id`` is None — ``resolve_runner``
+2. ``department_id`` is empty - ``resolve_runner`` is NOT called.
+3. ``department_id`` is set AND ``runner_id`` is None - ``resolve_runner``
    IS called, workflow uses the resolved runner_id.
-4. ``resolve_runner`` raises ApplicationError (no active runner) —
+4. ``resolve_runner`` raises ApplicationError (no active runner) -
    workflow fails with the error propagated.
-5. ``resolve_runner`` raises an infrastructure error — workflow falls
+5. ``resolve_runner`` raises an infrastructure error - workflow falls
    back to input runner_id (None) and continues.
 6. Resolved runner_id is passed to ``ssh_run_test`` activity.
 7. SSH key dual-slot rotation vault_path is preserved in the resolution.
@@ -105,10 +105,10 @@ def _build_activities(
     """Build the activity stub bundle for the canonical workflow.
 
     Includes:
-      * ``resolve_runner`` — returns resolve_runner_result or raises
-      * ``ssh_healthcheck`` — always healthy
-      * ``ssh_run_test`` — always passes
-      * ``apply_cleanup_policy`` — no-op
+      * ``resolve_runner`` - returns resolve_runner_result or raises
+      * ``ssh_healthcheck`` - always healthy
+      * ``ssh_run_test`` - always passes
+      * ``apply_cleanup_policy`` - no-op
     """
 
     @activity.defn(name="resolve_runner")

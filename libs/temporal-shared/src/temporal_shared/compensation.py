@@ -1,10 +1,10 @@
-"""Pure compensation-chain constants and report dataclasses.
+﻿"""Pure compensation-chain constants and report dataclasses.
 
 This module is the **single source of truth** for the cancel +
 compensation chain ordering and report shapes.
 
 The actual side-effecting :func:`run` activity body is **not** in
-scope for this module — it lives in the worker layer
+scope for this module - it lives in the worker layer
 (``platform/workers/agent-runner-worker``) so it can talk to Jira /
 Bitbucket / Confluence / MinIO.  Here we expose only the closed
 vocabulary, the deterministic order, and the pure dataclasses the
@@ -13,15 +13,15 @@ worker uses to build a :class:`CompensationReport`.
 Public API
 ----------
 
-* :data:`COMPENSATION_STEPS` — fixed-order tuple of activity step
+* :data:`COMPENSATION_STEPS` - fixed-order tuple of activity step
   names.
-* :class:`CompensationContext` — re-exported from
+* :class:`CompensationContext` - re-exported from
   :mod:`temporal_shared.messages` for caller ergonomics
   (``from temporal_shared.compensation import CompensationContext``).
-* :class:`CompensationReport` — frozen dataclass returned by the
+* :class:`CompensationReport` - frozen dataclass returned by the
   worker's chain runner.
 * :data:`STEP_RESULT_OK`, :data:`STEP_RESULT_FAILED`,
-  :data:`STEP_RESULT_SKIPPED` — outcome string vocabulary.
+  :data:`STEP_RESULT_SKIPPED` - outcome string vocabulary.
 
 """
 
@@ -45,7 +45,7 @@ __all__ = [
 
 
 # ---------------------------------------------------------------------------
-# Step vocabulary — the closed set of activity names dispatched by
+# Step vocabulary - the closed set of activity names dispatched by
 # the cancel + compensation chain. The order is part of the contract;
 # reordering would change the user-visible
 # cleanup behaviour and would silently break compensation idempotency

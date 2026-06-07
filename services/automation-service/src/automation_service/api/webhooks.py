@@ -1,4 +1,4 @@
-"""``POST /webhooks/jira`` and ``POST /webhooks/bitbucket``.
+﻿"""``POST /webhooks/jira`` and ``POST /webhooks/bitbucket``.
 
 * Wire the
   :class:`~automation_service.webhook_filters.WebhookFilterChain` to a
@@ -46,7 +46,7 @@ webhooks; the older ``automation_service/webhooks_handlers.py`` (Jira
 ``issue_created`` / ``issue_commented`` hand-rolled chain from the
 legacy handler) and the legacy ``src/webhooks/{jira,bitbucket}.py``
 (Phase-1 stand-alone handlers) remain mounted in parallel during the
-migration so existing deployments do not break — but new wiring goes
+migration so existing deployments do not break - but new wiring goes
 through these endpoints.
 
 """
@@ -114,11 +114,11 @@ from ..webhook_filters import (
 # always provides a :class:`LicenseCapEnforcer` callable; tests that
 # do not exercise the cap path leave it ``None`` and the enforcement
 # stage short-circuits.
-try:  # pragma: no cover — import guarded for legacy deployments
+try:  # pragma: no cover - import guarded for legacy deployments
     from middleware.license_cap import (  # type: ignore[import-not-found]
         BotLicenseCapExceededError,
     )
-except ImportError:  # pragma: no cover — optional dependency
+except ImportError:  # pragma: no cover - optional dependency
     class BotLicenseCapExceededError(RuntimeError):  # type: ignore[no-redef]
         """Fallback stub used when the middleware module is unavailable.
 
@@ -150,7 +150,7 @@ _LOG = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# Constants — event allowlists
+# Constants - event allowlists
 # ---------------------------------------------------------------------------
 
 #: Jira webhook event types this endpoint dispatches to a workflow.
@@ -163,7 +163,7 @@ JIRA_SUPPORTED_EVENTS: Final[frozenset[str]] = frozenset(JIRA_EVENT_TYPES)
 #: Bitbucket webhook event types this endpoint dispatches. The merge
 #: event (``pullrequest:fulfilled``) is intentionally excluded so the
 #: handler can short-circuit to ``loop_guard_dropped`` without going
-#: through HMAC verification — a merge fired by the bot itself would
+#: through HMAC verification - a merge fired by the bot itself would
 #: otherwise re-enter the chain and burn HMAC + dept-resolve cycles.
 BITBUCKET_SUPPORTED_EVENTS: Final[frozenset[str]] = frozenset(
     {
@@ -176,7 +176,7 @@ BITBUCKET_SUPPORTED_EVENTS: Final[frozenset[str]] = frozenset(
 #: Bitbucket events that are **recognised** but always loop-guarded.
 #: ``pullrequest:fulfilled`` is the canonical example: the merge tool
 #: is banned for the bot, so any ``fulfilled`` event we receive is a
-#: human action that has already taken effect — re-running the chain
+#: human action that has already taken effect - re-running the chain
 #: would only invite a self-trigger. Surfacing this as a distinct
 #: audit reason (``loop_guard_dropped``) lets operators tell merges
 #: apart from arbitrary unknown events (``webhook_event_ignored``).
@@ -273,7 +273,7 @@ _REASON_WEBHOOK_BLOCKED_LICENSE_CAP: Final[str] = (
 class _DeptResolverByProjectKey(Protocol):
     """Resolves a Jira project_key to a department id.
 
-    Optional collaborator — required only when the handler wants to
+    Optional collaborator - required only when the handler wants to
     populate ``dept_id`` on audit rows for Jira webhook events. The
     runtime implementation reads ``automation.department_project_keys``
     (or the in-memory dept registry); tests pass a hand-built mapping.
@@ -348,7 +348,7 @@ class WebhooksEndpointDeps:
         ``dept_id`` for the Jira / Bitbucket dialects respectively.
         Both default to ``None``; when omitted the audit ``dept_id``
         is left unset (chain-side dept resolution is still authoritative
-        — its result drives the chain's HMAC verifier and is captured
+        - its result drives the chain's HMAC verifier and is captured
         in the chain decision regardless of these callbacks).
     clock:
         Optional callable returning the current UTC datetime. Defaults
@@ -366,7 +366,7 @@ class WebhooksEndpointDeps:
         :func:`middleware.license_cap.enforce_license_cap` curried
         with the ``asyncpg.Pool`` and audit logger so the dispatcher
         only passes ``(dept_id, issue_key)``. ``None`` (default)
-        skips the cap check entirely — used by older deployments and
+        skips the cap check entirely - used by older deployments and
         by tests that do not exercise the cap path. When set, the
         callable runs *before* :meth:`ProcessedEventsRepo.claim` so a
         rejected delivery does not consume an idempotency slot;
@@ -378,7 +378,7 @@ class WebhooksEndpointDeps:
         comment on the originating Jira issue when the cap blocks a
         workflow start. The callable is expected to swallow its own
         errors so a broken MCP path never re-throws into the webhook
-        handler. ``None`` (default) skips the comment — Bitbucket-only
+        handler. ``None`` (default) skips the comment - Bitbucket-only
         flows or fixtures that do not exercise the comment path leave
         it unset.
     """
@@ -401,7 +401,7 @@ class WebhooksEndpointDeps:
 
 
 def _utc_now() -> datetime:
-    """Return current UTC datetime — default for :attr:`WebhooksEndpointDeps.clock`."""
+    """Return current UTC datetime - default for :attr:`WebhooksEndpointDeps.clock`."""
 
     return datetime.now(timezone.utc)
 
@@ -521,7 +521,7 @@ async def _emit_audit(
 ) -> None:
     """Write *event* to the audit log, swallowing errors.
 
-    A broken audit pipeline must not block webhook acknowledgement —
+    A broken audit pipeline must not block webhook acknowledgement -
     Atlassian retries deliveries indefinitely on 5xx and we would
     rather degrade audit fidelity than lock the gateway out of a
     transient Postgres outage. The failure is logged locally for
@@ -577,7 +577,7 @@ def _resolve_delivery_id(request: Request, provider: str) -> str:
     fixtures and curl-based smoke tests sometimes omit it, so the
     handler synthesises a stable but unique fallback derived from the
     payload hash via the calling code (we accept an empty header here
-    and fall through to the generic empty-string default — the chain's
+    and fall through to the generic empty-string default - the chain's
     ``replay_dedup`` stage will treat the empty string as ``False``
     and the ``processed_events`` table will then claim it).
     """
@@ -639,7 +639,7 @@ def _augment_payload_with_hmac(
 
     The chain's ``verify_hmac`` callback reads them via
     :func:`_extract_hmac_inputs`. Storing the data on the event keeps
-    the chain's pure-function contract intact — every input is on the
+    the chain's pure-function contract intact - every input is on the
     event, every output is in the :class:`FilterDecision`.
     """
 
@@ -660,7 +660,7 @@ def _workflow_id_for(event: WebhookEvent) -> str | None:
     Uses the foundation helpers in
     :mod:`temporal_shared.identifiers` so the format stays in lockstep
     with the workflow registry. Returns ``None`` when the event
-    lacks the keys needed to construct an id — the handler then falls
+    lacks the keys needed to construct an id - the handler then falls
     back to dropping the event with HTTP 400 because we cannot route
     it deterministically.
     """
@@ -717,7 +717,7 @@ async def _dispatch_pass(
     branch so the Jira and Bitbucket entry points stay tiny. The
     sequence is:
 
-    0. **License-cap enforcement** — when
+    0. **License-cap enforcement** - when
        :attr:`WebhooksEndpointDeps.license_cap_enforcer` is wired and
        a ``dept_id`` was resolved, run the cap helper *before*
        claiming the delivery. A cap breach raises
@@ -727,13 +727,13 @@ async def _dispatch_pass(
        best-effort Jira comment so the end user knows the bot is
        throttled rather than ignoring them. The middleware itself
        writes the ``bot_license_cap_exceeded`` audit row with the
-       raw cap details — the webhook layer's row records the
+       raw cap details - the webhook layer's row records the
        *delivery* metadata (delivery_id, event_type, workflow_id) so
        operators can correlate the 429 back to the originating
        Atlassian envelope without a cross-table join.
-    1. ``processed_events.claim`` — ``False`` on race → 200 with
+    1. ``processed_events.claim`` - ``False`` on race → 200 with
        audit ``webhook_claim_duplicate``.
-    2. :func:`start_workflow_idempotent` — on exception, release the
+    2. :func:`start_workflow_idempotent` - on exception, release the
        claim and re-raise so the webhook provider retries.
     3. Audit row tagged with ``webhook_workflow_started`` /
        ``webhook_workflow_already_started`` and the resolved
@@ -834,7 +834,7 @@ async def _dispatch_pass(
                 now=now,
             ),
         )
-        # Re-raise so FastAPI emits 500 — Atlassian's retry policy
+        # Re-raise so FastAPI emits 500 - Atlassian's retry policy
         # then re-fires the webhook and the (now-released) claim is
         # re-eligible.
         raise
@@ -895,24 +895,24 @@ async def _reject_for_license_cap(
     from this single rejection:
 
     1. **Audit row** (``webhook_workflow_start_blocked_license_cap``)
-       — captures the *delivery* metadata (delivery_id, event_type,
+       - captures the *delivery* metadata (delivery_id, event_type,
        workflow_id) so operators can correlate the 429 back to the
        Atlassian envelope. The middleware itself emits a separate
        ``bot_license_cap_exceeded`` row carrying the cap-side payload
        (license_id, current_value, max_value); the two together cover
        both halves of the rejection.
-    2. **Best-effort Jira comment** — only fires when ``issue_key``
+    2. **Best-effort Jira comment** - only fires when ``issue_key``
        is set (Bitbucket-only flows leave it ``None``) and the
        ``jira_ack_comment_poster`` callback is wired. The comment
        template is a short Turkish acknowledgement
        stating the cap and the current usage so the human reporter
        knows the bot is throttled rather than ignoring them.
-    3. **HTTP 429** — body ``{"error": "bot_license_cap_exceeded",
+    3. **HTTP 429** - body ``{"error": "bot_license_cap_exceeded",
        "limit": <type>, "current": <int|float>, "max": <int|float>}``
        so retrying clients (or the admin dashboard) can render a
        precise message without parsing the audit log.
 
-    The idempotency claim is **not** taken — see the
+    The idempotency claim is **not** taken - see the
     :func:`_dispatch_pass` docstring for the rationale (Atlassian
     redelivers, the next attempt re-enters the chain, and a fresh
     claim lands when capacity frees up).
@@ -963,7 +963,7 @@ async def _reject_for_license_cap(
     # Best-effort Jira acknowledgement. Only fires for Jira-driven
     # starts that surfaced an ``issue_key`` and only when the poster
     # is wired. Errors inside the poster are caught here as a second
-    # line of defence — the production binding already swallows its
+    # line of defence - the production binding already swallows its
     # own failures, but we double-guard so a misconfigured callback
     # cannot corrupt the rejection signal.
     poster = deps.jira_ack_comment_poster
@@ -1005,7 +1005,7 @@ async def _drop_response(
     The pass-through flavour decisions
     (``streamlit_inline_reply_with_bypass``,
     ``mention_filter_first_iter_exception``, ``filter_chain_pass``)
-    are handled by the caller — only genuine drops route through this
+    are handled by the caller - only genuine drops route through this
     helper. The HTTP body distinguishes coalesced bursts so operators
     can see "this delivery was merged into an open window" without
     diffing audit rows.
@@ -1130,7 +1130,7 @@ async def _process_webhook(  # noqa: PLR0911, PLR0912, PLR0915 - sequential chai
         body_event = payload.get("webhookEvent")
         event_type = body_event if isinstance(body_event, str) else ""
     else:
-        # Bitbucket — the event type lives in the X-Event-Key header.
+        # Bitbucket - the event type lives in the X-Event-Key header.
         event_type = request.headers.get(_HEADER_BITBUCKET_EVENT_KEY) or ""
         # Some test fixtures embed the event type in the body; accept
         # that as a secondary source so the same payload shape works
@@ -1270,7 +1270,7 @@ async def _process_webhook(  # noqa: PLR0911, PLR0912, PLR0915 - sequential chai
             now=now,
         )
 
-    # ---- (h) Pass — derive workflow_id and dispatch ---------------
+    # ---- (h) Pass - derive workflow_id and dispatch ---------------
     workflow_id = _workflow_id_for(event)
     if workflow_id is None:
         await _emit_audit(

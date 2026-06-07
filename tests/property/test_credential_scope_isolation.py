@@ -1,4 +1,4 @@
-"""invariant for cross-scope Vault read isolation (uyumluluk Q7).
+﻿"""invariant for cross-scope Vault read isolation (uyumluluk Q7).
 
 **invariant: Cross-Scope Vault Read Isolation (Q7 Kritik Güvenlik)**
 
@@ -230,8 +230,8 @@ _USER_PREFIXES: tuple[str, ...] = (
 def _org_prefix(dept_id: str) -> str:
     """Return the canonical org-default Vault prefix for *dept_id*.
 
- The resolver does not own this shape directly — the prefix lives
- in ``automation.department_bots.credential_ref`` rows — but the
+ The resolver does not own this shape directly - the prefix lives
+ in ``automation.department_bots.credential_ref`` rows - but the
  invariant enforces that user-scope reads never see paths
  starting with ``secret/atlassian/{dept_id}/`` even if such a row
  exists in the DB seed.
@@ -307,7 +307,7 @@ def _build_dept_pool(dept_id: str, service: str) -> _FakePool:
 
 
 # ---------------------------------------------------------------------------
-# invariant — org scope must not read user-prefix paths
+# invariant - org scope must not read user-prefix paths
 # ---------------------------------------------------------------------------
 
 
@@ -363,7 +363,7 @@ def test_org_scope_never_reads_user_prefix(
 
 
 # ---------------------------------------------------------------------------
-# invariant — user scope must not read org-prefix paths
+# invariant - user scope must not read org-prefix paths
 # ---------------------------------------------------------------------------
 
 
@@ -433,7 +433,7 @@ def test_user_scope_never_reads_org_prefix(
 
 
 # ---------------------------------------------------------------------------
-# invariant — deprecated ``"bot"`` alias inherits the org invariant
+# invariant - deprecated ``"bot"`` alias inherits the org invariant
 # ---------------------------------------------------------------------------
 
 
@@ -482,7 +482,7 @@ def test_bot_scope_alias_inherits_org_isolation(
 
 
 # ---------------------------------------------------------------------------
-# invariant — unknown scope raises ValueError
+# invariant - unknown scope raises ValueError
 # ---------------------------------------------------------------------------
 
 
@@ -532,7 +532,7 @@ def test_invalid_scope_raises_value_error(
 
     _run_async(_check())
 
-    # No Vault read should have escaped — invalid scope is rejected
+    # No Vault read should have escaped - invalid scope is rejected
     # before any I/O.
     assert vault.read_calls == [], (
         f"invalid scope {invalid_scope!r} triggered Vault reads: "
@@ -541,7 +541,7 @@ def test_invalid_scope_raises_value_error(
 
 
 # ---------------------------------------------------------------------------
-# invariant — leaked org credential_ref pointing at user prefix raises
+# invariant - leaked org credential_ref pointing at user prefix raises
 # ---------------------------------------------------------------------------
 
 
@@ -615,7 +615,7 @@ def test_org_scope_with_leaked_user_ref_raises_violation(
 
     _run_async(_check())
 
-    # 1) No Vault read happened — the guard short-circuits before I/O.
+    # 1) No Vault read happened - the guard short-circuits before I/O.
     assert vault.read_calls == [], (
         f"scope='org' attempted to read leaked user path: "
         f"{vault.read_calls!r}"
@@ -641,7 +641,7 @@ def test_org_scope_with_leaked_user_ref_raises_violation(
 
 
 # ---------------------------------------------------------------------------
-# invariant — user scope rejects empty session_id without I/O
+# invariant - user scope rejects empty session_id without I/O
 # ---------------------------------------------------------------------------
 
 

@@ -1,4 +1,4 @@
-"""invariant 9 — Confluence write invariants.
+﻿"""invariant 9 - Confluence write invariants.
 
 
 
@@ -6,27 +6,27 @@ Hypothesis-driven verification of the five pure helpers used by the
 ``confluence_doc_create`` / ``confluence_doc_update`` flow of the
 ``AgentRunnerWorkflow`` in ````:
 
-*:func:`temporal_shared.confluence_dedup.is_probe_page` —
+*:func:`temporal_shared.confluence_dedup.is_probe_page` -
  ``_AI_PROBE_*`` prefix detection (,
  §16.14.6 V6 / foundation).
-*:func:`temporal_shared.confluence_dedup.should_skip_overwrite` —
+*:func:`temporal_shared.confluence_dedup.should_skip_overwrite` -
  non-bot edited within freshness window → skip (,
- §16.11 — Confluence overwrite koruması).
-*:func:`temporal_shared.confluence_dedup.should_skip_section_update` —
+ §16.11 - Confluence overwrite koruması).
+*:func:`temporal_shared.confluence_dedup.should_skip_section_update` -
  ``(workflow_id, page_id, section_path, content_hash)`` already in
  the hash table → skip (, §16.14.10 V10).
-*:func:`temporal_shared.confluence.compute_provenance_footer` —
+*:func:`temporal_shared.confluence.compute_provenance_footer` -
  non-empty Jira link → footer that contains the link verbatim
  (, §16.13 S6 / §16.12 B7). Empty / invalid link inputs
  raise:class:`InvalidJiraIssueLinkError` (a:class:`ValueError`
  subclass) so the caller cannot accidentally render a malformed
  page; the invariant pins this fail-fast behaviour.
-*:func:`temporal_shared.confluence.format_page_title` —
+*:func:`temporal_shared.confluence.format_page_title` -
  ``{topic} - {YYYY-MM-DD}`` shape. Empty / whitespace-only
  topics raise:class:`InvalidTopicError` (a:class:`ValueError`
  subclass).
 
-All five helpers are **pure deterministic** — calling each one twice
+All five helpers are **pure deterministic** - calling each one twice
 with the same inputs must return the same value (or raise the same
 exception). The final ``TestDeterminism`` class pins this end-to-end.
 
@@ -38,7 +38,7 @@ Invariant statements (mirror design.md §"invariant")
 (P-probe-2) ``is_probe_page(title)`` is:data:`False` for any title
  whose first ``len("_AI_PROBE_")`` characters do not match
  the prefix.
-(P-probe-3) ``is_probe_page`` is deterministic — two consecutive calls
+(P-probe-3) ``is_probe_page`` is deterministic - two consecutive calls
  on the same input return the same boolean.
 
 (P-overwrite-1) ``should_skip_overwrite`` returns ``skip=True`` **iff**
@@ -60,7 +60,7 @@ Invariant statements (mirror design.md §"invariant")
 
 (P-footer-1) For any non-empty, structurally-valid Jira issue link the
  returned footer **contains the link verbatim**
- (substring check — the activity layer relies on this so
+ (substring check - the activity layer relies on this so
  readers can click through to the source issue).
 (P-footer-2) The footer is non-empty and contains the canonical
  provenance prefix ``"🤖"`` so tests / readers can locate
@@ -92,7 +92,7 @@ Deviation note (task brief vs implementation)
 The task brief for invariant states "empty → empty string" for:func:`compute_provenance_footer`. The production implementation in:mod:`temporal_shared.confluence` raises:class:`InvalidJiraIssueLinkError` instead, on the basis that the
 footer is rendered verbatim into Confluence storage format and a
 silently-empty footer would strip the AI-attribution required by 
-( §16.12 B7 — bot output attribution). The invariant tests
+( §16.12 B7 - bot output attribution). The invariant tests
 the **as-implemented** contract (raise on empty) since that module's
 docstring and unit tests in
 ``platform/libs/temporal-shared/tests/test_confluence.py`` are the
@@ -115,7 +115,7 @@ from hypothesis import strategies as st
 
 
 # ---------------------------------------------------------------------------
-# ``sys.path`` bootstrap — mirrors ``test_explain_keyword.py``.
+# ``sys.path`` bootstrap - mirrors ``test_explain_keyword.py``.
 #
 # ``temporal_shared`` ships under ``libs/temporal-shared/src/`` and is
 # already on the workspace ``pytest.ini`` ``pythonpath``; we add it
@@ -134,7 +134,7 @@ for _src in _REQUIRED_SRC_DIRS:
         sys.path.insert(0, _src_str)
 
 
-# noqa: E402 — imports must follow the ``sys.path`` bootstrap above.
+# noqa: E402 - imports must follow the ``sys.path`` bootstrap above.
 
 from temporal_shared.confluence import (  # noqa: E402
     InvalidJiraIssueLinkError,
@@ -154,7 +154,7 @@ from temporal_shared.confluence_dedup import (  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
-# Constants — pinned from the production modules
+# Constants - pinned from the production modules
 # ---------------------------------------------------------------------------
 
 #: Anchor timestamp for the overwrite-protection strategy. Fixed so the
@@ -233,7 +233,7 @@ _NON_PROBE_TITLE: Final[st.SearchStrategy[str]] = st.text(
 ).filter(lambda s: not s.startswith(PROBE_PAGE_TITLE_PREFIX))
 
 
-# Mixed strategy — half probe shapes, half non-probe shapes — used for
+# Mixed strategy - half probe shapes, half non-probe shapes - used for
 # the determinism property which does not care which branch is hit.
 _ANY_TITLE: Final[st.SearchStrategy[str]] = st.one_of(
     _probe_titles(),
@@ -283,7 +283,7 @@ def _last_edit_ats(
 # ---- should_skip_section_update -----------------------------------------
 
 
-# Identifier alphabets — all non-empty since the helper rejects empty
+# Identifier alphabets - all non-empty since the helper rejects empty
 # key components with ``ValueError`` (we exercise the happy path here;
 # the validation paths are covered by the unit-test suite).
 _KEY_COMPONENT: Final[st.SearchStrategy[str]] = st.text(
@@ -327,7 +327,7 @@ _HOSTS: Final[st.SearchStrategy[str]] = st.sampled_from(
 
 @st.composite
 def _issue_keys(draw: st.DrawFn) -> str:
-    """``PROJ-NNN`` shape — same alphabet used by ``identifiers``."""
+    """``PROJ-NNN`` shape - same alphabet used by ``identifiers``."""
 
     head = draw(st.sampled_from("ABCDEFGHIJKLMNOPQRSTUVWXYZ"))
     tail = draw(
@@ -377,7 +377,7 @@ def _topics(draw: st.DrawFn) -> str:
     body = draw(
         st.text(alphabet=_TOPIC_ALPHABET, min_size=1, max_size=40)
     )
-    # Reject all-whitespace bodies — those would raise InvalidTopicError
+    # Reject all-whitespace bodies - those would raise InvalidTopicError
     # and we want the happy-path strategy to land on success.
     if not body.strip():
         body = body + "x"
@@ -404,7 +404,7 @@ _EMPTY_OR_WS_TOPICS: Final[st.SearchStrategy[str]] = st.sampled_from(
 
 
 class TestIsProbePage:
-    """invariant — ``_AI_PROBE_*`` prefix detection."""
+    """invariant - ``_AI_PROBE_*`` prefix detection."""
 
     @settings(max_examples=100, deadline=None)
     @given(title=_probe_titles())
@@ -456,7 +456,7 @@ class TestIsProbePage:
 
 
 class TestShouldSkipOverwrite:
-    """invariant — non-bot edit within freshness window blocks update."""
+    """invariant - non-bot edit within freshness window blocks update."""
 
     @settings(max_examples=100, deadline=None)
     @given(
@@ -479,7 +479,7 @@ class TestShouldSkipOverwrite:
  AND last_editor ∉ bot_ids
  AND timedelta(0) <= now - last_edit_at < freshness
 
- A future-dated edit (negative delta) does not block — the
+ A future-dated edit (negative delta) does not block - the
  helper treats clock skew as "not recent enough to block"
  rather than always-blocking.
 
@@ -493,7 +493,7 @@ class TestShouldSkipOverwrite:
         )
 
         # Compute the expected decision using the same predicate the
-        # implementation documents — re-derive rather than mirror so a
+        # implementation documents - re-derive rather than mirror so a
         # silent contract change in the source surfaces as a property
         # failure rather than a stale duplicate constant.
         if last_editor is None or last_edit_at is None:
@@ -573,7 +573,7 @@ class TestShouldSkipOverwrite:
 
 
 class TestShouldSkipSectionUpdate:
-    """invariant — section dedup by content hash."""
+    """invariant - section dedup by content hash."""
 
     @settings(max_examples=100, deadline=None)
     @given(
@@ -706,7 +706,7 @@ class TestShouldSkipSectionUpdate:
 
 
 class TestComputeProvenanceFooter:
-    """invariant — provenance footer contains the Jira link verbatim."""
+    """invariant - provenance footer contains the Jira link verbatim."""
 
     @settings(max_examples=100, deadline=None)
     @given(jira_issue_link=_jira_issue_links())
@@ -781,7 +781,7 @@ class TestComputeProvenanceFooter:
 
 
 class TestFormatPageTitle:
-    """invariant — page-title shape + empty-topic rejection."""
+    """invariant - page-title shape + empty-topic rejection."""
 
     @settings(max_examples=100, deadline=None)
     @given(topic=_topics(), current_date=_DATES)
@@ -851,12 +851,12 @@ class TestFormatPageTitle:
 
 
 # ---------------------------------------------------------------------------
-# End-to-end determinism — every helper is pure
+# End-to-end determinism - every helper is pure
 # ---------------------------------------------------------------------------
 
 
 class TestDeterminism:
-    """All five helpers are pure deterministic — same input → same output.
+    """All five helpers are pure deterministic - same input → same output.
 
  The per-helper test classes already pin the contract for each
  function individually; this class exists as a single, easy-to-grep

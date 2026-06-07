@@ -1,13 +1,13 @@
-"""Property test: Webhook comment decision determinism.
+﻿"""Property test: Webhook comment decision determinism.
 
 For any combination of ``(workflow_exists, issue_status,
 assignee_account_id, dept_config)`` the handler's decision is
-**deterministic** — the same inputs always produce the same outcome:
+**deterministic** - the same inputs always produce the same outcome:
 
-  * ``signal_forwarded``          — workflow exists, signal delivered.
-  * ``workflow_restarted_from_comment`` — no workflow, status eligible,
+  * ``signal_forwarded``          - workflow exists, signal delivered.
+  * ``workflow_restarted_from_comment`` - no workflow, status eligible,
                                     assignee is a dept bot.
-  * ``comment_ignored_no_pending_workflow`` — no workflow AND (status
+  * ``comment_ignored_no_pending_workflow`` - no workflow AND (status
                                     not eligible OR assignee not a bot).
 
 No real database or Temporal cluster is required; all I/O goes through
@@ -485,10 +485,10 @@ class TestWebhookCommentDecisionDeterminism:
     dept_config)`` combination the handler always produces the same
     outcome:
 
-    * ``signal_forwarded``                   — workflow exists.
-    * ``restarted``                          — no workflow, eligible
+    * ``signal_forwarded``                   - workflow exists.
+    * ``restarted``                          - no workflow, eligible
                                                status, bot assignee.
-    * ``ignored`` (no_pending_workflow)      — no workflow, ineligible
+    * ``ignored`` (no_pending_workflow)      - no workflow, ineligible
                                                status or non-bot assignee.
     """
 
@@ -538,7 +538,7 @@ class TestWebhookCommentDecisionDeterminism:
 
         The second call may be a replay (duplicate) for the non-comment
         path, but for comment_created the replay guard fires on the
-        second delivery — the important invariant is that the *first*
+        second delivery - the important invariant is that the *first*
         call's outcome is stable.
         """
         issue_key: str = scenario["issue_key"]
@@ -563,7 +563,7 @@ class TestWebhookCommentDecisionDeterminism:
         )
         resp1 = await _post(app1, body)
 
-        # Second run (fresh store — same inputs, independent state)
+        # Second run (fresh store - same inputs, independent state)
         store2 = _fresh_store(retrigger_statuses=retrigger_statuses)
         pool2 = _FakePoolWithDeptConfig(store2)
         temporal2 = _FakeTemporalClient(workflow_exists=workflow_exists)

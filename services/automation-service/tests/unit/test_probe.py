@@ -1,4 +1,4 @@
-"""Unit tests for ``automation_service.probe``.
+﻿"""Unit tests for ``automation_service.probe``.
 
 Covers the probe acceptance criteria:
 
@@ -27,7 +27,7 @@ from typing import Any
 import pytest
 
 # ---------------------------------------------------------------------------
-# Path setup — make the in-tree ``src`` directory importable
+# Path setup - make the in-tree ``src`` directory importable
 # ---------------------------------------------------------------------------
 _AUTOMATION_ROOT = Path(__file__).resolve().parents[2]
 if str(_AUTOMATION_ROOT / "src") not in sys.path:
@@ -94,7 +94,7 @@ class TestSentinelFormat:
 class _FakeAtlassianClient:
     """In-memory ``AtlassianProbeClient`` for unit tests.
 
-    Implements the bare minimum surface needed by ``ProbeRunner`` —
+    Implements the bare minimum surface needed by ``ProbeRunner`` -
     every method records its inputs in ``calls`` so assertions can
     drive off the call log instead of poking at private attributes.
     """
@@ -481,7 +481,7 @@ class TestBitbucketProbe:
         client = _FakeAtlassianClient(
             bitbucket_probe_branches=[
                 "_AI_PROBE_1600000000_DELETE_ME",
-                "feature/regular-branch",  # unrelated — must NOT be deleted
+                "feature/regular-branch",  # unrelated - must NOT be deleted
                 "_AI_PROBE_1650000000_DELETE_ME",
             ]
         )
@@ -513,7 +513,7 @@ class TestBitbucketProbe:
         assert result.state == "read_failed"
         assert client.calls == []  # never even called the read probe
 
-        # Partial targets — workspace only.
+        # Partial targets - workspace only.
         result2 = await runner.run(
             "payment",
             "bitbucket",

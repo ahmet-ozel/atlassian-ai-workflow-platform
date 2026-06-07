@@ -1,4 +1,4 @@
-"""Capability gate behavioral properties.
+﻿"""Capability gate behavioral properties.
 
 
 
@@ -8,7 +8,7 @@ Capability gate determinism + feature flag default-off + mode=disabled
 For every triple ``(Department, workflow_type, env)`` drawn from a
 schema-faithful Hypothesis strategy:
 
-(a) Determinism / purity.:func:`derive_capabilities` is a pure function — it consults only the
+(a) Determinism / purity.:func:`derive_capabilities` is a pure function - it consults only the
  fields of ``dept`` and the keys of ``env`` documented in:mod:`temporal_shared.capabilities`. It performs no network or
  filesystem I/O. We enforce this by patching every common I/O entry
  point (``socket.socket``, ``socket.create_connection``,
@@ -41,7 +41,7 @@ schema-faithful Hypothesis strategy:
  ``not mock.called`` whenever the gate denies.
 
 (d) ``dept.mode == "disabled"`` blocks workflow start unconditionally.
- The pure:func:`gate` function does not consult ``mode`` — that
+ The pure:func:`gate` function does not consult ``mode`` - that
  rule is enforced by the layer above (automation-service). We
  therefore wrap ``gate`` with the reference helper:func:`_should_start_workflow` defined in this module: it returns
  ``False`` whenever ``mode == "disabled"`` regardless of the gate
@@ -54,7 +54,7 @@ schema-faithful Hypothesis strategy:
  Setting either flag in the environment to ``"false"`` (or omitting
  it entirely) MUST NOT change the output of:func:`derive_capabilities`. Only the presence of at least one
  ``SSH_HOST_<n>`` key drives the ``execution`` capability. The flag
- is *not yet* consulted by the resolver — turning it on is a future
+ is *not yet* consulted by the resolver - turning it on is a future
  behavior that introduces dept-pinning logic. This test pins the
  default-off behaviour so the regression cannot land silently.
 """
@@ -216,7 +216,7 @@ def _env_strategy(draw: st.DrawFn) -> dict[str, str]:
  (``SSH_HOST_*``, ``FIRECRAWL_ENABLED``) with feature-flag keys
  (``SSH_RUNNER_DEPT_PINNING_ENABLED``, ``SSH_DEPT_QUOTA_ENABLED``)
  and arbitrary unrelated keys so the feature-flag default-off behavior
- default-off do not affect derivation* — is exercised.
+ default-off do not affect derivation* - is exercised.
  """
     env: dict[str, str] = {}
 
@@ -232,7 +232,7 @@ def _env_strategy(draw: st.DrawFn) -> dict[str, str]:
     if fc is not None:
         env["FIRECRAWL_ENABLED"] = fc
 
-    # Feature flags — should be ignored by derive_capabilities.
+    # Feature flags - should be ignored by derive_capabilities.
     for flag in (
         "SSH_RUNNER_DEPT_PINNING_ENABLED",
         "SSH_DEPT_QUOTA_ENABLED",
@@ -285,7 +285,7 @@ ALL_CAPABILITIES: frozenset[str] = frozenset(
 
 
 # ---------------------------------------------------------------------------
-# Helper: expected derivation (oracle) — mirrors the derivation rules
+# Helper: expected derivation (oracle) - mirrors the derivation rules
 # ---------------------------------------------------------------------------
 
 
@@ -676,7 +676,7 @@ class TestWorkflowStartInvariant:
  with a ``workflow_started`` audit event.
 
  We construct a maximally-capable dept directly rather than
- sampling-then-filtering — random departments are denied far
+ sampling-then-filtering - random departments are denied far
  more often than allowed, so an ``assume(allowed)`` filter would
  trigger ``HealthCheck.filter_too_much``.
  """
@@ -842,7 +842,7 @@ class TestModeDisabledBlocks:
         workflow_type: str,
     ) -> None:
         """``mode=disabled`` MUST short-circuit *before* the capability
- gate runs — no ``capability_denied`` audit may appear, only
+ gate runs - no ``capability_denied`` audit may appear, only
  ``dept_disabled``. This locks the layering documented in:func:`_should_start_workflow`.
  """
         # Synthesise a dept that *would* pass the gate so the test
@@ -926,7 +926,7 @@ class TestFeatureFlagsDefaultOff:
         caps_with = derive_capabilities(dept, env_with)
 
         assert caps_without == caps_with, (
-            f"derive_capabilities reacted to {flag_name}={flag_value!r} — "
+            f"derive_capabilities reacted to {flag_name}={flag_value!r} - "
             f"flag is supposed to default-off and not be consulted yet"
         )
 
@@ -1090,7 +1090,7 @@ from unittest.mock import AsyncMock
 # Load ``capability_gate.py`` from the automation-service without going
 # through the full package init (which pulls in asyncpg and other heavy
 # dependencies). We use ``importlib.util.spec_from_file_location`` to
-# register the module under a synthetic name — same pattern as
+# register the module under a synthetic name - same pattern as
 # ``test_burst_debounce.py`` and ``test_replay_dedup.py``.
 # ---------------------------------------------------------------------------
 

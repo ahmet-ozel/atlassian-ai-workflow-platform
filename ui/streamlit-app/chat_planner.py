@@ -1,4 +1,4 @@
-"""Prompt planning helpers for Streamlit Atlassian chat."""
+﻿"""Prompt planning helpers for Streamlit Atlassian chat."""
 
 from __future__ import annotations
 
@@ -210,7 +210,7 @@ _SPACE_KEY_STOPWORDS = {
 
 def _extract_confluence_space_key(text: str) -> str:
     # The ``space`` keyword may appear in any case ("Space"/"space"), but the
-    # key token itself must be uppercase AS WRITTEN — real Confluence space
+    # key token itself must be uppercase AS WRITTEN - real Confluence space
     # keys are uppercase (E2ETEST, KAN, JOH). Using ``re.IGNORECASE`` on the
     # whole pattern previously captured lowercase prose words such as
     # "space bilgisini" -> "BILGISINI" or "space key" -> "KEY", which then

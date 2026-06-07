@@ -1,14 +1,14 @@
-"""FastAPI entrypoint for assistant-service.
+﻿"""FastAPI entrypoint for assistant-service.
 
 Listens on port 8081 and exposes:
 
-* ``GET /healthz`` / ``GET /readyz`` — service health endpoints.
-* ``POST /api/chat/stream`` — SSE chat endpoint owned by
+* ``GET /healthz`` / ``GET /readyz`` - service health endpoints.
+* ``POST /api/chat/stream`` - SSE chat endpoint owned by
   :class:`src.chat.handler.ChatHandler`. Every request flows through the deterministic
   six-step pipeline (PII mask → sliding window → system prompt
   render → tool filter → LLM tool-call loop → audit) before the
   first SSE byte is yielded.
-* ``POST /api/session-credentials/...`` — per-user session
+* ``POST /api/session-credentials/...`` - per-user session
   credential relay.
 
 Lifespan wiring:
@@ -80,15 +80,15 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     deployment never blocks the rest of the surface. The pieces
     are:
 
-    1. :class:`prompts.PromptLoader` — service-local prompts/ +
+    1. :class:`prompts.PromptLoader` - service-local prompts/ +
        platform/prompts/ search roots.
-    2. :class:`llm_orchestrator.LlmOrchestrator` — primary (vLLM) +
+    2. :class:`llm_orchestrator.LlmOrchestrator` - primary (vLLM) +
        fallback (OpenAI). Starts in a degraded "no-providers"
        mode when neither lib can be imported; SSE requests then
        return 503.
-    3. :class:`audit_logger.AuditLogger` — Postgres-backed when
+    3. :class:`audit_logger.AuditLogger` - Postgres-backed when
        asyncpg + DSN are reachable, log-only otherwise.
-    4. :class:`src.chat.handler.ChatHandler` — composed from the
+    4. :class:`src.chat.handler.ChatHandler` - composed from the
        three collaborators above plus the foundation
        :class:`mcp_client` capability gate.
     """
@@ -302,7 +302,7 @@ def _passthrough_capability_gate(tools, *, capabilities):
 
     The foundation gate lives in :mod:`mcp_client`. Until it's wired
     here we surface every banned-tool-
-    filtered tool — the chat handler still applies the foundation
+    filtered tool - the chat handler still applies the foundation
     banned-tool list before reaching this gate.
     """
 
@@ -317,7 +317,7 @@ def _passthrough_capability_gate(tools, *, capabilities):
 app = FastAPI(
     title="assistant-service",
     version="0.1.0",
-    description="Assistant HTTP service — SSE chat tool-call loop.",
+    description="Assistant HTTP service - SSE chat tool-call loop.",
     lifespan=lifespan,
 )
 

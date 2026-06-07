@@ -1,13 +1,13 @@
-"""Pure-function helpers for AgentRunnerWorkflow saga compensation.
+﻿"""Pure-function helpers for AgentRunnerWorkflow saga compensation.
 
 This module encapsulates the saga compensation logic referenced by
 :class:`src.workflows.agent_runner_workflow.AgentRunnerWorkflow` in a
 form that is
 
-* **deterministic** — no wallclock, no randomness, no hidden state;
-* **pure** — given the same history and inverse table, ``compensate_actions``
+* **deterministic** - no wallclock, no randomness, no hidden state;
+* **pure** - given the same history and inverse table, ``compensate_actions``
   always invokes the same inverses in the same order;
-* **testable in isolation** — the helper accepts an arbitrary inverse table
+* **testable in isolation** - the helper accepts an arbitrary inverse table
   (``Mapping[str, Callable]``) so unit/property tests can pass mocks
   without spinning up a Temporal worker or any external service.
 
@@ -29,7 +29,7 @@ the following invariants:
    discards the history after compensation) and is a no-op.
 4. **Determinism.** Order of inverse invocations is a pure function of
    ``H``; no random shuffling and no clock-dependent ordering.
-5. **Empty history.** ``compensate_actions([], _)`` is a no-op — no
+5. **Empty history.** ``compensate_actions([], _)`` is a no-op - no
    inverse is invoked.
 
 Compensation P0 inverse table
@@ -68,7 +68,7 @@ class CompensableAction:
     Attributes
     ----------
     name : str
-        The forward activity name as registered with Temporal — for
+        The forward activity name as registered with Temporal - for
         example ``"bitbucket_create_branch"`` or ``"artifact_upload"``.
         This is the lookup key into the inverse table; if it is absent
         from the table the action is treated as having no inverse.
@@ -98,7 +98,7 @@ class CompensableAction:
 
 #: Type alias for an inverse activity. Inverses are expected to be
 #: ``async`` callables in production (Temporal activities), but the
-#: helper does not enforce that — synchronous callables are accepted by
+#: helper does not enforce that - synchronous callables are accepted by
 #: ``compensate_actions_sync`` for unit/property tests that prefer to
 #: keep their assertions free of an event loop.
 InverseCallable = Callable[..., Awaitable[None]]
@@ -117,8 +117,8 @@ def plan_compensation(
     """Return the ordered list of actions whose inverses MUST be invoked.
 
     This is the deterministic, side-effect-free *planner* underneath
-    :func:`compensate_actions`. It returns a fresh list — the input
-    ``history`` is never mutated — containing the subset of recorded
+    :func:`compensate_actions`. It returns a fresh list - the input
+    ``history`` is never mutated - containing the subset of recorded
     actions that have a registered inverse, in **reverse** of the order
     they were appended.
 

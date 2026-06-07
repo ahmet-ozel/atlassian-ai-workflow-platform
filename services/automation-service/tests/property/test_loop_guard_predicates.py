@@ -1,4 +1,4 @@
-"""Property tests for webhook loop-guard predicates.
+﻿"""Property tests for webhook loop-guard predicates.
 
 Webhook predicate guards (loop, assignee, changelog, event-type).
 
@@ -82,7 +82,7 @@ _account_ids: st.SearchStrategy[str] = st.text(
     max_size=40,
 )
 
-#: A bot registry: a frozenset of 0–10 account IDs.
+#: A bot registry: a frozenset of 0-10 account IDs.
 _bot_registries: st.SearchStrategy[frozenset[str]] = st.frozensets(
     _account_ids, min_size=0, max_size=10
 )
@@ -166,7 +166,7 @@ def _changelog_with_assignee_to_bot(
     return {"items": items}
 
 
-# A standard Hypothesis ``settings`` profile for this module — bounded
+# A standard Hypothesis ``settings`` profile for this module - bounded
 # example count plus a generous deadline so CI on slow runners doesn't
 # flake. The predicates are O(n) over the changelog so 200 examples
 # completes well under a second locally.
@@ -353,7 +353,7 @@ class TestAssigneeChangedToBot:
         bot_ids: frozenset[str],
     ) -> None:
         """``True`` from the predicate implies that the changelog actually
-        contains a matching item — i.e. there are no false positives.
+        contains a matching item - i.e. there are no false positives.
         """
         if assignee_changed_to_bot(changelog, bot_ids):
             assert changelog is not None
@@ -432,9 +432,9 @@ class TestShortCircuitOrdering:
         2. ``is_bot_assignee`` / ``assignee_changed_to_bot`` (per event)
         3. ``route``           → classifies the event type
 
-    Step 1 short-circuits steps 2–3. Because each predicate is a pure
+    Step 1 short-circuits steps 2-3. Because each predicate is a pure
     function, the *value* of a downstream predicate is a function of
-    its own inputs alone — varying those inputs cannot retroactively
+    its own inputs alone - varying those inputs cannot retroactively
     flip the loop guard's verdict. The properties below assert this
     independence directly.
     """
@@ -456,13 +456,13 @@ class TestShortCircuitOrdering:
         """When the actor *is* a registered bot, ``is_self_actor`` returns
         ``True`` no matter what downstream inputs (assignee, changelog,
         event type) the webhook carries. This is the formal statement
-        of "step 1 short-circuits steps 2–3".
+        of "step 1 short-circuits steps 2-3".
         """
         bot_actor = sorted(bot_ids)[0]
         # Step 1 fires regardless of what the rest of the payload says.
         assert is_self_actor(bot_actor, bot_ids) is True
 
-        # Downstream predicates remain *callable* and *deterministic* —
+        # Downstream predicates remain *callable* and *deterministic* -
         # they simply do not influence the loop-guard branch the
         # handler took.
         _ = is_bot_assignee(downstream_assignee, bot_ids)
@@ -490,7 +490,7 @@ class TestShortCircuitOrdering:
         """
         assume(actor_id not in bot_ids)
         assert is_self_actor(actor_id, bot_ids) is False
-        # Downstream classification is now meaningful — it must be one
+        # Downstream classification is now meaningful - it must be one
         # of the two literals route() can return.
         assert route(event_type) in ("accepted", "ignored")
 
@@ -504,7 +504,7 @@ class TestShortCircuitOrdering:
         ``is_self_actor`` already returned True.
 
         We assert the composition by checking that both predicates
-        return True on the same bot id — but the handler's contract is
+        return True on the same bot id - but the handler's contract is
         that the handler stops after step 1, never reaching step 2.
         """
         bot_id = sorted(bot_ids)[0]

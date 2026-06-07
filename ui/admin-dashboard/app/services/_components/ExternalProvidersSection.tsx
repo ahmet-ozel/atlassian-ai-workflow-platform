@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 /**
- * ExternalProvidersSection — AI model provider status widget.
+ * ExternalProvidersSection - AI model provider status widget.
  *
  * Renders a compact section above the managed services table showing the
  * live status of explicitly configured AI model providers.
@@ -23,7 +23,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api-client";
 
 // --------------------------------------------------------------------------
-// Types — mirrors ExternalServiceResponse from external_providers.py
+// Types - mirrors ExternalServiceResponse from external_providers.py
 // --------------------------------------------------------------------------
 
 type ExternalProviderStatus =
@@ -96,14 +96,14 @@ function getUnreachableHint(providerName: string, baseUrl: string): string {
 // --------------------------------------------------------------------------
 
 function formatProbeTime(epochSeconds: number): string {
-  if (!epochSeconds) return "—";
+  if (!epochSeconds) return "-";
   const date = new Date(epochSeconds * 1000);
-  if (Number.isNaN(date.getTime())) return "—";
+  if (Number.isNaN(date.getTime())) return "-";
   return date.toLocaleTimeString();
 }
 
 function formatLatency(latencyMs: number | null): string {
-  if (latencyMs === null || latencyMs === undefined) return "—";
+  if (latencyMs === null || latencyMs === undefined) return "-";
   return `${Math.round(latencyMs)} ms`;
 }
 

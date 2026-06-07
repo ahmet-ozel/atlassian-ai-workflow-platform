@@ -1,13 +1,13 @@
-"""LLM Provider implementations: vLLM, OpenAI, and Anthropic.
+﻿"""LLM Provider implementations: vLLM, OpenAI, and Anthropic.
 
 Provides concrete
 provider classes that can be used by the :class:`LlmOrchestrator` for
 the tool-call loop with retry + fallback.
 
 Provider Selection:
-    - ``vllm`` — Self-hosted vLLM (OpenAI-compatible API).
-    - ``openai`` — OpenAI cloud API.
-    - ``anthropic`` — Anthropic Claude API.
+    - ``vllm`` - Self-hosted vLLM (OpenAI-compatible API).
+    - ``openai`` - OpenAI cloud API.
+    - ``anthropic`` - Anthropic Claude API.
 
 All real providers implement the same interface and can be used as
 primary or fallback in the orchestrator's retry chain.
@@ -161,7 +161,7 @@ class SyntheticLLMProvider:
 
 @dataclass
 class VLLMProvider:
-    """vLLM provider — self-hosted, OpenAI-compatible API.
+    """vLLM provider - self-hosted, OpenAI-compatible API.
 
     Uses the OpenAI client library pointed at the vLLM endpoint.
     Tracks downtime for fallback decisions.
@@ -260,7 +260,7 @@ class OpenAIProvider:
 
     Uses the OpenAI **Responses API** (``POST /v1/responses``). Serves as
     the default fallback when vLLM is unavailable. The legacy Chat
-    Completions surface is intentionally NOT used — every OpenAI call in
+    Completions surface is intentionally NOT used - every OpenAI call in
     this codebase goes through the Responses API.
     """
 
@@ -474,9 +474,9 @@ class LLMProviderFactory:
     """Factory that builds provider instances from environment configuration.
 
     The factory dispatches on ``LLM_PROVIDER`` env variable:
-    * ``vllm`` — self-hosted vLLM (OpenAI-compatible).
-    * ``openai`` — OpenAI cloud.
-    * ``anthropic`` — Anthropic Claude.
+    * ``vllm`` - self-hosted vLLM (OpenAI-compatible).
+    * ``openai`` - OpenAI cloud.
+    * ``anthropic`` - Anthropic Claude.
 
     For fallback chain construction, use :meth:`from_env_with_fallback`
     which returns a (primary, fallback) tuple suitable for

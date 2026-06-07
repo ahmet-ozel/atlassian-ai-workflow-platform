@@ -1,4 +1,4 @@
-"""Unit tests for the ``derive_workspace_path`` wrappers in
+﻿"""Unit tests for the ``derive_workspace_path`` wrappers in
 :mod:`src.runners.remote_ssh` and :mod:`src.runners.remote_ssh_docker`.
 
 The tests pin two contracts:
@@ -13,7 +13,7 @@ The tests pin two contracts:
 2. **Error propagation.** Validation errors raised by the central
    helper (``InvalidIssueKeyError`` for path-traversal vectors,
    ``InvalidIterError`` for out-of-range iterations) propagate through
-   the wrapper unchanged — the wrapper does not swallow them or wrap
+   the wrapper unchanged - the wrapper does not swallow them or wrap
    them in a different exception type, because downstream audit code
    relies on the typed exception attributes.
 
@@ -70,13 +70,13 @@ _WRAPPERS = [
 @pytest.mark.parametrize("derive", _WRAPPERS)
 class TestDerivationDelegatesToCentralHelper:
     """The wrappers MUST route through ``build_workspace_path`` with
-    the ``base`` argument bound to ``settings.runner_base_path`` —
+    the ``base`` argument bound to ``settings.runner_base_path`` -
     nothing else."""
 
     def test_canonical_output_with_explicit_settings(
         self, derive, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        # Explicit Settings instance — the wrapper MUST honour it
+        # Explicit Settings instance - the wrapper MUST honour it
         # rather than constructing a fresh one (so tests can pin a
         # specific base without touching the env).
         settings = _build_settings(monkeypatch, "/var/ai-runner")
@@ -89,7 +89,7 @@ class TestDerivationDelegatesToCentralHelper:
     def test_uses_env_when_no_settings_argument(
         self, derive, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        # No ``settings=`` kwarg — the wrapper builds Settings()
+        # No ``settings=`` kwarg - the wrapper builds Settings()
         # internally, which reads ``RUNNER_BASE_PATH`` from the env.
         # This is the production call site shape.
         monkeypatch.delenv("SSH_BASE_PATH", raising=False)
@@ -102,7 +102,7 @@ class TestDerivationDelegatesToCentralHelper:
     ) -> None:
         # ``SSH_BASE_PATH`` is the deprecated alias preserved for
         # backwards compatibility. When ``RUNNER_BASE_PATH`` is
-        # unset the wrapper MUST still resolve the legacy variable —
+        # unset the wrapper MUST still resolve the legacy variable -
         # otherwise existing deployments would silently fall back to
         # the ``/var/ai-runner`` default and write workspaces in the
         # wrong place.
@@ -114,7 +114,7 @@ class TestDerivationDelegatesToCentralHelper:
     def test_default_base_when_no_env_set(
         self, derive, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        # Neither env var set — the Settings default ``/var/ai-runner``
+        # Neither env var set - the Settings default ``/var/ai-runner``
         # wins. This pins the contract that an unconfigured deployment
         # still produces a sensible (and grep-able) path.
         monkeypatch.delenv("RUNNER_BASE_PATH", raising=False)
@@ -138,7 +138,7 @@ class TestDerivationDelegatesToCentralHelper:
             calls.append((base, issue_key, iter_n))
             return f"SPY::{base}/{issue_key}/iter-{iter_n}"
 
-        # Patch the symbol the wrapper resolved at import time — the
+        # Patch the symbol the wrapper resolved at import time - the
         # ``from ... import build_workspace_path`` style means the
         # binding lives on the wrapper module itself.
         monkeypatch.setattr(
@@ -173,7 +173,7 @@ class TestValidationErrorsPropagate:
             "PAY/../OPS-1",
             "PAY-1; rm -rf /",
             "PAY-1\nOPS-1",
-            "pay-1",  # lowercase — rejected
+            "pay-1",  # lowercase - rejected
             "",
             "PAY-",
             "-1",

@@ -1,4 +1,4 @@
-"""Iteration Manager activity for the automation-worker.
+﻿"""Iteration Manager activity for the automation-worker.
 
 Implements the ``prepare_iteration`` Temporal activity which prepares the
 context for a re-run triggered by an ``[iterate]`` comment on an already
@@ -7,27 +7,27 @@ processed Jira issue.
 The activity is the first stage of the iteration re-run flow described in
 ``design.md`` §"Iteration Re-Run Flow":
 
-1. **Authorization gate ** — the comment author MUST be in the
+1. **Authorization gate ** - the comment author MUST be in the
  department's ``approvers`` list OR equal the issue reporter; any
  other author causes the activity to return a *not authorized*
  result and the orchestrating workflow drops the request.
-2. **Iteration number** — load the highest ``iteration_number`` for
+2. **Iteration number** - load the highest ``iteration_number`` for
  ``issue_key`` from ``shared.workflow_iterations`` and increment to
  ``N+1``. The first ever iteration on an issue resolves to
  ``1`` (the original automated run is iter-0 by convention).
-3. **Workspace path ** — derive ``{base}/{issue_key}/iter-{N+1}``
+3. **Workspace path ** - derive ``{base}/{issue_key}/iter-{N+1}``
  via the same canonical helper used by ``execution-runner-worker``.
  The path is *guaranteed distinct* from any earlier iteration on
  the same issue so workspace state cannot leak across iterations.
-4. **PR / branch carry-over (/)** — if the latest stored
+4. **PR / branch carry-over (/)** - if the latest stored
  iteration recorded a ``previous_pr_id``, surface it in the result
  so the workflow can choose to push commits to the *same* PR.
  Otherwise the result carries ``previous_pr_id=None`` and the
  workflow opens a fresh branch + PR.
-5. **Extra instructions ** — extract any text following the
+5. **Extra instructions ** - extract any text following the
  ``[iterate]`` keyword from the comment body and forward it as a
  free-form instruction string for the LLM context.
-6. **Persist ** — insert a ``shared.workflow_iterations`` row
+6. **Persist ** - insert a ``shared.workflow_iterations`` row
  with status ``'pending'``. The activity returns the workflow_id
  placeholder it generated; the caller (workflow) overwrites
  ``status`` with ``'in_progress'`` once the inner workflow start
@@ -39,14 +39,14 @@ Dependency-injection pattern
 Mirrors:mod:`audit_prune` exactly. Two collaborators are pulled
 through module-level setters configured at worker boot:
 
-*:func:`set_db_pool` — asyncpg-shaped Postgres pool used to read /
+*:func:`set_db_pool` - asyncpg-shaped Postgres pool used to read /
  write ``shared.workflow_iterations``. Tests inject an in-memory
  fake (see ``tests/unit/test_iteration_manager.py``).
-*:func:`set_iteration_store` — an alternative override that bypasses
+*:func:`set_iteration_store` - an alternative override that bypasses
  the SQL path entirely and lets tests stub the persistence surface
  with a hand-rolled:class:`IterationStore` implementation. This is
  the path used by sibling 's table migration when it lands
- *after* this activity ships — it lets (this task) be
+ *after* this activity ships - it lets (this task) be
  shipped, exercised, and unit-tested before the migration runs..
 """
 
@@ -109,9 +109,9 @@ MAX_ITERATION_NUMBER: Final[int] = 999
 #: Storm-guard cap on the number of automated iterations a single
 #: issue may accumulate. Independent of:data:`MAX_ITERATION_NUMBER`
 #: (which is the *path-layout* upper bound). The intent is to break
-#: runaway ``[iterate]`` loops — a misbehaving approver, a flaky LLM
+#: runaway ``[iterate]`` loops - a misbehaving approver, a flaky LLM
 #: that keeps re-emitting a "please re-run" comment, or a feedback
-#: loop between two bots — at a count that is well above any realistic
+#: loop between two bots - at a count that is well above any realistic
 #: engineering session but well below the path-layout bound. The
 #: activity returns an unauthorized result with
 #: ``reason="max_iteration_exceeded"`` once the *current* iteration
@@ -131,7 +131,7 @@ ITERATE_PATTERN: Final[re.Pattern[str]] = re.compile(
 )
 
 #: Jira-style issue key validator. Reused so an injected ``issue_key``
-#: cannot escape the ``{base}/{issue_key}/iter-{N}`` template — see the
+#: cannot escape the ``{base}/{issue_key}/iter-{N}`` template - see the
 #: matching regex in ``execution-runner-worker.runners.workspace_path``.
 _ISSUE_KEY_PATTERN: Final[re.Pattern[str]] = re.compile(
     r"^[A-Z][A-Z0-9_]*-\d+$"
@@ -153,7 +153,7 @@ class PrepareIterationInput:
 
  Attributes:
  issue_key: The Jira issue key (e.g. ``"PAY-4211"``).
- comment_body: Full body text of the ``[iterate]`` comment —
+ comment_body: Full body text of the ``[iterate]`` comment -
  used both for authorization tracing (the audit log mirrors
  the original text) and for ``extra_instructions``
  extraction.
@@ -162,7 +162,7 @@ class PrepareIterationInput:
  and ``issue_reporter_account_id`` to gate authorization.
  issue_reporter_account_id: ``accountId`` of the Jira issue
  reporter. ``None`` when the webhook payload did not carry
- a reporter (e.g. the issue was created by a bot — in that
+ a reporter (e.g. the issue was created by a bot - in that
  case only the dept ``approvers`` list grants access).
  dept_id: Department identifier. Forwarded to the resulting
  workflow input so the inner re-run wires up the correct
@@ -192,13 +192,13 @@ class IterationContext:
 
  The workflow consumes this dataclass to build the input for the
  inner re-run workflow. ``authorized=False`` means the activity
- declined to start an iteration — the workflow logs and
+ declined to start an iteration - the workflow logs and
  drops the request without surfacing an exception so a stray
  ``[iterate]`` from an unauthorized user cannot crash the cron.
 
  Attributes:
  authorized: ``True`` if the comment author may trigger a
- re-run. ``False`` otherwise — every other field except
+ re-run. ``False`` otherwise - every other field except
  ``reason`` is the empty / default value.
  reason: When ``authorized=False``, a short machine-readable
  reason code (e.g. ``"not_in_approvers"``,
@@ -231,8 +231,8 @@ class IterationContext:
  current_count: When ``authorized=False`` and
  ``reason="max_iteration_exceeded"``, the *current* highest
  iteration number stored for this issue (i.e. the count we
- refused to increment). ``None`` for every other path —
- including authorized results — to keep the field a
+ refused to increment). ``None`` for every other path -
+ including authorized results - to keep the field a
  no-overhead diagnostic that callers can rely on for the
  storm-guard surface only.
  """
@@ -274,7 +274,7 @@ class IterationRecord:
 
 
 # ---------------------------------------------------------------------------
-# IterationStore Protocol — abstraction over ``shared.workflow_iterations``
+# IterationStore Protocol - abstraction over ``shared.workflow_iterations``
 # ---------------------------------------------------------------------------
 
 
@@ -288,7 +288,7 @@ class IterationStore(Protocol):
  1. The activity can be unit-tested against a hand-rolled in-memory
  fake without spinning up Postgres.
  2. Sibling (which delivers the SQL migration) can be
- implemented in parallel — until the migration lands, production
+ implemented in parallel - until the migration lands, production
  deployments wire:class:`PostgresIterationStore` (defined
  below) which is a no-op when the table is missing, while
  focused unit tests inject the in-memory fake directly via:func:`set_iteration_store`.
@@ -303,7 +303,7 @@ class IterationStore(Protocol):
     ) -> IterationRecord | None:
         """Return the highest-numbered iteration for ``issue_key``.
 
- ``None`` is returned when no row exists — the caller treats
+ ``None`` is returned when no row exists - the caller treats
  this as "first iteration" and the new ``iteration_number``
  becomes ``1``.
  """
@@ -324,7 +324,7 @@ class IterationStore(Protocol):
 
  Implementations MUST honour the ``UNIQUE(issue_key,
  iteration_number)`` constraint and raise a clear error on
- conflict; the activity does not retry on conflict — concurrent
+ conflict; the activity does not retry on conflict - concurrent
  ``[iterate]`` comments race for the same iteration number and
  the second writer is rejected so the workflow can surface the
  race to the user via Jira.
@@ -362,7 +362,7 @@ def set_db_pool(pool: _AsyncPoolLike) -> None:
     """Register the asyncpg-shaped pool for the default SQL store.
 
  Called once at worker boot (``automation_worker.main``). When a
- custom:class:`IterationStore` has been wired through:func:`set_iteration_store`, the pool is unused — but registering
+ custom:class:`IterationStore` has been wired through:func:`set_iteration_store`, the pool is unused - but registering
  it anyway is harmless and keeps the boot script symmetric with
  the audit-prune wiring.
  """
@@ -454,7 +454,7 @@ def extract_extra_instructions(comment_body: str | None) -> str | None:
 
  Everything after the closing ``]`` is treated as the extra
  instruction. Leading / trailing whitespace is stripped. Multiple
- ``[iterate]`` markers are tolerated — only the *first* match is
+ ``[iterate]`` markers are tolerated - only the *first* match is
  used as the anchor and the rest of the body (verbatim) becomes the
  instruction text.
 
@@ -483,7 +483,7 @@ def is_authorized_for_iterate(
  * ``author_account_id`` is in the department's ``approvers`` list, or
  * ``author_account_id`` equals the issue's ``reporter`` accountId.
 
- Empty strings never authorize anyone — a misconfigured webhook
+ Empty strings never authorize anyone - a misconfigured webhook
  that drops the actor accountId must not silently grant access.
  """
     if not author_account_id:
@@ -554,7 +554,7 @@ def build_iteration_workspace_path(
 class PostgresIterationStore:
     """Default:class:`IterationStore` backed by ``shared.workflow_iterations``.
 
- The class is intentionally tiny — it's mostly just two SQL
+ The class is intentionally tiny - it's mostly just two SQL
  statements bound to the column layout introduced by sibling 's migration. We declare it here (rather than waiting on the
  migration) so the activity can ship and be exercised end-to-end
  against a Postgres test container; if the migration is missing in
@@ -683,7 +683,7 @@ async def prepare_iteration(
     )
 
     # ------------------------------------------------------------------
-    # Step 1 — Authorization gate 
+    # Step 1 - Authorization gate 
     # ------------------------------------------------------------------
     approvers_raw = input.dept_config.get("approvers") if input.dept_config else None
     approvers: list[str] = (
@@ -698,7 +698,7 @@ async def prepare_iteration(
         issue_reporter_account_id=input.issue_reporter_account_id,
     ):
         activity.logger.info(
-            "iteration_manager: rejecting [iterate] from %s on %s — "
+            "iteration_manager: rejecting [iterate] from %s on %s - "
             "not in approvers and not the reporter",
             input.comment_author_account_id,
             input.issue_key,
@@ -710,7 +710,7 @@ async def prepare_iteration(
         )
 
     # ------------------------------------------------------------------
-    # Step 2 — Load latest iteration (,)
+    # Step 2 - Load latest iteration (,)
     # ------------------------------------------------------------------
     store = get_iteration_store()
     latest = await store.latest_iteration(input.issue_key)
@@ -741,7 +741,7 @@ async def prepare_iteration(
     if new_iteration_number > MAX_ITERATION_NUMBER:
         activity.logger.warning(
             "iteration_manager: %s has reached the max iteration "
-            "count %d — refusing to start iter-%d",
+            "count %d - refusing to start iter-%d",
             input.issue_key,
             MAX_ITERATION_NUMBER,
             new_iteration_number,
@@ -754,7 +754,7 @@ async def prepare_iteration(
         )
 
     # ------------------------------------------------------------------
-    # Step 3 — Workspace path (,)
+    # Step 3 - Workspace path (,)
     # ------------------------------------------------------------------
     try:
         workspace_path = build_iteration_workspace_path(
@@ -777,7 +777,7 @@ async def prepare_iteration(
         )
 
     # ------------------------------------------------------------------
-    # Step 4 — Carry-over branch / PR (,)
+    # Step 4 - Carry-over branch / PR (,)
     # ------------------------------------------------------------------
     previous_branch = latest.previous_branch if latest else None
     previous_pr_id = latest.previous_pr_id if latest else None
@@ -785,17 +785,17 @@ async def prepare_iteration(
     # was a noop_test that never opened a PR) we still want to use its
     # own ``workspace_path`` references rather than reaching further
     # back in history. the "previous PR" is whichever PR is
-    # *currently* tracked against the issue — the dispatcher records
+    # *currently* tracked against the issue - the dispatcher records
     # exactly that on each iteration so the latest row is the source
     # of truth.
 
     # ------------------------------------------------------------------
-    # Step 5 — Extra instructions 
+    # Step 5 - Extra instructions 
     # ------------------------------------------------------------------
     extra_instructions = extract_extra_instructions(input.comment_body)
 
     # ------------------------------------------------------------------
-    # Step 6 — Persist the new iteration row 
+    # Step 6 - Persist the new iteration row 
     # ------------------------------------------------------------------
     workflow_id = (
         f"iteration-{input.issue_key}-{new_iteration_number}-"
@@ -817,7 +817,7 @@ async def prepare_iteration(
         # violation from a racing ``[iterate]`` that grabbed
         # iteration_number first. We surface it as an
         # ``insert_failed`` reason so the workflow drops the request
-        # without retrying — the user can re-issue ``[iterate]`` and
+        # without retrying - the user can re-issue ``[iterate]`` and
         # the next call sees a higher ``previous_iteration_number``.
         activity.logger.warning(
             "iteration_manager: failed to insert iteration row for "

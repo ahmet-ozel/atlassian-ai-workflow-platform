@@ -1,4 +1,4 @@
-"""`.env.example` parser — pure, deterministic, I/O-free.
+﻿"""`.env.example` parser - pure, deterministic, I/O-free.
 
 This module turns the textual contents of a Component's
 ``.env.example`` file into a list of :class:`EnvField` records that the
@@ -9,17 +9,17 @@ Parser contract
 ---------------
 Lines are classified in this order:
 
-1. **Assignment** — matches ``^[A-Z][A-Z0-9_]*=.*$``. Produces an
+1. **Assignment** - matches ``^[A-Z][A-Z0-9_]*=.*$``. Produces an
    :class:`EnvField` whose ``comment`` is the joined comment buffer
    accumulated since the previous blank line / assignment, and whose
    ``default_value`` has matching outer quotes stripped.
-2. **Comment** — matches ``^#.*$``. Each comment line contributes one
+2. **Comment** - matches ``^#.*$``. Each comment line contributes one
    string to the comment buffer (leading ``#`` plus a single optional
    space stripped). Consecutive comment lines join with ``\\n`` and
    are attached to the *next* assignment.
-3. **Blank line** — resets the comment buffer so dangling comments do
+3. **Blank line** - resets the comment buffer so dangling comments do
    not leak across blank-line-separated stanzas.
-4. **Anything else** — silently skipped without touching the buffer.
+4. **Anything else** - silently skipped without touching the buffer.
 
 The parser is pure: no I/O, no global state, no exceptions on
 malformed input. Order in the returned list mirrors the order of
@@ -33,7 +33,7 @@ from dataclasses import dataclass
 
 from .sensitive import is_sensitive_env_key
 
-# Assignment line — uppercase identifier, ``=``, then arbitrary value.
+# Assignment line - uppercase identifier, ``=``, then arbitrary value.
 # Keeps the form-schema LHS set deterministic across Python and TypeScript
 # consumers.
 _ASSIGNMENT_RE: re.Pattern[str] = re.compile(r"^([A-Z][A-Z0-9_]*)=(.*)$")
@@ -95,7 +95,7 @@ def _strip_comment_prefix(line: str) -> str:
 
     ``# foo``  → ``foo``
     ``#foo``   → ``foo``
-    ``#  foo`` → `` foo`` (only one space is stripped — the rest is
+    ``#  foo`` → `` foo`` (only one space is stripped - the rest is
     preserved verbatim to keep manually-indented comment blocks intact).
     ``##``     → ``#``
     """
@@ -124,7 +124,7 @@ def parse_env_example(text: str) -> list[EnvField]:
         appear in ``text``. Empty input yields an empty list. Lines
         that match no rule (e.g. lowercase ``key=value`` or naked
         identifiers) are silently skipped without resetting the
-        comment buffer — this preserves the parser rule that *only*
+        comment buffer - this preserves the parser rule that *only*
         blank lines reset comment accumulation.
 
     Notes
@@ -174,7 +174,7 @@ def parse_env_example(text: str) -> list[EnvField]:
             comment_buffer = []
             continue
 
-        # Rule 4: anything else — silently skipped, buffer preserved
+        # Rule 4: anything else - silently skipped, buffer preserved
         # so a malformed line between a comment block and its target
         # assignment does not orphan the comment.
 

@@ -1,4 +1,4 @@
-"""Docker activity module for the execution-runner-worker.
+﻿"""Docker activity module for the execution-runner-worker.
 
 Provides Temporal activity functions for Docker container lifecycle
 management: build, run, log collection, stop, cleanup, and healthcheck.
@@ -400,7 +400,7 @@ async def docker_build_image(input: DockerBuildInput) -> DockerBuildResult:
             error_msg = stderr[:1000] if stderr else f"Build failed with exit code {exit_code}"
 
         activity.logger.error(
-            "docker_build_image: build_failed — exit_code=%d error=%s",
+            "docker_build_image: build_failed - exit_code=%d error=%s",
             exit_code,
             error_msg[:200],
         )
@@ -439,7 +439,7 @@ async def docker_build_image(input: DockerBuildInput) -> DockerBuildResult:
         image_id = input.image_tag
 
     activity.logger.info(
-        "docker_build_image: success — image_id=%s duration=%.1fs",
+        "docker_build_image: success - image_id=%s duration=%.1fs",
         image_id,
         duration,
     )
@@ -554,7 +554,7 @@ async def docker_run_container(input: DockerRunInput) -> DockerRunResult:
             log_artifact_uri=None,
         )
 
-    # Extract container ID — docker run without -d prints output directly
+    # Extract container ID - docker run without -d prints output directly
     # We need to get the container ID. Let's query for the last container.
     container_id = ""
     try:
@@ -578,7 +578,7 @@ async def docker_run_container(input: DockerRunInput) -> DockerRunResult:
     )
 
     activity.logger.info(
-        "docker_run_container: completed — container=%s exit_code=%d "
+        "docker_run_container: completed - container=%s exit_code=%d "
         "stdout_len=%d stderr_len=%d",
         container_id,
         exit_code,
@@ -702,7 +702,7 @@ async def docker_collect_logs(
     )
 
     activity.logger.info(
-        "docker_collect_logs: done — container=%s bytes=%d uri=%s",
+        "docker_collect_logs: done - container=%s bytes=%d uri=%s",
         container_id,
         total_bytes,
         log_uri or "upload_failed",
@@ -746,7 +746,7 @@ async def docker_stop_container(
             "docker_stop_container: credential fetch failed: %s", exc
         )
         raise RuntimeError(
-            f"Cannot stop container — SSH credential fetch failed: {exc}"
+            f"Cannot stop container - SSH credential fetch failed: {exc}"
         ) from exc
 
     stop_cmd = f"docker stop -t {grace_period} {shlex.quote(container_id)}"
@@ -817,7 +817,7 @@ async def docker_cleanup_container(input: DockerCleanupInput) -> None:
 
     if not should_cleanup:
         activity.logger.info(
-            "docker_cleanup_container: skipping cleanup — policy=%s "
+            "docker_cleanup_container: skipping cleanup - policy=%s "
             "task_succeeded=%s",
             input.policy,
             input.task_succeeded,
@@ -830,7 +830,7 @@ async def docker_cleanup_container(input: DockerCleanupInput) -> None:
         activity.logger.error(
             "docker_cleanup_container: credential fetch failed: %s", exc
         )
-        return  # Best-effort cleanup — don't fail the workflow
+        return  # Best-effort cleanup - don't fail the workflow
 
     # Remove container
     if input.container_id:
@@ -950,7 +950,7 @@ async def docker_daemon_healthcheck(
 
     if exit_code != 0:
         activity.logger.warning(
-            "docker_daemon_healthcheck: Docker daemon unhealthy — "
+            "docker_daemon_healthcheck: Docker daemon unhealthy - "
             "exit_code=%d stderr=%s",
             exit_code,
             stderr[:200],
@@ -1099,7 +1099,7 @@ async def _upload_logs_to_minio(
                 return f"s3://{bucket}/{key}"
             else:
                 activity.logger.warning(
-                    "docker: MinIO upload failed — status=%d",
+                    "docker: MinIO upload failed - status=%d",
                     response.status_code,
                 )
                 return None

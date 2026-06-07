@@ -1,4 +1,4 @@
-"""``BudgetCapPolicy`` — dept / user weekly + monthly USD cap enforcement.
+﻿"""``BudgetCapPolicy`` - dept / user weekly + monthly USD cap enforcement.
 
 Implements the ``BudgetCapPolicy`` cap enforcement flow.
 
@@ -7,14 +7,14 @@ that the workflow start endpoint owes to the user when a department
 or a single end-user has burned through their LLM cost budget. It
 deliberately keeps three concerns isolated:
 
-1. **Configuration read** — :class:`BudgetCaps` mirrors the
+1. **Configuration read** - :class:`BudgetCaps` mirrors the
    ``budget_caps`` block of ``config/departments.json``
    (``departments.schema.json`` ``BudgetCaps`` ``$def``). The policy
    pulls the caps through a small :class:`BudgetCapsProvider`
    protocol so production wiring can read either the JSON file or
    ``shared.budget_caps`` (whichever stays in sync) without changing
    the policy.
-2. **Usage aggregation** — :meth:`BudgetCapPolicy._usage` runs four
+2. **Usage aggregation** - :meth:`BudgetCapPolicy._usage` runs four
    ``SUM(cost_usd)`` aggregates against ``shared.cost_tracking``,
    each filtered by ``cost_tag = 'production'`` so sandbox prompt
    tests (``cost_tag='sandbox'``) and connectivity probes
@@ -23,7 +23,7 @@ deliberately keeps three concerns isolated:
    driven by the SQL planner's ``now() - $1`` constant folding and
    the matching ``idx_cost_dept_time`` / ``idx_cost_user_time``
    indexes (``20_ops.sql``).
-3. **Decision + audit** — :meth:`BudgetCapPolicy.enforce` checks the
+3. **Decision + audit** - :meth:`BudgetCapPolicy.enforce` checks the
    four scopes in the order ``dept_weekly → user_weekly →
    dept_monthly → user_monthly`` (matching the ordering in
    ``departments.README.md``); on the **first** breach it writes a
@@ -312,7 +312,7 @@ class NotificationDispatcher(Protocol):
 
 @dataclass(frozen=True, slots=True)
 class BudgetCheckResult:
-    """Outcome of :func:`check_budget` — the enhanced pre-workflow check.
+    """Outcome of :func:`check_budget` - the enhanced pre-workflow check.
 
     Extends the original :class:`BudgetDecision` with 90% threshold
     warning information and full usage breakdown so callers can:
@@ -363,7 +363,7 @@ class BudgetCapsProvider(Protocol):
     the parsed ``departments.json`` document, the
     ``shared.budget_caps`` projection table, or an in-test fixture.
     Implementations MUST raise :class:`KeyError` when ``dept_id`` is
-    unknown — the policy converts that into a clear runtime error
+    unknown - the policy converts that into a clear runtime error
     rather than silently allowing an unbudgeted dept.
     """
 
@@ -395,7 +395,7 @@ class UsageQueryRunner(Protocol):
 
 
 # ---------------------------------------------------------------------------
-# SQL — usage aggregates
+# SQL - usage aggregates
 # ---------------------------------------------------------------------------
 
 #: Department-scoped weekly / monthly aggregate. ``$1`` is the dept id;
@@ -415,7 +415,7 @@ _SQL_USAGE_DEPT: Final[str] = """
 #: User-scoped variant of :data:`_SQL_USAGE_DEPT`. The extra
 #: ``user_id = $3`` filter narrows the aggregate to the single
 #: end-user identified by the request. ``user_id`` is never
-#: ``NULL`` here — the caller short-circuits the user-scope check
+#: ``NULL`` here - the caller short-circuits the user-scope check
 #: when ``user_id is None`` so this query is only issued for an
 #: explicitly attributed end-user.
 _SQL_USAGE_USER: Final[str] = """
@@ -446,7 +446,7 @@ class BudgetCapPolicy:
         audit_logger: A :class:`AuditLogger` used to write a
             ``budget_exceeded`` event on the first scope breach. The
             logger validates ``actor_role`` so the policy MUST
-            populate it — see :meth:`enforce` for the value chosen.
+            populate it - see :meth:`enforce` for the value chosen.
         clock: Optional ``Callable[[], datetime]`` returning a
             timezone-aware UTC ``datetime``. Defaults to
             ``datetime.now(timezone.utc)``. Tests inject a fake clock
@@ -541,7 +541,7 @@ class BudgetCapPolicy:
         # Scope ordering is part of the public contract (mirrored in
         # the README. Each branch mirrors the equivalent policy block.
         # We use ``>=`` (not ``>``) so a usage that exactly
-        # matches the limit also denies — this matches the README's
+        # matches the limit also denies - this matches the README's
         # "cap reached" wording and prevents off-by-one boundary slips.
         if usage.dept_weekly_usd >= caps.weekly_usd_dept:
             await self._emit_denied(
@@ -683,7 +683,7 @@ class BudgetCapPolicy:
 
         try:
             thresholds = await self._alarm_threshold_store.get_thresholds(dept_id)
-        except Exception as exc:  # noqa: BLE001 — best-effort
+        except Exception as exc:  # noqa: BLE001 - best-effort
             _LOG.warning(
                 "budget alarm threshold check: failed to fetch thresholds "
                 "for dept=%s: %s",
@@ -738,7 +738,7 @@ class BudgetCapPolicy:
                     threshold_pct=threshold.threshold_pct,
                     pct_used=pct_used,
                 )
-            except Exception as exc:  # noqa: BLE001 — best-effort
+            except Exception as exc:  # noqa: BLE001 - best-effort
                 _LOG.warning(
                     "budget alarm dispatch failed for dept=%s period=%s "
                     "scope=%s channel=%s: %s",
@@ -756,7 +756,7 @@ class BudgetCapPolicy:
                     threshold_id=threshold.id,
                     alarmed_at=now,
                 )
-            except Exception as exc:  # noqa: BLE001 — best-effort
+            except Exception as exc:  # noqa: BLE001 - best-effort
                 _LOG.warning(
                     "budget alarm: failed to update last_alarmed_at for "
                     "threshold=%s: %s",
@@ -786,7 +786,7 @@ class BudgetCapPolicy:
                         },
                     )
                 )
-            except Exception as exc:  # noqa: BLE001 — best-effort
+            except Exception as exc:  # noqa: BLE001 - best-effort
                 _LOG.warning(
                     "budget alarm: failed to write audit for threshold=%s: %s",
                     threshold.id,
@@ -869,10 +869,10 @@ class BudgetCapPolicy:
         ``test_audit_log_integrity_ops.py``:
 
         * ``action="budget_exceeded"``
-        * ``actor_role="system"`` — the policy enforces caps as a
+        * ``actor_role="system"`` - the policy enforces caps as a
           background gate; the human actor is recorded separately on
           the surrounding workflow start audit row.
-        * ``result="denied"`` — Postgres ``CHECK`` accepts this value
+        * ``result="denied"`` - Postgres ``CHECK`` accepts this value
           (see ``audit_logger.event.AUDIT_RESULTS``).
         * ``payload`` carries the four diagnostic fields the
           ``/costs`` panel renders so admins can tell **which** cap
@@ -907,7 +907,7 @@ class BudgetCapPolicy:
 
 
 def _default_clock() -> datetime:
-    """Return ``datetime.now(timezone.utc)`` — overridable for tests."""
+    """Return ``datetime.now(timezone.utc)`` - overridable for tests."""
 
     return datetime.now(timezone.utc)
 
@@ -969,7 +969,7 @@ class StaticBudgetCapsProvider:
     Suitable for production wiring that reads ``config/departments.json``
     once at boot (the file is the source of truth per
     ``departments.README.md``) and for tests that need a deterministic
-    cap table. Hot-reload of caps lives outside this class — callers
+    cap table. Hot-reload of caps lives outside this class - callers
     rebuild the provider on config refresh and swap it on the
     long-lived :class:`BudgetCapPolicy` instance.
 
@@ -1058,7 +1058,7 @@ def configuration_error_response(*, dept_id: str) -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
-# Enhanced check_budget — pre-workflow budget check with 90% warnings
+# Enhanced check_budget - pre-workflow budget check with 90% warnings
 # ---------------------------------------------------------------------------
 
 
@@ -1096,7 +1096,7 @@ async def check_budget(
         policy: The :class:`BudgetCapPolicy` instance to use.
         jira_comment_callback: Optional async callback for posting
             Jira comments. Signature: ``async (issue_key, body) -> None``.
-            Best-effort — failures are logged but do not block.
+            Best-effort - failures are logged but do not block.
 
     Returns:
         :class:`BudgetCheckResult` with the decision and usage data.
@@ -1164,14 +1164,14 @@ async def check_budget(
         # Post Jira comment (best-effort)
         if jira_comment_callback is not None:
             comment_body = (
-                f"⛔ Bütçe limiti aşıldı — iş akışı reddedildi.\n\n"
+                f"⛔ Bütçe limiti aşıldı - iş akışı reddedildi.\n\n"
                 f"Aşılan kapsam: **{exceeded_scope}**\n"
                 f"Mevcut kullanım: ${_decimal_to_str(_get_usage_for_scope(usage, exceeded_scope))}\n"
                 f"Limit: ${_decimal_to_str(_get_cap_for_scope(caps, exceeded_scope))}"
             )
             try:
                 await jira_comment_callback(issue_key, comment_body)
-            except Exception as exc:  # noqa: BLE001 — best-effort
+            except Exception as exc:  # noqa: BLE001 - best-effort
                 _LOG.warning(
                     "check_budget: failed to post denial comment to %s: %s",
                     issue_key,
@@ -1196,13 +1196,13 @@ async def check_budget(
     if warning_scopes and jira_comment_callback is not None:
         scopes_str = ", ".join(warning_scopes)
         comment_body = (
-            f"⚠️ Bütçe uyarısı — aşağıdaki kapsam(lar) %90 eşiğine ulaştı:\n\n"
+            f"⚠️ Bütçe uyarısı - aşağıdaki kapsam(lar) %90 eşiğine ulaştı:\n\n"
             f"**{scopes_str}**\n\n"
             f"İş akışı başlatıldı ancak bütçe limitine yaklaşılıyor."
         )
         try:
             await jira_comment_callback(issue_key, comment_body)
-        except Exception as exc:  # noqa: BLE001 — best-effort
+        except Exception as exc:  # noqa: BLE001 - best-effort
             _LOG.warning(
                 "check_budget: failed to post warning comment to %s: %s",
                 issue_key,
@@ -1267,7 +1267,7 @@ async def pre_llm_budget_guard(
 
     usage = await policy._usage(dept_id=dept_id, user_id=user_id)
 
-    # Check each scope — block on first exceeded
+    # Check each scope - block on first exceeded
     if usage.dept_weekly_usd >= caps.weekly_usd_dept:
         _LOG.warning(
             "pre_llm_budget_guard: dept_weekly exceeded for dept=%s "

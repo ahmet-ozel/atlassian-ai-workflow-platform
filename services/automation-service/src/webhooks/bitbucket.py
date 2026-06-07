@@ -1,4 +1,4 @@
-"""Bitbucket webhook handler — sequential guard chain → Temporal dispatch.
+﻿"""Bitbucket webhook handler - sequential guard chain → Temporal dispatch.
 
 Implements the ``POST /webhooks/bitbucket`` endpoint with the same
 ordered guard chain as ``webhooks/jira.py`` (each step short-circuits
@@ -6,10 +6,10 @@ with the appropriate HTTP response and emits a ``structlog`` JSON
 audit entry; see Error Handling §5.1):
 
   (a) Read the raw request body.
-  (b) ``hmac_verify.verify(...)`` — 401 ``unauthorized`` on failure.
-  (c) ``replay.check_and_insert(...)`` — 200 ``duplicate`` on dup.
-  (d) ``loop_guard.is_self_actor(...)`` — 200 ``loop_guard`` on self.
-  (e) Classify event type via ``loop_guard.route(...)`` — 200 ``ignored``
+  (b) ``hmac_verify.verify(...)`` - 401 ``unauthorized`` on failure.
+  (c) ``replay.check_and_insert(...)`` - 200 ``duplicate`` on dup.
+  (d) ``loop_guard.is_self_actor(...)`` - 200 ``loop_guard`` on self.
+  (e) Classify event type via ``loop_guard.route(...)`` - 200 ``ignored``
       for unsupported event types.
   (f) ``pullrequest:reviewer_added`` → reviewer is bot?  If not, 200
       ``not_bot_reviewer``.  Otherwise:
@@ -230,7 +230,7 @@ def _extract_reviewer_account_id(payload: dict[str, Any]) -> str | None:
     """Return the added reviewer's ``account_id``.
 
     ``pullrequest:reviewer_added`` payloads carry the new reviewer
-    under ``reviewer`` (single user) — fall back to the last entry of
+    under ``reviewer`` (single user) - fall back to the last entry of
     ``pullrequest.reviewers`` if necessary.
     """
     reviewer = payload.get("reviewer")
@@ -506,7 +506,7 @@ async def handle_bitbucket_webhook(  # noqa: PLR0911 - sequential guard chain
     log = log.bind(department_id=department_id)
 
     # ``automation.work_items.issue_key`` is ``NOT NULL`` but Bitbucket
-    # events do not carry a Jira issue key — synthesise a stable
+    # events do not carry a Jira issue key - synthesise a stable
     # repo-scoped identifier so the row is unambiguous.
     work_item_issue_key = f"{workspace}/{repo}#{pr_id}"
 
@@ -649,7 +649,7 @@ async def _handle_comment_created(
     Forwards a minimal ``new_comment`` signal to the existing PR review
     workflow.  When no workflow is running for this PR the signal call
     raises (Temporal returns ``NOT_FOUND``), which we surface as
-    ``200 ignored`` — comments on PRs without an active review are not
+    ``200 ignored`` - comments on PRs without an active review are not
     actionable in P0.
     """
 

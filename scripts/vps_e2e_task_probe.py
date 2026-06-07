@@ -1,6 +1,6 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
-VPS E2E Task Probe — End-to-End task workflow verification (B5/R13).
+VPS E2E Task Probe - End-to-End task workflow verification (B5/R13).
 
 After the operator submits a task via Streamlit UI and pastes the
 workflow_run_id, this script:
@@ -224,7 +224,7 @@ def poll_temporal_workflow(
         elapsed = int(time.time() - start_time)
 
         if elapsed >= timeout:
-            print(f"[TEMPORAL] Timeout after {elapsed}s — workflow still in status: {last_status}")
+            print(f"[TEMPORAL] Timeout after {elapsed}s - workflow still in status: {last_status}")
             return {
                 "completed": False,
                 "status": "TimedOut",
@@ -286,7 +286,7 @@ def poll_temporal_workflow(
                     "error": f"Workflow canceled: {output[:256]}",
                 }
             else:
-                # Still running or unknown — continue polling
+                # Still running or unknown - continue polling
                 remaining = timeout - elapsed
                 print(
                     f"[TEMPORAL] Status: {status} | Elapsed: {elapsed}s | "
@@ -294,7 +294,7 @@ def poll_temporal_workflow(
                 )
 
         except subprocess.TimeoutExpired:
-            print(f"[TEMPORAL] describe command timed out at {elapsed}s — retrying...")
+            print(f"[TEMPORAL] describe command timed out at {elapsed}s - retrying...")
         except (FileNotFoundError, OSError) as e:
             print(f"[TEMPORAL] Error running describe: {e}")
 
@@ -797,7 +797,7 @@ def run_e2e_task_probe(workflow_run_id: str, timeout: int = DEFAULT_TIMEOUT) -> 
     Returns exit code: 0 = all assertions pass, 1 = one or more failures.
     """
     print("=" * 60)
-    print("VPS E2E Task Probe — End-to-End Workflow Verification (R13)")
+    print("VPS E2E Task Probe - End-to-End Workflow Verification (R13)")
     print(f"Workflow Run ID: {workflow_run_id}")
     print(f"Timeout: {timeout}s")
     print(f"MCP Endpoint: {MCP_ENDPOINT}")
@@ -945,7 +945,7 @@ def run_e2e_task_probe(workflow_run_id: str, timeout: int = DEFAULT_TIMEOUT) -> 
     # Handle failures (R13.6)
     # -----------------------------------------------------------------------
     if failures:
-        print(f"\n[R13.6] {len(failures)} assertion(s) failed — capturing workflow trace...")
+        print(f"\n[R13.6] {len(failures)} assertion(s) failed - capturing workflow trace...")
         trace = capture_workflow_trace(workflow_run_id)
         write_evidence("13-task-trace.txt", trace)
 
@@ -1010,7 +1010,7 @@ def run_e2e_task_probe(workflow_run_id: str, timeout: int = DEFAULT_TIMEOUT) -> 
 def main() -> int:
     """Parse CLI arguments and run the E2E task probe."""
     parser = argparse.ArgumentParser(
-        description="VPS E2E Task Probe — polls Temporal workflow and asserts R13 criteria.",
+        description="VPS E2E Task Probe - polls Temporal workflow and asserts R13 criteria.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
             "Example:\n"

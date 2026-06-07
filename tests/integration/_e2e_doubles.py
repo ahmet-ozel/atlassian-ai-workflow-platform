@@ -1,4 +1,4 @@
-"""Module-scoped Temporal workflow doubles for ``test_e2e_code_change.py``.
+﻿"""Module-scoped Temporal workflow doubles for ``test_e2e_code_change.py``.
 
 This module is intentionally minimal (no filesystem or sys.path
 manipulation, no heavy imports) so the Temporal workflow sandbox can
@@ -6,7 +6,7 @@ re-import it during workflow validation without tripping over banned
 calls (``Path.resolve()``, ``open()``, ``random.*``, ...).
 
 The ``AutomationWorkflow`` orchestrator dispatches its child by the
-string name ``"AgentRunnerWorkflow"`` — see
+string name ``"AgentRunnerWorkflow"`` - see
 ``platform/workers/agent-runner-worker/src/workflows/automation_workflow.py``.
 Registering a ``@workflow.defn(name="AgentRunnerWorkflow")`` class on
 the same task queue makes the parent's
@@ -21,8 +21,8 @@ The Temporal workflow sandbox re-imports modules with ``@workflow.defn``
 classes into an isolated module namespace, so writing to module-level
 variables from inside a workflow body would leave the test harness's
 copy untouched. To get observable state out of the workflow, the
-double executes a synchronous, no-op recording **activity** —
-``e2e_record_child_input`` — which runs *outside* the sandbox and can
+double executes a synchronous, no-op recording **activity** -
+``e2e_record_child_input`` - which runs *outside* the sandbox and can
 mutate plain process-level state (``LAST_RUN``).
 
 The activity is also used to assert that the child was actually
@@ -58,7 +58,7 @@ async def e2e_record_child_input(payload: Any) -> None:
 
     Activities run outside the workflow sandbox, so this function can
     safely mutate ``LAST_RUN`` (module-level state in *this* module
-    object — the same one the test harness imports). The payload is a
+    object - the same one the test harness imports). The payload is a
     serialised view of the ``_AgentRunnerInputShape`` the parent
     constructed; Temporal converts the dataclass to a dict on the
     activity boundary by default.

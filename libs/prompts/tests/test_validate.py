@@ -1,4 +1,4 @@
-"""Unit tests for ``prompts.validate.validate_template_format``.
+﻿"""Unit tests for ``prompts.validate.validate_template_format``.
 """
 
 from __future__ import annotations
@@ -42,7 +42,7 @@ class TestAcceptsValidTemplates:
         validate_template_format(body)
 
     def test_known_placeholder_with_format_spec(self) -> None:
-        # ``str.format`` allows format-specs like ``{name:>10}`` —
+        # ``str.format`` allows format-specs like ``{name:>10}`` -
         # validator should accept them when the root is known.
         body = "Padded: [{department_id:>10}]"
         validate_template_format(body)

@@ -1,10 +1,10 @@
-"""CI gate — Task Creation Prompt tek kanonik kaynak doğrulaması.
+﻿"""CI gate - Task Creation Prompt tek kanonik kaynak doğrulaması.
 
 
 `docs/task-creation-assistant-prompt.md` dosyası ya mevcut olmamalı ya da
 yalnızca `prompts/task_creation_assistant.md`'ye yönlendiren ≤5 satırlık
 redirect stub olmalıdır. Her iki dosyanın da ana içerikle dolu olması
-CI fail'dir — tek kanonik kaynak kuralı ihlal edilmiş demektir.
+CI fail'dir - tek kanonik kaynak kuralı ihlal edilmiş demektir.
 """
 
 from __future__ import annotations
@@ -30,7 +30,7 @@ _MAX_STUB_LINES = 5
 def test_old_docs_file_is_absent_or_redirect_stub() -> None:
     """docs/task-creation-assistant-prompt.md ya yok ya da ≤5 satırlık redirect."""
     if not _OLD_DOCS_PATH.exists():
-        # Dosya yok — tamamen kabul edilebilir
+        # Dosya yok - tamamen kabul edilebilir
         return
 
     content = _OLD_DOCS_PATH.read_text(encoding="utf-8")
@@ -39,7 +39,7 @@ def test_old_docs_file_is_absent_or_redirect_stub() -> None:
     assert len(lines) <= _MAX_STUB_LINES, (
         f"docs/task-creation-assistant-prompt.md {len(lines)} boş olmayan satır "
         f"içeriyor (max {_MAX_STUB_LINES}). Bu dosya yalnızca redirect stub "
-        "olmalı — ana içerik prompts/task_creation_assistant.md'de tutulmalı."
+        "olmalı - ana içerik prompts/task_creation_assistant.md'de tutulmalı."
     )
 
     assert _REDIRECT_PATTERN.search(content), (

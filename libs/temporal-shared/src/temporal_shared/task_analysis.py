@@ -1,4 +1,4 @@
-"""Shared LLM task-analysis JSON parser.
+﻿"""Shared LLM task-analysis JSON parser.
 
 This module is the **single source of truth** for the LLM
 task-analysis JSON parser.  The parser validates the LLM-produced
@@ -8,9 +8,9 @@ fields.
 
 Validation contract:
 
-* Universal required fields — every payload must carry
+* Universal required fields - every payload must carry
   ``{workflow_type, confidence, output_actions}``.
-* Workflow-type-specific required fields — see
+* Workflow-type-specific required fields - see
   :data:`_TYPE_SPECIFIC_REQUIRED`.
 * ``workflow_type`` must be a key of
   :data:`temporal_shared.capabilities.WORKFLOW_TYPE_CAPABILITIES`.
@@ -23,11 +23,11 @@ a parallel type hierarchy.
 
 Public API:
 
-* :class:`TaskAnalysisParseError` — ``ValueError`` subclass raised
+* :class:`TaskAnalysisParseError` - ``ValueError`` subclass raised
   for any validation failure.  Re-exported from
   :mod:`temporal_shared` so callers can write
   ``from temporal_shared import TaskAnalysisParseError``.
-* :func:`parse_llm_analysis` — accepts either a parsed dict or a
+* :func:`parse_llm_analysis` - accepts either a parsed dict or a
   raw JSON string and returns a validated
   :class:`LlmAnalysisResult`.
 """
@@ -47,7 +47,7 @@ __all__ = [
 
 
 # ---------------------------------------------------------------------------
-# Constants — closed vocabularies
+# Constants - closed vocabularies
 # ---------------------------------------------------------------------------
 
 #: Confidence vocabulary.
@@ -58,7 +58,7 @@ _VALID_CONFIDENCES: Final[frozenset[str]] = frozenset(
 #: Output-action types accepted by the parser.  Mirrors the kinds
 #: defined in :data:`temporal_shared.messages.OutputActionKind` plus
 #: the legacy ``bitbucket_pr`` / ``bitbucket_commit`` / ``confluence_page``
-#: tags emitted by the worker's ``prompts.parser`` module — both
+#: tags emitted by the worker's ``prompts.parser`` module - both
 #: vocabularies are accepted so the shared module can replace the
 #: worker-local parser without a coordinated migration.
 _VALID_ACTION_TYPES: Final[frozenset[str]] = frozenset(
@@ -98,18 +98,18 @@ _TYPE_SPECIFIC_REQUIRED: Final[Mapping[str, frozenset[str]]] = {
     "research_with_web":          frozenset(),
     "multi_step":                 frozenset({"children"}),
     "noop_test":                  frozenset(),
-    # EK3 additions — kept in lock-step with WORKFLOW_TYPE_CAPABILITIES
+    # EK3 additions - kept in lock-step with WORKFLOW_TYPE_CAPABILITIES
     # and ``task_analyzer.VALID_WORKFLOW_TYPES``.
     # script_execute runs a one-off script on the SSH runner; like
     # remote_ssh_test_only it needs a target repo/branch so the runner
     # knows where to check out the script source.
     "script_execute":             frozenset({"target_repo", "target_branch"}),
     # research_publish_confluence is a research workflow whose output
-    # is published to Confluence — caller must say which language /
+    # is published to Confluence - caller must say which language /
     # space context to use.
     "research_publish_confluence": frozenset({"target_lang"}),
     # research_summary_jira posts the research summary back on the
-    # triggering Jira issue — no extra required fields beyond the
+    # triggering Jira issue - no extra required fields beyond the
     # universal set.
     "research_summary_jira":      frozenset(),
 }
@@ -124,7 +124,7 @@ assert set(_TYPE_SPECIFIC_REQUIRED.keys()) == set(
     "update _TYPE_SPECIFIC_REQUIRED in temporal_shared.task_analysis."
 )
 
-#: Universal required fields — every workflow_type must carry these
+#: Universal required fields - every workflow_type must carry these
 #: in addition to the workflow-type-specific extras.
 _ALWAYS_REQUIRED: Final[frozenset[str]] = frozenset(
     {"workflow_type", "confidence", "output_actions"}
@@ -140,7 +140,7 @@ class TaskAnalysisParseError(ValueError):
     """Raised when LLM task-analysis output fails validation.
 
     Subclasses :class:`ValueError` so callers can catch it generically
-    when they only care about "bad input" — and so the worker's
+    when they only care about "bad input" - and so the worker's
     legacy ``TaskAnalysisError`` (also a ``ValueError``) can alias to
     this name without breaking ``except`` blocks.
     """
@@ -173,7 +173,7 @@ def _parse_output_action(raw: Any, index: int) -> OutputAction:
     :data:`BEST_EFFORT_OUTPUT_ACTION_KINDS` membership; legacy kinds
     (``bitbucket_pr`` / ``bitbucket_commit`` / ``confluence_page``)
     that the new partition table does not classify default to
-    ``"critical"`` — the conservative choice for a side-effect that
+    ``"critical"`` - the conservative choice for a side-effect that
     writes to a tracked system of record.
     """
 
@@ -213,7 +213,7 @@ def _parse_output_action(raw: Any, index: int) -> OutputAction:
     elif action_type in BEST_EFFORT_OUTPUT_ACTION_KINDS:
         severity = "best_effort"
     else:
-        # Legacy / unclassified kind — default to ``critical`` so a
+        # Legacy / unclassified kind - default to ``critical`` so a
         # silent failure of an un-tagged action can never be swept
         # under "best_effort".
         severity = "critical"

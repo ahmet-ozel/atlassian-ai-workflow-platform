@@ -1,4 +1,4 @@
-"""Per-user > org-default credential resolution.
+﻿"""Per-user > org-default credential resolution.
 
 Implements ``CredentialResolver.resolve(session_id, dept_id, service)``
 using the platform Vault path layout.
@@ -6,15 +6,15 @@ using the platform Vault path layout.
 Lookup order
 ------------
 
-1. **Per-user session credential** —
+1. **Per-user session credential** -
    ``vault:atlassian/_user_session/<session_id>/<service>``. This path
    is populated by the Streamlit per-user session form
    when a user supplies their own Atlassian credential for the
    lifetime of an interactive session.
-2. **Org-default credential** — ``vault:atlassian/<dept_id>/<service>``.
+2. **Org-default credential** - ``vault:atlassian/<dept_id>/<service>``.
    This is the bot credential registered through the department
    wizard.
-3. **Neither present** — :class:`CredentialMissing` is raised. The
+3. **Neither present** - :class:`CredentialMissing` is raised. The
    exception's ``error_code`` attribute equals ``"credential_missing"``
    so callers can match the canonical audit event name without
    string-stringifying the exception.
@@ -25,7 +25,7 @@ Why not extend ``decision.credential_resolver``?
 ``src/decision/credential_resolver.py`` is the *bot-only* resolver
 that talks to ``automation.department_bots`` (Postgres) for the
 ``credential_ref`` lookup. The per-user/session flow does not touch
-Postgres — its source of truth is purely the Vault path layout — so
+Postgres - its source of truth is purely the Vault path layout - so
 keeping the two resolvers in separate modules avoids muddying the
 ``decision`` package with session-state plumbing. The two resolvers
 **can** be composed at the call site if a workflow ever needs to
@@ -39,7 +39,7 @@ exposes a synchronous ``read(path: str) -> Mapping[str, str]`` method
 which raises :class:`KeyError` when the path does not exist. This
 matches the canonical :class:`vault_client.VaultClient` protocol
 shipped under ``platform/libs/vault_client/`` without
-adding a hard build-time dependency on that package — production
+adding a hard build-time dependency on that package - production
 wiring imports the real backend, tests inject an in-memory fake.
 
 """
@@ -67,7 +67,7 @@ __all__ = [
 #: enum used everywhere else in the platform (``departments.schema.json``).
 AtlassianService = Literal["jira", "bitbucket", "confluence"]
 
-#: Per-user / per-session credential path template. The session id is opaque to this module —
+#: Per-user / per-session credential path template. The session id is opaque to this module -
 #: callers (Streamlit / assistant-service) generate and rotate it.
 _USER_SESSION_TEMPLATE: Final[str] = "vault:atlassian/_user_session/{session_id}/{service}"
 
@@ -103,7 +103,7 @@ class ResolvedCredential:
 
     Attributes:
         data: The Vault KV-v2 ``data:`` payload as a flat mapping. The
-            resolver does **not** validate the inner shape — callers
+            resolver does **not** validate the inner shape - callers
             (e.g. the Atlassian client) decide which keys are required
             for their surface, so this resolver stays usable for both
             ``token``-style and ``email + api_token``-style entries.
@@ -136,7 +136,7 @@ class CredentialMissing(LookupError):
     directly to emit the ``credential_missing`` audit event.
 
     Attributes:
-        error_code: Always ``"credential_missing"`` — the canonical
+        error_code: Always ``"credential_missing"`` - the canonical
             audit event name.
         session_id: The session id that was tried.
         dept_id: The department id that was tried.
@@ -200,7 +200,7 @@ class VaultReader(Protocol):
 class CredentialResolver:
     """Resolve Atlassian credentials with per-user > org-default priority.
 
-    The resolver is intentionally tiny — all of its logic is the path
+    The resolver is intentionally tiny - all of its logic is the path
     construction and the two-step fallback. Auditing,
     rate-limiting and session-TTL eviction are layered on top by the
     calling service (assistant-service / automation-service) so this
@@ -281,7 +281,7 @@ class CredentialResolver:
             structural pre-conditions described above.
         """
 
-        # Structural validation — keep error messages free of any
+        # Structural validation - keep error messages free of any
         # secret material so they are safe to surface in HTTP 4xx
         # responses or audit events.
         if not session_id:
@@ -298,7 +298,7 @@ class CredentialResolver:
         org_path = build_org_default_path(dept_id, service)
 
         # 1) Per-user override has priority. We treat ``KeyError`` as
-        # "missing" — the protocol contract; any other exception
+        # "missing" - the protocol contract; any other exception
         # bubbles up to surface real infra failures distinctly.
         try:
             data = self._read(user_path)
@@ -317,7 +317,7 @@ class CredentialResolver:
         if data is not None:
             return ResolvedCredential(data=data, path=org_path, source="org_default")
 
-        # 3) Both absent — surface the canonical audit error code.
+        # 3) Both absent - surface the canonical audit error code.
         raise CredentialMissing(
             session_id=session_id,
             dept_id=dept_id,

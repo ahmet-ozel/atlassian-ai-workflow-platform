@@ -1,4 +1,4 @@
-"""invariant for the comment-burst debounce window —.
+﻿"""invariant for the comment-burst debounce window -.
 
 
 
@@ -19,7 +19,7 @@ dispatched signal. Specifically:
  window threshold (≥3.0s apart) → both dispatch independently
  (``coalesce_emit`` each), because the first event's window has
  closed before the second arrives.
-* Events with **different** ``issue_key`` values never coalesce —
+* Events with **different** ``issue_key`` values never coalesce -
  they live in independent windows.
 * The ``coalesced_with`` list returned by:meth:`BurstWindow.flush_window` contains exactly the dropped
  delivery_ids (the anchor delivery's id is **not** included because
@@ -35,7 +35,7 @@ coalesced_with=...)`` per the design's decision table.
 NOT replay-safe
 ---------------
 
-The:class:`BurstWindow` is intentionally non-replay-safe — it uses
+The:class:`BurstWindow` is intentionally non-replay-safe - it uses
 wall-clock timing (``time.monotonic`` semantics, injected by the
 caller as ``now``) and lives in the webhook handler scope rather than
 inside any Temporal workflow. The invariant therefore inject
@@ -55,7 +55,7 @@ from hypothesis import HealthCheck, assume, given, settings
 from hypothesis import strategies as st
 
 # ---------------------------------------------------------------------------
-# Module loading — avoid the heavy ``automation_service`` package __init__
+# Module loading - avoid the heavy ``automation_service`` package __init__
 #
 # ``automation_service/__init__.py`` imports ``app.py`` which in turn
 # imports ``src.config`` from the legacy ````
@@ -163,7 +163,7 @@ _payloads = st.dictionaries(
     max_size=5,
 )
 
-# Window-relative timestamps — non-negative floats up to 10 seconds
+# Window-relative timestamps - non-negative floats up to 10 seconds
 # so we cover both within-window (<3s) and outside-window (>=3s)
 # branches generously.
 _offsets = st.floats(
@@ -222,7 +222,7 @@ class TestSameKeyWithinWindow:
     ) -> None:
         """Inside the window the second event drops; payload is the latest."""
 
-        # Distinct delivery ids are required by the spec — two events
+        # Distinct delivery ids are required by the spec - two events
         # sharing the same delivery id would collide on idempotency.
         assume(first_delivery != second_delivery)
 
@@ -247,7 +247,7 @@ class TestSameKeyWithinWindow:
         assert second == "coalesce_dropped"
 
         # Flushing the window now must surface the dropped delivery
-        # id and the **latest** payload — the design mandates "son
+        # id and the **latest** payload - the design mandates "son
         # event'in payload'ı korunur".
         flush = window.flush_window(issue_key)
         assert flush is not None
@@ -285,7 +285,7 @@ class TestSameKeyOutsideWindow:
         second_delivery=_delivery_ids,
         first_payload=_payloads,
         second_payload=_payloads,
-        # Strictly outside the window — at-or-after the threshold.
+        # Strictly outside the window - at-or-after the threshold.
         # Add a small epsilon to guard against IEEE-754 rounding when
         # ``start`` has many fractional bits: ``(start + 3.0) - start``
         # may evaluate to ``2.9999999999999996`` for some ``start``
@@ -370,7 +370,7 @@ class TestDifferentKeysIndependent:
         delivery_b=_delivery_ids,
         payload_a=_payloads,
         payload_b=_payloads,
-        # Choose any gap — even a gap that would coalesce on a single
+        # Choose any gap - even a gap that would coalesce on a single
         # key must not coalesce across distinct keys.
         gap=st.floats(
             min_value=0.0,
@@ -398,7 +398,7 @@ class TestDifferentKeysIndependent:
     ) -> None:
         """Same-window-time events on distinct keys both emit independently."""
 
-        # Keys must differ — the same-key path is exercised by the
+        # Keys must differ - the same-key path is exercised by the
         # other tests in this module.
         assume(key_a != key_b)
         assume(delivery_a != delivery_b)
@@ -418,7 +418,7 @@ class TestDifferentKeysIndependent:
             now=start + gap,
         )
 
-        # Both events open their own window — distinct issue keys
+        # Both events open their own window - distinct issue keys
         # never share state.
         assert a == "coalesce_emit"
         assert b == "coalesce_emit"
@@ -446,7 +446,7 @@ class TestCoalescedListExactness:
 
  This invariant covers the design mandate "coalesced_with listesi
  delivery_id'leri içerir" and the implicit "the anchor delivery
- is not in the dropped list" — the anchor was dispatched, not
+ is not in the dropped list" - the anchor was dispatched, not
  dropped.
  """
 
@@ -489,7 +489,7 @@ class TestCoalescedListExactness:
     ) -> None:
         """Every delivery after the first is in coalesced_with, in order."""
 
-        # Align the payload list with the delivery list — Hypothesis
+        # Align the payload list with the delivery list - Hypothesis
         # generates them independently so we slice / pad as needed.
         n = min(len(deliveries), len(payloads))
         assume(n >= 2)
@@ -498,7 +498,7 @@ class TestCoalescedListExactness:
 
         window = BurstWindow()
 
-        # Register the first event — opens the window.
+        # Register the first event - opens the window.
         first_decision = window.register(
             issue_key=issue_key,
             delivery_id=deliveries[0],
@@ -507,7 +507,7 @@ class TestCoalescedListExactness:
         )
         assert first_decision == "coalesce_emit"
 
-        # Register the rest — all should drop because each step is
+        # Register the rest - all should drop because each step is
         # bounded so the cumulative offset stays under the window
         # threshold (n <= 8 and step <= window/8 => total <= window).
         for i in range(1, n):
@@ -532,7 +532,7 @@ class TestCoalescedListExactness:
 
 
 # ---------------------------------------------------------------------------
-# Test 5: chain wiring — coalesce_dropped surfaces as
+# Test 5: chain wiring - coalesce_dropped surfaces as
 # FilterDecision(action="drop", reason="burst_coalesced",...)
 # ---------------------------------------------------------------------------
 
@@ -559,7 +559,7 @@ def _make_chain_with_burst(
  actor we use in tests.
 
  The ``now_provider`` is a list whose first entry is consumed by
- each ``burst_register`` call — tests pop from the head so each
+ each ``burst_register`` call - tests pop from the head so each
  invocation can set its own wall-clock value deterministically.
  """
 
@@ -582,7 +582,7 @@ def _make_chain_with_burst(
             # the design contract: the buffer's dropped list is
             # ordered, and ``flush_window`` returns the same. Here
             # we cheat slightly by calling ``flush_window`` to read
-            # the state, then re-registering would be wrong — so we
+            # the state, then re-registering would be wrong - so we
             # instead reach into the private ``_buffers`` dict. This
             # is acceptable in tests because the chain wiring at
             # production time will use a sweeper task that reads

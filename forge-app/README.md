@@ -1,4 +1,4 @@
-# AI Bot Task — Forge Add-On
+﻿# AI Bot Task - Forge Add-On
 
 Atlassian Forge skeleton that ships the **`AI Bot Task`** Jira issue type with
 mandatory custom fields so end-users cannot create AI bot tasks with missing

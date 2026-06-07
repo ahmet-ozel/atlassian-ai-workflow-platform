@@ -1,4 +1,4 @@
-"""Streamlit app configuration loader.
+﻿"""Streamlit app configuration loader.
 
 Reads runtime settings from environment variables (and a local
 ``.env`` file when present) following the same two-level model as
@@ -6,13 +6,13 @@ the rest of the platform services. The
 :class:`Settings` class is consumed by ``app.py``'s session-state
 injector and surfaces the URLs every page reaches out to:
 
-* ``ASSISTANT_SERVICE_URL`` — base URL of assistant-service (the
+* ``ASSISTANT_SERVICE_URL`` - base URL of assistant-service (the
   chat / task creator pages proxy here).
-* ``ADMIN_DASHBOARD_API_URL`` — base URL of admin-dashboard-api
+* ``ADMIN_DASHBOARD_API_URL`` - base URL of admin-dashboard-api
   (workflow listing, costs, audit search).
-* ``MCP_BASE_URL`` — base URL of the read-only Atlassian MCP server
+* ``MCP_BASE_URL`` - base URL of the read-only Atlassian MCP server
   used by the Explorer page.
-* ``CLIENT_SOURCE`` — value advertised in outgoing
+* ``CLIENT_SOURCE`` - value advertised in outgoing
   ``X-Client-Source`` headers.
 
 The ``dependencies_reachable`` method is a stub used by ``/healthz``;

@@ -1,6 +1,6 @@
-"""Pre-commit static analysis + secret scan activity (T2 — P0).
+﻿"""Pre-commit static analysis + secret scan activity (T2 - P0).
 
-Implements :func:`precommit_scanner` — the **commit-gating** activity
+Implements :func:`precommit_scanner` - the **commit-gating** activity
 that ``AgentRunnerWorkflow`` invokes immediately before every
 ``bitbucket_commit_patch`` call.
 
@@ -10,9 +10,9 @@ Contract
 The activity takes a unified-diff string and returns a frozen
 :class:`ScanResult` with two fields:
 
-* ``decision: Literal["pass", "block"]`` — ``"block"`` when the diff
+* ``decision: Literal["pass", "block"]`` - ``"block"`` when the diff
   contains at least one matched secret pattern; ``"pass"`` otherwise.
-* ``matched_patterns: tuple[str, ...]`` — the **stable, sorted** tuple
+* ``matched_patterns: tuple[str, ...]`` - the **stable, sorted** tuple
   of pattern *names* (not the secret values) that fired against the
   diff. Names are stable identifiers (``"aws_access_key"``,
   ``"atlassian_api_token"``, ...) chosen for audit / dashboard use.
@@ -20,7 +20,7 @@ The activity takes a unified-diff string and returns a frozen
 When ``decision == "block"`` the activity emits a single audit event
 ``precommit_secret_leak_blocked`` via the foundation
 :mod:`audit_logger`. The audit
-``payload`` carries only the matched **pattern names** — never the
+``payload`` carries only the matched **pattern names** - never the
 secret values themselves; secret values are masked at the audit
 boundary so the audit log does not become a secondary leak surface.
 The audit emission is best-effort: a broken audit pipeline must
@@ -37,7 +37,7 @@ This is enforced by:
 
 * the regex pattern table is a frozen module-level constant,
 * the matched-patterns tuple is built by **iterating the table in
-  insertion order** and ``sorted()``-ed by pattern name — both of
+  insertion order** and ``sorted()``-ed by pattern name - both of
   which are deterministic,
 * the activity never reads the wall clock, environment, or any other
   source of non-determinism on the scanning path.
@@ -46,7 +46,7 @@ Audit emission is a *side-effect* layered on top of the deterministic
 scan; it does not affect the return value, so the determinism property
 holds whether or not an :class:`audit_logger.AuditLogger` is wired in.
 
-Implementation choice — pure-Python regex fallback
+Implementation choice - pure-Python regex fallback
 --------------------------------------------------
 
 ``gitleaks`` (binary) and ``bandit`` (Python) are optional detail-scan
@@ -55,16 +55,16 @@ tools. Those binaries are deployment artefacts of the
 unit / property test environments. The activity is implemented as a
 **pure-Python regex sweep** over the documented secret pattern list:
 
-* ``aws_access_key``       — ``AKIA`` followed by 16 ``[0-9A-Z]``
-* ``atlassian_api_token``  — ``ATATT3x`` followed by ``[A-Za-z0-9_-]+``
-* ``bearer_token``         — ``Bearer`` + whitespace + token chars
-* ``generic_password``     — ``password = "..."`` (case-insensitive,
+* ``aws_access_key``       - ``AKIA`` followed by 16 ``[0-9A-Z]``
+* ``atlassian_api_token``  - ``ATATT3x`` followed by ``[A-Za-z0-9_-]+``
+* ``bearer_token``         - ``Bearer`` + whitespace + token chars
+* ``generic_password``     - ``password = "..."`` (case-insensitive,
   single or double quoted, non-empty value)
 
 These four cover the critical scope for AWS keys, Atlassian API tokens,
 Bearer headers, and hard-coded passwords. The
 ``gitleaks`` / ``bandit`` binaries can be layered on top as additional
-findings sources without changing the :class:`ScanResult` contract —
+findings sources without changing the :class:`ScanResult` contract -
 their output normalises to additional entries in
 ``matched_patterns``. That extension is out of scope here.
 
@@ -137,13 +137,13 @@ def _compile_patterns() -> Mapping[str, Pattern[str]]:
     """
 
     return {
-        # AWS access key id — 20-char fixed prefix + 16 [0-9A-Z].
+        # AWS access key id - 20-char fixed prefix + 16 [0-9A-Z].
         # https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_identifiers.html
         "aws_access_key": re.compile(r"AKIA[0-9A-Z]{16}"),
-        # Atlassian API token (cloud) — fixed ``ATATT3x`` prefix + base64url-ish body.
+        # Atlassian API token (cloud) - fixed ``ATATT3x`` prefix + base64url-ish body.
         # https://id.atlassian.com/manage-profile/security/api-tokens
         "atlassian_api_token": re.compile(r"ATATT3x[A-Za-z0-9_\-]+"),
-        # Bearer auth header — ``Bearer`` + whitespace + token chars.
+        # Bearer auth header - ``Bearer`` + whitespace + token chars.
         # The ``\b`` anchors prevent matching inside an unrelated word
         # like ``MyBearerWrapper``.
         "bearer_token": re.compile(r"\bBearer\s+[A-Za-z0-9._\-]+"),
@@ -244,7 +244,7 @@ def get_audit_logger() -> Any | None:
 def scan_diff(diff: str) -> ScanResult:
     """Run the deterministic regex sweep over *diff* and return the result.
 
-    This is the **pure** core of the activity — same input, same
+    This is the **pure** core of the activity - same input, same
     output, no side effects. ``test_precommit_scanner``
     asserts:
 
@@ -259,7 +259,7 @@ def scan_diff(diff: str) -> ScanResult:
     --------------------
     * We iterate :data:`SECRET_PATTERNS` in **insertion order** but
       sort the matched names before returning. Sorting makes the
-      tuple invariant under future reordering of the table — the
+      tuple invariant under future reordering of the table - the
       test compares tuples for equality, so the sort keeps
       the test stable across pattern-list edits.
     * Each pattern is checked with :meth:`re.Pattern.search`; we do
@@ -329,14 +329,14 @@ def _build_audit_event(
 
     Lazy-imported so the activity module can be loaded in environments
     where ``audit_logger`` is not on ``sys.path`` (eg. a worker that
-    runs without the foundation libs available — the deterministic
+    runs without the foundation libs available - the deterministic
     scan still works, the audit just becomes a no-op).
 
     The event ``payload`` carries:
 
-    * ``matched_patterns`` — the same tuple as ``ScanResult``, so the
+    * ``matched_patterns`` - the same tuple as ``ScanResult``, so the
       audit row and the activity return value agree by construction,
-    * ``workflow_id`` and ``issue_key`` — best-effort context for
+    * ``workflow_id`` and ``issue_key`` - best-effort context for
       operator triage on the *Security > Secret Leak Olayları*
       dashboard.
 
@@ -345,7 +345,7 @@ def _build_audit_event(
     not turn the audit pipeline into a secondary leak surface.
     """
 
-    from audit_logger import AuditEvent  # local import — see docstring
+    from audit_logger import AuditEvent  # local import - see docstring
 
     return AuditEvent(
         actor_id="bot.agent-runner",
@@ -433,7 +433,7 @@ def _resolve_workflow_context() -> tuple[str | None, str | None]:
     # and let the workflow caller pass it via the activity argument
     # if needed. The current task signature is ``precommit_scanner(diff)``
     # only, so dept_id stays ``None`` and the audit row carries
-    # ``dept_id=NULL`` — which is allowed by the audit_events schema
+    # ``dept_id=NULL`` - which is allowed by the audit_events schema
     # (``dept_id`` is nullable for cross-dept system events).
     return workflow_id, None
 
@@ -453,8 +453,8 @@ async def precommit_scanner(diff: str) -> ScanResult:
     * ``start_to_close_timeout`` is configured by the caller
       (``AgentRunnerWorkflow``); a low value (eg. 10s) is appropriate
       because the scan is CPU-bound regex work over a single diff.
-    * The activity is **idempotent** — same diff always produces the
-      same ``ScanResult`` — so Temporal retries on transient worker
+    * The activity is **idempotent** - same diff always produces the
+      same ``ScanResult`` - so Temporal retries on transient worker
       failures are safe.
     * On ``decision == "block"`` the workflow MUST fail the
       ``bitbucket_commit_patch`` step. The audit row produced here
@@ -469,7 +469,7 @@ async def precommit_scanner(diff: str) -> ScanResult:
     Returns
     -------
     ScanResult
-        Same as :func:`scan_diff` — frozen dataclass with ``decision``
+        Same as :func:`scan_diff` - frozen dataclass with ``decision``
         and ``matched_patterns``.
     """
 
@@ -478,7 +478,7 @@ async def precommit_scanner(diff: str) -> ScanResult:
     if result.decision == "block":
         workflow_id, dept_id = _resolve_workflow_context()
         # The activity argument signature is
-        # ``precommit_scanner(diff: str) -> ScanResult`` — no
+        # ``precommit_scanner(diff: str) -> ScanResult`` - no
         # ``issue_key`` is passed in. Operators can correlate the
         # audit row to the issue via ``workflow_id`` (which encodes
         # the issue key for Jira-triggered workflows, eg.

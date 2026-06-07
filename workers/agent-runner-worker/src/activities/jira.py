@@ -1,4 +1,4 @@
-"""Jira MCP activities for AgentRunnerWorkflow."""
+﻿"""Jira MCP activities for AgentRunnerWorkflow."""
 
 from __future__ import annotations
 
@@ -147,7 +147,7 @@ async def jira_build_issue_link(issue_key: str, dept_id: str) -> str:
         creds = await get_credential_resolver().get(
             dept_id, "jira", scope="org"
         )
-    except Exception:  # noqa: BLE001 — best-effort
+    except Exception:  # noqa: BLE001 - best-effort
         return ""
 
     if isinstance(creds, dict):

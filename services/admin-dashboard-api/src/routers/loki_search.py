@@ -1,4 +1,4 @@
-"""``LokiSearchProxy``.
+﻿"""``LokiSearchProxy``.
 
 Forwards an audit search query to Loki + cross-references the MinIO
 archive index when the query window extends beyond the
@@ -205,7 +205,7 @@ async def search(
     # ordered list with a clear discriminator.
     loki_tagged = [{**h, "archived": False} for h in loki_hits]
 
-    # Client-side client_source filter — applied when the Loki backend
+    # Client-side client_source filter - applied when the Loki backend
     # does not natively support the field (graceful degradation).
     if client_source:
         loki_tagged = [
@@ -213,7 +213,7 @@ async def search(
             if h.get("client_source", "").lower() == client_source.lower()
         ]
 
-    # Client-side trace_id filter — same graceful-degradation pattern
+    # Client-side trace_id filter - same graceful-degradation pattern
     # as ``client_source``. When the Loki client supported the kwarg
     # natively (see :func:`_invoke_loki_search`) the hits are already
     # filtered, so this pass is a cheap no-op.
@@ -255,7 +255,7 @@ async def _invoke_loki_search(
             end=end,
         )
     except TypeError:
-        # Older client signature — retry without the new kwarg.
+        # Older client signature - retry without the new kwarg.
         return await loki.search(
             actor_id=actor_id,
             dept_id=dept_id,
@@ -277,7 +277,7 @@ def _build_logql(workflow_id: str, trace_id: str | None) -> str:
     The selector pins both the ``workflow_id`` and (when supplied)
     the ``trace_id`` labels so the operator only sees lines from the
     single request being investigated. The label values are
-    surrounded with double quotes — Loki rejects unquoted matchers —
+    surrounded with double quotes - Loki rejects unquoted matchers -
     and any embedded double quotes are escaped to keep the LogQL
     syntactically valid even when a future caller passes a label
     containing the character.
@@ -405,7 +405,7 @@ async def workflow_logs(
         return response
 
     # Prefer a dedicated ``query_range`` / ``query`` surface if the
-    # client exposes one — that lets us push the LogQL selector down
+    # client exposes one - that lets us push the LogQL selector down
     # without translating it back into the kwarg-shaped ``search``
     # API. Fall back to ``search(trace_id=...)`` when the client only
     # offers the audit-search surface (eg. the soft-fail stub used in
@@ -421,7 +421,7 @@ async def workflow_logs(
             end=end,
             limit=limit,
         )
-    except Exception as exc:  # noqa: BLE001 — degrade gracefully
+    except Exception as exc:  # noqa: BLE001 - degrade gracefully
         logger.warning(
             "workflow_logs: loki query failed for wf=%s trace=%s: %s",
             workflow_id,
@@ -463,10 +463,10 @@ async def _invoke_workflow_log_query(
     Three surfaces are accepted (in order of preference):
 
     1. ``loki.query_range(query=logql, start=..., end=..., limit=...)``
-       — the canonical Loki HTTP API. Returns a list of streams which
+       - the canonical Loki HTTP API. Returns a list of streams which
        we flatten to one entry per log line.
-    2. ``loki.query(query=logql, ...)`` — instant query variant.
-    3. ``loki.search(trace_id=..., ...)`` — fall back to the same
+    2. ``loki.query(query=logql, ...)`` - instant query variant.
+    3. ``loki.search(trace_id=..., ...)`` - fall back to the same
        audit-search surface used by ``/admin/audit/search``. The
        result already comes back as a list of dicts, so we return
        it as-is (the caller re-applies workflow_id / trace_id
@@ -476,7 +476,7 @@ async def _invoke_workflow_log_query(
     without depending on the real ``LokiClient`` implementation.
     """
 
-    # 1. ``query_range`` — preferred when the client exposes it.
+    # 1. ``query_range`` - preferred when the client exposes it.
     query_range = getattr(loki, "query_range", None)
     if callable(query_range):
         raw = await query_range(
@@ -487,7 +487,7 @@ async def _invoke_workflow_log_query(
         )
         return _flatten_loki_streams(raw)
 
-    # 2. ``query`` — instant query variant.
+    # 2. ``query`` - instant query variant.
     query_fn = getattr(loki, "query", None)
     if callable(query_fn):
         raw = await query_fn(
@@ -527,7 +527,7 @@ def _flatten_loki_streams(raw: Any) -> list[dict[str, Any]]:
     if raw is None:
         return []
     if isinstance(raw, list):
-        # Already flattened — every entry should be a dict.
+        # Already flattened - every entry should be a dict.
         return [r for r in raw if isinstance(r, dict)]
     if isinstance(raw, dict):
         # Loki HTTP API shape: ``{"data": {"result": [...]}}`` or just

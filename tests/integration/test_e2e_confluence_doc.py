@@ -1,4 +1,4 @@
-"""End-to-end integration test for the ``confluence_doc_update`` flow.
+﻿"""End-to-end integration test for the ``confluence_doc_update`` flow.
 
 
 This test exercises the parent → child workflow boundary using
@@ -14,7 +14,7 @@ test server. The flow under test:
  → confluence_update_page
  → completion comment + Done transition
 
-Test scope decision (option (a) — minimal AgentRunnerWorkflow stub)
+Test scope decision (option (a) - minimal AgentRunnerWorkflow stub)
 -------------------------------------------------------------------
 
 The production ``AgentRunnerWorkflow`` class
@@ -30,7 +30,7 @@ The test-local stub lives in
 so the Temporal sandbox can validate it). It implements only the
 ``confluence_doc_update`` branch needed for this scenario. When the
 production workflow body lands in spec the implementation, the test will
-transparently start exercising the production class instead — both
+transparently start exercising the production class instead - both
 register under ``name="AgentRunnerWorkflow"`` and the activity-call
 contract is identical.
 
@@ -109,7 +109,7 @@ async def test_confluence_doc_update_e2e_flow() -> None:
     with isolate_worker("agent-runner"):
         # Imports inside the block resolve to the agent-runner-worker
         # tree. ``TaskAnalysis`` and ``OutputAction`` are the dataclasses
-        # AutomationWorkflow expects from ``llm_analyze_task`` — see
+        # AutomationWorkflow expects from ``llm_analyze_task`` - see
         # automation_workflow._resolve_analysis. Bind them onto the
         # module globals so ``temporalio.activity.defn``'s
         # ``get_type_hints`` call can resolve the annotations.
@@ -168,7 +168,7 @@ async def test_confluence_doc_update_e2e_flow() -> None:
 
         # The workflow accesses ``analysis.workflow_type`` etc. as
         # attributes, so the mock returns an actual ``TaskAnalysis``
-        # dataclass — not a dict — so the data converter delivers
+        # dataclass - not a dict - so the data converter delivers
         # attribute access on the workflow side.
         @activity.defn(name="llm_analyze_task")
         async def llm_analyze_task(issue: Any, ctx: Any) -> TaskAnalysis:

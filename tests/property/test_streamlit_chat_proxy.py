@@ -1,17 +1,17 @@
-"""Static test for Streamlit chat proxying through assistant-service.
+﻿"""Static test for Streamlit chat proxying through assistant-service.
 
 Static AST scan of the Streamlit pages directory. The chat page
 (``pages/1_chat.py``) and the task creator page
 (``pages/2_task_creator.py``) MUST NOT import ``mcp_client`` (or
-its submodules) directly — every LLM-related call MUST go through
+its submodules) directly - every LLM-related call MUST go through
 ``assistant-service``. Direct ``mcp_client`` use here would let the
 chat surface bypass the foundation banned-tool list / capability
 gate / audit chain.
 
 The test reads each Streamlit page's source as text + AST, and
 fails the build when an offending import is found. Hypothesis is
-not strictly necessary — the property is universal over the file
-set — but we still write it as a pytest module so it surfaces in
+not strictly necessary - the property is universal over the file
+set - but we still write it as a pytest module so it surfaces in
 the same `tests/property/` lane as the rest of the audit gates.
 """
 

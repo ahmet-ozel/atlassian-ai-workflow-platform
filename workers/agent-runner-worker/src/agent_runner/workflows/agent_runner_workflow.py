@@ -1,4 +1,4 @@
-"""``AgentRunnerWorkflow`` — LLM + MCP iteration orchestrator.
+﻿"""``AgentRunnerWorkflow`` - LLM + MCP iteration orchestrator.
 
 Canonical home of the AgentRunnerWorkflow. The workflow runs on the
 ``agent-runner-tq`` task queue and is dispatched as a child by
@@ -17,13 +17,13 @@ Responsibilities:
     2. Carry workflow-local sets/lists for cross-iteration dedup and
        partial-failure reporting:
 
-           ``previous_findings: set[str]`` — PR review hash dedup
-           ``confluence_section_hashes: set[str]`` — Confluence dedup
-           ``output_actions_partial: list[str]`` — best-effort failures
+           ``previous_findings: set[str]`` - PR review hash dedup
+           ``confluence_section_hashes: set[str]`` - Confluence dedup
+           ``output_actions_partial: list[str]`` - best-effort failures
            reported in the final summary
 
-    3. Expose four signals — ``comment_added``, ``fix_triggered``,
-       ``explain_triggered`` and ``cancel_requested`` — each of which
+    3. Expose four signals - ``comment_added``, ``fix_triggered``,
+       ``explain_triggered`` and ``cancel_requested`` - each of which
        calls a pre-condition (``should_advance_iter(state, MAX_ITER)``)
        *before* mutating state. When the cap is reached the workflow
        transitions to ``out_of_scope`` and refuses to advance further;
@@ -35,10 +35,10 @@ Responsibilities:
 Replay-safety invariants:
 
 * No ``datetime.now()``, ``time.time()``, ``random.*``, ``uuid.uuid4()``
-  in the workflow body — only ``workflow.now()`` and the activities
+  in the workflow body - only ``workflow.now()`` and the activities
   emit timestamps.
 * No direct ``httpx`` / ``requests`` / ``aiohttp`` / ``openai`` /
-  ``anthropic`` calls — every side effect is wrapped in an activity.
+  ``anthropic`` calls - every side effect is wrapped in an activity.
 * Any module that performs I/O is imported inside the
   ``workflow.unsafe.imports_passed_through()`` sandbox-escape block.
 
@@ -51,7 +51,7 @@ The pure helpers ``should_advance_iter``, ``is_fix_debounced``,
 this file imports them lazily inside ``workflow.unsafe.imports_passed_through()``;
 when the import fails we fall back to inline placeholder functions that
 encode the same contract. Once that module ships the placeholders go
-unused automatically — no rewrite required.
+unused automatically - no rewrite required.
 """
 
 from __future__ import annotations
@@ -171,7 +171,7 @@ with workflow.unsafe.imports_passed_through():
 
 
 # ---------------------------------------------------------------------------
-# Constants — magic numbers the workflow consults each iteration
+# Constants - magic numbers the workflow consults each iteration
 # ---------------------------------------------------------------------------
 
 #: Default activity timeout for short Atlassian / DB calls.
@@ -194,7 +194,7 @@ _DEFAULT_RETRY: RetryPolicy = RetryPolicy(
 )
 
 #: Hard cap on iterations. The workflow input may
-#: lower this — but we treat the input value as advisory and clamp to
+#: lower this - but we treat the input value as advisory and clamp to
 #: this constant so a misconfigured caller can't bypass the cap.
 MAX_ITER: int = 5
 
@@ -290,7 +290,7 @@ _CANCEL_RECOGNISED_ROLES: Final[frozenset[str]] = (
 def _audit_action_for_cancel_role(actor_role: str | None) -> str:
     """Map a cancel signal ``actor_role`` to the matching audit action.
 
-    Pure helper (no I/O, no clock, no randomness) — safe to call from
+    Pure helper (no I/O, no clock, no randomness) - safe to call from
     the signal handler. Returns
     :data:`CANCEL_BY_ADMIN_AUDIT_ACTION` for ``admin`` / ``dept_admin``,
     :data:`CANCEL_BY_END_USER_AUDIT_ACTION` for everything else,
@@ -309,7 +309,7 @@ ITER_WARNING_THRESHOLD: int = 3
 #: for the first time.
 ITER_WARNING_BANNER_TEXT: str = (
     "⚠️ Bu görev şu ana kadar 3 iterasyon sürdü. Yeni bir task açmayı "
-    "düşünün — devam ederseniz iterasyon sayısı 5'i bulduğunda iş otomatik "
+    "düşünün - devam ederseniz iterasyon sayısı 5'i bulduğunda iş otomatik "
     "olarak kapatılacaktır."
 )
 
@@ -364,7 +364,7 @@ _OUTPUT_ACTION_DISPATCH: Final = MappingProxyType(
 #
 # The webhook gateway is responsible for routing ``[fix]`` / ``[explain]``
 # comments into the dedicated signals (``fix_triggered`` /
-# ``explain_triggered``) — but ``comment_added`` also accepts keyword
+# ``explain_triggered``) - but ``comment_added`` also accepts keyword
 # markers verbatim so that direct-signal tests, the Streamlit inline
 # reply path, and any future caller that signals only this workflow can
 # rely on a single entrypoint.
@@ -408,7 +408,7 @@ class CommentAddedSignal:
         Plain-text body of the comment (already debounce-coalesced by
         the gateway when applicable).
     actor_account_id:
-        Atlassian ``account_id`` of the commenter — stored for audit
+        Atlassian ``account_id`` of the commenter - stored for audit
         only; the loop guard runs on the gateway side.
     diff_hash:
         Optional hash of the current diff at the time the comment was
@@ -453,7 +453,7 @@ class CancelRequestedSignal:
         OIDC subject of the cancelling user (Atlassian
         ``account_id`` or platform ``user_id``).
     actor_role:
-        Role of the cancelling user — one of ``end_user``, ``admin``,
+        Role of the cancelling user - one of ``end_user``, ``admin``,
         or ``dept_admin``. Drives the audit action selected by
         :func:`_audit_action_for_cancel_role`. Unknown / blank values
         default to ``end_user``.
@@ -470,7 +470,7 @@ class CancelRequestedSignal:
 
 
 # ---------------------------------------------------------------------------
-# TokenCapExceededError — non-retryable application error
+# TokenCapExceededError - non-retryable application error
 # ---------------------------------------------------------------------------
 
 
@@ -479,7 +479,7 @@ class TokenCapExceededError(ApplicationError):
 
     Subclasses :class:`temporalio.exceptions.ApplicationError` with
     ``non_retryable=True`` so Temporal's retry machinery treats the
-    failure as terminal — no second attempt is scheduled, mirroring
+    failure as terminal - no second attempt is scheduled, mirroring
     the fail-fast contract.
 
     The error type is :data:`TOKEN_CAP_ERROR_TYPE` so the workflow body
@@ -487,7 +487,7 @@ class TokenCapExceededError(ApplicationError):
     discriminate it from generic activity failures.
 
     The accompanying audit event (:data:`TOKEN_CAP_AUDIT_ACTION`) is
-    emitted by the workflow body **before** raising — so even if the
+    emitted by the workflow body **before** raising - so even if the
     audit-emit activity itself fails, the workflow's terminal status
     still reflects the cap-exceeded condition.
     """
@@ -514,12 +514,12 @@ class TokenCapExceededError(ApplicationError):
 
 
 # ---------------------------------------------------------------------------
-# Pure helpers — placeholders for the not-yet-shipped temporal_shared.iteration
+# Pure helpers - placeholders for the not-yet-shipped temporal_shared.iteration
 # module.
 #
 # These mirror the runtime contract for ``temporal_shared.iteration``.
 # Once :mod:`temporal_shared.iteration` lands these placeholders go
-# unused automatically — the production helpers take precedence in
+# unused automatically - the production helpers take precedence in
 # :func:`_should_advance_iter` and friends below.
 # ---------------------------------------------------------------------------
 
@@ -537,7 +537,7 @@ def _placeholder_should_advance_iter(
 ) -> _IterDecision:
     """Pure pre-condition: may we advance to ``state.iter_count + 1``?
 
-    The decision is purely arithmetic — no clock, no randomness — so
+    The decision is purely arithmetic - no clock, no randomness - so
     the workflow can call it from inside a signal handler without
     breaking replay determinism.
     """
@@ -638,7 +638,7 @@ def _needs_info_should_terminate(
 
 
 # ---------------------------------------------------------------------------
-# Functional update helpers — keep ``IterationState`` evolutions explicit
+# Functional update helpers - keep ``IterationState`` evolutions explicit
 # and side-effect free.
 # ---------------------------------------------------------------------------
 
@@ -706,7 +706,7 @@ def _dedup_findings(
 
     Pure helper; placeholder until :func:`temporal_shared.llm_dedup.dedup_findings`
     lands. Each finding is expected to carry a stable
-    ``hash`` field — usually a sha256 of the rendered finding body —
+    ``hash`` field - usually a sha256 of the rendered finding body -
     so the set difference reliably suppresses repeat content across
     iterations.
 
@@ -746,7 +746,7 @@ class AgentRunnerWorkflow:
     """
 
     def __init__(self) -> None:
-        # Iteration state — frozen dataclass; we evolve it via
+        # Iteration state - frozen dataclass; we evolve it via
         # ``dataclasses.replace`` so every replay reaches the same
         # value.
         self._iteration_state: IterationState = IterationState()
@@ -785,7 +785,7 @@ class AgentRunnerWorkflow:
         # and short-circuits, so compensation never double-fires.
         # The flag stays set for the lifetime of the workflow so a
         # cancel that arrives *after* the chain completes is also a
-        # no-op (terminal state — the workflow is about to close).
+        # no-op (terminal state - the workflow is about to close).
         self._compensation_running: bool = False
 
         # Set to True once the iteration cap (or needs_info cap) is
@@ -796,20 +796,20 @@ class AgentRunnerWorkflow:
         # when the run terminates non-successfully.
         self._failure_reason: str | None = None
 
-        # Pending ``[fix]`` / ``[explain]`` invocation parameters —
+        # Pending ``[fix]`` / ``[explain]`` invocation parameters -
         # consumed by the body the next time it advances. Populated by
         # the corresponding signal handler when the pre-conditions hold.
         self._pending_fix_diff_hash: str | None = None
         self._pending_explain_diff_hash: str | None = None
         self._pending_explain_text: str | None = None
 
-        # Latest comment received via ``comment_added`` — feeds back
+        # Latest comment received via ``comment_added`` - feeds back
         # into the next iteration.
         self._latest_comment: str = ""
 
         # Once-per-workflow flag: ``True`` after the iter==3 warning
         # banner has been posted to Jira.
-        # Idempotent — the body inspects this flag and a parallel
+        # Idempotent - the body inspects this flag and a parallel
         # ``_iter_warning_pending`` edge to decide whether to call the
         # ``jira_add_comment`` activity. Once set the flag never flips
         # back, so re-entry into the iter==3 region during a future
@@ -828,7 +828,7 @@ class AgentRunnerWorkflow:
         # signal handler), so we accumulate audit action strings here
         # and emit them on the next loop turn. The list is bounded by
         # the number of signals received, which is itself bounded by
-        # :data:`MAX_ITER` plus a small constant — Temporal history
+        # :data:`MAX_ITER` plus a small constant - Temporal history
         # growth is therefore O(MAX_ITER), well within the hard caps.
         self._pending_audit_actions: list[str] = []
 
@@ -937,7 +937,7 @@ class AgentRunnerWorkflow:
     #
     # Every handler runs the ``should_advance_iter`` pre-condition before
     # mutating state. When the pre-condition denies, the handler flips
-    # ``_out_of_scope`` and leaves the state untouched — the body's wait
+    # ``_out_of_scope`` and leaves the state untouched - the body's wait
     # predicate then drains and the workflow terminates with
     # ``out_of_scope``.
     #
@@ -987,7 +987,7 @@ class AgentRunnerWorkflow:
             return
 
         # ----- Plain comment path ---------------------------------
-        # Receiving a non-``needs_info`` comment resets the streak —
+        # Receiving a non-``needs_info`` comment resets the streak -
         # the user has supplied additional context, so the loop cap
         # restarts from zero.
         self._iteration_state = _state_reset_needs_info(self._iteration_state)
@@ -1003,7 +1003,7 @@ class AgentRunnerWorkflow:
         if text:
             self._latest_comment = text
         self._advance_iter_with_banner_check()
-        # Note: ``actor`` is not surfaced as workflow state — it only
+        # Note: ``actor`` is not surfaced as workflow state - it only
         # exists so the audit chain can log the originator. We accept
         # the value to keep the wire schema stable but intentionally
         # avoid storing PII inside the workflow state
@@ -1041,7 +1041,7 @@ class AgentRunnerWorkflow:
     # These methods carry the actual debounce / dedup / cache logic so
     # ``comment_added`` (keyword-routed) and the dedicated signals share
     # one implementation. They are NOT decorated with ``@workflow.signal``
-    # — Temporal still treats them as plain methods, so the per-signal
+    # - Temporal still treats them as plain methods, so the per-signal
     # ``@workflow.signal`` boundary stays intact while the body is
     # de-duplicated.
 
@@ -1070,7 +1070,7 @@ class AgentRunnerWorkflow:
             self._pending_audit_actions.append(FIX_DEBOUNCE_AUDIT_ACTION)
             return
 
-        # Receiving a ``[fix]`` resets the needs_info streak — the user
+        # Receiving a ``[fix]`` resets the needs_info streak - the user
         # has supplied additional direction.
         self._iteration_state = _state_reset_needs_info(self._iteration_state)
 
@@ -1108,7 +1108,7 @@ class AgentRunnerWorkflow:
 
         # ``[explain]`` does NOT consume an iteration when the cache is
         # warm (the answer is replayed verbatim). When the cache is
-        # cold we still respect the iter cap — emitting a fresh LLM
+        # cold we still respect the iter cap - emitting a fresh LLM
         # response is a meaningful unit of work.
         now = workflow.now()
         if pr_diff_hash and _explain_should_skip_llm(
@@ -1120,7 +1120,7 @@ class AgentRunnerWorkflow:
             self._signal_pending = True
             return
 
-        # ``[explain]`` is a directional comment — reset the
+        # ``[explain]`` is a directional comment - reset the
         # ``needs_info`` streak just like the plain comment path does.
         self._iteration_state = _state_reset_needs_info(self._iteration_state)
 
@@ -1159,7 +1159,7 @@ class AgentRunnerWorkflow:
             self._signal_pending = True
             return
 
-        # ``needs_info`` does NOT advance ``iter_count`` on its own —
+        # ``needs_info`` does NOT advance ``iter_count`` on its own -
         # it just records that the bot is still gathering input. The
         # iteration counter advances when the user supplies a real
         # answer (plain ``comment_added``) or fires ``[fix]`` /
@@ -1188,13 +1188,13 @@ class AgentRunnerWorkflow:
     def cancel_requested(self, payload: Any) -> None:
         """Receive an end-user / admin cancel signal.
 
-        Cancel always wins over the iter cap — the body observes
+        Cancel always wins over the iter cap - the body observes
         ``_cancel_requested`` and runs the compensation chain regardless
         of ``_out_of_scope`` state.
 
         Idempotent: a second cancel signal that arrives
         while compensation is already in flight (or has completed) is
-        a silent no-op — both :attr:`_cancel_requested` and
+        a silent no-op - both :attr:`_cancel_requested` and
         :attr:`_compensation_running` latch the first request, and
         every subsequent invocation observes the latched state and
         returns without mutating workflow state. This guarantees the
@@ -1202,7 +1202,7 @@ class AgentRunnerWorkflow:
         replay or rapid double-tap from the cancel API.
         """
 
-        # Idempotency latch — the *first* cancel wins. We refuse to
+        # Idempotency latch - the *first* cancel wins. We refuse to
         # overwrite ``_cancel_actor_id`` / ``_cancel_actor_role`` /
         # ``_cancel_reason`` once they're set so the audit row + the
         # compensation context reflect the original cancel actor even
@@ -1234,7 +1234,7 @@ class AgentRunnerWorkflow:
             self._iteration_state, iter_count=max(0, inp.iteration - 1)
         )
 
-        # Initial advance pre-condition — refuse to start when the
+        # Initial advance pre-condition - refuse to start when the
         # input already exceeds the cap.
         decision = _should_advance_iter(self._iteration_state, max_iter)
         if not decision.advance:
@@ -1371,7 +1371,7 @@ class AgentRunnerWorkflow:
         for this branch.
         """
 
-        # Idempotency latch — same flag the cancel path sets so a
+        # Idempotency latch - same flag the cancel path sets so a
         # cancel signal arriving during this compensation chain does
         # not double-fire the activity.
         self._compensation_running = True
@@ -1394,14 +1394,14 @@ class AgentRunnerWorkflow:
             )
         except Exception:  # noqa: BLE001 - compensation best-effort
             workflow.logger.warning(
-                "compensation_chain_run failed for %s — continuing",
+                "compensation_chain_run failed for %s - continuing",
                 workflow.info().workflow_id,
             )
 
         # Compose the final Jira comment with the expected operator-facing shape:
         # the ``failed_critical`` list lands under the best-effort
         # prefix because the Turkish prose template only carries one
-        # "warning" line — see :func:`format_final_jira_comment`.
+        # "warning" line - see :func:`format_final_jira_comment`.
         failed_lines: list[tuple[str, str]] = list(
             self._output_actions_log.failed_critical
         )
@@ -1427,7 +1427,7 @@ class AgentRunnerWorkflow:
         the ``confluence_doc_*`` paths land here too. The remaining
         types (``research_*``, ``multi_step``, ``noop_test``,
         ``remote_ssh_test_only``) still fall through to the legacy
-        signal-wait loop below — tasks 9.3 / 10.3 will replace those
+        signal-wait loop below - tasks 9.3 / 10.3 will replace those
         branches.
 
         Subclasses / future extensions MUST observe the same invariants:
@@ -1476,7 +1476,7 @@ class AgentRunnerWorkflow:
 
         # Wait for either: a signal (cancel / fix / explain / comment),
         # the iter cap to flip, or the signal-wait timeout. The
-        # ``wait_condition`` callable is replay-deterministic — it only
+        # ``wait_condition`` callable is replay-deterministic - it only
         # reads workflow state.
         try:
             await workflow.wait_condition(
@@ -1520,7 +1520,7 @@ class AgentRunnerWorkflow:
         1. ``set_assignee_to_bot`` claims the Jira issue for the bot.
         2. ``branch_pattern_rules`` deny → ``out_of_scope``.
         3. ``compute_branch_name`` (pure formatter).
-        4. ``precommit_scanner`` activity — block → fail with audit
+        4. ``precommit_scanner`` activity - block → fail with audit
            ``precommit_secret_leak_blocked``.
         5. ``bitbucket_create_commit`` to push the change.
         6. Child :class:`ExecutionRunWorkflow` to run tests.
@@ -1568,7 +1568,7 @@ class AgentRunnerWorkflow:
         (``with_test`` adds the test-run + PR-create chain;
         ``commit_only`` posts a branch-link Jira comment) are gated
         behind the *open_pr* / *with_test* flags so the activity
-        sequence stays readable in one place — and the unit tests
+        sequence stays readable in one place - and the unit tests
         can drive both branches against a single mock fixture set.
         """
 
@@ -1592,7 +1592,7 @@ class AgentRunnerWorkflow:
             )
             raise
 
-        # 2. branch_pattern_rules check — denies hotfix commit-only,
+        # 2. branch_pattern_rules check - denies hotfix commit-only,
         #    release non-pr_review etc. The rule list is pinned to
         #    the foundation defaults; per-dept rule loading lands in
         #    departments.json schema migration.
@@ -1608,9 +1608,9 @@ class AgentRunnerWorkflow:
                 await self._emit_audit_action(decision.reason, inp)
                 raise _OutOfScope
 
-        # 3. compute_branch_name — pure formatter; ``existing_branches``
+        # 3. compute_branch_name - pure formatter; ``existing_branches``
         #    is empty for the first iteration of a fresh issue. A
-        #    follow-up task (7.6 — iter-N supersede) will populate the
+        #    follow-up task (7.6 - iter-N supersede) will populate the
         #    set from a Bitbucket list-branches activity.
         branch_name = compute_branch_name(
             inp.issue_key,
@@ -1618,7 +1618,7 @@ class AgentRunnerWorkflow:
             (),
         )
 
-        # 4. precommit_scanner — gating step. The diff to scan is
+        # 4. precommit_scanner - gating step. The diff to scan is
         #    produced by the LLM analysis output_actions; for the
         #    skeleton path we use the analysis ``rationale`` as a
         #    proxy so the activity is exercised. A future task (10.1)
@@ -1815,7 +1815,7 @@ class AgentRunnerWorkflow:
                             "repo_slug": target_repo,
                         },
                         branch_name,
-                        "main",  # destination branch — callers can override
+                        "main",  # destination branch - callers can override
                         # the dept-configured default branch.
                         f"[bot] {inp.analysis.title or inp.issue_key}",
                         inp.analysis.rationale or "AI-generated change.",
@@ -1866,7 +1866,7 @@ class AgentRunnerWorkflow:
                         ),
                     )
                 except Exception as exc:  # noqa: BLE001 - best-effort
-                    # Supersede is a courtesy update — failure must
+                    # Supersede is a courtesy update - failure must
                     # not block the new iteration. The activity itself
                     # records partial progress (label vs description)
                     # so a subsequent ``[fix]`` retry will pick up
@@ -1883,7 +1883,7 @@ class AgentRunnerWorkflow:
                     )
 
             # Track the new PR id so the next iteration can supersede
-            # this one. Only updated when the PR id is recoverable —
+            # this one. Only updated when the PR id is recoverable -
             # otherwise we leave the previous value intact so a
             # malformed activity response does not silently break the
             # supersede chain.
@@ -1899,7 +1899,7 @@ class AgentRunnerWorkflow:
 
         # commit-only flow: post a branch-link Jira comment with a
         # diff summary served from the per-workflow cache
-        # placeholder — see ``_diff_summary_cache``).
+        # placeholder - see ``_diff_summary_cache``).
         diff_hash = commit_hash
         diff_summary = self._diff_summary_cache.get(diff_hash)
         if diff_summary is None:
@@ -1910,7 +1910,7 @@ class AgentRunnerWorkflow:
 
         await self._post_jira_comment_best_effort(
             inp,
-            f"✅ Branch hazır: `{branch_name}` — {diff_summary}",
+            f"✅ Branch hazır: `{branch_name}` - {diff_summary}",
         )
         await self._maybe_execute_llm_output_actions(inp)
 
@@ -1925,7 +1925,7 @@ class AgentRunnerWorkflow:
         2. Run the ``pr_review.md`` LLM activity (``llm_review_code``)
            via :meth:`_execute_llm_activity` so the token cap
            applies.
-        3. ``dedup_findings(self._previous_findings, current)`` — only
+        3. ``dedup_findings(self._previous_findings, current)`` - only
            emit findings whose ``hash`` was not seen in earlier
            iterations.
         4. Post each new finding as a PR comment via
@@ -1936,7 +1936,7 @@ class AgentRunnerWorkflow:
         """
 
         target_repo = inp.target_repo or ""
-        # The workflow input carries the issue_key, not the PR id —
+        # The workflow input carries the issue_key, not the PR id -
         # the AutomationWorkflow passes the PR id via the analysis
         # ``rationale`` as a fallback today; future callers can surface a
         # dedicated field. Defensive: fall back to 0 so the activity
@@ -1964,7 +1964,7 @@ class AgentRunnerWorkflow:
             raise
 
         diff_text = self._extract_diff_text(diff)
-        # Token estimate — best effort approximation; the activity
+        # Token estimate - best effort approximation; the activity
         # itself recomputes the count from the rendered prompt.
         estimated_tokens = max(1, len(diff_text) // 4)
 
@@ -1984,7 +1984,7 @@ class AgentRunnerWorkflow:
                 inp=inp,
             )
         except TokenCapExceededError:
-            # Re-raise — the workflow body's outer handler converts
+            # Re-raise - the workflow body's outer handler converts
             # this into a stable terminal status.
             raise
         except Exception as exc:  # noqa: BLE001 - critical
@@ -2032,7 +2032,7 @@ class AgentRunnerWorkflow:
             if finding_hash:
                 self._previous_findings.add(finding_hash)
 
-        # ``[explain]`` enrichment — when a signal handler stashed an
+        # ``[explain]`` enrichment - when a signal handler stashed an
         # explain request, render a max-200-word answer via the LLM
         # token-capped helper, cache it on IterationState, and post
         # the answer to the PR.
@@ -2063,7 +2063,7 @@ class AgentRunnerWorkflow:
            ``llm_generate_doc`` (token-cap enforcement applies). The
            returned text is appended with the provenance footer
            before the page is created.
-        5. Call ``confluence_create_page`` — the foundation
+        5. Call ``confluence_create_page`` - the foundation
            :func:`mcp_client.tool_filter.filter_tools` ensures
            ``confluence_delete_page`` is never offered to the LLM
            ``confluence_create_page`` itself is allowed.
@@ -2072,7 +2072,7 @@ class AgentRunnerWorkflow:
 
         """
 
-        # 1. set_assignee_to_bot — critical step.
+        # 1. set_assignee_to_bot - critical step.
         try:
             await workflow.execute_activity(
                 "set_assignee_to_bot",
@@ -2110,7 +2110,7 @@ class AgentRunnerWorkflow:
             )
             raise
 
-        # 4. LLM body — token-capped.
+        # 4. LLM body - token-capped.
         rationale = inp.analysis.rationale or ""
         estimated_tokens = max(1, len(rationale) // 4 + len(topic) // 4)
         try:
@@ -2154,7 +2154,7 @@ class AgentRunnerWorkflow:
                 )
             except Exception as exc:  # noqa: BLE001 - degraded footer path
                 workflow.logger.warning(
-                    "compute_provenance_footer failed for %s: %s — "
+                    "compute_provenance_footer failed for %s: %s - "
                     "creating page without footer",
                     inp.issue_key,
                     exc,
@@ -2217,10 +2217,10 @@ class AgentRunnerWorkflow:
            sections. The activity also supplies the page title so the
            ``_AI_PROBE_*`` filter can fire deterministically.
         3. Filter out pages whose title matches
-           :func:`is_probe_page` — write-probe artifacts must never
+           :func:`is_probe_page` - write-probe artifacts must never
            be overwritten.
         4. Overwrite-protection check via :func:`should_skip_overwrite`
-           — when a non-bot user edited the page within the last 5
+           - when a non-bot user edited the page within the last 5
            minutes, skip the update and emit the
            ``confluence_overwrite_protected`` audit.
         5. For every target section: compute the content hash, run
@@ -2283,7 +2283,7 @@ class AgentRunnerWorkflow:
             page_meta, "last_edit_at"
         )
 
-        # 3. Probe page filter — never write to ``_AI_PROBE_*`` pages.
+        # 3. Probe page filter - never write to ``_AI_PROBE_*`` pages.
         if is_probe_page(page_title):
             await self._emit_audit_action(
                 CONFLUENCE_PROBE_PAGE_SKIPPED_AUDIT_ACTION, inp
@@ -2320,7 +2320,7 @@ class AgentRunnerWorkflow:
         # 5. Per-section update with dedup.
         sections = self._extract_confluence_sections(page_meta, inp)
         if not sections:
-            # Nothing to update — surface a clear partial-failure
+            # Nothing to update - surface a clear partial-failure
             # signal but do not crash the run.
             workflow.logger.info(
                 "confluence_doc_update: no sections to update for %s",
@@ -2333,7 +2333,7 @@ class AgentRunnerWorkflow:
             )
             return
 
-        # Resolve the Jira issue link once — every section's body
+        # Resolve the Jira issue link once - every section's body
         # gets the same provenance footer.
         jira_issue_link = await self._resolve_jira_issue_link(inp)
 
@@ -2375,7 +2375,7 @@ class AgentRunnerWorkflow:
 
             # Append the provenance footer to the section
             # body before writing. Failure to render the footer is
-            # non-fatal — the update still goes ahead.
+            # non-fatal - the update still goes ahead.
             section_body = content
             if jira_issue_link:
                 try:
@@ -2384,7 +2384,7 @@ class AgentRunnerWorkflow:
                     )
                 except Exception as exc:  # noqa: BLE001 - degraded
                     workflow.logger.warning(
-                        "compute_provenance_footer failed for %s/%s: %s — "
+                        "compute_provenance_footer failed for %s/%s: %s - "
                         "writing without footer",
                         page_id,
                         section_path,
@@ -2473,7 +2473,7 @@ class AgentRunnerWorkflow:
 
         """
 
-        # 1. set_assignee_to_bot — critical step.
+        # 1. set_assignee_to_bot - critical step.
         try:
             await workflow.execute_activity(
                 "set_assignee_to_bot",
@@ -2523,14 +2523,14 @@ class AgentRunnerWorkflow:
                 url=url, inp=inp
             )
             if outcome is None:
-                continue  # blocked URL — graceful path already handled.
+                continue  # blocked URL - graceful path already handled.
             scraped_content.append(outcome["content"])
             sources.append(outcome["source"])
 
         if not sources:
             # Nothing useful was collected; surface the situation as a
             # best-effort Jira comment + partial-failure marker. The
-            # workflow does NOT fail — the operator can supply a
+            # workflow does NOT fail - the operator can supply a
             # different topic or extend the allowlist.
             self._record_partial_failure("research_no_sources")
             await self._post_jira_comment_best_effort(
@@ -2553,7 +2553,7 @@ class AgentRunnerWorkflow:
                 )
             except Exception as exc:  # noqa: BLE001 - degraded footer path
                 workflow.logger.warning(
-                    "compute_provenance_footer failed for %s: %s — "
+                    "compute_provenance_footer failed for %s: %s - "
                     "creating page without footer",
                     inp.issue_key,
                     exc,
@@ -2624,7 +2624,7 @@ class AgentRunnerWorkflow:
         Sequence for the research-to-Jira summary flow:
 
         1. ``set_assignee_to_bot`` claims the Jira issue for the bot.
-        2. ``firecrawl_search`` — enumerate candidate URLs from the
+        2. ``firecrawl_search`` - enumerate candidate URLs from the
            Jira topic.
         3. For every URL run ``firecrawl_scrape`` with the same
            graceful 403 fallback as the Confluence flow; collect the
@@ -2638,12 +2638,12 @@ class AgentRunnerWorkflow:
            comment text. When ``minio_uri`` is ``None`` the comment
            is short enough to land in Jira verbatim.
         5. Post the Jira comment (the comment IS the workflow's
-           primary side effect — failure flips ``failure_reason``
+           primary side effect - failure flips ``failure_reason``
            rather than degrading silently).
 
         """
 
-        # 1. set_assignee_to_bot — critical step.
+        # 1. set_assignee_to_bot - critical step.
         try:
             await workflow.execute_activity(
                 "set_assignee_to_bot",
@@ -2660,7 +2660,7 @@ class AgentRunnerWorkflow:
             )
             raise
 
-        # 2. firecrawl_search — same shape as the Confluence flow.
+        # 2. firecrawl_search - same shape as the Confluence flow.
         query = self._extract_research_query(inp)
         try:
             search_result = await workflow.execute_activity(
@@ -2730,7 +2730,7 @@ class AgentRunnerWorkflow:
                 )
             except Exception as exc:  # noqa: BLE001 - best-effort offload
                 workflow.logger.warning(
-                    "minio_put_research_summary failed for %s: %s — "
+                    "minio_put_research_summary failed for %s: %s - "
                     "posting comment without MinIO link",
                     inp.issue_key,
                     exc,
@@ -2750,7 +2750,7 @@ class AgentRunnerWorkflow:
                     f"{comment_text}\n\n🔗 Tam içerik: {stored_uri_str}"
                 )
 
-        # Post the comment as the primary output (NOT best-effort —
+        # Post the comment as the primary output (NOT best-effort -
         # the comment IS the workflow's deliverable for this type).
         try:
             await workflow.execute_activity(
@@ -2783,7 +2783,7 @@ class AgentRunnerWorkflow:
         1. ``set_assignee_to_bot`` claims the parent Epic for the bot.
         2. ``jira_list_epic_children`` enumerates the Epic's child
            issues (JQL ``parent = <epic>``). An empty list posts a
-           guidance comment and ends — the analyzer normally gates
+           guidance comment and ends - the analyzer normally gates
            this case into ``needs_info``, but the workflow defends in
            depth.
         3. Each child runs as its own ``AutomationWorkflow`` child,
@@ -2797,7 +2797,7 @@ class AgentRunnerWorkflow:
         ``failure_reason`` so the run terminates as ``failed``.
         """
 
-        # 1. set_assignee_to_bot — claim the Epic for the bot.
+        # 1. set_assignee_to_bot - claim the Epic for the bot.
         try:
             await workflow.execute_activity(
                 "set_assignee_to_bot",
@@ -2846,7 +2846,7 @@ class AgentRunnerWorkflow:
         # Disambiguate child ids by the parent workflow run so a
         # re-triggered Epic actually re-runs its subtasks (Temporal
         # dedupes by workflow id; reusing a prior id would silently
-        # replay the earlier — possibly denied — execution).
+        # replay the earlier - possibly denied - execution).
         run_suffix = workflow.info().run_id[:8]
         for index, child in enumerate(child_items):
             child_key = child["key"]
@@ -2873,11 +2873,11 @@ class AgentRunnerWorkflow:
                 skipped = total - (index + 1)
                 await self._post_jira_comment_best_effort(
                     inp,
-                    f"❌ Subtask {child_key} başarısız oldu — Epic durduruldu "
+                    f"❌ Subtask {child_key} başarısız oldu - Epic durduruldu "
                     f"({completed}/{total} tamamlandı, {skipped} atlandı).",
                 )
                 # Stop the fan-out: surface a failed terminal status via
-                # the run body's generic handler (no compensation chain —
+                # the run body's generic handler (no compensation chain -
                 # the Epic itself opened no PR / draft to roll back).
                 raise _EpicSubtaskFailed(child_key) from exc
 
@@ -2891,7 +2891,7 @@ class AgentRunnerWorkflow:
                 skipped = total - (index + 1)
                 await self._post_jira_comment_best_effort(
                     inp,
-                    f"❌ Subtask {child_key} işlenemedi (sonuç: {decision}) — "
+                    f"❌ Subtask {child_key} işlenemedi (sonuç: {decision}) - "
                     f"Epic durduruldu ({completed}/{total} tamamlandı, "
                     f"{skipped} atlandı).",
                 )
@@ -2906,7 +2906,7 @@ class AgentRunnerWorkflow:
 
         await self._post_jira_comment_best_effort(
             inp,
-            f"✅ Epic tamamlandı — {completed}/{total} subtask işlendi.",
+            f"✅ Epic tamamlandı - {completed}/{total} subtask işlendi.",
         )
         await self._maybe_execute_llm_output_actions(inp)
 
@@ -2982,7 +2982,7 @@ class AgentRunnerWorkflow:
 
         Prefers ``analysis.title`` because it is the LLM's distilled
         statement of the task; falls back to ``rationale`` (truncated)
-        and finally to the issue key so the query is never empty —
+        and finally to the issue key so the query is never empty -
         firecrawl rejects empty input outright.
         """
 
@@ -2991,7 +2991,7 @@ class AgentRunnerWorkflow:
             return title
         rationale = (inp.analysis.rationale or "").strip()
         if rationale:
-            # Cap the fallback at a defensible length — firecrawl
+            # Cap the fallback at a defensible length - firecrawl
             # tokenises the query upstream so a thousand-word
             # rationale would just waste budget.
             return rationale[:500]
@@ -3062,7 +3062,7 @@ class AgentRunnerWorkflow:
             )
         except Exception as exc:  # noqa: BLE001 - per-URL best effort
             workflow.logger.warning(
-                "firecrawl_scrape failed for %s/%s: %s — skipping URL",
+                "firecrawl_scrape failed for %s/%s: %s - skipping URL",
                 inp.issue_key,
                 url,
                 exc,
@@ -3156,9 +3156,9 @@ class AgentRunnerWorkflow:
 
     @staticmethod
     def _extract_firecrawl_accessed_at(outcome: Any, now: datetime) -> str:
-        """Best-effort access date for a scrape — defaults to ``now``.
+        """Best-effort access date for a scrape - defaults to ``now``.
 
-        Pure / replay-deterministic — when the scrape payload doesn't
+        Pure / replay-deterministic - when the scrape payload doesn't
         carry an ``accessed_at`` we use ``workflow.now().date()`` so
         the rendered Confluence sources block always shows a date.
         """
@@ -3198,7 +3198,7 @@ class AgentRunnerWorkflow:
             )
         except Exception as exc:  # noqa: BLE001 - best effort
             workflow.logger.warning(
-                "jira_build_issue_link failed for %s: %s — "
+                "jira_build_issue_link failed for %s: %s - "
                 "provenance footer will be degraded",
                 inp.issue_key,
                 exc,
@@ -3219,7 +3219,7 @@ class AgentRunnerWorkflow:
         """Best-effort bot ``account_id`` set for overwrite protection.
 
         Today the workflow input does not surface the dept's bot
-        account ids directly — the value is loaded by the
+        account ids directly - the value is loaded by the
         AutomationWorkflow when computing the loop guard and is not
         forwarded to the agent runner. As a defensive default we
         return an empty set, which means
@@ -3270,7 +3270,7 @@ class AgentRunnerWorkflow:
     ) -> datetime | None:
         """Read a tz-aware datetime field from a confluence_get_page result.
 
-        Accepts either a real :class:`datetime` (preferred — typed
+        Accepts either a real :class:`datetime` (preferred - typed
         activity returns) or an ISO-8601 string (dict-shaped returns).
         Returns ``None`` for missing / malformed values rather than
         raising, so the overwrite-protection branch falls through to
@@ -3289,7 +3289,7 @@ class AgentRunnerWorkflow:
         if isinstance(value, str):
             try:
                 # ``datetime.fromisoformat`` is a deterministic, pure
-                # parser — safe to use inside the workflow body.
+                # parser - safe to use inside the workflow body.
                 parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
             except ValueError:
                 return None
@@ -3303,8 +3303,8 @@ class AgentRunnerWorkflow:
         """Return the list of section payloads to update.
 
         Accepts either a ``confluence_get_page`` activity output that
-        already enumerates sections, or — when the activity returns a
-        bare body — falls back to a single-section update keyed on
+        already enumerates sections, or - when the activity returns a
+        bare body - falls back to a single-section update keyed on
         ``analysis.title``. The shape returned by each entry is a
         mapping with ``section_path`` and ``content`` keys; the
         ``content_hash`` key is optional (we recompute when absent).
@@ -3590,7 +3590,7 @@ class AgentRunnerWorkflow:
            ``summary``/``minio_uri``/``size_bytes`` triple.
         2. :func:`temporal_shared.output_actions.partition` splits the
            cap-corrected list into ``(critical, best_effort)`` based on
-           the kind classification table — not the carried severity —
+           the kind classification table - not the carried severity -
            so a malformed ``severity`` field cannot bypass the policy.
         3. Critical actions are applied **first** (and serially): any
            critical failure short-circuits the rest of the critical
@@ -3612,14 +3612,14 @@ class AgentRunnerWorkflow:
             (2) the ``inp.department_id`` for the credential lookup.
 
         Activities that need additional context (``issue_key``,
-        ``workflow_id``, etc.) read it from the payload — the LLM
+        ``workflow_id``, etc.) read it from the payload - the LLM
         analysis is responsible for populating those keys when it
         emits the action.
 
         Parameters
         ----------
         actions:
-            Tuple of LLM-emitted :class:`OutputAction`.  May be empty —
+            Tuple of LLM-emitted :class:`OutputAction`.  May be empty -
             the function is a no-op for empty tuples.
         workflow_id:
             Temporal workflow id, formatted via
@@ -3627,7 +3627,7 @@ class AgentRunnerWorkflow:
             :func:`redirect_oversized_payload` so MinIO offloads land
             under ``ai-runs/{workflow_id}/output-{idx}.json``.
         inp:
-            The workflow input — used for ``department_id`` (credential
+            The workflow input - used for ``department_id`` (credential
             lookup) and audit context.
 
         Returns
@@ -3729,7 +3729,7 @@ class AgentRunnerWorkflow:
 
         activity_name = _OUTPUT_ACTION_DISPATCH.get(action.kind)
         if activity_name is None:
-            # Unknown kind — should be unreachable because partition()
+            # Unknown kind - should be unreachable because partition()
             # rejects unclassified kinds, but defensive handling lets
             # tests mock the dispatch table without crashing.
             return False, f"no_dispatch_for_kind:{action.kind}"
@@ -3857,7 +3857,7 @@ class AgentRunnerWorkflow:
     ) -> None:
         """Merge *result* into the running :attr:`_output_actions_log`.
 
-        Pure list extension — no clocks, no randomness — so the
+        Pure list extension - no clocks, no randomness - so the
         merged log replays deterministically.  *inp* is currently
         unused but retained in the signature so a future audit hook
         audit on partial failure can be threaded through
@@ -3884,7 +3884,7 @@ class AgentRunnerWorkflow:
         Delegates to the ``minio_put_output_action`` activity and
         returns the canonical S3-style URI emitted by the activity.
         Shape mirrors :class:`temporal_shared.output_size_cap.MinioCallback`.
-        Failure of the activity propagates to the caller — the
+        Failure of the activity propagates to the caller - the
         size-cap branch is part of the critical pipeline, so a
         MinIO outage during the offload is treated as a critical
         failure rather than a degraded best-effort action.
@@ -4174,7 +4174,7 @@ class AgentRunnerWorkflow:
         observes the latched state via :meth:`cancel_requested` and
         returns without re-firing. Combined with the activity-level
         idempotency contract (every compensation step is a no-op when
-        the side effect is already cleaned up — see
+        the side effect is already cleaned up - see
         ``temporal_shared.compensation``) this gives an
         exactly-once compensation guarantee at the workflow layer.
 
@@ -4186,7 +4186,7 @@ class AgentRunnerWorkflow:
         misconfigured caller still produces a usable audit trail.
         """
 
-        # Idempotency latch — set *before* the activity call so a
+        # Idempotency latch - set *before* the activity call so a
         # cancel signal arriving during the chain is a no-op.
         self._compensation_running = True
 
@@ -4219,11 +4219,11 @@ class AgentRunnerWorkflow:
             )
         except Exception:  # noqa: BLE001 - compensation best-effort
             workflow.logger.warning(
-                "compensation_chain_run failed for %s — continuing",
+                "compensation_chain_run failed for %s - continuing",
                 workflow.info().workflow_id,
             )
 
-        # Emit the role-mapped audit row. Best-effort — the
+        # Emit the role-mapped audit row. Best-effort - the
         # workflow still terminates with ``cancelled`` even if the
         # audit activity is unavailable.
         await self._emit_audit_action(
@@ -4247,7 +4247,7 @@ class AgentRunnerWorkflow:
         execution. The flag :attr:`_iter_warning_at_three` is set
         **before** the activity returns so a transient activity
         failure cannot cause the banner to be posted twice on the
-        next loop turn — at-most-once is preferred over
+        next loop turn - at-most-once is preferred over
         at-least-once for user-facing comments (the banner is a soft
         warning, not a contractual guarantee).
 
@@ -4262,12 +4262,12 @@ class AgentRunnerWorkflow:
             return
         if (
             self._iteration_state.iter_count < ITER_WARNING_THRESHOLD
-        ):  # defensive — flag should not have been armed below threshold
+        ):  # defensive - flag should not have been armed below threshold
             self._iter_warning_pending = False
             return
 
         # Flip the flag *first* so a second drain in the same loop
-        # iteration is a no-op (the activity itself is best-effort —
+        # iteration is a no-op (the activity itself is best-effort -
         # the contract is "fire once and remember", not "fire until
         # success").
         self._iter_warning_at_three = True
@@ -4282,12 +4282,12 @@ class AgentRunnerWorkflow:
             )
         except Exception:  # noqa: BLE001 - banner is best-effort
             workflow.logger.warning(
-                "iter_warning_at_three banner activity failed for %s — "
+                "iter_warning_at_three banner activity failed for %s - "
                 "continuing without re-fire",
                 workflow.info().workflow_id,
             )
 
-        # Audit the banner emission — best-effort, never raises.
+        # Audit the banner emission - best-effort, never raises.
         await self._emit_audit_action(ITER_WARNING_AUDIT_ACTION, inp)
 
     async def _drain_pending_audits(
@@ -4308,7 +4308,7 @@ class AgentRunnerWorkflow:
 
         # Snapshot + clear so a fresh signal during the drain doesn't
         # cause double emission. We rebuild the list after the drain
-        # completes — emit failures are swallowed (best-effort).
+        # completes - emit failures are swallowed (best-effort).
         pending = list(self._pending_audit_actions)
         self._pending_audit_actions = []
         for action in pending:
@@ -4342,7 +4342,7 @@ class AgentRunnerWorkflow:
             )
         except Exception:  # noqa: BLE001 - audit is best-effort
             workflow.logger.warning(
-                "audit_emit(%s) failed for %s — continuing",
+                "audit_emit(%s) failed for %s - continuing",
                 action,
                 workflow.info().workflow_id,
             )
@@ -4386,7 +4386,7 @@ class AgentRunnerWorkflow:
             workflow is responsible for accurate counting; the cap is
             enforced verbatim against this value.
         inp:
-            The workflow input — used for audit context.
+            The workflow input - used for audit context.
         start_to_close_timeout:
             Per-attempt timeout; defaults to :data:`_LLM_TIMEOUT`.
         token_cap:
@@ -4484,7 +4484,7 @@ class AgentRunnerWorkflow:
         raw dict produced by the Temporal data converter when the wire
         schema doesn't match a registered dataclass. The
         ``actor_role`` field is normalised through the closed
-        vocabulary in :data:`_CANCEL_RECOGNISED_ROLES` — unknown,
+        vocabulary in :data:`_CANCEL_RECOGNISED_ROLES` - unknown,
         empty, or ``None`` values default to
         :data:`_CANCEL_ROLE_END_USER`.
         """
@@ -4511,7 +4511,7 @@ class AgentRunnerWorkflow:
                 else "user_cancel"
             )
         else:
-            # Fallback — preserve the operator's intent without crashing.
+            # Fallback - preserve the operator's intent without crashing.
             return "", _CANCEL_ROLE_END_USER, "user_cancel"
 
         # Closed-vocabulary check. Unknown roles default to
@@ -4527,7 +4527,7 @@ class AgentRunnerWorkflow:
 #
 # These are caught by ``run`` to translate body-side termination signals
 # into the appropriate :class:`AgentRunnerWorkflowOutput`. They are NOT
-# part of the public API — exporting them would tempt callers to raise
+# part of the public API - exporting them would tempt callers to raise
 # them from outside the workflow body, which would bypass the cancel /
 # out-of-scope state machine.
 # ---------------------------------------------------------------------------
@@ -4546,7 +4546,7 @@ class _EpicSubtaskFailed(Exception):
 
     Caught by the ``run`` body's generic handler, which returns a
     ``failed`` terminal status carrying the ``epic_subtask_failed``
-    reason already set on the workflow. No compensation chain runs —
+    reason already set on the workflow. No compensation chain runs -
     the Epic parent itself opened no draft PR / page to roll back; the
     failed subtask child handles its own compensation.
     """
@@ -4561,7 +4561,7 @@ class _OutputActionCriticalFailure(Exception):
     least one critical output action fails.
 
     The ``run`` body catches this sentinel exactly the same way it
-    catches ``cancel_requested`` — it triggers the
+    catches ``cancel_requested`` - it triggers the
     ``compensation_chain_run`` activity before terminating with
     ``failed`` and the stable failure reason
     :data:`OUTPUT_ACTION_CRITICAL_FAILED_REASON`.

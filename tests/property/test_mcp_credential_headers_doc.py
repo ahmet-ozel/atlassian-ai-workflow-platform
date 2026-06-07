@@ -1,4 +1,4 @@
-"""Parity property test: ``mcp-credential-headers.md`` ↔ Python constants.
+﻿"""Parity property test: ``mcp-credential-headers.md`` ↔ Python constants.
 
 The doc at ``platform/docs/api-contracts/mcp-credential-headers.md`` is the
 canonical contract for every header name a caller must set when talking to
@@ -14,7 +14,7 @@ header you MUST update both files; the test fails fast on drift.
 Implementation note
 -------------------
 
-We do **not** import the MCP server modules — they pull heavy runtime deps
+We do **not** import the MCP server modules - they pull heavy runtime deps
 (httpx, mcp). Instead we read the source files as text and do a regex scan
 for the constant assignments. That keeps the test cheap (no network, no
 DB) and lets it run inside the workspace-root pytest collection without
@@ -29,7 +29,7 @@ from pathlib import Path
 import pytest
 
 # ---------------------------------------------------------------------------
-# Path resolution — find the platform/ root no matter where pytest is invoked.
+# Path resolution - find the platform/ root no matter where pytest is invoked.
 # ---------------------------------------------------------------------------
 
 _THIS = Path(__file__).resolve()
@@ -66,26 +66,26 @@ _MCP_CLIENT_PATH = (
 # ---------------------------------------------------------------------------
 # Header strings the doc lists (case-sensitive; the wire format is
 # canonical). Adding a new header requires editing this set AND the doc
-# AND the matching .py constant — three-way parity is intentional.
+# AND the matching .py constant - three-way parity is intentional.
 # ---------------------------------------------------------------------------
 
 _DOCUMENTED_HEADERS: frozenset[str] = frozenset(
     {
-        # §1 — Generic / cross-service
+        # §1 - Generic / cross-service
         "X-Client-Source",
         "Authorization",
         "X-Atlassian-Cloud-Id",
-        # §2 — Jira
+        # §2 - Jira
         "X-Atlassian-Jira-Url",
         "X-Atlassian-Jira-Personal-Token",
         "X-Atlassian-Jira-Username",
         "X-Atlassian-Jira-Api-Token",
-        # §3 — Confluence
+        # §3 - Confluence
         "X-Atlassian-Confluence-Url",
         "X-Atlassian-Confluence-Personal-Token",
         "X-Atlassian-Confluence-Username",
         "X-Atlassian-Confluence-Api-Token",
-        # §4 — Bitbucket
+        # §4 - Bitbucket
         "X-Atlassian-Bitbucket-Url",
         "X-Atlassian-Bitbucket-Personal-Token",
         "X-Atlassian-Bitbucket-Cloud-Access-Token",
@@ -165,7 +165,7 @@ def test_doc_does_not_invent_undocumented_atlassian_headers(doc_text: str) -> No
     the typo in the doc.
     """
 
-    # Match canonical capitalisation only — strings inside code spans and
+    # Match canonical capitalisation only - strings inside code spans and
     # tables follow the wire format, not lowercased ASGI form.
     found = set(re.findall(r"X-Atlassian-[A-Za-z0-9-]+", doc_text))
 
@@ -203,7 +203,7 @@ def test_bitbucket_env_module_defines_each_header_constant(
 ) -> None:
     """Each Bitbucket header string appears as a string literal inside
     ``environment.py``. The exact constant name (BITBUCKET_*_HEADER) is
-    not asserted — only the wire-format string — so renaming the Python
+    not asserted - only the wire-format string - so renaming the Python
     symbol stays a non-breaking refactor as long as the wire format is
     preserved."""
 
@@ -281,6 +281,6 @@ def test_mcp_client_constructor_requires_client_source(
     )
     assert pattern.search(mcp_client_source), (
         "AtlassianClient.__init__ must declare client_source as required "
-        "(no default value). This is an enforcement chokepoint — "
+        "(no default value). This is an enforcement chokepoint - "
         "see platform/docs/api-contracts/mcp-credential-headers.md §1."
     )

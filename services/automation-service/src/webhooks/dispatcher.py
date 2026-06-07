@@ -1,4 +1,4 @@
-"""Webhook Dispatcher — routes webhooks to the correct department workflow.
+﻿"""Webhook Dispatcher - routes webhooks to the correct department workflow.
 
 Resolves ``assignee.accountId`` → ``dept_id`` via the
 ``department_bot_identity`` cache (backed by ``automation.department_bots``
@@ -39,14 +39,14 @@ from .loop_guard import StageResult, WebhookPayload
 # resolution at import time and silently degrade to a no-op when
 # ``automation_service`` was not yet on the path.
 
-# Concurrency gate — imported eagerly because the dispatcher is the
+# Concurrency gate - imported eagerly because the dispatcher is the
 # only public caller of :func:`check_dept_concurrency`. Keeping the
 # import at module load time also lets type checkers verify the
 # protocol contract for ``self._temporal`` (which doubles as the
 # Visibility client when a real :class:`temporalio.client.Client` is
 # wired). When ``concurrency`` is unavailable for any reason the
 # dispatcher continues to start workflows uncapped (graceful
-# degradation) — the cap is an advisory throttle, not a security
+# degradation) - the cap is an advisory throttle, not a security
 # control.
 try:
     from concurrency import (  # type: ignore[import-not-found]
@@ -141,7 +141,7 @@ def _decode_config_json(config_json: Any) -> dict[str, Any] | None:
 
     Mirrors the loose contract used by :func:`_extract_approvers`:
     asyncpg returns ``jsonb`` as a decoded Python object in
-    production, but some test fakes pass raw JSON strings — so we
+    production, but some test fakes pass raw JSON strings - so we
     accept both.
     """
     if config_json is None:
@@ -450,7 +450,7 @@ class WebhookDispatcher:
 
         # Comment on needs_info issue → signal existing workflow
         # Order matters: iterate → needs_info → approval → workflow
-        # start. The three are mutually exclusive — at most one
+        # start. The three are mutually exclusive - at most one
         # branch fires per comment.
 
         # [iterate] comment → Iteration Manager
@@ -516,11 +516,11 @@ class WebhookDispatcher:
         # ``approval_received`` signal so the child resumes (or
         # rejects) instead of timing out at 24h. The child workflow id
         # mirrors the helper that started it
-        # (``ApprovalGateWorkflow-{parent}-{issue_key}`` — see
+        # (``ApprovalGateWorkflow-{parent}-{issue_key}`` - see
         # ``automation_worker.workflows.workflow_helpers
         # .maybe_run_approval_gate``). Forwarding is best-effort: a
         # missing child or a Temporal RPC failure is audited but does
-        # not break the dispatch flow — the comment is then treated
+        # not break the dispatch flow - the comment is then treated
         # as a normal update so the workflow's normal restart path
         # still runs.
         if (
@@ -538,7 +538,7 @@ class WebhookDispatcher:
         # workflow start so we never issue an RPC we'd immediately
         # cancel. ``check_dept_concurrency`` is None when the
         # ``concurrency`` module failed to import; in that case we
-        # skip the gate (graceful degradation — see module docstring).
+        # skip the gate (graceful degradation - see module docstring).
         if (
             check_dept_concurrency is not None
             and dept_config is not None
@@ -570,7 +570,7 @@ class WebhookDispatcher:
         # :meth:`BudgetCapPolicy.enforce` with 90% threshold warnings
         # and Jira comment posting. On deny it has already written
         # the ``budget_exceeded`` audit row and posted the Jira
-        # rejection comment — the dispatcher just maps the deny to
+        # rejection comment - the dispatcher just maps the deny to
         # a 429 ``DispatchResult``.
         budget_rejection = await self._check_budget_pre_start(payload, dept_id)
         if budget_rejection is not None:
@@ -657,7 +657,7 @@ class WebhookDispatcher:
             )
         except Exception:
             logger.exception("Failed to refresh bot identity cache")
-            # Keep stale cache on failure — better stale than empty
+            # Keep stale cache on failure - better stale than empty
 
     async def _resolve_dept(self, account_id: str) -> str | None:
         """Resolve an assignee account_id to a department_id.
@@ -713,7 +713,7 @@ class WebhookDispatcher:
         """Derive the dept's capability set for the workflow envelope.
 
         Capabilities are sourced from the registered bot credentials
-        (``automation.department_bots`` — one service row grants the
+        (``automation.department_bots`` - one service row grants the
         matching ``jira`` / ``bitbucket`` / ``confluence`` capability),
         plus ``web_search`` when the department opts in and Firecrawl is
         enabled, and ``execution`` when an SSH runner host is configured.
@@ -1104,7 +1104,7 @@ class WebhookDispatcher:
 
         The :class:`ApprovalGateWorkflow` child id mirrors the helper
         that started it
-        (``ApprovalGateWorkflow-{parent_workflow_id}-{issue_key}`` —
+        (``ApprovalGateWorkflow-{parent_workflow_id}-{issue_key}`` -
         see ``automation_worker.workflows.workflow_helpers
         .maybe_run_approval_gate``). The parent id is the
         deterministic ``automation-jira-{issue_key}`` that the
@@ -1112,7 +1112,7 @@ class WebhookDispatcher:
 
         Best-effort: a Temporal RPC failure (e.g. no running child)
         is audited as ``approval_signal_forwarding_failed`` but does
-        not raise — the dispatch flow always succeeds so the webhook
+        not raise - the dispatch flow always succeeds so the webhook
         layer returns 200 to Atlassian.
         """
 
@@ -1127,7 +1127,7 @@ class WebhookDispatcher:
 
         # Parse the decision token (``approve``/``reject``) for the
         # audit row. Falls back to ``"unknown"`` if the regex match
-        # somehow disagrees with the parsed token (defensive — the
+        # somehow disagrees with the parsed token (defensive - the
         # caller already checked :meth:`_is_approval_comment`).
         decision_token = "unknown"
         if payload.comment_body:
@@ -1139,7 +1139,7 @@ class WebhookDispatcher:
             await self._temporal.signal_workflow(
                 child_workflow_id, "approval_received", signal_payload
             )
-        except Exception:  # noqa: BLE001 — best-effort
+        except Exception:  # noqa: BLE001 - best-effort
             logger.exception(
                 "approval_signal_forwarding_failed: child=%s issue=%s",
                 child_workflow_id,
@@ -1217,25 +1217,25 @@ class WebhookDispatcher:
         *,
         payload: WebhookPayload,
         dept_id: str,
-        exc: Any,  # ConcurrencyLimitExceeded — typed as Any to keep the
+        exc: Any,  # ConcurrencyLimitExceeded - typed as Any to keep the
                    # optional-import contract clean.
     ) -> None:
         """Side effects for a concurrency-cap rejection.
 
         Three things happen, in order:
 
-        1. **Audit row** ``dispatch_concurrency_rejected`` — captures
+        1. **Audit row** ``dispatch_concurrency_rejected`` - captures
            dept, issue_key, current count, max, and the source
            (Temporal vs Postgres). Foundation audit pipeline picks
            this up for the operations dashboard.
-        2. **Best-effort Jira comment** — only fires when a
+        2. **Best-effort Jira comment** - only fires when a
            ``jira_commenter`` was wired. Posts a short Turkish note
            identifying that the dept's parallel-work limit was hit
            and the request will be retried (the webhook layer above
            returns 200 to Atlassian which may or may not redeliver;
            the comment makes the throttle visible to the human
            reporter regardless).
-        3. (Caller renders the HTTP 429 response — handled by the
+        3. (Caller renders the HTTP 429 response - handled by the
            webhook orchestrator above the dispatcher.)
         """
 
@@ -1262,7 +1262,7 @@ class WebhookDispatcher:
                 await commenter.post_comment(
                     dept_id, payload.issue_key, body
                 )
-            except Exception:  # noqa: BLE001 — best-effort
+            except Exception:  # noqa: BLE001 - best-effort
                 logger.warning(
                     "concurrency_rejection_comment_failed: dept_id=%s "
                     "issue_key=%s",
@@ -1287,7 +1287,7 @@ class WebhookDispatcher:
         whether the policy was wired (production) or omitted (legacy
         test paths). Returns:
 
-        * ``None`` when the workflow may proceed — either the policy
+        * ``None`` when the workflow may proceed - either the policy
           is not configured, or :func:`check_budget` returned
           ``allowed=True``. Any 90% threshold warnings are surfaced
           as Jira comments inside ``check_budget`` itself; the
@@ -1300,9 +1300,9 @@ class WebhookDispatcher:
 
         The helper is best-effort w.r.t. wiring availability: when
         the budget package failed to import (``check_budget is None``
-        — only happens in the dispatcher's standalone unit-test
+        - only happens in the dispatcher's standalone unit-test
         environments) the gate is a no-op. The same is true when the
-        caller did not pass ``budget_policy`` to ``__init__`` — the
+        caller did not pass ``budget_policy`` to ``__init__`` - the
         cap is then enforced at the workflow start handler one layer
         up (legacy compatibility).
 
@@ -1316,7 +1316,7 @@ class WebhookDispatcher:
         if self._budget_policy is None:
             return None
 
-        # Lazy import — the budget package depends on
+        # Lazy import - the budget package depends on
         # ``automation_service.__init__`` which in turn pulls in
         # ``http_shared``. Test harnesses commonly bootstrap their
         # ``sys.path`` after this module has already loaded, so a
@@ -1434,7 +1434,7 @@ class WebhookDispatcher:
         """Write an audit event for a dispatch decision.
 
         Uses the AuditLogger if available, otherwise falls back to
-        structured logging. Audit writes are best-effort — failures
+        structured logging. Audit writes are best-effort - failures
         are logged but do not block the dispatch pipeline.
 
         Parameters
@@ -1485,7 +1485,7 @@ class WebhookDispatcher:
     # ------------------------------------------------------------------
 
     def invalidate_cache(self) -> None:
-        """Force cache invalidation — next dispatch will refresh."""
+        """Force cache invalidation - next dispatch will refresh."""
         self._last_cache_refresh = 0.0
 
     @property

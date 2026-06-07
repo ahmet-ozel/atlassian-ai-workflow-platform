@@ -1,4 +1,4 @@
-"""Streamlit per-session credential lifecycle manager.
+﻿"""Streamlit per-session credential lifecycle manager.
 
 This component is a strict in-memory credential store: every value
 the user types lives **only** inside ``st.session_state`` for the
@@ -43,7 +43,7 @@ Lifecycle contract
 The component is split into a pure :class:`CredentialManager` class
 (unit-testable without Streamlit) and a thin set of ``render_*``
 helpers that drive ``st.session_state``. Tests can drive the class
-through a fake ``state`` dict and a deterministic ``now`` clock —
+through a fake ``state`` dict and a deterministic ``now`` clock -
 matching the seam pattern used by ``components.dept_switcher``.
 """
 
@@ -92,8 +92,8 @@ CREDENTIAL_WARNING_TEXT: Final[str] = (
 
 #: The single ``st.session_state`` key under which every credential
 #: lives. Bundling everything into one namespaced dict keeps the
-#: full-clear logic O(1) — :meth:`CredentialManager.clear_all` simply
-#: drops this key — and prevents accidental key collisions with
+#: full-clear logic O(1) - :meth:`CredentialManager.clear_all` simply
+#: drops this key - and prevents accidental key collisions with
 #: other components.
 _STATE_KEY: Final[str] = "_credential_manager_state"
 
@@ -147,7 +147,7 @@ class StoredCredential:
     """One Atlassian credential held in session_state.
 
     Attributes:
-        service: Atlassian surface this credential targets — one of
+        service: Atlassian surface this credential targets - one of
             :data:`_SUPPORTED_SERVICES`.
         email: Atlassian account email. Never logged in full; the
             manager masks it to the first three characters when it
@@ -165,9 +165,9 @@ class StoredCredential:
             also the default for credentials whose latest validation
             attempt failed (``is_valid`` then carries ``False``).
         is_valid: Tri-state validity flag.
-            ``None`` — not yet validated;
-            ``True`` — last validate() returned ok;
-            ``False`` — last validate() returned an auth/network
+            ``None`` - not yet validated;
+            ``True`` - last validate() returned ok;
+            ``False`` - last validate() returned an auth/network
             failure. The token is **kept** in either case so the
             user can retry without retyping; the UI uses the flag
             to decide whether to surface a red error banner.
@@ -187,7 +187,7 @@ class StoredCredential:
         """Return a log-safe rendering of ``email``.
 
         The first three characters are kept, the rest is collapsed
-        to ``***`` plus the domain suffix. Never used for auth — the
+        to ``***`` plus the domain suffix. Never used for auth - the
         original ``email`` field is what builds the Authorization
         header.
         """
@@ -303,7 +303,7 @@ def _default_validator(
     *,
     credential: "StoredCredential | None" = None,
 ) -> tuple[bool, str | None]:
-    """Default validator — POSTs a credential probe to MCP.
+    """Default validator - POSTs a credential probe to MCP.
 
     The function is deliberately small and dependency-light so unit
     tests can swap it for a stub. It uses the MCP base URL from the
@@ -319,7 +319,7 @@ def _default_validator(
     so the UI can surface a banner instead of crashing the page.
     """
 
-    try:  # pragma: no cover — exercised in integration only.
+    try:  # pragma: no cover - exercised in integration only.
         import httpx  # type: ignore[import-not-found]
     except ImportError:
         return False, "httpx kütüphanesi yok; credential doğrulanamıyor."
@@ -336,7 +336,7 @@ def _default_validator(
         from config import Settings  # type: ignore[import-not-found]
 
         base_url = Settings().mcp_base_url
-    except Exception as exc:  # noqa: BLE001 — never crash the UI on import errors
+    except Exception as exc:  # noqa: BLE001 - never crash the UI on import errors
         return False, f"MCP yapılandırması okunamadı: {exc}"
 
     auth = base64.b64encode(f"{email}:{api_token}".encode("utf-8")).decode("ascii")
@@ -358,7 +358,7 @@ def _default_validator(
 
 
 # ---------------------------------------------------------------------------
-# CredentialManager — pure state-machine slice
+# CredentialManager - pure state-machine slice
 # ---------------------------------------------------------------------------
 
 
@@ -581,9 +581,9 @@ class CredentialManager:
     helpers so unit tests can drive it without standing up
     Streamlit. The only collaborators are:
 
-    * a ``state`` mapping (defaults to ``st.session_state``) —
+    * a ``state`` mapping (defaults to ``st.session_state``) -
       where the credential dict lives;
-    * a ``now`` callable (defaults to ``time.monotonic``) — used to
+    * a ``now`` callable (defaults to ``time.monotonic``) - used to
       compute the inactivity window deterministically in tests;
     * an optional ``validator`` (defaults to
       :func:`_default_validator`) that performs the MCP test
@@ -625,7 +625,7 @@ class CredentialManager:
     def is_expired(self) -> bool:
         """Return ``True`` when the inactivity threshold has been crossed.
 
-        The check is read-only — it does **not** touch
+        The check is read-only - it does **not** touch
         ``last_activity``. Callers that want to act on expiry should
         explicitly invoke :meth:`clear_all` after an ``is_expired()``
         positive. When no credentials have ever
@@ -658,7 +658,7 @@ class CredentialManager:
         """Drop every credential and reset the state bucket.
 
         The implementation removes the namespaced state dict
-        outright rather than mutating it in place — the goal is to
+        outright rather than mutating it in place - the goal is to
         guarantee that no stale token byte stays referenced through
         a forgotten dict key. A fresh, empty bucket is reinstalled
         on the next interaction by :meth:`_ensure_state`.
@@ -717,7 +717,7 @@ class CredentialManager:
 
         Returns:
             The :class:`StoredCredential` now living in the state
-            bucket. Validation status is left at ``None`` — call
+            bucket. Validation status is left at ``None`` - call
             :meth:`validate` separately so the (potentially slow)
             HTTP request is not hidden inside the storage path.
 
@@ -774,7 +774,7 @@ class CredentialManager:
         Calling this method counts as an interaction, so the
         inactivity timer is refreshed. When the session has already
         expired (the timer crossed 60 minutes before this call) the
-        state is cleared **and** the function returns ``None`` — a
+        state is cleared **and** the function returns ``None`` - a
         caller may immediately re-prompt without an extra check.
         """
         if self.enforce_timeout():
@@ -808,7 +808,7 @@ class CredentialManager:
         ``error_message`` at ``None`` and bump
         ``last_validated_at``; failures keep the credential stored
         so the user can retry without retyping. The HTTP request
-        itself is delegated to :attr:`validator` — the default
+        itself is delegated to :attr:`validator` - the default
         impl talks to MCP ``/healthz``.
         """
         cred = self.get(service)
@@ -923,7 +923,7 @@ def render_logout_button(*, key: str = "credential_manager_logout") -> bool:
     """Render the "Oturumu Kapat" button.
 
     Returns ``True`` after a successful logout so the caller can
-    redirect — typically via ``st.switch_page("pages/0_credentials.py")``.
+    redirect - typically via ``st.switch_page("pages/0_credentials.py")``.
     The button clears every credential entry first; the redirect
     only fires when the clear succeeds, so a transient
     Streamlit reroute can't leave the manager in a half-cleared
@@ -934,7 +934,7 @@ def render_logout_button(*, key: str = "credential_manager_logout") -> bool:
         manager.clear_all()
         _clear_restore_cookie()
         st.success("Oturum kapatıldı; tüm credential'lar bellekten silindi.")
-        # Try the modern ``switch_page`` API first — it lands the user
+        # Try the modern ``switch_page`` API first - it lands the user
         # on the canonical credential page. Streamlit ≥1.30
         # ships it; older runtimes fall back to ``st.rerun`` which at
         # least re-renders the page in its post-logout state.
@@ -942,11 +942,11 @@ def render_logout_button(*, key: str = "credential_manager_logout") -> bool:
         if callable(switch_page):
             try:
                 switch_page(_CREDENTIAL_PAGE_PATH)
-            except Exception:  # noqa: BLE001 — rerun is the safe fallback
+            except Exception:  # noqa: BLE001 - rerun is the safe fallback
                 rerun = getattr(st, "rerun", None) or getattr(st, "experimental_rerun", None)
                 if callable(rerun):
                     rerun()
-        else:  # pragma: no cover — legacy Streamlit fallback
+        else:  # pragma: no cover - legacy Streamlit fallback
             rerun = getattr(st, "rerun", None) or getattr(st, "experimental_rerun", None)
             if callable(rerun):
                 rerun()
@@ -1018,7 +1018,7 @@ def _render_service_form(manager: CredentialManager, service: str) -> None:
                 if cred.is_valid is True
                 else ("⚠️ Doğrulanmadı" if cred.is_valid is None else "❌ Reddedildi")
             )
-            st.caption(f"Mevcut: `{cred.masked_email()}` — {status}")
+            st.caption(f"Mevcut: `{cred.masked_email()}` - {status}")
         deployment_label = st.radio(
             f"{service.title()} deployment",
             list(_DEPLOYMENTS.keys()),
@@ -1141,7 +1141,7 @@ def render_credential_manager(
 
     1. Warning banner.
     2. Per-service entry form (Jira / Confluence / Bitbucket).
-    3. Status snapshot — masked email + validation state +
+    3. Status snapshot - masked email + validation state +
        remaining session window.
     4. Logout button.
 
@@ -1153,7 +1153,7 @@ def render_credential_manager(
     manager = _get_manager(validator=validator)
     _restore_credentials_from_cache(manager)
 
-    # Enforce timeout on every render — a tab idle for over an hour
+    # Enforce timeout on every render - a tab idle for over an hour
     # surfaces an "session expired" banner instead of leaking the old
     # credentials into a fresh request.
     if manager.enforce_timeout():

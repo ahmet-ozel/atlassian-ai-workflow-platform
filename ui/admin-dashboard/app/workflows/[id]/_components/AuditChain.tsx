@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * AuditChain — renders the audit event chain for a workflow.
+ * AuditChain - renders the audit event chain for a workflow.
  * Shows action, actor, actor_role, timestamp and payload_summary.
  */
 
@@ -40,10 +40,10 @@ export default function AuditChain({ rows }: AuditChainProps): JSX.Element {
                   <code style={{ fontSize: "0.8rem" }}>{row.action}</code>
                 </td>
                 <td style={{ padding: "0.5rem", fontSize: "0.8rem" }}>
-                  {row.actor ?? "—"}
+                  {row.actor ?? "-"}
                 </td>
                 <td style={{ padding: "0.5rem", fontSize: "0.8rem" }}>
-                  {row.actor_role ?? "—"}
+                  {row.actor_role ?? "-"}
                 </td>
                 <td style={{ padding: "0.5rem", color: "#6b7280", fontSize: "0.8rem" }}>
                   {row.payload_summary ?? ""}

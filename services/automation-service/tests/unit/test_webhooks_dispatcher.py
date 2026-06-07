@@ -1,4 +1,4 @@
-"""Unit tests for the webhook pipeline Dispatcher stage.
+﻿"""Unit tests for the webhook pipeline Dispatcher stage.
 
 Tests cover:
 - Resolve assignee.accountId → dept_id from bot identity cache
@@ -24,7 +24,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 # ---------------------------------------------------------------------------
-# Path setup — ensure src/ is importable
+# Path setup - ensure src/ is importable
 # ---------------------------------------------------------------------------
 
 _TESTS_DIR = Path(__file__).resolve().parent
@@ -731,7 +731,7 @@ class TestExtractApprovers:
 
     def test_json_string_payload(self) -> None:
         """asyncpg may return jsonb as already-decoded dict, but some
-        test fakes pass the raw JSON string — both must work."""
+        test fakes pass the raw JSON string - both must work."""
         from webhooks.dispatcher import _extract_approvers
 
         result = _extract_approvers('{"approvers": ["carol"]}')
@@ -933,7 +933,7 @@ class TestConcurrencyCapEnforcement:
         bot_rows: list[dict[str, Any]],
         fake_audit: FakeAuditLogger,
     ) -> None:
-        """Missing ``jira_commenter`` does not break the gate — audit
+        """Missing ``jira_commenter`` does not break the gate - audit
         still fires and the workflow is still rejected."""
         dept_rows = [
             {

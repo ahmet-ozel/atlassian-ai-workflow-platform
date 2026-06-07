@@ -1,4 +1,4 @@
-"""invariant for Cookie Sign/Verify Round-Trip.
+﻿"""invariant for Cookie Sign/Verify Round-Trip.
 
 
 
@@ -35,7 +35,7 @@ from components.cookie_manager import sign_cookie, verify_cookie
 # Strategies
 # ---------------------------------------------------------------------------
 
-# Non-empty department strings — printable text that could be a department name.
+# Non-empty department strings - printable text that could be a department name.
 _DEPARTMENT = st.text(
     alphabet=st.characters(
         whitelist_categories=("L", "N", "P", "Z"),
@@ -45,7 +45,7 @@ _DEPARTMENT = st.text(
     max_size=100,
 )
 
-# Secret keys — non-empty strings used for HMAC signing.
+# Secret keys - non-empty strings used for HMAC signing.
 _SECRET = st.text(
     alphabet=st.characters(
         whitelist_categories=("L", "N", "P", "S"),

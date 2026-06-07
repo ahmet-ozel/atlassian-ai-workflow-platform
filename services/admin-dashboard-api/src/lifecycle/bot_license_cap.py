@@ -1,13 +1,13 @@
-"""``BotLicenseHardCap`` (`operations surface` bot license cap wiring).
+﻿"""``BotLicenseHardCap`` (`operations surface` bot license cap wiring).
 
 
 Concurrency-bounded queue that gates bot-license-paid actions so
 the platform never exceeds the licensed concurrent-bot count. The
-class is small on purpose — it only provides:
+class is small on purpose - it only provides:
 
-* :meth:`acquire` — async context manager; blocks until a slot is
+* :meth:`acquire` - async context manager; blocks until a slot is
   free, then yields. Cancellable via task cancellation.
-* :meth:`stats` — current ``(in_use, capacity, queued)``.
+* :meth:`stats` - current ``(in_use, capacity, queued)``.
 
 invariant 19 (``test_bot_license_hard_cap.py``) pins:
 (a) capacity bound, (b) FIFO fairness, (c) idempotent release on

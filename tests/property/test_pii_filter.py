@@ -1,11 +1,11 @@
-"""PII filter mandatory full-masking property tests.
+﻿"""PII filter mandatory full-masking property tests.
 
 Hypothesis-driven exercise of :func:`pii_shared.mask`:
 
 (a) For any text + N injected PII patterns (TR phone, email,
     Luhn-valid credit-card), the masked output contains zero
     PII pattern matches and ``len(matches) == N``.
-(b) The function is deterministic — same input ⇒ same output
+(b) The function is deterministic - same input ⇒ same output
     (same matches, same masked string).
 (c) Luhn-invalid card numbers are NOT masked (they are not credit
     cards, so we must not destroy unrelated 13-19 digit numbers).
@@ -54,7 +54,7 @@ def test_phone_and_email_are_masked(
     prefix: str, middle: str, suffix: str
 ) -> None:
     text = (
-        f"{prefix} contact: 555 123 45 67 — email me at user@example.com "
+        f"{prefix} contact: 555 123 45 67 - email me at user@example.com "
         f"{middle} ok? {suffix}"
     )
     masked, matches = mask(text)
@@ -82,7 +82,7 @@ def test_mask_is_deterministic(text: str) -> None:
 
 
 def test_luhn_invalid_card_not_masked() -> None:
-    # 13-digit number that fails Luhn — must not be masked.
+    # 13-digit number that fails Luhn - must not be masked.
     text = "Order ref 1234567890123 archived."
     masked, matches = mask(text)
     assert "1234567890123" in masked

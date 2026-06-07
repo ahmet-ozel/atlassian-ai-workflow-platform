@@ -1,4 +1,4 @@
-"""REST router backing ``/admin/services``.
+﻿"""REST router backing ``/admin/services``.
 
 This module is the HTTP boundary for every Lifecycle_Action exposed by
 the admin-dashboard-api. The router is intentionally *thin*: it adapts
@@ -10,14 +10,14 @@ paths through :class:`fastapi.responses.StreamingResponse`.
 Endpoints (8 total, every one is gated on
 ``Depends(require_admin)``):
 
-* ``GET    /admin/services``                — list services.
-* ``GET    /admin/services/{name}``         — service detail.
-* ``POST   /admin/services/{name}/start``   — start a service.
-* ``POST   /admin/services/{name}/stop``    — stop a service.
-* ``POST   /admin/services/{name}/restart`` — restart a service.
-* ``POST   /admin/services/{name}/test``    — run the manifest test command.
-* ``GET    /admin/services/{name}/logs``    — tail service logs.
-* ``GET    /admin/services/{name}/health``  — return fresh health.
+* ``GET    /admin/services``                - list services.
+* ``GET    /admin/services/{name}``         - service detail.
+* ``POST   /admin/services/{name}/start``   - start a service.
+* ``POST   /admin/services/{name}/stop``    - stop a service.
+* ``POST   /admin/services/{name}/restart`` - restart a service.
+* ``POST   /admin/services/{name}/test``    - run the manifest test command.
+* ``GET    /admin/services/{name}/logs``    - tail service logs.
+* ``GET    /admin/services/{name}/health``  - return fresh health.
 
 HTTP error mapping:
 
@@ -102,7 +102,7 @@ def get_lifecycle_service(request: Request) -> LifecycleService:
     monkey-patching module globals.
 
     Raises ``503`` (the same shape ``/readyz`` returns when the manifest
-    is invalid) when the singleton is missing — this happens during the
+    is invalid) when the singleton is missing - this happens during the
     short window between process start and lifespan completion, and on
     every request after a manifest-load failure.
     """
@@ -177,7 +177,7 @@ def _detail_from_entry(
     * :meth:`LifecycleService.get_form_schema` → ``form_schema.fields``.
 
     We deliberately surface the *cached* snapshot rather than firing a
-    fresh probe — the dedicated ``GET /admin/services/{name}/health``
+    fresh probe - the dedicated ``GET /admin/services/{name}/health``
     endpoint exists for that purpose.
     """
 
@@ -327,10 +327,10 @@ async def get_service_start_plan(
       dependencies precede dependents in ``will_start`` (mirrors the
       actual dependency descent).
     * Filters out external Boot_Bundle deps (e.g. ``postgres`` /
-      ``vault``) that are not manifest-resident — the lifecycle
+      ``vault``) that are not manifest-resident - the lifecycle
       service cannot start them so they have no place in the plan.
     * Partitions visited services into ``already_running`` (current
-      ``state="running"`` — idempotent skip) and
+      ``state="running"`` - idempotent skip) and
       ``will_start``.
     * Read-only: writes no audit rows, performs no I/O outside the
       in-process state cache. Safe to poll from the UI.
@@ -447,7 +447,7 @@ async def stop_service(
 ):
     """Bring a service down.
 
-    The body is optional — a missing body is equivalent to
+    The body is optional - a missing body is equivalent to
     ``{"remove_volumes": false, "purge_vault": false}``. The
     orchestrator handles the idempotent path internally and returns
     ``noop=True`` when the service was already stopped.
@@ -490,7 +490,7 @@ async def stop_service(
             ) from exc
 
         # Best-effort audit. The audit DB outage path is intentionally
-        # non-fatal — the canonical 403 still fires. The
+        # non-fatal - the canonical 403 still fires. The
         # ``write_with_retry`` queue persists the row when Postgres is
     # back online.
         try:
@@ -632,7 +632,7 @@ async def run_service_tests(
 
     try:
         # Note: the underlying ComposeRunner currently captures the
-        # full output regardless of ``stream`` — the SSE path slices
+        # full output regardless of ``stream`` - the SSE path slices
         # the captured stdout into ``data:`` frames after-the-fact so
         # we still benefit from the audit + summary parsing in
         # ``LifecycleService.run_tests``. A future enhancement can
@@ -667,7 +667,7 @@ async def run_service_tests(
             result.summary, from_attributes=True
         )
 
-    # E4 — persist the run to automation.test_runs so the dashboard
+    # E4 - persist the run to automation.test_runs so the dashboard
     # keeps a durable pass/fail trend (gereksinim.txt G9). Best-effort:
     # a persistence failure must not fail the test-run response.
     try:
@@ -743,8 +743,8 @@ async def run_service_smoke_test(
     pass/fail badge.
 
     Error mapping:
-    * 404 — unknown service.
-    * 409 — service has no ``smoke_test_command`` in manifest.
+    * 404 - unknown service.
+    * 409 - service has no ``smoke_test_command`` in manifest.
     """
     try:
         entry = svc.get_manifest_entry(name)
@@ -900,7 +900,7 @@ async def get_service_logs(
             )
         return LogsResponse(lines=lines)
 
-    # Streaming path — call ``compose.logs(follow=True)`` directly so
+    # Streaming path - call ``compose.logs(follow=True)`` directly so
     # we get the async iterator and can redact line-by-line. Resolve
     # the manifest entry up-front so the SSE response is short-circuited
     # with a 404 before any subprocess is spawned.
@@ -930,7 +930,7 @@ async def get_service_logs(
 
 async def _sse_log_stream(
     log_iter: AsyncIterator[str],
-    pattern,  # re.Pattern[str] | None — typed loosely to avoid module import
+    pattern,  # re.Pattern[str] | None - typed loosely to avoid module import
 ) -> AsyncIterator[bytes]:
     """Forward each log line as an SSE ``data:`` frame, redacted.
 
@@ -984,7 +984,7 @@ async def probe_service_connectivity(
 
     When the manifest entry has no ``connectivity_probe_command`` the
     call is a no-op and the response reflects ``credentials_status=None``
-    (no probe configured). This is not an error — the UI should simply
+    (no probe configured). This is not an error - the UI should simply
     not render the ``[Re-probe]`` button for such services.
     """
 
@@ -1045,7 +1045,7 @@ async def get_service_health(
 
 
 # ---------------------------------------------------------------------------
-# GET /admin/services/ssh-runner/status  (SSH Runner Status — healthcheck)
+# GET /admin/services/ssh-runner/status  (SSH Runner Status - healthcheck)
 # ---------------------------------------------------------------------------
 
 
@@ -1060,8 +1060,8 @@ async def get_ssh_runner_status(
 
     Performs a lightweight TCP connect probe against the configured SSH
     runner host (same probe as the ``ssh_healthcheck`` activity in the
-    execution-runner-worker). The result is returned immediately — no
-    caching — so the admin-dashboard UI can show real-time runner
+    execution-runner-worker). The result is returned immediately - no
+    caching - so the admin-dashboard UI can show real-time runner
     availability.
 
     Response shape::
@@ -1095,7 +1095,7 @@ async def get_ssh_runner_status(
             "status": "unconfigured",
             "host": None,
             "port": None,
-            "error": "SSH_HOST not configured (canonical) — no SSH_HOST_1 alias either",
+            "error": "SSH_HOST not configured (canonical) - no SSH_HOST_1 alias either",
             "checked_at": datetime.now(tz=timezone.utc).isoformat(),
         }
 

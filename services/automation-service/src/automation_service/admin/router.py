@@ -1,17 +1,17 @@
-"""FastAPI router for ``/admin/*`` endpoints.
+﻿"""FastAPI router for ``/admin/*`` endpoints.
 
 Owns the HTTP surface for department administration:
 
-* ``POST /admin/departments`` — atomic department create with
+* ``POST /admin/departments`` - atomic department create with
   Vault staging + DB transaction (orchestrated by
   :class:`automation_service.admin.dept_create.DepartmentCreateOrchestrator`).
-* ``POST /admin/departments/wizard`` — multi-step setup wizard
+* ``POST /admin/departments/wizard`` - multi-step setup wizard
   (Jira → Bitbucket → Confluence) as a thin state-machine over the
   same orchestrator.
 * ``POST /admin/departments/{id}/credentials/rotate`` and
-  ``/disable`` — credential rotation and department disable.
+  ``/disable`` - credential rotation and department disable.
 * ``GET`` / ``DELETE /admin/probe-artifacts`` and
-  ``/admin/probe-artifacts/{id}`` — partial-orphan listing and
+  ``/admin/probe-artifacts/{id}`` - partial-orphan listing and
   manual cleanup.
 
 The router is the **thin shim** layer: every endpoint validates the
@@ -28,17 +28,17 @@ The :func:`automation_service.app.create_app` factory is responsible
 for populating ``request.app.state.admin`` with a single
 :class:`AdminEndpointDeps` instance carrying:
 
-* ``orchestrator`` — :class:`DepartmentCreateOrchestrator`.
-* ``vault`` — :class:`vault_client.VaultClient`.
-* ``audit_logger`` — :class:`audit_logger.AuditLogger`.
-* ``connection_factory`` — async factory returning a fresh DB
+* ``orchestrator`` - :class:`DepartmentCreateOrchestrator`.
+* ``vault`` - :class:`vault_client.VaultClient`.
+* ``audit_logger`` - :class:`audit_logger.AuditLogger`.
+* ``connection_factory`` - async factory returning a fresh DB
   connection scoped to a single request.
-* ``probe_client`` — :class:`automation_service.probe.AtlassianProbeClient`
+* ``probe_client`` - :class:`automation_service.probe.AtlassianProbeClient`
   used by the wizard's per-step probe.
-* ``temporal_client`` (optional) — :class:`temporal_client.TemporalClient`
+* ``temporal_client`` (optional) - :class:`temporal_client.TemporalClient`
   used by the disable endpoint to signal long-running workflows.
 
-The router never imports any of these directly — keeping the wiring
+The router never imports any of these directly - keeping the wiring
 on ``app.state.admin`` lets the endpoints be unit-tested in
 isolation by injecting a stub ``AdminEndpointDeps``.
 
@@ -51,7 +51,7 @@ authentication and the RBAC pre-check. The router still emits an
 ``AuthContext`` from the ``X-Actor-*`` proxy headers so the audit
 ``actor_id`` / ``actor_role`` columns can be populated correctly.
 Direct (un-proxied) requests fall back to the
-``"system"`` actor when the headers are absent — production deploys
+``"system"`` actor when the headers are absent - production deploys
 mark ``admin-dashboard-api`` as the only ingress, so this fallback
 is only used by integration tests that bypass the proxy.
 """
@@ -93,7 +93,7 @@ __all__ = ["AdminEndpointDeps", "router"]
 _LOG = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Dependency container — injected via ``app.state.admin``
+# Dependency container - injected via ``app.state.admin``
 # ---------------------------------------------------------------------------
 
 
@@ -119,7 +119,7 @@ def _deps(request: Request) -> AdminEndpointDeps:
     """Pull the :class:`AdminEndpointDeps` off ``app.state``.
 
     Raises a 500 if the application factory neglected to wire the
-    admin collaborators — surfacing the deployment misconfiguration
+    admin collaborators - surfacing the deployment misconfiguration
     early rather than letting a downstream attribute access throw a
     less helpful error.
     """
@@ -152,7 +152,7 @@ def _extract_actor(request: Request) -> _Actor:
     ``admin-dashboard-api`` is the only ingress that populates these
     headers (after running its OIDC + RBAC pre-checks). Direct
     requests (integration tests, smoke probes) fall back to the
-    ``"system"`` actor — production deployments enforce the proxy
+    ``"system"`` actor - production deployments enforce the proxy
     via Compose-level network isolation so this fallback is never
     reachable in real traffic.
     """
@@ -178,7 +178,7 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 
 
 # ---------------------------------------------------------------------------
-# 5.3 — POST /admin/departments
+# 5.3 - POST /admin/departments
 # ---------------------------------------------------------------------------
 
 
@@ -262,7 +262,7 @@ async def create_department(
     request: Request,
     deps: AdminEndpointDeps = Depends(_deps),
 ) -> JSONResponse:
-    """``POST /admin/departments`` — atomic create.
+    """``POST /admin/departments`` - atomic create.
 
     Delegates to :class:`DepartmentCreateOrchestrator`. Translates
     the orchestrator's exception ladder into HTTP status codes:
@@ -324,7 +324,7 @@ async def create_department_wizard(
     request: Request,
     deps: AdminEndpointDeps = Depends(_deps),
 ) -> JSONResponse:
-    """Multi-step setup wizard — Jira → Bitbucket → Confluence.
+    """Multi-step setup wizard - Jira → Bitbucket → Confluence.
 
     The wizard is a *thin* state machine on top of
     :class:`DepartmentCreateOrchestrator`: each step's credential is
@@ -342,12 +342,12 @@ async def create_department_wizard(
     credential write + identity probe are treated as an atomic unit
     from the caller's perspective.
 
-    The state is fully encoded in the request body — there is no
+    The state is fully encoded in the request body - there is no
     server-side session. Clients submit either:
 
     * ``{"steps": ["jira", "bitbucket", ...], "credentials": {...},
-       "department": {...}}`` — the canonical multi-step form, or
-    * ``{"department": {...}}`` with the embedded ``bots`` array —
+       "department": {...}}`` - the canonical multi-step form, or
+    * ``{"department": {...}}`` with the embedded ``bots`` array -
       treated as a one-shot wizard equivalent to the atomic create.
 
     On success the response shape matches :func:`create_department`
@@ -371,7 +371,7 @@ async def create_department_wizard(
         )
 
     # The wizard's per-step probe and the final atomic commit share
-    # the exact same orchestrator path — the orchestrator already
+    # the exact same orchestrator path - the orchestrator already
     # runs read+write probes and rolls back on the first failure
     # and rolls back on the first failure. The wizard's own state machine therefore reduces to a
     # **caller-side** ordering hint: the body declares the intended
@@ -610,7 +610,7 @@ async def rotate_credentials(
     is written on every call.
 
     Allowed roles: ``admin`` (for any dept), ``dept_admin`` (only
-    for their own dept — enforced by ``admin-dashboard-api`` on the
+    for their own dept - enforced by ``admin-dashboard-api`` on the
     way in; the router still records the actor for the audit row).
     """
 
@@ -742,7 +742,7 @@ async def disable_department(
                 detail=f"db update failed: {type(exc).__name__}",
             )
 
-    # Best-effort Temporal drain signal — never raises (a missing
+    # Best-effort Temporal drain signal - never raises (a missing
     # client is a deployment-time choice, not an error).
     if deps.temporal_client is not None:
         signal = getattr(deps.temporal_client, "signal_dept_disabled", None)

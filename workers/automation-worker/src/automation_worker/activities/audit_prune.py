@@ -1,17 +1,17 @@
-"""Activities backing:class:`AuditPruneWorkflow`.
+﻿"""Activities backing:class:`AuditPruneWorkflow`.
 
 This module ships the four Temporal activities the daily ``audit-prune-cron``
 workflow consumes:
 
-*:func:`get_retention_setting` — env / feature-flag lookup of
+*:func:`get_retention_setting` - env / feature-flag lookup of
  ``RETENTION_DAYS`` (default 90 days).
-*:func:`archive_audit_to_minio` — streams ``automation.audit_events``
+*:func:`archive_audit_to_minio` - streams ``automation.audit_events``
  rows older than ``cutoff`` into MinIO as a daily-partitioned
  gzipped JSON-lines object.
-*:func:`delete_audit_older_than` — deletes the same row slice from
+*:func:`delete_audit_older_than` - deletes the same row slice from
  ``automation.audit_events`` (and the parallel ``shared.cost_tracking``
  rows that share the retention window).
-*:func:`notify_audit_prune_failed` — mandatory admin Slack alarm
+*:func:`notify_audit_prune_failed` - mandatory admin Slack alarm
  wired through:class:`notification.NotificationService`.
 
 (daily cron archives audit_events older
@@ -97,7 +97,7 @@ __all__ = (
 
 #: MinIO bucket name where archived audit objects land. The bucket is
 #: created at MinIO boot by (``infra/minio/init.sh``);
-#: this activity does not attempt to auto-create it on first write —
+#: this activity does not attempt to auto-create it on first write -
 #: doing so on a deny-by-default IAM would mask configuration drift.
 #: Sibling owns the bucket lifecycle.
 AUDIT_ARCHIVE_BUCKET: str = "audit-archive"
@@ -144,7 +144,7 @@ class _NotificationServiceLike(Protocol):
     """Minimal:class:`notification.NotificationService` surface.
 
  Only:meth:`notify_audit_prune_failed` is part of the contract for
- this module — the wider success-gated dispatch surface lives on
+ this module - the wider success-gated dispatch surface lives on
  the same object but is not consumed here. Sibling ships
  the concrete method body; this activity calls it through the
  Protocol so it does not import:mod:`notification` at module
@@ -267,11 +267,11 @@ async def get_retention_setting() -> int:
 
  1. **Test override**: any callable installed via:func:`set_retention_setting_provider` is awaited; its return
  value, if a positive int, wins.
- 2. **Environment variable** ``RETENTION_DAYS`` — parsed as a
+ 2. **Environment variable** ``RETENTION_DAYS`` - parsed as a
  positive int. A non-numeric or non-positive value is ignored
  (logged) so a typo cannot accidentally widen retention to "0
  days = delete everything".
- 3. **``shared.feature_flags`` table** — the row whose
+ 3. **``shared.feature_flags`` table** - the row whose
  ``name = audit_retention_days`` (constant:data:`RETENTION_FEATURE_FLAG_NAME`). The flag stores the value
  in its ``description`` column when ``enabled = TRUE``;
  parseability is checked the same way as the env var.
@@ -283,7 +283,7 @@ async def get_retention_setting() -> int:
 
  Notes:
  The activity intentionally does not raise on a malformed env
- / DB value — the workflow body falls back to:data:`DEFAULT_RETENTION_DAYS` when this returns 0 / None
+ / DB value - the workflow body falls back to:data:`DEFAULT_RETENTION_DAYS` when this returns 0 / None
  anyway, so logging the malformed input is more useful than
  crashing the daily cron over a config typo.
  """
@@ -303,7 +303,7 @@ async def get_retention_setting() -> int:
                 return parsed
 
     # 2. Environment variable. ``os.environ`` is read inside the
-    # activity (allowed) — never inside the workflow body.
+    # activity (allowed) - never inside the workflow body.
     env_raw = os.environ.get("RETENTION_DAYS")
     parsed = _parse_positive_int(env_raw)
     if parsed is not None:
@@ -342,7 +342,7 @@ async def get_retention_setting() -> int:
                 if parsed is not None:
                     return parsed
 
-    # 4. Default — design.md §"AuditPruneWorkflow" RETENTION_DAYS=90.
+    # 4. Default - design.md §"AuditPruneWorkflow" RETENTION_DAYS=90.
     return DEFAULT_RETENTION_DAYS
 
 
@@ -383,7 +383,7 @@ async def archive_audit_to_minio(cutoff: datetime) -> AuditArchiveResult:
  3. PUTs the gzip blob to MinIO under the deterministic key
  ``audit-archive/{Y}/{M}/{D}/audit-N.jsonl.gz`` where ``Y / M / D``
  are zero-padded components of ``cutoff`` (UTC) and ``N`` is the
- sha256 of ``cutoff.isoformat`` truncated to 8 hex chars — a
+ sha256 of ``cutoff.isoformat`` truncated to 8 hex chars - a
  stable per-cutoff suffix that lets a future "split daily
  archive into multiple shards" extension add a numeric counter
  without breaking object-name compatibility.
@@ -393,8 +393,8 @@ async def archive_audit_to_minio(cutoff: datetime) -> AuditArchiveResult:
  key, or empty string when no rows fell within the cutoff).
 
  Notes:
- Activity logs only counts and the object key — never row
- contents — so the worker log stream never contains audit
+ Activity logs only counts and the object key - never row
+ contents - so the worker log stream never contains audit
  payload data verbatim (log-redaction parity).
  """
     pool = get_db_pool()
@@ -512,7 +512,7 @@ async def delete_audit_older_than(cutoff: datetime) -> AuditDeleteResult:
  * ``DELETE FROM shared.cost_tracking WHERE created_at < $1``
 
  Both tables share the same retention window design.md
- §"AuditPruneWorkflow" — the cost rows mirror the audit rows
+ §"AuditPruneWorkflow" - the cost rows mirror the audit rows
  one-to-one for LLM activities so dropping audit history without
  dropping cost history would orphan cost rows. The transaction is
  a single atomic step so a partial failure does not leave the two
@@ -563,7 +563,7 @@ def _parse_delete_count(status: Any) -> int:
     """Extract the row count from an asyncpg ``execute`` status string.
 
  asyncpg returns the SQL command tag (eg. ``"DELETE 42"``); we
- parse the trailing integer. Any malformed value yields 0 — better
+ parse the trailing integer. Any malformed value yields 0 - better
  to under-report than to fail the activity over a status-string
  quirk.
  """
@@ -601,7 +601,7 @@ async def notify_audit_prune_failed(error_text: str) -> None:
 
  Notes:
  * The activity does **not** swallow exceptions raised by the
- notification service — the workflow's failure helper
+ notification service - the workflow's failure helper
  catches them so the *original* prune exception is the one
  that propagates to Temporal. See:meth:`AuditPruneWorkflow._notify_failure`.
  * The "audit_prune_failed" admin alarm is mandatory per: it is the only signal an operator gets that the
@@ -625,7 +625,7 @@ def _truncate(value: str, *, max_len: int) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Internal helpers — JSON-lines + gzip encoding
+# Internal helpers - JSON-lines + gzip encoding
 # ---------------------------------------------------------------------------
 
 
@@ -636,7 +636,7 @@ def _encode_jsonl_gzip(rows: list[dict[str, Any]]) -> bytes:
  ``\\n``. ``json.dumps`` is called with ``sort_keys=True`` and
  ``default=_json_default`` so the resulting payload is
  deterministic across Python versions (a re-run on the same row
- set produces a byte-identical archive — required for 's
+ set produces a byte-identical archive - required for 's
  "second run no-op" invariant when paired with object overwrite).
  """
     buffer = io.BytesIO()
@@ -683,7 +683,7 @@ def _json_default(value: Any) -> Any:
 def _ensure_utc(value: datetime) -> datetime:
     """Return ``value`` as a timezone-aware UTC ``datetime``.
 
- A naive ``datetime`` (no ``tzinfo``) is interpreted as UTC —
+ A naive ``datetime`` (no ``tzinfo``) is interpreted as UTC -
  Temporal's ``workflow.now`` and Postgres ``TIMESTAMPTZ`` both
  surface UTC values, so this is the safe default. Aware
  ``datetime`` values in non-UTC zones are converted via:meth:`datetime.astimezone`.
@@ -749,7 +749,7 @@ def _build_archive_key(cutoff: datetime) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Internal helpers — MinIO PutObject (S3 SigV4)
+# Internal helpers - MinIO PutObject (S3 SigV4)
 # ---------------------------------------------------------------------------
 
 
@@ -771,7 +771,7 @@ async def _minio_put_object(
  ``execution-runner-worker/activities/minio.py``; we re-implement
  a minimal copy here so the ``automation-worker`` does not have to
  import the execution-runner package (the two workers are separately
- deployable). The implementation is deliberately small — only the
+ deployable). The implementation is deliberately small - only the
  PUT call audit-prune needs is handled, no bucket auto-creation.
 
  Raises::class:`AuditArchiveTransportError` on transport / non-2xx

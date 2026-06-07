@@ -1,4 +1,4 @@
-"""``automation_service`` package — FastAPI HTTP gateway.
+﻿"""``automation_service`` package - FastAPI HTTP gateway.
 
 The FastAPI app and its routes live under
 ``services/automation-service/src/automation_service/``. Webhook

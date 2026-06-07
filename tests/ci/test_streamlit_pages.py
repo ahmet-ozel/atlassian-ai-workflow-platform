@@ -1,4 +1,4 @@
-"""CI gate — Streamlit page catalog.
+﻿"""CI gate - Streamlit page catalog.
 
 end-user pages (chat / task creator / workflows / po review inbox) plus
 admin/ops-only pages (explorer / orphan branches / MCP inspector) and the

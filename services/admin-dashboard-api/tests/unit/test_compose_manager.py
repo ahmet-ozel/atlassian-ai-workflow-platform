@@ -1,4 +1,4 @@
-"""Unit tests for ``src.lifecycle.compose_manager`` .
+﻿"""Unit tests for ``src.lifecycle.compose_manager`` .
 These tests exercise :class:`ComposeManager` as a black box with
 :func:`asyncio.create_subprocess_exec` and :class:`httpx.AsyncClient`
 patched out. Production behaviour we need to confirm:
@@ -6,7 +6,7 @@ patched out. Production behaviour we need to confirm:
   (``--profile {p} up -d`` and ``--profile {p} down``) and surface
   non-zero exits as :class:`ComposeManagerError`.
 * The subprocess env is scrubbed to the allow-list (``PATH``,
-  ``HOME``, ``DOCKER_HOST``) — host-side secrets must not leak
+  ``HOME``, ``DOCKER_HOST``) - host-side secrets must not leak
   .
 * ``check_health`` polls until 200 lands or the budget elapses.
 * ``get_running_services`` parses both the array and NDJSON layouts
@@ -298,7 +298,7 @@ def test_missing_docker_binary_surfaces_error() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Environment scrubbing — host secrets must not leak
+# Environment scrubbing - host secrets must not leak
 # ---------------------------------------------------------------------------
 
 

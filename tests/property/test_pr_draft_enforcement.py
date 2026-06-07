@@ -1,10 +1,10 @@
-"""Property-based tests for PR draft enforcement.
+﻿"""Property-based tests for PR draft enforcement.
 
 This file owns the **PR draft enforcement** behavior. The
 companion files for the same property are:
 
-- ``test_tool_filter.py`` — banned MCP tool filtering
-- ``test_webhook_predicates.py`` (extended) — webhook loop guard behavior
+- ``test_tool_filter.py`` - banned MCP tool filtering
+- ``test_webhook_predicates.py`` (extended) - webhook loop guard behavior
 
 Universal property
 ------------------
@@ -168,7 +168,7 @@ def _pr_payloads_already_draft(draw: st.DrawFn) -> dict[str, Any]:
 class _CapturingAuditWriter:
     """In-memory ``AuditWriter`` used to assert on emitted events.
 
-    Mirrors the helper in ``tests/unit/test_mcp_client.py`` — kept
+    Mirrors the helper in ``tests/unit/test_mcp_client.py`` - kept
     local here so the property file is self-contained and parallel
     runs do not cross-contaminate state.
     """
@@ -224,7 +224,7 @@ class TestEnforcePrDraftCoercion:
         """
 
         snapshot = {**payload}
-        # Deep-snapshot the reviewers list too — that's the only
+        # Deep-snapshot the reviewers list too - that's the only
         # nested mutable structure the strategy emits.
         reviewers_snapshot = [dict(r) for r in payload["reviewers"]]
         asyncio.run(enforce_pr_draft(payload))
@@ -234,7 +234,7 @@ class TestEnforcePrDraftCoercion:
     @settings(max_examples=200, deadline=2000)
     @given(payload=_pr_payloads())
     def test_returns_a_new_mapping(self, payload: dict[str, Any]) -> None:
-        """The output is a freshly constructed ``dict`` — callers can
+        """The output is a freshly constructed ``dict`` - callers can
         mutate it without aliasing the caller's payload.
         """
 
@@ -267,7 +267,7 @@ class TestEnforcePrDraftCoercion:
         self, payload: dict[str, Any]
     ) -> None:
         """Applying the helper a second time on its output produces an
-        equal mapping — the rule reaches a fixed point in one step,
+        equal mapping - the rule reaches a fixed point in one step,
         so chaining through multiple interceptor layers is safe.
         """
 
@@ -280,7 +280,7 @@ class TestEnforcePrDraftCoercion:
     def test_output_keys_are_a_superset_of_input_keys(
         self, payload: dict[str, Any]
     ) -> None:
-        """The helper never *drops* keys — even if ``draft`` was
+        """The helper never *drops* keys - even if ``draft`` was
         absent in the input, every other key in the input is in the
         output (and ``draft`` has been added).
         """
@@ -414,7 +414,7 @@ class TestEnforcePrDraftAuditTrail:
         assert event.actor_id == actor_id
         assert event.actor_role == "system"
         assert event.dept_id == dept_id
-        # Default timestamp is "now" — verify it sits in the call
+        # Default timestamp is "now" - verify it sits in the call
         # window so the property catches a regression to a frozen
         # default value.
         assert before <= event.timestamp.replace(tzinfo=None) <= after or (

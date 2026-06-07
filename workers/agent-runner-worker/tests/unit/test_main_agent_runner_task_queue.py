@@ -1,4 +1,4 @@
-"""Unit tests for ``agent_runner.main`` boot script.
+﻿"""Unit tests for ``agent_runner.main`` boot script.
 
 Validates the **single-queue-per-worker** invariant:
 
@@ -30,7 +30,7 @@ import pytest
 
 
 # ---------------------------------------------------------------------------
-# ``sys.path`` bootstrapping — the canonical package ships under
+# ``sys.path`` bootstrapping - the canonical package ships under
 # ``src/agent_runner/`` (mirrors ``hatchling``
 # ``packages = ["src", "src/agent_runner"]``).
 # ---------------------------------------------------------------------------
@@ -166,7 +166,7 @@ class TestWorkerConstructorCallSite:
 
     def test_task_queue_kwarg_resolves_via_registry(self) -> None:
         """The ``task_queue=`` keyword must resolve through
-        ``task_queue_for("AgentRunnerWorkflow")`` — either directly
+        ``task_queue_for("AgentRunnerWorkflow")`` - either directly
         or via a module-level constant whose RHS is the same call.
         """
 
@@ -181,7 +181,7 @@ class TestWorkerConstructorCallSite:
             _assert_constant_resolves_to_task_queue_for(
                 tree, value.id, "AgentRunnerWorkflow"
             )
-        else:  # pragma: no cover — defensive
+        else:  # pragma: no cover - defensive
             pytest.fail(
                 "task_queue= kwarg must be either a direct call to "
                 "task_queue_for(...) or a module-level constant; "
@@ -189,7 +189,7 @@ class TestWorkerConstructorCallSite:
             )
 
     def test_no_hardcoded_queue_string_in_worker_call(self) -> None:
-        """The ``task_queue=`` kwarg must not be a string literal — that
+        """The ``task_queue=`` kwarg must not be a string literal - that
         would bypass the registry and break the single-source-of-truth
         invariant.
         """
@@ -197,7 +197,7 @@ class TestWorkerConstructorCallSite:
         (call,) = _find_worker_calls(_parse_main_module())
         value = _kwarg(call, "task_queue")
         assert not isinstance(value, ast.Constant), (
-            "task_queue= must not be a hardcoded string literal — use "
+            "task_queue= must not be a hardcoded string literal - use "
             "task_queue_for(...) from temporal_shared.workflow_registry"
         )
 

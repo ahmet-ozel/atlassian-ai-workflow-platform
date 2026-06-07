@@ -1,4 +1,4 @@
-"""Invariant test: Description override validation.
+﻿"""Invariant test: Description override validation.
 
 **: Description override validation
 --------------------------------------------
@@ -20,7 +20,7 @@ For each recognised field the test draws one of three branches:
 
 The chosen ``ai-bot`` mapping is then serialised through
 ``yaml.safe_dump`` so the input to the parser is always well-formed
-YAML — only the **field-level** values are invalid. After parsing we
+YAML - only the **field-level** values are invalid. After parsing we
 assert the post-conditions field:
 
 * valid → ``result.<field>`` equals what we supplied AND the field
@@ -44,7 +44,7 @@ from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — match the convention used by sibling Invariant tests.
+# sys.path bootstrap - match the convention used by sibling Invariant tests.
 # ---------------------------------------------------------------------------
 
 _WORKER_ROOT: Path = Path(__file__).resolve().parents[2]
@@ -78,7 +78,7 @@ _VALID_OUTPUT_TYPES: tuple[str, ...] = (
 )
 
 
-# Identifier-shaped strings — chosen to round-trip through
+# Identifier-shaped strings - chosen to round-trip through
 # ``yaml.safe_dump`` / ``yaml.safe_load`` without surprises (no
 # leading dashes, no whitespace, no characters that need quoting).
 # A minimum length of 2 keeps the value past the parser's
@@ -89,7 +89,7 @@ _safe_string: st.SearchStrategy[str] = st.from_regex(
 
 
 # ---------------------------------------------------------------------------
-# Per-field strategies — valid and invalid branches
+# Per-field strategies - valid and invalid branches
 # ---------------------------------------------------------------------------
 
 
@@ -101,7 +101,7 @@ def _invalid_workflow_type() -> st.SearchStrategy[Any]:
     return st.one_of(
         # An identifier that is *not* in the closed set.
         _safe_string.filter(lambda s: s not in VALID_WORKFLOW_TYPES),
-        # Wrong-typed scalars — non-string is rejected outright.
+        # Wrong-typed scalars - non-string is rejected outright.
         st.integers(),
         st.floats(allow_nan=False, allow_infinity=False),
         st.lists(st.integers(), max_size=3),
@@ -158,7 +158,7 @@ def _valid_repo_or_branch() -> st.SearchStrategy[str]:
 
 def _invalid_repo_or_branch() -> st.SearchStrategy[Any]:
     # Any non-string scalar / collection. Empty strings are intentionally
-    # excluded — they are also rejected by the parser, but the property
+    # excluded - they are also rejected by the parser, but the property
     # under test focuses on type-level invalidity.
     return st.one_of(
         st.integers(),
@@ -183,7 +183,7 @@ def _valid_output() -> st.SearchStrategy[list[dict[str, Any]]]:
 
 
 def _invalid_output_top_level() -> st.SearchStrategy[Any]:
-    """Top-level shape that is not a list — drops the entire field."""
+    """Top-level shape that is not a list - drops the entire field."""
     return st.one_of(
         _safe_string,
         st.integers(),
@@ -238,7 +238,7 @@ def _override_block(
             ai_bot[name] = value
             expectations[name] = ("invalid", None)
 
-    # ``output`` — handled separately because its valid shape (list of
+    # ``output`` - handled separately because its valid shape (list of
     # dicts) and invalid shape (non-list) require different generators.
     output_choice = draw(st.integers(min_value=0, max_value=2))
     if output_choice == 1:

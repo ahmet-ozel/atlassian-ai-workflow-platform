@@ -1,4 +1,4 @@
-"""Workflow modules for the ``automation-worker``.
+﻿"""Workflow modules for the ``automation-worker``.
 
 Each ``@workflow.defn``-decorated class lives in its own module so the
 worker boot script can selectively register them.
@@ -37,7 +37,7 @@ from automation_worker.workflows.bot_branch_retention import (
     BranchRetentionDecision,
     should_delete_branch,
 )
-# — IterationWorkflow is the Temporal-side
+# - IterationWorkflow is the Temporal-side
 # entry point for ``[iterate]`` re-runs dispatched by the webhook
 # layer. Registering it alongside ``AutomationWorkflow`` keeps the
 # automation-tq queue self-contained (no extra worker process).
@@ -46,7 +46,7 @@ from automation_worker.workflows.iteration_workflow import (
     IterationWorkflowInput,
     IterationWorkflowOutput,
 )
-# — register the multi-step orchestrator
+# - register the multi-step orchestrator
 # alongside the existing workflows so the boot script picks it up.
 from automation_worker.workflows.multi_step_workflow import (
     MAX_STEPS,
@@ -62,7 +62,7 @@ from automation_worker.workflows.multi_step_workflow import (
     StepDefinition,
     StepResult,
 )
-# — periodic webhook secret rotation
+# - periodic webhook secret rotation
 # auto-finalize workflow.
 from automation_worker.workflows.webhook_rotation_finalize import (
     WEBHOOK_ROTATION_FINALIZE_CRON_SCHEDULE,
@@ -72,7 +72,7 @@ from automation_worker.workflows.webhook_rotation_finalize import (
     WebhookRotationFinalizeReport,
     WebhookRotationFinalizeWorkflow,
 )
-# Single-runner canonical contract — G2: hourly disk auto-prune cron.
+# Single-runner canonical contract - G2: hourly disk auto-prune cron.
 from automation_worker.workflows.workspace_cleanup import (
     DEFAULT_EVICT_PCT,
     DEFAULT_WARN_PCT,
@@ -110,11 +110,11 @@ __all__: tuple[str, ...] = (
     "match_approval_paths",
     "parse_approval_decision",
     "should_delete_branch",
-    # — IterationWorkflow + I/O envelopes.
+    # - IterationWorkflow + I/O envelopes.
     "IterationWorkflow",
     "IterationWorkflowInput",
     "IterationWorkflowOutput",
-    # MultiStep (–5.10)
+    # MultiStep (-5.10)
     "MAX_STEPS",
     "MIN_STEPS",
     "MultiStepInput",
@@ -135,7 +135,7 @@ __all__: tuple[str, ...] = (
     "WebhookOverlapEntry",
     "WebhookRotationFinalizeReport",
     "WebhookRotationFinalizeWorkflow",
-    # Workspace disk auto-prune (single-runner canonical contract — G2)
+    # Workspace disk auto-prune (single-runner canonical contract - G2)
     "DEFAULT_EVICT_PCT",
     "DEFAULT_WARN_PCT",
     "MAX_PRUNES_PER_TICK",

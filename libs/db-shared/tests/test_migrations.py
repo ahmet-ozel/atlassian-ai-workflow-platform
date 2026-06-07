@@ -1,4 +1,4 @@
-"""Unit tests for ``db_shared.migrations.apply_migrations``.
+﻿"""Unit tests for ``db_shared.migrations.apply_migrations``.
 
 The tests use an in-memory fake pool/connection so they run without
 Postgres. They cover the idempotency contract, file discovery,
@@ -28,7 +28,7 @@ from db_shared.migrations import (
 
 
 class _FakeTransaction:
-    """asyncpg-shaped async context manager — entered/exited; no-op body."""
+    """asyncpg-shaped async context manager - entered/exited; no-op body."""
 
     async def __aenter__(self) -> "_FakeTransaction":
         return self
@@ -40,7 +40,7 @@ class _FakeTransaction:
 class _FakeConn:
     """Records every ``execute`` / ``fetch`` call.
 
-    ``execute`` simulates SQL — INSERT INTO schema_migrations updates an
+    ``execute`` simulates SQL - INSERT INTO schema_migrations updates an
     in-memory dict; everything else is recorded verbatim. ``fetch`` only
     serves the schema_migrations SELECT path.
     """
@@ -101,7 +101,7 @@ def migrations_dir(tmp_path: Path) -> Path:
     (d / "003_third.sql").write_text(
         "CREATE TABLE IF NOT EXISTS public.t_third (id int);"
     )
-    # In-progress draft — should be skipped by discovery.
+    # In-progress draft - should be skipped by discovery.
     (d / "_draft.sql").write_text("/* not yet ready */")
     return d
 
@@ -167,7 +167,7 @@ async def test_checksum_mismatch_logged_not_reapplied(
     conn = _FakeConn()
     pool = _FakePool(conn)
 
-    # First pass — record the original checksums.
+    # First pass - record the original checksums.
     await apply_migrations(pool, migrations_dir)
     original_executions = len(conn.executed)
 
@@ -229,7 +229,7 @@ def test_real_migration_dir_has_expected_files() -> None:
     assert not missing, f"missing migration prefixes: {missing}"
 
     # The 013_ssh_runner_pool / 010_llm_providers / 011_test_runs MUST
-    # be present — these are the tables admin-dashboard-api needs.
+    # be present - these are the tables admin-dashboard-api needs.
     names = {p.stem for p in files}
     assert "018_ssh_runner_pool" in names
     assert "010_llm_providers" in names

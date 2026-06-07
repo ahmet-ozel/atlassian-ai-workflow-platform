@@ -1,4 +1,4 @@
-"""Probe runner — read / write credential validation for department bots.
+﻿"""Probe runner - read / write credential validation for department bots.
 
 Implements the ``ProbeRunner.run(dept_id, service, cred) -> ProbeResult``
 API for validating department bot credentials.
@@ -11,7 +11,7 @@ What this module owns
   ``GET /wiki/rest/api/user/current``. The read probe must succeed
   before the write probe runs; if it fails, the credential is rejected
   and ``ProbeResult.state == "read_failed"`` is returned.
-* A **write probe** for each surface — Confluence draft create+delete,
+* A **write probe** for each surface - Confluence draft create+delete,
   Bitbucket temporary branch create+delete, Jira self-comment on a
   bot-owned issue. Every artifact uses the canonical sentinel
   title / branch name format ``_AI_PROBE_<unix_ts>_DELETE_ME``
@@ -46,7 +46,7 @@ Every outbound Atlassian HTTP call must go through the
 does **not** issue raw HTTP itself; it depends on a thin
 :class:`AtlassianProbeClient` :class:`~typing.Protocol` that the
 production wiring backs with an MCP-routed implementation.
-Tests inject an in-memory fake satisfying the protocol — the suite at
+Tests inject an in-memory fake satisfying the protocol - the suite at
 ``tests/unit/test_probe.py`` and the property test at
 ``platform/tests/property/test_probe_runner.py`` exercise
 the runner this way.
@@ -87,12 +87,12 @@ ProbeArtifactType = Literal["confluence_page", "bitbucket_branch", "jira_comment
 
 #: Terminal states surfaced on :class:`ProbeResult`.
 #:
-#: * ``ok`` — both read and write probes succeeded; no residue left.
-#: * ``read_failed`` — read probe failed; write probe was skipped.
-#: * ``write_failed`` — read probe succeeded but the write probe
+#: * ``ok`` - both read and write probes succeeded; no residue left.
+#: * ``read_failed`` - read probe failed; write probe was skipped.
+#: * ``write_failed`` - read probe succeeded but the write probe
 #:   could not create / delete the artifact (clean failure, no
 #:   leftover).
-#: * ``partial_orphan`` — write probe created an artifact but failed
+#: * ``partial_orphan`` - write probe created an artifact but failed
 #:   to delete it. The artifact is captured on
 #:   :attr:`ProbeResult.artifact` so the caller can persist
 #:   it for admin cleanup.
@@ -106,7 +106,7 @@ def make_probe_title(now_unix_ts: int | None = None) -> str:
     seconds-since-epoch UTC (``time.time()`` rounded to ``int``).
 
     Args:
-        now_unix_ts: Optional fixed timestamp — useful in tests so the
+        now_unix_ts: Optional fixed timestamp - useful in tests so the
             generated title is deterministic. Defaults to the current
             wall-clock value.
     """
@@ -137,7 +137,7 @@ def is_probe_artifact_title(title: str) -> bool:
 class ResolvedCredential:
     """Resolved credential triple passed into the probe runner.
 
-    The runner never reads the raw value from Vault directly — that
+    The runner never reads the raw value from Vault directly - that
     work is done by ``CredentialResolver``. The
     runner accepts an opaque ``ResolvedCredential`` so the same
     surface can probe department org-default and per-user session
@@ -146,7 +146,7 @@ class ResolvedCredential:
     Attributes:
         url: Atlassian site URL (``https://acme.atlassian.net``,
             ``https://bitbucket.org``, ...).
-        username: Account email or username — used for Basic auth and
+        username: Account email or username - used for Basic auth and
             for tagging the write artifact (Jira self-comment author
             check).
         personal_token: API token / app password. **Must not** appear
@@ -169,7 +169,7 @@ class ProbeArtifact:
         dept_id: Department that owns the bot the probe ran against.
         service: One of ``"jira"``, ``"bitbucket"`` or
             ``"confluence"``.
-        artifact_type: Concrete artifact subtype — see
+        artifact_type: Concrete artifact subtype - see
             :data:`ProbeArtifactType`.
         external_id: Identifier returned by the target system (e.g.
             Confluence page id, Bitbucket branch ref, Jira comment id)
@@ -199,12 +199,12 @@ class ProbeResult:
             or the read probe failed. Startup validation consumes this field to
             decide whether to update ``departments.json`` /
             ``automation.departments``.
-        artifact: Populated only when ``state == "partial_orphan"`` —
+        artifact: Populated only when ``state == "partial_orphan"`` -
             the leftover artifact the caller should record
             in ``automation.probe_artifacts``.
         state: Terminal state (see :data:`ProbeState`).
         error_message: Human-readable detail when ``state`` is anything
-            other than ``"ok"``. Sanitised — never contains tokens or
+            other than ``"ok"``. Sanitised - never contains tokens or
             passwords.
     """
 
@@ -225,7 +225,7 @@ class ProbeResult:
 class AtlassianProbeClient(Protocol):
     """Minimum surface the probe runner needs from the MCP wrapper.
 
-    The protocol is intentionally narrow — only the calls required to
+    The protocol is intentionally narrow - only the calls required to
     implement read and write probes. The production implementation
     routes every call through the ``atlassian_unified`` MCP service; tests
     inject a fake whose method signatures match this protocol.
@@ -237,7 +237,7 @@ class AtlassianProbeClient(Protocol):
     # ----- Jira ----------------------------------------------------------
 
     async def jira_myself(self, cred: ResolvedCredential) -> dict[str, Any]:
-        """``GET /rest/api/3/myself`` — returns the authenticated user.
+        """``GET /rest/api/3/myself`` - returns the authenticated user.
 
         Used by the read probe. The implementation must surface
         the response JSON unchanged so the probe runner can extract
@@ -288,7 +288,7 @@ class AtlassianProbeClient(Protocol):
     # ----- Bitbucket -----------------------------------------------------
 
     async def bitbucket_user(self, cred: ResolvedCredential) -> dict[str, Any]:
-        """``GET /2.0/user`` — returns the authenticated user."""
+        """``GET /2.0/user`` - returns the authenticated user."""
         ...
 
     async def bitbucket_list_probe_branches(
@@ -413,7 +413,7 @@ class ProbeRunner:
             seconds. Defaults to :func:`time.time`. Overridable so the
             generated artifact titles are deterministic in unit tests.
 
-    The runner is **stateless** between calls — every invocation does
+    The runner is **stateless** between calls - every invocation does
     its own idempotent cleanup before issuing the new write probe so
     repeated calls leave no extra residue.
     """
@@ -446,11 +446,11 @@ class ProbeRunner:
 
         The flow is:
 
-        1. **Idempotent cleanup** — list and delete any existing
+        1. **Idempotent cleanup** - list and delete any existing
            ``_AI_PROBE_*`` artifacts on the target service.
-        2. **Read probe** — verify the credential can authenticate
+        2. **Read probe** - verify the credential can authenticate
            and capture ``account_id`` for auto-fetch.
-        3. **Write probe** — create + delete a sentinel artifact
+        3. **Write probe** - create + delete a sentinel artifact
            On delete failure return ``state="partial_orphan"``
            with the artifact attached.
 
@@ -466,7 +466,7 @@ class ProbeRunner:
 
         Returns:
             A :class:`ProbeResult` describing the terminal state. The
-            method never raises for "expected" probe failures — they
+            method never raises for "expected" probe failures - they
             are surfaced via the ``state`` field so callers can branch
             on a single switch.
         """
@@ -477,7 +477,7 @@ class ProbeRunner:
             return await self._run_bitbucket(dept_id, cred, targets)
         if service == "confluence":
             return await self._run_confluence(dept_id, cred, targets)
-        # Defensive — Literal narrowing should make this unreachable.
+        # Defensive - Literal narrowing should make this unreachable.
         raise ValueError(  # pragma: no cover - defensive only
             f"unsupported probe service {service!r}"
         )
@@ -494,7 +494,7 @@ class ProbeRunner:
         # ----- 1. Read probe -------------------------------------------
         try:
             myself = await self._client.jira_myself(cred)
-        except Exception as exc:  # noqa: BLE001 — surface as terminal state
+        except Exception as exc:  # noqa: BLE001 - surface as terminal state
             return _read_failed("jira", exc)
 
         account_id = _extract_account_id(myself)
@@ -802,8 +802,8 @@ class ProbeRunner:
 def _read_failed(service: str, exc: BaseException) -> ProbeResult:
     """Build a ``read_failed`` :class:`ProbeResult` with a sanitised message.
 
-    The error message includes only the exception class name — never
-    the raw ``str(exc)`` — to avoid accidentally leaking
+    The error message includes only the exception class name - never
+    the raw ``str(exc)`` - to avoid accidentally leaking
     ``Authorization: Basic ...`` strings or token suffixes that some
     HTTP clients echo into their exceptions.
     """
@@ -825,7 +825,7 @@ def _extract_account_id(payload: Any) -> str | None:
 
     * Jira / Confluence cloud return ``accountId`` (camelCase).
     * Bitbucket cloud sometimes returns ``account_id`` (snake_case)
-      and sometimes ``uuid`` — we accept ``accountId`` first, then
+      and sometimes ``uuid`` - we accept ``accountId`` first, then
       ``account_id``, then ``uuid``.
 
     Returns ``None`` for falsy / missing values so the caller never
@@ -877,7 +877,7 @@ async def probe_bot_identity(
     * Jira / Confluence: ``GET /rest/api/3/myself`` or equivalent.
     * Bitbucket: ``GET /2.0/user``.
 
-    The function **never raises** — failures are surfaced via the
+    The function **never raises** - failures are surfaced via the
     returned :class:`BotIdentityProbeResult` so the caller can
     include ``account_id_probe_status`` in the HTTP response without
     breaking the 200 contract.

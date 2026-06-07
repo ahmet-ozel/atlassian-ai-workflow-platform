@@ -1,4 +1,4 @@
-"""YAML front-matter priority over LLM.
+﻿"""YAML front-matter priority over LLM.
 
 For any task description containing a valid YAML front-matter block with
 ``workflow_type``, the parsed values are used directly and the LLM is not
@@ -46,7 +46,7 @@ from automation_worker.activities.task_analyzer import (  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
-# In-memory fakes — record interactions so the property can assert on them
+# In-memory fakes - record interactions so the property can assert on them
 # ---------------------------------------------------------------------------
 
 
@@ -76,7 +76,7 @@ class _FakeLLM:
 
 @dataclass
 class _FakeCommenter:
-    """No-op commenter — tests don't assert on Jira comments here."""
+    """No-op commenter - tests don't assert on Jira comments here."""
 
     comments: list[tuple[str, str, str]] = field(default_factory=list)
 
@@ -100,7 +100,7 @@ _DEFAULT_DEPT_CONFIG: dict[str, Any] = {
     "available_spaces": ["TEAM"],
     "available_capabilities": ["jira_read", "jira_write"],
     "default_language": "tr",
-    # Web search enabled so research_with_web doesn't downgrade —
+    # Web search enabled so research_with_web doesn't downgrade -
     # the downgrade itself doesn't affect this behavior, but keeping the
     # flag on means the result objects survive equality checks.
     "web_search_enabled": True,
@@ -128,7 +128,7 @@ set_prompt_path(_TMP_PROMPT_FILE)
 
 
 # ---------------------------------------------------------------------------
-# Hypothesis strategies — generators for valid YAML front-matter blocks
+# Hypothesis strategies - generators for valid YAML front-matter blocks
 # ---------------------------------------------------------------------------
 
 
@@ -139,7 +139,7 @@ _workflow_type_strategy = st.sampled_from(sorted(VALID_WORKFLOW_TYPES))
 # Cleanup policies likewise.
 _cleanup_strategy = st.sampled_from(sorted(VALID_CLEANUP_POLICIES))
 
-# Simple identifier-shaped strings for repo / branch — kept narrow so
+# Simple identifier-shaped strings for repo / branch - kept narrow so
 # we never accidentally produce YAML syntax inside the value (eg. a
 # quote, ``---``, leading dash). The parser also strips whitespace, so
 # we exclude leading/trailing spaces from the alphabet.
@@ -160,7 +160,7 @@ _timeout_strategy = st.integers(
 
 # Free-form description body that follows the YAML block. Restricted to
 # printable text without ``---`` so we can't accidentally introduce a
-# second front-matter delimiter further down — that would be invisible
+# second front-matter delimiter further down - that would be invisible
 # to the parser anyway, but it keeps generated examples readable.
 _body_text_strategy = st.text(
     alphabet=st.characters(

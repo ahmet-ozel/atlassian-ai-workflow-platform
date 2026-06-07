@@ -1,4 +1,4 @@
-"""SSH activity module for the execution-runner-worker.
+﻿"""SSH activity module for the execution-runner-worker.
 
 Provides :func:`ssh_connect_and_run` and :func:`ssh_cleanup`, Temporal
 activities that execute commands and perform cleanup on remote SSH hosts.
@@ -15,7 +15,7 @@ workflow via Temporal activity options (``RetryPolicy``):
         maximum_attempts=3,
     )
 
-The activity itself does not implement internal retries — it raises on
+The activity itself does not implement internal retries - it raises on
 connection failure and lets Temporal handle retry scheduling.
 
 Total execution timeout (30 minutes) is enforced by the caller workflow
@@ -123,7 +123,7 @@ def _ssh_execute_command(
     SSHActivityError
         On connection failure, authentication failure, or timeout.
     """
-    import paramiko  # noqa: PLC0415 — imported inside function to keep module importable without paramiko installed
+    import paramiko  # noqa: PLC0415 - imported inside function to keep module importable without paramiko installed
 
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -218,7 +218,7 @@ def _ssh_cleanup_workspace(
 ) -> None:
     """Connect to SSH host and remove the workspace directory (blocking).
 
-    Best-effort cleanup — exceptions are logged but not propagated.
+    Best-effort cleanup - exceptions are logged but not propagated.
 
     Parameters
     ----------
@@ -252,7 +252,7 @@ def _ssh_cleanup_workspace(
                 try:
                     pkey = paramiko.ECDSAKey.from_private_key(key_file)
                 except paramiko.SSHException:
-                    return  # Cannot parse key — best-effort, just return
+                    return  # Cannot parse key - best-effort, just return
 
         client.connect(
             hostname=host,
@@ -268,7 +268,7 @@ def _ssh_cleanup_workspace(
         cleanup_command = f"rm -rf {workspace_path}"
         client.exec_command(cleanup_command, timeout=60.0)
 
-    except Exception:  # noqa: BLE001 — best-effort, swallow all exceptions
+    except Exception:  # noqa: BLE001 - best-effort, swallow all exceptions
         pass
     finally:
         client.close()
@@ -383,7 +383,7 @@ async def ssh_cleanup(
 ) -> None:
     """Remove the workspace directory on the remote SSH host.
 
-    Best-effort cleanup — exceptions are swallowed and logged. The
+    Best-effort cleanup - exceptions are swallowed and logged. The
     workflow continues regardless of whether cleanup succeeds.
 
     Uses ``asyncio.to_thread`` to run the blocking paramiko SSH session
@@ -427,7 +427,7 @@ async def ssh_cleanup(
             host,
             workspace_path,
         )
-    except Exception as exc:  # noqa: BLE001 — best-effort, swallow all
+    except Exception as exc:  # noqa: BLE001 - best-effort, swallow all
         activity.logger.warning(
             "SSH cleanup failed (best-effort, continuing): host=%s, "
             "workspace=%s, error=%s",
@@ -439,7 +439,7 @@ async def ssh_cleanup(
 
 
 # ---------------------------------------------------------------------------
-# ssh_run_test — canonical SSH test runner activity
+# ssh_run_test - canonical SSH test runner activity
 #
 # Combines credential fetch, command execution, MinIO artifact upload, and
 # 30-second heartbeating into a single activity so the canonical
@@ -468,17 +468,17 @@ async def ssh_cleanup(
 # The activity returns a JSON-serialisable dict matching
 # :class:`ExecutionRunWorkflowOutput`'s fields, populated as follows:
 #
-# * ``status``           — ``"passed"`` (exit_code == 0),
+# * ``status``           - ``"passed"`` (exit_code == 0),
 #                          ``"failed"`` (exit_code != 0), or
 #                          ``"timeout"`` (TimeoutError raised by SSH).
-# * ``exit_code``        — process exit code, or ``None`` on timeout.
-# * ``stdout_uri`` /     — ``s3://{bucket}/{prefix}/stdout.txt`` and
+# * ``exit_code``        - process exit code, or ``None`` on timeout.
+# * ``stdout_uri`` /     - ``s3://{bucket}/{prefix}/stdout.txt`` and
 #   ``stderr_uri``         ``stderr.txt``; ``None``
 #                          if upload failed.
-# * ``duration_seconds`` — wall-clock seconds spent inside the activity.
-# * ``runner_id``        — echo of the input runner identifier so the
+# * ``duration_seconds`` - wall-clock seconds spent inside the activity.
+# * ``runner_id``        - echo of the input runner identifier so the
 #                          parent can correlate retries against runner.
-# * ``failure_reason``   — stable category string when ``status !=
+# * ``failure_reason``   - stable category string when ``status !=
 #                          "passed"``: ``"non_zero_exit"``, ``"timeout"``,
 #                          ``"runner_unreachable"``,
 #                          ``"artifact_upload_failed"``, or ``None``.
@@ -538,7 +538,7 @@ def _bucket_and_key_from_prefix(prefix: str) -> tuple[str, str]:
 
     Notes
     -----
-    The function is **pure** — string parsing only — so it is safe to
+    The function is **pure** - string parsing only - so it is safe to
     call from inside the activity body without touching the worker
     event loop.
     """
@@ -644,10 +644,10 @@ async def _upload_text_artifact(
 ) -> str | None:
     """Upload a UTF-8 text artifact to MinIO and return its URI.
 
-    Returns ``None`` when MinIO credentials are missing — the caller
+    Returns ``None`` when MinIO credentials are missing - the caller
     treats a ``None`` URI as ``failure_reason="artifact_upload_failed"``.
 
-    The function deliberately does **not** raise on transport failures —
+    The function deliberately does **not** raise on transport failures -
     activity-level retry is governed by the workflow's
     ``RetryPolicy(maximum_attempts=3)``; a transient MinIO outage should
     drive Temporal to retry the whole activity rather than surface a
@@ -731,12 +731,12 @@ async def ssh_run_test(
         the parameter docstring below.
     command:
         Shell command to execute on the remote host.  Treated as opaque
-        text — the activity wraps it in a ``cd`` / env-export prefix
+        text - the activity wraps it in a ``cd`` / env-export prefix
         when applicable.
     env:
         Environment variables to export before invoking the command.
         Either a mapping of ``str → str`` or a tuple of
-        ``(key, value)`` pairs (the message-dataclass shape — frozen
+        ``(key, value)`` pairs (the message-dataclass shape - frozen
         and hashable).
     artifact_minio_prefix:
         Path under which ``stdout.txt`` and ``stderr.txt`` are stored.
@@ -747,7 +747,7 @@ async def ssh_run_test(
         Optional remote working directory.  When supplied the command
         is wrapped as ``cd {workdir} && {env}{command}``.
     parent_workflow_id:
-        Parent ``ExecutionRunWorkflow`` id — propagated to
+        Parent ``ExecutionRunWorkflow`` id - propagated to
         :func:`vault_fetch_ssh_credentials` so its error context
         carries the workflow that requested the run.
     vault_path:
@@ -786,7 +786,7 @@ async def ssh_run_test(
         f"{key_prefix}/{_STDERR_NAME}" if key_prefix else _STDERR_NAME
     )
 
-    # Step 1 — fetch credentials from Vault.
+    # Step 1 - fetch credentials from Vault.
     # Pass the resolved ``vault_path`` so the admin-panel-managed runner's
     # secret is read (not the global ``ssh/runner/current``).
     try:
@@ -794,7 +794,7 @@ async def ssh_run_test(
             parent_workflow_id or (runner_id or ""),
             vault_path=vault_path,
         )
-    except Exception as exc:  # noqa: BLE001 — surface as runner_unreachable
+    except Exception as exc:  # noqa: BLE001 - surface as runner_unreachable
         activity.logger.warning(
             "ssh_run_test: vault credential lookup failed: %s", exc
         )
@@ -820,7 +820,7 @@ async def ssh_run_test(
         cred.user,
     )
 
-    # Step 2/4 — run the command in a thread, heartbeat every 30 s.
+    # Step 2/4 - run the command in a thread, heartbeat every 30 s.
     started_at = time.monotonic()
     timeout_seconds = _resolve_command_timeout_seconds()
 
@@ -905,7 +905,7 @@ async def ssh_run_test(
 
     duration_seconds = time.monotonic() - started_at
 
-    # Step 3 — upload stdout / stderr to MinIO.  Failure here flips
+    # Step 3 - upload stdout / stderr to MinIO.  Failure here flips
     # ``failure_reason`` to ``artifact_upload_failed`` only if the
     # command itself succeeded; a failed command keeps its own reason.
     stdout_uri = await _upload_text_artifact(
@@ -916,7 +916,7 @@ async def ssh_run_test(
     )
 
     if (stdout_uri is None or stderr_uri is None) and status == "passed":
-        # Successful test, but artifacts are missing — flag so the
+        # Successful test, but artifacts are missing - flag so the
         # caller can decide whether to treat as a soft failure.
         status = "failed"
         failure_reason = "artifact_upload_failed"

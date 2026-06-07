@@ -1,4 +1,4 @@
-#
+﻿#
 # Workflow control audit trail
 #
 """Workflow control audit trail .
@@ -264,7 +264,7 @@ def _expected_http_status(*, action: Action, outcome: Outcome) -> int:
 # Hypothesis strategies
 # ---------------------------------------------------------------------------
 
-#: Workflow ids: short Jira-flavoured strings — enough variety to shrink
+#: Workflow ids: short Jira-flavoured strings - enough variety to shrink
 #: into a meaningful counterexample without spending all our entropy on
 #: the id itself.
 _WORKFLOW_ID_STRATEGY = st.from_regex(
@@ -280,7 +280,7 @@ _SIGNAL_NAME_STRATEGY = st.from_regex(
     fullmatch=True,
 )
 
-#: Free-form JSON payload — exercises the ``payload: Any`` field on
+#: Free-form JSON payload - exercises the ``payload: Any`` field on
 #: ``SignalRequest`` without bias toward any single shape.
 _SIGNAL_PAYLOAD_STRATEGY = st.recursive(
     st.one_of(
@@ -381,7 +381,7 @@ def _assert_audit_invariants(
         f"audit event.actor_id must be {_ACTOR_SUB!r}; got {event.actor_id!r}"
     )
 
-    # The audit row must reference the same workflow_id inside the payload —
+    # The audit row must reference the same workflow_id inside the payload -
     # the router builds the payload from ``{"action_kind", "workflow_id"}``
     # so this is guaranteed by the implementation, but the property is
     # part of the contract so we assert it explicitly.
@@ -392,7 +392,7 @@ def _assert_audit_invariants(
 
 
 # ---------------------------------------------------------------------------
-#  — exactly one workflow_control audit event per action
+#  - exactly one workflow_control audit event per action
 # ---------------------------------------------------------------------------
 
 
@@ -415,12 +415,12 @@ def test_every_control_action_emits_one_audit_event(
     signal_name: str,
     signal_payload: Any,
 ) -> None:
-    """— every control action emits exactly one audit event.
+    """- every control action emits exactly one audit event.
     For any random ``(action, outcome, workflow_id, …)`` tuple, the
     router writes exactly one ``workflow_control`` audit event whose
     ``action_kind`` and ``result`` match the requested action and the
     observed outcome. Holds for all three actions and all three
-    outcomes — including the denied path (404) and the error path
+    outcomes - including the denied path (404) and the error path
     (502) where the underlying Temporal mutation never executes."""
 
     temporal = _FakeTemporalControl()
@@ -453,7 +453,7 @@ def test_every_control_action_emits_one_audit_event(
 
 
 # ---------------------------------------------------------------------------
-#  — happy-path action_kind / result mapping is total
+#  - happy-path action_kind / result mapping is total
 # ---------------------------------------------------------------------------
 
 
@@ -474,7 +474,7 @@ def test_happy_path_audit_records_action_kind_and_ok_result(
     signal_name: str,
     signal_payload: Any,
 ) -> None:
-    """— happy-path action_kind / result mapping is total.
+    """- happy-path action_kind / result mapping is total.
     For every successful invocation the audit row carries
     ``payload.action_kind == action`` and ``result == "ok"``. The
     router must not collapse ``cancel`` / ``retry`` / ``signal`` onto
@@ -505,7 +505,7 @@ def test_happy_path_audit_records_action_kind_and_ok_result(
 
 
 # ---------------------------------------------------------------------------
-#  — denied path always emits one denied event (no double-write)
+#  - denied path always emits one denied event (no double-write)
 # ---------------------------------------------------------------------------
 
 
@@ -526,7 +526,7 @@ def test_denied_path_emits_single_denied_event(
     signal_name: str,
     signal_payload: Any,
 ) -> None:
-    """— denied path emits exactly one ``denied`` audit event.
+    """- denied path emits exactly one ``denied`` audit event.
     When Temporal reports the workflow does not exist, the router must
     write **one** audit event with ``result="denied"`` (never two,
     never zero) and never invoke the mutation. This is the property

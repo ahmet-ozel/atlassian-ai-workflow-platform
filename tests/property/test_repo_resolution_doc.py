@@ -1,13 +1,13 @@
-"""Parity test for ``repo-resolution-order.md`` and prompts.
+﻿"""Parity test for ``repo-resolution-order.md`` and prompts.
 
 The repo resolution precedence is documented in three places that must
 stay in sync:
 
-1. ``platform/docs/api-contracts/repo-resolution-order.md`` — canonical
+1. ``platform/docs/api-contracts/repo-resolution-order.md`` - canonical
    contract (this is the source of truth).
-2. ``platform/prompts/task_creation_assistant.md`` — user-facing prompt
+2. ``platform/prompts/task_creation_assistant.md`` - user-facing prompt
    that tells task creators where to put the repo name.
-3. ``platform/workers/agent-runner-worker/prompts/task_analysis.md`` —
+3. ``platform/workers/agent-runner-worker/prompts/task_analysis.md`` -
    LLM decision prompt that picks the repo at runtime.
 
 If any of the three drifts (different precedence numbers, different
@@ -15,7 +15,7 @@ source names, different fallback rules) the platform produces tasks
 where the user, the assistant, and the bot disagree on what "repo"
 means. This test catches drift early.
 
-The test does not parse the markdown — that would require shipping a
+The test does not parse the markdown - that would require shipping a
 markdown AST in CI. Instead we look for a small set of canonical
 strings that MUST appear in each file. Drift = test fails.
 """
@@ -83,7 +83,7 @@ def test_doc_lists_seven_sources(doc_text: str) -> None:
     """The canonical doc declares exactly 7 precedence levels.
 
     If you add or remove a source, also update the parametrised tests
-    below — the count is part of the contract.
+    below - the count is part of the contract.
     """
 
     # The TL;DR table has rows numbered 1-7. We look for the literal
@@ -97,7 +97,7 @@ def test_doc_lists_seven_sources(doc_text: str) -> None:
 
 
 def test_doc_does_not_list_eighth_source(doc_text: str) -> None:
-    """An 8th row would be silent drift — bump this test deliberately."""
+    """An 8th row would be silent drift - bump this test deliberately."""
 
     assert "| 8 |" not in doc_text, (
         "Found '| 8 |' in the doc but the canonical contract is 7 sources. "
@@ -131,7 +131,7 @@ def test_doc_mentions_each_canonical_source_token(
     assert token.lower() in doc_text.lower(), (
         f"Canonical token {token!r} missing from "
         f"{_DOC_PATH.relative_to(_PLATFORM_ROOT)}. The token is part of the "
-        f"contract this test enforces — either add it back or update "
+        f"contract this test enforces - either add it back or update "
         f"_CANONICAL_SOURCE_TOKENS."
     )
 

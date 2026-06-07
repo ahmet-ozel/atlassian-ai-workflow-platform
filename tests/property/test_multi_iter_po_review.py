@@ -1,19 +1,19 @@
-"""invariant for invariant — Multi-iter / PO Review invariants.
+﻿"""invariant for invariant - Multi-iter / PO Review invariants.
 
 This file pins the four invariants of ````
 **invariant**:
 
-1.:func:`temporal_shared.po_review.compute_orphan_branches` —
+1.:func:`temporal_shared.po_review.compute_orphan_branches` -
  deterministic, idempotent set-algebra filter for the
  ``GET /api/orphan-branches`` endpoint /).
-2.:func:`temporal_shared.po_review.compute_po_review_inbox` —
+2.:func:`temporal_shared.po_review.compute_po_review_inbox` -
  deterministic filter for the ``GET /api/po-review-inbox``
  endpoint /).
 3.:func:`automation_worker.workflows.bot_branch_retention.should_delete_branch`
- — pure predicate for the daily ``ai/*`` branch retention cron
+ - pure predicate for the daily ``ai/*`` branch retention cron
  /).
 4. The pure idempotency guards inside:func:`agent_runner.activities.iter_advance.iter_advance_pr_supersede`
- —:func:`_build_banner` is a deterministic formatter and:func:`_description_already_banners` is a pure idempotency check
+ -:func:`_build_banner` is a deterministic formatter and:func:`_description_already_banners` is a pure idempotency check
  that prevents a doubly-prefixed description on retry /).
 
 
@@ -21,29 +21,29 @@ This file pins the four invariants of ````
 Invariant statements (design.md §"invariant")
 ---------------------------------------------
 
-* **PR supersede idempotency ** — re-running the iter-advance
+* **PR supersede idempotency ** - re-running the iter-advance
  banner machinery on an already-superseded PR description is a
  no-op:
 
- 1. ``_build_banner(new_pr_id)`` is a pure formatter — same input
+ 1. ``_build_banner(new_pr_id)`` is a pure formatter - same input
  always returns the same string.
  2. ``_description_already_banners(_build_banner(n) + body, n)``
  is always ``True`` (the prepend-once guard).
  3. Prepending the banner to the same description twice via the
  guard yields the same single-banner result (idempotent).
 
-* **Branch retention predicate ** —:func:`should_delete_branch` returns ``True`` iff the branch age
+* **Branch retention predicate ** -:func:`should_delete_branch` returns ``True`` iff the branch age
  exceeds 30 days **and** the linked Jira issue status is in
  ``{Done, Closed}`` (case-insensitive). Concretely:
 
- 1. ``age <= 30 days`` ⇒ ``False`` (boundary kept — strict
+ 1. ``age <= 30 days`` ⇒ ``False`` (boundary kept - strict
  inequality).
  2. ``status ∉ {Done, Closed}`` (case-folded) ⇒ ``False``.
  3. Negative / zero age ⇒ ``False`` (clock-skew guard).
  4. Non-string ``status`` ⇒ ``False``.
- 5. Deterministic — same input always returns the same bool.
+ 5. Deterministic - same input always returns the same bool.
 
-* **Orphan-branch filter ** —:func:`compute_orphan_branches`
+* **Orphan-branch filter ** -:func:`compute_orphan_branches`
  is a deterministic, idempotent set-algebra filter over the
  caller-provided ``branches`` and ``prs`` iterables. Concretely:
 
@@ -55,10 +55,10 @@ Invariant statements (design.md §"invariant")
  results.
  5. Feeding the result back as ``branches`` returns the same set
  (idempotency).
- 6. PR draftness / author / merge state never affects the decision —
+ 6. PR draftness / author / merge state never affects the decision -
  any PR claims its source branch.
 
-* **PO Review Inbox filter ** —:func:`compute_po_review_inbox`
+* **PO Review Inbox filter ** -:func:`compute_po_review_inbox`
  is a deterministic filter over the caller-provided ``prs`` iterable
  and ``bot_ids`` set. Concretely:
 
@@ -68,7 +68,7 @@ Invariant statements (design.md §"invariant")
  4. Two calls with the same input return equal:class:`frozenset`
  results.
  5. Empty ``bot_ids`` always yields the empty set.
- 6. Idempotent — feeding the result back returns the same set.
+ 6. Idempotent - feeding the result back returns the same set.
 
 Hypothesis is used to drive every property across hundreds of
 ``(branches, prs, bot_ids, age, status, pr_ids, descriptions)`` shapes.
@@ -100,7 +100,7 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — expose the worker source trees so the predicate
+# sys.path bootstrap - expose the worker source trees so the predicate
 # and pure helpers can be imported without pip-installing each worker
 # package. Mirrors ``test_llm_dedup.py`` / ``test_temporal_loop_cap.py``.
 # ---------------------------------------------------------------------------
@@ -118,7 +118,7 @@ for _src in _REQUIRED_SRC_DIRS:
         sys.path.insert(0, _src_str)
 
 
-# noqa: E402 — imports must follow the sys.path bootstrap above.
+# noqa: E402 - imports must follow the sys.path bootstrap above.
 
 from temporal_shared.po_review import (  # noqa: E402
     AI_BRANCH_PREFIX,
@@ -206,7 +206,7 @@ def _branch_strategy() -> st.SearchStrategy[Branch]:
     )
 
 
-# Account ids — small set so bot-id membership is non-trivial.
+# Account ids - small set so bot-id membership is non-trivial.
 _ACCOUNT_IDS: Final = st.sampled_from(
     [f"acct-{i}" for i in range(1, 11)]
 )
@@ -238,7 +238,7 @@ _PR_LISTS = st.lists(_pull_request_strategy(), max_size=20)
 
 
 # ---------------------------------------------------------------------------
-# compute_orphan_branches — set-algebra invariants 
+# compute_orphan_branches - set-algebra invariants 
 # ---------------------------------------------------------------------------
 
 
@@ -280,7 +280,7 @@ class TestComputeOrphanBranchesProperties:
     ) -> None:
         """The returned set is a subset of the input branches.
 
- No branch is ever synthesised by the helper — every result
+ No branch is ever synthesised by the helper - every result
  element comes from the input ``branches`` iterable.
 
 
@@ -300,7 +300,7 @@ class TestComputeOrphanBranchesProperties:
         first = compute_orphan_branches(branches, prs)
         second = compute_orphan_branches(branches, prs)
         assert first == second
-        # The result type is:class:`frozenset` — pinned so the API
+        # The result type is:class:`frozenset` - pinned so the API
         # endpoint can rely on hashability.
         assert isinstance(first, frozenset)
 
@@ -313,7 +313,7 @@ class TestComputeOrphanBranchesProperties:
 
  Once a branch is determined to be orphan, re-running the helper
  on the orphan subset (with the same PR list) must return the
- same set — the helper does not have any state that could flip
+ same set - the helper does not have any state that could flip
  a branch from orphan to non-orphan on a second pass.
 
 
@@ -327,7 +327,7 @@ class TestComputeOrphanBranchesProperties:
     def test_pr_draftness_and_author_do_not_affect_orphan_decision(
         self, branches: list[Branch], prs: list[PullRequest]
     ) -> None:
-        """Any PR (draft or not, bot or human) claims its source branch.:func:`compute_orphan_branches` only consults:attr:`PullRequest.source_branch` — flipping any other field
+        """Any PR (draft or not, bot or human) claims its source branch.:func:`compute_orphan_branches` only consults:attr:`PullRequest.source_branch` - flipping any other field
  on every PR must not change the orphan set.
 
 
@@ -350,7 +350,7 @@ class TestComputeOrphanBranchesProperties:
 
 
 # ---------------------------------------------------------------------------
-# compute_po_review_inbox — filter invariants 
+# compute_po_review_inbox - filter invariants 
 # ---------------------------------------------------------------------------
 
 
@@ -433,7 +433,7 @@ class TestComputePoReviewInboxProperties:
         """Feeding the inbox back as ``prs`` yields the same inbox.
 
  Every PR in the inbox is, by construction, a draft authored
- by a bot — so a second filter pass must be a no-op.
+ by a bot - so a second filter pass must be a no-op.
 
 
  """
@@ -609,7 +609,7 @@ class TestComputePoReviewInboxExamples:
 
 
 # ---------------------------------------------------------------------------
-# should_delete_branch — pure predicate invariants 
+# should_delete_branch - pure predicate invariants 
 # ---------------------------------------------------------------------------
 #
 # The retention predicate sits on the daily ``BotBranchRetention`` cron
@@ -617,7 +617,7 @@ class TestComputePoReviewInboxExamples:
 # conditions must hold (age > 30 days **and** issue closed) and the
 # predicate is pure so it is replay-safe inside the workflow body.
 
-# Branch ages — bounded so Hypothesis shrinks counterexamples quickly
+# Branch ages - bounded so Hypothesis shrinks counterexamples quickly
 # but still exercise both sides of the boundary (≤ 30 days vs > 30
 # days) and the negative-age clock-skew guard.
 _AGE_DAYS = st.integers(min_value=-5, max_value=120)
@@ -683,7 +683,7 @@ class TestShouldDeleteBranchProperties:
     def test_deterministic(self, age: timedelta, status: str) -> None:
         """Two calls with the same input return the same result.
 
- The predicate has no clock, no I/O, no globals — replay-safe.
+ The predicate has no clock, no I/O, no globals - replay-safe.
 
 
  """
@@ -703,7 +703,7 @@ class TestShouldDeleteBranchProperties:
     ) -> None:
         """``age <= 30 days`` ⇒ ``False`` regardless of issue status.
 
- The boundary uses *strict* inequality — a branch whose age is
+ The boundary uses *strict* inequality - a branch whose age is
  exactly 30 days survives the current cron tick and is
  reconsidered tomorrow. This mirrors the the operational rule language
  ("30 günden eski" excludes the boundary itself).
@@ -860,11 +860,11 @@ class TestShouldDeleteBranchExamples:
 # ``platform/workers/agent-runner-worker/tests/unit/test_iter_advance_pr_supersede.py``.
 # The invariant here pins the **pure** half of the contract:
 #
-# *:func:`_build_banner` is a deterministic formatter — same input
+# *:func:`_build_banner` is a deterministic formatter - same input
 # yields the same string, banner contains the new PR id, banner
 # embeds the canonical Turkish supersede notice.
 # *:func:`_description_already_banners` is a pure idempotency guard
-# — once a banner is present in the description, a second
+# - once a banner is present in the description, a second
 # prepend-via-the-guard is a no-op (no double-prefix).
 #
 # Together, these properties are sufficient to prove that an
@@ -873,11 +873,11 @@ class TestShouldDeleteBranchExamples:
 # Temporal retries the activity (which is the loop the 
 # idempotency the operational rule actually guards against).
 
-# PR ids — bounded so Hypothesis shrinks quickly; the formatter does
+# PR ids - bounded so Hypothesis shrinks quickly; the formatter does
 # not constrain the integer range, so any positive int is valid.
 _PR_ID_STRATEGY = st.integers(min_value=1, max_value=1_000_000)
 
-# Description bodies — small alphabet, bounded length so Hypothesis
+# Description bodies - small alphabet, bounded length so Hypothesis
 # can shrink counterexamples to readable strings. ``max_size=80``
 # keeps the tests fast while still exercising long descriptions.
 _DESCRIPTION_STRATEGY = st.text(
@@ -895,10 +895,10 @@ class TestIterAdvanceBannerProperties:
  The full Bitbucket-side idempotency contract relies on the banner
  formatter being:
 
- 1. **Deterministic** — same input always yields the same string.
- 2. **Embedding the new PR id** — the banner mentions ``#{new_pr_id}``
+ 1. **Deterministic** - same input always yields the same string.
+ 2. **Embedding the new PR id** - the banner mentions ``#{new_pr_id}``
  so a human reading the description sees which iter superseded.
- 3. **Containing the canonical Turkish notice** — design.md §
+ 3. **Containing the canonical Turkish notice** - design.md §
  "AgentRunner modülü" pins the exact wording.
 
 
@@ -1043,7 +1043,7 @@ class TestDescriptionAlreadyBannersProperties:
  desc = _build_banner(n) + desc
 
  Running this guarded prepend twice in succession must produce
- the same string both times — exactly one banner copy. This
+ the same string both times - exactly one banner copy. This
  is the property actually requires from the production
  retry path.
 
@@ -1090,7 +1090,7 @@ class TestDescriptionAlreadyBannersProperties:
         # The guard for ``b`` must return False (no banner for ``b``
         # is present), so a fresh prepend is required.
         # Hypothesis may produce a description that *coincidentally*
-        # contains the substring ``PR #{b}`` — in that case skip. In
+        # contains the substring ``PR #{b}`` - in that case skip. In
         # practice the BANNER_PREFIX_TEMPLATE is long enough that
         # accidental collisions are negligible, but we guard anyway.
         if _build_banner(new_pr_id_b) in bannered_for_a:

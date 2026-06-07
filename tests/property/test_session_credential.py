@@ -1,4 +1,4 @@
-"""Property-based tests for Streamlit per-user session credential lifecycle.
+﻿"""Property-based tests for Streamlit per-user session credential lifecycle.
 
 Hypothesis-driven verification of the Streamlit per-user credential
 lifecycle:
@@ -17,12 +17,12 @@ Scope and surface under test
 The test targets the canonical Vault path layer that the UI and service
 relay use:
 
-* :func:`automation_service.credentials.build_user_session_path` —
+* :func:`automation_service.credentials.build_user_session_path` -
   returns ``vault:atlassian/_user_session/<session_id>/<service>``
   exactly. This is the **single source of truth** for the path layout
   shared by the Streamlit form, the assistant-service relay and the
   :class:`automation_service.credentials.CredentialResolver`.
-* :class:`vault_client.LocalDevBackend` — the pluggable backend chosen
+* :class:`vault_client.LocalDevBackend` - the pluggable backend chosen
   here over an ad-hoc dict because it
   exercises the on-disk encryption path and the ``KeyError``
   semantics that ``CredentialResolver`` already relies on. Property
@@ -34,8 +34,8 @@ A thin in-test :class:`_SessionCredentialStore` wraps the backend with
 the four lifecycle operations any production session-credential
 handler MUST expose (``write_credential`` / ``read_credential`` /
 ``end_session`` / ``expire_ttl``) and uses the canonical path helper
-internally. The wrapper is intentionally tiny — the property tests
-exercise the Vault path layer, not the wrapper's bookkeeping — but
+internally. The wrapper is intentionally tiny - the property tests
+exercise the Vault path layer, not the wrapper's bookkeeping - but
 it makes the lifecycle states explicit so the property assertions
 read like English sentences against the design document.
 """
@@ -52,7 +52,7 @@ from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 # ---------------------------------------------------------------------------
-# Path bootstrap — make ``automation_service.credentials`` importable.
+# Path bootstrap - make ``automation_service.credentials`` importable.
 #
 # The ``automation-service`` source tree co-exists with the
 # legacy ``src/main.py`` + ``src/config.py`` layer;
@@ -166,7 +166,7 @@ class _SessionCredentialStore:
     backend already stores: the path layout itself
     (``vault:atlassian/_user_session/<session_id>/<service>``) is the
     isolation primitive. The ``end_session`` and ``expire_ttl``
-    operations are functionally identical (both delete the path) —
+    operations are functionally identical (both delete the path) -
     they are split into two methods purely so a regression in either
     code path surfaces with a meaningful test name.
     """
@@ -198,7 +198,7 @@ class _SessionCredentialStore:
         self._backend.delete(self._path(session_id, service))
 
     def expire_ttl(self, session_id: str, service: AtlassianService) -> None:
-        """TTL-driven cleanup (background sweeper) — same effect as end_session."""
+        """TTL-driven cleanup (background sweeper) - same effect as end_session."""
         self._backend.delete(self._path(session_id, service))
 
 
@@ -227,7 +227,7 @@ def test_write_lands_at_user_session_path(
     For every (session_id, service, credential) triple the
     Hypothesis can generate, ``write_credential`` MUST persist the
     payload at ``vault:atlassian/_user_session/<session_id>/<service>``
-    exactly — same canonical path shape consumed by the resolver,
+    exactly - same canonical path shape consumed by the resolver,
     so a per-user override is never observable at any
     other path.
     """
@@ -263,7 +263,7 @@ def test_read_after_session_end_returns_not_found(
     """Explicit session end removes the credential path.
 
     After explicit session end, the path is removed and any subsequent
-    ``read`` call raises :class:`KeyError` — the canonical
+    ``read`` call raises :class:`KeyError` - the canonical
     "not_found" signal across the :class:`vault_client.VaultClient`
     protocol (matches the contract relied on by
     :class:`automation_service.credentials.CredentialResolver`).
@@ -341,8 +341,8 @@ def test_session_id_uniqueness_path_isolation(
     ``_user_session/<session_id>/<service>`` is unique per
     ``(session_id, service)``, so a second write under the same
     ``session_id`` either overwrites the first session's credential
-    (single-tenant slot) — which means a subsequent ``end_session``
-    by *either* tenant clears the slot for everyone — or, equivalently,
+    (single-tenant slot) - which means a subsequent ``end_session``
+    by *either* tenant clears the slot for everyone - or, equivalently,
     the second session can only observe a fresh credential after the
     first session has ended.
 
@@ -407,7 +407,7 @@ def test_distinct_sessions_are_isolated(
     in both directions.
     """
 
-    # Distinct session ids only — coinciding ids would collapse to
+    # Distinct session ids only - coinciding ids would collapse to
     # the same path and are covered by the uniqueness test.
     if session_id_a == session_id_b:
         return

@@ -1,12 +1,12 @@
-"""Bot assignee info card for the Task Creator page (R7.1–R7.4).
+﻿"""Bot assignee info card for the Task Creator page (R7.1-R7.4).
 
 Validates Requirements:
-    * R7.1 — Dept switcher altında bot assignee bilgi kartı render edilir;
+    * R7.1 - Dept switcher altında bot assignee bilgi kartı render edilir;
       display_name, bot_username, account_id (kısaltılmış), probe rozeti.
-    * R7.2 — Kart başlığı: "Bu task açıldığında atayın:"; account_id
+    * R7.2 - Kart başlığı: "Bu task açıldığında atayın:"; account_id
       üzerine tıklandığında pano'ya tam değer kopyalanır.
-    * R7.3 — Hiç credential yoksa kırmızı uyarı + Credentials page link.
-    * R7.4 — Credential var ama probe fail ise sarı uyarı + admin-dashboard
+    * R7.3 - Hiç credential yoksa kırmızı uyarı + Credentials page link.
+    * R7.4 - Credential var ama probe fail ise sarı uyarı + admin-dashboard
       /security deep link.
 
 The component fetches data from ``GET /api/dept/{id}/bot-info`` via an
@@ -67,7 +67,7 @@ _ADMIN_DASHBOARD_SECURITY_URL: str = "/security"
 def _truncate_account_id(account_id: str | None) -> str:
     """Return first 8 chars + ellipsis, or placeholder if empty."""
     if not account_id:
-        return "—"
+        return "-"
     if len(account_id) <= _ACCOUNT_ID_DISPLAY_LEN:
         return account_id
     return f"{account_id[:_ACCOUNT_ID_DISPLAY_LEN]}…"
@@ -91,7 +91,7 @@ def _fetch_bot_info(dept_id: str) -> dict[str, Any] | None:
         return None
     try:
         return api.get_bot_info(dept_id)
-    except Exception:  # noqa: BLE001 — best-effort; card is informational
+    except Exception:  # noqa: BLE001 - best-effort; card is informational
         return None
 
 
@@ -114,7 +114,7 @@ def render_bot_assignee_card(dept_id: str) -> dict[str, Any] | None:
 
     if data is None:
         st.warning(
-            "Bot bilgisi yüklenemedi — assistant-service bağlantısını kontrol edin."
+            "Bot bilgisi yüklenemedi - assistant-service bağlantısını kontrol edin."
         )
         return None
 
@@ -155,11 +155,11 @@ def render_bot_assignee_card(dept_id: str) -> dict[str, Any] | None:
             bots[0],
         )
 
-        bot_username: str = primary_bot.get("username", "—")
+        bot_username: str = primary_bot.get("username", "-")
         account_id: str = primary_bot.get("account_id") or ""
 
         # Display name + username
-        st.markdown(f"**{display_name}** — `{bot_username}`")
+        st.markdown(f"**{display_name}** - `{bot_username}`")
 
         # Account ID with copy button
         truncated_id = _truncate_account_id(account_id)
@@ -182,7 +182,7 @@ def render_bot_assignee_card(dept_id: str) -> dict[str, Any] | None:
         # ------------------------------------------------------------------
         if has_probe_failure:
             st.warning(
-                "⚠️ Credential mevcut ama bağlantı testi başarısız — "
+                "⚠️ Credential mevcut ama bağlantı testi başarısız - "
                 "admin-dashboard'dan re-probe çalıştırın."
             )
             admin_url = st.session_state.get(

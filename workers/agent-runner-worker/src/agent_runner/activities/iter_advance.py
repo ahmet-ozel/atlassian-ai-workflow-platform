@@ -1,4 +1,4 @@
-"""Iter advance + PR supersede activity.
+﻿"""Iter advance + PR supersede activity.
 
 When :class:`AgentRunnerWorkflow` advances to a new iteration and opens
 a fresh draft PR, the previous iteration's PR (if any) must be marked
@@ -29,7 +29,7 @@ mechanisms combine to guarantee this:
   (see :class:`PrSupersedeLogRepo` and
   ``platform/infra/postgres/11_workflows.sql`` block 4) so a retried
   insert is silently dropped.
-* The Bitbucket *label add* is naturally idempotent — adding the same
+* The Bitbucket *label add* is naturally idempotent - adding the same
   label twice has no effect on the PR's label set.
 * The Bitbucket *description prepend* is guarded by a string
   containment check: when the banner already appears in the existing
@@ -41,13 +41,13 @@ Closed/merged old PR
 --------------------
 
 When the upstream PR's state is anything other than ``"OPEN"`` (i.e.
-``"MERGED"``, ``"DECLINED"``, ``"CLOSED"`` — the exact spellings vary
+``"MERGED"``, ``"DECLINED"``, ``"CLOSED"`` - the exact spellings vary
 by Bitbucket deployment, but only ``"OPEN"`` is treated as live),
 labelling and description rewriting would be both unnecessary
 (reviewers no longer act on a closed PR) and noisy (the banner would
 muddy the closed PR's audit trail). The activity short-circuits the
 Bitbucket calls in that case while *still* recording the supersede
-log row — the ledger is the single source of truth for the PO Review
+log row - the ledger is the single source of truth for the PO Review
 Inbox audit trail and must capture every iter transition regardless
 of the upstream PR's current state.
 
@@ -90,7 +90,7 @@ _LOG = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# Constants — shared with tests so the contract is the single source of truth
+# Constants - shared with tests so the contract is the single source of truth
 # ---------------------------------------------------------------------------
 
 
@@ -134,7 +134,7 @@ def _mcp_base_url() -> str:
 
 @dataclass(frozen=True)
 class RepoRef:
-    """Bitbucket repository coordinate — workspace + slug.
+    """Bitbucket repository coordinate - workspace + slug.
 
     Mirrors :class:`activities.bitbucket.RepoRef` so the two activity
     modules can be passed the same object shape without an extra
@@ -161,7 +161,7 @@ class IterAdvanceResult:
     label_added:
         ``True`` iff the label-add HTTP call returned a success code
         on this invocation. Adding an already-present label still
-        counts as "added" because Bitbucket treats it idempotently —
+        counts as "added" because Bitbucket treats it idempotently -
         what we want to surface here is whether the call fired at all.
     description_updated:
         ``True`` iff the description prepend was issued. Skipped when
@@ -180,7 +180,7 @@ class IterAdvanceResult:
 
 
 # ---------------------------------------------------------------------------
-# Repo registry — wired at worker boot, read by the activity at runtime
+# Repo registry - wired at worker boot, read by the activity at runtime
 # ---------------------------------------------------------------------------
 
 
@@ -193,7 +193,7 @@ def set_pr_supersede_log_repo(repo: Any) -> None:
     Called once during worker startup (``main.py``) after the
     Postgres pool is initialised. The activity reads the registry on
     each invocation; if no repo is wired the activity falls through
-    gracefully (the Bitbucket side-effects still fire — the ledger
+    gracefully (the Bitbucket side-effects still fire - the ledger
     write is a *consequence* of supersede, not a precondition for it,
     matching the audit-emit pattern in :mod:`activities.precommit_scan`).
 
@@ -229,7 +229,7 @@ def get_pr_supersede_log_repo() -> Any | None:
 #
 # Each helper is a thin wrapper around the same authenticated MCP
 # client so the activity body stays readable. None of the helpers
-# raises on a 4xx — they return the response object so the activity
+# raises on a 4xx - they return the response object so the activity
 # can decide whether the failure is a hard error or a graceful
 # fallthrough.
 
@@ -304,7 +304,7 @@ async def _get_pr_state_and_description(
     if response.status_code != 200:
         raise BitbucketSupersedeError(
             f"Failed to fetch PR #{pr_id}: "
-            f"HTTP {response.status_code} — {response.text}",
+            f"HTTP {response.status_code} - {response.text}",
             status_code=response.status_code,
         )
 
@@ -321,7 +321,7 @@ async def _add_pr_label(
 
     Bitbucket's label endpoints differ between Cloud and DC, but the
     MCP server normalises both behind ``/api/bitbucket/pull-requests/labels``.
-    A 409 response (label already present) is treated as success — the
+    A 409 response (label already present) is treated as success - the
     desired end state (label set on PR) holds either way.
     """
 
@@ -355,7 +355,7 @@ async def _add_pr_label(
 
     raise BitbucketSupersedeError(
         f"Failed to add label {label!r} to PR #{pr_id}: "
-        f"HTTP {response.status_code} — {response.text}",
+        f"HTTP {response.status_code} - {response.text}",
         status_code=response.status_code,
     )
 
@@ -394,7 +394,7 @@ async def _update_pr_description(
 
     raise BitbucketSupersedeError(
         f"Failed to update description on PR #{pr_id}: "
-        f"HTTP {response.status_code} — {response.text}",
+        f"HTTP {response.status_code} - {response.text}",
         status_code=response.status_code,
     )
 
@@ -424,14 +424,14 @@ class BitbucketSupersedeError(RuntimeError):
 # ---------------------------------------------------------------------------
 
 
-#: Bitbucket states that count as "live" — only an OPEN PR receives
+#: Bitbucket states that count as "live" - only an OPEN PR receives
 #: the supersede treatment. Any other state is treated as a no-op
 #: (the closed/merged PR is already out of the review queue).
 _OPEN_STATES: Final[frozenset[str]] = frozenset({"OPEN"})
 
 
 # ---------------------------------------------------------------------------
-# Pure helper — exposed for unit tests
+# Pure helper - exposed for unit tests
 # ---------------------------------------------------------------------------
 
 
@@ -471,12 +471,12 @@ async def iter_advance_pr_supersede(
 
     Side effects (in order):
 
-    1. Short-circuit when ``old_pr_id is None`` (first-iteration call —
+    1. Short-circuit when ``old_pr_id is None`` (first-iteration call -
        there is nothing to supersede). Returns
        :class:`IterAdvanceResult` with all flags ``False``.
     2. Fetch the old PR's ``(state, description)`` via
        ``/api/bitbucket/pull-requests/get``. A 404 collapses to
-       ``state="CLOSED"`` (the PR has been deleted upstream — same
+       ``state="CLOSED"`` (the PR has been deleted upstream - same
        end state).
     3. When the state is not ``"OPEN"`` the Bitbucket calls are
        skipped, but the supersede ledger row is still recorded so the
@@ -510,7 +510,7 @@ async def iter_advance_pr_supersede(
         Bitbucket repository coordinate. Carried as a positional
         argument (rather than derived from ``workflow_id``) so the
         activity works for both ``automation-jira-*`` and
-        ``automation-bb-*`` workflow ids — the ``automation-jira-*``
+        ``automation-bb-*`` workflow ids - the ``automation-jira-*``
         variant carries the issue key but not the repo, so the
         workflow body must thread the repo through.
     workflow_id:
@@ -518,13 +518,13 @@ async def iter_advance_pr_supersede(
         the supersede-log PK.
     old_pr_id:
         PR id of the previous iteration's draft PR. ``None`` on the
-        first iteration of a fresh issue — the activity returns
+        first iteration of a fresh issue - the activity returns
         ``IterAdvanceResult(superseded=False)`` immediately.
     new_pr_id:
         PR id of the freshly opened iteration draft PR. Embedded in
         the label and the banner.
     dept_id:
-        Department slug — used by the credential resolver to mint
+        Department slug - used by the credential resolver to mint
         Bitbucket creds. Mirrors :mod:`activities.bitbucket`.
 
     Returns
@@ -569,7 +569,7 @@ async def iter_advance_pr_supersede(
     if state not in _OPEN_STATES:
         _LOG.info(
             "iter_advance_pr_supersede: old PR #%d is %s "
-            "(not OPEN) — skipping Bitbucket updates",
+            "(not OPEN) - skipping Bitbucket updates",
             old_pr_id,
             state or "<unknown>",
         )
@@ -602,7 +602,7 @@ async def iter_advance_pr_supersede(
         else:
             _LOG.debug(
                 "iter_advance_pr_supersede: banner already present on "
-                "PR #%d for new_pr_id=%d — skipping description update",
+                "PR #%d for new_pr_id=%d - skipping description update",
                 old_pr_id,
                 new_pr_id,
             )
@@ -652,7 +652,7 @@ async def _record_supersede_log(
     if repo is None:
         # Worker has not wired the repo (eg. unit / integration test
         # environment that mocks the activity). The Bitbucket side
-        # effects still fire — the ledger is a *consequence* of
+        # effects still fire - the ledger is a *consequence* of
         # supersede, not a precondition.
         _LOG.debug(
             "iter_advance_pr_supersede: PrSupersedeLogRepo not wired; "
@@ -666,7 +666,7 @@ async def _record_supersede_log(
     except Exception:  # noqa: BLE001 - best-effort, ledger may be down
         _LOG.warning(
             "iter_advance_pr_supersede: PrSupersedeLogRepo.record "
-            "failed for workflow_id=%s old_pr_id=%d — continuing",
+            "failed for workflow_id=%s old_pr_id=%d - continuing",
             workflow_id,
             old_pr_id,
             exc_info=True,

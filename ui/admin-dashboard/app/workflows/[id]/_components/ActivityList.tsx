@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * ActivityList — renders each Temporal activity with collapsible input/output,
+ * ActivityList - renders each Temporal activity with collapsible input/output,
  * elapsed_ms, retry_count and status.
  */
 
@@ -26,7 +26,7 @@ interface ActivityListProps {
 function CollapsibleJson({ label, value }: { label: string; value: unknown }): JSX.Element {
   const [open, setOpen] = useState(false);
   const text = value != null ? JSON.stringify(value, null, 2) : null;
-  if (!text) return <span style={{ color: "#9ca3af" }}>{label}: —</span>;
+  if (!text) return <span style={{ color: "#9ca3af" }}>{label}: -</span>;
 
   return (
     <span>
@@ -103,11 +103,11 @@ export default function ActivityList({ activities }: ActivityListProps): JSX.Ele
                     borderRadius: "4px",
                     background: ACTIVITY_STATUS_COLORS[act.status ?? ""] ?? "#f3f4f6",
                   }}>
-                    {act.status ?? "—"}
+                    {act.status ?? "-"}
                   </span>
                 </td>
                 <td style={{ padding: "0.5rem" }}>
-                  {act.elapsed_ms != null ? `${act.elapsed_ms}ms` : "—"}
+                  {act.elapsed_ms != null ? `${act.elapsed_ms}ms` : "-"}
                 </td>
                 <td style={{ padding: "0.5rem" }}>
                   {act.retry_count ?? 0}

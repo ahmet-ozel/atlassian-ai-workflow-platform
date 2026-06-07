@@ -1,13 +1,13 @@
-"""Notification dispatcher exception hierarchy.
+﻿"""Notification dispatcher exception hierarchy.
 
 The two leaf exceptions distinguish *which side* of the dispatch failed so
 callers (typically a Temporal activity) can apply different retry policies:
 
-* :class:`TemplateRenderError` — the prompt template could not be rendered
+* :class:`TemplateRenderError` - the prompt template could not be rendered
   (missing placeholder, unknown prompt name, escape error). This is **never**
-  retryable — the workflow should fail-fast and surface the validation error
+  retryable - the workflow should fail-fast and surface the validation error
   to the operator.
-* :class:`NotificationError` — generic transport / persistence failure. Used
+* :class:`NotificationError` - generic transport / persistence failure. Used
   by concrete adapters when Slack returns non-2xx, SMTP times out,
   or the Postgres ``notification_log`` insert fails for a non-unique reason.
 

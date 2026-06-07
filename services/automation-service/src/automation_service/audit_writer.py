@@ -1,4 +1,4 @@
-"""Asyncpg-backed :class:`audit_logger.AuditWriter` for automation-service.
+﻿"""Asyncpg-backed :class:`audit_logger.AuditWriter` for automation-service.
 
 The lifespan handler wraps an :class:`AuditLogger` around this writer so
 every router that pulls an ``audit_logger`` collaborator off
@@ -17,14 +17,14 @@ Failure semantics
 -----------------
 
 Failures **never** propagate out of :meth:`insert_audit`. Audit
-failures must not mask the underlying request outcome — the column-
+failures must not mask the underlying request outcome - the column-
 level CHECK on ``actor_role`` is enforced by
 :class:`audit_logger.AuditLogger` *before* the SQL runs, and any
 connection-level / programming error here is logged and swallowed.
 
 * Connection-level errors (``OSError``, ``asyncio.TimeoutError`` and
   the asyncpg-named connection exceptions enumerated in
-  :func:`_is_connection_error`) are logged at WARNING — the audit row
+  :func:`_is_connection_error`) are logged at WARNING - the audit row
   is dropped on the floor; an operator looking at "audit_events
   insert failed" log lines can correlate with the orchestrator's
   Postgres outage signal.
@@ -74,7 +74,7 @@ class _PoolLike(Protocol):
 
 
 # ---------------------------------------------------------------------------
-# SQL — column order mirrors infra/postgres/init/10_automation.sql
+# SQL - column order mirrors infra/postgres/init/10_automation.sql
 # ---------------------------------------------------------------------------
 
 
@@ -118,7 +118,7 @@ class AsyncpgAuditEventsWriter:
 
     Wraps an externally-owned :class:`asyncpg.Pool` and performs a
     single ``INSERT INTO automation.audit_events`` per call.  The pool
-    is **not** closed by the writer — lifecycle (open + close) belongs
+    is **not** closed by the writer - lifecycle (open + close) belongs
     to the lifespan handler.
     """
 

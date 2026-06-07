@@ -1,19 +1,19 @@
-"""Pull-request opener protocol + Bitbucket adapter.
+﻿"""Pull-request opener protocol + Bitbucket adapter.
 
 The :class:`PromptsGitRouter` decouples "open a PR" from the concrete
 upstream by talking to a :class:`PullRequestOpener` interface. Two
 implementations ship in-tree:
 
-* :class:`BitbucketPullRequestOpener` — wraps an
+* :class:`BitbucketPullRequestOpener` - wraps an
   ``mcp_client``-style ``bitbucket_create_pull_request_cloud`` callable
   (the foundation library's MCP client) so the actual HTTP call goes
   through the existing capability-gated tool dispatch surface.
-* :class:`InMemoryPullRequestOpener` — used by unit tests to capture
+* :class:`InMemoryPullRequestOpener` - used by unit tests to capture
   the call arguments without touching Bitbucket; lives in the test
   module rather than here to keep production imports lean.
 
 The interface is async because the Bitbucket call goes over HTTP. The
-router awaits the opener inside the FastAPI handler — no
+router awaits the opener inside the FastAPI handler - no
 ``run_in_executor`` indirection needed.
 """
 
@@ -208,7 +208,7 @@ def _extract_pr_url(response: Mapping[str, object]) -> str:
     * DC:    ``response["links"]["self"][0]["href"]``
 
     We try both shapes and fall back to an empty string so a missing
-    URL never raises — the router treats an empty URL as
+    URL never raises - the router treats an empty URL as
     "PR opened, link unavailable" and emits an audit warning rather
     than failing the request.
     """

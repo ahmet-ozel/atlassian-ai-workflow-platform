@@ -1,4 +1,4 @@
-"""invariant 6 — Cost tracking idempotent insert.
+﻿"""invariant 6 - Cost tracking idempotent insert.
 
 
 
@@ -14,21 +14,21 @@ For any hypothesis-generated list of ``CostEntry`` values
 
  (a) After ``cost_tracker.record(entry)`` has been called for
  every entry in the list, ``cost_tracking`` contains
- **exactly one** row per distinct ``activity_id`` — the
+ **exactly one** row per distinct ``activity_id`` - the
  ``UNIQUE (activity_id)`` index plus the
  ``ON CONFLICT (activity_id) DO NOTHING`` clause guarantee
  the second insert is a no-op.
  (b) The resulting row count equals the number of unique
  ``activity_id`` values in the input list.
  (c) ``record`` enforces the Postgres ``CHECK`` constraint
- ``cost_tag IN ('production','sandbox','probe')`` — invalid
+ ``cost_tag IN ('production','sandbox','probe')`` - invalid
  tags raise at write time and never reach the table.
  (d) Rows tagged ``'sandbox'`` or ``'probe'`` are excluded from:class:`automation_service.budget.policy.BudgetCapPolicy`
  usage queries (the SQL filter is ``cost_tag = 'production'``);
  sandbox prompt tests and probe-time LLM calls do not
  contaminate dept budget aggregates.
  (e) Determinism: a second pass over the same entry list against
- a fresh table arrives at the **same** final row state — the
+ a fresh table arrives at the **same** final row state - the
  first ``activity_id`` write wins, all subsequent writes for
  the same id are dropped silently. A subsequent ``SELECT``
  returns the row from the first insert, not from any later
@@ -47,7 +47,7 @@ Surface under test
  invariant exercises a faithful in-memory reference oracle that
  mirrors the storage contract (``INSERT... ON CONFLICT
  (activity_id) DO NOTHING`` + the ``cost_tag`` ``CHECK``) so the
- invariants in (a)–(f) still pin the contract a future
+ invariants in (a)-(f) still pin the contract a future
  implementation must satisfy. When lands the import guard
  collapses and the production module is exercised directly.
 *:class:`cost_tracking.types.CostEntry` is imported under the same
@@ -60,14 +60,14 @@ Related coverage
 
 * The ``CostTracker`` insert path uses ``INSERT...
  ON CONFLICT`` behavior pinned by this property.
-* ``platform/infra/postgres/20_ops.sql`` — the ``shared.cost_tracking``
+* ``platform/infra/postgres/20_ops.sql`` - the ``shared.cost_tracking``
  table whose ``UNIQUE (activity_id)`` + ``CHECK (cost_tag IN
  ('production','sandbox','probe'))`` constraints make the property
  enforceable end-to-end.
-* ``platform/tests/property/test_token_cap_fail_fast.py`` —
+* ``platform/tests/property/test_token_cap_fail_fast.py`` -
  reference style for the module-level ``skipif`` fallback pattern
  and the ``try / except ModuleNotFoundError`` import guard.
-* ``platform/tests/property/test_cost_predict_budget_cap.py`` —
+* ``platform/tests/property/test_cost_predict_budget_cap.py`` -
  sibling invariant (invariant); together (6 + 7) they own the
  combinatorial coverage of the cost-tracking lib's two halves
  (record + predict / enforce).
@@ -89,7 +89,7 @@ from hypothesis import strategies as st
 
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — the ``cost_tracking`` lib lives under
+# sys.path bootstrap - the ``cost_tracking`` lib lives under
 # ``libs/cost-tracking/src`` (added defensively because the path is
 # not yet wired into ``pytest.ini``; once ships, the entry
 # can be promoted to ``pythonpath`` and this block becomes a no-op).
@@ -108,11 +108,11 @@ for _src in _LIB_SRC_DIRS:
 
 
 # ---------------------------------------------------------------------------
-# Optional import —:class:`cost_tracking.tracker.CostTracker` is
+# Optional import -:class:`cost_tracking.tracker.CostTracker` is
 #; until it ships we fall back to an in-test stand-in that
 # mirrors the design pseudocode (``INSERT... ON CONFLICT
 # (activity_id) DO NOTHING`` + the ``cost_tag`` ``CHECK``) so the
-# invariants in (a)–(f) still pin the contract a future
+# invariants in (a)-(f) still pin the contract a future
 # implementation must satisfy.
 #
 # Import style mirrors ``test_token_cap_fail_fast.py``:
@@ -155,14 +155,14 @@ _DUPLICATE_AUDIT_ACTION: Final[str] = "cost_tracking_duplicate_dropped"
 #: carry verbatim per clause (d). Used to assert the SQL string
 #: shape both in the reference oracle (here) and against the
 #: production aggregate query (sibling invariant already pins
-#: this for the policy SQL — invariant only pins the data side
+#: this for the policy SQL - invariant only pins the data side
 #: of the contract: non-production rows must be observably tagged
 #: so the filter has something to exclude).
 _PRODUCTION_FILTER: Final[str] = "cost_tag = 'production'"
 
 
 # ---------------------------------------------------------------------------
-# Domain dataclass — local stand-in for ``cost_tracking.types.CostEntry``.
+# Domain dataclass - local stand-in for ``cost_tracking.types.CostEntry``.
 #
 # Mirrors the cost tracking entry shape. Once the production module lands, we replace the local
 # definition with a direct import; the structural shape stays
@@ -194,7 +194,7 @@ class _CostEntry:
 
 
 def _to_entry(values: dict[str, Any]) -> Any:
-    """Build a CostEntry — production class when available, else stand-in.
+    """Build a CostEntry - production class when available, else stand-in.
 
  Keeps the invariant agnostic to which side of the import
  guard is active: when ships, the production
@@ -209,7 +209,7 @@ def _to_entry(values: dict[str, Any]) -> Any:
 
 
 # ---------------------------------------------------------------------------
-# Reference Postgres-shaped store — mirrors the
+# Reference Postgres-shaped store - mirrors the
 # ``shared.cost_tracking`` table semantics (UNIQUE on activity_id,
 # CHECK on cost_tag, ON CONFLICT DO NOTHING) so the property
 # invariants exercise an oracle that matches what the production
@@ -230,7 +230,7 @@ class _CostTagViolation(ValueError):
  ``CheckViolationError`` (a subclass of
  ``IntegrityConstraintViolationError``). For the invariant
  we only care about the error class shape, not the SQLSTATE
- code —:class:`ValueError` keeps the assertion stable across
+ code -:class:`ValueError` keeps the assertion stable across
  driver versions.
  """
 
@@ -241,17 +241,17 @@ class _InMemoryCostTrackingTable:
 
  Implements the exact subset of Postgres semantics the invariant exercises:
 
- * ``UNIQUE (activity_id)`` index — duplicate inserts return
+ * ``UNIQUE (activity_id)`` index - duplicate inserts return
  ``conflict=True`` and leave the existing row in place
  (``ON CONFLICT (activity_id) DO NOTHING``).
- * ``CHECK (cost_tag IN ('production','sandbox','probe'))`` —
+ * ``CHECK (cost_tag IN ('production','sandbox','probe'))`` -
  invalid tags raise:class:`_CostTagViolation` before the
  row is committed.
  * Insertion order is preserved (``rows`` is a list) so a
  ``SELECT`` returning rows in insert order is deterministic
  under the same input sequence.
 
- The store is intentionally small — clauses (d) / (e) inspect
+ The store is intentionally small - clauses (d) / (e) inspect
  the raw row state and the ``audit`` callable; nothing else.
  """
 
@@ -262,7 +262,7 @@ class _InMemoryCostTrackingTable:
         """Insert ``entry`` and return ``True`` if a conflict occurred.
 
  Mirrors ``INSERT INTO cost_tracking... ON CONFLICT
- (activity_id) DO NOTHING`` — the call returns ``False``
+ (activity_id) DO NOTHING`` - the call returns ``False``
  when a new row is inserted and ``True`` when the unique
  index already has the ``activity_id`` and the insert was
  dropped.
@@ -284,12 +284,12 @@ class _InMemoryCostTrackingTable:
         return False
 
     def select_all(self) -> list[Any]:
-        """Return every row in insert order — used by clauses (a) / (e)."""
+        """Return every row in insert order - used by clauses (a) / (e)."""
 
         return list(self.rows)
 
     def select_by_activity_id(self, activity_id: str) -> Any | None:
-        """Return the winning row for ``activity_id`` — clause (e)."""
+        """Return the winning row for ``activity_id`` - clause (e)."""
 
         idx = self._index.get(activity_id)
         return self.rows[idx] if idx is not None else None
@@ -310,7 +310,7 @@ class _InMemoryCostTrackingTable:
 
 
 # ---------------------------------------------------------------------------
-# Reference CostTracker — used when has not landed yet.
+# Reference CostTracker - used when has not landed yet.
 #
 # Faithful transliteration of the tracker storage contract:
 # ``INSERT... ON CONFLICT
@@ -322,7 +322,7 @@ class _InMemoryCostTrackingTable:
 
 @dataclass
 class _RecordingAudit:
-    """Captures every emitted audit action — clause (f) oracle."""
+    """Captures every emitted audit action - clause (f) oracle."""
 
     events: list[tuple[str, dict[str, Any]]] = field(default_factory=list)
 
@@ -335,10 +335,10 @@ class _ReferenceCostTracker:
 
  Two collaborators:
 
- * ``store`` — an:class:`_InMemoryCostTrackingTable` that
+ * ``store`` - an:class:`_InMemoryCostTrackingTable` that
  mirrors the Postgres semantics ``CostTracker.record`` relies
  on.
- * ``audit`` — an:class:`_RecordingAudit` that records every
+ * ``audit`` - an:class:`_RecordingAudit` that records every
  ``cost_tracking_duplicate_dropped`` event so clause (f) can
  assert the audit trail.
 
@@ -382,7 +382,7 @@ def _build_tracker() -> tuple[
  matches.
 
  The fallback path returns the reference:class:`_ReferenceCostTracker`
- — both halves of the import guard share the same surface area
+ - both halves of the import guard share the same surface area
  so the call sites in the tests below remain identical.
  """
 
@@ -436,7 +436,7 @@ _dept_id_strategy: st.SearchStrategy[str] = st.sampled_from(
     ("payment", "platform", "data")
 )
 
-#: Optional ``user_id`` — ``None`` is a valid value for
+#: Optional ``user_id`` - ``None`` is a valid value for
 #: automation-driven workflows without an attributed end-user.
 _user_id_strategy: st.SearchStrategy[str | None] = st.one_of(
     st.none(),
@@ -449,14 +449,14 @@ _provider_strategy: st.SearchStrategy[str] = st.sampled_from(
     ("vllm", "openai", "anthropic")
 )
 
-#: ``cost_tag`` strategy used by the happy-path tests — only
+#: ``cost_tag`` strategy used by the happy-path tests - only
 #: valid values; clause (c) is exercised by a separate test that
 #: explicitly draws invalid tags.
 _valid_cost_tag_strategy: st.SearchStrategy[str] = st.sampled_from(
     _VALID_COST_TAGS
 )
 
-#: ``cost_usd`` quantised to two decimal places — matches the
+#: ``cost_usd`` quantised to two decimal places - matches the
 #: ``numeric(12, 6)`` column at workable precision while keeping
 #: the search space small.
 _cost_usd_strategy: st.SearchStrategy[Decimal] = st.decimals(
@@ -473,7 +473,7 @@ def _cost_entry_strategy(draw: st.DrawFn) -> Any:
     """Generate a:class:`CostEntry` with a small ``activity_id`` alphabet.
 
  Drawing ``activity_id`` from a 6-symbol alphabet means a list
- of 8–20 entries reliably contains collisions, exercising the
+ of 8-20 entries reliably contains collisions, exercising the
  ``ON CONFLICT DO NOTHING`` branch on every Hypothesis example
  rather than only on rare lucky draws.
  """
@@ -515,7 +515,7 @@ _entries_list_strategy: st.SearchStrategy[list[Any]] = st.lists(
 
 
 # ---------------------------------------------------------------------------
-# Module-level skip — covers the case where has not landed.
+# Module-level skip - covers the case where has not landed.
 # ---------------------------------------------------------------------------
 
 
@@ -531,7 +531,7 @@ pytestmark = pytest.mark.skipif(
 
 
 # ---------------------------------------------------------------------------
-# invariant — full invariant set (a)..(f)
+# invariant - full invariant set (a)..(f)
 # ---------------------------------------------------------------------------
 
 
@@ -542,13 +542,13 @@ pytestmark = pytest.mark.skipif(
 )
 @given(entries=_entries_list_strategy)
 def test_record_is_idempotent_on_activity_id(entries: list[Any]) -> None:
-    """invariant (a) + (b) — UNIQUE activity_id keeps row count = uniq(ids).
+    """invariant (a) + (b) - UNIQUE activity_id keeps row count = uniq(ids).
 
 
 
  For every Hypothesis-generated list of:class:`CostEntry`:
 
- * exactly one row is committed per distinct ``activity_id`` —
+ * exactly one row is committed per distinct ``activity_id`` -
  the ``UNIQUE`` index plus ``ON CONFLICT DO NOTHING`` makes
  every subsequent insert with the same ``activity_id`` a
  no-op (clause (a));
@@ -600,13 +600,13 @@ def test_record_is_idempotent_on_activity_id(entries: list[Any]) -> None:
 )
 @given(entries=_entries_list_strategy)
 def test_first_write_wins_on_activity_id_conflict(entries: list[Any]) -> None:
-    """invariant (e) — first insert wins; later attempts are dropped.
+    """invariant (e) - first insert wins; later attempts are dropped.
 
 
 
  The semantic that ``ON CONFLICT DO NOTHING`` enforces is
  "first writer wins": once an ``activity_id`` row exists,
- subsequent inserts for the same id are silently ignored — the
+ subsequent inserts for the same id are silently ignored - the
  table keeps the **earliest** row, not the latest. A
  ``SELECT`` issued after the entry list has been replayed must
  therefore return the row from the **first** insert with that
@@ -638,7 +638,7 @@ def test_first_write_wins_on_activity_id_conflict(entries: list[Any]) -> None:
         assert actual == expected, (
             f"activity_id={activity_id!r}: stored row {actual!r} "
             f"does not match the first input entry {expected!r}. "
-            "invariant (e) — first-writer-wins — was violated; a "
+            "invariant (e) - first-writer-wins - was violated; a "
             "later insert with the same id appears to have "
             "overwritten the original."
         )
@@ -653,7 +653,7 @@ def test_first_write_wins_on_activity_id_conflict(entries: list[Any]) -> None:
 def test_record_emits_duplicate_dropped_audit_on_conflict(
     entries: list[Any],
 ) -> None:
-    """invariant (f) — every conflict path emits a single audit event.
+    """invariant (f) - every conflict path emits a single audit event.
 
 
 
@@ -716,7 +716,7 @@ def test_record_emits_duplicate_dropped_audit_on_conflict(
 def test_record_rejects_invalid_cost_tag(
     entry: Any, invalid_tag: str
 ) -> None:
-    """invariant (c) — Postgres CHECK on cost_tag rejects invalid values.
+    """invariant (c) - Postgres CHECK on cost_tag rejects invalid values.
 
 
 
@@ -757,7 +757,7 @@ def test_record_rejects_invalid_cost_tag(
 def test_non_production_rows_excluded_from_budget_usage(
     entries: list[Any],
 ) -> None:
-    """invariant (d) — sandbox / probe rows do not count against budgets.
+    """invariant (d) - sandbox / probe rows do not count against budgets.
 
 
 
@@ -771,7 +771,7 @@ def test_non_production_rows_excluded_from_budget_usage(
 
  Sandbox prompt tests and probe-time LLM calls share
  one storage path with production usage; the only thing that
- keeps them out of dept budgets is the tag — so the tag must
+ keeps them out of dept budgets is the tag - so the tag must
  survive the round-trip unchanged.
  """
 
@@ -785,7 +785,7 @@ def test_non_production_rows_excluded_from_budget_usage(
 
     rows = store.select_all()
 
-    # The committed rows preserve every cost_tag verbatim — the
+    # The committed rows preserve every cost_tag verbatim - the
     # tracker never silently rewrites sandbox / probe to
     # production. (If it did, the BudgetCapPolicy SQL filter
     # would be a no-op and dept budgets would silently inflate.)
@@ -826,7 +826,7 @@ def test_non_production_rows_excluded_from_budget_usage(
             f"strictly less than the all-rows sum "
             f"{all_rows_sum!r} despite "
             f"{expected_non_production_sum!r} of non-production "
-            "cost being committed. invariant (d) — the "
+            "cost being committed. invariant (d) - the "
             "production filter would be a no-op."
         )
 
@@ -838,7 +838,7 @@ def test_non_production_rows_excluded_from_budget_usage(
 )
 @given(entries=_entries_list_strategy)
 def test_record_is_deterministic(entries: list[Any]) -> None:
-    """invariant (e) — same entry list ⇒ identical final table state.
+    """invariant (e) - same entry list ⇒ identical final table state.
 
 
 
@@ -864,7 +864,7 @@ def test_record_is_deterministic(entries: list[Any]) -> None:
         "input lists produced different table states.\n"
         f" run #1 rows: {store_a.select_all()!r}\n"
         f" run #2 rows: {store_b.select_all()!r}\n"
-        "invariant (e) — determinism."
+        "invariant (e) - determinism."
     )
 
     assert audit_a.events == audit_b.events, (
@@ -872,12 +872,12 @@ def test_record_is_deterministic(entries: list[Any]) -> None:
         "input lists produced different audit-event sequences.\n"
         f" run #1 events: {audit_a.events!r}\n"
         f" run #2 events: {audit_b.events!r}\n"
-        "invariant (e) — determinism."
+        "invariant (e) - determinism."
     )
 
 
 # ---------------------------------------------------------------------------
-# Concrete regression anchors — pinned examples that complement the
+# Concrete regression anchors - pinned examples that complement the
 # Hypothesis search by fixing the conflict pattern on a known input.
 # These run independently of the strategy shrinker so a regression
 # in the ``ON CONFLICT DO NOTHING`` clause is caught even when
@@ -911,7 +911,7 @@ def test_second_insert_with_same_activity_id_is_a_noop() -> None:
  Anchors clause (a) on a fixed pair so a regression that drops
  the ``ON CONFLICT (activity_id) DO NOTHING`` clause and lets
  the second insert raise (or worse: overwrite the first row)
- surfaces deterministically — independently of what
+ surfaces deterministically - independently of what
  Hypothesis happens to draw.
 
 
@@ -1003,7 +1003,7 @@ def test_sandbox_and_probe_rows_excluded_from_production_sum() -> None:
 
  Anchors clause (d) on a fixed input: three rows, one per tag,
  each with cost_usd=1.00. The production-only sum must be
- 1.00, not 3.00 — independently of how Hypothesis draws the
+ 1.00, not 3.00 - independently of how Hypothesis draws the
  cost values.
 
 
@@ -1025,7 +1025,7 @@ def test_sandbox_and_probe_rows_excluded_from_production_sum() -> None:
     assert store.production_usage_sum() == Decimal("1.00"), (
         "Production-only sum over [production=1, sandbox=1, "
         "probe=1] must equal Decimal('1.00'); got "
-        f"{store.production_usage_sum()!r}. invariant (d) — "
+        f"{store.production_usage_sum()!r}. invariant (d) - "
         "sandbox / probe rows must be excluded from budget "
         "aggregates."
     )
@@ -1038,7 +1038,7 @@ def test_postgres_filter_substring_is_what_property_6_d_relies_on() -> None:
  ``cost_tag = 'production'`` (sibling invariant asserts this
  on the policy SQL itself). invariant (d)'s data-side
  invariant is meaningless if the filter substring drifts, so
- we pin the literal here as a regression anchor — a future
+ we pin the literal here as a regression anchor - a future
  rename of the column or a switch to a positional placeholder
  breaks this test before it breaks invariant's SQL assertion.
 

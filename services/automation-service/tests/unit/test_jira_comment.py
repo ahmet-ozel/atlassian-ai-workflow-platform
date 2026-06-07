@@ -1,4 +1,4 @@
-"""Unit tests for ``automation_service.budget.jira_comment``.
+﻿"""Unit tests for ``automation_service.budget.jira_comment``.
 
 The tests cover the cost prediction comment and the global-fallback
 disclosure note.
@@ -34,7 +34,7 @@ import httpx
 import pytest
 
 # ---------------------------------------------------------------------------
-# Path setup — mirrors test_budget_policy.py so ``automation_service``,
+# Path setup - mirrors test_budget_policy.py so ``automation_service``,
 # ``audit_logger``, and ``http_shared`` resolve without an editable install.
 # ---------------------------------------------------------------------------
 
@@ -172,7 +172,7 @@ def _ok_jsonrpc_handler(
 
 
 # ---------------------------------------------------------------------------
-# Tests — body composition
+# Tests - body composition
 # ---------------------------------------------------------------------------
 
 
@@ -208,7 +208,7 @@ class TestBodyComposition:
         # markers individually so the test is robust to small wording
         # tweaks elsewhere (for instance, swapping the em-dash).
         assert "🤖 Tahmini maliyet: $1.23" in body
-        assert "CI %80: $0.80–$1.50" in body
+        assert "CI %80: $0.80-$1.50" in body
         assert "Kaynak: dept." in body
         # Global-fallback note must NOT appear for ``dept`` source.
         assert "global ortalamadan üretildi" not in body
@@ -322,12 +322,12 @@ class TestBodyComposition:
             clock=_frozen_clock,
         )
         # Linker failure must not turn a successful comment into a
-        # "failed" outcome — the comment still went out.
+        # "failed" outcome - the comment still went out.
         assert outcome.status == "posted"
 
 
 # ---------------------------------------------------------------------------
-# Tests — MCP wire shape parity with worker activity
+# Tests - MCP wire shape parity with worker activity
 # ---------------------------------------------------------------------------
 
 
@@ -358,7 +358,7 @@ class TestMcpWireShape:
 
         assert len(captured) == 1
         request = captured[0]
-        # Endpoint must be ``/mcp`` — the streamable-http JSON-RPC path.
+        # Endpoint must be ``/mcp`` - the streamable-http JSON-RPC path.
         assert request.url.path == "/mcp"
         assert request.method == "POST"
         envelope = json.loads(request.read())
@@ -367,7 +367,7 @@ class TestMcpWireShape:
         params = envelope["params"]
         assert params["name"] == "jira_add_comment"
         assert params["arguments"]["issue_key"] == "PAY-500"
-        # The body field is the comment text — assert the expected
+        # The body field is the comment text - assert the expected
         # opening token; full-body assertions live in the body-composition
         # test class above.
         assert params["arguments"]["comment"].startswith("🤖 Tahmini maliyet:")
@@ -410,14 +410,14 @@ class TestMcpWireShape:
             request.headers["X-Atlassian-Jira-Personal-Token"]
             == cred.personal_token
         )
-        # And the X-Client-Source identifier — set by the production
-        # factory wrapper — must distinguish the caller from the
+        # And the X-Client-Source identifier - set by the production
+        # factory wrapper - must distinguish the caller from the
         # worker for MCP-side observability.
         assert request.headers["X-Client-Source"] == "automation-service"
 
 
 # ---------------------------------------------------------------------------
-# Tests — best-effort failure semantics
+# Tests - best-effort failure semantics
 # ---------------------------------------------------------------------------
 
 
@@ -561,7 +561,7 @@ class TestBestEffortFailureSemantics:
 
 
 # ---------------------------------------------------------------------------
-# Tests — happy-path audit shape
+# Tests - happy-path audit shape
 # ---------------------------------------------------------------------------
 
 
@@ -615,7 +615,7 @@ class TestAuditShape:
 
 
 # ---------------------------------------------------------------------------
-# Tests — argument validation
+# Tests - argument validation
 # ---------------------------------------------------------------------------
 
 

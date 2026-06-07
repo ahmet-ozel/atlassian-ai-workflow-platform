@@ -1,4 +1,4 @@
-"""CI test 1.4 — services.manifest schema + manifest content checks.
+﻿"""CI test 1.4 - services.manifest schema + manifest content checks.
 
 
 Scope
@@ -38,7 +38,7 @@ from jsonschema.validators import Draft202012Validator
 
 
 # ---------------------------------------------------------------------------
-# Constants — design's minimum sets 
+# Constants - design's minimum sets 
 # ---------------------------------------------------------------------------
 
 #: Minimum required entries in ``depends_on_services`` service. The
@@ -105,11 +105,11 @@ class TestConnectivityProbeCommandIsOptional:
         managed = schema["$defs"]["ManagedService"]
         assert "connectivity_probe_command" in managed["properties"], (
             "connectivity_probe_command is missing from "
-            "$defs.ManagedService.properties — the implementation contract violated."
+            "$defs.ManagedService.properties - the implementation contract violated."
         )
 
     def test_field_is_not_required(self, schema: dict[str, Any]) -> None:
-        """The field is opt-in — it must not be in the ``required`` array."""
+        """The field is opt-in - it must not be in the ``required`` array."""
 
         managed = schema["$defs"]["ManagedService"]
         required = managed.get("required", [])

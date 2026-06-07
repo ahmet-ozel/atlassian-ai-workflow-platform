@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * EventHistoryTimeline — renders Temporal event history in chronological order.
+ * EventHistoryTimeline - renders Temporal event history in chronological order.
  * Each event shows event_type, timestamp and a short summary.
  */
 
@@ -47,7 +47,7 @@ export default function EventHistoryTimeline({ events }: EventHistoryTimelinePro
                 {evt.event_type ?? "UNKNOWN"}
               </span>
               <span style={{ color: "#6b7280", minWidth: "12rem" }}>
-                {evt.timestamp ? new Date(evt.timestamp).toLocaleString() : "—"}
+                {evt.timestamp ? new Date(evt.timestamp).toLocaleString() : "-"}
               </span>
               <span style={{ color: "#374151" }}>{evt.summary ?? ""}</span>
             </li>

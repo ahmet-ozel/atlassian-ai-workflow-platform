@@ -1,4 +1,4 @@
-"""``POST /admin/vault/init`` — Vault production initialization endpoint.
+﻿"""``POST /admin/vault/init`` - Vault production initialization endpoint.
 
 This router exposes the Vault operator init flow. The endpoint
 executes ``vault operator init`` with 5 key shares and 3 threshold,
@@ -128,7 +128,7 @@ def _get_vault_token(request: Request) -> str:
     summary="Initialize Vault in production mode with Shamir key shares",
     status_code=status.HTTP_200_OK,
     responses={
-        200: {"description": "Vault initialized successfully — one-time key display"},
+        200: {"description": "Vault initialized successfully - one-time key display"},
         409: {"description": "Vault is already initialized"},
         502: {"description": "Vault communication error"},
         503: {"description": "HTTP client unavailable"},
@@ -195,7 +195,7 @@ async def vault_init(
 
     init_status = init_status_resp.json()
     if init_status.get("initialized", False):
-        logger.info("Vault init attempt rejected — already initialized")
+        logger.info("Vault init attempt rejected - already initialized")
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail={"error": "vault_already_initialized"},
@@ -226,7 +226,7 @@ async def vault_init(
 
     if init_resp.status_code != 200:
         logger.error(
-            "Vault init returned unexpected status: %d — %s",
+            "Vault init returned unexpected status: %d - %s",
             init_resp.status_code,
             init_resp.text[:200],
         )
@@ -271,7 +271,7 @@ async def vault_init(
         )
         logger.info("Root token written to Vault secret engine")
     except httpx.HTTPError as exc:
-        # Non-fatal — the operator still has the token in the response.
+        # Non-fatal - the operator still has the token in the response.
         # Log a warning so they know the write-back failed.
         logger.warning(
             "Failed to write root token to Vault secret engine: %s. "

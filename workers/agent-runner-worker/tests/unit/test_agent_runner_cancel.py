@@ -1,4 +1,4 @@
-"""Unit tests for ``AgentRunnerWorkflow`` cancel signal handler.
+﻿"""Unit tests for ``AgentRunnerWorkflow`` cancel signal handler.
 
 Covers the cancel + compensation contract delivered by
 The cancel signal path covers:
@@ -6,13 +6,13 @@ The cancel signal path covers:
     1. ``cancel_requested`` signal triggers the
        ``compensation_chain_run`` activity exactly once.
     2. ``MAX_ITER`` exhaustion does NOT trigger the compensation
-       chain (natural termination — only the "yeni task aç" comment
+       chain (natural termination - only the "yeni task aç" comment
        is posted via the existing helper).
     3. ``out_of_scope`` natural termination (``needs_info_streak`` cap)
        does NOT trigger the compensation chain.
     4. A second ``cancel_requested`` signal that arrives while the
        chain is already running is a silent no-op (no double-fire).
-    5. Audit role mapping — ``end_user`` →
+    5. Audit role mapping - ``end_user`` →
        ``workflow_cancelled_by_end_user``, ``admin`` / ``dept_admin``
        → ``workflow_cancelled_by_admin``; unknown roles default to
        end_user.
@@ -38,7 +38,7 @@ import pytest
 from temporalio import workflow as _temporal_workflow
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — mirrors ``test_agent_runner_signal_handlers.py``.
+# sys.path bootstrap - mirrors ``test_agent_runner_signal_handlers.py``.
 # ---------------------------------------------------------------------------
 
 _WORKER_ROOT: Path = Path(__file__).resolve().parents[2]
@@ -54,7 +54,7 @@ for _candidate in (_SRC_DIR, _TEMPORAL_SHARED_SRC, _MCP_CLIENT_SRC):
     if _candidate.is_dir() and _str not in sys.path:
         sys.path.insert(0, _str)
 
-# noqa: E402 below — import after sys.path bootstrap.
+# noqa: E402 below - import after sys.path bootstrap.
 
 from agent_runner.workflows.agent_runner_workflow import (  # noqa: E402
     CANCEL_BY_ADMIN_AUDIT_ACTION,
@@ -169,7 +169,7 @@ def _patch_workflow_runtime(activity_mock: AsyncMock):
 
 
 # ---------------------------------------------------------------------------
-# 1. Pure helper — role → audit action mapping
+# 1. Pure helper - role → audit action mapping
 # ---------------------------------------------------------------------------
 
 
@@ -232,7 +232,7 @@ class TestCancelSignalLatch:
         assert wf._cancel_actor_role == "end_user"
         assert wf._cancel_reason == "user pressed cancel"
         assert wf._signal_pending is True
-        # Compensation hasn't been dispatched yet — only the body
+        # Compensation hasn't been dispatched yet - only the body
         # observing ``_cancel_requested`` runs the chain.
         assert wf._compensation_running is False
 
@@ -247,7 +247,7 @@ class TestCancelSignalLatch:
             )
         )
         # Drain the signal_pending flag so the no-op assertion below
-        # is meaningful — a second signal must not flip it back on.
+        # is meaningful - a second signal must not flip it back on.
         wf._signal_pending = False
 
         # Second cancel attempt with different actor.
@@ -264,7 +264,7 @@ class TestCancelSignalLatch:
         assert wf._cancel_actor_role == "end_user"
         assert wf._cancel_reason == "first"
         # The handler must not flip the signal pending edge a second
-        # time — the body has nothing new to drain.
+        # time - the body has nothing new to drain.
         assert wf._signal_pending is False
 
     def test_cancel_during_compensation_is_noop(self, make_wf) -> None:
@@ -466,7 +466,7 @@ class TestHandleCancelCompensation:
             if c.args and c.args[0] == "compensation_chain_run"
         )
         timeout = comp_call.kwargs.get("start_to_close_timeout")
-        # 2 minutes / 120s — covers the full six-step chain.
+        # 2 minutes / 120s - covers the full six-step chain.
         assert timeout == timedelta(minutes=2)
 
     def test_end_user_cancel_emits_end_user_audit(
@@ -598,7 +598,7 @@ class TestHandleCancelCompensation:
 
         output = asyncio.run(_drive())
         # Workflow still terminates with ``cancelled`` even though the
-        # chain raised — the spec contract is "compensation is
+        # chain raised - the spec contract is "compensation is
         # best-effort, the workflow status still flips to cancelled".
         assert output.status == "cancelled"
 
@@ -631,7 +631,7 @@ class TestMaxIterNoCompensation:
         )
 
         assert wf._out_of_scope is True
-        # Cancel state untouched — natural termination is NOT cancel.
+        # Cancel state untouched - natural termination is NOT cancel.
         assert wf._cancel_requested is False
         assert wf._compensation_running is False
 
@@ -671,7 +671,7 @@ class TestMaxIterNoCompensation:
         output = asyncio.run(_drive())
 
         assert output.status == "out_of_scope"
-        # Crucial invariant — compensation MUST NOT have been called.
+        # Crucial invariant - compensation MUST NOT have been called.
         comp_calls = [
             c
             for c in activity_mock.call_args_list
@@ -818,7 +818,7 @@ class TestCancelDuringRun:
         )
 
         # Use ``noop_test`` so the body falls through to the legacy
-        # signal-wait loop — which will see ``_cancel_requested`` and
+        # signal-wait loop - which will see ``_cancel_requested`` and
         # raise ``_CancelledViaSignal`` immediately, routing into
         # ``_handle_cancel``.
         inp = _make_input(workflow_type="noop_test")

@@ -1,4 +1,4 @@
-"""Activity modules for the execution-runner-worker.
+﻿"""Activity modules for the execution-runner-worker.
 
 Exports the Temporal activity functions that the ExecutionRunWorkflow
 invokes for Vault credential fetching, SSH execution, MinIO artifact
@@ -86,7 +86,7 @@ __all__ = [
     # SSH Healthcheck
     "SSHHealthcheckResult",
     "ssh_healthcheck",
-    # Runner Resolver (multi-SSH pool — G5)
+    # Runner Resolver (multi-SSH pool - G5)
     "RunnerResolution",
     "RunnerResolutionError",
     "resolve_runner",
@@ -118,7 +118,7 @@ __all__ = [
     "DiskQuotaResult",
     "DiskQuotaError",
     "check_disk_quota",
-    # Workspace Cleanup Scheduler (single-runner canonical contract — G2)
+    # Workspace Cleanup Scheduler (single-runner canonical contract - G2)
     "WorkspaceCleanupError",
     "WorkspaceDiskSnapshot",
     "WorkspaceIterEntry",

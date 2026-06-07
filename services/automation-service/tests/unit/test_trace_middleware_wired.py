@@ -1,4 +1,4 @@
-"""End-to-end test — automation-service mounts ``TraceMiddleware``.
+﻿"""End-to-end test - automation-service mounts ``TraceMiddleware``.
 
 The automation-service FastAPI app must:
 

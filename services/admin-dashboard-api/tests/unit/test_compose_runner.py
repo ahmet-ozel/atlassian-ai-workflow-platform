@@ -1,12 +1,12 @@
-"""Unit tests for ``src.lifecycle.compose_runner``.
+﻿"""Unit tests for ``src.lifecycle.compose_runner``.
 These tests exercise the public surface of :class:`ComposeRunner` as a
 black box, with :func:`asyncio.create_subprocess_exec` patched out.
 The patch lets us:
 * Capture and assert the exact ``argv`` shape passed to the OS
-  — argv list, ``shell=False``, no shell metacharacter
+  - argv list, ``shell=False``, no shell metacharacter
   expansion).
 * Assert the subprocess ``env`` dict only contains the allow-listed
-  host keys plus the operator-supplied overrides — never the host's
+  host keys plus the operator-supplied overrides - never the host's
   arbitrary secrets such as ``VAULT_TOKEN`` or ``OPENAI_API_KEY``.
 * Assert no temporary ``.env`` files are created under the workspace
   root during ``up``/``stop``/``restart``/``exec_test``.
@@ -125,7 +125,7 @@ def _runner() -> ComposeRunner:
 
 
 # ---------------------------------------------------------------------------
-# argv shape — happy paths
+# argv shape - happy paths
 # ---------------------------------------------------------------------------
 
 
@@ -236,7 +236,7 @@ def test_stop_argv_shape() -> None:
 
 def test_stop_with_remove_volumes_runs_rm_fv() -> None:
     """``remove_volumes=True`` follows ``stop`` with ``rm -fv``.
-    Named volumes — ``pg_data``, ``minio_data``,
+    Named volumes - ``pg_data``, ``minio_data``,
     ``agent_workspace``) are owned by the top-level ``volumes:`` block
     in ``docker-compose.yml``, so ``rm -fv <service>`` only purges the
     service's *anonymous* volumes. This test asserts
@@ -367,7 +367,7 @@ def test_exec_test_argv_uses_compose_exec_dash_capital_t() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Failure mode — non-zero exit raises ComposeFailureError
+# Failure mode - non-zero exit raises ComposeFailureError
 # ---------------------------------------------------------------------------
 
 
@@ -422,7 +422,7 @@ def test_stop_remove_volumes_failure_in_rm_step_raises() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Environment scrubbing — host secrets must NOT leak
+# Environment scrubbing - host secrets must NOT leak
 # ---------------------------------------------------------------------------
 
 
@@ -433,7 +433,7 @@ def test_environ_is_scrubbed_to_allowlist_only() -> None:
     ``AWS_SECRET_ACCESS_KEY``, the user's PowerShell profile vars, ...)
     must never appear in the env dict that lands on the spawned
     subprocess. Operator-supplied ``env_overrides`` *are* applied on
-    top — that is the only sanctioned path for non-allow-listed keys.
+    top - that is the only sanctioned path for non-allow-listed keys.
     """
 
     recorder = _make_recorder(_FakeProcess(returncode=0))
@@ -530,7 +530,7 @@ def test_overrides_can_shadow_allowlisted_host_keys() -> None:
 
 
 # ---------------------------------------------------------------------------
-#  surface — no temporary.env files written under workspace
+#  surface - no temporary.env files written under workspace
 # ---------------------------------------------------------------------------
 
 
@@ -573,7 +573,7 @@ def test_no_temp_env_files_written_under_workspace_root(tmp_path: Path) -> None:
     after = {p for p in tmp_path.rglob("*") if p.is_file()}
     new_files = after - before
 
-    # No new files — and especially nothing matching ``.env`` patterns.
+    # No new files - and especially nothing matching ``.env`` patterns.
     assert new_files == set(), f"unexpected files written: {sorted(new_files)}"
     for path in after:
         name = path.name.lower()
@@ -583,12 +583,12 @@ def test_no_temp_env_files_written_under_workspace_root(tmp_path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Subprocess invocation primitives — shell=False is implicit but checkable
+# Subprocess invocation primitives - shell=False is implicit but checkable
 # ---------------------------------------------------------------------------
 
 
 def test_create_subprocess_exec_called_with_pipes_and_no_shell_kwarg() -> None:
-    """We rely on ``create_subprocess_exec`` (argv) — never ``..._shell``.
+    """We rely on ``create_subprocess_exec`` (argv) - never ``..._shell``.
     This is the structural guarantee that no shell metacharacter
     expansion can occur : the API used here takes an
     argv list and forwards it to ``execve`` directly, without an

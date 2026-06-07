@@ -1,4 +1,4 @@
-"""Pydantic v2 request/response models for the PromptsGitRouter.
+﻿"""Pydantic v2 request/response models for the PromptsGitRouter.
 
 Co-located with :mod:`src.routers.prompts_git` so the HTTP boundary
 stays in one folder. The router itself stays Pydantic-free internally
@@ -8,10 +8,10 @@ into the models below for FastAPI's serialiser.
 
 Design references
 -----------------
-* design notes §`PromptsGitRouter` — endpoint matrix and JSON shapes.
-* behavior 2.2 — ``GET /admin/prompts``, ``GET /admin/prompts/{path}``,
+* design notes §`PromptsGitRouter` - endpoint matrix and JSON shapes.
+* behavior 2.2 - ``GET /admin/prompts``, ``GET /admin/prompts/{path}``,
   ``POST .../draft``, ``POST .../pr``.
-* behavior 2.9 — every write path is preceded by
+* behavior 2.9 - every write path is preceded by
   ``validate_template_format(body)`` at the router layer.
 """
 
@@ -30,7 +30,7 @@ from pydantic import BaseModel, ConfigDict, Field
 class PromptListItem(BaseModel):
     """Row shape returned by ``GET /admin/prompts`` (behavior 2.2).
 
-    Only ``path`` and ``commit_hash`` are mandatory — both come from
+    Only ``path`` and ``commit_hash`` are mandatory - both come from
     the underlying :class:`git_shared.GitRepo`. ``size_bytes`` is
     populated when the router can stat the blob without an extra round
     trip; the Pydantic optional shape lets callers degrade gracefully
@@ -92,7 +92,7 @@ class PromptDraftRequest(BaseModel):
 
     1. ``body`` is non-empty (the schema does the work below).
     2. ``validate_template_format(body)`` passes (behavior 2.9).
-    3. The path exists on the configured main branch — the router
+    3. The path exists on the configured main branch - the router
        rejects writes to brand-new files at the API edge so the audit
        trail is "edit existing" and "create new" stays explicit.
     """
@@ -130,7 +130,7 @@ class PromptPrRequest(BaseModel):
 
     The draft branch must already exist (i.e. the caller has gone
     through ``POST .../draft`` first). The title / description fields
-    are optional — when omitted the router falls back to deterministic
+    are optional - when omitted the router falls back to deterministic
     defaults that include the prompt path and the diff against
     ``main``.
     """
@@ -168,7 +168,7 @@ class PromptPrResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Sandbox test (service lifecycle wiring — behavior 2.4)
+# Sandbox test (service lifecycle wiring - behavior 2.4)
 # ---------------------------------------------------------------------------
 
 
@@ -180,7 +180,7 @@ class PromptSandboxRequest(BaseModel):
     ``cost_tag='sandbox'`` LLM call (behavior 2.4). Two
     invariants are enforced at the schema layer:
 
-    1. ``sample_input`` is non-empty — sandbox-test calls without a
+    1. ``sample_input`` is non-empty - sandbox-test calls without a
        sample input would just echo the system prompt back at the
        LLM, which is rarely useful and skews the cost row's
        ``token_in`` figure.
@@ -238,7 +238,7 @@ class PromptSandboxResponse(BaseModel):
 
     Mirrors :class:`src.sandbox.SandboxResult` field-for-field so
     the JSON envelope is a one-to-one projection of the dataclass.
-    The ``cost_tag`` field is always ``"sandbox"`` — exposing it
+    The ``cost_tag`` field is always ``"sandbox"`` - exposing it
     on the response makes the isolation contract auditable from a
     single response without re-reading the source.
 
@@ -250,7 +250,7 @@ class PromptSandboxResponse(BaseModel):
     so the promote handler can verify the sandbox
     actually ``passed`` before opening a PR. The field is
     :class:`Optional` so the endpoint stays answerable even when the
-    asyncpg pool is degraded — in that case the response carries
+    asyncpg pool is degraded - in that case the response carries
     ``sandbox_run_id=None`` and the promote endpoint will reject
     follow-up calls with 404 (``sandbox_run_not_found``).
     """

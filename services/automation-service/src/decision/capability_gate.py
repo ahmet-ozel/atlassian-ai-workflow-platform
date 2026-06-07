@@ -1,15 +1,15 @@
-"""Capability gate — Phase 1 and Phase 2 helpers for webhook decision layer.
+﻿"""Capability gate - Phase 1 and Phase 2 helpers for webhook decision layer.
 
 Phase 1 (webhook handler, pre-workflow):
-    ``has_jira_credential(db, dept_id)`` — cheapest possible check: does the
+    ``has_jira_credential(db, dept_id)`` - cheapest possible check: does the
     department have a ``department_bots`` row with ``service='jira'``?  If not,
     there is no point starting a Temporal workflow.
 
-    ``resolve_dept_capabilities(db, dept_id)`` — builds the full capability
+    ``resolve_dept_capabilities(db, dept_id)`` - builds the full capability
     frozenset for a department by combining:
       • services registered in ``department_bots`` (jira, bitbucket, confluence)
       • ``web_search`` flag from ``departments.web_search_enabled``
-      • ``execution`` — present only when at least one active SSH runner is
+      • ``execution`` - present only when at least one active SSH runner is
         assigned to the department (via ``infrastructure.dept_ssh_assignments``
         joined with ``infrastructure.ssh_runners`` where status='active')
 
@@ -47,7 +47,7 @@ async def has_jira_credential(db: asyncpg.Pool, dept_id: str) -> bool:
 
     Performs a single existence check against ``automation.department_bots``
     for the given department with ``service = 'jira'``.  This is the cheapest
-    pre-check in the webhook handler — if the department cannot even talk to
+    pre-check in the webhook handler - if the department cannot even talk to
     Jira, there is no reason to start a workflow.
 
     Parameters
@@ -85,9 +85,9 @@ async def resolve_dept_capabilities(
     The capability set is the union of:
       1. All ``service`` values from ``automation.department_bots`` for the
          department (e.g. ``{'jira', 'bitbucket', 'confluence'}``).
-      2. ``'web_search'`` — included when ``departments.web_search_enabled``
+      2. ``'web_search'`` - included when ``departments.web_search_enabled``
          is ``TRUE`` for the department.
-      3. ``'execution'`` — included only when at least one active SSH runner
+      3. ``'execution'`` - included only when at least one active SSH runner
          is assigned to the department via ``infrastructure.dept_ssh_assignments``
          joined with ``infrastructure.ssh_runners`` (status='active').
 

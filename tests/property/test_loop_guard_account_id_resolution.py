@@ -1,4 +1,4 @@
-"""Loop Guard Account ID Resolution.
+﻿"""Loop Guard Account ID Resolution.
 
 
 
@@ -9,12 +9,12 @@ After account probing at startup, post-create, and wizard flows, all
 departments have their ``bot.<service>.account_id`` fields populated.
 The loop guard operates in two tiers:
 
-1. **First tier (account_id match)** — when ``actor_account_id`` is
+1. **First tier (account_id match)** - when ``actor_account_id`` is
  present on the webhook event, the guard checks membership in the
  union of all bot account IDs. A hit drops the event with reason
  ``loop_guard_dropped``.
 
-2. **Regex fallback** — when ``actor_account_id`` is ``None`` (legacy
+2. **Regex fallback** - when ``actor_account_id`` is ``None`` (legacy
  payloads from older Atlassian delivery shapes), the guard scans
  ``body_text`` for the ``^\\s*\\[bot:`` prefix. A hit drops with
  reason ``loop_guard_regex_dropped``.
@@ -23,7 +23,7 @@ This invariant verifies:
 
 (a) When all departments have account_id filled (the normal
  steady state), the loop guard uses first-tier account_id matching
- for bot-authored events — the regex fallback is never reached.
+ for bot-authored events - the regex fallback is never reached.
 
 (b) The regex fallback activates **only** for legacy payloads where
  ``actor_account_id`` is ``None`` (missing from the payload).
@@ -54,7 +54,7 @@ from hypothesis import strategies as st
 import pytest
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — expose the automation-service source root
+# sys.path bootstrap - expose the automation-service source root
 # ---------------------------------------------------------------------------
 
 _PLATFORM_ROOT: Final[Path] = Path(__file__).resolve().parents[2]
@@ -96,7 +96,7 @@ from automation_service.webhook_filters import (  # noqa: E402
 # Hypothesis strategies
 # ---------------------------------------------------------------------------
 
-#: Account ID strategy — hex-like strings mimicking Atlassian account IDs.
+#: Account ID strategy - hex-like strings mimicking Atlassian account IDs.
 #: These represent the steady state where every dept has a
 #: resolved account_id.
 _account_ids = st.text(
@@ -107,12 +107,12 @@ _account_ids = st.text(
     max_size=32,
 )
 
-#: Bot registry strategy — non-empty frozensets representing the union
+#: Bot registry strategy - non-empty frozensets representing the union
 #: of all department bot account IDs after account probing has
 #: filled every slot.
 _filled_bot_registries = st.frozensets(_account_ids, min_size=1, max_size=8)
 
-#: Human actor IDs — guaranteed not to be in the bot registry.
+#: Human actor IDs - guaranteed not to be in the bot registry.
 _human_actor_ids = st.text(
     alphabet=st.characters(
         whitelist_categories=("Ll", "Lu", "Nd"), whitelist_characters="-_:"
@@ -216,7 +216,7 @@ class TestLoopGuardFirstTierResolution:
 
  When all depts have account_id filled and the webhook event carries
  a bot's account_id as the actor, the loop guard drops the event
- using first-tier account_id matching — reason is
+ using first-tier account_id matching - reason is
  ``loop_guard_dropped``, NOT ``loop_guard_regex_dropped``.
  """
 
@@ -234,7 +234,7 @@ class TestLoopGuardFirstTierResolution:
 
         assert isinstance(decision, FilterDecision)
         assert decision.action == "drop"
-        # First tier fires — NOT the regex fallback
+        # First tier fires - NOT the regex fallback
         assert decision.reason == REASON_LOOP_GUARD_DROPPED
 
     @settings(
@@ -283,7 +283,7 @@ class TestLoopGuardFirstTierResolution:
 
  A human actor quoting ``[bot:`` text in their comment is NOT
  dropped by the regex fallback. The first-tier path (actor
- present, not in registry) short-circuits to pass — the regex
+ present, not in registry) short-circuits to pass - the regex
  fallback is gated on ``actor_account_id is None``.
 
  This confirms that when actors have account_ids, the regex path is
@@ -311,7 +311,7 @@ class TestLoopGuardRegexFallbackLegacyOnly:
     """Exercise the legacy regex fallback gate.
 
  The regex fallback (``^\\s*\\[bot:``) activates ONLY when
- ``actor_account_id`` is ``None`` — the legacy payload shape where
+ ``actor_account_id`` is ``None`` - the legacy payload shape where
  Atlassian's older delivery format omits the user attribution.
  This is the only scenario where the regex path is reachable.
  """
@@ -332,7 +332,7 @@ class TestLoopGuardRegexFallbackLegacyOnly:
 
  Legacy payloads (``actor_account_id=None``) with body text
  matching ``^\\s*\\[bot:`` are dropped via the regex fallback.
- The reason is ``loop_guard_regex_dropped`` — distinct from
+ The reason is ``loop_guard_regex_dropped`` - distinct from
  the first-tier ``loop_guard_dropped``.
  """
 
@@ -363,7 +363,7 @@ class TestLoopGuardRegexFallbackLegacyOnly:
         """Legacy payloads without a bot prefix pass through.
 
  Legacy payloads (``actor_account_id=None``) whose body does
- NOT match the ``[bot:`` regex pass through — they are treated
+ NOT match the ``[bot:`` regex pass through - they are treated
  as system events with no bot footprint.
  """
 
@@ -390,7 +390,7 @@ class TestLoopGuardRegexFallbackLegacyOnly:
         """Present actors never use the regex fallback.
 
  When ``actor_account_id`` is present (non-None), the regex
- fallback NEVER fires — regardless of body content. The
+ fallback NEVER fires - regardless of body content. The
  decision is either ``loop_guard_dropped`` (actor in registry)
  or ``pass`` (actor not in registry). The reason is never
  ``loop_guard_regex_dropped``.
@@ -416,7 +416,7 @@ class TestLoopGuardRegexFallbackLegacyOnly:
 
 
 # ---------------------------------------------------------------------------
-# invariant: First-tier dominance — account_id match always takes
+# invariant: First-tier dominance - account_id match always takes
 # precedence over regex when both could fire
 # ---------------------------------------------------------------------------
 
@@ -484,7 +484,7 @@ class TestFirstTierDominatesRegex:
 
 
 # ---------------------------------------------------------------------------
-# invariant: steady state — all depts filled means
+# invariant: steady state - all depts filled means
 # the regex path is only reachable via legacy (None actor) payloads
 # ---------------------------------------------------------------------------
 
@@ -494,7 +494,7 @@ class TestPostProbeInvariant:
 
  In the steady state, the bot registry is non-empty
  (every dept has at least one bot account_id). The regex fallback
- path is reachable ONLY when ``actor_account_id is None`` — which
+ path is reachable ONLY when ``actor_account_id is None`` - which
  corresponds to legacy Atlassian delivery shapes that omit user
  attribution.
  """
@@ -526,7 +526,7 @@ class TestPostProbeInvariant:
         decision = chain.evaluate(event)
 
         if decision.reason == REASON_LOOP_GUARD_REGEX_DROPPED:
-            # The regex fallback fired — actor MUST be None (legacy)
+            # The regex fallback fired - actor MUST be None (legacy)
             assert actor is None, (
                 f"Regex fallback fired with non-None actor={actor!r}; "
                 f"this violates the the operational rule invariant that regex is "

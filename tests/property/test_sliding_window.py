@@ -1,4 +1,4 @@
-"""Property-based tests for sliding window deterministic compression.
+﻿"""Property-based tests for sliding window deterministic compression.
 
 Hypothesis-driven verification of the sliding-window compressor.
 
@@ -14,7 +14,7 @@ messages, n=n, summarizer=mock_summarizer)`` MUST satisfy:
     (b) ``len(messages) > n`` ⇒ ``len(output) == n + 1``
         (1 summary message + ``n`` recent messages).
     (c) The last ``n`` elements of the output equal ``messages[-n:]``
-        verbatim — original ordering preserved.
+        verbatim - original ordering preserved.
     (d) The first element of a compressed output has
         ``role == "system"`` and its ``text`` contains the substring
         ``"[Önceki konuşma özeti]"``.
@@ -56,7 +56,7 @@ strategies:
   isolating the compressor from any input dependence;
 * a ``"length"`` summariser that maps the older-messages list to its
   ``str(len(...))`` so the summary value is a pure function of input
-  length — still deterministic but exercising the "summary depends on
+  length - still deterministic but exercising the "summary depends on
   input" branch.
 
 Both branches MUST produce identical outputs across two independent
@@ -75,7 +75,7 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 
 # ---------------------------------------------------------------------------
-# Path bootstrap — make ``src.chat.sliding_window`` and ``messages``
+# Path bootstrap - make ``src.chat.sliding_window`` and ``messages``
 # importable.
 #
 # Mirrors the pattern used by the sister property tests
@@ -236,7 +236,7 @@ _summariser_strategy: st.SearchStrategy[Callable[[Sequence[Message]], str]] = (
 
 
 # ---------------------------------------------------------------------------
-# Module-level skip — covers the case where the implementation is unavailable.
+# Module-level skip - covers the case where the implementation is unavailable.
 # ---------------------------------------------------------------------------
 
 
@@ -290,7 +290,7 @@ def test_sliding_window_compress_preserves_last_n_and_is_deterministic(
 
         # ----- (c) the last n elements equal ``messages[-n:]`` -----
         # Cast both sides to ``list`` so a tuple-vs-list return type
-        # difference does not leak into the assertion message — the
+        # difference does not leak into the assertion message - the
         # property is about *content*, not container type.
         recent_actual = result_list[-n:]
         recent_expected = list(messages[-n:])
@@ -353,7 +353,7 @@ def test_compress_empty_messages_returns_empty() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Concrete regression anchor — boundary at len(messages) == n
+# Concrete regression anchor - boundary at len(messages) == n
 # ---------------------------------------------------------------------------
 
 
@@ -396,7 +396,7 @@ def test_compress_at_window_boundary_is_noop() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Concrete regression anchor — single-message overflow
+# Concrete regression anchor - single-message overflow
 # ---------------------------------------------------------------------------
 
 

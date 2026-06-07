@@ -1,4 +1,4 @@
-"""Unit tests for ``db_shared.session``.
+﻿"""Unit tests for ``db_shared.session``.
 
 Covers the ``with_dept_session`` async context manager (issues ``SET LOCAL
 app.current_dept_id`` / ``app.current_role`` at the start of every
@@ -74,7 +74,7 @@ def _run(coro):
 
 
 # ---------------------------------------------------------------------------
-# ALLOWED_ROLES — schema parity with audit_events.actor_role CHECK
+# ALLOWED_ROLES - schema parity with audit_events.actor_role CHECK
 # ---------------------------------------------------------------------------
 
 
@@ -91,7 +91,7 @@ def test_allowed_roles_matches_check_constraint() -> None:
 
 
 # ---------------------------------------------------------------------------
-# with_dept_session — happy paths
+# with_dept_session - happy paths
 # ---------------------------------------------------------------------------
 
 
@@ -158,7 +158,7 @@ def test_with_dept_session_system_without_dept_id_allowed() -> None:
 
 
 # ---------------------------------------------------------------------------
-# with_dept_session — input validation
+# with_dept_session - input validation
 # ---------------------------------------------------------------------------
 
 
@@ -231,7 +231,7 @@ def test_with_dept_session_requires_dept_id_for_non_global_roles(
 
 
 # ---------------------------------------------------------------------------
-# with_dept_session — rollback on body exception
+# with_dept_session - rollback on body exception
 # ---------------------------------------------------------------------------
 
 
@@ -296,7 +296,7 @@ def test_with_dept_session_set_config_failure_triggers_rollback() -> None:
 
 
 # ---------------------------------------------------------------------------
-# bind_actor — role-specific scoping rules
+# bind_actor - role-specific scoping rules
 # ---------------------------------------------------------------------------
 
 
@@ -400,7 +400,7 @@ def test_bind_actor_unknown_role_raises() -> None:
 
 
 # ---------------------------------------------------------------------------
-# with_actor_session — convenience wrapper integration
+# with_actor_session - convenience wrapper integration
 # ---------------------------------------------------------------------------
 
 

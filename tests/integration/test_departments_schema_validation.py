@@ -1,4 +1,4 @@
-"""Integration test: ``config/departments.json`` validates against its schema.
+﻿"""Integration test: ``config/departments.json`` validates against its schema.
 
 This test validates that the schema is loadable by ``automation-service``
 and ``admin-dashboard-api`` and successfully validates the bundled example
@@ -192,7 +192,7 @@ def test_all_bot_account_ids_are_empty_strings(departments_data: dict) -> None:
                 )
 
     assert not offenders, (
-        "violation — bot account_id values must be empty "
+        "violation - bot account_id values must be empty "
         "strings:\n " + "\n ".join(offenders)
     )
 

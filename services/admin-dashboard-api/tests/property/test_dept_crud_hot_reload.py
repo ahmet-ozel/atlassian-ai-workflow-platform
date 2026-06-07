@@ -1,4 +1,4 @@
-#
+﻿#
 # Department CRUD hot-reload signal
 #
 """Department CRUD hot-reload signal .
@@ -10,14 +10,14 @@ For any successful CRUD operation against
 hot-reload signal carrying the dept id and the matching action label
 (``dept_created`` / ``dept_updated`` / ``dept_decommissioned``) before
 the response returns. This is the publisher-side guarantee that backs
-the 10-second consumer-side propagation budget called out in —
+the 10-second consumer-side propagation budget called out in -
 the consumer cannot meet the SLA if the publisher never fires.
 The complementary invariants on the failure / idempotent paths are
 also covered:
 * A 409 ``dept_id_conflict`` on POST MUST NOT emit a signal.
 * A 404 on PATCH / DELETE MUST NOT emit a signal.
 * A DELETE on an already-disabled dept (``status="already_disabled"``)
-  MUST NOT emit a signal — the implementation early-returns without
+  MUST NOT emit a signal - the implementation early-returns without
   rewriting the file, so consumers do not need to be poked.
 Strategy
 --------
@@ -73,7 +73,7 @@ from src.routers.departments import crud_router  # noqa: E402
 # Constants
 # ---------------------------------------------------------------------------
 
-#: Action labels emitted by ``_signal_hot_reload`` — kept in sync with the
+#: Action labels emitted by ``_signal_hot_reload`` - kept in sync with the
 #: module-level ``_ACTION_*`` constants on the router. Hard-coded here so
 #: a typo in the router immediately fails the test instead of silently
 #: agreeing with itself.
@@ -220,7 +220,7 @@ def _redirect_config_paths(
 # Hypothesis strategies
 # ---------------------------------------------------------------------------
 
-#: Department id slug — schema requires ``^[a-z][a-z0-9-]{1,30}$`` with
+#: Department id slug - schema requires ``^[a-z][a-z0-9-]{1,30}$`` with
 #: length in ``[2, 31]``. We narrow to a small alphabet and 2-8 chars so
 #: collisions are likely (exercising the 409 path) but the slug is still
 #: schema-valid.
@@ -315,7 +315,7 @@ def _execute_step(
 
     body = resp.json()
     if existing[dept_id].get("mode") == "disabled":
-        # Idempotent path — already disabled before the call.
+        # Idempotent path - already disabled before the call.
         assert resp.status_code == 200, (
             f"delete on already-disabled id={dept_id!r} must 200; "
             f"got {resp.status_code} body={resp.text!r}"
@@ -338,7 +338,7 @@ def _execute_step(
 
 
 # ---------------------------------------------------------------------------
-#  — every successful CRUD emits exactly one matching signal
+#  - every successful CRUD emits exactly one matching signal
 # ---------------------------------------------------------------------------
 
 
@@ -353,7 +353,7 @@ def test_every_successful_crud_signals_hot_reload_once(
     tmp_path: Path,
     monkeypatch: Any,
 ) -> None:
-    """— successful CRUD triggers exactly one signal each.
+    """- successful CRUD triggers exactly one signal each.
     For every randomly generated sequence of CRUD operations the
     publisher MUST receive one ``(dept_id, action)`` tuple per
     successful mutation, no tuples on conflict / not-found /
@@ -372,7 +372,7 @@ def test_every_successful_crud_signals_hot_reload_once(
         _, _, expected_action = _execute_step(client, step, cfg_path)
 
         if expected_action is None:
-            # Failure / idempotent path — no new signal allowed.
+            # Failure / idempotent path - no new signal allowed.
             assert publisher.calls == before, (
                 f"step={step!r} returned a non-mutating response but the "
                 f"publisher recorded a new signal (before={before!r}, "
@@ -381,7 +381,7 @@ def test_every_successful_crud_signals_hot_reload_once(
             )
             continue
 
-        # Successful mutation — exactly one new tuple, matching id+action.
+        # Successful mutation - exactly one new tuple, matching id+action.
         assert len(publisher.calls) == len(before) + 1, (
             f"step={step!r} expected exactly one new signal; "
             f"before={before!r}, after={publisher.calls!r}"
@@ -400,7 +400,7 @@ def test_every_successful_crud_signals_hot_reload_once(
 
 
 # ---------------------------------------------------------------------------
-#  — POST conflict (409) does not signal hot-reload
+#  - POST conflict (409) does not signal hot-reload
 # ---------------------------------------------------------------------------
 
 
@@ -415,10 +415,10 @@ def test_post_conflict_does_not_signal_hot_reload(
     tmp_path: Path,
     monkeypatch: Any,
 ) -> None:
-    """— duplicate POST must not signal hot-reload.
+    """- duplicate POST must not signal hot-reload.
     When a ``POST /api/v1/departments`` returns 409
     ``dept_id_conflict``, no ``departments.json`` write happened, so
-    the publisher MUST stay silent — anything else would burn the
+    the publisher MUST stay silent - anything else would burn the
     consumer-side reload budget on a no-op."""
 
     _redirect_config_paths(monkeypatch, tmp_path, seed_ids=(dept_id,))
@@ -440,7 +440,7 @@ def test_post_conflict_does_not_signal_hot_reload(
 
 
 # ---------------------------------------------------------------------------
-#  — DELETE on already-disabled dept does not signal hot-reload
+#  - DELETE on already-disabled dept does not signal hot-reload
 # ---------------------------------------------------------------------------
 
 
@@ -455,7 +455,7 @@ def test_delete_already_disabled_does_not_signal_hot_reload(
     tmp_path: Path,
     monkeypatch: Any,
 ) -> None:
-    """— DELETE on a disabled dept is a no-op signal-wise.
+    """- DELETE on a disabled dept is a no-op signal-wise.
     When the dept is already at ``mode=disabled`` the router
     short-circuits with ``status="already_disabled"`` and skips the
     file rewrite. No consumer cache needs to refresh, so the publisher
@@ -494,7 +494,7 @@ def test_delete_already_disabled_does_not_signal_hot_reload(
 
 
 # ---------------------------------------------------------------------------
-#  — coverage of all three action labels
+#  - coverage of all three action labels
 # ---------------------------------------------------------------------------
 
 
@@ -509,10 +509,10 @@ def test_full_lifecycle_covers_all_three_actions(
     tmp_path: Path,
     monkeypatch: Any,
 ) -> None:
-    """— create → patch → delete fires the three action labels.
+    """- create → patch → delete fires the three action labels.
     Walks one dept through its whole lifecycle and asserts the
     publisher tape is exactly ``[(id, dept_created), (id, dept_updated),
-    (id, dept_decommissioned)]`` — confirming the three constants from
+    (id, dept_decommissioned)]`` - confirming the three constants from
     the router are wired into the signal payload, in order."""
 
     _redirect_config_paths(monkeypatch, tmp_path, seed_ids=())

@@ -1,26 +1,26 @@
-"""``automation-worker`` boot script.
+﻿"""``automation-worker`` boot script.
 
 Hosts the **single** Temporal worker that polls the ``automation-tq``
 task queue. The queue name is sourced from:func:`temporal_shared.workflow_registry.task_queue_for` so the boot
-script and the workflow modules share a single source of truth — the
+script and the workflow modules share a single source of truth - the
 queue string is never duplicated as a string literal anywhere in the
 worker package.
 
 The worker registers three workflows:
 
-*:class:`AutomationWorkflow` — webhook-triggered gateway plus the
+*:class:`AutomationWorkflow` - webhook-triggered gateway plus the
  capability gate + workflow_type router.
-*:class:`BotBranchRetention` — daily cron (02:30 UTC) that deletes
+*:class:`BotBranchRetention` - daily cron (02:30 UTC) that deletes
  ``ai/{issue_key}`` branches older than 30 days whose linked Jira
  issue is closed.
-*:class:`AuditPruneWorkflow` — daily cron (03:00 UTC) that archives
+*:class:`AuditPruneWorkflow` - daily cron (03:00 UTC) that archives
  ``audit_events`` to MinIO before deleting them.
 
 The boot script's only job is to construct the collaborator graph
 (Postgres pool, MinIO settings, NotificationService) and hand it to
 the activity-side setters declared in:mod:`automation_worker.activities.audit_prune` before the worker
 enters its run loop. Configuration is read from the process
-environment (no ``.env`` file loader at this layer — Compose /
+environment (no ``.env`` file loader at this layer - Compose /
 Kubernetes injects the values). The keys consumed are documented in
 ``platform/workers/automation-worker/.env.example``.
 
@@ -44,7 +44,7 @@ from typing import Any
 
 # Avoid importing temporalio at module scope when only documentation is
 # being rendered; the runtime dependency is required for ``run``.
-try:  # pragma: no cover — exercised at boot only
+try:  # pragma: no cover - exercised at boot only
     from temporalio.client import Client, ScheduleHandle
     from temporalio.worker import Worker
     from temporalio.service import RPCError
@@ -82,7 +82,7 @@ from automation_worker.workflows import (
     WorkspaceCleanupSchedulerWorkflow,
 )
 
-# — new activities registered alongside
+# - new activities registered alongside
 # the audit-prune family. Imported here as plain callables; the
 # ``@activity.defn`` decorator on each function carries the wire
 # name so the workflow side can resolve them via
@@ -106,7 +106,7 @@ from automation_worker.activities.task_analyzer import analyze_task
 # the workflow modules cannot drift apart on the queue string. The
 # helper raises ``KeyError`` for unknown workflow names, which means
 # adding a new workflow to this worker also requires extending the
-# registry — the worker boot cannot silently fall through to a
+# registry - the worker boot cannot silently fall through to a
 # default queue.
 from temporal_shared.workflow_registry import task_queue_for
 
@@ -199,11 +199,11 @@ def _build_notification_service() -> object:
 
  Wires the production concrete adapters from:mod:`notification.concrete_adapters`:
 
- *:class:`AiohttpSlackAdapter` — POSTs to the admin Slack webhook
+ *:class:`AiohttpSlackAdapter` - POSTs to the admin Slack webhook
  resolved from ``SLACK_ADMIN_WEBHOOK`` (or
  ``vault:notifications/slack/admin`` when Vault credentials are
  available).
- *:class:`AsyncpgNotificationLogStore` — backed by the same
+ *:class:`AsyncpgNotificationLogStore` - backed by the same
  Postgres pool the audit activities use; we open a separate
  connection here because the audit pool is bound to the
  activity-side setter.
@@ -211,7 +211,7 @@ def _build_notification_service() -> object:
  reused via the in-process module-level cache; the dispatcher
  depends only on the Protocol-typed ``render`` method.
 
- Failure modes are non-fatal — when any adapter cannot be
+ Failure modes are non-fatal - when any adapter cannot be
  constructed (eg. no Slack webhook configured) we fall back to a
  log-only stub and log a clear warning so the operator can fix
  the configuration without restarting the worker.
@@ -297,7 +297,7 @@ def _build_credential_resolver() -> Any:
  Re-raised when the resolver cannot be constructed (missing
  Vault address, missing decision module, etc.). The caller
  catches it, logs a warning, and continues without a wired
- MCP caller —:func:`output_actions.execute_output_actions`
+ MCP caller -:func:`output_actions.execute_output_actions`
  will fail loudly at the first call instead.
  """
 
@@ -417,7 +417,7 @@ class _LazyNotificationService:
  verbatim. Callers receive the same:class:`NotificationOutcome` they would get if they had
  constructed the service eagerly at boot.
 
- Errors are **not** swallowed at this layer — the:func:`dispatch_notification` activity wraps the call in its
+ Errors are **not** swallowed at this layer - the:func:`dispatch_notification` activity wraps the call in its
  own best-effort ``try / except`` so the workflow's terminal
  path is never blocked by a transport hiccup.
  """
@@ -495,12 +495,12 @@ async def _ensure_audit_prune_schedule(client: object) -> None:
     """Idempotently register the daily ``audit-prune-cron`` schedule.
 
  Uses Temporal's first-class ``Schedule`` API so the cron survives
- worker restarts. Calling this function repeatedly is safe — when
+ worker restarts. Calling this function repeatedly is safe - when
  a schedule with the canonical ID already exists we leave it
  alone; otherwise we create it with ``cron_schedule="0 3 * * *"``.
  """
 
-    if Client is None:  # pragma: no cover — guarded import path
+    if Client is None:  # pragma: no cover - guarded import path
         raise RuntimeError(
             "temporalio is required to register the audit-prune cron"
         )
@@ -523,7 +523,7 @@ async def _ensure_audit_prune_schedule(client: object) -> None:
         )
         return
     except RPCError:
-        # Not found — fall through to create.
+        # Not found - fall through to create.
         pass
     except Exception as exc:  # noqa: BLE001
         _LOG.warning(
@@ -559,12 +559,12 @@ async def _ensure_workspace_cleanup_schedule(client: object) -> None:
 
  Mirrors the pattern of:func:`_ensure_audit_prune_schedule`: try ``describe`` first,
  create only when not found. Failure to register is logged but
- does not abort the worker boot — operators can drive an emergency
+ does not abort the worker boot - operators can drive an emergency
  prune via admin-dashboard while a misconfigured Temporal cluster
  is fixed.
  """
 
-    if Client is None:  # pragma: no cover — guarded import path
+    if Client is None:  # pragma: no cover - guarded import path
         raise RuntimeError(
             "temporalio is required to register the workspace-cleanup cron"
         )
@@ -639,7 +639,7 @@ async def _run_async() -> None:
     # which sets the context variable; the filter fans the value out
     # into the log record's ``%(trace_id)s`` placeholder. Wrapped in
     # try/except so a missing observability lib (in focused unit
-    # tests) does not block worker startup — in that branch we fall
+    # tests) does not block worker startup - in that branch we fall
     # back to a format string without the trace_id placeholder so
     # ``logging.basicConfig`` cannot raise ``KeyError`` later on.
     log_format = (
@@ -669,7 +669,7 @@ async def _run_async() -> None:
 
     # Install the redaction filter before any activity logs run.
     # The automation-worker handles Jira
-    # / Bitbucket / Confluence tokens via the MCP caller — leaks here
+    # / Bitbucket / Confluence tokens via the MCP caller - leaks here
     # surface in the workflow audit trail.
     from http_shared import install_redaction_filter  # noqa: PLC0415
 
@@ -738,14 +738,14 @@ async def _run_async() -> None:
             exc,
         )
 
-    # Postgres pool may fail to open in dev — log + continue so the
+    # Postgres pool may fail to open in dev - log + continue so the
     # worker's other activities can still be scheduled. The cron
     # itself remains registered; AuditPruneWorkflow's lookup activity
     # will surface a clear RuntimeError when it tries to use the pool.
     try:
         pool = await _build_postgres_pool()
         audit_prune_activities.set_db_pool(pool)
-        # — prepare_iteration also
+        # - prepare_iteration also
         # consults Postgres (``shared.workflow_iterations``); share
         # the same pool so the worker only opens one connection
         # tree. ``set_workspace_base_path`` is honoured by
@@ -776,7 +776,7 @@ async def _run_async() -> None:
         await _ensure_audit_prune_schedule(client)
     except Exception as exc:  # noqa: BLE001
         # Do not crash the worker boot on schedule registration
-        # issues — the worker can still consume one-off workflows
+        # issues - the worker can still consume one-off workflows
         # while an operator fixes the schedule manually.
         _LOG.error(
             "audit-prune schedule registration failed; worker will "
@@ -802,11 +802,11 @@ async def _run_async() -> None:
     # exactly one task queue.
     # Three workflows share the queue:
     #
-    # * ``AutomationWorkflow`` — the gateway / capability gate /
+    # * ``AutomationWorkflow`` - the gateway / capability gate /
     # workflow_type router invoked from the webhook handler via
     # ``signalWithStart``.
-    # * ``BotBranchRetention`` — daily cron at 02:30 UTC.
-    # * ``AuditPruneWorkflow`` — daily cron at 03:00 UTC.
+    # * ``BotBranchRetention`` - daily cron at 02:30 UTC.
+    # * ``AuditPruneWorkflow`` - daily cron at 03:00 UTC.
     #
     # Activity registration follows the same single-queue contract:
     # only the ``audit_prune`` activities are wired here today. The
@@ -821,15 +821,15 @@ async def _run_async() -> None:
             AutomationWorkflow,
             BotBranchRetention,
             AuditPruneWorkflow,
-            # — new workflows
+            # - new workflows
             MultiStepWorkflow,
             ApprovalGateWorkflow,
-            # — IterationWorkflow is the
+            # - IterationWorkflow is the
             # Temporal entry point for ``[iterate]``-driven re-runs
             #. Hosted on the same automation-tq queue
             # as the gateway so the worker stays single-queue.
             IterationWorkflow,
-            # — EpicSubtaskWorkflow
+            # - EpicSubtaskWorkflow
             # orchestrates Epic subtasks sequentially, starting a child
             # AutomationWorkflow for each (,).
             EpicSubtaskWorkflow,
@@ -845,7 +845,7 @@ async def _run_async() -> None:
             audit_prune_activities.archive_audit_to_minio,
             audit_prune_activities.delete_audit_older_than,
             audit_prune_activities.notify_audit_prune_failed,
-            # — new activities. Each
+            # - new activities. Each
             # carries ``@activity.defn(name=...)`` so the wire name
             # matches the string literal used by the workflow side.
             execute_output_actions,
@@ -859,7 +859,7 @@ async def _run_async() -> None:
             load_branch_pattern_rules,
             audit_write,
             noop_test_post_result,
-            # — prepare_iteration is the
+            # - prepare_iteration is the
             # first activity called by IterationWorkflow. Wiring it
             # here keeps the [iterate] flow self-contained on the
             # automation-tq queue (no cross-worker call).
@@ -887,7 +887,7 @@ async def _run_async() -> None:
     for sig in (signal.SIGTERM, signal.SIGINT):
         try:
             loop.add_signal_handler(sig, stop_event.set)
-        except NotImplementedError:  # pragma: no cover — Windows
+        except NotImplementedError:  # pragma: no cover - Windows
             pass
 
     worker_task = asyncio.create_task(worker.run())
@@ -902,7 +902,7 @@ async def _run_async() -> None:
             pass
 
 
-def run() -> None:  # pragma: no cover — thin entrypoint
+def run() -> None:  # pragma: no cover - thin entrypoint
     """Console-script entrypoint."""
 
     asyncio.run(_run_async())

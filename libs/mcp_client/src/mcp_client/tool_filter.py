@@ -1,4 +1,4 @@
-"""Banned MCP tool list.
+﻿"""Banned MCP tool list.
 
 The :data:`BANNED_TOOLS` constant is the **single source of truth** for
 the tools the LLM is never allowed to call. Anything that hands a tool
@@ -8,10 +8,10 @@ admin-dashboard tooling) must route the catalog through
 
 Two members are always banned:
 
-- ``bitbucket_merge_pr`` — merging a pull request is a human
+- ``bitbucket_merge_pr`` - merging a pull request is a human
   decision; coupling it with always-draft PR creation keeps the platform
   from auto-merging anything an LLM produces.
-- ``confluence_delete_page`` — page deletes are irreversible at the
+- ``confluence_delete_page`` - page deletes are irreversible at the
   Confluence API level. Probe artifacts are cleaned up via the
   admin "Probe Artifacts" UI, never via this MCP tool.
 
@@ -40,7 +40,7 @@ BANNED_TOOLS: Final[frozenset[str]] = frozenset(
 
 
 # ---------------------------------------------------------------------------
-# filter_tools — strip banned tools from a catalog
+# filter_tools - strip banned tools from a catalog
 # ---------------------------------------------------------------------------
 
 
@@ -53,7 +53,7 @@ def _tool_name(tool: Any) -> str | None:
     (eg. an ``mcp.types.Tool`` instance).
 
     Returning ``None`` lets the caller decide what to do with shapes
-    we cannot inspect — :func:`filter_tools` keeps such entries
+    we cannot inspect - :func:`filter_tools` keeps such entries
     untouched (they cannot match a banned name and therefore cannot be
     a banned tool).
     """
@@ -71,7 +71,7 @@ def filter_tools(tools: Iterable[Any]) -> list[Any]:
     """Return ``tools`` with every entry whose name is in
     :data:`BANNED_TOOLS` removed.
 
-    The function is intentionally tolerant of catalog shape — see
+    The function is intentionally tolerant of catalog shape - see
     :func:`_tool_name` for the supported input forms. Tools whose name
     we cannot inspect are kept as-is; they cannot match a banned name
     and therefore cannot violate the ban.
@@ -102,7 +102,7 @@ def filter_tools(tools: Iterable[Any]) -> list[Any]:
 
     Notes:
         :data:`BANNED_TOOLS` is the *single source of truth*. Callers must not maintain a private deny
-        list — adding a tool there is intentionally a code change so
+        list - adding a tool there is intentionally a code change so
         tests catch any drift.
     """
 

@@ -1,4 +1,4 @@
-"""— ConnectionTestResult shape covers timeout, non-2xx, 2xx.
+﻿"""- ConnectionTestResult shape covers timeout, non-2xx, 2xx.
 spec. Three upstream outcomes are exercised:
 * **Slow handler** exceeding the budget → result is
   ``success=false, latency_ms=10000, model=null,

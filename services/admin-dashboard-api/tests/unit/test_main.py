@@ -1,4 +1,4 @@
-"""Unit tests for ``src.main``.
+﻿"""Unit tests for ``src.main``.
 These tests validate the readiness / liveness contract and the
 lifespan wiring for the service:
 * ``GET /healthz`` returns 200 ``{"status": "ok"}`` whether or not the
@@ -7,7 +7,7 @@ lifespan wiring for the service:
   "manifest_invalid"}`` when ``load_manifest`` raised
   :class:`ManifestLoadError` during startup. Body must be ≤64 bytes.
 * ``GET /readyz`` returns 200 ``{"status": "ready"}`` on the happy
-  path (manifest loaded + ``Settings.dependencies_reachable`` true) —
+  path (manifest loaded + ``Settings.dependencies_reachable`` true) -
 * The lifespan context attaches the LifecycleService singleton on
   ``app.state.lifecycle`` and tears it down on shutdown.
 * ``get_lifecycle_service`` raises ``HTTPException(503)`` when the
@@ -44,7 +44,7 @@ from src.manifest import ManifestLoadError  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
-# /healthz — always 200
+# /healthz - always 200
 # ---------------------------------------------------------------------------
 
 
@@ -79,7 +79,7 @@ def test_healthz_returns_200_even_when_manifest_invalid(
 
 
 # ---------------------------------------------------------------------------
-# /readyz — happy path + manifest_invalid
+# /readyz - happy path + manifest_invalid
 # ---------------------------------------------------------------------------
 
 
@@ -132,7 +132,7 @@ def test_readyz_manifest_invalid_body_under_64_bytes(
     so logs/metrics remain the structured surface for diagnostics.
     The canonical body
     ``{"status":"not_ready","reason":"manifest_invalid"}`` is 51
-    bytes — well within budget."""
+    bytes - well within budget."""
 
     def _explode(_workspace_root: Path) -> None:
         raise ManifestLoadError("synthetic")
@@ -178,7 +178,7 @@ def test_readyz_returns_503_when_dependencies_unreachable(
 
 
 # ---------------------------------------------------------------------------
-# Lifespan — LifecycleService wiring
+# Lifespan - LifecycleService wiring
 # ---------------------------------------------------------------------------
 
 

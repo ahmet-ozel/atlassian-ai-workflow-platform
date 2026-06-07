@@ -1,10 +1,10 @@
-"""Tests for out-of-scope artifact absence.
+﻿"""Tests for out-of-scope artifact absence.
 
 The project workspace must not contain artifacts that
 belong to features explicitly deferred or excluded from the in-scope
 deliverable set:
 
-* ``helm/`` and ``k8s/`` (and the nested ``k8s/manifests/``) — Kubernetes
+* ``helm/`` and ``k8s/`` (and the nested ``k8s/manifests/``) - Kubernetes
   deployment artifacts are out of scope.
 * Any nested ``helm/`` directory anywhere under the workspace root
   is out of scope.
@@ -22,9 +22,9 @@ parameterizes over each entry and asserts:
 
 * For literal paths (no ``**`` segment), the path does not exist
   beneath ``WORKSPACE_ROOT``.
-* For glob patterns (``**/<basename-pattern>``), the workspace tree —
+* For glob patterns (``**/<basename-pattern>``), the workspace tree -
   pruned of heavy / vendored directories such as ``node_modules/``,
-  ``.venv/``, ``.git/``, ``.next/``, and ``atlassian_mcp_bitbucket/`` — yields
+  ``.venv/``, ``.git/``, ``.next/``, and ``atlassian_mcp_bitbucket/`` - yields
   no matching paths.
 
 The ``atlassian_mcp_bitbucket/`` exclusion is critical: that gateway
@@ -63,7 +63,7 @@ from conftest import FORBIDDEN_PATHS, WORKSPACE_ROOT  # noqa: E402
 #:   ``.venv/``, ``.next/``, ``dist/``).
 #: - Tooling and cache trees (``.git/``, ``.pytest_cache/``,
 #:   ``.hypothesis/``, ``__pycache__/``).
-#: - ``atlassian_mcp_bitbucket/`` — gateway subtree which legitimately
+#: - ``atlassian_mcp_bitbucket/`` - gateway subtree which legitimately
 #:   owns its own ``helm/`` chart.
 _EXCLUDED_DIR_NAMES: frozenset[str] = frozenset(
     {

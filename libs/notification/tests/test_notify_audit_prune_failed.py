@@ -1,4 +1,4 @@
-"""Unit tests for ``NotificationService.notify_audit_prune_failed``.
+﻿"""Unit tests for ``NotificationService.notify_audit_prune_failed``.
 
 Covers the mandatory admin alarm contract:
 
@@ -152,7 +152,7 @@ def test_dedup_key_default_run_id_matches_documented_shape() -> None:
 
 
 def test_dedup_key_custom_run_id_is_reflected_in_hash() -> None:
-    """Per-cron-run idempotency — ``run_id`` substitutes the workflow_id slot."""
+    """Per-cron-run idempotency - ``run_id`` substitutes the workflow_id slot."""
 
     service, _, _, _, store = _service_with_fakes()
 
@@ -248,14 +248,14 @@ def test_render_failure_raises_template_render_error() -> None:
     with pytest.raises(TemplateRenderError):
         _run(service.notify_audit_prune_failed(error="boom"))
 
-    # No log row, no admin send — the dispatcher fails before
+    # No log row, no admin send - the dispatcher fails before
     # touching either side effect.
     assert store.rows == []
     assert slack.admin_sends == []
 
 
 def test_admin_send_transport_failure_is_reraised() -> None:
-    """Mandatory alarm is never best-effort — adapter failure re-raises."""
+    """Mandatory alarm is never best-effort - adapter failure re-raises."""
 
     slack = _FakeSlackAdapter(raise_on_admin_send=RuntimeError("slack 503"))
     service, _, _, _, store = _service_with_fakes(slack=slack)
@@ -277,7 +277,7 @@ def test_failed_send_then_dedup_on_retry() -> None:
 
     First attempt: insert lands, adapter raises, dispatcher re-raises.
     Second attempt with the same ``run_id``: insert returns False
-    (UNIQUE collision), adapter is NOT called again — the dispatcher
+    (UNIQUE collision), adapter is NOT called again - the dispatcher
     returns the dedup-skip outcome instead of re-raising.
 
     This mirrors the workflow-completion contract: dedup is decided by
@@ -314,7 +314,7 @@ def test_failed_send_then_dedup_on_retry() -> None:
 
 
 def test_alarm_does_not_consult_dept_config() -> None:
-    """The admin alarm is dept-agnostic — no DeptConfigView is accepted."""
+    """The admin alarm is dept-agnostic - no DeptConfigView is accepted."""
 
     # Inspect the public method signature: it MUST NOT accept ``dept``.
     import inspect
@@ -327,7 +327,7 @@ def test_alarm_does_not_consult_dept_config() -> None:
 
 def test_alarm_does_not_call_dept_send_or_email() -> None:
     """Even when dept channels exist in the suite, ``notify_audit_prune_failed``
-    routes only through ``send_admin_channel`` — never ``send`` or email."""
+    routes only through ``send_admin_channel`` - never ``send`` or email."""
 
     service, slack, email, _, _ = _service_with_fakes()
 

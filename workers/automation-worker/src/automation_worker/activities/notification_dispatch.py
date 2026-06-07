@@ -1,4 +1,4 @@
-"""Notification dispatch activity for workflow completion (/).
+﻿"""Notification dispatch activity for workflow completion (/).
 
 Wires the ``automation-worker`` Temporal activity surface to:class:`notification.NotificationService` so a finishing workflow
 (``AutomationWorkflow`` / ``IterationWorkflow`` / future siblings)
@@ -10,18 +10,18 @@ table in ```` design.md §`NotificationService`:
 * ``status ∈ {"completed", "partial"}`` ⇒ success-gated; the dispatcher
  short-circuits to a no-op when ``notify_on_success == False``.
 * Idempotency, body redaction and the ``shared.notification_log`` row
- shape are all enforced inside:class:`NotificationService` — this
+ shape are all enforced inside:class:`NotificationService` - this
  activity is the wire-in point.
 
 Single activity exported:
 
-*:func:`dispatch_notification` — the primary call. Builds a:class:`notification.DeptConfigView` and:class:`notification.WorkflowResult` from the flat:class:`DispatchNotificationInput` payload, then forwards to:meth:`NotificationService.notify_workflow_completion`.
+*:func:`dispatch_notification` - the primary call. Builds a:class:`notification.DeptConfigView` and:class:`notification.WorkflowResult` from the flat:class:`DispatchNotificationInput` payload, then forwards to:meth:`NotificationService.notify_workflow_completion`.
 
 Best-effort contract
 --------------------
 
 The activity **swallows** every dispatch-side exception and returns
-without raising — a notification failure must never block the
+without raising - a notification failure must never block the
 workflow's terminal path (the workflow has already done the
 operator-visible work; missing a Slack ping is far less bad than
 holding the workflow open forever or, worse, retrying the user's
@@ -34,7 +34,7 @@ Dependency injection
 Mirrors the convention used by:mod:`automation_worker.activities.audit_prune`:
 
 *:func:`set_notification_service` /:func:`get_notification_service`
- — the boot script (:mod:`automation_worker.main`) registers the
+ - the boot script (:mod:`automation_worker.main`) registers the
  shared:class:`NotificationService` (or a lazy-built wrapper) on
  startup. Tests inject an in-memory fake via:func:`set_notification_service`.
 
@@ -73,7 +73,7 @@ class DispatchNotificationInput:
 
  The dataclass is deliberately **flat** (no nested:class:`notification.DeptConfigView` /:class:`notification.WorkflowResult`
  instances) so Temporal's default JSON data converter can ship the
- payload without a custom codec — the activity body re-builds the
+ payload without a custom codec - the activity body re-builds the
  typed objects on the worker side.
 
  Args:
@@ -105,7 +105,7 @@ class DispatchNotificationInput:
  placeholder.
  error: Error message for ``status="failed"``; rendered into
  the ``{error}`` placeholder. Long stack traces should be
- truncated by the caller — the field is not redacted by
+ truncated by the caller - the field is not redacted by
  the dispatcher.
  jira_issue_url: Optional Jira issue URL surfaced into
  ``{jira_issue_url}``. ``None`` is rendered as the literal
@@ -133,7 +133,7 @@ class DispatchNotificationInput:
 class _NotificationServiceLike(Protocol):
     """Minimal:class:`notification.NotificationService` surface.
 
- Only:meth:`notify_workflow_completion` is part of this contract —
+ Only:meth:`notify_workflow_completion` is part of this contract -
  the audit-prune admin alarm is wired through:mod:`automation_worker.activities.audit_prune` against the same
  underlying service instance. Declaring a Protocol keeps this
  module free of a hard runtime dependency on:mod:`notification`
@@ -151,7 +151,7 @@ class _NotificationServiceLike(Protocol):
         ...
 
 
-# Module-level state — kept **separate** from the audit_prune
+# Module-level state - kept **separate** from the audit_prune
 # module's ``_notification_service`` slot so a test that swaps one
 # does not interfere with the other. The boot script
 # (:mod:`automation_worker.main`) registers the *same* underlying
@@ -220,7 +220,7 @@ async def dispatch_notification(inp: DispatchNotificationInput) -> None:
  """
 
     # 1. Resolve the registered service. Missing service is a normal
-    # branch in dev / test — log + return so the workflow's
+    # branch in dev / test - log + return so the workflow's
     # terminal path stays unblocked.
     try:
         service = get_notification_service()
@@ -237,7 +237,7 @@ async def dispatch_notification(inp: DispatchNotificationInput) -> None:
     # 2. Lazily import the notification lib types. Deferring the
     # import means a worker that ships without:mod:`notification`
     # (focused unit-test environments) does not blow up at
-    # module-import time — only the dispatch activity needs the
+    # module-import time - only the dispatch activity needs the
     # typed objects.
     try:
         from notification import (  # type: ignore[import-not-found]
@@ -272,7 +272,7 @@ async def dispatch_notification(inp: DispatchNotificationInput) -> None:
             error=inp.error,
             jira_issue_url=inp.jira_issue_url,
         )
-    except Exception as exc:  # noqa: BLE001 — best-effort
+    except Exception as exc:  # noqa: BLE001 - best-effort
         activity.logger.warning(
             "dispatch_notification: failed to build dispatch payload "
             "(%s); skipping (workflow_id=%s)",
@@ -291,9 +291,9 @@ async def dispatch_notification(inp: DispatchNotificationInput) -> None:
             dept=dept,
             result=result,
         )
-    except Exception as exc:  # noqa: BLE001 — best-effort (/)
+    except Exception as exc:  # noqa: BLE001 - best-effort (/)
         activity.logger.warning(
-            "dispatch_notification failed: %s — best-effort, returning "
+            "dispatch_notification failed: %s - best-effort, returning "
             "(workflow_id=%s, status=%s)",
             exc,
             inp.workflow_id,

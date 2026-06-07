@@ -1,4 +1,4 @@
-"""Shared literal types for the cost-tracking lib.
+﻿"""Shared literal types for the cost-tracking lib.
 
 Mirrors the ``CHECK`` constraints declared by ``20_ops.sql`` on the
 ``shared.cost_tracking`` table so a typo at the application layer
@@ -36,10 +36,10 @@ PROVIDER_NAMES: Final[frozenset[str]] = frozenset(
 
 #: Mirrors ``chk_cost_tracking_cost_tag`` in ``20_ops.sql``.
 #:
-#: * ``"production"`` — bills against the dept budget (R5.5).
-#: * ``"sandbox"`` — admin-dashboard prompt sandbox runs (R2.4); never
+#: * ``"production"`` - bills against the dept budget (R5.5).
+#: * ``"sandbox"`` - admin-dashboard prompt sandbox runs (R2.4); never
 #:   counted by ``BudgetCapPolicy._usage(...)``.
-#: * ``"probe"`` — connectivity probe LLM calls; never counted.
+#: * ``"probe"`` - connectivity probe LLM calls; never counted.
 CostTag = Literal["production", "sandbox", "probe"]
 
 

@@ -1,4 +1,4 @@
-# execution-runner-worker
+﻿# execution-runner-worker
 
 Temporal worker that hosts the `ExecutionRunWorkflow` and its supporting
 SSH / Docker / Vault / MinIO activities (see the
@@ -30,7 +30,7 @@ docker build -t execution-runner-worker .
 docker run --rm --env-file .env execution-runner-worker
 ```
 
-The container has no published ports — workers communicate exclusively
+The container has no published ports - workers communicate exclusively
 over the Temporal gRPC connection. To point the worker at a Temporal
 instance running on the host machine override `TEMPORAL_HOST`:
 

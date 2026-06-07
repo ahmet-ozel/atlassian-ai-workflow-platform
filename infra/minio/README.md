@@ -1,4 +1,4 @@
-# MinIO (dev mode only)
+﻿# MinIO (dev mode only)
 
 Dev-mode MinIO; bucket bootstrap is performed by the
 [`init.sh`](./init.sh) script.
@@ -8,7 +8,7 @@ Dev-mode MinIO; bucket bootstrap is performed by the
 | Bucket          | Purpose                                                                  | Owner / writer                                | Retention                              |
 |-----------------|--------------------------------------------------------------------------|-----------------------------------------------|----------------------------------------|
 | `ai-runs`       | Execution artifacts (stdout, stderr, exit_code) keyed by workflow id     | `execution-runner-worker.minio_upload_artifact` | Workflow lifetime + post-mortem window |
-| `audit-archive` | Daily-partitioned audit-log archive — `audit-archive/{Y}/{M}/{D}/audit-N.jsonl.gz` | `automation-worker.archive_audit_to_minio`     | `RETENTION_DAYS` (default 90 days)     |
+| `audit-archive` | Daily-partitioned audit-log archive - `audit-archive/{Y}/{M}/{D}/audit-N.jsonl.gz` | `automation-worker.archive_audit_to_minio`     | `RETENTION_DAYS` (default 90 days)     |
 
 The `audit-archive` layout is
 consumed by
@@ -19,7 +19,7 @@ audit panel's date-bucketed archive search.
 
 The `minio` Compose service ships an empty data volume; running
 [`init.sh`](./init.sh) creates the buckets above and is **idempotent**
-— `BucketAlreadyOwnedByYou` is treated as success.
+- `BucketAlreadyOwnedByYou` is treated as success.
 
 ```sh
 # After `docker compose --profile minio up -d minio`:
@@ -60,7 +60,7 @@ are expected to layer the following on top before going live:
 1. **Object-lock + COMPLIANCE retention** for `audit-archive`. The
    bucket should be created with `mc mb --with-lock` and a default
    retention of at least `RETENTION_DAYS` days
-   (write-once / WORM — protects archived audit data from
+   (write-once / WORM - protects archived audit data from
    tampering).
 2. **Lifecycle transition** to a cold storage tier after N days for
    the `audit-archive` bucket; expiry is **disabled** so archived

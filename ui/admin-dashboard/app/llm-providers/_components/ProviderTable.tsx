@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * Provider list table (Requirements 4.4, 9.4, 9.5, 14.1).
@@ -7,7 +7,7 @@
  * last_tested_at (relative time), and a per-row action menu (Test /
  * Edit / Disable / Delete).
  *
- * The table renders `api_key_masked` only — never the raw credential.
+ * The table renders `api_key_masked` only - never the raw credential.
  * The parent page owns the data and the action handlers; the table is
  * a pure presentational component so the property-test surface stays
  * deterministic.
@@ -91,7 +91,7 @@ export default function ProviderTable({
               <td className="px-3 py-2 text-gray-600 tabular-nums">
                 {row.last_tested_at
                   ? formatRelative(row.last_tested_at)
-                  : "—"}
+                  : "-"}
               </td>
               <td className="px-3 py-2 text-right">
                 <div className="inline-flex gap-2">
@@ -136,7 +136,7 @@ export default function ProviderTable({
 
 /**
  * Lightweight relative-time formatter. Avoids pulling in a heavy
- * intl library — the table only needs a single-glance summary.
+ * intl library - the table only needs a single-glance summary.
  */
 function formatRelative(iso: string): string {
   const now = Date.now();

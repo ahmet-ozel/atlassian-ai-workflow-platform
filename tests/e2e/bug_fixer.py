@@ -1,4 +1,4 @@
-"""
+﻿"""
 Pre-existing bug fix orchestrator for the Local E2E test suite.
 
 This module identifies and applies fixes for known pre-existing bugs in the
@@ -198,11 +198,11 @@ class BugFixer:
                 bug_id=bug_id,
                 original_problem=original_problem,
                 root_cause=root_cause,
-                fix_applied="Test file not found — no fix needed",
+                fix_applied="Test file not found - no fix needed",
                 files_modified=[],
                 verification_passed=False,
                 before_state="File does not exist: tests/property/test_log_redaction.py",
-                after_state="Cannot verify — file missing",
+                after_state="Cannot verify - file missing",
             )
 
         content = test_file.read_text(encoding="utf-8")
@@ -503,7 +503,7 @@ class ConfluenceSpaceHelper:
 # continue running.
 
 def pytest_collectreport(report):
-    """Handle collection errors gracefully — skip problematic files."""
+    """Handle collection errors gracefully - skip problematic files."""
     if report.outcome == "failed":
         import warnings
         warnings.warn(
@@ -567,11 +567,11 @@ def pytest_collectreport(report):
                 bug_id=bug_id,
                 original_problem=original_problem,
                 root_cause=root_cause,
-                fix_applied="Makefile not found — cannot apply fix",
+                fix_applied="Makefile not found - cannot apply fix",
                 files_modified=[],
                 verification_passed=False,
                 before_state="Makefile does not exist",
-                after_state="Cannot verify — Makefile missing",
+                after_state="Cannot verify - Makefile missing",
             )
 
         content = self.makefile.read_text(encoding="utf-8")
@@ -626,7 +626,7 @@ def pytest_collectreport(report):
         if up_sh.exists():
             sh_content = up_sh.read_text(encoding="utf-8")
             # The up.sh already uses COMPOSE_FULL_ARGV for down which includes
-            # all manifest profiles — this is correct behavior.
+            # all manifest profiles - this is correct behavior.
             # No change needed for up.sh as it already derives all profiles.
 
         # Verify: check that the Makefile down target is updated
@@ -890,11 +890,11 @@ def verify_volumes_exist(platform_root: Path) -> dict[str, bool]:
                 bug_id=bug_id,
                 original_problem=original_problem,
                 root_cause=root_cause,
-                fix_applied="docker-compose.yml not found — cannot apply fix",
+                fix_applied="docker-compose.yml not found - cannot apply fix",
                 files_modified=[],
                 verification_passed=False,
                 before_state="docker-compose.yml does not exist",
-                after_state="Cannot verify — compose file missing",
+                after_state="Cannot verify - compose file missing",
             )
 
         content = self.compose_file.read_text(encoding="utf-8")

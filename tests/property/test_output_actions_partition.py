@@ -1,4 +1,4 @@
-"""output_actions partition and partial-failure semantics.
+﻿"""output_actions partition and partial-failure semantics.
 
 This file pins the expected partition and partial-failure behavior:
 
@@ -6,13 +6,13 @@ This file pins the expected partition and partial-failure behavior:
     ``BEST_EFFORT_OUTPUT_ACTION_KINDS`` are disjoint frozensets (the
     classification table in :mod:`temporal_shared.messages` is the
     single source of truth) and :func:`partition` routes every action
-    by ``kind`` membership — never by the carried ``severity`` field.
+    by ``kind`` membership - never by the carried ``severity`` field.
 
 (b) **Critical failure → workflow ``failed`` + compensation.**  When a
     simulated apply step records a non-empty ``failed_critical`` list
     on an :class:`ApplyResult`, the workflow body raises
     :class:`_OutputActionCriticalFailure` (the sentinel
-    :class:`Exception` carrying the partial result) — which the
+    :class:`Exception` carrying the partial result) - which the
     workflow's ``run`` traps to dispatch ``compensation_chain_run``
     after a critical output-action failure.
 
@@ -39,7 +39,7 @@ This file pins the expected partition and partial-failure behavior:
 The tests are pure-Python: they never import the worker package and
 never await a Temporal activity.  Workflow-level behaviour is
 exercised by simulating the public surface (``ApplyResult`` shape,
-the sentinel exception, the partition routing) — this matches the
+the sentinel exception, the partition routing) - this matches the
 "simulated success/failure" behavior and keeps the tests isolated
 from event-loop / Temporal runtime concerns.
 
@@ -103,16 +103,16 @@ _VALID_KIND_SEVERITY: Final[tuple[tuple[str, str], ...]] = (
     ("jira_attachment", "best_effort"),
 )
 
-#: Set of unknown kinds — used to drive the ValueError clause of the
+#: Set of unknown kinds - used to drive the ValueError clause of the
 #: partition contract.  These strings are deliberately picked to look
 #: plausible but to fall outside both classification frozensets.
 _UNKNOWN_KINDS: Final[tuple[str, ...]] = (
     "unknown_kind",
     "jira_unknown",
-    "bitbucket_merge_pr",  # banned tool — never a valid output action
+    "bitbucket_merge_pr",  # banned tool - never a valid output action
     "confluence_delete_page",  # banned tool
     "send_carrier_pigeon",
-    "",  # empty kind — also unclassified
+    "",  # empty kind - also unclassified
 )
 
 
@@ -127,7 +127,7 @@ def _make_action(kind: str, severity: str) -> OutputAction:
     The payload carries a single ``("idx", n)`` pair so generated
     instances are distinguishable in ordering assertions.  We use a
     fresh int per call (taken from the iteration count of the
-    surrounding strategy) — this keeps each action distinct without
+    surrounding strategy) - this keeps each action distinct without
     bloating the search space.
     """
     return OutputAction(kind=kind, severity=severity, payload=(("idx", 0),))
@@ -138,7 +138,7 @@ def _action_strategy() -> st.SearchStrategy[OutputAction]:
 
     Each draw samples a (kind, severity) pair from the closed
     alphabet plus a small integer payload tag so action equality
-    rarely collides — useful for the union-preservation check in
+    rarely collides - useful for the union-preservation check in
     partition invariant.
     """
     return st.builds(
@@ -152,7 +152,7 @@ def _action_strategy() -> st.SearchStrategy[OutputAction]:
     )
 
 
-#: ``tuple[OutputAction, ...]`` of length 0..10 — the natural input to
+#: ``tuple[OutputAction, ...]`` of length 0..10 - the natural input to
 #: :func:`partition`.  The upper bound is small (10 actions) because
 #: that is the realistic maximum a single LLM analysis emits and
 #: keeps the union-preservation check cheap.
@@ -203,19 +203,19 @@ class TestPartitionDisjoint:
 
         For any tuple of well-formed actions:
 
-        * ``len(critical) + len(best_effort) == len(actions)`` —
+        * ``len(critical) + len(best_effort) == len(actions)`` -
           every action lands in exactly one bucket.
         * Every critical-bucket action's ``kind`` is in
           :data:`CRITICAL_OUTPUT_ACTION_KINDS`.
         * Every best-effort-bucket action's ``kind`` is in
           :data:`BEST_EFFORT_OUTPUT_ACTION_KINDS`.
         * The concatenation ``critical + best_effort`` (treated as
-          a multiset) equals ``actions`` as a multiset — no
+          a multiset) equals ``actions`` as a multiset - no
           duplication, no loss.
         """
         critical, best_effort = partition(actions)
 
-        # Count parity — partition is a partition, not a copy.
+        # Count parity - partition is a partition, not a copy.
         assert len(critical) + len(best_effort) == len(actions)
 
         # Membership: critical bucket carries only critical kinds.
@@ -226,7 +226,7 @@ class TestPartitionDisjoint:
         for action in best_effort:
             assert action.kind in BEST_EFFORT_OUTPUT_ACTION_KINDS
 
-        # Multiset preservation — every input action appears exactly
+        # Multiset preservation - every input action appears exactly
         # once across the two buckets.  We compare the multisets keyed
         # by (kind, payload-idx) since :class:`OutputAction` is a frozen
         # dataclass and hashable, but Counter on the dataclass itself
@@ -333,7 +333,7 @@ class _SimulatedCriticalFailure(Exception):
     ``temporalio`` heavily, and pytest's ``pythonpath`` does not
     inject the worker source).  We define an equivalent local
     sentinel so the simulated apply step has a concrete exception
-    type to raise — the contract under test is *that* an exception
+    type to raise - the contract under test is *that* an exception
     is raised when ``failed_critical`` is non-empty, not which class
     name carries the result.
 
@@ -368,7 +368,7 @@ def _simulate_apply(
        into :attr:`ApplyResult.failed_best_effort` but never raise
        .
 
-    The function is intentionally synchronous — the simulation does
+    The function is intentionally synchronous - the simulation does
     not need an event loop because every "activity" is a no-op.
     Indices refer to position **within the partitioned bucket**, not
     the original tuple.
@@ -403,7 +403,7 @@ class TestCriticalFailureTriggersCompensation:
         actions=_ACTION_TUPLE.filter(
             lambda a: any(act.kind in CRITICAL_OUTPUT_ACTION_KINDS for act in a)
         ),
-        # The first critical action always fails — this is the most
+        # The first critical action always fails - this is the most
         # interesting case (it short-circuits the rest of the bucket).
         # Hypothesis would otherwise spend examples picking different
         # indices that all collapse to the same fail-fast branch.
@@ -511,7 +511,7 @@ class TestBestEffortFailureIsRecordedNotRaised:
     ) -> None:
         """Best-effort failure is recorded and does not abort.
 
-        Failing the chosen best-effort action MUST NOT raise — the
+        Failing the chosen best-effort action MUST NOT raise - the
         simulated apply returns an :class:`ApplyResult` whose
         ``failed_best_effort`` list contains the failed kind and
         whose ``failed_critical`` list is empty.  This is the (c)
@@ -541,7 +541,7 @@ class TestBestEffortFailureIsRecordedNotRaised:
         # ``successful_best_effort`` or ``failed_best_effort`` exactly
         # once, and the total equals the bucket size.  This is the
         # parity invariant the workflow output's
-        # ``partial_failure_actions`` field relies on — a
+        # ``partial_failure_actions`` field relies on - a
         # failed action must never be silently double-counted as a
         # success.
         _, best_effort_bucket = partition(actions)
@@ -678,7 +678,7 @@ class TestJiraAttachmentFormatGuard:
             severity=severity,
             payload=(("format", "exe"),),  # invalid for jira_attachment
         )
-        # Should not raise — guard ignores non-jira_attachment kinds.
+        # Should not raise - guard ignores non-jira_attachment kinds.
         _validate_jira_attachment_format(action)
 
 
@@ -688,7 +688,7 @@ class TestJiraAttachmentFormatGuard:
 #
 # The exhaustive size-cap behaviour (random-payload identity / replacement
 # determinism) lives in :mod:`test_output_size_cap`.  Here we re-pin the
-# boundary condition with two deterministic examples — one just below the
+# boundary condition with two deterministic examples - one just below the
 # cap, one just above.
 
 
@@ -750,7 +750,7 @@ class TestSizeCapMinioRedirection:
         ``ai-runs/{workflow_id}/output-{idx}.json`` and the original
         encoded body.  ``kind`` and ``severity`` are preserved.
         """
-        # Single ASCII string just above the cap — JSON wrapping
+        # Single ASCII string just above the cap - JSON wrapping
         # overhead is < 16 bytes for this shape, so the encoded
         # length comfortably exceeds the cap.
         oversized_body = "x" * (MAX_OUTPUT_BYTES + 100)

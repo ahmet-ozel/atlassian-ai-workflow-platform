@@ -1,4 +1,4 @@
-"""``agent_runner`` package — new layout for the AgentRunnerWorkflow.
+﻿"""``agent_runner`` package - new layout for the AgentRunnerWorkflow.
 
 This package mirrors the ``automation_worker`` layout as the canonical
 home of the Temporal worker code hosting

@@ -1,4 +1,4 @@
-"""Unit tests for ``libs/llm-orchestrator`` providers and factory.
+﻿"""Unit tests for ``libs/llm-orchestrator`` providers and factory.
 
 These tests are intentionally example-based (no Hypothesis). They exercise
 the four behaviours the provider package needs to guarantee:
@@ -9,7 +9,7 @@ the four behaviours the provider package needs to guarantee:
 2. ``SyntheticLLMProvider.complete`` is deterministic for isolated tests.
 3. The three real providers (``OpenAIProvider``, ``AnthropicProvider``,
    ``VLLMProvider``) construct successfully via the factory and via
-   direct instantiation — they are no longer stubs that raise
+   direct instantiation - they are no longer stubs that raise
    ``NotImplementedError`` on ``__init__``. See the docstrings on
    ``test_from_env_dispatches_real_providers_to_not_implemented`` and
    ``test_real_providers_raise_not_implemented_on_direct_instantiation``
@@ -95,7 +95,7 @@ def test_synthetic_complete_rejects_non_string_prompt() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Real provider stubs — must raise NotImplementedError
+# Real provider stubs - must raise NotImplementedError
 # ---------------------------------------------------------------------------
 
 
@@ -175,7 +175,7 @@ def test_real_providers_raise_not_implemented_on_direct_instantiation(
 
 
 # ---------------------------------------------------------------------------
-# Unknown provider — must fail loudly
+# Unknown provider - must fail loudly
 # ---------------------------------------------------------------------------
 
 
@@ -194,7 +194,7 @@ def test_from_env_unknown_provider_error_mentions_the_offending_value() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Tuning knobs — forwarded only for capable models
+# Tuning knobs - forwarded only for capable models
 # ---------------------------------------------------------------------------
 
 

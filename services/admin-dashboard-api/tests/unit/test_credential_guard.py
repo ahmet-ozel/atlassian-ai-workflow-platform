@@ -1,4 +1,4 @@
-"""Unit tests for the Credential Guard module.
+﻿"""Unit tests for the Credential Guard module.
 * : Production + dev-default POSTGRES_PASSWORD → blocked.
 * : Production + dev-default VAULT_TOKEN → blocked.
 * : /healthz returns 503 when credential_blocked is True.
@@ -31,7 +31,7 @@ from src.lifecycle.credential_guard import (
 
 
 # ---------------------------------------------------------------------------
-# check_credentials — production + dev password → blocked (Req 1.1, 1.2)
+# check_credentials - production + dev password → blocked (Req 1.1, 1.2)
 # ---------------------------------------------------------------------------
 
 
@@ -76,7 +76,7 @@ class TestProductionBlocked:
 
 
 # ---------------------------------------------------------------------------
-# check_credentials — development + dev password → NOT blocked (Req 1.4)
+# check_credentials - development + dev password → NOT blocked (Req 1.4)
 # ---------------------------------------------------------------------------
 
 
@@ -118,7 +118,7 @@ class TestDevelopmentNotBlocked:
 
 
 # ---------------------------------------------------------------------------
-# check_credentials — production + secure password → NOT blocked
+# check_credentials - production + secure password → NOT blocked
 # ---------------------------------------------------------------------------
 
 

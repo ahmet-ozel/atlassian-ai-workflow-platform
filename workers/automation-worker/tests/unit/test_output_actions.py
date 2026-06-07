@@ -1,4 +1,4 @@
-"""Unit tests for the ``output_actions`` activity.
+﻿"""Unit tests for the ``output_actions`` activity.
 
 Strategy
 --------
@@ -6,7 +6,7 @@ Strategy
 The activity depends on an MCP caller that makes HTTP calls to the
 MCP Server. We replace it with an in-memory fake registered through
 the module-level ``set_mcp_caller`` setter. The activity runs as a
-plain coroutine — ``@activity.defn`` does not change the calling
+plain coroutine - ``@activity.defn`` does not change the calling
 contract for direct invocation.
 """
 
@@ -442,7 +442,7 @@ class TestErrorHandling:
         # then the failure summary)
         # The error dict only applies to "jira_add_comment" tool name,
         # so the failure summary call also uses "jira_add_comment" and
-        # will also fail — but that's handled gracefully.
+        # will also fail - but that's handled gracefully.
 
     def test_failure_summary_posted_to_jira(
         self, fake_caller: _FakeMCPCaller

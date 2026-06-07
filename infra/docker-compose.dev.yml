@@ -1,5 +1,5 @@
-# =============================================================================
-# infra/docker-compose.dev.yml — Local-dev override (live reload)
+﻿# =============================================================================
+# infra/docker-compose.dev.yml - Local-dev override (live reload)
 # =============================================================================
 # Usage:
 #   docker compose -f infra/docker-compose.yml -f infra/docker-compose.dev.yml up -d
@@ -28,20 +28,20 @@
 #   so the workspace-root sources resolve as `../services/...`,
 #   `../workers/...`, and `../ui/...`.
 # * Only services already defined in the base Compose file may appear
-#   here — Compose `merge` semantics extend, not introduce.
+#   here - Compose `merge` semantics extend, not introduce.
 # * Workers (`agent-runner-worker`, `execution-runner-worker`) do not
 #   expose HTTP ports and run a long-lived Temporal worker entrypoint;
 #   this override only refreshes their source mount + LOG_LEVEL, leaving
 #   the base `command` (or Dockerfile `CMD`) intact. Restart the worker
 #   container after editing source to pick up the change.
 # * `atlassian_mcp_bitbucket/` is the Atlassian MCP gateway and intentionally
-#   has no override stanza here — its `LOG_LEVEL` continues to be sourced
+#   has no override stanza here - its `LOG_LEVEL` continues to be sourced
 #   from the base file's `${LOG_LEVEL:-INFO}` interpolation.
 # =============================================================================
 
 services:
   # ───────────────────────────────────────────────────────────────────────────
-  # Application HTTP services — uvicorn --reload + bind-mounted src/
+  # Application HTTP services - uvicorn --reload + bind-mounted src/
   # ───────────────────────────────────────────────────────────────────────────
 
   automation-service:
@@ -81,7 +81,7 @@ services:
     restart: unless-stopped
 
   # ───────────────────────────────────────────────────────────────────────────
-  # Temporal workers — bind-mount src/ only (no HTTP, no --reload semantics)
+  # Temporal workers - bind-mount src/ only (no HTTP, no --reload semantics)
   # ───────────────────────────────────────────────────────────────────────────
 
   agent-runner-worker:
@@ -99,7 +99,7 @@ services:
     restart: unless-stopped
 
   # ───────────────────────────────────────────────────────────────────────────
-  # Sidecars / supporting infra — LOG_LEVEL only (image-built, no source mount)
+  # Sidecars / supporting infra - LOG_LEVEL only (image-built, no source mount)
   # ───────────────────────────────────────────────────────────────────────────
 
   firecrawl:
@@ -113,7 +113,7 @@ services:
     restart: unless-stopped
 
   # ───────────────────────────────────────────────────────────────────────────
-  # Admin dashboard UI — Next.js dev server with HMR
+  # Admin dashboard UI - Next.js dev server with HMR
   # ───────────────────────────────────────────────────────────────────────────
 
   admin-dashboard-ui:

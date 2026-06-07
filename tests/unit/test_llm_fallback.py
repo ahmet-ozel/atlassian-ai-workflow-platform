@@ -1,4 +1,4 @@
-"""Unit tests for LLM Provider Factory fallback mechanism.
+﻿"""Unit tests for LLM Provider Factory fallback mechanism.
 
 Tests the FallbackLLMProviderFactory class from
 platform/libs/llm-orchestrator/src/llm_orchestrator/fallback.py
@@ -229,7 +229,7 @@ class TestPrimary5xxRetry:
 
     @pytest.mark.asyncio
     async def test_5xx_succeeds_on_retry(self):
-        """Primary recovers on second retry — no fallback switch."""
+        """Primary recovers on second retry - no fallback switch."""
         primary = FakeLLMProvider([
             LLMServerError("error", 500),
             "recovered",

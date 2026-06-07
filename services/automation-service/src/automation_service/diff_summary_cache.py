@@ -1,4 +1,4 @@
-"""LLM diff-summary cache repository.
+﻿"""LLM diff-summary cache repository.
 
 Backs the diff-summary cache: every Bitbucket diff is summarised by
 an LLM exactly once, keyed by sha256 of the unified diff body.
@@ -23,7 +23,7 @@ Cache contract:
   occur the cached summary is universally correct because it
   describes the diff itself, not its provenance.
 
-The module is deliberately tiny — every public method maps 1:1 onto a
+The module is deliberately tiny - every public method maps 1:1 onto a
 SQL statement against ``automation.diff_summary_cache``.  The PR
 review previous-findings cache lives in workflow state, not
 here, because it depends on per-workflow iteration history and is
@@ -120,7 +120,7 @@ class DiffSummaryCacheRepo:
 
         1. Try a plain ``SELECT`` against
            ``automation.diff_summary_cache``.  A hit returns
-           immediately — ``llm_callback`` is **never** invoked.
+           immediately - ``llm_callback`` is **never** invoked.
         2. On a miss, invoke ``llm_callback(diff_hash)`` to produce
            the summary text.
         3. Persist the result via
@@ -138,7 +138,7 @@ class DiffSummaryCacheRepo:
             Async callable that produces the LLM summary for the
             diff.  Receives the same ``diff_hash`` we received so the
             callback can fetch the diff body from MinIO or re-derive
-            it from a workflow context — the cache itself never
+            it from a workflow context - the cache itself never
             stores the diff body.
 
         Returns
@@ -159,7 +159,7 @@ class DiffSummaryCacheRepo:
         if cached is not None:
             return cached
 
-        # Cache miss — pay the LLM call exactly once for this caller.
+        # Cache miss - pay the LLM call exactly once for this caller.
         # Concurrent miss-races on the same hash will each produce
         # their own summary; the ON CONFLICT below ensures the table
         # records exactly one of them and every caller still returns

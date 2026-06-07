@@ -1,4 +1,4 @@
-"""Vault-backed credential resolver for department bot credentials.
+﻿"""Vault-backed credential resolver for department bot credentials.
 
 Reads ``automation.department_bots`` from Postgres to discover which
 Vault path (``credential_ref``) holds the PAT for a given department ×
@@ -8,7 +8,7 @@ Vault KV-v2.
 For ``scope="user"`` the resolver bypasses Postgres entirely and reads
 the per-user / per-session path
 ``secret/atlassian/_user_session/{session_id}/{service}`` directly.
-The two scopes are **strictly isolated** — see
+The two scopes are **strictly isolated** - see
 :class:`CredentialScopeViolationError` and the property test
 ``tests/property/test_credential_scope_isolation.py``.
 
@@ -31,7 +31,7 @@ so operators can correlate worker-side rotation pickup with the
 admin-dashboard *Security* drift banner.
 
 The cache is process-local; a worker restart drops it, which is by
-design — admin-triggered restarts are the operator escape hatch when
+design - admin-triggered restarts are the operator escape hatch when
 the 300 s window is too long.
 
 """
@@ -114,7 +114,7 @@ class CachedEntry:
 # Cache configuration
 # ---------------------------------------------------------------------------
 
-#: Default cache TTL — 300 seconds (5 minutes). Mirrors the Vault
+#: Default cache TTL - 300 seconds (5 minutes). Mirrors the Vault
 #: rotation banner cadence in admin-dashboard *Security* sub-page so
 #: a worker picks up rotated material within one TTL window without
 #: a process restart.
@@ -122,9 +122,9 @@ _CACHE_TTL: Final[timedelta] = timedelta(seconds=300)
 
 
 #: Type alias for the cache key. The first element is the canonical
-#: scope (``"org"`` or ``"user"`` — the legacy ``"bot"`` alias is
+#: scope (``"org"`` or ``"user"`` - the legacy ``"bot"`` alias is
 #: normalised before key construction). The second element is the
-#: ``dept_id`` for org scope and the ``session_id`` for user scope —
+#: ``dept_id`` for org scope and the ``session_id`` for user scope -
 #: keeping a single tuple shape lets one cache serve both scopes
 #: without leaking either side's identity into the other slot
 #: (the path-isolation invariant carries over to the cache
@@ -253,13 +253,13 @@ class CredentialResolver:
     Scope semantics
     ---------------
 
-    * ``scope="org"`` (default; ``"bot"`` is a deprecated alias) — bot /
+    * ``scope="org"`` (default; ``"bot"`` is a deprecated alias) - bot /
       worker credentials. The resolver looks up
       ``automation.department_bots.credential_ref`` in Postgres and
       reads the resulting Vault path. The path **must** be org-shaped
       (i.e. it does not contain ``atlassian/_user``); otherwise a
       :class:`CredentialScopeViolationError` is raised.
-    * ``scope="user"`` — Streamlit per-user session credentials. The
+    * ``scope="user"`` - Streamlit per-user session credentials. The
       resolver bypasses Postgres entirely and reads
       ``secret/atlassian/_user_session/{session_id}/{service}``
       directly. *session_id* is required and must be a non-empty
@@ -301,14 +301,14 @@ class CredentialResolver:
         self._dept_bots_cache: list[DeptBotRow] | None = None
         # In-memory TTL cache. Keyed by
         # ``(scope, dept_id_or_session_id, service)`` so org and user
-        # scopes share the same map without ever colliding — ``scope``
+        # scopes share the same map without ever colliding - ``scope``
         # is part of the key and the second slot semantics differ per
         # scope, so two reads with the same ``(dept_id, service)`` but
         # different scopes resolve to two distinct entries.
         self._cred_cache: dict[CacheKey, CachedEntry] = {}
         # Injectable clock for deterministic TTL tests; defaults to
         # ``datetime.now(tz=UTC)``. The clock MUST return tz-aware
-        # values — the resolver subtracts cached vs. now to compute
+        # values - the resolver subtracts cached vs. now to compute
         # the TTL window and a naive datetime would raise.
         self._clock: Callable[[], datetime] = clock or _utc_now
 
@@ -432,7 +432,7 @@ class CredentialResolver:
             path = self._build_user_session_path(session_id, service)
             # Defensive: the constructed path must NOT match the org
             # shape. By construction it always contains the user
-            # infix, so the inverse check is what matters here — if a
+            # infix, so the inverse check is what matters here - if a
             # caller somehow triggers a path without the user infix
             # while requesting scope="user" we raise.
             if _USER_PATH_INFIX not in path:
@@ -493,7 +493,7 @@ class CredentialResolver:
         # metadata (legacy fakes, simple in-memory test stubs).
         secret, vault_created_time = await self._read_secret_with_metadata(path)
         if secret is None:
-            # Stale cache entries are never served on 404 — a removed
+            # Stale cache entries are never served on 404 - a removed
             # secret should fail loudly so operators notice rather
             # than silently using whatever value was last cached.
             self._cred_cache.pop(cache_key, None)
@@ -538,7 +538,7 @@ class CredentialResolver:
         # ``vault_credential_refreshed`` audit row so operators can
         # correlate worker rotation pickup with the admin-dashboard
         # *Security* drift banner. Drift is **only** asserted when
-        # both timestamps are non-empty strings — a missing prior
+        # both timestamps are non-empty strings - a missing prior
         # value means the cache had no metadata to compare against
         # (e.g. populated by the legacy ``read_secret`` path) and
         # would yield a spurious "rotation" event on first refresh.
@@ -630,7 +630,7 @@ class CredentialResolver:
             return
 
         # Local imports keep ``audit_logger`` an optional dependency at
-        # import time — the ``decision`` package is loaded by code paths
+        # import time - the ``decision`` package is loaded by code paths
         # that do not always wire an audit sink (CLI tools, REPL).
         try:
             from audit_logger import AuditEvent  # type: ignore[import-not-found]
@@ -655,7 +655,7 @@ class CredentialResolver:
         try:
             await self._audit_logger.write(event)
         except Exception:  # noqa: BLE001 - best-effort audit
-            # Deliberately swallow — the violation is still raised by
+            # Deliberately swallow - the violation is still raised by
             # the caller, so the security signal reaches the workflow
             # boundary regardless of audit-pipeline health.
             pass
@@ -757,7 +757,7 @@ def _utc_now() -> datetime:
     """Return the current UTC time as a tz-aware :class:`datetime`.
 
     Wrapped in a module-level helper so it can be referenced by name
-    from the resolver's ``__init__`` default — passing
+    from the resolver's ``__init__`` default - passing
     ``datetime.now`` directly would freeze the implementation to the
     bound method object at import time and complicate
     monkey-patching during tests.

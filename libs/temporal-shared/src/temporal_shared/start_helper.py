@@ -1,4 +1,4 @@
-"""Idempotent Temporal workflow start helper.
+﻿"""Idempotent Temporal workflow start helper.
 
 Provides :func:`start_workflow_idempotent`, a thin wrapper around
 :meth:`temporalio.client.Client.start_workflow` that absorbs the native
@@ -12,7 +12,7 @@ webhook adapters, admin endpoints) can implement the contract:
 
 This helper is the single source of truth for the idempotency rule
 for duplicate workflow starts.  It does **not** perform any
-signal-with-start or other re-trigger logic — that decision belongs in
+signal-with-start or other re-trigger logic - that decision belongs in
 the caller.
 
 Notes
@@ -45,7 +45,7 @@ class SupportsStartWorkflow(Protocol):
     may substitute any object with the same ``start_workflow`` shape.
     """
 
-    async def start_workflow(  # noqa: D401 — protocol method
+    async def start_workflow(  # noqa: D401 - protocol method
         self,
         workflow: str,
         *args: Any,
@@ -98,7 +98,7 @@ async def start_workflow_idempotent(
     Parameters
     ----------
     client:
-        Anything implementing :class:`SupportsStartWorkflow` — in
+        Anything implementing :class:`SupportsStartWorkflow` - in
         production a connected :class:`temporalio.client.Client`.
     workflow_type:
         Registered workflow name, e.g. ``"AutomationWorkflow"``.
@@ -111,7 +111,7 @@ async def start_workflow_idempotent(
         ``run`` method.  Each element is splatted as a separate
         positional argument (matching the Temporal SDK contract).
     task_queue:
-        The task queue the worker is polling — required by Temporal.
+        The task queue the worker is polling - required by Temporal.
     **start_kwargs:
         Any additional keyword arguments accepted by
         :meth:`temporalio.client.Client.start_workflow` (e.g.
@@ -131,7 +131,7 @@ async def start_workflow_idempotent(
     Any exception other than
     :class:`temporalio.exceptions.WorkflowAlreadyStartedError` raised
     by the underlying client (e.g. RPC connection errors) is
-    propagated unchanged — duplicate detection is the only special
+    propagated unchanged - duplicate detection is the only special
     case this helper handles.
 
     Examples

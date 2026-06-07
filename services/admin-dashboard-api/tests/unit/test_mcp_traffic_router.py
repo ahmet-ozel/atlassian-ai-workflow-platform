@@ -1,6 +1,6 @@
-"""Unit tests for ``src.routers.mcp_traffic`` .
+﻿"""Unit tests for ``src.routers.mcp_traffic`` .
 The router exposes:
-* ``GET /api/v1/mcp/traffic`` — counters fetched from the MCP server's
+* ``GET /api/v1/mcp/traffic`` - counters fetched from the MCP server's
   ``/metrics`` endpoint, optionally filtered by ``client_source`` /
   ``tool`` / ``status``.
 These tests inject:

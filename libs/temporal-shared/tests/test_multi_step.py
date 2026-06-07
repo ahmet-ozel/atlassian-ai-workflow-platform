@@ -1,4 +1,4 @@
-"""Unit tests for ``temporal_shared.multi_step``.
+﻿"""Unit tests for ``temporal_shared.multi_step``.
 
 Validates the pure :func:`multi_step_dispatch` decision function and the
 :func:`aggregated_output` aggregator against
@@ -45,7 +45,7 @@ def _spec(workflow_id: str = "agent-1") -> ChildWorkflowSpec:
 
 
 # ---------------------------------------------------------------------------
-# multi_step_dispatch — happy paths
+# multi_step_dispatch - happy paths
 # ---------------------------------------------------------------------------
 
 
@@ -76,7 +76,7 @@ class TestMultiStepDispatchHappyPath:
     def test_missing_capability_yields_skip_with_missing_set(self) -> None:
         """
 
-        ``code_change_with_test`` requires ``execution`` — a dept with
+        ``code_change_with_test`` requires ``execution`` - a dept with
         only ``jira`` + ``bitbucket`` skips it as ``out_of_scope``
         with the exact missing set.
         """
@@ -93,7 +93,7 @@ class TestMultiStepDispatchHappyPath:
     def test_partial_skip_preserves_total_length(self) -> None:
         """
 
-        Mixed children — some with all caps, some without — produce a
+        Mixed children - some with all caps, some without - produce a
         plan list of exactly ``len(children)``: graceful skip means no
         child is ever dropped.
         """
@@ -128,7 +128,7 @@ class TestMultiStepDispatchHappyPath:
         """
 
         ``dept_capabilities`` accepts both :class:`set` and
-        :class:`frozenset` for ergonomics — the function normalises
+        :class:`frozenset` for ergonomics - the function normalises
         internally.
         """
         children = [ChildProposal("pr_review", _spec("c-1"))]
@@ -156,7 +156,7 @@ class TestMultiStepDispatchHappyPath:
     def test_dispatch_is_deterministic_for_same_input(self) -> None:
         """
 
-        Two calls with the same inputs return equal plan lists — the
+        Two calls with the same inputs return equal plan lists - the
         function is pure.
         """
         children = [
@@ -170,7 +170,7 @@ class TestMultiStepDispatchHappyPath:
 
 
 # ---------------------------------------------------------------------------
-# multi_step_dispatch — edge cases (unknown workflow type, nested multi_step)
+# multi_step_dispatch - edge cases (unknown workflow type, nested multi_step)
 # ---------------------------------------------------------------------------
 
 
@@ -181,7 +181,7 @@ class TestMultiStepDispatchEdgeCases:
         """
 
         The LLM may occasionally emit a workflow type outside the
-        closed vocabulary — the dispatcher records it and continues
+        closed vocabulary - the dispatcher records it and continues
         rather than raising :class:`KeyError`.
         """
         children = [ChildProposal("code_change_invented", _spec("c-1"))]
@@ -227,7 +227,7 @@ class TestMultiStepDispatchEdgeCases:
 
 
 # ---------------------------------------------------------------------------
-# aggregated_output — happy paths
+# aggregated_output - happy paths
 # ---------------------------------------------------------------------------
 
 
@@ -290,7 +290,7 @@ class TestAggregatedOutputHappyPath:
 
 
 # ---------------------------------------------------------------------------
-# aggregated_output — invariant enforcement
+# aggregated_output - invariant enforcement
 # ---------------------------------------------------------------------------
 
 
@@ -306,7 +306,7 @@ class TestAggregatedOutputInvariantEnforcement:
         """
         # Bypass the Literal type check by constructing via ``object``.
         bad_outcome = ChildOutcome.__new__(ChildOutcome)
-        # frozen dataclass — use object.__setattr__ for fields
+        # frozen dataclass - use object.__setattr__ for fields
         object.__setattr__(bad_outcome, "action", "exploded")
         object.__setattr__(bad_outcome, "child_spec", _spec("c-1"))
         object.__setattr__(bad_outcome, "reason", "unexpected")
@@ -321,7 +321,7 @@ class TestAggregatedOutputInvariantEnforcement:
         """
 
         Constructing :class:`AggregatedOutput` with mismatched
-        counters raises immediately — even without going through the
+        counters raises immediately - even without going through the
         aggregator function.
         """
         with pytest.raises(InvariantViolation):
@@ -361,7 +361,7 @@ class TestAggregatedOutputInvariantEnforcement:
 
 
 class TestChildPlanShape:
-    """Shape contract sanity — frozen, hashable, and discriminator typed."""
+    """Shape contract sanity - frozen, hashable, and discriminator typed."""
 
     def test_child_plan_is_frozen(self) -> None:
         plan = ChildPlan(

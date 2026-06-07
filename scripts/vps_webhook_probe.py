@@ -1,13 +1,13 @@
-"""
-VPS Webhook Probe — webhook delivery polling + audit_events query (R14/R15).
+﻿"""
+VPS Webhook Probe - webhook delivery polling + audit_events query (R14/R15).
 
 This script verifies that Jira and Bitbucket webhook subscriptions deliver
 events to the automation-service and that those events are recorded in the
 ``automation.audit_events`` table with correct event_type and payload fields.
 
 Requirements:
-  R14.1-R14.6 — Jira webhook subscription and real event delivery
-  R15.1-R15.5 — Bitbucket webhook subscription and real event delivery
+  R14.1-R14.6 - Jira webhook subscription and real event delivery
+  R15.1-R15.5 - Bitbucket webhook subscription and real event delivery
 
 Usage:
   # Jira webhook probe
@@ -186,7 +186,7 @@ def probe_jira_webhook(public_endpoint: str, secret: str) -> int:
     # R14.1: Prompt operator to subscribe webhook in Atlassian admin panel
     print()
     print("=" * 60)
-    print("STEP 1 — SUBSCRIBE JIRA WEBHOOK (R14.1)")
+    print("STEP 1 - SUBSCRIBE JIRA WEBHOOK (R14.1)")
     print("=" * 60)
     print()
     print("  Operator action: Subscribe a Jira webhook in the Atlassian admin panel.")
@@ -217,7 +217,7 @@ def probe_jira_webhook(public_endpoint: str, secret: str) -> int:
 
     # Prompt operator to create test issue (R14.2)
     print("=" * 60)
-    print("STEP 2 — CREATE TEST ISSUE (R14.2)")
+    print("STEP 2 - CREATE TEST ISSUE (R14.2)")
     print("=" * 60)
     print()
     print("  Operator action: Create a Jira issue in project JOH with summary:")
@@ -266,7 +266,7 @@ def probe_jira_webhook(public_endpoint: str, secret: str) -> int:
 
     # Evaluate result
     if audit_row_id:
-        # Success — emit evidence (R14.6)
+        # Success - emit evidence (R14.6)
         evidence = {
             "provider": "jira",
             "verdict": "pass",
@@ -283,7 +283,7 @@ def probe_jira_webhook(public_endpoint: str, secret: str) -> int:
         print(f"  Evidence: vps-test-evidence/14-jira-webhook.json")
         return 0
     else:
-        # Failure — capture logs (R14.4)
+        # Failure - capture logs (R14.4)
         print(f"\n[FAIL] No webhook.jira.received event found within {POLL_TIMEOUT_S}s")
         logs = _capture_automation_logs(tail=500, grep_pattern="webhook")
         fail_log_path = _write_text_evidence("14-jira-webhook-fail.log", logs)
@@ -367,7 +367,7 @@ def probe_bitbucket_webhook(public_endpoint: str, secret: str) -> int:
     # R15.1: Prompt operator to subscribe webhook in Bitbucket repo settings
     print()
     print("=" * 60)
-    print("STEP 1 — SUBSCRIBE BITBUCKET WEBHOOK (R15.1)")
+    print("STEP 1 - SUBSCRIBE BITBUCKET WEBHOOK (R15.1)")
     print("=" * 60)
     print()
     print("  Operator action: Subscribe a webhook in example_workspace/smoke-test repo settings.")
@@ -395,7 +395,7 @@ def probe_bitbucket_webhook(public_endpoint: str, secret: str) -> int:
 
     # R15.2: Prompt operator to push a branch
     print("=" * 60)
-    print("STEP 2 — PUSH A BRANCH TO TRIGGER WEBHOOK (R15.2)")
+    print("STEP 2 - PUSH A BRANCH TO TRIGGER WEBHOOK (R15.2)")
     print("=" * 60)
     print()
     print("  Operator action: Push a single-commit branch to example_workspace/smoke-test.")
@@ -485,7 +485,7 @@ def probe_bitbucket_webhook(public_endpoint: str, secret: str) -> int:
 
     # Evaluate result
     if audit_row_id:
-        # Success — emit evidence (R15.5)
+        # Success - emit evidence (R15.5)
         evidence = {
             "provider": "bitbucket",
             "verdict": "pass",
@@ -504,7 +504,7 @@ def probe_bitbucket_webhook(public_endpoint: str, secret: str) -> int:
         print(f"  Evidence: vps-test-evidence/15-bitbucket-webhook.json")
         return 0
     else:
-        # Failure — capture logs (R15.4)
+        # Failure - capture logs (R15.4)
         print(f"\n[FAIL] No webhook.bitbucket.received event found within {POLL_TIMEOUT_S}s")
         logs = _capture_automation_logs(tail=500, grep_pattern="webhook")
         fail_log_path = _write_text_evidence("15-bitbucket-webhook-fail.log", logs)
@@ -549,7 +549,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="vps_webhook_probe",
         description=(
-            "VPS Webhook Probe — polls audit_events for webhook delivery "
+            "VPS Webhook Probe - polls audit_events for webhook delivery "
             "confirmation after operator subscribes and triggers a webhook event. "
             "Supports Jira (R14) and Bitbucket (R15) providers."
         ),

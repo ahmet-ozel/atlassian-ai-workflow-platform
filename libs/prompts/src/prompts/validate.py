@@ -1,4 +1,4 @@
-"""Prompt template format validator.
+﻿"""Prompt template format validator.
 
 Validates the brace-balanced ``str.format``-style placeholders used
 in prompt Markdown bodies before they are loaded into the runtime
@@ -31,11 +31,11 @@ prevents the draft commit).
 Public exports
 --------------
 
-* :class:`PromptTemplateError` — re-exported from
+* :class:`PromptTemplateError` - re-exported from
   :mod:`prompts.errors` so existing call sites can import the symbol
   from either module without confusion.
-* :func:`validate_template_format` — the validator itself.
-* :data:`KNOWN_TEMPLATE_VARS` — alias of
+* :func:`validate_template_format` - the validator itself.
+* :data:`KNOWN_TEMPLATE_VARS` - alias of
   :data:`prompts.types.TEMPLATE_VARIABLE_NAMES`, kept for callers
   that want a validator-local handle on the accepted placeholder
   names.

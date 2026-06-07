@@ -1,4 +1,4 @@
-"""Unit tests for pii_shared.filter.
+﻿"""Unit tests for pii_shared.filter.
 
 These are *example-based* sanity checks. The exhaustive
 property-based coverage lives in the platform property tests.
@@ -39,7 +39,7 @@ def test_mask_phone_tr_variants() -> None:
 
 
 def test_mask_phone_tr_non_5_prefix_not_matched() -> None:
-    # +90 fixed-line numbers don't start with 5 — must not match.
+    # +90 fixed-line numbers don't start with 5 - must not match.
     masked, _ = mask("ofis 2121234567 numaras\u0131")
     assert "2121234567" in masked
 
@@ -60,7 +60,7 @@ def test_mask_email_rfc5322_basic() -> None:
 def test_luhn_valid_known_test_number() -> None:
     # Visa test number, Luhn-valid.
     assert _luhn_valid("4111111111111111") is True
-    # Off-by-one — invalidates the checksum.
+    # Off-by-one - invalidates the checksum.
     assert _luhn_valid("4111111111111112") is False
 
 
@@ -72,7 +72,7 @@ def test_mask_credit_card_luhn_valid_redacted() -> None:
 
 
 def test_mask_credit_card_luhn_invalid_left_alone() -> None:
-    # 16 digits but failing Luhn — must NOT be redacted, must NOT be reported.
+    # 16 digits but failing Luhn - must NOT be redacted, must NOT be reported.
     masked, matches = mask("ref no 1234567890123456 lutfen")
     assert "1234567890123456" in masked
     assert all(m.kind != "credit_card" for m in matches)

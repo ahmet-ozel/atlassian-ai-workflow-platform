@@ -1,4 +1,4 @@
-"""End-to-end live smoke for the Jira automation path."""
+﻿"""End-to-end live smoke for the Jira automation path."""
 
 from __future__ import annotations
 
@@ -275,7 +275,7 @@ async def _llm_decision(
         "input": f"{prompt}\nissue_key={issue_key}",
     }
     # Reasoning-capable models (gpt-5 family / o-series) reject an
-    # explicit temperature — drop it so the default model still routes.
+    # explicit temperature - drop it so the default model still routes.
     if supports_reasoning_effort(model):
         body.pop("temperature", None)
     response = await _http(request).post(

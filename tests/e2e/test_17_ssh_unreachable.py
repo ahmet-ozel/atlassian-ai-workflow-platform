@@ -1,4 +1,4 @@
-"""
+﻿"""
 Test 17: Unreachable SSH host error handling (R17).
 
 Validates that the system handles unreachable SSH hosts gracefully:
@@ -22,7 +22,7 @@ import pytest
 # ---------------------------------------------------------------------------
 
 EVIDENCE_FILENAME = "17-ssh-unreachable.json"
-UNREACHABLE_HOST = "192.0.2.1"  # RFC 5737 TEST-NET-1 — guaranteed unreachable
+UNREACHABLE_HOST = "192.0.2.1"  # RFC 5737 TEST-NET-1 - guaranteed unreachable
 SSH_TIMEOUT_SECONDS = 20
 CONTAINER_CHECK_TIMEOUT = 10
 
@@ -172,7 +172,7 @@ class TestSSHUnreachable:
         self.__class__._ssh_result = result
 
         assert not result["success"], (
-            f"SSH to {UNREACHABLE_HOST} should NOT succeed — "
+            f"SSH to {UNREACHABLE_HOST} should NOT succeed - "
             f"this is an RFC 5737 documentation address."
         )
 
@@ -216,10 +216,10 @@ class TestSSHUnreachable:
         health = _get_container_health("agent-runner-worker")
 
         # If the container isn't running at all, it might not be started yet
-        # in this test phase — that's acceptable (skip)
+        # in this test phase - that's acceptable (skip)
         if health["error"] or health["status"] == "unknown":
             pytest.skip(
-                "agent-runner-worker not running — "
+                "agent-runner-worker not running - "
                 "may not be started in current test phase"
             )
 

@@ -12,7 +12,7 @@ interface HeaderProps {
 }
 
 function formatDuration(ms: number | null | undefined): string {
-  if (ms == null) return "—";
+  if (ms == null) return "-";
   const seconds = Math.floor(ms / 1000);
   if (seconds < 60) return `${seconds}s`;
   const minutes = Math.floor(seconds / 60);
@@ -41,10 +41,10 @@ export default function Header({ detail }: HeaderProps): JSX.Element {
         <dd><code style={{ fontSize: "0.875rem" }}>{detail.workflow_id}</code></dd>
 
         <dt style={{ fontWeight: 600, color: "#6b7280" }}>Type</dt>
-        <dd>{detail.workflow_type ?? "—"}</dd>
+        <dd>{detail.workflow_type ?? "-"}</dd>
 
         <dt style={{ fontWeight: 600, color: "#6b7280" }}>Department</dt>
-        <dd>{detail.dept_id ?? "—"}</dd>
+        <dd>{detail.dept_id ?? "-"}</dd>
 
         <dt style={{ fontWeight: 600, color: "#6b7280" }}>Status</dt>
         <dd>
@@ -59,13 +59,13 @@ export default function Header({ detail }: HeaderProps): JSX.Element {
         </dd>
 
         <dt style={{ fontWeight: 600, color: "#6b7280" }}>Started</dt>
-        <dd>{detail.started_at ? new Date(detail.started_at).toLocaleString() : "—"}</dd>
+        <dd>{detail.started_at ? new Date(detail.started_at).toLocaleString() : "-"}</dd>
 
         <dt style={{ fontWeight: 600, color: "#6b7280" }}>Duration</dt>
         <dd>{formatDuration(detail.duration_ms)}</dd>
 
         <dt style={{ fontWeight: 600, color: "#6b7280" }}>Cost (USD)</dt>
-        <dd>{detail.cost_usd != null ? `$${detail.cost_usd}` : "—"}</dd>
+        <dd>{detail.cost_usd != null ? `$${detail.cost_usd}` : "-"}</dd>
       </dl>
     </section>
   );

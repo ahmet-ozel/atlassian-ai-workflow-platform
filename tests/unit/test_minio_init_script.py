@@ -1,6 +1,6 @@
-"""Static checks for ``infra/minio/init.sh``.
+﻿"""Static checks for ``infra/minio/init.sh``.
 
-These tests do NOT execute the script — bash is not always available
+These tests do NOT execute the script - bash is not always available
 on Windows dev machines and the script needs a live MinIO endpoint
 to do anything useful. Instead we lock down the contract operators
 rely on:
@@ -73,7 +73,7 @@ def test_script_declares_required_buckets(script_text: str) -> None:
     env.
     """
 
-    # The defaults appear inside ``${VAR:-default}`` — match the
+    # The defaults appear inside ``${VAR:-default}`` - match the
     # literal substring rather than insisting on surrounding quotes
     # (the bash assignment is ``X="${X:-audit-archive}"``).
     assert "AUDIT_ARCHIVE_BUCKET" in script_text

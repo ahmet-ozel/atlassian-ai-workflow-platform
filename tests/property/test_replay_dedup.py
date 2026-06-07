@@ -1,7 +1,7 @@
-"""Behavioral tests for replay-dedup idempotence.
+﻿"""Behavioral tests for replay-dedup idempotence.
 
 Invariants tested:
-  1. compute_payload_hash is deterministic — same input always yields
+  1. compute_payload_hash is deterministic - same input always yields
       the same SHA-256 hex digest (idempotence).
   2. Distinct payloads produce distinct hashes (injectivity for
       semantically different JSON objects).
@@ -9,7 +9,7 @@ Invariants tested:
       subsequent inserts of the same hash (dedup idempotence).
   4. cleanup_expired removes only entries where expires_at < now;
       entries with expires_at >= now survive (post-state invariant).
-  5. cleanup_expired is idempotent — calling it twice with the same
+  5. cleanup_expired is idempotent - calling it twice with the same
       timestamp produces the same post-state.
 
 The HTTP-layer checks cover the ``delivery_id`` / ``provider`` schema
@@ -492,7 +492,7 @@ ProcessedEventsRepo = _processed_events_module.ProcessedEventsRepo
 
 
 # ---------------------------------------------------------------------------
-# Strategies — processed_events HTTP layer
+# Strategies - processed_events HTTP layer
 # ---------------------------------------------------------------------------
 
 # Webhook delivery ids are opaque provider-assigned tokens. Jira sends
@@ -520,14 +520,14 @@ _claim_inputs = st.tuples(_delivery_ids, _providers)
 
 
 # ---------------------------------------------------------------------------
-# In-memory fake for asyncpg pool — honours the new schema's PK + CHECK
+# In-memory fake for asyncpg pool - honours the new schema's PK + CHECK
 # ---------------------------------------------------------------------------
 #
 # The fake intentionally models only the surface ``ProcessedEventsRepo``
 # touches: a ``fetchrow`` that interprets the three SQL strings the
 # repo emits (claim INSERT, is_processed SELECT, release DELETE) and
 # an ``execute`` for the DELETE return-status. This keeps the
-# property test self-contained — no real Postgres in the loop — while
+# property test self-contained - no real Postgres in the loop - while
 # still enforcing the unique PK constraint that the claim invariant
 # relies on.
 
@@ -539,7 +539,7 @@ class _ProcessedEventsFakeConnection:
     ``provider``, which is the minimal projection of the
     ``automation.processed_events`` row needed to validate the
     processed-events invariants. ``received_at`` is intentionally not
-    modelled — neither the repo nor the property reads it back.
+    modelled - neither the repo nor the property reads it back.
     """
 
     _ALLOWED_PROVIDERS = frozenset({"jira", "bitbucket"})
@@ -648,7 +648,7 @@ async def test_claim_first_true_then_false_exactly_one_row(
     :meth:`ProcessedEventsRepo.claim` returns True and inserts
     exactly one row into ``automation.processed_events``. Every
     subsequent call with the same ``delivery_id`` returns False
-    (replay dedup) and the row count stays at one — this is the
+    (replay dedup) and the row count stays at one - this is the
     ``ON CONFLICT DO NOTHING`` invariant the SQL PK provides.
     """
 
@@ -698,7 +698,7 @@ async def test_claim_independent_state_across_delivery_ids(
 
     After claiming each id once, the store contains exactly one row
     per id with the matching provider. A second pass over the same
-    ids returns False for every entry — the dedup state of one
+    ids returns False for every entry - the dedup state of one
     delivery does not contaminate another.
     """
 
@@ -762,7 +762,7 @@ async def test_is_processed_true_after_claim_and_stable(
 
 
 # ---------------------------------------------------------------------------
-# signalWithStart 503 rollback — claim → release → claim → True
+# signalWithStart 503 rollback - claim → release → claim → True
 # ---------------------------------------------------------------------------
 
 
@@ -787,7 +787,7 @@ async def test_claim_release_claim_round_trip_after_503(
     webhook handler calls :meth:`ProcessedEventsRepo.release` to
     remove the row so the webhook provider's retry observes the
     delivery as un-claimed and can re-enter the workflow-start
-    path. Repeated rollback cycles must remain idempotent — every
+    path. Repeated rollback cycles must remain idempotent - every
     cycle ends with ``is_processed == False`` and the store empty
     of the rolled-back id.
     """
@@ -849,7 +849,7 @@ async def test_release_without_prior_claim_is_noop(delivery_id: str) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Composite invariant — N webhook replays → 1 dispatch
+# Composite invariant - N webhook replays → 1 dispatch
 # ---------------------------------------------------------------------------
 
 
@@ -928,7 +928,7 @@ async def test_n_replays_with_503_rollback_yield_exactly_one_success(
     Each delivery either succeeds (counter
     advances, row stays) or fails with 503 (row is rolled back). The
     invariant: the total number of successful dispatches across the
-    whole sequence is at most one — once a dispatch succeeds, every
+    whole sequence is at most one - once a dispatch succeeds, every
     subsequent replay observes the row as already claimed and is
     dropped before reaching the dispatcher. If every dispatch
     failed, the counter is zero and the store ends empty.

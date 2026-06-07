@@ -1,4 +1,4 @@
-"""Integration smoke — audit prune round-trip (ops work).
+﻿"""Integration smoke - audit prune round-trip (ops work).
 
 Inserts a synthetic old audit row, runs the AuditPruneWorkflow on
 demand and verifies the row was archived to MinIO + deleted from

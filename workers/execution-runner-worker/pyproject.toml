@@ -1,4 +1,4 @@
-[build-system]
+﻿[build-system]
 requires = ["hatchling>=1.24"]
 build-backend = "hatchling.build"
 
@@ -32,7 +32,7 @@ execution-runner-worker = "execution_runner.main:run"
 # The wheel ships only the canonical ``execution_runner`` package so the
 # console script (``execution_runner.main:run``) resolves after install.
 # The legacy ``src.*`` namespace is served at runtime from the source
-# tree copied to ``/app/src`` and by the test tree — NOT from the wheel.
+# tree copied to ``/app/src`` and by the test tree - NOT from the wheel.
 # Listing ``src`` as a second package makes hatchling map
 # ``src/execution_runner/__init__.py`` to ``execution_runner/__init__.py``
 # twice and abort with a duplicate-archive-path error.

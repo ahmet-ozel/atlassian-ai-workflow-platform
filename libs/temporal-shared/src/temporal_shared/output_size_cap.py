@@ -1,4 +1,4 @@
-"""Output-action size cap with MinIO redirection.
+﻿"""Output-action size cap with MinIO redirection.
 
 This module hosts the size-cap policy applied to every
 :class:`temporal_shared.messages.OutputAction` before its payload
@@ -6,20 +6,20 @@ reaches the ``apply()`` step in
 :mod:`temporal_shared.output_actions`.  Two pure helpers plus one
 Turkish-prose formatter live here:
 
-* :data:`MAX_OUTPUT_BYTES` — the hard 1 MiB cap.
-* :func:`measure_payload_bytes` — JSON-encode an
+* :data:`MAX_OUTPUT_BYTES` - the hard 1 MiB cap.
+* :func:`measure_payload_bytes` - JSON-encode an
   ``OutputAction.payload`` (``tuple[tuple[str, object], ...]``) and
   return the byte length used by the cap check.  Exposed so callers
   and tests can reason about the cap without rebuilding the encoding
   logic.
-* :func:`redirect_oversized_payload` — the cap helper itself.  When a
+* :func:`redirect_oversized_payload` - the cap helper itself.  When a
   payload exceeds :data:`MAX_OUTPUT_BYTES` it invokes a caller-supplied
   ``minio_callback`` to offload the full body to
   ``ai-runs/{workflow_id}/output-{idx}.json`` and returns a fresh
   :class:`OutputAction` whose payload is replaced with a
   ``{"summary", "minio_uri", "size_bytes"}`` triple.  Below the cap the
   original action is returned unchanged.
-* :func:`format_final_jira_comment` — the Turkish prose formatter
+* :func:`format_final_jira_comment` - the Turkish prose formatter
   combining the lists of completed critical steps and failed
   best-effort actions into the canonical final-comment shape.
 
@@ -35,7 +35,7 @@ sites a single import surface.
 Purity and replay determinism
 -----------------------------
 
-Every public helper here is **pure** — no clocks, no randomness, no
+Every public helper here is **pure** - no clocks, no randomness, no
 UUIDs, no globals, no module-level mutable state.  The only side
 effect happens through the caller-supplied ``minio_callback``.  That
 callback is awaited exactly once when (and only when) the payload
@@ -48,7 +48,7 @@ determinism assertion in this module's property test relies on.
 
 The Turkish final-comment formatter is also pure: emoji literals,
 fixed labels, and ``", "`` joiners.  It never localises by clock or
-locale — the whole platform addresses end users in Turkish.
+locale - the whole platform addresses end users in Turkish.
 """
 
 from __future__ import annotations
@@ -147,7 +147,7 @@ class MinioCallback(Protocol):
     The expected URI shape is the canonical S3 form
     ``s3://{bucket}/{key}`` (mirroring
     :mod:`mcp_client.firecrawl`); however, the helper is agnostic
-    about the prefix — anything the caller's MinIO writer chooses to
+    about the prefix - anything the caller's MinIO writer chooses to
     return is propagated verbatim into the replacement payload's
     ``minio_uri`` field.
 
@@ -165,7 +165,7 @@ class MinioCallback(Protocol):
 
 
 # Public type alias used in signatures.  We accept any awaitable callable
-# matching the keyword shape — :class:`MinioCallback` is the
+# matching the keyword shape - :class:`MinioCallback` is the
 # documentation contract; the alias keeps the ``async def`` site simple.
 _MinioCallable = Callable[..., Awaitable[str]]
 
@@ -180,7 +180,7 @@ def _payload_to_dict(payload: Sequence[tuple[str, object]]) -> dict[str, object]
 
     :class:`OutputAction.payload` is documented as
     ``tuple[tuple[str, object], ...]`` (an immutable ordered
-    key-value mapping — see :mod:`temporal_shared.messages`).  The
+    key-value mapping - see :mod:`temporal_shared.messages`).  The
     JSON encoder needs a ``dict``; we materialise it once per call.
 
     Duplicate keys in the input are resolved last-wins, mirroring
@@ -218,8 +218,8 @@ def measure_payload_bytes(payload: Sequence[tuple[str, object]]) -> int:
     TypeError
         If ``payload`` cannot be JSON-encoded (e.g. contains a
         non-serialisable value).  Output actions emitted by activities
-        are expected to carry only JSON-friendly leaf types — strings,
-        numbers, booleans, ``None``, and nested lists/dicts thereof —
+        are expected to carry only JSON-friendly leaf types - strings,
+        numbers, booleans, ``None``, and nested lists/dicts thereof -
         so a ``TypeError`` here indicates a programming bug at the
         emitting activity, not a runtime condition.
     """
@@ -233,7 +233,7 @@ def _encode_payload(payload: Sequence[tuple[str, object]]) -> bytes:
     Centralising the encoder in a single private helper guarantees
     that :func:`measure_payload_bytes` and the offload step in
     :func:`redirect_oversized_payload` operate on **identical** byte
-    strings — a correctness invariant that ensures two evaluations of
+    strings - a correctness invariant that ensures two evaluations of
     the same input produce the same redirected action.
     """
     as_dict = _payload_to_dict(payload)
@@ -243,7 +243,7 @@ def _encode_payload(payload: Sequence[tuple[str, object]]) -> bytes:
     # (which is technically deterministic in CPython 3.7+ but the
     # spec-level invariant is stronger when we sort explicitly).
     # ``separators=(",", ":")`` strips optional whitespace so the byte
-    # count corresponds to the minimum representation — the cap then
+    # count corresponds to the minimum representation - the cap then
     # measures actual content rather than formatting.
     return json.dumps(
         as_dict,
@@ -259,7 +259,7 @@ def _build_summary(encoded: bytes) -> str:
     The summary is the first :data:`SUMMARY_TRUNCATE_CHARS` Unicode
     code points of the JSON text.  Code-point slicing (rather than
     byte slicing) avoids splitting a multi-byte UTF-8 sequence in
-    half — important for Turkish payloads.  When the decoded text is
+    half - important for Turkish payloads.  When the decoded text is
     shorter than the cut-off the whole text is returned verbatim
     (this branch is unreachable from the redirect path because we
     only summarise oversized payloads, but the helper is total to
@@ -288,7 +288,7 @@ async def redirect_oversized_payload(
 
     1. Compute the JSON-encoded byte length of ``action.payload``.
     2. If the length is **at or below** :data:`MAX_OUTPUT_BYTES`,
-       return ``action`` **unchanged** (identity branch — the helper
+       return ``action`` **unchanged** (identity branch - the helper
        is a no-op for small payloads).
     3. Otherwise, build the MinIO object key from
        :data:`MINIO_KEY_TEMPLATE`, ``await`` ``minio_callback`` once
@@ -309,7 +309,7 @@ async def redirect_oversized_payload(
        lands) can apply the action without special-casing it.
 
     The summary is intentionally small enough to fit in the LLM
-    context window without re-quoting the full payload — that is the
+    context window without re-quoting the full payload - that is the
     "LLM context'ine sadece özet konur" half of the policy.
 
     Parameters
@@ -331,7 +331,7 @@ async def redirect_oversized_payload(
         a non-negative integer.
     minio_callback:
         Async callable matching :class:`MinioCallback`.  Called
-        **at most once** per invocation — never when the payload is
+        **at most once** per invocation - never when the payload is
         below the cap, exactly once when it is above.  The callback
         is responsible for the MinIO write itself (which is I/O and
         therefore must live outside this pure helper).
@@ -354,8 +354,8 @@ async def redirect_oversized_payload(
     Notes
     -----
     The function is :func:`async def` (rather than wrapping the
-    callback in a sync runner) because the natural caller —
-    :class:`AgentRunnerWorkflow`'s ``apply()`` step — is itself
+    callback in a sync runner) because the natural caller -
+    :class:`AgentRunnerWorkflow`'s ``apply()`` step - is itself
     awaiting the offload as part of its activity workflow.  Keeping
     the helper async means the caller can ``await`` it inline and
     Temporal's event-history tracks the boundary correctly.
@@ -389,7 +389,7 @@ async def redirect_oversized_payload(
     encoded = _encode_payload(action.payload)
     size_bytes = len(encoded)
     if size_bytes <= MAX_OUTPUT_BYTES:
-        # Identity branch — small payloads pass through unchanged.
+        # Identity branch - small payloads pass through unchanged.
         # We deliberately return the **same** instance so callers
         # that compare with ``is`` see the no-op semantics.
         return action

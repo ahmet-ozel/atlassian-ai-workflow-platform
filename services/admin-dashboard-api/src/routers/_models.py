@@ -1,10 +1,10 @@
-"""Pydantic v2 request/response models for the lifecycle REST router.
+﻿"""Pydantic v2 request/response models for the lifecycle REST router.
 
 Co-located with ``services_lifecycle.py`` so the HTTP boundary stays
 in one folder. The orchestrator (``src/lifecycle/service.py``) is
-deliberately Pydantic-free — it ships frozen dataclasses
+deliberately Pydantic-free - it ships frozen dataclasses
 (:class:`~src.lifecycle.service.ServiceSummary`,
-:class:`~src.lifecycle.service.StartResponse`, ...) — and this module
+:class:`~src.lifecycle.service.StartResponse`, ...) - and this module
 adapts those into Pydantic models for FastAPI's serialiser.
 
 Model coverage
@@ -250,7 +250,7 @@ class LogsResponse(BaseModel):
 class StartPlanResponse(BaseModel):
     """``GET /admin/services/{name}/start-plan`` 200 body.
 
-    Implements platform operations behavior 5.6 (Q11 —
+    Implements platform operations behavior 5.6 (Q11 -
     dependency chain orchestration preview). The UI fetches this
     payload before the operator presses *Start* so it can render a
     confirmation modal listing every transitive dependency that will
@@ -258,16 +258,16 @@ class StartPlanResponse(BaseModel):
 
     Field semantics
     ---------------
-    * ``target_service`` — the service the operator clicked. Echoed
+    * ``target_service`` - the service the operator clicked. Echoed
       back so the UI can correlate the response with the originating
       request without parsing the URL.
-    * ``will_start`` — manifest-resident services that the
+    * ``will_start`` - manifest-resident services that the
       :meth:`LifecycleService.start` call will visit and start (or
       attempt to start) under Step 1.6 (dependency chain) and Step 8
       (the parent's own ``compose.up``). Sorted in topological order
       with **dependencies before dependents** so the UI can render the
       list in the same order the chain will execute.
-    * ``already_running`` — manifest-resident services in the
+    * ``already_running`` - manifest-resident services in the
       transitive closure that are currently in ``state="running"`` and
       will therefore be skipped (behavior 5.3 idempotent skip).
 
@@ -293,21 +293,21 @@ class StartPlanResponse(BaseModel):
 class ProbeResponse(BaseModel):
     """``POST /admin/services/{name}/probe`` 200 body.
 
-    Implements platform operations behavior 9.6 (Q10 — manual
+    Implements platform operations behavior 9.6 (Q10 - manual
     connectivity probe re-run). The response reflects the *current*
     state of the ``credentials_status`` field in the in-memory state
     cache after the probe has completed.
 
     Field semantics
     ---------------
-    * ``service_name`` — echoed back from the URL path parameter.
-    * ``credentials_status`` — ``"ok"`` when the probe command exited
+    * ``service_name`` - echoed back from the URL path parameter.
+    * ``credentials_status`` - ``"ok"`` when the probe command exited
       with code 0; ``"failed"`` on non-zero exit, timeout, or OS error;
       ``None`` when the manifest entry has no ``connectivity_probe_command``
       (no probe configured).
-    * ``credentials_probe_at`` — UTC timestamp of the probe execution,
+    * ``credentials_probe_at`` - UTC timestamp of the probe execution,
       or ``None`` when no probe was run (no command configured).
-    * ``credentials_probe_detail`` — last 500 characters of stderr from
+    * ``credentials_probe_detail`` - last 500 characters of stderr from
       a failed probe, or ``None`` when the probe passed or was not run.
     """
 

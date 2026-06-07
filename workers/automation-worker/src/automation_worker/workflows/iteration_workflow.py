@@ -1,11 +1,11 @@
-"""``IterationWorkflow`` — entry point for ``[iterate]``-driven re-runs.
+﻿"""``IterationWorkflow`` - entry point for ``[iterate]``-driven re-runs.
 
 This workflow is the Temporal-side counterpart of the dispatcher's
 ``[iterate]`` detection (see:mod:`platform.services.automation-service.src.webhooks.dispatcher`).
 The webhook dispatcher already:
 
 * matches the ``[iterate]`` keyword in the comment body
- (case-insensitive —:data:`webhooks.dispatcher._ITERATE_PATTERN`),
+ (case-insensitive -:data:`webhooks.dispatcher._ITERATE_PATTERN`),
 * enforces authorization (``approvers`` ∪ ``reporter``) via:meth:`WebhookDispatcher._is_iterate_authorized`,
 * extracts free-form ``extra_instructions`` from the comment body, and
 * emits the ``dispatch_iteration_started`` /
@@ -13,7 +13,7 @@ The webhook dispatcher already:
 
 What is left for the workflow side (this module / spec):
 
-1. Run the:func:`prepare_iteration` activity *first* — it loads the
+1. Run the:func:`prepare_iteration` activity *first* - it loads the
  most recent stored iteration row, increments to ``N+1``, builds the
  ``{base}/{issue_key}/iter-{N+1}`` workspace path (/), and persists a ``shared.workflow_iterations`` row with
  status ``"pending"``. The activity also runs its own authorization
@@ -21,7 +21,7 @@ What is left for the workflow side (this module / spec):
  bypass by going around the dispatcher.
 2. On a *not-authorized* / *insert_failed* /
  *max_iteration_exceeded* / *invalid_workspace_path* result the
- workflow logs and exits cleanly — never raises so a stray
+ workflow logs and exits cleanly - never raises so a stray
  ``[iterate]`` cannot crash the worker.
 3. On success, dispatch:class:`AutomationWorkflow` as a child with
  the iteration metadata (``iteration=N+1``,
@@ -44,7 +44,7 @@ from temporalio.common import RetryPolicy
 # ---------------------------------------------------------------------------
 # Activity / shared-helper imports inside the Temporal sandbox escape hatch.
 #
-# Mirrors ``automation_workflow.py`` —:func:`prepare_iteration` lives
+# Mirrors ``automation_workflow.py`` -:func:`prepare_iteration` lives
 # in an activities module that imports asyncpg, regex helpers, etc.
 # ``imports_passed_through`` is the Temporal-blessed way to make these
 # safe for sandbox replay.
@@ -67,17 +67,17 @@ with workflow.unsafe.imports_passed_through():
 # Constants
 # ---------------------------------------------------------------------------
 
-#: Activity name strings — referenced via ``workflow.execute_activity``
+#: Activity name strings - referenced via ``workflow.execute_activity``
 #: so the workflow module stays decoupled from the concrete activity
 #: implementation.
 _ACT_PREPARE_ITERATION: Final[str] = "prepare_iteration"
 
-#: Activity name for posting Jira comments — used by the
+#: Activity name for posting Jira comments - used by the
 #: storm-guard branch so an issue that hits the per-issue iteration
 #: cap gets a user-visible heads-up.
 _ACT_JIRA_ADD_COMMENT: Final[str] = "jira_add_comment"
 
-#: Activity name for writing audit log entries — used by the
+#: Activity name for writing audit log entries - used by the
 #: storm-guard branch so the operator has an authoritative record of
 #: every refused ``[iterate]`` even if Jira is unavailable.
 _ACT_AUDIT_WRITE: Final[str] = "audit_write"
@@ -116,7 +116,7 @@ class IterationWorkflowInput:
  The webhook dispatcher constructs this envelope from the
  ``[iterate]`` payload. Fields mirror the dict the dispatcher
  historically passed (see:meth:`WebhookDispatcher._start_iteration`) so the wire shape
- stays backwards compatible — the only change in is that
+ stays backwards compatible - the only change in is that
  the worker now has a real workflow class on the receiving end
  instead of a placeholder.
 
@@ -135,7 +135,7 @@ class IterationWorkflowInput:
  Free-form text the user supplied after ``[iterate]``.
  ``None`` when the comment body was just the keyword.
  comment_body:
- Full original comment body — kept verbatim so
+ Full original comment body - kept verbatim so
  ``prepare_iteration`` can audit the source text and re-extract
  the instructions if needed (defence in depth against the
  dispatcher and the activity drifting on the parsing rule).
@@ -195,7 +195,7 @@ class IterationWorkflowOutput:
  ``"dispatched"`` means the child:class:`AutomationWorkflow`
  was started; the inner outcome surfaces on:attr:`automation_output`. ``"unauthorized"`` means:func:`prepare_iteration` rejected the request (/
  max-iteration / invalid path / DB insert race).
- ``"failed"`` means an unexpected exception was raised — the
+ ``"failed"`` means an unexpected exception was raised - the
  workflow logs the error and surfaces a clean envelope rather
  than letting Temporal retry forever.
  iteration_number:
@@ -238,9 +238,9 @@ class IterationWorkflow:
  Lifecycle:
 
  1. Coerce the dispatcher's payload (which may arrive as either a
- dataclass or a plain dict — the dispatcher historically passed
+ dataclass or a plain dict - the dispatcher historically passed
  a dict, see:meth:`WebhookDispatcher._start_iteration`) into:class:`IterationWorkflowInput`.
- 2. Run:func:`prepare_iteration` — see module docstring. On any
+ 2. Run:func:`prepare_iteration` - see module docstring. On any
  non-authorized result the workflow exits with the carrying
  reason code so the dispatcher's audit row remains the only
  record of the rejection (no double-audit at this layer).
@@ -258,7 +258,7 @@ class IterationWorkflow:
         # dict via ``args=[workflow_input]`` (see
         # WebhookDispatcher._start_iteration). Temporal's data
         # converter will hand us either shape depending on how the
-        # caller registered the workflow input type — be liberal in
+        # caller registered the workflow input type - be liberal in
         # what we accept.
         coerced = _coerce_input(inp)
 
@@ -283,7 +283,7 @@ class IterationWorkflow:
             )
         except Exception as exc:  # noqa: BLE001
             # The activity itself swallows expected denial paths
-            # and returns ``authorized=False`` — anything that
+            # and returns ``authorized=False`` - anything that
             # propagates here is a genuine fault (DB outage, etc.).
             # Surface a clean ``failed`` envelope rather than letting
             # the workflow loop on retry forever.
@@ -299,7 +299,7 @@ class IterationWorkflow:
 
         if not context.authorized:
             # Storm-guard: a ``max_iteration_exceeded`` rejection is
-            # special — the dispatcher already authorized the
+            # special - the dispatcher already authorized the
             # ``[iterate]`` (the comment author was an approver) but
             # the activity refused to allocate an N+1 row because the
             # per-issue cap was hit. We surface a user-visible Jira
@@ -307,7 +307,7 @@ class IterationWorkflow:
             # storm without rummaging through worker logs. Every
             # other denial path (``not_authorized``,
             # ``insert_failed``, ``invalid_workspace_path``) is left
-            # to the dispatcher's existing audit row — no double-
+            # to the dispatcher's existing audit row - no double-
             # audit at this layer.
             if context.reason == "max_iteration_exceeded":
                 await self._handle_max_iteration_exceeded(
@@ -353,7 +353,7 @@ class IterationWorkflow:
         # Use the workflow id the activity already persisted so the
         # ``shared.workflow_iterations`` row and the Temporal record
         # stay aligned. The activity returned a deterministic id of
-        # the form ``iteration-{ISSUE_KEY}-{N}-{shortuuid}`` — replays
+        # the form ``iteration-{ISSUE_KEY}-{N}-{shortuuid}`` - replays
         # see the same value because Temporal stores activity results
         # in the workflow history.
         child_workflow_id = context.workflow_id
@@ -440,7 +440,7 @@ class IterationWorkflow:
 
         cap = MAX_ITERATIONS_PER_ISSUE
         # ``current_count`` is ``None`` only when the activity raised
-        # before computing the count — fall back to the cap so the
+        # before computing the count - fall back to the cap so the
         # message stays grammatical.
         count = current_count if current_count is not None else cap
 
@@ -466,10 +466,10 @@ class IterationWorkflow:
                 start_to_close_timeout=_SHORT_TIMEOUT,
                 retry_policy=_PREPARE_ITERATION_RETRY,
             )
-        except Exception:  # noqa: BLE001 — audit best-effort
+        except Exception:  # noqa: BLE001 - audit best-effort
             workflow.logger.warning(
                 "IterationWorkflow: audit_write(iteration_max_exceeded) "
-                "failed for %s — continuing",
+                "failed for %s - continuing",
                 issue_key,
             )
 
@@ -485,10 +485,10 @@ class IterationWorkflow:
                 start_to_close_timeout=_SHORT_TIMEOUT,
                 retry_policy=_PREPARE_ITERATION_RETRY,
             )
-        except Exception:  # noqa: BLE001 — comment best-effort
+        except Exception:  # noqa: BLE001 - comment best-effort
             workflow.logger.warning(
                 "IterationWorkflow: jira_add_comment(max_exceeded) "
-                "failed for %s — continuing",
+                "failed for %s - continuing",
                 issue_key,
             )
 
@@ -503,7 +503,7 @@ def _coerce_input(
 ) -> IterationWorkflowInput:
     """Normalise the dispatcher payload into:class:`IterationWorkflowInput`.
 
- The webhook dispatcher passes a plain ``dict`` to:meth:`temporalio.client.Client.start_workflow` — see:meth:`WebhookDispatcher._start_iteration`. The Temporal data
+ The webhook dispatcher passes a plain ``dict`` to:meth:`temporalio.client.Client.start_workflow` - see:meth:`WebhookDispatcher._start_iteration`. The Temporal data
  converter delivers it to the workflow as either:
 
  * a:class:`dict` (the default JSON converter when the workflow
@@ -514,7 +514,7 @@ def _coerce_input(
  This helper flattens both shapes into the dataclass so the rest
  of:meth:`IterationWorkflow.run` can rely on attribute access.
  Keys that are missing from the dict default to safe values
- (empty tuples / strings / ``None``) — the activity body re-checks
+ (empty tuples / strings / ``None``) - the activity body re-checks
  authorization, so a malformed input cannot bypass the gate.
  """
 
@@ -523,7 +523,7 @@ def _coerce_input(
 
     # Anything dict-like (regular ``dict``, ``MappingProxyType``,...)
     # is unpacked field-by-field. Tuple coercion guards against
-    # mutable-list inputs leaking into the frozen dataclass — the
+    # mutable-list inputs leaking into the frozen dataclass - the
     # input is then trivially replayable.
     if hasattr(inp, "get"):
 
@@ -558,7 +558,7 @@ def _coerce_input(
     # Last-resort fallback: build a minimal envelope from attribute
     # access. This branch exists so a future Temporal-side data
     # converter that delivers a typed-but-not-frozen object still
-    # works — production hits the dataclass / dict branches above.
+    # works - production hits the dataclass / dict branches above.
     return IterationWorkflowInput(
         trigger=str(getattr(inp, "trigger", "iterate")),
         issue_key=str(getattr(inp, "issue_key", "")),

@@ -1,14 +1,14 @@
-"""Sanity check that config/services.manifest.schema.json behaves as expected.
+﻿"""Sanity check that config/services.manifest.schema.json behaves as expected.
 
 The checker also verifies that config/services.manifest.json is schema-valid
 and contains the baseline service topology used by the platform.
 
-* ``depends_on_services`` (array of string, default ``[]``) — names of
+* ``depends_on_services`` (array of string, default ``[]``) - names of
   services this entry depends on for cascade healthcheck and auto-start
   orchestration. May reference other manifest entries by
   ``name`` OR external Boot_Bundle / infra components (postgres, vault,
   temporal, atlassian_mcp_bitbucket) that do not appear as manifest entries.
-* ``feature_flag_dependency`` (array of string, default ``[]``) — names
+* ``feature_flag_dependency`` (array of string, default ``[]``) - names
   of feature flags whose enabled state must be ``true`` before the
   Control_Plane will start the service.
 * Cycle detection (DFS) over the intra-manifest portion of the
@@ -595,7 +595,7 @@ print("OK   foundation health_endpoint invariants hold.")
 # ---------------------------------------------------------------------------
 # 6) Cycle detection (DFS) over depends_on_services edges, restricted to
 #    intra-manifest references. External dependency names that are not
-#    manifest entry names are skipped — they cannot form a cycle since
+#    manifest entry names are skipped - they cannot form a cycle since
 #    they are not nodes in the graph.
 # ---------------------------------------------------------------------------
 

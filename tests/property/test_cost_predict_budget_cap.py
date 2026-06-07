@@ -1,4 +1,4 @@
-"""invariant 7 — Cost prediction + budget cap enforcement.
+﻿"""invariant 7 - Cost prediction + budget cap enforcement.
 
 
 
@@ -21,7 +21,7 @@ workflow_type)`` tuple:
  (b) When ``source == "global_fallback"`` the workflow start
  handler writes a single
  ``cost_prediction_using_global_fallback`` audit event
- (caller-site assertion — exercised by mirroring the
+ (caller-site assertion - exercised by mirroring the
  emit-on-fallback contract through a recording audit
  writer).
  (c) ``BudgetCapPolicy.enforce(dept_id, user_id)`` checks the
@@ -36,7 +36,7 @@ workflow_type)`` tuple:
  request was attributed) ``user_id``; allow paths emit no
  audit events.
  (e) ``BudgetCapPolicy.enforce`` excludes ``cost_tag IN
- ('sandbox','probe')`` rows from the usage aggregate — the
+ ('sandbox','probe')`` rows from the usage aggregate - the
  SQL string carries ``cost_tag = 'production'`` verbatim
  on every aggregate query the policy issues.
  (f) Determinism: repeating the call with the same
@@ -47,7 +47,7 @@ workflow_type)`` tuple:
 Surface under test
 ------------------
 
-*:class:`automation_service.budget.policy.BudgetCapPolicy` (implementation milestone — already shipped) is exercised end-to-end with an
+*:class:`automation_service.budget.policy.BudgetCapPolicy` (implementation milestone - already shipped) is exercised end-to-end with an
  in-memory:class:`UsageQueryRunner` and:class:`AuditWriter` so the invariant owns the full
  decide-and-audit contract.
 *:func:`cost_tracking.predictor.predict_cost` is
@@ -67,10 +67,10 @@ Related coverage
 * The cost prediction and budget cap workflow emits the audit-on-fallback
  event exercised here through the recording audit writer.
 * ``platform/services/automation-service/tests/unit/\
- test_budget_policy.py`` — example-based tests that pin
+ test_budget_policy.py`` - example-based tests that pin
  individual scope branches; this invariant owns the
  combinatorial coverage they cannot.
-* ``platform/tests/property/test_token_cap_fail_fast.py`` —
+* ``platform/tests/property/test_token_cap_fail_fast.py`` -
  reference style for the module-level skipif fallback pattern.
 """
 
@@ -90,7 +90,7 @@ from hypothesis import strategies as st
 
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — the budget policy lives under the
+# sys.path bootstrap - the budget policy lives under the
 # automation-service package which is not on the workspace
 # pythonpath. Mirror the test_budget_policy.py unit-test bootstrap
 # so the invariant runs identically from any cwd.
@@ -133,7 +133,7 @@ from automation_service.budget.policy import (  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
-# Optional import —:func:`cost_tracking.predictor.predict_cost` is
+# Optional import -:func:`cost_tracking.predictor.predict_cost` is
 #; until it ships we fall back to an in-test stand-in that
 # mirrors the predictor contract so clauses (a) / (b) still pin the
 # contract a future implementation must satisfy.
@@ -154,7 +154,7 @@ GLOBAL_FALLBACK_MIN_TASKS: Final[int] = int(_PRODUCTION_MIN_TASKS)
 
 
 # ---------------------------------------------------------------------------
-# Domain dataclasses — local stand-ins for ``cost_tracking.types``.
+# Domain dataclasses - local stand-ins for ``cost_tracking.types``.
 #
 # These mirror the cost and budget tracking data shape. Once the production
 # module lands we replace the local
@@ -215,7 +215,7 @@ class _BudgetUsageInput:
 
 
 # ---------------------------------------------------------------------------
-# Reference predictor — fall-back implementation used when
+# Reference predictor - fall-back implementation used when
 # has not landed yet. Once the production ``predict_cost`` ships,
 # the helper below collapses to a thin pass-through wrapper.
 # ---------------------------------------------------------------------------
@@ -226,7 +226,7 @@ def _scaling_factor(repo_size_loc: int, estimated_iterations: int) -> Decimal:
 
  The helper is monotonic in both arguments and bounded below at
  ``1`` so the resulting prediction never collapses to zero. The
- exact formula is not load-bearing for invariant — only the
+ exact formula is not load-bearing for invariant - only the
  ``confidence_low ≤ predicted ≤ confidence_high`` invariant
  matters, and that invariant holds because the same factor is
  applied to all three values.
@@ -309,8 +309,8 @@ class _FakeUsageRunner:
     """List-of-calls fake matching the:class:`UsageQueryRunner` protocol.
 
  The fake also records the SQL string each ``fetchval`` call
- issues so clause (e) of invariant — the ``cost_tag =
- 'production'`` filter — can be asserted on the actual SQL the
+ issues so clause (e) of invariant - the ``cost_tag =
+ 'production'`` filter - can be asserted on the actual SQL the
  policy emits, not the policy author's intent.
  """
 
@@ -498,7 +498,7 @@ def _budget_caps_strategy(draw: st.DrawFn) -> BudgetCaps:
  The caps must be ``> 0`` so the ``>=`` comparison in:meth:`BudgetCapPolicy.enforce` has a meaningful boundary. We
  also draw weekly < monthly so a usage value that exhausts the
  weekly budget does not also trivially exhaust the monthly one
- — that keeps the four-scope ordering observable.
+ - that keeps the four-scope ordering observable.
  """
 
     weekly_dept = draw(_decimal_dollars(10.00, 500.00))
@@ -531,7 +531,7 @@ def _budget_usage_strategy(draw: st.DrawFn) -> _BudgetUsageInput:
 
 
 # ---------------------------------------------------------------------------
-# invariant — predictor source switch + CI invariant
+# invariant - predictor source switch + CI invariant
 # ---------------------------------------------------------------------------
 
 
@@ -550,7 +550,7 @@ def test_predict_cost_source_and_ci_invariant(
     repo_size: int,
     iterations: int,
 ) -> None:
-    """invariant (a) — source switch on ``task_count >= 30`` + CI bounds.
+    """invariant (a) - source switch on ``task_count >= 30`` + CI bounds.
 
 
 
@@ -611,7 +611,7 @@ def test_predict_cost_is_deterministic(
     repo_size: int,
     iterations: int,
 ) -> None:
-    """invariant (f) — predictor is a pure function.
+    """invariant (f) - predictor is a pure function.
 
 
 
@@ -643,7 +643,7 @@ def test_predict_cost_is_deterministic(
 
 
 # ---------------------------------------------------------------------------
-# invariant — BudgetCapPolicy enforcement state machine
+# invariant - BudgetCapPolicy enforcement state machine
 # ---------------------------------------------------------------------------
 
 
@@ -658,7 +658,7 @@ def test_budget_cap_policy_decision_table(
     usage: _BudgetUsageInput,
     user_attributed: bool,
 ) -> None:
-    """invariant (c) + (d) — scope-ordered deny + single audit on first breach.
+    """invariant (c) + (d) - scope-ordered deny + single audit on first breach.
 
 
 
@@ -720,7 +720,7 @@ def test_budget_cap_policy_decision_table(
         "invariant (d) ties the two together."
     )
     # ``limit`` and ``usage`` are serialised as Decimal-as-string;
-    # the exact rendering is a callsite contract — we assert the
+    # the exact rendering is a callsite contract - we assert the
     # keys are present and non-empty.
     assert "limit" in payload and payload["limit"], (
         f"Audit payload missing ``limit``; got {payload!r}."
@@ -746,14 +746,14 @@ def test_budget_cap_policy_excludes_non_production_via_sql_filter(
     usage: _BudgetUsageInput,
     user_attributed: bool,
 ) -> None:
-    """invariant (e) — the policy SQL filters ``cost_tag='production'``.
+    """invariant (e) - the policy SQL filters ``cost_tag='production'``.
 
 
 
  The policy never aggregates rows tagged ``sandbox`` / ``probe``.
  We assert the filter at the SQL string level by requiring
  every ``fetchval`` call the policy issues to carry
- ``cost_tag = 'production'`` verbatim — the same substring the
+ ``cost_tag = 'production'`` verbatim - the same substring the
  production aggregate query in:mod:`automation_service.budget.\
  policy` uses.
  """
@@ -786,13 +786,13 @@ def test_budget_cap_policy_is_deterministic(
     usage: _BudgetUsageInput,
     user_attributed: bool,
 ) -> None:
-    """invariant (f) — repeating the call is deterministic.
+    """invariant (f) - repeating the call is deterministic.
 
 
 
- Two enforcements with the same ``(caps, usage, user_id)`` —
+ Two enforcements with the same ``(caps, usage, user_id)`` -
  each driven through an independent policy instance with fresh
- fakes — produce the same:class:`BudgetDecision` and emit the
+ fakes - produce the same:class:`BudgetDecision` and emit the
  same audit-event sequence (same scope, same payload keys).
  """
 
@@ -821,14 +821,14 @@ def test_budget_cap_policy_is_deterministic(
 
 
 # ---------------------------------------------------------------------------
-# invariant — concrete regression anchors
+# invariant - concrete regression anchors
 # ---------------------------------------------------------------------------
 
 
 def test_dept_weekly_breach_denies_first_in_scope_order() -> None:
     """Pinned example: dept_weekly takes priority over user_weekly.
 
- invariant (c) — scope-ordered evaluation. Both ``dept_weekly``
+ invariant (c) - scope-ordered evaluation. Both ``dept_weekly``
  and ``user_weekly`` are over their caps; the policy MUST deny on
  ``dept_weekly`` because it is the first scope in the canonical
  ordering.
@@ -861,7 +861,7 @@ def test_dept_weekly_breach_denies_first_in_scope_order() -> None:
 def test_user_id_none_skips_user_scoped_caps() -> None:
     """Pinned example: a system workflow cannot deny on user scope.
 
- invariant (c) — when ``user_id is None`` the user-scoped checks
+ invariant (c) - when ``user_id is None`` the user-scoped checks
  are short-circuited; even if ``user_weekly_usd >=
  weekly_usd_user`` the policy must NOT deny on ``user_weekly``.
 

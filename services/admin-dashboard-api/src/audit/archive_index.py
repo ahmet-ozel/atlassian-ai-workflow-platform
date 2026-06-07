@@ -1,4 +1,4 @@
-"""MinIO-backed archive index for audit logs.
+﻿"""MinIO-backed archive index for audit logs.
 
 Surfaces archived audit-log objects to
 the admin-dashboard ``/admin/audit/search`` endpoint when a query's
@@ -52,7 +52,7 @@ Implementation notes
   pulled into a shared library because (a) the worker activity uses
   ``activity.logger`` and Temporal-specific retry semantics that the
   admin-dashboard-api does not need, and (b) extracting a shared lib
-  is the *only* way the two would diverge — keeping them inline
+  is the *only* way the two would diverge - keeping them inline
   makes the duplication obvious to reviewers.
 * All MinIO calls go through a caller-supplied :class:`httpx.AsyncClient`
   so unit tests can install an :class:`httpx.MockTransport` without
@@ -105,7 +105,7 @@ _S3_XMLNS: str = "http://s3.amazonaws.com/doc/2006-03-01/"
 class MinIOArchiveError(RuntimeError):
     """Raised when the archive index cannot be queried.
 
-    The error message is intentionally crisp — it surfaces in the
+    The error message is intentionally crisp - it surfaces in the
     admin UI when the archive-side search fails, so we want the
     operator to see *what* failed (HTTP status, prefix) without
     exposing credentials.
@@ -180,7 +180,7 @@ def _build_authorization(
     """Build a SigV4 ``Authorization`` header for an S3 GET/LIST request.
 
     The canonical headers list is fixed at ``host``,
-    ``x-amz-content-sha256``, ``x-amz-date`` — the minimum required
+    ``x-amz-content-sha256``, ``x-amz-date`` - the minimum required
     for ListObjectsV2 with no payload.
     """
 
@@ -297,7 +297,7 @@ class MinIOArchiveIndex:
         Compose values; production callers MUST override credentials.
     http_client:
         A live :class:`httpx.AsyncClient`. The index does NOT take
-        ownership — callers manage the client's lifecycle (open it
+        ownership - callers manage the client's lifecycle (open it
         in the FastAPI ``lifespan`` and close it on shutdown). This
         also makes unit tests trivial: pass a client wired to an
         :class:`httpx.MockTransport`.
@@ -326,7 +326,7 @@ class MinIOArchiveIndex:
     async def search(self, query: AuditQuery) -> tuple[ArchivedAuditHit, ...]:
         """List archive objects covering ``query.time_range``.
 
-        Filters at the **prefix** level only — no object-content
+        Filters at the **prefix** level only - no object-content
         inspection. The ``actor_id``, ``dept_id`` and ``action``
         fields on :class:`AuditQuery` are *not* applied here; that
         responsibility belongs to the restore endpoint.
@@ -363,7 +363,7 @@ class MinIOArchiveIndex:
                     )
                 )
 
-        # Deterministic ordering — operators (and Hypothesis tests)
+        # Deterministic ordering - operators (and Hypothesis tests)
         # rely on this. ``archive_uri`` sort matches lexicographic
         # date ordering because the keys are zero-padded.
         hits.sort(key=lambda h: h.archive_uri)
@@ -389,7 +389,7 @@ class MinIOArchiveIndex:
         Two archives with the same key (impossible under the bucket's
         write contract) would collide here, but operators looking up
         a hit by id only need uniqueness within a single search
-        result set — the key itself satisfies that.
+        result set - the key itself satisfies that.
         """
 
         return key

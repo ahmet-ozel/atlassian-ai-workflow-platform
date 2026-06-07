@@ -1,4 +1,4 @@
-"""End-to-end integration test for the ``pr_review`` workflow.
+﻿"""End-to-end integration test for the ``pr_review`` workflow.
 
 Scenario
 --------
@@ -8,14 +8,14 @@ The :class:`agent_runner.workflows.agent_runner_workflow.AgentRunnerWorkflow`
 review. The handler walks through three side-effecting steps before
 exiting:
 
- 1. ``bitbucket_fetch_pr_diff`` — pull the diff for the PR id
+ 1. ``bitbucket_fetch_pr_diff`` - pull the diff for the PR id
  extracted from ``analysis.rationale``. Until that id is carried directly,
  :meth:`AgentRunnerWorkflow._extract_pr_id` parses digits out of
  ``rationale``.
- 2. ``llm_review_code`` — run the ``pr_review.md`` template through
+ 2. ``llm_review_code`` - run the ``pr_review.md`` template through
  the token-capped LLM helper. Returns a ``{"findings":
  [...]}`` envelope.
- 3. ``bitbucket_add_pr_comment`` — post each finding whose ``hash``
+ 3. ``bitbucket_add_pr_comment`` - post each finding whose ``hash``
  was not seen on a previous iteration. The
  workflow's ``_previous_findings`` set tracks the hashes posted
  across calls so a second iteration does not re-post the same
@@ -26,21 +26,21 @@ real Temporal time-skipping ``WorkflowEnvironment`` so signal
 dispatch, sandbox enforcement, and replay determinism all
 participate. Two scenarios are covered:
 
-* ``test_pr_review_happy_path_posts_findings`` — the LLM returns two
+* ``test_pr_review_happy_path_posts_findings`` - the LLM returns two
  fresh findings (``h1`` / ``h2``); both are posted and the
  ``get_previous_findings`` query returns the sorted tuple
  ``("h1", "h2")``.
 
-* ``test_pr_review_dedup_within_single_run`` — the LLM returns three
+* ``test_pr_review_dedup_within_single_run`` - the LLM returns three
  findings with ``h1`` duplicated. After the body finishes, the
  ``_previous_findings`` set has collapsed the duplicates into two
- distinct hashes (``{"h1", "h3"}``) — the canonical
+ distinct hashes (``{"h1", "h3"}``) - the canonical
  ``_dedup_findings`` dedup contract is consulted, even when the
  dedup happens at the *post* boundary rather than between iterations
  (the workflow hashes a finding into ``_previous_findings`` only
  *after* the comment activity returned, so within a single run two
  occurrences of the same hash may both flush through to the comment
- activity — but the query surface that downstream consumers rely on
+ activity - but the query surface that downstream consumers rely on
  carries the deduped set).
 
 Activity stubs are registered through ``@activity.defn(name=...)``
@@ -50,7 +50,7 @@ would in production.
 
 Hosts without the embedded ``temporal-test-server`` skip cleanly via
 the same module-level gate the existing integration tests in
-``test_temporal_signal.py`` / ``test_temporal_loop_cap.py`` use — see
+``test_temporal_signal.py`` / ``test_temporal_loop_cap.py`` use - see
 :func:`_temporal_test_env_available` and
 :func:`_start_time_skipping_or_skip`.
 """
@@ -67,7 +67,7 @@ import pytest
 
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — agent-runner-worker tree, temporal-shared, mcp_client.
+# sys.path bootstrap - agent-runner-worker tree, temporal-shared, mcp_client.
 #
 # Mirrors the bootstrap used by ``test_e2e_code_change_with_test.py`` and
 # ``test_e2e_confluence_doc_create.py``. The agent-runner-worker ships
@@ -177,15 +177,15 @@ class ActivityCallLog:
 
 
 # ---------------------------------------------------------------------------
-# Activity stub factory — every activity the ``pr_review`` handler
+# Activity stub factory - every activity the ``pr_review`` handler
 # invokes is registered with a thin recording stub. The workflow walks
 # through this activity set:
 #
-# * ``bitbucket_fetch_pr_diff`` — return a stub diff envelope.
-# * ``llm_review_code`` — return ``{"findings": [...]}`` with the
+# * ``bitbucket_fetch_pr_diff`` - return a stub diff envelope.
+# * ``llm_review_code`` - return ``{"findings": [...]}`` with the
 # findings the test wants to drive through the dedup logic.
-# * ``bitbucket_add_pr_comment`` — best-effort PR comment poster.
-# * ``audit_emit`` — defensive (best-effort audit hooks may fire).
+# * ``bitbucket_add_pr_comment`` - best-effort PR comment poster.
+# * ``audit_emit`` - defensive (best-effort audit hooks may fire).
 #
 # The ``pr_review`` body does not invoke ``set_assignee_to_bot``,
 # ``precommit_scanner``, ``bitbucket_create_commit`` or any of the
@@ -207,7 +207,7 @@ def _build_pr_review_activities(
  Parameters
  ----------
  log:
- Shared :class:`ActivityCallLog` — every stub appends its
+ Shared :class:`ActivityCallLog` - every stub appends its
  invocation here so the tests can assert on order, count, and
  payload.
  findings:
@@ -217,7 +217,7 @@ def _build_pr_review_activities(
  text).
  diff_content:
  Stub diff text returned by ``bitbucket_fetch_pr_diff`` under
- the ``"diff_content"`` key — matches the contract the
+ the ``"diff_content"`` key - matches the contract the
  workflow's :meth:`AgentRunnerWorkflow._extract_diff_text`
  helper expects.
  """
@@ -358,7 +358,7 @@ def _output_to_dict(result: Any) -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
-# Test 1 — happy path: posts every fresh finding
+# Test 1 - happy path: posts every fresh finding
 # ---------------------------------------------------------------------------
 
 
@@ -370,7 +370,7 @@ async def test_pr_review_happy_path_posts_findings() -> None:
 
  1. ``bitbucket_fetch_pr_diff`` returns a stub diff.
  2. ``llm_review_code`` returns two findings (``h1`` and ``h2``)
- — neither has been seen before, so both must flush through to
+ - neither has been seen before, so both must flush through to
  the comment activity.
  3. ``bitbucket_add_pr_comment`` succeeds twice (once per
  finding).
@@ -382,11 +382,11 @@ async def test_pr_review_happy_path_posts_findings() -> None:
  ``analysis.rationale``.
  * ``llm_review_code`` is invoked exactly once with the diff
  envelope and the ``"pr_review.md"`` template name.
- * ``bitbucket_add_pr_comment`` is invoked exactly twice — once
- per finding — and both finding bodies surface verbatim in the
+ * ``bitbucket_add_pr_comment`` is invoked exactly twice - once
+ per finding - and both finding bodies surface verbatim in the
  activity payload.
  * The :meth:`AgentRunnerWorkflow.get_previous_findings` query
- returns the sorted tuple ``("h1", "h2")`` — confirms both
+ returns the sorted tuple ``("h1", "h2")`` - confirms both
  hashes were latched into ``_previous_findings`` so the next
  iteration would dedup them.
  * Final status is ``"completed"`` and ``failure_reason`` is
@@ -443,7 +443,7 @@ async def test_pr_review_happy_path_posts_findings() -> None:
         f"(call log: {log.names()!r})"
     )
     assert log.count("bitbucket_add_pr_comment") == 2, (
-        f"bitbucket_add_pr_comment must run exactly twice — once per "
+        f"bitbucket_add_pr_comment must run exactly twice - once per "
         f"finding; got {log.count('bitbucket_add_pr_comment')} "
         f"(call log: {log.names()!r})"
     )
@@ -495,7 +495,7 @@ async def test_pr_review_happy_path_posts_findings() -> None:
     llm_args_list = log.args_for("llm_review_code")
     assert len(llm_args_list) == 1
     llm_args = llm_args_list[0]
-    # Second positional argument is the prompt template name — the
+    # Second positional argument is the prompt template name - the
     # body invokes ``self._execute_llm_activity("llm_review_code",
     # args=[diff, "pr_review.md"], ...)``.
     assert llm_args[1] == "pr_review.md", (
@@ -523,7 +523,7 @@ async def test_pr_review_happy_path_posts_findings() -> None:
 
     # ----- get_previous_findings query -----------------
     #
-    # The query is declared as returning ``tuple[str, ...]`` — but
+    # The query is declared as returning ``tuple[str, ...]`` - but
     # the Temporal JSON data converter renders the value as a list
     # on the wire so the return type at the call site is normalised
     # to ``list``. We coerce to a tuple before the equality check
@@ -548,7 +548,7 @@ async def test_pr_review_happy_path_posts_findings() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Test 2 — dedup within a single run: duplicate hashes collapse
+# Test 2 - dedup within a single run: duplicate hashes collapse
 # ---------------------------------------------------------------------------
 
 
@@ -556,7 +556,7 @@ async def test_pr_review_happy_path_posts_findings() -> None:
 @pytest.mark.integration
 async def test_pr_review_dedup_within_single_run() -> None:
     """Drive the ``pr_review`` body with three findings whose hashes are
- ``["h1", "h1", "h3"]`` — ``h1`` is duplicated.
+ ``["h1", "h1", "h3"]`` - ``h1`` is duplicated.
 
  The production ``_dedup_findings`` placeholder filters against the
  *previously seen* hash set. On a fresh run the set starts empty,
@@ -566,7 +566,7 @@ async def test_pr_review_dedup_within_single_run() -> None:
  single run two occurrences of the same hash may both flush
  through to the comment activity (the second occurrence is checked
  against the set *before* the first occurrence's hash has been
- written — the body does the post-then-add ordering, not
+ written - the body does the post-then-add ordering, not
  add-then-post).
 
  The dedup contract that matters at the *query* layer is therefore
@@ -575,16 +575,16 @@ async def test_pr_review_dedup_within_single_run() -> None:
  :meth:`AgentRunnerWorkflow.get_previous_findings` query must
  return the deduped set ``{"h1", "h3"}``, and the comment
  activity must have fired at least twice (one per *distinct*
- hash) — the second ``h1`` may or may not have flushed depending
+ hash) - the second ``h1`` may or may not have flushed depending
  on the ordering, so we assert ``>= 2`` rather than ``== 2`` or
  ``== 3``.
 
  Assertions
  ----------
- * ``bitbucket_add_pr_comment`` is invoked at least twice — every
+ * ``bitbucket_add_pr_comment`` is invoked at least twice - every
  distinct finding hash MUST have flushed at least once.
  * ``get_previous_findings`` returns the sorted tuple
- ``("h1", "h3")`` — duplicates collapsed into the
+ ``("h1", "h3")`` - duplicates collapsed into the
  ``_previous_findings`` set.
  * Final status is ``"completed"``; ``failure_reason`` is
  ``None``.
@@ -639,7 +639,7 @@ async def test_pr_review_dedup_within_single_run() -> None:
     # The duplicate ``h1`` may or may not have flushed depending on
     # whether the body's ``_previous_findings`` had absorbed the
     # first ``h1`` before the second occurrence's
-    # ``_dedup_findings`` check ran — at the integration boundary
+    # ``_dedup_findings`` check ran - at the integration boundary
     # we accept either branch and only pin the lower bound the
     # workflow behavior guarantees.
     comment_count = log.count("bitbucket_add_pr_comment")
@@ -648,7 +648,7 @@ async def test_pr_review_dedup_within_single_run() -> None:
         f"distinct finding hash (h1 + h3); got {comment_count} "
         f"(call log: {log.names()!r})"
     )
-    # Upper bound is the number of findings the LLM returned —
+    # Upper bound is the number of findings the LLM returned -
     # nothing must spuriously inflate the count beyond that.
     assert comment_count <= len(findings), (
         f"bitbucket_add_pr_comment must not fire more than once per "

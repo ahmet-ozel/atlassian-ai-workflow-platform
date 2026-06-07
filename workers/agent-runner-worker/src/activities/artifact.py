@@ -1,4 +1,4 @@
-"""MinIO artifact storage activities for AgentRunnerWorkflow.
+﻿"""MinIO artifact storage activities for AgentRunnerWorkflow.
 
 This module provides Temporal activities for uploading, downloading, and
 deleting artifacts in MinIO (S3-compatible object storage). Artifacts are
@@ -244,7 +244,7 @@ async def artifact_delete(bucket: str, key: str) -> None:
 
     This activity is designed for saga compensation. If the object does
     not exist (404 / NoSuchKey), the operation is treated as a successful
-    no-op — the desired end state (object absent) is already achieved.
+    no-op - the desired end state (object absent) is already achieved.
 
     Parameters
     ----------
@@ -273,7 +273,7 @@ async def artifact_delete(bucket: str, key: str) -> None:
             await client.delete_object(Bucket=bucket, Key=key)
     except Exception as exc:
         error_str = str(exc)
-        # 404 / NoSuchKey is acceptable — compensation is idempotent
+        # 404 / NoSuchKey is acceptable - compensation is idempotent
         if "NoSuchKey" in error_str or "404" in error_str:
             activity.logger.info(
                 "artifact_delete: object already absent %s/%s (idempotent ok)",

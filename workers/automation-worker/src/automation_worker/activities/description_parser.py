@@ -1,4 +1,4 @@
-"""Description Parser activity — YAML front-matter override extraction.
+﻿"""Description Parser activity - YAML front-matter override extraction.
 
 Parses the ``---\\nai-bot:\\n...\\n---`` front-matter block at the top of a
 Jira task description and exposes the structured override values consumed
@@ -8,9 +8,9 @@ entirely.
 
 The parser is **lenient** by design:
 
-* Missing front-matter is not an error — the function returns ``None``
+* Missing front-matter is not an error - the function returns ``None``
  so the caller can fall through to LLM analysis.
-* Invalid field values do not abort parsing — they are recorded in:attr:`ParsedFrontMatter.parse_errors`, the offending field is set to
+* Invalid field values do not abort parsing - they are recorded in:attr:`ParsedFrontMatter.parse_errors`, the offending field is set to
  ``None``, and the rest of the block is preserved. The caller can
  surface ``parse_errors`` as a warning Jira comment.
 """
@@ -22,12 +22,12 @@ import re
 from dataclasses import dataclass, field
 from typing import Any, Final
 
-# ``yaml.safe_load`` is the only YAML entry point used here — we never
+# ``yaml.safe_load`` is the only YAML entry point used here - we never
 # call ``yaml.load`` on user-supplied content (description bodies arrive
 # straight from Jira webhooks). Imported lazily inside the parsing
 # helper so this module can be imported even when PyYAML is not yet
 # installed, e.g. during partial dev-env bootstrapping.
-try:  # pragma: no cover — exercised at runtime only
+try:  # pragma: no cover - exercised at runtime only
     import yaml as _yaml  # type: ignore[import-not-found]
 except ImportError:  # pragma: no cover
     _yaml = None  # type: ignore[assignment]
@@ -136,7 +136,7 @@ COMMAND_LENGTH_MAX: Final[int] = 8000
 #: ``---`` line is followed by the YAML body and a closing ``---`` line.
 #: ``re.DOTALL`` lets ``.*?`` match across newlines; the lazy quantifier
 #: stops at the **first** ``---`` line so a ``---`` inside the YAML body
-#: (eg. inside a quoted string) doesn't confuse us — but in practice
+#: (eg. inside a quoted string) doesn't confuse us - but in practice
 #: ``---`` is always a YAML stream separator so this is the right
 #: behaviour anyway.
 _FRONT_MATTER_RE: Final[re.Pattern[str]] = re.compile(
@@ -179,7 +179,7 @@ class ParsedFrontMatter:
  All fields are ``Optional`` because the user is free to omit any of
  them; the workflow falls back to department defaults for missing
  values. ``parse_errors`` lists the keys that **were** present but
- failed validation — those keys appear here as ``None`` even if the
+ failed validation - those keys appear here as ``None`` even if the
  raw YAML contained a value..
  """
 
@@ -455,7 +455,7 @@ def _extract_front_matter_body(description: str) -> str | None:
     """Return the YAML body between the ``---`` delimiters or ``None``.
 
  The match is anchored at the start of the description so only a
- *true* front-matter block is recognised — a stray ``---`` further
+ *true* front-matter block is recognised - a stray ``---`` further
  down in the body (eg. a Markdown horizontal rule) will not trigger
  parsing.
  """
@@ -497,7 +497,7 @@ def parse_description_frontmatter(
         return None
 
     if _yaml is None:
-        # PyYAML missing — treat as a parse failure rather than crashing
+        # PyYAML missing - treat as a parse failure rather than crashing
         # the workflow. The caller still sees the front-matter block
         # textually but cannot extract structured values, so we return
         # ``None`` and let the LLM path take over.

@@ -1,4 +1,4 @@
-"""Audit sink wiring for the admin-dashboard-api.
+﻿"""Audit sink wiring for the admin-dashboard-api.
 
 This module provides the audit-write surface consumed by
 :class:`src.proxy.AdminProxy`. The proxy emits a single
@@ -50,7 +50,7 @@ class LoggingAuditSink:
     :class:`src.proxy._AuditSink` protocol so the proxy can be wired
     against it without changes.
 
-    The class is intentionally tiny — it holds no state and never
+    The class is intentionally tiny - it holds no state and never
     raises. A failure to format the event is logged at ``WARNING``
     instead of being propagated, because audit-write failures must
     not mask the underlying HTTP 403 (behavior 7.5; see
@@ -71,7 +71,7 @@ class LoggingAuditSink:
 
         try:
             line = self._render(event)
-        except Exception as exc:  # noqa: BLE001 — never raise from a sink
+        except Exception as exc:  # noqa: BLE001 - never raise from a sink
             self._logger.warning(
                 "LoggingAuditSink could not serialise audit event "
                 "(action=%s, actor=%s): %s",
@@ -117,7 +117,7 @@ class AsyncpgAuditSink:
     swallowing every database error so the audit pipeline never masks
     the request outcome (rule 12.7).
 
-    Used by the ``llm-provider-management`` spec — provider audit wiring wires this
+    Used by the ``llm-provider-management`` spec - provider audit wiring wires this
     sink onto ``app.state.audit_logger`` in :mod:`src.main` so the
     :class:`llm_providers.service.ProviderService` constructed per
     request lands its events in the same Postgres table as the rest of
@@ -150,7 +150,7 @@ class AsyncpgAuditSink:
     async def write(self, event: AuditEvent) -> None:
         """Persist ``event`` to ``automation.audit_events``.
 
-        Failures are logged at WARNING and swallowed — the service
+        Failures are logged at WARNING and swallowed - the service
         layer's outer ``try/except`` then surfaces the HTTP response
         regardless (rule 12.7).
         """

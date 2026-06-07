@@ -1,10 +1,10 @@
-import type { ReactNode } from "react";
+﻿import type { ReactNode } from "react";
 
 import "./globals.css";
 import AppShell from "@/components/AppShell";
 
 export const metadata = {
-  title: "Admin Console — AI Bot Platform",
+  title: "Admin Console - AI Bot Platform",
   description:
     "Departman, servis, workflow ve maliyet yönetimi için kontrol paneli.",
 };

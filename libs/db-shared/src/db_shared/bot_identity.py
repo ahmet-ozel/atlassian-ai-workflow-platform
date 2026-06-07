@@ -1,15 +1,15 @@
-"""Bot account_id uniqueness validator.
+﻿"""Bot account_id uniqueness validator.
 
 This module owns the third layer of the bot account uniqueness defence:
 
-* DB layer  — partial UNIQUE INDEX on ``automation.department_bots``
+* DB layer  - partial UNIQUE INDEX on ``automation.department_bots``
   ``(service, account_id) WHERE account_id <> ''`` (migration
   ``012_bot_identity_unique.sql``).
-* CRUD layer — ``_find_account_id_conflicts`` in
+* CRUD layer - ``_find_account_id_conflicts`` in
   ``admin-dashboard-api/src/routers/departments.py`` rejects POST /
   PATCH bodies that would introduce a clash with HTTP 409
   ``account_id_conflict``.
-* Boot-time — :func:`validate_bot_account_id_uniqueness` (this module)
+* Boot-time - :func:`validate_bot_account_id_uniqueness` (this module)
   scans the parsed ``departments.json`` document at service start-up
   and refuses to bring the process up if a clash exists. Wired into
   the ``admin-dashboard-api`` lifespan so an admin who hand-edits the
@@ -17,14 +17,14 @@ This module owns the third layer of the bot account uniqueness defence:
   instead of silent routing ambiguity.
 
 The function is intentionally pure and synchronous so it can be called
-from any startup hook — FastAPI lifespan, ``__main__`` entry point,
-unit tests — without dragging an asyncio runtime, a DB pool, or the
+from any startup hook - FastAPI lifespan, ``__main__`` entry point,
+unit tests - without dragging an asyncio runtime, a DB pool, or the
 admin-dashboard-api package into the dependency graph.
 
 Whitespace-only ``account_id`` values are treated as placeholders (the
 bundled ``departments.json`` ships ``"account_id": ""`` rows for depts
 whose Vault probe has not yet populated the field). They never
-participate in conflict detection — same convention as
+participate in conflict detection - same convention as
 ``_extract_bot_identities`` in the CRUD layer so the three layers
 agree on the same notion of "real" id.
 
@@ -62,7 +62,7 @@ class BotAccountIdConflict:
     """A single ``(service, account_id)`` pair claimed by 2+ depts.
 
     Attributes:
-        service: Atlassian surface — one of
+        service: Atlassian surface - one of
             :data:`BOT_IDENTITY_SERVICES`.
         account_id: The non-empty ``account_id`` value that two or
             more departments listed under
@@ -95,7 +95,7 @@ class BotAccountIdConflictError(ValueError):
 
     Attributes:
         conflicts: The full list of detected conflicts. Always
-            non-empty — the constructor would not be reached
+            non-empty - the constructor would not be reached
             otherwise.
     """
 
@@ -124,12 +124,12 @@ def validate_bot_account_id_uniqueness(
     pair claimed by more than one department is flagged.
 
     Empty / whitespace ``account_id`` values are treated as
-    placeholders and skipped — those rows are not yet routing keys.
+    placeholders and skipped - those rows are not yet routing keys.
 
     Args:
         departments: Iterable of dept config mappings. Mappings that
             are not dicts, lack an ``id``, or whose ``bot`` field is
-            absent / non-dict are skipped silently — schema-level
+            absent / non-dict are skipped silently - schema-level
             validation catches those upstream
             (:func:`db_shared.config_validator.validate_departments_config`).
             This validator focuses on a single semantic invariant.
@@ -169,7 +169,7 @@ def validate_bot_account_id_uniqueness(
                 continue
             stripped = account_id.strip()
             if not stripped:
-                # Placeholder — Vault probe has not run yet for this
+                # Placeholder - Vault probe has not run yet for this
                 # dept × service pair. Same skip rule as the CRUD
                 # layer's ``_extract_bot_identities``.
                 continue
@@ -196,7 +196,7 @@ def validate_bot_account_id_uniqueness(
 
     if conflicts:
         # Keep the order the conflicts were discovered in (insertion
-        # order on ``claims`` — Python 3.7+ guarantees dict ordering)
+        # order on ``claims`` - Python 3.7+ guarantees dict ordering)
         # so the message is stable across runs against the same
         # config.
         raise BotAccountIdConflictError(conflicts)
@@ -217,7 +217,7 @@ def validate_bot_account_id_uniqueness_from_file(
     ``departments`` array, and forwards to
     :func:`validate_bot_account_id_uniqueness`. Any
     :class:`OSError` / :class:`json.JSONDecodeError` raised by the
-    read is **not** caught — the caller (typically the FastAPI
+    read is **not** caught - the caller (typically the FastAPI
     lifespan handler) wraps the call in its own try / except so the
     process exits with a clear stderr line.
 
@@ -241,7 +241,7 @@ def validate_bot_account_id_uniqueness_from_file(
     if isinstance(doc, Mapping):
         raw = doc.get("departments", [])
         departments = raw if isinstance(raw, list) else []
-    elif isinstance(doc, list):  # pragma: no cover — legacy shape
+    elif isinstance(doc, list):  # pragma: no cover - legacy shape
         departments = doc
     else:
         departments = []

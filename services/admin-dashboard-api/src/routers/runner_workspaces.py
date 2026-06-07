@@ -1,13 +1,13 @@
-"""``RunnerWorkspacesRouter`` — manual SSH workspace listing + purge.
+﻿"""``RunnerWorkspacesRouter`` - manual SSH workspace listing + purge.
 
 Two admin-only endpoints backing the *Services → Workspaces* sub-tab:
 
-* ``GET    /admin/runner/workspaces`` — listing of every directory under
+* ``GET    /admin/runner/workspaces`` - listing of every directory under
   ``RUNNER_BASE_PATH`` on the SSH runner host. Each row carries
   ``issue_key``, ``size_mb`` (rounded ``du -sm``) and ``last_modified``
   (``stat -c %Y`` ISO-8601). Empty list when the runner is unreachable
   or the base path is empty.
-* ``DELETE /admin/runner/workspaces/{issue_key}`` — recursive ``rm -rf``
+* ``DELETE /admin/runner/workspaces/{issue_key}`` - recursive ``rm -rf``
   of ``$RUNNER_BASE_PATH/{issue_key}/`` on the runner host plus a
   best-effort ``docker rm -f`` of any container labelled
   ``ai-task={issue_key}``. The endpoint is the manual override for
@@ -19,8 +19,8 @@ Path-traversal guard
 ``issue_key`` MUST match the Jira-style pattern
 ``^[A-Z][A-Z0-9_]*-\\d+$`` (the same regex used by
 ``execution-runner-worker/src/runners/workspace_path.py`` for forward
-construction). Anything else — ``..``, ``;``, ``&``, ``|``, ``$``,
-backtick, newline, null-byte, or simply lower-case — is rejected with
+construction). Anything else - ``..``, ``;``, ``&``, ``|``, ``$``,
+backtick, newline, null-byte, or simply lower-case - is rejected with
 ``400 + {"error": "invalid_issue_key_format"}`` **before** any SSH
 command is constructed. The router never calls
 ``str.format`` / f-string interpolation against unvalidated input;
@@ -35,7 +35,7 @@ The router declares ``Depends(require_admin)``; the dashboard's
 ``require_admin`` dependency only admits tokens that carry
 ``admin`` in the OIDC ``groups`` / ``roles`` claim. ``dept_admin``,
 ``lead`` and ``viewer`` therefore receive ``403`` from the auth
-dependency itself — no extra check is needed here. The proxy's
+dependency itself - no extra check is needed here. The proxy's
 :func:`classify_admin_path` matrix already classifies every
 ``/admin/runner/...`` path as ``required_role="admin"`` via the
 default fail-closed branch.
@@ -104,7 +104,7 @@ ISSUE_KEY_PATTERN: Final[re.Pattern[str]] = re.compile(r"^[A-Z][A-Z0-9_]*-\d+$")
 
 
 # ---------------------------------------------------------------------------
-# Client protocol — injected via ``app.state.runner_workspaces_client``
+# Client protocol - injected via ``app.state.runner_workspaces_client``
 # ---------------------------------------------------------------------------
 
 
@@ -144,7 +144,7 @@ class WorkspacePurgeResult:
     Attributes:
         purged: ``True`` when ``rm -rf`` succeeded on the SSH host.
             ``False`` is reserved for soft-fail purges where the
-            directory was missing to begin with — the endpoint still
+            directory was missing to begin with - the endpoint still
             returns ``200`` in that case so the UI's "delete twice"
             click does not surface as an error.
         freed_bytes: Approximate bytes reclaimed (``du -sb`` before
@@ -168,7 +168,7 @@ class RunnerWorkspacesClient(Protocol):
     bind an in-memory stub.
 
     Both methods MUST be async and MUST treat ``issue_key`` as
-    untrusted in spite of the router's regex guard — the contract is
+    untrusted in spite of the router's regex guard - the contract is
     "validate at the boundary AND escape at the call-site".
     """
 
@@ -219,7 +219,7 @@ def _audit_sink(request: Request) -> Any | None:
     land in the same ``automation.audit_events`` stream as other
     admin-dashboard-originated audit rows. Falls back to the
     ``AdminProxy._audit`` private handle when the dedicated slot is
-    missing — same pattern as ``feature_flags.py::_get_audit``.
+    missing - same pattern as ``feature_flags.py::_get_audit``.
     """
 
     sink = getattr(request.app.state, "feature_flag_audit_sink", None)
@@ -230,7 +230,7 @@ def _audit_sink(request: Request) -> Any | None:
 
 
 async def _safe_audit(sink: Any | None, event: AuditEvent) -> None:
-    """Best-effort audit write — never raises.
+    """Best-effort audit write - never raises.
 
     Matches the contract used by every other admin-dashboard-api
     router: a transient audit-DB outage MUST NOT mask the underlying
@@ -244,7 +244,7 @@ async def _safe_audit(sink: Any | None, event: AuditEvent) -> None:
         return
     try:
         await sink.write(event)
-    except Exception as exc:  # noqa: BLE001 — never raise from an audit sink
+    except Exception as exc:  # noqa: BLE001 - never raise from an audit sink
         logger.warning(
             "runner_workspaces audit write failed (action=%s, key=%s): %s",
             event.action,
@@ -280,7 +280,7 @@ async def list_runner_workspaces(request: Request) -> dict[str, Any]:
 
     try:
         entries = await client.list_workspaces()
-    except Exception as exc:  # noqa: BLE001 — soft-fail, surface empty list
+    except Exception as exc:  # noqa: BLE001 - soft-fail, surface empty list
         logger.warning(
             "runner_workspaces.list_workspaces() failed (returning empty "
             "list so the UI keeps rendering): %s",
@@ -339,11 +339,11 @@ async def purge_runner_workspace(
     masked by an audit hiccup.
     """
 
-    # ---- Step 1 — path-traversal guard ---------------------------------
+    # ---- Step 1 - path-traversal guard ---------------------------------
     if ISSUE_KEY_PATTERN.fullmatch(issue_key) is None:
         # Audit the rejected attempt so the security panel surfaces the
         # path-traversal try. The payload carries the *raw* offending
-        # key (truncated) so an operator can see what was attempted —
+        # key (truncated) so an operator can see what was attempted -
         # the redaction filter installed on the audit logger covers
         # any credential-shaped substring that might appear by accident.
         await _safe_audit(
@@ -367,7 +367,7 @@ async def purge_runner_workspace(
             detail={"error": "invalid_issue_key_format"},
         )
 
-    # ---- Step 2 — wiring guard -----------------------------------------
+    # ---- Step 2 - wiring guard -----------------------------------------
     client = _client(request)
     if client is None:
         raise HTTPException(
@@ -378,11 +378,11 @@ async def purge_runner_workspace(
             },
         )
 
-    # ---- Step 3 — invoke client + audit --------------------------------
+    # ---- Step 3 - invoke client + audit --------------------------------
     sink = _audit_sink(request)
     try:
         result = await client.purge_workspace(issue_key)
-    except Exception as exc:  # noqa: BLE001 — surface as 502 + audit
+    except Exception as exc:  # noqa: BLE001 - surface as 502 + audit
         await _safe_audit(
             sink,
             AuditEvent(
@@ -606,12 +606,12 @@ async def get_queue_status(request: Request) -> dict[str, Any]:
 
     Data source: ``automation.execution_workspaces`` table.
 
-    * ``active_count`` — workspaces with ``status='running'``.
-    * ``queued_count`` — workspaces with ``status='queued'``.
-    * ``avg_wait_seconds`` — mean of ``started_at - queued_at`` for the
+    * ``active_count`` - workspaces with ``status='running'``.
+    * ``queued_count`` - workspaces with ``status='queued'``.
+    * ``avg_wait_seconds`` - mean of ``started_at - queued_at`` for the
       last 10 completed workspaces.
-    * ``max_concurrent_global`` — ``RUNNER_MAX_CONCURRENT`` env (default 5).
-    * ``by_dept`` — per-department active/queued breakdown.
+    * ``max_concurrent_global`` - ``RUNNER_MAX_CONCURRENT`` env (default 5).
+    * ``by_dept`` - per-department active/queued breakdown.
     """
 
     pool = _get_pool(request)
@@ -644,7 +644,7 @@ async def _queue_status_sse_generator(pool: Any) -> AsyncIterator[bytes]:
                 snapshot = await _fetch_queue_status(pool)
                 payload = json.dumps(snapshot, ensure_ascii=False)
                 yield f"data: {payload}\n\n".encode("utf-8")
-            except Exception as exc:  # noqa: BLE001 — never crash the stream
+            except Exception as exc:  # noqa: BLE001 - never crash the stream
                 # Surface the error as an SSE event so the UI can show
                 # a transient warning without losing the connection.
                 error_payload = json.dumps(
@@ -654,7 +654,7 @@ async def _queue_status_sse_generator(pool: Any) -> AsyncIterator[bytes]:
 
             await asyncio.sleep(_QUEUE_STATUS_SSE_INTERVAL_S)
     except asyncio.CancelledError:
-        # Client disconnected — clean exit.
+        # Client disconnected - clean exit.
         return
 
 

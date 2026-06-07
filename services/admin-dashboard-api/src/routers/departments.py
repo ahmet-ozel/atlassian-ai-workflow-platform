@@ -1,22 +1,22 @@
-"""``DepartmentsRouter`` — capability matrix + department detail,
+﻿"""``DepartmentsRouter`` - capability matrix + department detail,
 repo-mapping self-service CRUD (Feature 9), and runtime department CRUD
 for department administration.
 
 Provides:
 
-* ``GET /admin/departments``              — list all departments.
-* ``GET /admin/departments/{dept_id}``    — department detail + capability matrix.
+* ``GET /admin/departments``              - list all departments.
+* ``GET /admin/departments/{dept_id}``    - department detail + capability matrix.
 * ``GET /admin/departments/{dept_id}/capability-matrix``
-                                          — 10×1 workflow_type matrix (✅/❌).
+                                          - 10×1 workflow_type matrix (✅/❌).
 * ``POST /admin/departments/{dept_id}/repo-mappings``
-                                          — add a repo mapping.
+                                          - add a repo mapping.
 * ``PUT /admin/departments/{dept_id}/repo-mappings``
-                                          — update a repo mapping.
+                                          - update a repo mapping.
 * ``DELETE /admin/departments/{dept_id}/repo-mappings``
-                                          — remove a repo mapping.
-* ``POST /api/v1/departments``            — create a new department (admin only).
-* ``PATCH /api/v1/departments/{dept_id}`` — partial update (admin only).
-* ``DELETE /api/v1/departments/{dept_id}`` — soft-delete: ``mode=disabled``.
+                                          - remove a repo mapping.
+* ``POST /api/v1/departments``            - create a new department (admin only).
+* ``PATCH /api/v1/departments/{dept_id}`` - partial update (admin only).
+* ``DELETE /api/v1/departments/{dept_id}`` - soft-delete: ``mode=disabled``.
 
 The capability matrix shows which workflow types a department can execute
 based on its configured credentials. For each denied workflow type, the
@@ -383,7 +383,7 @@ def _require_dept_admin(claims: AuthClaims, dept_id: str) -> None:
     if f"dept_admin:{dept_id}" in claims.groups:
         return
     if "dept_admin" in claims.groups:
-        # Generic dept_admin — check if they have access to this dept
+        # Generic dept_admin - check if they have access to this dept
         return
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
@@ -617,13 +617,13 @@ _DEPARTMENTS_SCHEMA_PATH = (
 
 #: Sidecar lock file used by :func:`_acquire_file_lock`. We never lock the
 #: data file itself because Windows refuses to ``rename`` a file that is
-#: open / locked by the same process — the sidecar keeps the atomic
+#: open / locked by the same process - the sidecar keeps the atomic
 #: replace pathway clean.
 _DEPARTMENTS_LOCK_PATH = (
     _platform_root() / "config" / ".departments.json.lock"
 )
 
-#: Audit action labels — kept as constants so a typo never silently
+#: Audit action labels - kept as constants so a typo never silently
 #: produces a malformed audit row.
 _ACTION_DEPT_CREATED = "dept_created"
 _ACTION_DEPT_UPDATED = "dept_updated"
@@ -645,7 +645,7 @@ def _extract_bot_identities(
 
     Empty / missing ``account_id`` values are skipped because the
     bundled ``departments.json`` ships ``account_id: ""`` placeholders
-    that get filled in by the Vault probe at runtime — those are *not*
+    that get filled in by the Vault probe at runtime - those are *not*
     routing keys yet and must not trigger spurious 409s on the very
     first ``POST``. Once an operator pins a real ``account_id`` it
     starts participating in conflict detection.
@@ -674,7 +674,7 @@ def _find_account_id_conflicts(
     """Detect ``(service, account_id)`` collisions across departments.
 
     Walks every other department's bot identities and returns the
-    list of clashes — each entry carrying the ``service``, the
+    list of clashes - each entry carrying the ``service``, the
     offending ``account_id``, and the ``dept_id`` that already owns
     it. The caller raises ``HTTP 409`` when this list is non-empty.
 
@@ -721,7 +721,7 @@ class _FileLockContext:
     * POSIX → ``fcntl.flock`` against a sidecar ``.lock`` file.
     * Windows → ``msvcrt.locking`` against the same sidecar.
 
-    Either way the lock is **advisory** — only well-behaved writers
+    Either way the lock is **advisory** - only well-behaved writers
     (i.e. the admin-dashboard-api) need to acquire it. The lock is
     released when the context manager exits, even on exception.
     """
@@ -747,7 +747,7 @@ class _FileLockContext:
                 self._impl = FileLock(str(self._lock_path))
                 self._impl.acquire(timeout=self._timeout)
                 return self
-            except Exception as exc:  # noqa: BLE001 — fall through
+            except Exception as exc:  # noqa: BLE001 - fall through
                 logger.warning(
                     "filelock acquisition failed (%s); falling back to "
                     "native file locking",
@@ -758,7 +758,7 @@ class _FileLockContext:
         # Fallback path: POSIX fcntl / Windows msvcrt.
         # Open in append mode so the file is created if missing and we
         # never truncate any pre-existing lock token.
-        self._fh = open(self._lock_path, "a+")  # noqa: SIM115 — released in __exit__
+        self._fh = open(self._lock_path, "a+")  # noqa: SIM115 - released in __exit__
         try:
             if os.name == "nt":  # Windows
                 import msvcrt  # type: ignore[import-not-found]
@@ -872,7 +872,7 @@ def _atomic_write_json(path: Path, doc: dict[str, Any]) -> None:
     """Write ``doc`` to ``path`` atomically.
 
     Strategy: serialise to a temp file in the same directory (so
-    ``os.replace`` is rename-only — no cross-device copy), ``fsync``
+    ``os.replace`` is rename-only - no cross-device copy), ``fsync``
     the temp file, then ``os.replace`` to swap it into place.
     ``os.replace`` is atomic on both POSIX and Windows so a crash
     mid-write can never leave a partial file at ``path``.
@@ -894,7 +894,7 @@ def _atomic_write_json(path: Path, doc: dict[str, Any]) -> None:
                 os.fsync(fh.fileno())
             except (OSError, AttributeError):
                 # ``fsync`` is unsupported on some Windows file types
-                # (e.g. tmpfs); fall through — ``os.replace`` is still
+                # (e.g. tmpfs); fall through - ``os.replace`` is still
                 # atomic, we just lose the durability guarantee for
                 # this single write.
                 pass
@@ -922,7 +922,7 @@ def _validate_departments_doc(doc: dict[str, Any]) -> None:
     descriptive ``error`` body so the FE can surface the field path
     that broke. When :mod:`jsonschema` is unavailable we fall back to
     a minimal structural check (``version`` + ``departments`` array)
-    so the endpoint still rejects obviously broken payloads — but
+    so the endpoint still rejects obviously broken payloads - but
     log a warning so the operator knows full validation is off.
     """
 
@@ -994,7 +994,7 @@ async def _emit_dept_audit(
 ) -> None:
     """Write a single audit event for a department CRUD action.
 
-    Failures are swallowed — Postgres hiccups must never block a
+    Failures are swallowed - Postgres hiccups must never block a
     legitimate dept mutation (the row write is observability, not a
     correctness guarantee). The sink is resolved through the same
     fallback chain as :func:`workflow_control._get_audit_sink`:
@@ -1023,7 +1023,7 @@ async def _emit_dept_audit(
             payload=payload,
         )
         await sink.write(event)
-    except Exception as exc:  # noqa: BLE001 — audit must never block
+    except Exception as exc:  # noqa: BLE001 - audit must never block
         logger.warning(
             "dept audit write failed (action=%s, dept=%s): %s",
             action,
@@ -1040,23 +1040,23 @@ async def _signal_hot_reload(
 ) -> None:
     """Notify dependent services that ``departments.json`` changed.
 
-    The admin-dashboard-api itself is the BFF — automation-service and
+    The admin-dashboard-api itself is the BFF - automation-service and
     the workers consume ``departments.json`` and need to refresh their
     in-memory caches within 10 seconds. Two paths
     are supported, in order of preference:
 
-    1. **Publisher** — ``app.state.departments_reload_publisher`` is a
+    1. **Publisher** - ``app.state.departments_reload_publisher`` is a
        callable ``async (dept_id: str, action: str) -> None`` that the
        lifespan wires when a pub/sub channel is available (Redis
        channel, Postgres ``LISTEN/NOTIFY``, etc.).
-    2. **HTTP fan-out** — falls back to
+    2. **HTTP fan-out** - falls back to
        ``POST {automation_service_url}/admin/departments/_reload``
        through the AdminProxy's ``http_client``. The endpoint is
        idempotent on the automation-service side (it just bumps a
        cache generation counter and re-reads the file).
 
     Both paths are best-effort. When neither is wired we log a
-    warning but return success — the next 30-second poll loop in
+    warning but return success - the next 30-second poll loop in
     each consumer will pick up the new config anyway.
     """
 
@@ -1070,7 +1070,7 @@ async def _signal_hot_reload(
         except Exception as exc:  # noqa: BLE001
             logger.warning(
                 "departments_reload_publisher failed (dept=%s, action=%s): "
-                "%s — falling back to HTTP fan-out",
+                "%s - falling back to HTTP fan-out",
                 dept_id,
                 action,
                 exc,
@@ -1088,7 +1088,7 @@ async def _signal_hot_reload(
                     timeout=5.0,
                 )
                 return
-        except Exception as exc:  # noqa: BLE001 — soft-fail
+        except Exception as exc:  # noqa: BLE001 - soft-fail
             logger.warning(
                 "automation-service hot-reload signal failed "
                 "(dept=%s, action=%s): %s",
@@ -1136,7 +1136,7 @@ class DepartmentCreate(BaseModel):
 class DepartmentPatch(BaseModel):
     """Request body for ``PATCH /api/v1/departments/{dept_id}``.
 
-    Free-form mapping — every supplied field overlays the matching
+    Free-form mapping - every supplied field overlays the matching
     field on the existing department object. The merged document is
     re-validated against ``departments.schema.json`` so a partial
     update can never break the schema contract.
@@ -1280,7 +1280,7 @@ async def update_department(
 
     The patch body is merged onto the existing department object
     (top-level field replacement; nested objects are replaced
-    wholesale, not deep-merged — operators who want a deep merge
+    wholesale, not deep-merged - operators who want a deep merge
     should ``GET`` first and ``PATCH`` the full object). The merged
     document is re-validated against ``departments.schema.json``
     before it lands on disk.
@@ -1290,7 +1290,7 @@ async def update_department(
     """
 
     patch = body.model_dump(exclude_unset=True)
-    # Reject ``id`` mutations — the dept id is the stable handle that
+    # Reject ``id`` mutations - the dept id is the stable handle that
     # links audit rows, workflows, and credentials together.
     if "id" in patch and patch["id"] != dept_id:
         raise HTTPException(
@@ -1402,7 +1402,7 @@ async def decommission_department(
 
     Calling ``DELETE`` against an already-disabled dept is a no-op
     that returns 200 with ``status="already_disabled"`` so the
-    endpoint is idempotent — replaying the call after a network
+    endpoint is idempotent - replaying the call after a network
     blip never surfaces a confusing 404.
     """
 
@@ -1432,7 +1432,7 @@ async def decommission_department(
         target = departments[target_idx]
         previous_mode = target.get("mode", "active")
         if previous_mode == "disabled":
-            # Idempotent — record the no-op but skip the rewrite so
+            # Idempotent - record the no-op but skip the rewrite so
             # we don't bump file mtime or trigger a needless reload.
             await _emit_dept_audit(
                 request,

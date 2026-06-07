@@ -1,4 +1,4 @@
-"""FastAPI dependency that enforces admin-only OIDC authentication.
+﻿"""FastAPI dependency that enforces admin-only OIDC authentication.
 
 This module wires the ``libs/auth-shared`` :class:`OIDCValidator` into
 the admin-dashboard-api request pipeline. Every ``/admin/services``
@@ -41,7 +41,7 @@ class AuthClaims:
     """Subject + group claims surfaced to admin endpoints.
 
     Attributes:
-        sub: OIDC ``sub`` claim — used as the ``actor`` field on every
+        sub: OIDC ``sub`` claim - used as the ``actor`` field on every
             audit log entry written by lifecycle handlers
             11.2).
         groups: Union of the validated token's ``groups`` and ``roles``
@@ -68,7 +68,7 @@ def _build_validator(
     """
 
     if auth_mode not in ("dev", "production"):
-        # Defensive guard — Settings already constrains this via a
+        # Defensive guard - Settings already constrains this via a
         # ``Literal`` type, but if a future caller bypasses Settings
         # we still want a clear failure mode rather than a silent
         # fall-through to ``production`` validation.
@@ -129,7 +129,7 @@ async def require_admin(
     # Per behavior 10.2 we MUST raise 401 before any claim inspection
     # when the header is absent or the scheme is wrong. The
     # case-insensitive match below treats ``Bearer``, ``bearer`` and
-    # ``BEARER`` identically (RFC 7235 §2.1 — schemes are case-insensitive).
+    # ``BEARER`` identically (RFC 7235 §2.1 - schemes are case-insensitive).
     if not auth_header.lower().startswith(_BEARER_SCHEME + " "):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

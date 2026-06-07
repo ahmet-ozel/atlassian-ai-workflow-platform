@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * LlmUsageTable — renders LLM token/cost usage per activity.
+ * LlmUsageTable - renders LLM token/cost usage per activity.
  * Shows prompt_path, prompt_version, model, token_in, token_out, cost_usd.
  */
 
@@ -48,18 +48,18 @@ export default function LlmUsageTable({ rows }: LlmUsageTableProps): JSX.Element
                     <code style={{ fontSize: "0.8rem" }}>{row.activity_id}</code>
                   </td>
                   <td style={{ padding: "0.5rem", fontSize: "0.8rem" }}>
-                    {row.prompt_path ?? "—"}
+                    {row.prompt_path ?? "-"}
                   </td>
-                  <td style={{ padding: "0.5rem" }}>{row.prompt_version ?? "—"}</td>
-                  <td style={{ padding: "0.5rem" }}>{row.model ?? "—"}</td>
+                  <td style={{ padding: "0.5rem" }}>{row.prompt_version ?? "-"}</td>
+                  <td style={{ padding: "0.5rem" }}>{row.model ?? "-"}</td>
                   <td style={{ padding: "0.5rem", textAlign: "right" }}>
-                    {row.token_in?.toLocaleString() ?? "—"}
-                  </td>
-                  <td style={{ padding: "0.5rem", textAlign: "right" }}>
-                    {row.token_out?.toLocaleString() ?? "—"}
+                    {row.token_in?.toLocaleString() ?? "-"}
                   </td>
                   <td style={{ padding: "0.5rem", textAlign: "right" }}>
-                    {row.cost_usd != null ? `$${row.cost_usd}` : "—"}
+                    {row.token_out?.toLocaleString() ?? "-"}
+                  </td>
+                  <td style={{ padding: "0.5rem", textAlign: "right" }}>
+                    {row.cost_usd != null ? `$${row.cost_usd}` : "-"}
                   </td>
                 </tr>
               ))}

@@ -1,13 +1,13 @@
-"""Workflow-type vocabulary parity property test (EK3).
+﻿"""Workflow-type vocabulary parity property test (EK3).
 
 Locks the three sources that previously drifted apart:
 
-1. ``task_analyzer.VALID_WORKFLOW_TYPES`` — what the analyser is allowed
+1. ``task_analyzer.VALID_WORKFLOW_TYPES`` - what the analyser is allowed
    to emit (and what the task-creation assistant advertises to users).
-2. ``temporal_shared.capabilities.WORKFLOW_TYPE_CAPABILITIES`` — what the
+2. ``temporal_shared.capabilities.WORKFLOW_TYPE_CAPABILITIES`` - what the
    capability gate accepts.
 3. ``automation_workflow._AGENT_RUNNER_WORKFLOW_TYPES`` /
-   ``_EXECUTION_RUN_WORKFLOW_TYPES`` — what the gateway routes.
+   ``_EXECUTION_RUN_WORKFLOW_TYPES`` - what the gateway routes.
 
 Before the EK3 fix the analyser produced ``script_execute``,
 ``research_publish_confluence`` and ``research_summary_jira`` but the
@@ -29,7 +29,7 @@ from pathlib import Path
 # globally adds worker dirs to sys.path because doing so caused cross-
 # service module-name collisions and regressed the collection-error
 # count. This test module needs the worker namespaces, so it injects
-# them locally — affecting only the modules this file imports.
+# them locally - affecting only the modules this file imports.
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _WORKER_DIRS = (
     _REPO_ROOT / "workers" / "automation-worker" / "src",
@@ -92,7 +92,7 @@ def test_every_workflow_type_is_routed() -> None:
 
 def test_routing_sets_are_disjoint() -> None:
     """A workflow type cannot be both an agent-runner task and an
-    execution-runner task — the gateway picks the wrong child if both
+    execution-runner task - the gateway picks the wrong child if both
     sets claim it."""
     from automation_worker.workflows.automation_workflow import (  # type: ignore[import-not-found]
         _AGENT_RUNNER_WORKFLOW_TYPES,
@@ -104,7 +104,7 @@ def test_routing_sets_are_disjoint() -> None:
     )
     assert not overlap, (
         f"Workflow types in BOTH routing sets: {sorted(overlap)}. "
-        "Pick one — these dispatch through different Temporal queues."
+        "Pick one - these dispatch through different Temporal queues."
     )
 
 
@@ -127,5 +127,5 @@ def test_capability_table_size_at_least_13() -> None:
 
     assert len(WORKFLOW_TYPE_CAPABILITIES) >= 13, (
         f"WORKFLOW_TYPE_CAPABILITIES shrunk to "
-        f"{len(WORKFLOW_TYPE_CAPABILITIES)} — expected ≥13 after EK3."
+        f"{len(WORKFLOW_TYPE_CAPABILITIES)} - expected ≥13 after EK3."
     )

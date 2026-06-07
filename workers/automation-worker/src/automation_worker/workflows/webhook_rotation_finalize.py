@@ -1,6 +1,6 @@
-"""``WebhookRotationFinalizeWorkflow`` — periodic Temporal cron for auto-finalizing webhook secret rotations.
+﻿"""``WebhookRotationFinalizeWorkflow`` - periodic Temporal cron for auto-finalizing webhook secret rotations.
 
-Validates Requirements: **R9.2** — *"``WEBHOOK_ROTATION_OVERLAP_S`` env'i
+Validates Requirements: **R9.2** - *"``WEBHOOK_ROTATION_OVERLAP_S`` env'i
 (default 3600) süre sonunda ``secret_previous``'ı ``null``'a çekecek
 background job'ı zamanlar."*
 
@@ -8,7 +8,7 @@ This workflow runs every 10 minutes and scans all dept × provider
 webhook entries. For each entry that has an active ``secret_previous``
 slot whose ``overlap_until`` timestamp has expired, the workflow
 invokes the ``finalize_webhook_rotation`` activity to clear the
-previous slot — ensuring that stale overlap windows are automatically
+previous slot - ensuring that stale overlap windows are automatically
 closed even if the operator forgets to click "Finalize" in the UI.
 
 Lifecycle (one cron tick)::
@@ -23,7 +23,7 @@ Lifecycle (one cron tick)::
 
     On any exception inside the finalize activity for a single entry:
         The error is recorded in the report but does NOT abort the
-        remaining entries — the workflow continues best-effort so a
+        remaining entries - the workflow continues best-effort so a
         single Vault hiccup does not block all pending finalizations.
 
 Determinism contract
@@ -91,7 +91,7 @@ AUTOMATION_TASK_QUEUE: str = "automation-tq"
 #: same ID across restarts means a single in-flight cron lineage.
 WEBHOOK_ROTATION_FINALIZE_WORKFLOW_ID: str = "webhook-rotation-finalize-cron"
 
-#: Cron schedule expression — every 10 minutes.
+#: Cron schedule expression - every 10 minutes.
 #: 5-field POSIX cron syntax. Temporal interprets in UTC.
 WEBHOOK_ROTATION_FINALIZE_CRON_SCHEDULE: str = "*/10 * * * *"
 
@@ -114,12 +114,12 @@ _ACT_FINALIZE_WEBHOOK_ROTATION: str = "finalize_webhook_rotation"
 # Activity options
 # ---------------------------------------------------------------------------
 
-#: Timeout for listing webhook entries — reads Vault metadata for each
+#: Timeout for listing webhook entries - reads Vault metadata for each
 #: dept × provider pair. 60s is generous for a typical deployment with
 #: a handful of departments.
 _LIST_TIMEOUT: timedelta = timedelta(seconds=60)
 
-#: Timeout for a single finalize operation — one Vault delete + one
+#: Timeout for a single finalize operation - one Vault delete + one
 #: audit write. 30s is generous.
 _FINALIZE_TIMEOUT: timedelta = timedelta(seconds=30)
 
@@ -206,7 +206,7 @@ class WebhookRotationFinalizeReport:
         (still within the ``WEBHOOK_ROTATION_OVERLAP_S`` window).
     errors:
         List of per-entry errors encountered during finalization.
-        These do not abort the workflow — remaining entries are still
+        These do not abort the workflow - remaining entries are still
         processed.
     """
 
@@ -253,7 +253,7 @@ class WebhookRotationFinalizeWorkflow:
 
         for entry in entries:
             # Parse the overlap_until timestamp. If parsing fails,
-            # treat it as expired (defensive — clear stale data).
+            # treat it as expired (defensive - clear stale data).
             try:
                 overlap_until = datetime.fromisoformat(entry.overlap_until)
                 # Ensure timezone-aware comparison
@@ -262,15 +262,15 @@ class WebhookRotationFinalizeWorkflow:
 
                     overlap_until = overlap_until.replace(tzinfo=timezone.utc)
             except (ValueError, TypeError):
-                # Malformed timestamp — treat as expired to clean up
+                # Malformed timestamp - treat as expired to clean up
                 overlap_until = now
 
             if overlap_until > now:
-                # Overlap window still active — skip this entry
+                # Overlap window still active - skip this entry
                 skipped += 1
                 continue
 
-            # 3. Overlap expired — finalize this entry
+            # 3. Overlap expired - finalize this entry
             try:
                 await workflow.execute_activity(
                     _ACT_FINALIZE_WEBHOOK_ROTATION,
@@ -280,7 +280,7 @@ class WebhookRotationFinalizeWorkflow:
                 )
                 finalized += 1
             except Exception as exc:  # noqa: BLE001
-                # Per-entry failure — record and continue with
+                # Per-entry failure - record and continue with
                 # remaining entries. The next cron tick will retry.
                 errors.append(
                     WebhookFinalizeError(

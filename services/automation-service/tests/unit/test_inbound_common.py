@@ -1,16 +1,16 @@
-"""Unit tests for :mod:`automation_service.inbound.common`.
+﻿"""Unit tests for :mod:`automation_service.inbound.common`.
 
 These tests cover the deterministic core of the inbound adapter chain:
 
-* :func:`build_inbound_workflow_id` — channel-discriminated, normalised,
+* :func:`build_inbound_workflow_id` - channel-discriminated, normalised,
   deterministic.
-* :func:`auto_assign_workflow_input` — flips ``auto_assign`` and
+* :func:`auto_assign_workflow_input` - flips ``auto_assign`` and
   ``smart_defaults`` to ``True`` (the standard task-creator path).
-* :func:`verify_slack_signature` — rejects tampered bodies, stale
+* :func:`verify_slack_signature` - rejects tampered bodies, stale
   timestamps, malformed headers; accepts Slack's exact contract.
-* :func:`extract_slack_command_text` — strips the ``<@USER>`` prefix
+* :func:`extract_slack_command_text` - strips the ``<@USER>`` prefix
   and surrounding whitespace.
-* :class:`InboundTaskRequest` validation — empty fields raise
+* :class:`InboundTaskRequest` validation - empty fields raise
   ``ValueError`` so adapters fail fast on bad inputs.
 """
 
@@ -25,7 +25,7 @@ from pathlib import Path
 import pytest
 
 # ---------------------------------------------------------------------------
-# Path setup — mirrors test_jira_comment / test_budget_policy.
+# Path setup - mirrors test_jira_comment / test_budget_policy.
 # ---------------------------------------------------------------------------
 
 _AUTOMATION_ROOT = Path(__file__).resolve().parents[2]

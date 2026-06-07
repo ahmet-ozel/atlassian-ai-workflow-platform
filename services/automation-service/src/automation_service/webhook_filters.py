@@ -1,4 +1,4 @@
-"""Webhook filter chain.
+﻿"""Webhook filter chain.
 
 This module hosts the **deterministic decision pipeline** for the
 webhook gateway. The filter stages cover HMAC verification, department
@@ -9,21 +9,21 @@ comment-burst debounce.
 What this module owns
 ---------------------
 
-1. :class:`WebhookEvent` — a frozen dataclass that **normalises the
+1. :class:`WebhookEvent` - a frozen dataclass that **normalises the
    Jira and Bitbucket webhook dialects to a single shape**. Atlassian
    Jira encodes the event type in the JSON body's ``webhookEvent``
    field, while Bitbucket carries it in the ``X-Event-Key`` HTTP
    header. The chain operates on a normalised, dialect-agnostic value
    object so the rest of the pipeline can stay protocol-pure.
 
-2. :class:`FilterDecision` — a frozen dataclass that captures the
+2. :class:`FilterDecision` - a frozen dataclass that captures the
    chain's verdict (``"drop"`` or ``"pass"``), an audit-friendly
    ``reason`` string (e.g. ``"loop_guard_dropped"`` or
    ``"comment_ignored_unauthorized_actor"``), and an optional tuple of
    delivery_ids that were merged together by the burst-debounce stage
    (populated only when ``coalesced_with`` is non-empty).
 
-3. :class:`WebhookFilterChain` — the orchestration class. Its
+3. :class:`WebhookFilterChain` - the orchestration class. Its
    constructor accepts callbacks that compose into the actual filter
    logic. The :meth:`evaluate` method runs the stages in this order:
 
@@ -40,7 +40,7 @@ Determinism contract
 --------------------
 
 Every callback the chain accepts must be a **pure function of its
-input**. The chain itself performs no I/O — it only routes the event
+input**. The chain itself performs no I/O - it only routes the event
 through the callbacks supplied at construction time. This mirrors the
 filter-chain contract
 and keeps the chain testable with hypothesis-driven event sequences.
@@ -127,7 +127,7 @@ __all__ = [
 # router writes to ``audit_events.action`` when a filter stage produces
 # a verdict. They are exported so call-sites (the FastAPI router in
 # the router and the unit / property tests) can match against the
-# constant rather than retyping the literal — typos in audit labels
+# constant rather than retyping the literal - typos in audit labels
 # are otherwise silent.
 
 #: Jira webhook event type that the mention filter / first-iter
@@ -170,14 +170,14 @@ REASON_STREAMLIT_INLINE_REPLY_WITH_BYPASS: Final[str] = (
 )
 
 #: Audit reason emitted when the chain reaches the end without a drop
-#: or bypass — the canonical "filter chain accepted the event" label.
+#: or bypass - the canonical "filter chain accepted the event" label.
 REASON_FILTER_CHAIN_PASS: Final[str] = "filter_chain_pass"
 
 #: Compiled regex matching :data:`STREAMLIT_BYPASS_TAG` anywhere in
 #: ``body_text``. ``re.IGNORECASE`` is used so casing variants of the
 #: tag still trigger the bypass; ``re.escape`` defends against any
 #: future change that adds regex meta-characters to the tag. The
-#: pattern is module-private — callers should use
+#: pattern is module-private - callers should use
 #: :meth:`WebhookFilterChain._has_streamlit_bypass_tag` (or the
 #: equivalent simple ``in`` check on the lower-cased body) so the tag
 #: detection stays consistent across the chain and the tests.
@@ -193,7 +193,7 @@ _STREAMLIT_BYPASS_TAG_RE: Final[re.Pattern[str]] = re.compile(
 # Jira webhook payloads carry the event type under the top-level
 # ``webhookEvent`` key (e.g. ``"jira:issue_created"``). Bitbucket Cloud
 # uses the ``X-Event-Key`` header (e.g. ``"pullrequest:created"``). We
-# expose both sets as immutable mappings so other modules — notably the
+# expose both sets as immutable mappings so other modules - notably the
 # routing stage can validate against the same canonical
 # table without needing to import the FastAPI router.
 
@@ -211,7 +211,7 @@ JIRA_EVENT_TYPES: Final[Mapping[str, str]] = MappingProxyType(
 
 #: Bitbucket webhook event types supported by the automation gateway.
 #: ``pullrequest:fulfilled`` is included because it must be **explicitly
-#: dropped** by the loop-guard stage — it's a recognised
+#: dropped** by the loop-guard stage - it's a recognised
 #: event whose action is "drop", not an unknown event whose action is
 #: "ignore".
 BITBUCKET_EVENT_TYPES: Final[Mapping[str, str]] = MappingProxyType(
@@ -242,8 +242,8 @@ BITBUCKET_EVENT_TYPES: Final[Mapping[str, str]] = MappingProxyType(
 # specific labels and fallback regex on top.
 
 #: Loop-guard fallback regex. When
-#: ``actor_account_id`` is missing from the payload — typical for
-#: Jira's older comment delivery shapes that omit ``user`` — the chain
+#: ``actor_account_id`` is missing from the payload - typical for
+#: Jira's older comment delivery shapes that omit ``user`` - the chain
 #: scans ``body_text`` for the ``[bot:`` prefix at the start of the
 #: line (with optional leading whitespace). A match means the comment
 #: was *itself* authored by a bot under a previous account scheme; the
@@ -270,7 +270,7 @@ REASON_LOOP_GUARD_DROPPED: Final[str] = "loop_guard_dropped"
 
 #: Audit reason for body-text loop-guard hits. Distinct from
 #: :data:`REASON_LOOP_GUARD_DROPPED` so operators
-#: can diagnose the *source* of every loop drop — actor-id matches
+#: can diagnose the *source* of every loop drop - actor-id matches
 #: indicate registry hits, regex matches indicate a missing or
 #: malformed actor field.
 REASON_LOOP_GUARD_REGEX_DROPPED: Final[str] = "loop_guard_regex_dropped"
@@ -287,13 +287,13 @@ REASON_BURST_COALESCED: Final[str] = "burst_coalesced"
 #: Skeleton reason still emitted by the chain when no stage logic is
 #: wired. Preserved for backwards compatibility with the original
 #: signature contract; no event
-#: surfaces this reason — but the constant remains so unit tests that
+#: surfaces this reason - but the constant remains so unit tests that
 #: pin the skeleton-era behaviour can still import it.
 REASON_FILTER_CHAIN_SKELETON: Final[str] = "filter_chain_skeleton"
 
 
 # ---------------------------------------------------------------------------
-# Stage exceptions — HTTP-level failures (HMAC invalid, dept unresolved)
+# Stage exceptions - HTTP-level failures (HMAC invalid, dept unresolved)
 # ---------------------------------------------------------------------------
 #
 # The chain treats HMAC failures (HTTP 401) and unresolved-dept
@@ -314,7 +314,7 @@ class WebhookHmacInvalidError(Exception):
     this exception to HTTP 401.
 
     The error intentionally **does not** capture the failing signature
-    or the secret being matched against — those are sensitive enough
+    or the secret being matched against - those are sensitive enough
     that a stack trace from this exception must remain inert.
     """
 
@@ -347,7 +347,7 @@ class WebhookDeptUnresolvedError(Exception):
 
 
 # ---------------------------------------------------------------------------
-# WebhookEvent — normalised value object
+# WebhookEvent - normalised value object
 # ---------------------------------------------------------------------------
 
 
@@ -355,8 +355,8 @@ class WebhookDeptUnresolvedError(Exception):
 class WebhookEvent:
     """Normalised webhook event shared by Jira and Bitbucket dialects.
 
-    The value object is deliberately *flat* — every field is either a
-    primitive or an immutable container — so the chain can hash, copy,
+    The value object is deliberately *flat* - every field is either a
+    primitive or an immutable container - so the chain can hash, copy,
     and serialise events without surprises. Optional fields default to
     ``None`` so a single :class:`WebhookEvent` shape covers both
     dialects without conditional ``hasattr`` checks downstream.
@@ -364,39 +364,39 @@ class WebhookEvent:
     Field semantics
     ---------------
 
-    * :attr:`provider` — ``"jira"`` or ``"bitbucket"``. Disambiguates
+    * :attr:`provider` - ``"jira"`` or ``"bitbucket"``. Disambiguates
       the dialect-specific HMAC header (``X-Atlassian-Webhook-Signature``
       vs. ``X-Hub-Signature``) and the per-provider Vault secret path
       (``vault:webhooks/jira/<dept_id>`` vs.
       ``vault:webhooks/bitbucket/<dept_id>``).
-    * :attr:`event_type` — the **raw** Jira ``webhookEvent`` value or
+    * :attr:`event_type` - the **raw** Jira ``webhookEvent`` value or
       Bitbucket ``X-Event-Key`` header value (e.g.
       ``"jira:issue_commented"``, ``"pullrequest:created"``). The
       normalised display labels live in :data:`JIRA_EVENT_TYPES` /
       :data:`BITBUCKET_EVENT_TYPES`.
-    * :attr:`delivery_id` — the platform's idempotency key. For Jira
+    * :attr:`delivery_id` - the platform's idempotency key. For Jira
       this is the ``X-Request-Id`` (or ``X-Atlassian-Webhook-Identifier``
       depending on tenancy); for Bitbucket it's the ``X-Request-UUID``.
       The replay-dedup stage hashes this against the
       ``processed_events`` table.
-    * :attr:`actor_account_id` — the ``accountId`` of the user who
+    * :attr:`actor_account_id` - the ``accountId`` of the user who
       triggered the event. May be ``None`` for system events; the
       loop-guard fallback then scans ``body_text`` for the
       ``[bot:`` prefix.
-    * :attr:`body_text` — comment body or PR title. Used by the
+    * :attr:`body_text` - comment body or PR title. Used by the
       ``[bot:`` regex fallback and by the ``[bot:hear]`` bypass.
-    * :attr:`project_key` — Jira project key (e.g. ``"PAY"``); ``None``
+    * :attr:`project_key` - Jira project key (e.g. ``"PAY"``); ``None``
       for Bitbucket events. Used by ``resolve_dept`` to look up the
       department.
-    * :attr:`repo_slug` — Bitbucket repo slug (e.g.
+    * :attr:`repo_slug` - Bitbucket repo slug (e.g.
       ``"payment-callbacks"``); ``None`` for Jira events. Also used by
       ``resolve_dept`` for Bitbucket-side resolution.
-    * :attr:`issue_key` — full Jira issue key (e.g. ``"PAY-4211"``);
+    * :attr:`issue_key` - full Jira issue key (e.g. ``"PAY-4211"``);
       drives ``mention_set_for`` / ``iter_count_for`` /
       ``reporter_for`` callbacks.
-    * :attr:`pr_id` — Bitbucket PR id; mirrors :attr:`issue_key` for PR
+    * :attr:`pr_id` - Bitbucket PR id; mirrors :attr:`issue_key` for PR
       events.
-    * :attr:`raw_payload` — the original parsed JSON body. Kept around
+    * :attr:`raw_payload` - the original parsed JSON body. Kept around
       so the HMAC verifier can recompute the signature against the
       exact bytes if it needs to.
     """
@@ -414,7 +414,7 @@ class WebhookEvent:
 
 
 # ---------------------------------------------------------------------------
-# FilterDecision — chain verdict
+# FilterDecision - chain verdict
 # ---------------------------------------------------------------------------
 
 
@@ -422,7 +422,7 @@ class WebhookEvent:
 class FilterDecision:
     """The chain's verdict for a single :class:`WebhookEvent`.
 
-    The decision is **structural** — it tells the FastAPI router
+    The decision is **structural** - it tells the FastAPI router
     what HTTP status to return and what audit action to log, but
     it never carries an HTTP status itself. Mapping ``action`` /
     ``reason`` pairs to HTTP responses is the router's job.
@@ -430,21 +430,21 @@ class FilterDecision:
     Fields
     ------
 
-    * :attr:`action` — ``"drop"`` means the event is acknowledged but
+    * :attr:`action` - ``"drop"`` means the event is acknowledged but
       not propagated (returns ``200 OK`` from the router). ``"pass"``
       means the event proceeds to ``signalWithStart`` (returns
       ``202 Accepted``). The HMAC-failure and dept-unresolved cases
       surface as exceptions raised by the corresponding stages, not
       as ``"drop"`` decisions, because they correspond to ``401`` /
       ``400`` HTTP responses respectively.
-    * :attr:`reason` — a short audit-friendly identifier. Known
+    * :attr:`reason` - a short audit-friendly identifier. Known
       values: ``"loop_guard_dropped"``,
       ``"comment_ignored_unauthorized_actor"``,
       ``"streamlit_inline_reply_with_bypass"``,
       ``"mention_filter_first_iter_exception"``,
       ``"duplicate_event_dropped"``,
       ``"filter_chain_pass"``, ``"filter_chain_skeleton"``.
-    * :attr:`coalesced_with` — delivery ids merged into this decision
+    * :attr:`coalesced_with` - delivery ids merged into this decision
       by the 3-second burst-debounce window. Empty for any event that
       isn't the *terminal* event of a debounced burst. The router
       writes these into the audit payload so operators can trace which
@@ -500,7 +500,7 @@ ReporterFor = Callable[[str], str]
 # ---------------------------------------------------------------------------
 #
 # The burst-debounce stage is the only filter stage that owns
-# *cross-event* state — it tracks an open 3-second window per
+# *cross-event* state - it tracks an open 3-second window per
 # ``issue_key`` and merges deliveries that arrive inside the window.
 # That state lives in :class:`automation_service.burst_window.BurstWindow`,
 # not inside the chain itself, so the chain stays a pure decision
@@ -523,14 +523,14 @@ class BurstRegisterResult:
     :class:`~automation_service.burst_window.BurstWindow`-specific
     ``Literal`` type alias. The two fields are:
 
-    * :attr:`decision` — ``"coalesce_emit"`` means the event opened a
+    * :attr:`decision` - ``"coalesce_emit"`` means the event opened a
       fresh window and the chain should pass it through (the caller
       will eventually flush the window and dispatch the *terminal*
       payload). ``"coalesce_dropped"`` means the event landed inside
       an open window and the chain returns
       ``FilterDecision(action="drop", reason="burst_coalesced",
       coalesced_with=...)``.
-    * :attr:`coalesced_with` — delivery_ids accumulated in the open
+    * :attr:`coalesced_with` - delivery_ids accumulated in the open
       window, including the dropped delivery itself. The
       tuple is empty for ``"coalesce_emit"`` decisions because the
       window has only just opened with the current delivery as the
@@ -701,8 +701,8 @@ def normalize_bitbucket_event(
         ``X-Request-UUID`` header.
     event_type:
         The Bitbucket ``X-Event-Key`` header value (e.g.
-        ``"pullrequest:created"``). Required because Bitbucket — unlike
-        Jira — does **not** put the event type in the JSON body.
+        ``"pullrequest:created"``). Required because Bitbucket - unlike
+        Jira - does **not** put the event type in the JSON body.
 
     Returns
     -------
@@ -763,7 +763,7 @@ def normalize_bitbucket_event(
 
 
 # ---------------------------------------------------------------------------
-# WebhookFilterChain — orchestration skeleton
+# WebhookFilterChain - orchestration skeleton
 # ---------------------------------------------------------------------------
 
 
@@ -774,7 +774,7 @@ class WebhookFilterChain:
     supplied at construction time. :meth:`evaluate` itself is pure: it
     accepts a :class:`WebhookEvent`, optionally invokes the callbacks
     in the order defined by the filter pipeline, and returns a
-    :class:`FilterDecision`. No I/O is performed by the chain itself —
+    :class:`FilterDecision`. No I/O is performed by the chain itself -
     every external interaction (Vault, Postgres, dept registry) goes
     through one of the callbacks.
 
@@ -852,7 +852,7 @@ class WebhookFilterChain:
             ``_stage_burst_debounce`` stage to a
             :class:`~automation_service.burst_window.BurstWindow`
             instance. When ``None`` (default) the burst stage is
-            skipped entirely — useful for unit tests of unrelated
+            skipped entirely - useful for unit tests of unrelated
             stages and for the period before the FastAPI router
             instantiates the singleton ``BurstWindow``.
             Production deployments wire this callback at startup so
@@ -881,7 +881,7 @@ class WebhookFilterChain:
         self._burst_register = burst_register
 
     # -----------------------------------------------------------------
-    # Public properties — handy for tests and for the router
+    # Public properties - handy for tests and for the router
     # so it can introspect the configured window without poking private
     # attributes.
     # -----------------------------------------------------------------
@@ -900,7 +900,7 @@ class WebhookFilterChain:
     # Each ``_stage_*`` method below is a small *pure* helper: it takes
     # a :class:`WebhookEvent`, consults at most one chain callback, and
     # returns a :class:`FilterDecision` if the stage produced a verdict
-    # — or ``None`` to mean "this stage did not fire, fall through to
+    # - or ``None`` to mean "this stage did not fire, fall through to
     # the next stage". Splitting the chain like this keeps the unit
     # tests in ``tests/unit/test_webhook_filter_stages.py`` focused on
     # one stage at a time and lets the property tests in
@@ -922,7 +922,7 @@ class WebhookFilterChain:
     # The two HTTP-level failure stages (``_stage_verify_hmac`` and
     # ``_stage_resolve_dept``) surface their drop reason via raised
     # exceptions because the router needs distinct HTTP status codes
-    # (401 / 400) — not a generic 200 ``"drop"``. The loop-guard stage
+    # (401 / 400) - not a generic 200 ``"drop"``. The loop-guard stage
     # uses the standard :class:`FilterDecision` drop verdict because
     # its policy is "acknowledge but do not propagate" (HTTP 200 with
     # no signal dispatched), exactly mirroring the audit-only drops
@@ -946,7 +946,7 @@ class WebhookFilterChain:
         :data:`REASON_WEBHOOK_HMAC_INVALID` audit row, and returns
         HTTP 401. Surfacing the failure as an exception keeps the
         chain's ``"drop" | "pass"`` verdict cleanly mapped to HTTP
-        200 / 202 — every other status code uses a dedicated
+        200 / 202 - every other status code uses a dedicated
         exception type.
 
         Parameters
@@ -973,8 +973,8 @@ class WebhookFilterChain:
         ``departments.json`` (or its in-memory mirror) to map the
         event's :attr:`WebhookEvent.project_key` (Jira) or
         :attr:`WebhookEvent.repo_slug` (Bitbucket) to a ``dept_id``.
-        If the lookup yields ``None`` — i.e. the project / repo is
-        not registered with any department — the event cannot be
+        If the lookup yields ``None`` - i.e. the project / repo is
+        not registered with any department - the event cannot be
         scoped to a Vault secret, an audit dept_id, or a workflow
         capability gate, so we fail loudly rather than silently
         dropping it.
@@ -1011,18 +1011,18 @@ class WebhookFilterChain:
 
         The bot self-action loop guard operates in two layers:
 
-        1. **Actor-id match** — when ``actor_account_id`` is present
+        1. **Actor-id match** - when ``actor_account_id`` is present
            on the event, the chain checks whether it is in the union
            of every department's ``bot.<service>.account_id`` (the
            ``bot_account_ids()`` callback returns this flat union).
            A hit means the event is the bot reacting to its own
-           write — drop with reason
+           write - drop with reason
            :data:`REASON_LOOP_GUARD_DROPPED`. Cross-department bot
            activity (a bot in dept A commenting on a dept B issue)
            still triggers the drop because the predicate operates on
            the union, not on the per-dept registry.
 
-        2. **Body-text fallback** — when ``actor_account_id`` is
+        2. **Body-text fallback** - when ``actor_account_id`` is
            ``None`` the chain falls back to a regex scan of
            ``body_text`` for the ``[bot:`` prefix at the start of the
            line (with optional leading whitespace). This matches
@@ -1051,7 +1051,7 @@ class WebhookFilterChain:
                     pass through  # system event with no bot footprint
 
         The empty / boot-time edge case (``bot_account_ids()`` returns
-        an empty set) falls through naturally — the membership check
+        an empty set) falls through naturally - the membership check
         returns ``False`` and the event proceeds to the next stage.
         This preserves the invariant that an empty registry never
         silently drops every webhook.
@@ -1082,14 +1082,14 @@ class WebhookFilterChain:
                     reason=REASON_LOOP_GUARD_DROPPED,
                     coalesced_with=(),
                 )
-            # Actor is present but is not a bot — the event survives
+            # Actor is present but is not a bot - the event survives
             # the loop guard regardless of body text. We deliberately
             # do not consult the regex fallback here because a known
             # human author writing ``[bot: ...]`` quotation in their
             # comment must not be treated as bot output.
             return None
 
-        # Actor is missing — fall back to the body-text regex.
+        # Actor is missing - fall back to the body-text regex.
         # ``BOT_PREFIX_REGEX`` is anchored to the start of the line
         # with optional leading whitespace, so the
         # pattern only matches comments that lead with ``[bot:`` and
@@ -1171,7 +1171,7 @@ class WebhookFilterChain:
         :data:`REASON_DUPLICATE_EVENT_DROPPED`.
 
         The ``is_processed`` callback is consulted with the **raw**
-        ``delivery_id`` — no hashing or normalisation — because the
+        ``delivery_id`` - no hashing or normalisation - because the
         caller is responsible for choosing the canonical idempotency
         key (``X-Atlassian-Webhook-Identifier`` for Jira,
         ``X-Request-UUID`` for Bitbucket).
@@ -1209,26 +1209,26 @@ class WebhookFilterChain:
         Decision rules in evaluation order
         ----------------------------------
 
-        1. **Scope** — only ``jira:issue_commented`` events are
+        1. **Scope** - only ``jira:issue_commented`` events are
            subject to the mention filter; every other event type
            passes through unchanged. ``issue_key`` must be present
            because both the reporter check and the mention-set
            lookup are keyed on it; comment events without an
            ``issue_key`` never originate from a real Jira webhook,
            so we conservatively treat them as out-of-scope.
-        2. **First-iter exception** — if ``iter_count == 1``
+        2. **First-iter exception** - if ``iter_count == 1``
            and the actor matches the issue reporter, the chain
            returns ``pass`` with reason
            :data:`REASON_MENTION_FILTER_FIRST_ITER_EXCEPTION`. This
            lets the reporter trigger the bot on the very first
            iteration without first having to be mentioned by the
-           bot (which would be impossible — the bot has not yet
+           bot (which would be impossible - the bot has not yet
            commented).
-        3. **Mention filter** — if ``iter_count > 1`` and the
+        3. **Mention filter** - if ``iter_count > 1`` and the
            actor is not in the bot-mentioned set for the issue, the
            chain returns ``drop`` with reason
            :data:`REASON_COMMENT_IGNORED_UNAUTHORIZED_ACTOR`.
-        4. **Otherwise** — the comment is in scope (mention set hit,
+        4. **Otherwise** - the comment is in scope (mention set hit,
            or ``iter_count == 1`` with a non-reporter actor on a
            freshly-mentioned issue), and the chain returns ``None``
            so the next stage (burst debounce / signalWithStart) can
@@ -1241,15 +1241,15 @@ class WebhookFilterChain:
         count for the issue. The convention used by the agent runner
         workflow is:
 
-        * ``0`` — the issue has never been processed; this should
+        * ``0`` - the issue has never been processed; this should
           not happen in practice for a comment event because
           ``jira:issue_created`` would have advanced the counter to
           ``1`` first. We treat ``0`` the same as ``1`` for the
           check so a freshly-created issue's first comment is
           honoured.
-        * ``1`` — the workflow is in iter 1; the exception applies if the
+        * ``1`` - the workflow is in iter 1; the exception applies if the
           actor matches the reporter.
-        * ``≥ 2`` — the exception does not apply and the mention filter is
+        * ``≥ 2`` - the exception does not apply and the mention filter is
           enforced.
 
         Returns
@@ -1258,7 +1258,7 @@ class WebhookFilterChain:
             See the decision rules above.
         """
 
-        # Stage scope — non-comment events fall through.
+        # Stage scope - non-comment events fall through.
         if event.event_type != JIRA_COMMENT_EVENT_TYPE:
             return None
         if event.issue_key is None:
@@ -1288,7 +1288,7 @@ class WebhookFilterChain:
 
         # Mention filter. Only enforced for iter > 1; iter == 1 with
         # a non-reporter actor still
-        # falls through (which is intentional — first-iter activity
+        # falls through (which is intentional - first-iter activity
         # from arbitrary commenters is allowed once, the next iter
         # tightens to mention-set membership).
         if iter_count > 1:
@@ -1321,12 +1321,12 @@ class WebhookFilterChain:
         * No ``burst_register`` callback configured → ``None``
           (skip the stage).
         * Callback returns ``None`` → ``None`` (the callback decided
-          the event is out of scope for the burst window — for
+          the event is out of scope for the burst window - for
           instance because it has no ``issue_key``).
         * Callback returns ``BurstRegisterResult(decision="coalesce_emit")``
           → ``None`` (the event opened a fresh window; the chain
           falls through to ``filter_chain_pass`` so the FastAPI
-          router dispatches the event normally — the eventual flush
+          router dispatches the event normally - the eventual flush
           will carry the coalesced delivery_ids).
         * Callback returns ``BurstRegisterResult(decision="coalesce_dropped")``
           → :class:`FilterDecision` with ``action="drop"``,
@@ -1340,7 +1340,7 @@ class WebhookFilterChain:
         ------------------------
 
         This stage must observe the *real* deliveries that survived
-        every other policy filter — running burst-debounce earlier
+        every other policy filter - running burst-debounce earlier
         would coalesce events that the mention filter or replay-dedup
         would otherwise have dropped, inflating the
         ``coalesced_with`` audit list with deliveries that never
@@ -1368,7 +1368,7 @@ class WebhookFilterChain:
                 coalesced_with=result.coalesced_with,
             )
 
-        # ``coalesce_emit`` — fresh window; let the chain pass the
+        # ``coalesce_emit`` - fresh window; let the chain pass the
         # event through. The router dispatches normally; the
         # ``coalesced_with`` audit list is empty for this delivery
         # because no other deliveries have been merged yet.

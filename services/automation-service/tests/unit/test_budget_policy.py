@@ -1,4 +1,4 @@
-"""Unit tests for ``automation_service.budget.policy.BudgetCapPolicy``.
+﻿"""Unit tests for ``automation_service.budget.policy.BudgetCapPolicy``.
 
 The tests exercise the policy against an in-memory caps provider, a
 list-backed asyncpg fake, and a recording :class:`AuditWriter`. They
@@ -29,7 +29,7 @@ from typing import Any
 import pytest
 
 # ---------------------------------------------------------------------------
-# Path setup — keep the bootstrap consistent with the other unit tests
+# Path setup - keep the bootstrap consistent with the other unit tests
 # (sys.path injection so ``automation_service`` and ``audit_logger``
 # resolve without an editable install).
 # ---------------------------------------------------------------------------
@@ -232,7 +232,7 @@ class TestAllow:
 
 
 # ---------------------------------------------------------------------------
-# Deny path — four scopes, ordering, audit shape
+# Deny path - four scopes, ordering, audit shape
 # ---------------------------------------------------------------------------
 
 
@@ -351,7 +351,7 @@ class TestSqlInvariants:
         assert runner.calls, "policy should have issued at least one query"
         for sql, _args in runner.calls:
             assert "cost_tag = 'production'" in sql, (
-                "every usage aggregate must filter sandbox/probe rows out — "
+                "every usage aggregate must filter sandbox/probe rows out - "
                 "budget enforcement"
             )
 

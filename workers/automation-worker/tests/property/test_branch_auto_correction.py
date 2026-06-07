@@ -1,4 +1,4 @@
-"""Invariant test: Branch name auto-correction.
+﻿"""Invariant test: Branch name auto-correction.
 
 Feature:,: For any generated branch name that doesn't
 match department branch_pattern_rules, the system SHALL produce a corrected name
@@ -61,7 +61,7 @@ def test_corrected_name_valid_after_rules(issue_key: str, branch_name: str) -> N
 @settings(max_examples=30, deadline=None)
 @given(branch_name=st.from_regex(r"[a-z][a-z0-9-]{1,20}", fullmatch=True))
 def test_empty_rules_keeps_name(branch_name: str) -> None:
-    """Empty rules list — name is returned unchanged."""
+    """Empty rules list - name is returned unchanged."""
     inp = BranchRuleInput(
         issue_key="PROJ-1",
         proposed_branch_name=branch_name,

@@ -1,10 +1,10 @@
-"""Structured-choice ``needs_info`` family (Y8 + Z3).
+﻿"""Structured-choice ``needs_info`` family (Y8 + Z3).
 
 For any hypothesis-generated tuple
 ``(confidence, candidates, requires_execution, dept_capabilities)``
-the structured-choice helpers — ``format_choice_list`` and
+the structured-choice helpers - ``format_choice_list`` and
 ``resolve_choice`` from
-:mod:`temporal_shared.structured_choice` (task 10.2) — SHALL satisfy
+:mod:`temporal_shared.structured_choice` (task 10.2) - SHALL satisfy
 the three sub-properties spelled out in the design document:
 
 (a) **Choice-list length parity (Y8).** When ``confidence < "high"``
@@ -37,7 +37,7 @@ the three sub-properties spelled out in the design document:
     ``requires_execution=True`` AND the dept's capability set does
     NOT include ``"execution"``, the structured-choice helper offers
     a 2-element candidate list whose ``workflow_type`` payload is
-    exactly ``("code_change_commit_only", "out_of_scope")`` — i.e.
+    exactly ``("code_change_commit_only", "out_of_scope")`` - i.e.
     the user is asked whether to (A) commit only and let the PO take
     over, or (B) escalate to the admin to enable an SSH runner.
     Resolving ``[A]`` selects ``code_change_commit_only`` and
@@ -47,16 +47,16 @@ Not in scope
 ------------
 
 * The ``AutomationWorkflow`` body that emits the needs_info Jira
-  comment and re-routes after the user reply — owned by the
+  comment and re-routes after the user reply - owned by the
   ``llm_analyze_task`` → capability-gate → choice helper wiring in
   :mod:`automation_worker.workflows.automation_workflow`. Exercised by the worker's own unit
   tests, not by this property test.
 * The capability gate itself
-  :mod:`temporal_shared.capabilities`) — the Z3 path here only asks:
+  :mod:`temporal_shared.capabilities`) - the Z3 path here only asks:
   *given* ``"execution" ∉ dept_capabilities``, does the helper produce
   the right A/B menu?  The gate's own decision tree is its own oracle.
 * Audit emission (``structured_choice_offered`` /
-  ``structured_choice_resolved``) — owned by the workflow body.
+  ``structured_choice_resolved``) - owned by the workflow body.
 
 Skip semantics
 --------------
@@ -76,9 +76,9 @@ hypothesis suite below runs automatically.
 Hypothesis configuration
 ------------------------
 
-* ``max_examples=100`` — matches the rest of this property suite (``test_fix_keyword.py``,
+* ``max_examples=100`` - matches the rest of this property suite (``test_fix_keyword.py``,
   ``test_explain_keyword.py``, ``test_precommit_scanner.py``).
-* ``deadline=None`` — the helper is a pure regex/format sweep so it
+* ``deadline=None`` - the helper is a pure regex/format sweep so it
   runs comfortably under the default deadline, but pytest's deadline
   trips on debug builds and CI cold-starts; turning it off mirrors
   the convention used by every other property test in this directory.
@@ -96,7 +96,7 @@ from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 # ---------------------------------------------------------------------------
-# ``sys.path`` bootstrap — ``platform/pytest.ini`` already injects
+# ``sys.path`` bootstrap - ``platform/pytest.ini`` already injects
 # ``libs/temporal-shared/src`` onto ``pythonpath``, so the import below
 # resolves in integrated runs. We re-affirm the path for the case
 # where this module is imported via a non-pytest entrypoint (mirrors
@@ -114,7 +114,7 @@ if _TEMPORAL_SHARED_SRC.is_dir() and _temporal_shared_str not in sys.path:
     sys.path.insert(0, _temporal_shared_str)
 
 
-# noqa: E402 below — imports follow the sys.path bootstrap above.
+# noqa: E402 below - imports follow the sys.path bootstrap above.
 try:
     from temporal_shared.structured_choice import (  # type: ignore[import-not-found]  # noqa: E402
         format_choice_list,
@@ -151,7 +151,7 @@ _WORKFLOW_TYPES: tuple[str, ...] = (
 #: emit a structured-choice prompt when the LLM is confident.
 _LOW_CONFIDENCE: tuple[str, ...] = ("low", "medium")
 
-#: Up to 5 letter slots (A-E) — the helper contract documented in
+#: Up to 5 letter slots (A-E) - the helper contract documented in
 #: the helper contract promises ``[A]/[B]/[C]/...`` markers.
 _LETTERS: tuple[str, ...] = ("A", "B", "C", "D", "E")
 
@@ -234,7 +234,7 @@ def _candidates_strategy(
     """Strategy emitting a list of 2..3 distinct candidate dicts.
 
     Distinct labels are enforced so the choice-list parity property
-    (a) — "every label exactly once" — is trivially testable.  Each
+    (a) - "every label exactly once" - is trivially testable.  Each
     candidate carries a workflow_type drawn from
     :data:`_WORKFLOW_TYPES` and a free-form rationale.
     """
@@ -345,7 +345,7 @@ def test_p_a_format_choice_list_label_and_marker_parity(
 
     assert confidence != "high"  # strategy invariant
     n = len(candidates)
-    assert n >= 2  # strategy invariant — lower bound enforced upstream
+    assert n >= 2  # strategy invariant - lower bound enforced upstream
 
     formatted = format_choice_list(candidates)
 
@@ -379,7 +379,7 @@ def test_p_a_format_choice_list_label_and_marker_parity(
             f"{formatted!r} for a {n}-candidate list"
         )
 
-    # Reply-contract phrasing — ``yorum olarak`` is the stable
+    # Reply-contract phrasing - ``yorum olarak`` is the stable
     # Stable Turkish substring in the user-facing reply instruction.
     assert "yorum olarak" in formatted, (
         "format_choice_list must include the canonical reply "
@@ -388,7 +388,7 @@ def test_p_a_format_choice_list_label_and_marker_parity(
 
 
 # ---------------------------------------------------------------------------
-# Property (b): resolve_choice — [A]/[B] parse + invalid → unresolved
+# Property (b): resolve_choice - [A]/[B] parse + invalid → unresolved
 # ---------------------------------------------------------------------------
 
 
@@ -420,7 +420,7 @@ def test_p_b_resolve_choice_parses_bracketed_letter(
     n = len(candidates)
     if index >= n:
         # Hypothesis can draw an out-of-range index; the next
-        # property covers that branch — short-circuit here.
+        # property covers that branch - short-circuit here.
         return
 
     letter = _LETTERS[index]
@@ -434,7 +434,7 @@ def test_p_b_resolve_choice_parses_bracketed_letter(
     # The helper's exact return shape is documented as
     # ``str | "unresolved"``. The string MUST
     # match either the candidate label or the candidate's
-    # workflow_type — we accept both, tracking the choice so the
+    # workflow_type - we accept both, tracking the choice so the
     # test fails loudly if neither applies.
     assert resolved in (expected_label, expected_workflow_type), (
         f"resolve_choice({comment!r}, ...) returned {resolved!r}; "
@@ -463,7 +463,7 @@ def test_p_b_resolve_choice_no_marker_returns_unresolved(
     for letter in _LETTERS:
         marker = f"[{letter}]"
         if marker in garbled:
-            return  # strategy outlier — skip rather than spuriously fail
+            return  # strategy outlier - skip rather than spuriously fail
 
     resolved = resolve_choice(garbled, candidates)
 
@@ -500,7 +500,7 @@ def test_p_b_resolve_choice_out_of_range_letter_unresolved(
 
 
 # ---------------------------------------------------------------------------
-# Property (c): execution-fallback choice — Z3 commit_only / out_of_scope
+# Property (c): execution-fallback choice - Z3 commit_only / out_of_scope
 # ---------------------------------------------------------------------------
 
 
@@ -513,7 +513,7 @@ _Z3_FALLBACK_CANDIDATES: Sequence[Mapping[str, str]] = (
         label="commit_only",
         workflow_type="code_change_commit_only",
         rationale=(
-            "Sadece commit edip PO'ya bırak — execution kapalı dept'te "
+            "Sadece commit edip PO'ya bırak - execution kapalı dept'te "
             "varsayılan akış."
         ),
     ),
@@ -521,7 +521,7 @@ _Z3_FALLBACK_CANDIDATES: Sequence[Mapping[str, str]] = (
         label="out_of_scope",
         workflow_type="out_of_scope",
         rationale=(
-            "Admin'den SSH runner açılmasını iste — task bu dept'te "
+            "Admin'den SSH runner açılmasını iste - task bu dept'te "
             "şu an çalıştırılamaz."
         ),
     ),
@@ -550,7 +550,7 @@ def test_p_c_z3_fallback_format_lists_commit_only_and_out_of_scope() -> None:
         f"{formatted!r}"
     )
 
-    # Exactly two markers — `[A]` and `[B]`, no `[C]`.
+    # Exactly two markers - `[A]` and `[B]`, no `[C]`.
     assert "[A]" in formatted, (
         f"Z3 fallback must expose marker [A]; got {formatted!r}"
     )
@@ -612,7 +612,7 @@ def test_p_c_z3_fallback_offered_iff_execution_required_and_missing(
     The decision is encoded as a small local predicate
     :func:`_should_offer_z3` so the property is stated as an
     if-and-only-if and the production helper need only expose the
-    formatting/resolving primitives — the workflow body is the place
+    formatting/resolving primitives - the workflow body is the place
     that decides whether to call them at all.
 
     """

@@ -1,5 +1,5 @@
-"""
-Test 07: Setup Wizard Step 7 — Add First Department.
+﻿"""
+Test 07: Setup Wizard Step 7 - Add First Department.
 
 Validates that the Playwright MCP browser automation can fill the department
 form (dept_id, workspace, repo, Bitbucket Token B, SSH target), test SSH
@@ -457,7 +457,7 @@ def _verify_wizard_state_in_db() -> dict:
         conn.close()
 
     except ImportError:
-        result["error"] = "psycopg2 not installed — cannot verify DB state"
+        result["error"] = "psycopg2 not installed - cannot verify DB state"
     except Exception as exc:
         result["error"] = f"Database connection/query failed: {exc}"
 
@@ -494,7 +494,7 @@ def _verify_wizard_state_via_docker(platform_dir: Path) -> dict:
         )
 
         if proc.returncode != 0:
-            # Table might not exist yet — try alternative schema
+            # Table might not exist yet - try alternative schema
             result["error"] = proc.stderr.strip() or f"psql exited with code {proc.returncode}"
             return result
 
@@ -530,7 +530,7 @@ def _verify_wizard_state_via_docker(platform_dir: Path) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Tests — Department Form Submission
+# Tests - Department Form Submission
 # ---------------------------------------------------------------------------
 
 class TestWizardStep7DepartmentForm:
@@ -563,7 +563,7 @@ class TestWizardStep7DepartmentForm:
         - Department ID: johni-test
         - Bitbucket Workspace: example_workspace
         - Bitbucket Repository: smoke-test
-        - Bitbucket Token: (Token B — Basic Auth, masked)
+        - Bitbucket Token: (Token B - Basic Auth, masked)
         - SSH Host: 91.99.149.163
         - SSH User: root
         - SSH Key Path: ~/.ssh/id_ed25519
@@ -596,7 +596,7 @@ class TestWizardStep7DepartmentForm:
 
 
 # ---------------------------------------------------------------------------
-# Tests — SSH Connection Test
+# Tests - SSH Connection Test
 # ---------------------------------------------------------------------------
 
 class TestWizardStep7SSHConnection:
@@ -618,7 +618,7 @@ class TestWizardStep7SSHConnection:
         ssh_result = _test_ssh_connection(credentials, timeout=SSH_TEST_TIMEOUT)
 
         if not ssh_result["success"] and ssh_result["status_code"] is None:
-            # API endpoint not found — this requires Playwright MCP interaction
+            # API endpoint not found - this requires Playwright MCP interaction
             pytest.skip(
                 f"SSH connection test API endpoint not found. "
                 f"This step requires Playwright MCP browser interaction to click "
@@ -644,7 +644,7 @@ class TestWizardStep7SSHConnection:
 
 
 # ---------------------------------------------------------------------------
-# Tests — Bitbucket Connection Test
+# Tests - Bitbucket Connection Test
 # ---------------------------------------------------------------------------
 
 class TestWizardStep7BitbucketConnection:
@@ -665,7 +665,7 @@ class TestWizardStep7BitbucketConnection:
         bb_result = _test_bitbucket_connection(credentials, timeout=BITBUCKET_TEST_TIMEOUT)
 
         if not bb_result["success"] and bb_result["status_code"] is None:
-            # API endpoint not found — this requires Playwright MCP interaction
+            # API endpoint not found - this requires Playwright MCP interaction
             pytest.skip(
                 f"Bitbucket connection test API endpoint not found. "
                 f"This step requires Playwright MCP browser interaction to click "
@@ -691,7 +691,7 @@ class TestWizardStep7BitbucketConnection:
 
 
 # ---------------------------------------------------------------------------
-# Tests — Create Department (Step 7 Completion)
+# Tests - Create Department (Step 7 Completion)
 # ---------------------------------------------------------------------------
 
 class TestWizardStep7CreateDepartment:
@@ -710,7 +710,7 @@ class TestWizardStep7CreateDepartment:
         completion = _wait_for_step_completion(WIZARD_STEP_NAME, STEP_7_TIMEOUT)
 
         if not completion["completed"]:
-            # Step didn't complete via API polling — expected if wizard
+            # Step didn't complete via API polling - expected if wizard
             # requires Playwright MCP browser interaction
             pytest.skip(
                 f"Department step did not complete within {STEP_7_TIMEOUT}s via API polling. "
@@ -730,7 +730,7 @@ class TestWizardStep7CreateDepartment:
 
 
 # ---------------------------------------------------------------------------
-# Tests — Final Screenshot (All 7 Green Checkmarks)
+# Tests - Final Screenshot (All 7 Green Checkmarks)
 # ---------------------------------------------------------------------------
 
 class TestWizardStep7FinalScreenshot:
@@ -770,11 +770,11 @@ class TestWizardStep7FinalScreenshot:
 
 
 # ---------------------------------------------------------------------------
-# Tests — Database Verification
+# Tests - Database Verification
 # ---------------------------------------------------------------------------
 
 class TestWizardStep7DatabaseVerification:
-    """R7.7: Verify DB — automation.setup_wizard_state has 7 completed rows.
+    """R7.7: Verify DB - automation.setup_wizard_state has 7 completed rows.
 
     THE Test_Framework SHALL verify via database query that
     automation.setup_wizard_state contains seven rows all with
@@ -826,7 +826,7 @@ class TestWizardStep7DatabaseVerification:
 
 
 # ---------------------------------------------------------------------------
-# Tests — Evidence Collection
+# Tests - Evidence Collection
 # ---------------------------------------------------------------------------
 
 class TestWizardStep7Evidence:
@@ -871,13 +871,13 @@ class TestWizardStep7Evidence:
             },
             "screenshot_path": SCREENSHOT_WIZARD_COMPLETE,
             "requirements_validated": [
-                "R7.1 — Department form displayed",
-                "R7.2 — Form accepts dept_id, workspace, repo, token, SSH target",
-                "R7.3 — SSH connection test (green badge within 15s)",
-                "R7.4 — Bitbucket connection test (green badge)",
-                "R7.5 — Create Department completes Step 7",
-                "R7.6 — Final screenshot with 7 green checkmarks",
-                "R7.7 — DB has 7 completed wizard state rows",
+                "R7.1 - Department form displayed",
+                "R7.2 - Form accepts dept_id, workspace, repo, token, SSH target",
+                "R7.3 - SSH connection test (green badge within 15s)",
+                "R7.4 - Bitbucket connection test (green badge)",
+                "R7.5 - Create Department completes Step 7",
+                "R7.6 - Final screenshot with 7 green checkmarks",
+                "R7.7 - DB has 7 completed wizard state rows",
             ],
         }
 

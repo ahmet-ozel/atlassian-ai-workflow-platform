@@ -1,4 +1,4 @@
-"""Logging redaction filter for credential / secret hygiene.
+﻿"""Logging redaction filter for credential / secret hygiene.
 
 Implements the regex-based :class:`RedactionFilter`:
 
@@ -19,7 +19,7 @@ Design principles
   keyword) so a sensitive value passed as a ``%s`` argument is masked
   before formatter substitution. ``record.msg`` is rewritten to its
   pre-redacted *rendered* form when args were present so the formatter
-  sees a flat string with no remaining ``%`` placeholders — that
+  sees a flat string with no remaining ``%`` placeholders - that
   prevents accidental ``TypeError: not enough arguments`` if any arg
   was reduced to its redacted scalar.
 
@@ -34,7 +34,7 @@ Design principles
   in every process.
 
 The matching surface deliberately does *not* try to detect arbitrary
-high-entropy strings — it enumerates the exact patterns that matter and
+high-entropy strings - it enumerates the exact patterns that matter and
 the test ``test_log_redaction.py`` validates
 the ``KEY=<redacted>`` form for environment dumps. This filter
 complements that test by covering the *log-call site* surface (HTTP
@@ -44,14 +44,14 @@ header echoes, OAuth bearer dumps, exception messages with literal
 Public API
 ~~~~~~~~~~
 
-* :data:`REDACTION_PATTERNS` — the compiled regex list, exposed for
+* :data:`REDACTION_PATTERNS` - the compiled regex list, exposed for
   unit-testing parity and ad-hoc redaction of non-log strings.
-* :data:`REDACTION_PLACEHOLDER` — the literal sentinel
+* :data:`REDACTION_PLACEHOLDER` - the literal sentinel
   (``"***REDACTED***"``).
-* :func:`redact_text` — pure-string helper (no logging coupling).
-* :class:`RedactionFilter` — :class:`logging.Filter` subclass for
+* :func:`redact_text` - pure-string helper (no logging coupling).
+* :class:`RedactionFilter` - :class:`logging.Filter` subclass for
   attachment to handlers.
-* :func:`install_redaction_filter` — convenience wiring helper that
+* :func:`install_redaction_filter` - convenience wiring helper that
   attaches the filter to a logger's handlers and (optionally) to the
   root logger so every record flowing through ``logging`` is redacted.
 """
@@ -75,15 +75,15 @@ REDACTION_PLACEHOLDER: Final[str] = "***REDACTED***"
 def _kv_pattern(key: str) -> re.Pattern[str]:
     """Build a ``KEY=value`` redaction regex for the given key name.
 
-    The value run is ``[^\\s&,;]+`` — one or more characters that are
+    The value run is ``[^\\s&,;]+`` - one or more characters that are
     *not* a typical separator. This intentionally stops at:
 
-    * whitespace (``\\s``) — the natural boundary in prose log lines
+    * whitespace (``\\s``) - the natural boundary in prose log lines
       and HTTP header echoes;
-    * ``&`` — the form-body / query-string separator, so a line like
+    * ``&`` - the form-body / query-string separator, so a line like
       ``api_token=AAA&password=BBB&secret=CCC`` redacts each value
       independently and preserves the operator-visible key names;
-    * ``,`` and ``;`` — common separators in cookie / config dumps.
+    * ``,`` and ``;`` - common separators in cookie / config dumps.
 
     Stopping at these boundaries preserves the surrounding context
     (other ``KEY=`` tokens, prose) while still removing the secret
@@ -101,15 +101,15 @@ def _kv_pattern(key: str) -> re.Pattern[str]:
 
 
 #: Compiled regex patterns for credential redaction. Ordering is
-#: not significant — every pattern is applied in turn and replacements
+#: not significant - every pattern is applied in turn and replacements
 #: do not interact (the placeholder is opaque to every pattern).
 REDACTION_PATTERNS: Final[tuple[re.Pattern[str], ...]] = (
-    # ``Authorization: Basic <base64-blob>`` — HTTP header echo. The
+    # ``Authorization: Basic <base64-blob>`` - HTTP header echo. The
     # ``<base64-blob>`` run can include ``+/=`` so we match ``\S+``
     # rather than a strict base64 charset; the goal is full removal of
     # the value, not parser-grade validation.
     re.compile(r"(?i:Authorization):\s*(?i:Basic)\s+\S+"),
-    # ``Bearer <token>`` — OAuth / OIDC access tokens. Matches both
+    # ``Bearer <token>`` - OAuth / OIDC access tokens. Matches both
     # ``Authorization: Bearer ...`` (already covered by the line above
     # via the value ``\S+``, but we keep this pattern for bare
     # ``Bearer abc.def.ghi`` mentions in exception messages) and
@@ -124,7 +124,7 @@ REDACTION_PATTERNS: Final[tuple[re.Pattern[str], ...]] = (
     # ---------------------------------------------------------------
     # LLM provider key patterns.
     # ---------------------------------------------------------------
-    # Anthropic keys: ``sk-ant-...`` — the public docs use the
+    # Anthropic keys: ``sk-ant-...`` - the public docs use the
     # ``sk-ant-`` prefix and a 95-char body for live keys; we match
     # at least 16 chars of body to keep the pattern conservative
     # while still catching every legitimate Anthropic credential.
@@ -193,16 +193,16 @@ class RedactionFilter(logging.Filter):
     ``args`` so the downstream formatter only ever sees redacted
     content. Both common log-call shapes are covered:
 
-    * ``logger.info("got %s", token)`` — ``token`` is in
+    * ``logger.info("got %s", token)`` - ``token`` is in
       ``record.args``; we redact each positional / keyword arg, then
       collapse the rendered form into ``record.msg`` with empty args
       so the formatter does not try to re-substitute.
-    * ``logger.info(f"got {token}")`` — the rendered string is in
+    * ``logger.info(f"got {token}")`` - the rendered string is in
       ``record.msg`` directly with ``record.args is None``; we redact
       ``record.msg`` in place.
 
     Errors are swallowed (the filter never *raises* and never
-    *suppresses* a record) — a misformatted log call must still reach
+    *suppresses* a record) - a misformatted log call must still reach
     the operator, just with the secret masked. We rely on the
     pattern set being conservative enough that false positives are
     cosmetic rather than load-bearing.
@@ -219,7 +219,7 @@ class RedactionFilter(logging.Filter):
             # If anything goes wrong we let the original (unredacted)
             # record through rather than silently dropping it. A leaked
             # secret is bad, a missing log line about a leaked secret
-            # is worse — the rest of the platform still has property
+            # is worse - the rest of the platform still has property
             # tests (``test_no_disk_secret_leak.py`` etc.) to catch
             # the failure at a coarser granularity.
             return True
@@ -240,7 +240,7 @@ class RedactionFilter(logging.Filter):
 
         * The secret never appears in the formatter input.
         * Subsequent ``record.getMessage()`` calls (eg. by additional
-          handlers further down the chain) are stable — no double
+          handlers further down the chain) are stable - no double
           ``%``-substitution occurs because we cleared the args.
         """
 
@@ -261,7 +261,7 @@ class RedactionFilter(logging.Filter):
                 try:
                     rendered = record.msg % record.args
                 except (TypeError, ValueError):
-                    # Misformatted log call — fall back to a plain
+                    # Misformatted log call - fall back to a plain
                     # join so we still emit *something*.
                     rendered = (
                         f"{record.msg} | args={record.args!r}"
@@ -277,7 +277,7 @@ class RedactionFilter(logging.Filter):
             try:
                 record.msg = redact_text(str(record.msg))
             except Exception:  # noqa: BLE001
-                # Leave it alone if str() blows up — the formatter will
+                # Leave it alone if str() blows up - the formatter will
                 # raise instead and the record gets dropped at that
                 # layer; no secret can leak through a non-string repr.
                 return
@@ -288,7 +288,7 @@ def _redact_args(
 ) -> tuple[Any, ...] | dict[str, Any]:
     """Return a copy of *args* with every string value redacted.
 
-    Non-string args pass through unchanged — ``%d`` / ``%r`` consumers
+    Non-string args pass through unchanged - ``%d`` / ``%r`` consumers
     are unaffected. The returned object preserves the input shape
     (``tuple`` for positional, ``dict`` for keyword).
     """
@@ -316,8 +316,8 @@ def install_redaction_filter(
     """Attach a :class:`RedactionFilter` to the given loggers' handlers.
 
     This is the helper services call from their ``main.py`` entry
-    point so every handler — including any created later by uvicorn /
-    structlog / FastAPI — sees redacted records.
+    point so every handler - including any created later by uvicorn /
+    structlog / FastAPI - sees redacted records.
 
     Strategy
     --------
@@ -326,7 +326,7 @@ def install_redaction_filter(
     2. Attach it to every handler currently bound to the supplied
        *loggers* (iterating to preserve handler order). The filter is
        added at the *handler* level rather than the logger level so
-       it survives :func:`logging.getLogger` ancestry traversal — a
+       it survives :func:`logging.getLogger` ancestry traversal - a
        child logger that does not propagate to root still has its own
        handlers covered.
     3. Optionally attach to the root logger's handlers (default
@@ -342,7 +342,7 @@ def install_redaction_filter(
     Idempotency
     -----------
 
-    Re-installing on the same logger / handler is harmless — the
+    Re-installing on the same logger / handler is harmless - the
     filter is added once per handler list because Python's
     ``logging.Filterer.addFilter`` performs an identity check on the
     filter list before adding. Repeated calls with *different*

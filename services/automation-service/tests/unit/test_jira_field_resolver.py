@@ -1,4 +1,4 @@
-"""Unit tests for ``automation_service.jira_field_resolver``.
+﻿"""Unit tests for ``automation_service.jira_field_resolver``.
 
 Validates the runtime contract of :class:`JiraFieldResolver`:
 
@@ -13,7 +13,7 @@ Validates the runtime contract of :class:`JiraFieldResolver`:
 
 The Jira HTTP client is replaced by a tiny in-memory fake whose
 ``get_fields()`` coroutine records every invocation. This avoids any
-dependency on httpx / live Jira / the foundation MCP plumbing — these
+dependency on httpx / live Jira / the foundation MCP plumbing - these
 tests are purely about the cache + TTL + lock semantics, all of which
 live inside :class:`JiraFieldResolver`.
 """
@@ -128,7 +128,7 @@ _SAMPLE_FIELDS: tuple[dict[str, str], ...] = (
 
 _REFRESHED_FIELDS: tuple[dict[str, str], ...] = (
     {"id": "summary", "name": "Summary"},
-    # Same name, different id — verifies that a TTL refresh actually
+    # Same name, different id - verifies that a TTL refresh actually
     # serves the new value rather than returning the previously
     # cached one.
     {"id": "customfield_99999", "name": "Sprint"},
@@ -173,7 +173,7 @@ class TestFirstCallTriggersFetch:
 
         assert first == "customfield_10020"
         assert second == "customfield_10014"
-        # Single fetch covers both lookups — the whole field list is
+        # Single fetch covers both lookups - the whole field list is
         # cached on the first call.
         assert client.call_count == 1
 
@@ -312,7 +312,7 @@ class TestUnknownFieldRaises:
         with pytest.raises(JiraFieldNotFoundError):
             await resolver.resolve_field_id("Bogus")
 
-        # Same TTL window — the next call must hit the cache
+        # Same TTL window - the next call must hit the cache
         # populated by the failed lookup's refresh.
         result = await resolver.resolve_field_id("Sprint")
         assert result == "customfield_10020"

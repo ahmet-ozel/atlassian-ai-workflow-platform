@@ -1,4 +1,4 @@
-"""Unit tests for ``src.routers.runner_workspaces``.
+﻿"""Unit tests for ``src.routers.runner_workspaces``.
 
 The router is exercised through :class:`fastapi.testclient.TestClient`
 against an in-memory stub :class:`RunnerWorkspacesClient`. The
@@ -201,7 +201,7 @@ class TestListWorkspaces:
         """``app.state.runner_workspaces_client = None`` is the default.
 
         The dashboard's *Services → Workspaces* tab must keep rendering
-        even before the production SSH client is wired — the router
+        even before the production SSH client is wired - the router
         returns an empty list rather than 503.
         """
 
@@ -226,7 +226,7 @@ class TestListWorkspaces:
 
 
 # ---------------------------------------------------------------------------
-# DELETE /admin/runner/workspaces/{issue_key} — happy path
+# DELETE /admin/runner/workspaces/{issue_key} - happy path
 # ---------------------------------------------------------------------------
 
 
@@ -270,7 +270,7 @@ class TestPurgeWorkspaceHappyPath:
         """``OPS_CORE-12`` matches the canonical regex.
 
         The forward construction path (`workspace_path.build_workspace_path`)
-        accepts the same shape, so the reverse path must too — otherwise
+        accepts the same shape, so the reverse path must too - otherwise
         valid workspaces could be created but never purged.
         """
 
@@ -286,7 +286,7 @@ class TestPurgeWorkspaceHappyPath:
 
 
 # ---------------------------------------------------------------------------
-# DELETE — path-traversal guard
+# DELETE - path-traversal guard
 # ---------------------------------------------------------------------------
 
 
@@ -334,7 +334,7 @@ def test_delete_rejects_invalid_keys_with_400(issue_key: str) -> None:
 def test_delete_path_traversal_dotdot_never_reaches_handler() -> None:
     """``/admin/runner/workspaces/..`` is normalised by Starlette.
 
-    The literal ``..`` segment never reaches our handler — the URL
+    The literal ``..`` segment never reaches our handler - the URL
     router sees ``/admin/runner`` (no matching route) and returns 404
     before our regex guard even runs. This is a defence-in-depth
     layer on top of the explicit regex check; we assert the SSH
@@ -347,7 +347,7 @@ def test_delete_path_traversal_dotdot_never_reaches_handler() -> None:
 
     response = TestClient(app).delete("/admin/runner/workspaces/..")
 
-    # 404 from Starlette's path normalisation — the route ``..``
+    # 404 from Starlette's path normalisation - the route ``..``
     # resolves to does not exist. Either 400 or 404 satisfies the
     # security invariant: the request never reaches the SSH client.
     assert response.status_code in (400, 404)
@@ -386,7 +386,7 @@ def test_delete_rejects_shell_metachar_keys() -> None:
 
 
 # ---------------------------------------------------------------------------
-# DELETE — wiring + transport failure branches
+# DELETE - wiring + transport failure branches
 # ---------------------------------------------------------------------------
 
 
@@ -447,7 +447,7 @@ def test_delete_502_and_audit_when_client_raises() -> None:
 
 
 class _RaisingAuditSink:
-    """Audit sink that always raises — verifies best-effort contract."""
+    """Audit sink that always raises - verifies best-effort contract."""
 
     async def write(self, event: AuditEvent) -> None:  # noqa: ARG002
         raise RuntimeError("simulated audit DB outage")

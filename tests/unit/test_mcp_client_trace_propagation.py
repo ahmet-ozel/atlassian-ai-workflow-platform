@@ -1,4 +1,4 @@
-"""Unit test for ``make_mcp_client`` trace header propagation.
+﻿"""Unit test for ``make_mcp_client`` trace header propagation.
 
 The :func:`http_shared.make_mcp_client` factory is the single point that
 constructs every outbound MCP / Firecrawl client across the platform.
@@ -9,7 +9,7 @@ through it) can correlate logs back to the originating webhook /
 admin action.
 
 The tests below exercise the contract directly against an
-:class:`httpx.MockTransport` — no real network involved — so the
+:class:`httpx.MockTransport` - no real network involved - so the
 property holds independently of Vault, Postgres, or the workspace
 ``observability`` lib being importable.
 """
@@ -51,7 +51,7 @@ async def test_make_mcp_client_injects_trace_id_from_context() -> None:
         captured[0].headers["X-Trace-Id"]
         == "018f7d4d-5f8c-7c4d-92ab-1f6f5a4d9b34"
     )
-    # And the X-Client-Source header is still injected — the trace
+    # And the X-Client-Source header is still injected - the trace
     # hook composes with (does not replace) the existing factory
     # behaviour.
     assert captured[0].headers["X-Client-Source"] == "agent-runner-worker"
@@ -79,7 +79,7 @@ async def test_make_mcp_client_omits_trace_id_when_context_empty() -> None:
         await client.aclose()
 
     assert len(captured) == 1
-    # Header must be absent — empty trace_id values are not emitted
+    # Header must be absent - empty trace_id values are not emitted
     # so log aggregators are not flooded with empty-string fields.
     assert "X-Trace-Id" not in captured[0].headers
 
@@ -101,7 +101,7 @@ async def test_make_mcp_client_preserves_caller_supplied_trace_id() -> None:
         transport=transport,
     )
     try:
-        # The caller pins a specific trace_id on the request itself —
+        # The caller pins a specific trace_id on the request itself -
         # the hook must not overwrite it (this path is reserved for
         # explicit retry / replay scenarios).
         await client.post(

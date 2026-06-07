@@ -1,4 +1,4 @@
-"""Activity-level token cap fail-fast tests.
+﻿"""Activity-level token cap fail-fast tests.
 
 Hypothesis-driven verification of the activity-level token cap
 fail-fast behaviour in ``LlmOrchestrator.stream_with_tool_loop``.
@@ -18,7 +18,7 @@ stream_with_tool_loop` MUST satisfy:
         whose ``type`` equals ``"token_cap_exceeded"`` and whose
         ``payload`` exposes the configured ``limit``.
     (b) After the ``token_cap_exceeded`` event the generator stops
-        — no further SSE events of any type are produced.
+        - no further SSE events of any type are produced.
     (c) When ``sum(token_chunks) <= token_cap`` (cap never
         exceeded), the orchestrator terminates with the normal
         ``done`` event and ``token_cap_exceeded`` is **not**
@@ -68,8 +68,8 @@ Related coverage
 * Companion sliding-window coverage lives in
   ``test_sliding_window.py`` and LLM retry / fallback coverage
   lives in ``test_llm_retry_fallback.py``.
-* The :class:`messages.SseEvent` event type catalogue —
-  including the ``token_cap_exceeded`` literal asserted here —
+* The :class:`messages.SseEvent` event type catalogue -
+  including the ``token_cap_exceeded`` literal asserted here -
   lives at ``platform/libs/messages/src/messages/chat.py`` and is
   also exercised by ``platform/tests/unit/test_messages_chat.py``.
 * The handler-level forwarding of ``token_cap`` into the
@@ -101,7 +101,7 @@ from hypothesis import strategies as st
 
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — the orchestrator lives in
+# sys.path bootstrap - the orchestrator lives in
 # ``libs/llm-orchestrator/src`` (already on the workspace pythonpath via
 # ``pytest.ini``), but we add it defensively for direct
 # ``python -m pytest <file>`` runs from unusual cwds. Mirrors
@@ -163,8 +163,8 @@ class _Chunk:
     Mirrors the shape consumed by
     :meth:`LlmOrchestrator.stream_with_tool_loop`'s loop body
     (``chunk.token_count``, ``chunk.kind``, ``chunk.text``,
-    ``chunk.is_final``). Keeping the fake in-line — rather than
-    importing a production chunk dataclass — pins the test to the
+    ``chunk.is_final``). Keeping the fake in-line - rather than
+    importing a production chunk dataclass - pins the test to the
     protocol shape and prevents a future rename of the provider
     chunk type from silently weakening the invariant.
     """
@@ -200,9 +200,9 @@ class _ScriptedProvider:
 
     async def stream(
         self,
-        system: str,  # noqa: ARG002 — protocol parity
-        history: Sequence[Any],  # noqa: ARG002 — protocol parity
-        tools: Sequence[Any],  # noqa: ARG002 — protocol parity
+        system: str,  # noqa: ARG002 - protocol parity
+        history: Sequence[Any],  # noqa: ARG002 - protocol parity
+        tools: Sequence[Any],  # noqa: ARG002 - protocol parity
     ) -> AsyncIterator[_Chunk]:
         for chunk in self._chunks:
             self.consumed += 1
@@ -222,7 +222,7 @@ def _build_chunks(
     """Wrap an integer sequence into a :class:`_Chunk` tuple.
 
     ``finalise`` flips ``is_final=True`` on the trailing chunk so
-    clause (c) — "cap never exceeded ⇒ ``done`` event" — has a
+    clause (c) - "cap never exceeded ⇒ ``done`` event" - has a
     well-defined trigger inside the orchestrator's loop.
     """
 
@@ -248,7 +248,7 @@ def _first_cap_cross_index(
 ) -> int | None:
     """Return the first index ``i`` with ``sum(counts[:i+1]) > cap``.
 
-    Mirrors clause (d) — the cumulative token tally is a monotone
+    Mirrors clause (d) - the cumulative token tally is a monotone
     prefix sum, so the cap-cross point is well-defined as a single
     integer (or ``None`` when the cap is never exceeded).
     """
@@ -270,7 +270,7 @@ async def _drain(orch_stream: AsyncIterator[SseEvent]) -> list[SseEvent]:
     return out
 
 
-async def _on_tool_call(_call: Any) -> Any:  # noqa: ARG001 — protocol parity
+async def _on_tool_call(_call: Any) -> Any:  # noqa: ARG001 - protocol parity
     """Tool-call callback that should *never* be invoked.
 
     These tests fix the chunk kind to ``"token"``; the
@@ -398,7 +398,7 @@ def test_token_cap_fail_fast_invariants(
         )
     )
 
-    # ---- Run #2 — independent provider, identical script ----
+    # ---- Run #2 - independent provider, identical script ----
     provider_b = _ScriptedProvider(
         chunks=_build_chunks(chunks, finalise=not cap_will_be_crossed)
     )
@@ -415,7 +415,7 @@ def test_token_cap_fail_fast_invariants(
         )
     )
 
-    # ----- (e) Determinism — same script ⇒ same SSE sequence -----
+    # ----- (e) Determinism - same script ⇒ same SSE sequence -----
     assert events_a == events_b, (
         f"stream_with_tool_loop is non-deterministic: identical "
         f"inputs produced different SSE sequences.\n"
@@ -441,7 +441,7 @@ def test_token_cap_fail_fast_invariants(
 
         # ----- (a) payload exposes the configured ``limit`` -----
         cap_event = events_a[cap_indices[0]]
-        # ``payload`` is a Mapping — design pseudocode uses
+        # ``payload`` is a Mapping - design pseudocode uses
         # ``{"limit": token_cap}``. We allow any mapping that
         # contains the key (additional metadata is fine) so
         # implementations can attach context like
@@ -498,7 +498,7 @@ def test_token_cap_fail_fast_invariants(
         # non-empty; an empty chunk list is a degenerate case where
         # the provider never yields, so the loop returns without
         # ever entering the ``is_final`` branch. Both branches
-        # satisfy clause (c) — the *forbidden* outcome is
+        # satisfy clause (c) - the *forbidden* outcome is
         # ``token_cap_exceeded``, which we already excluded above.
         if chunks:
             assert event_types and event_types[-1] == DONE_EVENT, (
@@ -526,7 +526,7 @@ def test_token_cap_fail_fast_invariants(
 
 
 # ---------------------------------------------------------------------------
-# Concrete regression anchors — pinned examples that complement the
+# Concrete regression anchors - pinned examples that complement the
 # Hypothesis search by fixing the cap-cross point on a known input.
 # ---------------------------------------------------------------------------
 
@@ -587,7 +587,7 @@ def test_cap_crossed_at_boundary_keeps_preceding_token_events() -> None:
     fixed input. ``[40, 40, 50]`` with ``cap=100`` crosses on the
     third chunk (running total ``130 > 100``), so the expected
     SSE sequence is two ``token`` events followed by the cap
-    event — never any ``done``.
+    event - never any ``done``.
 
     """
 
@@ -693,7 +693,7 @@ def test_cap_at_exact_boundary_does_not_fire() -> None:
     The loop uses ``used_tokens > token_cap`` (strict
     inequality), so reaching the cap exactly is allowed and the
     stream must continue. ``[50, 50]`` with ``cap=100`` produces
-    a final running total of exactly ``100`` — no cap event.
+    a final running total of exactly ``100`` - no cap event.
 
     """
 

@@ -1,4 +1,4 @@
-# temporal-shared
+﻿# temporal-shared
 
 Shared Temporal constants and pure-function helpers for the platform.
 
@@ -31,7 +31,7 @@ based on:
    `web_search`.
 
 `SSH_RUNNER_DEPT_PINNING_ENABLED` and `SSH_DEPT_QUOTA_ENABLED` are *not*
-consulted here — both default to off and dept-pinning / quota are later
+consulted here - both default to off and dept-pinning / quota are later
 concerns (Requirements 4.8, 4.9).
 
 ### `gate(workflow_type, dept, env) -> GateDecision`
@@ -85,7 +85,7 @@ container is provided for this library.
 
 - `WORKFLOW_TYPE_CAPABILITIES` is wrapped in `MappingProxyType`; mutation
   attempts raise `TypeError`. Treat it as read-only.
-- `derive_capabilities` and `gate` are pure functions — no network or
+- `derive_capabilities` and `gate` are pure functions - no network or
   filesystem I/O. All inputs flow through arguments.
 - `GateDecision` is a frozen dataclass; attribute assignment fails after
   construction.

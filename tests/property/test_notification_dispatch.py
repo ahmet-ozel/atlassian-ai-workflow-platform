@@ -1,4 +1,4 @@
-"""Notification dispatch is success-gated and failure-mandatory.
+﻿"""Notification dispatch is success-gated and failure-mandatory.
 
 
 
@@ -29,13 +29,13 @@ result)` MUST satisfy:
  (d) Every dispatch attempt writes exactly one row per ``(channel)``
  to ``shared.notification_log``; the row's
  ``dedup_key = sha256(f"{workflow_id}:{channel}:{kind}")`` is
- ``UNIQUE`` so a retried call cannot double-deliver — the
+ ``UNIQUE`` so a retried call cannot double-deliver - the
  adapter is invoked **at most once** per ``(workflow_id,
  channel, kind)`` triple across any number of retries.
  (e) The body persisted in ``notification_log`` is a sha256 hash of
  the rendered Slack/email body ( log-redaction parity); the
  ``target`` column is also a sha256 of the webhook URL / email
- address — the plain webhook URL never crosses the table.
+ address - the plain webhook URL never crosses the table.
 
 The companion file ``platform/libs/notification/tests/\
 test_notify_workflow_completion.py`` already pins the example-based
@@ -99,7 +99,7 @@ from hypothesis import strategies as st
 
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — reach into ``libs/notification/tests`` so the
+# sys.path bootstrap - reach into ``libs/notification/tests`` so the
 # fakes declared by the unit suite can be imported here. The workspace
 # ``conftest.py`` already pushes ``libs/notification/src`` onto
 # ``sys.path``; we add the *tests* directory so the fakes module is
@@ -162,7 +162,7 @@ _KIND: str = "workflow_completion"
 
 #: Stable separator wired into:func:`notification.service._dedup_key`.
 #: Mirrored here so the invariant computes the same digest the
-#: dispatcher writes — a regression that swaps the separator surfaces as
+#: dispatcher writes - a regression that swaps the separator surfaces as
 #: a dedup_key mismatch.
 _HASH_SEP: str = ":"
 
@@ -199,7 +199,7 @@ _slack_webhook_strategy: st.SearchStrategy[str] = st.from_regex(
 )
 
 # RFC-5322-ish email address; we keep the shape narrow because the
-# dispatcher does not validate the address — it just hashes it for the
+# dispatcher does not validate the address - it just hashes it for the
 # ``target`` column.
 _email_strategy: st.SearchStrategy[str] = st.from_regex(
     r"^[a-z]{1,8}@[a-z]{1,8}\.(com|io|test)$", fullmatch=True
@@ -330,7 +330,7 @@ def _run(coro):
 
 
 # ---------------------------------------------------------------------------
-# invariant — dispatch, logging, idempotency, and redaction behavior
+# invariant - dispatch, logging, idempotency, and redaction behavior
 # ---------------------------------------------------------------------------
 
 
@@ -411,13 +411,13 @@ def test_notification_dispatch_invariants(
     # whenever any channel was eligible. If no channel was eligible
     # (e.g. failure with no slack webhook AND no notify_email) the
     # dispatcher still renders the template upfront so the body_hash
-    # remains stable for any forthcoming retry — but the property only
+    # remains stable for any forthcoming retry - but the property only
     # asserts the *name* selected was correct.
     rendered_names = [n for n, _ in prompts.render_calls]
     assert all(
         name == expected_template for name in rendered_names
     ), (
-        f"invariant — template selection: expected only "
+        f"invariant - template selection: expected only "
         f"{expected_template!r} renders, got {rendered_names!r} for "
         f"status={result.status!r}, notify_on_success="
         f"{dept.notify_on_success}."
@@ -616,13 +616,13 @@ def test_notification_dispatch_idempotent_retry(
  ``UNIQUE(dedup_key)`` constraint across both calls. The
  dispatcher's contract: once the first call lands the row, the
  second call sees ``log_store.insert`` return ``False`` and skips
- the adapter send. End state — adapter call count is the *same*
+ the adapter send. End state - adapter call count is the *same*
  after the second call as it was after the first.
 
 
  """
 
-    # Skip the configurations that produce no dispatch at all — there's
+    # Skip the configurations that produce no dispatch at all - there's
     # nothing to dedup if the first call was already a pure no-op.
     is_failure = result.status == "failed"
     if not is_failure and not dept.notify_on_success:
@@ -648,7 +648,7 @@ def test_notification_dispatch_idempotent_retry(
     rows_after_first = len(store.rows)
     seen_dedup_after_first = set(store.seen_dedup_keys)
 
-    # --- Second call with identical inputs — must be idempotent ---
+    # --- Second call with identical inputs - must be idempotent ---
     outcome_b = _run(
         service.notify_workflow_completion(
             workflow_id=workflow_id,
@@ -683,7 +683,7 @@ def test_notification_dispatch_idempotent_retry(
 
     # The retry's outcome surfaces ``*_skipped_dedup`` for whatever
     # channel was eligible in the first call. We don't assert the
-    # specific flags (they depend on which channels fired) — the
+    # specific flags (they depend on which channels fired) - the
     # adapter-count + row-count invariants above cover the core
     # idempotency contract.
     # However: any channel that fired in call A and was eligible in
@@ -707,7 +707,7 @@ def test_notification_dispatch_idempotent_retry(
 
 
 # ---------------------------------------------------------------------------
-# Concrete regression anchors — pinned examples that complement the
+# Concrete regression anchors - pinned examples that complement the
 # Hypothesis search by fixing a representative input on each branch.
 # ---------------------------------------------------------------------------
 

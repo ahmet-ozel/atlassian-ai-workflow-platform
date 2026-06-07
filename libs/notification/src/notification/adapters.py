@@ -1,4 +1,4 @@
-"""Protocol-typed adapter contracts for the notification dispatcher.
+﻿"""Protocol-typed adapter contracts for the notification dispatcher.
 
 The notification service depends on three :class:`~typing.Protocol`s instead
 of concrete classes so:
@@ -7,9 +7,9 @@ of concrete classes so:
   ``aiosmtplib`` email adapter without re-touching this module.
 * Tests can inject lightweight in-memory fakes that
   capture every dispatch call and the row that lands in
-  ``shared.notification_log`` — no Postgres, no real network.
+  ``shared.notification_log`` - no Postgres, no real network.
 
-The protocols are intentionally minimal — only the calls
+The protocols are intentionally minimal - only the calls
 :meth:`NotificationService.notify_workflow_completion` makes are part of
 the contract. Anything else (rate limiting, retry policy, vault
 resolution) lives inside the concrete implementations.
@@ -51,10 +51,10 @@ class SlackAdapter(Protocol):
 
     Two methods, two destinations:
 
-    * :meth:`send` — dept-scoped notifications. The webhook is the dept's
+    * :meth:`send` - dept-scoped notifications. The webhook is the dept's
       Slack channel resolved from ``vault:notifications/{dept_id}/slack``
       (sibling lib ``vault_client``); the caller passes the resolved URL.
-    * :meth:`send_admin_channel` — platform-wide admin alarms (sibling task
+    * :meth:`send_admin_channel` - platform-wide admin alarms (sibling task
       8.3). The webhook is **always** the admin channel resolved by the
       adapter from ``vault:notifications/slack/admin``; callers do not pass
       a webhook because the destination is fixed: the
@@ -79,7 +79,7 @@ class SlackAdapter(Protocol):
 
         The destination webhook is **fixed** to the vault-resolved value at
         ``vault:notifications/slack/admin`` and is intentionally *not*
-        configurable per call — this is the platform's mandatory ops
+        configurable per call - this is the platform's mandatory ops
         alarm channel and must not be overridden by dept config.
 
         Args:
@@ -119,7 +119,7 @@ class PromptRenderer(Protocol):
     """Render a prompt body by logical name.
 
     The notification service consumes a *narrowed* slice of
-    :class:`prompts.loader.PromptLoader` — only :meth:`render` is part of
+    :class:`prompts.loader.PromptLoader` - only :meth:`render` is part of
     the contract. Defining a Protocol here keeps the lib free of a hard
     dependency on :mod:`prompts` (which would force every consumer to
     install the prompts loader even when they only need the dispatcher's
@@ -165,7 +165,7 @@ class NotificationLogEntry:
         );
 
     The ``id`` and ``created_at`` columns are populated by Postgres so
-    they are not part of this dataclass — the store implementation is
+    they are not part of this dataclass - the store implementation is
     responsible for not passing them through to the SQL emitter.
 
     Frozen + ``slots=True`` so the entry is a value object that the
@@ -192,7 +192,7 @@ class NotificationLogStore(Protocol):
     successfully) or ``False`` when ``dedup_key`` already existed (i.e.
     the ``UNIQUE`` constraint rejected the insert). Returning a boolean
     instead of raising on duplicate-key keeps the dispatch path branch-free
-    — the call site simply skips the adapter send when ``False``.
+    - the call site simply skips the adapter send when ``False``.
 
     Concrete implementations translate this contract to
     the Postgres ``INSERT INTO shared.notification_log ... ON CONFLICT
@@ -206,7 +206,7 @@ class NotificationLogStore(Protocol):
         Returns:
             ``True`` if the row was newly inserted, ``False`` if an
             existing row already has the same ``dedup_key`` (idempotent
-            retry — the caller MUST skip the adapter send).
+            retry - the caller MUST skip the adapter send).
         """
 
         ...

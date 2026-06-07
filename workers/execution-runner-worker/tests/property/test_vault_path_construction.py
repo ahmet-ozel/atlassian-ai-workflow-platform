@@ -1,4 +1,4 @@
-"""Vault credential path construction.
+﻿"""Vault credential path construction.
 
 For any valid department ID matching the schema pattern
 ``[a-z][a-z0-9-]{1,30}``, the :func:`build_vault_path` function returns a
@@ -18,7 +18,7 @@ from src.activities.credential_injector import build_vault_path
 
 
 # Strategy: generate valid department IDs matching the schema pattern
-# [a-z][a-z0-9-]{1,30} — starts with a lowercase letter, followed by
+# [a-z][a-z0-9-]{1,30} - starts with a lowercase letter, followed by
 # 1-30 lowercase alphanumeric or hyphen characters.
 dept_id_strategy = st.from_regex(r"[a-z][a-z0-9-]{1,30}", fullmatch=True)
 

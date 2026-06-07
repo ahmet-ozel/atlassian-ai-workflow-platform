@@ -1,4 +1,4 @@
-"""Docker environment variable injection completeness.
+﻿"""Docker environment variable injection completeness.
 
 For any set of environment variables defined in department configuration, all
 key-value pairs appear as ``--env`` parameters in the docker run
@@ -7,7 +7,7 @@ command, with no additions or omissions.
 The function under test, :func:`build_docker_run_command`, is a pure
 helper that constructs the docker run command string from a
 :class:`DockerRunInput` dataclass. It requires no SSH connection,
-Temporal runtime, or external services — making it ideal for
+Temporal runtime, or external services - making it ideal for
 property-based testing.
 
 We use Hypothesis to generate random environment variable dictionaries
@@ -97,7 +97,7 @@ def test_all_env_vars_present_as_env_flags(env_vars: dict[str, str]) -> None:
 
     cmd = build_docker_run_command(run_input)
 
-    # Count --env occurrences — must equal the number of env vars
+    # Count --env occurrences - must equal the number of env vars
     env_flag_count = cmd.count("--env ")
     assert env_flag_count == len(env_vars), (
         f"Expected {len(env_vars)} --env flags in the command, "
@@ -190,7 +190,7 @@ def test_empty_env_dict_produces_no_env_flags(env_vars: dict[str, str]) -> None:
 @given(env_vars=_env_dict_strategy)
 def test_none_environment_produces_no_env_flags(env_vars: dict[str, str]) -> None:
     """A None environment produces zero --env flags."""
-    # env_vars is drawn but unused — we always pass None to confirm
+    # env_vars is drawn but unused - we always pass None to confirm
     # the None path is safe regardless of what Hypothesis generates.
     run_input = DockerRunInput(
         image="test-image:latest",

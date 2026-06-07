@@ -1,4 +1,4 @@
-"""Step state machine validity.
+﻿"""Step state machine validity.
 
 For any workflow step, its status only transitions through valid states:
 pending -> running -> (completed | failed).
@@ -47,7 +47,7 @@ def test_only_valid_transitions_accepted(from_state: str, to_state: str) -> None
     )
 )
 def test_terminal_states_have_no_transitions(transitions: list[str]) -> None:
-    """completed and failed are terminal — no outgoing transitions."""
+    """completed and failed are terminal - no outgoing transitions."""
     for state in transitions:
         if state in ("completed", "failed"):
             assert _VALID_TRANSITIONS[state] == set()

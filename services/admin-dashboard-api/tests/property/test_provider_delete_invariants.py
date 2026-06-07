@@ -1,4 +1,4 @@
-"""— Provider-in-use deletes are blocked before any side-effect.
+﻿"""- Provider-in-use deletes are blocked before any side-effect.
 * Provider with at least one referencing dept → 409 with ``dept_ids``
   matching the override set; no Vault or DB write happens.
 * Provider with no overrides + healthy Vault delete → row removed

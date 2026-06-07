@@ -1,4 +1,4 @@
-"""Property test: Worker Vault TTL Cache + Drift Detection.
+﻿"""Property test: Worker Vault TTL Cache + Drift Detection.
 
 For any clock advance sequence ``dt = (t0, t1, ..., tN)`` and Vault
 change event sequence, ``CredentialResolver.get(...)`` behaviour:
@@ -13,7 +13,7 @@ change event sequence, ``CredentialResolver.get(...)`` behaviour:
   is emitted.
 
 The injectable ``clock`` parameter on ``CredentialResolver.__init__``
-is used to advance time deterministically — no freezegun/time-machine
+is used to advance time deterministically - no freezegun/time-machine
 dependency required.
 """
 
@@ -257,7 +257,7 @@ def _build_user_resolver(
 ) -> tuple[CredentialResolver, str]:
     """Return a resolver wired for user scope + the expected Vault path."""
     vault_path = f"secret/atlassian/_user_session/{session_id}/{service}"
-    # user scope bypasses DB; pool is never consulted — pass a dummy pool
+    # user scope bypasses DB; pool is never consulted - pass a dummy pool
     pool = _FakePool("_unused", "_unused", "_unused")
     resolver = CredentialResolver(vault, pool, audit, clock=clock)
     return resolver, vault_path
@@ -331,7 +331,7 @@ class TestTTLCacheInvariant:
         )
         _seed_vault(vault, path)
 
-        # First call — populates cache (1 Vault read expected)
+        # First call - populates cache (1 Vault read expected)
         await resolver.get(dept_id, service, "org")
         reads_after_first = vault.total_reads(path)
         assert reads_after_first == 1, (
@@ -341,7 +341,7 @@ class TestTTLCacheInvariant:
         # Advance time within TTL
         clock.advance(advance_seconds)
 
-        # Subsequent calls — must NOT hit Vault
+        # Subsequent calls - must NOT hit Vault
         for _ in range(extra_calls):
             await resolver.get(dept_id, service, "org")
 
@@ -374,7 +374,7 @@ class TestTTLCacheInvariant:
         )
         _seed_vault(vault, path)
 
-        # First call — populates cache
+        # First call - populates cache
         await resolver.get("_any_dept", service, "user", session_id=session_id)
         assert vault.total_reads(path) == 1
 
@@ -448,14 +448,14 @@ class TestTTLExpiration:
         )
         _seed_vault(vault, path)
 
-        # First call — populates cache
+        # First call - populates cache
         await resolver.get(dept_id, service, "org")
         assert vault.total_reads(path) == 1
 
         # Advance past TTL
         clock.advance(advance_seconds)
 
-        # Call after TTL — must trigger exactly one more Vault read
+        # Call after TTL - must trigger exactly one more Vault read
         await resolver.get(dept_id, service, "org")
         assert vault.total_reads(path) == 2, (
             f"Expected 2 total Vault reads (initial + post-TTL refresh), "
@@ -571,7 +571,7 @@ class TestDriftDetection:
         # Seed initial version
         initial_entry = _seed_vault(vault, path, created_offset=0)
 
-        # First call — populates cache, no drift yet
+        # First call - populates cache, no drift yet
         await resolver.get(dept_id, service, "org")
         assert len(audit.refreshed_events()) == 0, (
             "No drift audit expected on first (cold) cache population"
@@ -589,7 +589,7 @@ class TestDriftDetection:
         # Advance past TTL so cache expires
         clock.advance(advance_seconds)
 
-        # Refresh call — should detect drift and emit audit
+        # Refresh call - should detect drift and emit audit
         await resolver.get(dept_id, service, "org")
 
         refreshed = audit.refreshed_events()
@@ -632,10 +632,10 @@ class TestDriftDetection:
         # First call
         await resolver.get(dept_id, service, "org")
 
-        # Advance past TTL — but Vault secret is unchanged
+        # Advance past TTL - but Vault secret is unchanged
         clock.advance(advance_seconds)
 
-        # Refresh call — same created_time, no drift
+        # Refresh call - same created_time, no drift
         await resolver.get(dept_id, service, "org")
 
         assert len(audit.refreshed_events()) == 0, (
@@ -664,7 +664,7 @@ class TestDriftDetection:
         )
         _seed_vault(vault, path, created_offset=0)
 
-        # Cold start — no prior cache entry
+        # Cold start - no prior cache entry
         await resolver.get(dept_id, service, "org")
 
         assert len(audit.refreshed_events()) == 0, (
@@ -839,7 +839,7 @@ class TestTTLBoundary:
         await resolver.get(dept_id, service, "org")
         assert vault.total_reads(path) == 1
 
-        # Advance to exactly TTL — cache is stale (now - cached_at == TTL, not < TTL)
+        # Advance to exactly TTL - cache is stale (now - cached_at == TTL, not < TTL)
         clock.advance(_TTL_SECONDS)
 
         await resolver.get(dept_id, service, "org")
@@ -882,7 +882,7 @@ class TestTTLBoundary:
 
         n_cycles = 3
         for cycle in range(n_cycles):
-            # First call in cycle — should hit Vault (cold or stale)
+            # First call in cycle - should hit Vault (cold or stale)
             await resolver.get(dept_id, service, "org")
             expected_reads = cycle + 1
             assert vault.total_reads(path) == expected_reads, (

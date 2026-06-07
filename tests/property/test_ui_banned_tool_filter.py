@@ -1,11 +1,11 @@
-"""UI banned tool list filtering parity.
+﻿"""UI banned tool list filtering parity.
 
 The Streamlit Explorer page (read-only direct MCP) and the chat
 page (proxy through assistant-service) MUST never expose a tool
 in the foundation banned-tool list. The foundation's
 ``mcp_client.filter_tools`` is the authoritative gate; this
 property test scans the page source for hard-coded references to
-banned tools (eg. ``"bitbucket_merge_pr"``) — finding any string
+banned tools (eg. ``"bitbucket_merge_pr"``) - finding any string
 literal naming a banned tool is a regression that bypasses the
 filter.
 """
@@ -48,7 +48,7 @@ def test_no_banned_tool_string_literal(page_name: str) -> None:
     source = page.read_text(encoding="utf-8")
     tree = ast.parse(source)
 
-    # Skip the module docstring — design notes legitimately mention
+    # Skip the module docstring - design notes legitimately mention
     # banned tool names. Only assert on string literals that appear
     # *inside* code (function bodies, list literals, expression
     # statements that are not the module docstring).

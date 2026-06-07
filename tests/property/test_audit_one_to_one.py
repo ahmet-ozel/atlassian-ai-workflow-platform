@@ -1,4 +1,4 @@
-"""Audit entries are one-to-one with final action outcomes.
+﻿"""Audit entries are one-to-one with final action outcomes.
 
 
 
@@ -19,7 +19,7 @@ SHALL satisfy three simultaneous guarantees:
  of attempted actions that did not raise a precondition error before
  any audit write happened (those raise before allocating a
  correlation_id). ``restart`` is internally implemented as ``stop ∘
- start`` so it produces **two** correlation_ids — one per leg.
+ start`` so it produces **two** correlation_ids - one per leg.
 
 3. **No Env_Override values in details_json**.
  For every audit row written across the whole trace, no value string
@@ -28,9 +28,9 @@ SHALL satisfy three simultaneous guarantees:
 
 Strategy
 --------
-* ``actions`` — ``st.lists(st.sampled_from(["start", "stop", "restart",
+* ``actions`` - ``st.lists(st.sampled_from(["start", "stop", "restart",
  "run_tests"]), min_size=1, max_size=20)`` for the lifecycle action set.
-* ``env_overrides`` — a fixed-key dict whose values are randomly
+* ``env_overrides`` - a fixed-key dict whose values are randomly
  generated ``st.text`` strings of length 8..40 from a printable
  alphabet (excluding ``"<"`` and ``">"`` so values cannot collide with
  the redaction sentinel and excluding whitespace so single-token
@@ -39,7 +39,7 @@ Strategy
  driven by deterministic fakes (mirrors ``test_stop_idempotent.py``
  and ``test_log_redaction.py``). The service's actual ``AuditWriter``
  is replaced by ``_FakeAuditWriter`` that stores every entry in a
- list — this acts as an in-memory test DB: no
+ list - this acts as an in-memory test DB: no
  PostgreSQL is required and ``correlation_id`` ↔ rows mapping is
  observable directly.
 
@@ -110,7 +110,7 @@ from src.manifest import ManagedServiceEntry  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
-# Fakes — unconditionally green; this property only inspects audit rows.
+# Fakes - unconditionally green; this property only inspects audit rows.
 # ---------------------------------------------------------------------------
 
 
@@ -154,7 +154,7 @@ class _FakeAuditWriter:
 
 @dataclass
 class _FakeVaultClient:
-    """In-memory Vault stub — KV writes succeed and round-trip on read."""
+    """In-memory Vault stub - KV writes succeed and round-trip on read."""
 
     writes: list[tuple[str, str, str]] = field(default_factory=list)
     stored: dict[str, dict[str, str]] = field(default_factory=dict)
@@ -238,7 +238,7 @@ class _FakeComposeRunner:
         )
         # Canonical pytest summary line so ``_parse_pytest_summary``
         # produces a structured ``TestSummary``. The numbers are fixed
-        # but realistic — the property is on audit row counts, not the
+        # but realistic - the property is on audit row counts, not the
         # summary content.
         stdout = "============== 3 passed in 0.42s ==============\n"
         return TestResult(
@@ -308,7 +308,7 @@ def _entry() -> ManagedServiceEntry:
         # ``test_command`` must be present for ``run_tests`` to skip
         # the "no test_command" precondition error and proceed to the
         # state check (which is the precondition we *do* want to
-        # exercise —.
+        # exercise -.
         test_command=(
             "docker compose -f infra/docker-compose.yml exec "
             f"{_COMPOSE_SERVICE_NAME} pytest tests/integration/ -v"
@@ -332,7 +332,7 @@ def _make_service(
     # finds matching overrides on the Vault read path (the operational rule
     # 6.6). Without this seed, the first ``restart`` in a trace would
     # raise FormSchemaMismatchError and no audit row would be written
-    # for that leg — conflating two distinct contracts.
+    # for that leg - conflating two distinct contracts.
     vault.stored.setdefault(_MANIFEST_NAME, {"PORT": "8080"})
     compose = _FakeComposeRunner()
     health = _FakeHealthProbe()
@@ -427,7 +427,7 @@ async def _run_action(
             resp = await svc.run_tests(name=_MANIFEST_NAME, actor="ops")
         except TestPreconditionError:
             # State was not ``running`` (or, theoretically, no
-            # test_command) — the action raised before allocating a
+            # test_command) - the action raised before allocating a
             # correlation_id or writing any audit row. Excluded from
             # the expected count.
             return False, None
@@ -487,7 +487,7 @@ def test_audit_one_to_one(
         for action in actions:
             audited, _resp = await _run_action(svc, action, env_overrides)
             if audited:
-                # ``restart`` is internally ``stop ∘ start`` — two
+                # ``restart`` is internally ``stop ∘ start`` - two
                 # correlation_ids, two audit "actions" from the
                 # auditing perspective.
                 attempted_with_audit += 2 if action == "restart" else 1
@@ -498,7 +498,7 @@ def test_audit_one_to_one(
     # ----- Check 1: every correlation_id has exactly one final row -----
     # A "final" row has ``outcome ∈ {"success", "failed"}``. The
     # ``start`` flow additionally writes one ``outcome="pending"``
-    # row beforehand — counted under ``write_calls`` but excluded
+    # row beforehand - counted under ``write_calls`` but excluded
     # here because it is not the *final* outcome.
     by_corr: dict[UUID, list[AuditEntry]] = {}
     for row in audit.all_entries:
@@ -691,21 +691,21 @@ def test_env_override_value_never_appears_in_details_json(tmp_path: Path) -> Non
 #
 # Strategy
 # --------
-# * ``invalid_role`` — ``st.one_of(st.none, st.just(""),
+# * ``invalid_role`` - ``st.one_of(st.none, st.just(""),
 # whitespace-only strings, st.text filtered to NOT be in
 # AUDIT_ACTOR_ROLES)``. Each variant exercises a different branch
 # of:class:`AuditLogger.write`'s validation (None / empty /
 # unknown role).
-# * ``valid_role`` — ``st.sampled_from(AUDIT_ACTOR_ROLES)`` for the
+# * ``valid_role`` - ``st.sampled_from(AUDIT_ACTOR_ROLES)`` for the
 # positive case: every accepted role MUST round-trip through to
 # the underlying writer's ``insert_audit`` method, with no
 # ValueError raised.
-# * ``action`` / ``resource`` — short ASCII strings to avoid the
+# * ``action`` / ``resource`` - short ASCII strings to avoid the
 # policy's interaction with text encoding; the property is on
 # ``actor_role`` enforcement, not payload validation.
-# * ``dept_id`` — ``st.one_of(st.none, short_string)`` because
+# * ``dept_id`` - ``st.one_of(st.none, short_string)`` because
 # ``audit_events.dept_id`` is nullable for system-wide events
-# wording: "actor_role NULL değildir" — silently
+# wording: "actor_role NULL değildir" - silently
 # excluding dept_id from the rule).
 #
 # This test is **separate** from ``test_audit_one_to_one`` above, which
@@ -746,7 +746,7 @@ class _RecordingAuditWriter:
 # ---------------------------------------------------------------------------
 
 
-# Short printable strings — used for ``action`` / ``resource`` / etc.
+# Short printable strings - used for ``action`` / ``resource`` / etc.
 # We exclude control characters via ``st.characters`` so the values
 # are well-behaved for ``json.dumps`` if a future caller serialises
 # them.
@@ -756,7 +756,7 @@ _SHORT_ASCII: st.SearchStrategy[str] = st.text(
     max_size=24,
 )
 
-# Whitespace-only strings — these MUST be rejected by the writer
+# Whitespace-only strings - these MUST be rejected by the writer
 # (a role that is just whitespace is semantically empty).
 _WHITESPACE_ONLY: st.SearchStrategy[str] = st.sampled_from(
     (" ", "\t", " ", "\n", " \t \n")
@@ -791,7 +791,7 @@ _INVALID_ROLE: st.SearchStrategy[Any] = st.one_of(
     _TYPO_ROLES,
 )
 
-# Valid-role strategy — sampled from the runtime mirror.
+# Valid-role strategy - sampled from the runtime mirror.
 _VALID_ROLE: st.SearchStrategy[str] = st.sampled_from(sorted(AUDIT_ACTOR_ROLES))
 
 # Result strategy.
@@ -937,7 +937,7 @@ def test_audit_logger_admits_every_known_role(
     )
     assert writer.inserted[0] is event, (
         "The writer must receive the original AuditEvent unchanged "
-        "— AuditLogger only validates, it does not transform"
+        "- AuditLogger only validates, it does not transform"
     )
 
 
@@ -1009,8 +1009,8 @@ def test_audit_logger_rejects_empty_actor_role_concrete() -> None:
 def test_audit_logger_admits_system_role_concrete() -> None:
     """Concrete anchor: the ``system`` role is admitted (background events).
 
- Background processes — webhook handlers, probe runner, capability
- gate — write audit rows under the synthetic ``system`` actor_role.
+ Background processes - webhook handlers, probe runner, capability
+ gate - write audit rows under the synthetic ``system`` actor_role.
  The role is NOT in the four-role RBAC enumeration but IS in:data:`AUDIT_ACTOR_ROLES` for exactly this reason.
  """
 

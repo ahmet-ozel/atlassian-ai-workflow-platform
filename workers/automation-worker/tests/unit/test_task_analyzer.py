@@ -1,4 +1,4 @@
-"""Unit tests for the ``task_analyzer`` activity.
+﻿"""Unit tests for the ``task_analyzer`` activity.
 
 Strategy
 --------
@@ -11,7 +11,7 @@ The activity has two collaborators:
 
 Both are replaced with in-memory fakes registered through the module-
 level setters declared on ``task_analyzer``.  The activity is exercised
-as a plain coroutine — ``@activity.defn`` does not change the calling
+as a plain coroutine - ``@activity.defn`` does not change the calling
 contract for direct invocation.
 
 The prompt file is created in a tmp directory and ``set_prompt_path``
@@ -384,7 +384,7 @@ class TestWorkflowTypeValidation:
         """Every entry in VALID_WORKFLOW_TYPES is actually accepted."""
         # Use a dept config with web_search disabled to bypass the
         # downgrade for research_with_web/research_publish_confluence
-        # — those types remain valid (they will be downgraded but
+        # - those types remain valid (they will be downgraded but
         # status still ready).
         for wf in sorted(VALID_WORKFLOW_TYPES):
             fake_llm.response = _llm_payload(workflow_type=wf, confidence=0.9)
@@ -546,7 +546,7 @@ class TestPromptHotReload:
 
 
 # ---------------------------------------------------------------------------
-# Tests: YAML front-matter priority — uses real parser
+# Tests: YAML front-matter priority - uses real parser
 # ---------------------------------------------------------------------------
 
 

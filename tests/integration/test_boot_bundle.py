@@ -1,4 +1,4 @@
-"""Integration smoke test 9.1 — Boot_Bundle açılış davranışı.
+﻿"""Integration smoke test 9.1 - Boot_Bundle açılış davranışı.
 
 
 What it checks
@@ -16,7 +16,7 @@ What it checks
 * ``admin-dashboard-ui`` publishes host port ``3000`` and
  ``admin-dashboard-api`` publishes host port ``8082`` .
 * ``admin-dashboard-api`` ``/healthz`` returns ``200`` and ``/readyz``
- returns ``200`` — confirms that the Service_Manifest loaded cleanly
+ returns ``200`` - confirms that the Service_Manifest loaded cleanly
  + happy path).
 * The Next.js UI on ``http://localhost:3000`` answers with HTTP ``200``
  .
@@ -341,7 +341,7 @@ def test_boot_bundle_only_brings_up_four_services_and_they_are_healthy(
             f"  stderr: {up.stderr}"
         )
 
-        # ---- — only Boot_Bundle services running ----
+        # ---- - only Boot_Bundle services running ----
         running = _compose_ps_services(repo_root)
         assert running == BOOT_BUNDLE_SERVICES, (
             "Boot_Bundle invariant violated. `docker compose ps` should "
@@ -362,7 +362,7 @@ def test_boot_bundle_only_brings_up_four_services_and_they_are_healthy(
             f"; saw {sorted(api_ports)}"
         )
 
-        # ---- — HTTP probes ----
+        # ---- - HTTP probes ----
         # ``compose up --wait`` already gates on healthchecks, but a few
         # services (notably the Next.js UI) accept connections slightly
         # before they finish their first compile. The bounded poll

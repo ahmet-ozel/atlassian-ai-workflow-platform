@@ -1,4 +1,4 @@
-"""Unit tests for ``src.middleware.license_cap``.
+﻿"""Unit tests for ``src.middleware.license_cap``.
 
 Covers the workflow-start guard contract:
 
@@ -47,7 +47,7 @@ from middleware.license_cap import (  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
-# Fakes — asyncpg + audit logger
+# Fakes - asyncpg + audit logger
 # ---------------------------------------------------------------------------
 
 
@@ -199,7 +199,7 @@ class TestFetchCapForDept:
 
 
 # ---------------------------------------------------------------------------
-# enforce_license_cap — happy path
+# enforce_license_cap - happy path
 # ---------------------------------------------------------------------------
 
 
@@ -254,7 +254,7 @@ class TestEnforceAllows:
 
 
 # ---------------------------------------------------------------------------
-# enforce_license_cap — rejection paths
+# enforce_license_cap - rejection paths
 # ---------------------------------------------------------------------------
 
 
@@ -324,7 +324,7 @@ class TestEnforceRejects:
         assert exc_info.value.limit_type == "daily"
         assert exc_info.value.current == 50
         assert exc_info.value.max == 50
-        # Three SQL calls (cap, concurrent, daily) — no monthly query.
+        # Three SQL calls (cap, concurrent, daily) - no monthly query.
         assert len(pool._conn.calls) == 3
         assert audit.events[0].payload["limit_type"] == "daily"
 

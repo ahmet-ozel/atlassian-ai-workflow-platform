@@ -1,4 +1,4 @@
-"""Webhook ``delivery_id`` replay-dedup repository.
+﻿"""Webhook ``delivery_id`` replay-dedup repository.
 
 The :class:`ProcessedEventsRepo` is the HTTP-layer idempotency
 ledger for webhook deliveries. It backs the ``replay_dedup`` stage of
@@ -23,7 +23,7 @@ Rollback contract: when ``signalWithStart`` fails with HTTP
 503 (Temporal cluster unavailable), the surrounding webhook handler
 SHALL roll back the ``processed_events`` row so the webhook provider's
 retry can re-claim the same ``delivery_id``. The repo does NOT own
-the rollback transaction itself — it exposes the explicit
+the rollback transaction itself - it exposes the explicit
 :meth:`release` helper which the handler calls inside its except
 block. Tests cover the ``claim → release → claim`` round-trip.
 
@@ -34,7 +34,7 @@ Schema reference: ``platform/infra/postgres/11_workflows.sql`` block
 * ``provider``     TEXT NOT NULL CHECK (provider IN ('jira','bitbucket'))
 * ``received_at``  TIMESTAMPTZ NOT NULL DEFAULT now()
 
-The repo is intentionally minimal — every public method maps 1:1
+The repo is intentionally minimal - every public method maps 1:1
 onto a SQL statement against ``automation.processed_events``. Audit
 emission, the burst-debounce window, and the ``signalWithStart``
 dispatch itself are all the webhook handler's responsibility and
@@ -61,7 +61,7 @@ _LOG = logging.getLogger(__name__)
 Provider = Literal["jira", "bitbucket"]
 
 
-# Single-source SQL strings — held at module scope so contract tests
+# Single-source SQL strings - held at module scope so contract tests
 # can assert on the exact statement shape (the ``ON CONFLICT DO NOTHING``
 # clause IS the idempotency contract; mutating it without updating the
 # idempotency invariants would be a silent regression.
@@ -136,9 +136,9 @@ class ProcessedEventsRepo:
         Implementation strategy: a single
         ``INSERT ... ON CONFLICT DO NOTHING RETURNING delivery_id``.
         When the row is new the ``RETURNING`` clause yields the
-        inserted ``delivery_id`` and we report ``True`` — the caller
+        inserted ``delivery_id`` and we report ``True`` - the caller
         owns the workflow-start path. When the row already exists,
-        ``RETURNING`` yields no rows and we report ``False`` — the
+        ``RETURNING`` yields no rows and we report ``False`` - the
         caller emits ``duplicate_event_dropped`` and HTTP 200.
         Collapsing the lookup and the insert into a single
         round-trip closes the race window where a concurrent caller
@@ -219,7 +219,7 @@ class ProcessedEventsRepo:
         same delivery is processed exactly once across the full
         retry envelope.
 
-        The operation is itself idempotent — releasing a
+        The operation is itself idempotent - releasing a
         ``delivery_id`` that was already released (or never claimed)
         is a no-op and returns ``False``. Tests cover the
         round-trip ``claim → release → claim → True`` invariant.
@@ -229,7 +229,7 @@ class ProcessedEventsRepo:
 
         Returns:
             ``True`` when a row was removed; ``False`` when no row
-            matched (idempotent no-op — also the case after a
+            matched (idempotent no-op - also the case after a
             successful prior release).
         """
 

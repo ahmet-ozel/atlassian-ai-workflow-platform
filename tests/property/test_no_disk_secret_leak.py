@@ -1,4 +1,4 @@
-"""Env_Override values are never persisted to disk.
+﻿"""Env_Override values are never persisted to disk.
 
 
 
@@ -257,7 +257,7 @@ _EXCLUDED_DIR_NAMES: frozenset[str] = frozenset(
 #: Values shorter than this are skipped to avoid spurious collisions
 #: with ordinary file content (e.g. an 8-byte value that happens to
 #: contain the substring ``"abc"``). The Hypothesis strategy already
-#: enforces ``min_size=8`` so this guard is defensive — it should
+#: enforces ``min_size=8`` so this guard is defensive - it should
 #: rarely (if ever) trigger.
 _MIN_VALUE_LENGTH_FOR_SWEEP: int = 4
 
@@ -268,19 +268,19 @@ def _build_synthetic_workspace(root: Path, override_keys: list[str]) -> None:
 
  The workspace contains:
 
- * ``services/automation-service/.env.example`` — the LHS key set
+ * ``services/automation-service/.env.example`` - the LHS key set
  MUST equal ``override_keys`` because
  ``LifecycleService._validate_env_overrides`` raises:class:`FormSchemaMismatchError` on any mismatch (the operational rule).
- * ``infra/docker-compose.yml`` — placeholder so the file walk has
+ * ``infra/docker-compose.yml`` - placeholder so the file walk has
  something to inspect under ``infra/`` (no Compose CLI is
- actually invoked — the runner is a fake).
- * ``config/services.manifest.json`` — placeholder for the same
+ actually invoked - the runner is a fake).
+ * ``config/services.manifest.json`` - placeholder for the same
  reason.
  * Top-level ``.env.example`` and ``README.md`` so the workspace
  root has artefacts to scan.
 
  Every Sensitive_Env_Key field in the ``.env.example`` is given an
- empty default — the operator's override is the *only* permissible
+ empty default - the operator's override is the *only* permissible
  source of sensitive values and the validator
  inside ``LifecycleService.start`` requires non-empty submitted
  values for those keys.
@@ -342,7 +342,7 @@ def _walk_workspace_files(root: Path) -> list[Path]:
 
  Directories whose ``name`` is in:data:`_EXCLUDED_DIR_NAMES` are
  pruned in-place during the walk so we never descend into them.
- Only regular files are returned — symlinks, sockets and other
+ Only regular files are returned - symlinks, sockets and other
  special files are skipped (none should exist in the synthetic
  workspace, but the guard keeps the walk hermetic).
  """
@@ -416,7 +416,7 @@ def _assert_no_disk_leak(
         for path in files:
             if _file_contains(path, needle):
                 rel = path.relative_to(workspace_root).as_posix()
-                # Do NOT print the value — the leak itself is the
+                # Do NOT print the value - the leak itself is the
                 # contract violation. Cite key + file only.
                 raise AssertionError(
                     f"Disk secrecy invariant violated: value of override key {key!r} appears "
@@ -447,7 +447,7 @@ def _assert_no_disk_leak(
         keys=st.from_regex(r"\A[A-Z][A-Z0-9_]{0,30}\Z", fullmatch=True),
         # min_size=8 satisfies the orchestrator's "non-empty sensitive
         # value" check without any classification
-        # guesswork — every value is non-empty regardless of whether
+        # guesswork - every value is non-empty regardless of whether
         # the key happens to match a Sensitive_Env_Key pattern.
         values=st.text(min_size=8, max_size=64),
         min_size=1,
@@ -457,7 +457,7 @@ def _assert_no_disk_leak(
 def test_env_override_values_are_not_persisted_to_disk(
     env_overrides: dict[str, str],
 ) -> None:
-    """invariant — Env_Override values never reach disk.
+    """invariant - Env_Override values never reach disk.
 
 
 
@@ -551,7 +551,7 @@ def test_env_override_values_are_not_persisted_to_disk(
         # ------------------------------------------------------------------
         # Audit details_json must not carry values either (invariant
         # surface; relevant here because the audit writer is a fake and
-        # therefore in-memory only — we still verify the *contract* the
+        # therefore in-memory only - we still verify the *contract* the
         # orchestrator delivers to it).
         # ------------------------------------------------------------------
         for entry in (*audit.write_calls, *audit.write_with_retry_calls):
@@ -730,9 +730,9 @@ def test_property9_redacted_logs_do_not_persist_to_disk(
  For an arbitrary credential-bearing log line, after emitting
  through a logger whose handlers all carry the platform's:class:`RedactionFilter`, the on-disk log file MUST contain:
 
- * **No plain-text secret bytes** — every generated secret value
+ * **No plain-text secret bytes** - every generated secret value
  is absent from the persisted file content and generated artifacts.
- * **No detector-shaped survivor** — the file MUST NOT contain
+ * **No detector-shaped survivor** - the file MUST NOT contain
  any ``KEY=blob``, ``Authorization: Basic blob`` or
  ``Bearer blob`` shape that another consumer might later
  mis-classify as a credential; failed test reports identify the
@@ -745,8 +745,8 @@ def test_property9_redacted_logs_do_not_persist_to_disk(
     line, creds, noise = payload
 
     # Same ``assume`` filter as the pure-string property: discard
-    # examples where a generated secret value coincides with — or is
-    # a substring of — a noise word, since the noise word is not
+    # examples where a generated secret value coincides with - or is
+    # a substring of - a noise word, since the noise word is not
     # something the redactor is responsible for masking.
     for _family, value, _token in creds:
         for noise_word in noise:
@@ -780,7 +780,7 @@ def test_property9_redacted_logs_do_not_persist_to_disk(
         # Read the persisted file back from disk.
         on_disk = log_path.read_text(encoding="utf-8")
 
-        # Invariant 1 — no generated secret value appears in the file.
+        # Invariant 1 - no generated secret value appears in the file.
         for family, value, token in creds:
             assert value not in on_disk, (
                 f"invariant violated (disk path): secret value "
@@ -791,7 +791,7 @@ def test_property9_redacted_logs_do_not_persist_to_disk(
                 f"Original line: {line!r}."
             )
 
-        # Invariant 2 — no detector regex matches anywhere in the
+        # Invariant 2 - no detector regex matches anywhere in the
         # persisted file.
         for label, detector in _PROP9_DETECTORS:
             match = detector.search(on_disk)
@@ -802,7 +802,7 @@ def test_property9_redacted_logs_do_not_persist_to_disk(
                 f"Original line: {line!r}."
             )
 
-        # Invariant 3 — the redaction sentinel is present (proof
+        # Invariant 3 - the redaction sentinel is present (proof
         # that the filter actually fired; without this check a
         # silent regression that *drops* every record would also
         # pass invariants 1 and 2).

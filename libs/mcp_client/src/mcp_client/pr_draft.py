@@ -1,4 +1,4 @@
-"""PR draft enforcement.
+﻿"""PR draft enforcement.
 
 When an LLM (or any other caller) hands us a pull request creation
 payload whose ``draft`` field is ``False`` or absent, this module
@@ -12,7 +12,7 @@ interceptors in this lib, future admin-dashboard tooling) must route
 every outgoing payload through :func:`enforce_pr_draft` before
 handing it off to a transport.
 
-The enforcement is unconditional — we never trust the caller's intent
+The enforcement is unconditional - we never trust the caller's intent
 on this field. Tests verify the universal property for arbitrary inputs.
 """
 
@@ -39,7 +39,7 @@ PR_DRAFT_AUDIT_ACTION: Final[str] = "pr_draft_enforced"
 
 
 # ---------------------------------------------------------------------------
-# enforce_pr_draft — coerce ``draft`` to True
+# enforce_pr_draft - coerce ``draft`` to True
 # ---------------------------------------------------------------------------
 
 
@@ -56,14 +56,14 @@ async def enforce_pr_draft(
     """Return a copy of ``payload`` with ``draft`` forced to ``True``.
 
     Every outgoing PR payload must have ``draft=True``. The function is
-    unconditional — if the caller's
+    unconditional - if the caller's
     payload says ``draft=False`` (or omits the field) we overwrite it
     and emit a ``pr_draft_enforced`` audit event so the override is
     traceable.
 
     Args:
         payload: The PR creation payload an LLM (or other caller)
-            produced. Treated as immutable input — the function
+            produced. Treated as immutable input - the function
             performs a deep-ish copy so mutations to the returned
             ``dict`` do not affect the caller's mapping.
         audit_logger: Optional :class:`audit_logger.AuditLogger`. When
@@ -86,7 +86,7 @@ async def enforce_pr_draft(
 
     Returns:
         A new ``dict`` mirroring ``payload`` with ``draft=True``. The
-        function never returns the input mapping itself — callers can
+        function never returns the input mapping itself - callers can
         mutate the result without aliasing concerns.
 
     Notes:
@@ -119,7 +119,7 @@ async def enforce_pr_draft(
     coerced["draft"] = True
 
     if needed_flip and audit_logger is not None:
-        # Imported lazily so the audit dependency stays optional —
+        # Imported lazily so the audit dependency stays optional -
         # callers that pass ``audit_logger=None`` don't need
         # ``audit_logger`` installed at all.
         from audit_logger import AuditEvent
@@ -146,7 +146,7 @@ async def enforce_pr_draft(
 # ---------------------------------------------------------------------------
 
 #: Sentinel sentinel used to distinguish "field was absent" from
-#: "field was explicitly ``None``". A bare ``object()`` is sufficient —
+#: "field was explicitly ``None``". A bare ``object()`` is sufficient -
 #: the value is never exposed to callers.
 _MISSING: Final[object] = object()
 

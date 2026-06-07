@@ -1,4 +1,4 @@
-"""Bot license hard-cap enforcement middleware.
+﻿"""Bot license hard-cap enforcement middleware.
 
 This module owns the workflow-start guard that rejects new
 ``AutomationWorkflow`` executions when a dept's license tier limit is
@@ -15,11 +15,11 @@ For a given ``dept_id`` and a fresh workflow start request, the
    ``automation.departments.license_id``). When the dept has no
    ``license_id`` (NULL / department predates license assignment), the
    helper falls back to the *default cap* baked into
-   :class:`LicenseCap` — ``max_concurrent_workflows=10``,
+   :class:`LicenseCap` - ``max_concurrent_workflows=10``,
    ``max_workflows_per_day=100``,
    ``max_token_usd_per_month=Decimal("1000.00")``.
-2. Reads three usage counters in a deterministic order — **concurrent
-   → daily → monthly_token** — short-circuiting on the *first*
+2. Reads three usage counters in a deterministic order - **concurrent
+   → daily → monthly_token** - short-circuiting on the *first*
    exceeded limit.
 3. If a limit is exceeded, writes a ``bot_license_cap_exceeded``
    audit row (``actor_role="system"``, ``result="denied"``) with
@@ -29,7 +29,7 @@ For a given ``dept_id`` and a fresh workflow start request, the
    exception into HTTP
    429 Too Many Requests with a structured body and a best-effort
    Jira acknowledgement comment.
-4. If every limit is below its cap, returns ``None`` — no audit row
+4. If every limit is below its cap, returns ``None`` - no audit row
    is written on the success path (silent allow).
 
 The audit write is **best-effort**: a failure inside
@@ -124,7 +124,7 @@ class LicenseCap:
         Hard cap on workflow starts within the current calendar day
         (UTC). All ``automation.work_items`` rows whose
         ``created_at`` falls inside the day window count, regardless
-        of final status — this matches the design intent that a
+        of final status - this matches the design intent that a
         runaway start storm should be reined in even if executions
         terminate fast.
     max_token_usd_per_month:
@@ -236,7 +236,7 @@ async def fetch_cap_for_dept(db: asyncpg.Pool, dept_id: str) -> LicenseCap:
         ``automation.departments.license_id``, or
         :data:`DEFAULT_LICENSE_CAP` when the dept has no license
         assigned (``license_id IS NULL``) or the dept itself does not
-        exist (defensive fallback — workflow start path validates
+        exist (defensive fallback - workflow start path validates
         dept existence elsewhere).
 
     Notes
@@ -262,7 +262,7 @@ async def fetch_cap_for_dept(db: asyncpg.Pool, dept_id: str) -> LicenseCap:
         row = await conn.fetchrow(sql, dept_id)
 
     if row is None:
-        # Dept row missing — treat as default cap. The workflow start
+        # Dept row missing - treat as default cap. The workflow start
         # path is responsible for surfacing a real "unknown dept"
         # error before this guard runs; falling through to the
         # default keeps the helper composable for tests that wire
@@ -419,7 +419,7 @@ async def _sum_monthly_token_cost(
 
 
 def _utcnow() -> datetime:
-    """Default clock — UTC ``now()`` with timezone awareness."""
+    """Default clock - UTC ``now()`` with timezone awareness."""
 
     return datetime.now(timezone.utc)
 
@@ -466,7 +466,7 @@ async def _emit_cap_exceeded_audit(
 
     try:
         from audit_logger import AuditEvent  # type: ignore[import-not-found]
-    except ImportError:  # pragma: no cover — defensive
+    except ImportError:  # pragma: no cover - defensive
         return
 
     # ``current`` / ``max`` are emitted as JSON-friendly primitives so
@@ -505,7 +505,7 @@ async def _emit_cap_exceeded_audit(
 
     try:
         await audit_logger.write(event)
-    except Exception:  # noqa: BLE001 — best-effort
+    except Exception:  # noqa: BLE001 - best-effort
         logger.warning(
             "bot_license_cap_exceeded audit write failed; "
             "rejection signal preserved",
@@ -568,17 +568,17 @@ async def enforce_license_cap(
 
     Notes
     -----
-    * **Comparison semantics** — limits are checked with ``>=``: a
+    * **Comparison semantics** - limits are checked with ``>=``: a
       workflow that would push usage *to* the cap is also rejected,
       because the start being guarded would tip usage over by 1
       (concurrent / daily) or by an a-priori-unknown amount
       (monthly_token, since the LLM cost is not known at start
       time).
-    * **Order matters** — the first exceeded limit wins; subsequent
+    * **Order matters** - the first exceeded limit wins; subsequent
       limits are not evaluated. This is part of the public contract
       so the 429 response surface stays predictable for clients
       retrying with backoff.
-    * **No success audit** — a green pass writes nothing. Audit
+    * **No success audit** - a green pass writes nothing. Audit
       volume is dominated by webhook traffic; adding a per-start row
       here would inflate it without operational benefit.
     """
@@ -588,7 +588,7 @@ async def enforce_license_cap(
     day_start = _start_of_utc_day(timestamp)
     month_start = _start_of_utc_month(timestamp)
 
-    # 1. Concurrent — running workflow executions in scope right now.
+    # 1. Concurrent - running workflow executions in scope right now.
     concurrent = await _count_concurrent_workflows(
         db, license_id=cap.license_id, dept_id=dept_id
     )
@@ -612,7 +612,7 @@ async def enforce_license_cap(
             issue_key=issue_key,
         )
 
-    # 2. Daily — workflow starts within the current UTC calendar day.
+    # 2. Daily - workflow starts within the current UTC calendar day.
     daily = await _count_workflows_today(
         db,
         license_id=cap.license_id,
@@ -639,7 +639,7 @@ async def enforce_license_cap(
             issue_key=issue_key,
         )
 
-    # 3. Monthly token — production LLM cost (USD) since the start of
+    # 3. Monthly token - production LLM cost (USD) since the start of
     #    the current UTC calendar month.
     monthly = await _sum_monthly_token_cost(
         db,
@@ -667,7 +667,7 @@ async def enforce_license_cap(
             issue_key=issue_key,
         )
 
-    # All three caps under threshold — silent allow.
+    # All three caps under threshold - silent allow.
     return None
 
 

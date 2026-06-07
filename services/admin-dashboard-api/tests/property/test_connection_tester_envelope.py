@@ -1,4 +1,4 @@
-"""— Connection_Tester emits the exact upstream envelope per provider.
+﻿"""- Connection_Tester emits the exact upstream envelope per provider.
 the project spec: the per-provider URL, method, headers
 and body produced by :class:`ConnectionTester` exactly match the
 design table. ``Authorization`` / ``OpenAI-Organization`` headers are
@@ -39,7 +39,7 @@ def _capture_transport() -> tuple[
     def handler(request: httpx.Request) -> httpx.Response:
         captured.append(request)
         if request.method == "GET":
-            # vLLM /models — return a single-model list so the model
+            # vLLM /models - return a single-model list so the model
             # echo extraction has something to project from.
             return httpx.Response(
                 200,

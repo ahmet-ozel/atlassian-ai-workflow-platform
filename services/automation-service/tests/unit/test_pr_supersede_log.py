@@ -1,4 +1,4 @@
-"""Unit tests for ``automation_service.pr_supersede_log``.
+﻿"""Unit tests for ``automation_service.pr_supersede_log``.
 
 Validates the contract documented on
 :class:`automation_service.pr_supersede_log.PrSupersedeLogRepo`:
@@ -8,7 +8,7 @@ Validates the contract documented on
   ``(workflow_id, old_pr_id, new_pr_id)`` parameter order;
 * the method returns ``True`` on a fresh insert and ``False`` on a
   duplicate ``(workflow_id, old_pr_id)`` pair (idempotency contract
-  required by R10.1 — the ``iter_advance`` activity is retried under
+  required by R10.1 - the ``iter_advance`` activity is retried under
   ``maximumAttempts <= 3``);
 * the SQL uses the schema-qualified table name and the exact ON
   CONFLICT target so the PK constraint declared in
@@ -61,7 +61,7 @@ def mock_pool() -> AsyncMock:
 
 
 # =============================================================================
-# record() — return-value contract
+# record() - return-value contract
 # =============================================================================
 
 
@@ -108,7 +108,7 @@ class TestRecord:
     async def test_idempotent_second_call_no_op(
         self, mock_pool: AsyncMock
     ) -> None:
-        """Two calls with the same key — second returns False (R10.1)."""
+        """Two calls with the same key - second returns False (R10.1)."""
 
         # First call simulates the fresh insert; second simulates the
         # ``ON CONFLICT DO NOTHING`` path.
@@ -131,7 +131,7 @@ class TestRecord:
 
 
 # =============================================================================
-# record() — SQL / parameter binding contract
+# record() - SQL / parameter binding contract
 # =============================================================================
 
 
@@ -223,7 +223,7 @@ class TestRecordSql:
 
 
 # =============================================================================
-# record() — connection lifecycle
+# record() - connection lifecycle
 # =============================================================================
 
 

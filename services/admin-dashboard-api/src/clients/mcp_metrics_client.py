@@ -1,4 +1,4 @@
-"""``McpMetricsClient`` (`platform gap-fill work` metrics client wiring).
+﻿"""``McpMetricsClient`` (`platform gap-fill work` metrics client wiring).
 
 
 Forwards a request to the MCP server's Prometheus exposition endpoint
@@ -31,7 +31,7 @@ samples from ``/metrics`` are cumulative since the MCP server started,
 which is the right shape for a snapshot view in the admin dashboard.
 A future iteration can layer a Prometheus PromQL query on top
 (``increase(mcp_requests_total[24h])``) by pointing the client at a
-Prometheus aggregator URL — until that lands, the snapshot view is the
+Prometheus aggregator URL - until that lands, the snapshot view is the
 documented behaviour.
 """
 
@@ -64,7 +64,7 @@ logger = logging.getLogger(__name__)
 REQUEST_COUNTER_NAME: str = "mcp_requests_total"
 
 #: Required label set carried by every counter sample. Samples missing
-#: any of these labels are skipped silently — the parser must not
+#: any of these labels are skipped silently - the parser must not
 #: explode on a malformed exposition line.
 _REQUIRED_LABELS: frozenset[str] = frozenset({"client_source", "tool", "status"})
 
@@ -88,13 +88,13 @@ class McpRequestCounter:
     Attributes mirror the Prometheus label set defined by the MCP
     server's middleware (metrics middleware wiring):
 
-    * ``client_source`` — value of ``X-Client-Source`` on the inbound
+    * ``client_source`` - value of ``X-Client-Source`` on the inbound
       MCP request (or ``"unknown"`` when absent).
-    * ``tool`` — MCP tool name (``tools/call``) or JSON-RPC method
+    * ``tool`` - MCP tool name (``tools/call``) or JSON-RPC method
       name (``initialize``, ``tools/list``, …) or HTTP path.
-    * ``status`` — ``"success"`` for HTTP 2xx, ``"error"`` otherwise.
-    * ``count`` — cumulative counter value since the MCP server
-      process started (Counter — monotonically increasing).
+    * ``status`` - ``"success"`` for HTTP 2xx, ``"error"`` otherwise.
+    * ``count`` - cumulative counter value since the MCP server
+      process started (Counter - monotonically increasing).
     """
 
     client_source: str
@@ -105,7 +105,7 @@ class McpRequestCounter:
     def to_response(self) -> dict[str, object]:
         """Serialise to the JSON shape returned by the router."""
 
-        # ``count`` is exposed as ``int`` to the FE — Prometheus
+        # ``count`` is exposed as ``int`` to the FE - Prometheus
         # counters are integers by contract (Counter.inc() defaults
         # to incrementing by 1), and JSON consumers prefer ints over
         # floats for whole numbers.
@@ -121,10 +121,10 @@ def parse_request_counters(text: str) -> list[McpRequestCounter]:
     """Parse Prometheus exposition into :class:`McpRequestCounter` rows.
 
     Only counter samples named ``mcp_requests_total`` (or
-    ``mcp_requests`` — the parser's legacy ``_total``-stripped form)
+    ``mcp_requests`` - the parser's legacy ``_total``-stripped form)
     are emitted; everything else is skipped silently. Samples missing
     any required label (``client_source`` / ``tool`` / ``status``)
-    are also skipped — the parser must not crash on a partial
+    are also skipped - the parser must not crash on a partial
     exposition.
 
     Args:
@@ -137,7 +137,7 @@ def parse_request_counters(text: str) -> list[McpRequestCounter]:
     rows: list[McpRequestCounter] = []
     try:
         families = list(text_string_to_metric_families(text))
-    except Exception as exc:  # noqa: BLE001 — the parser raises bare ``Exception``
+    except Exception as exc:  # noqa: BLE001 - the parser raises bare ``Exception``
         raise McpMetricsError(
             "failed to parse Prometheus exposition body",
             cause=exc,
@@ -234,7 +234,7 @@ def _short_body(response: httpx.Response) -> str:
 
     try:
         text = response.text
-    except Exception:  # pragma: no cover — body decoding edge case
+    except Exception:  # pragma: no cover - body decoding edge case
         return "<unreadable body>"
     if len(text) > 200:
         return text[:200] + "..."

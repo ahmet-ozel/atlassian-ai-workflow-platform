@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * Operations > License sayfası.
@@ -68,7 +68,7 @@ function formatUsd(value: number): string {
 }
 
 // ---------------------------------------------------------------------------
-// SVG Bar Chart — tek bir metrik için yatay bar
+// SVG Bar Chart - tek bir metrik için yatay bar
 // ---------------------------------------------------------------------------
 
 type BarProps = {
@@ -128,7 +128,7 @@ function MetricBar({ label, used, max, formatValue }: BarProps) {
 }
 
 // ---------------------------------------------------------------------------
-// SVG Line Chart — 30 günlük trend
+// SVG Line Chart - 30 günlük trend
 // ---------------------------------------------------------------------------
 
 const CHART_W = 480;
@@ -290,7 +290,7 @@ function LicenseCard({ entry }: LicenseCardProps) {
         if (!res.ok) {
           const text = await res.text().catch(() => "");
           setTrendError(
-            `Trend yüklenemedi: HTTP ${res.status}${text ? ` — ${text.slice(0, 120)}` : ""}`,
+            `Trend yüklenemedi: HTTP ${res.status}${text ? ` - ${text.slice(0, 120)}` : ""}`,
           );
           return;
         }
@@ -388,7 +388,7 @@ function LicenseCard({ entry }: LicenseCardProps) {
             fontWeight: 600,
           }}
         >
-          Son 30 gün — günlük workflow sayısı
+          Son 30 gün - günlük workflow sayısı
         </h3>
         {trendLoading && (
           <p style={{ color: "#9ca3af", fontSize: "0.85rem" }}>

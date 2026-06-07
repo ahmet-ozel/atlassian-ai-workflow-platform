@@ -1,4 +1,4 @@
-"""Remote-SSH-Docker runner — workspace path derivation entry point.
+﻿"""Remote-SSH-Docker runner - workspace path derivation entry point.
 
 Scope of this module
 --------------------
@@ -15,11 +15,11 @@ workspace mount point **only** through
 The Docker runner mounts that path into the container as a bind-mount
 working directory, so any drift between the SSH runner's ``cd <path>``
 and the Docker runner's ``-v <path>:<path>`` would manifest as missing
-files inside the container — :func:`derive_workspace_path` makes that
+files inside the container - :func:`derive_workspace_path` makes that
 drift impossible by construction.
 
 Behaviour mirrors :func:`runners.remote_ssh.derive_workspace_path`
-exactly — both flavours of remote runner share the same on-host layout
+exactly - both flavours of remote runner share the same on-host layout
 and the same ``RUNNER_BASE_PATH`` setting (with ``SSH_BASE_PATH`` as a
 deprecated alias). Keeping the two thin wrappers as parallel modules
 preserves the call-site grep target (a reader looking at
@@ -55,7 +55,7 @@ def derive_workspace_path(
     :func:`runners.workspace_path.build_workspace_path` that binds the
     ``base`` argument to :attr:`Settings.runner_base_path` (the
     ``RUNNER_BASE_PATH`` env var, with ``SSH_BASE_PATH`` as a deprecated
-    alias — see :mod:`src.config`).
+    alias - see :mod:`src.config`).
 
     The Docker runner uses the returned string both as the bind-mount
     source on the host and as the container working directory, so the

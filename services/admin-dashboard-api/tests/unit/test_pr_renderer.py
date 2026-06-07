@@ -1,4 +1,4 @@
-"""Unit tests for ``src.prompts.pr_renderer`` (the project 6.3).
+﻿"""Unit tests for ``src.prompts.pr_renderer`` (the project 6.3).
 The renderer is a pure function: every input is passed in, no I/O is
 performed. The tests exercise the four section emitters
 (:func:`_render_header`, :func:`_render_diff_section`,
@@ -17,7 +17,7 @@ Test cases cover:
   depending on the :class:`V15SyncStatus` shape.
 * :func:`extract_v15_status` extracts every backlog ID and reports
   the missing-from-architecture subset deterministically.
-* The renderer is deterministic — identical inputs produce
+* The renderer is deterministic - identical inputs produce
   byte-identical Markdown."""
 
 from __future__ import annotations
@@ -77,7 +77,7 @@ class TestHeaderAndDiff:
 
     def test_empty_diff_renders_empty_change_notice(self) -> None:
         out = render_pr_description(path="prompts/x.md", diff="")
-        assert "(no textual diff — empty change)" in out
+        assert "(no textual diff - empty change)" in out
 
     def test_long_diff_is_truncated_with_ellipsis(self) -> None:
         # 9000-char body forces the 8000-char truncation branch.
@@ -117,7 +117,7 @@ class TestSandboxSection:
         assert "| Invoked at | Sample input |" in out
         # Tokens rendered as ``in / out``.
         assert "42 / 17" in out
-        # Decimal preserved verbatim — no float rounding.
+        # Decimal preserved verbatim - no float rounding.
         assert "0.0123" in out
         # cost_tag invariant called out.
         assert "cost_tag='sandbox'" in out
@@ -139,7 +139,7 @@ class TestSandboxSection:
         )
         assert "a&#124;b" in out
         # And the raw ``|`` only appears as table separators, never
-        # inside a cell — count the un-escaped pipes; they should
+        # inside a cell - count the un-escaped pipes; they should
         # match the well-formed table shape.
         assert "a|b" not in out
 
@@ -290,7 +290,7 @@ class TestExtractV15Status:
         assert "B5" in status.all_ids
         assert "N17" in status.all_ids
         assert "T13" in status.all_ids
-        # Lowercase must not match — the regex is case-sensitive.
+        # Lowercase must not match - the regex is case-sensitive.
         assert "v2" not in status.all_ids
 
     def test_unique_and_sorted(self) -> None:
@@ -363,7 +363,7 @@ class TestDeterminism:
             sandbox_history=[run],
             v15_status=v15,
         )
-        # Byte-identical — the renderer holds no clock / random state.
+        # Byte-identical - the renderer holds no clock / random state.
         assert out_a == out_b
         # Trailing newline keeps committed strings tidy.
         assert out_a.endswith("\n")

@@ -1,4 +1,4 @@
-"""Bulk department import service.
+﻿"""Bulk department import service.
 
 Orchestrates the import of multiple departments from a single JSON
 file upload.  Reuses the staging pattern:
@@ -52,7 +52,7 @@ __all__ = [
 
 _LOG = logging.getLogger(__name__)
 
-# A connection factory — the orchestrator never owns pool lifecycle.
+# A connection factory - the orchestrator never owns pool lifecycle.
 ConnectionFactory = Callable[[], Awaitable[AsyncConnection]]
 
 
@@ -833,7 +833,7 @@ class BulkImportService:
     def _cleanup_staging(self, paths: list[VaultPath]) -> None:
         """Best-effort cleanup of staging Vault paths.
 
-        Failures are logged but do not propagate — the staging paths
+        Failures are logged but do not propagate - the staging paths
         will be garbage-collected by the periodic cleanup job.
         """
         for path in paths:

@@ -1,4 +1,4 @@
-"""External provider HTTP probe with credential injection and caching.
+﻿"""External provider HTTP probe with credential injection and caching.
 
 This module implements :func:`probe_external`, the helper that turns a
 ``kind="external"`` manifest entry into an :class:`ExternalProbeResult`
@@ -27,9 +27,9 @@ Key behaviours
 
 Design references
 -----------------
-* design notes §rule 10 — External Provider Downtime Widget.
-* implementation notes external probe wiring — External probe helper.
-* implementation notes audit and alarm wiring — Audit + alarm.
+* design notes §rule 10 - External Provider Downtime Widget.
+* implementation notes external probe wiring - External probe helper.
+* implementation notes audit and alarm wiring - Audit + alarm.
 * behaviors 10.3, 10.4, 10.7.
 """
 
@@ -555,7 +555,7 @@ async def emit_probe_audit(
     state = _get_streak_state(result.name)
 
     if result.status == "ok":
-        # Provider recovered — reset streak.
+        # Provider recovered - reset streak.
         state.consecutive_failures = 0
         state.streak_alert_emitted = False
         return

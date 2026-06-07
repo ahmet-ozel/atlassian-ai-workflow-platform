@@ -1,4 +1,4 @@
-"""Unit tests for the SSH activity module.
+﻿"""Unit tests for the SSH activity module.
 
 Tests ssh_connect_and_run and ssh_cleanup activities including:
 - Successful command execution via mocked paramiko
@@ -236,7 +236,7 @@ class TestSSHExecuteCommand:
                 timeout_seconds=1800,
             )
 
-        # Non-zero exit code is NOT an error — it's a valid result
+        # Non-zero exit code is NOT an error - it's a valid result
         assert result.exit_code == 1
         assert result.stderr == "FAILED"
 
@@ -376,7 +376,7 @@ class TestSSHCleanupWorkspace:
         )
 
     def test_swallows_exceptions(self) -> None:
-        """Cleanup is best-effort — exceptions are swallowed."""
+        """Cleanup is best-effort - exceptions are swallowed."""
         mock_paramiko = MagicMock()
         mock_key = MagicMock()
         mock_paramiko.RSAKey.from_private_key.return_value = mock_key
@@ -558,7 +558,7 @@ class TestSSHCleanup:
 
     @pytest.mark.asyncio
     async def test_swallows_exceptions(self) -> None:
-        """ssh_cleanup is best-effort — exceptions are swallowed."""
+        """ssh_cleanup is best-effort - exceptions are swallowed."""
         with (
             patch(
                 "src.activities.ssh._ssh_cleanup_workspace",

@@ -1,5 +1,5 @@
-"""
-Test 39: LLM Provider Management — Admin UI End-to-End .
+﻿"""
+Test 39: LLM Provider Management - Admin UI End-to-End .
 
 Validates that the ``/admin/llm-providers`` Next.js page renders
 against the live ``admin-dashboard-ui`` container, that its structural
@@ -136,13 +136,13 @@ def _page_source_path() -> Path:
 
 
 # ---------------------------------------------------------------------------
-# — Page is served by the UI container
+# - Page is served by the UI container
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.llm_providers
 class TestLlmProvidersPageReachable:
-    """ — ``GET /llm-providers`` returns HTTP 200 HTML."""
+    """ - ``GET /llm-providers`` returns HTTP 200 HTML."""
 
     def test_page_returns_200(self) -> None:
         _require_ui_or_skip()
@@ -156,13 +156,13 @@ class TestLlmProvidersPageReachable:
 
 
 # ---------------------------------------------------------------------------
-# — Structural anchors / testids are present in the rendered HTML
+# - Structural anchors / testids are present in the rendered HTML
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.llm_providers
 class TestPageStructuralAnchors:
-    """ — Add Provider button + provider table render in the page."""
+    """ - Add Provider button + provider table render in the page."""
 
     def test_add_provider_button_testid_present(self) -> None:
         _require_ui_or_skip()
@@ -196,13 +196,13 @@ class TestPageStructuralAnchors:
 
 
 # ---------------------------------------------------------------------------
-# — Page must not leak credential markers in rendered HTML
+# - Page must not leak credential markers in rendered HTML
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.llm_providers
 class TestPageDoesNotLeakCredentials:
-    """ — Server-rendered HTML carries no Sensitive_Field_Set markers.
+    """ - Server-rendered HTML carries no Sensitive_Field_Set markers.
 
  The DTO surface returns only ``api_key_masked``; this is a defence
  in depth check that asserts the rendered HTML does not contain a
@@ -230,13 +230,13 @@ class TestPageDoesNotLeakCredentials:
 
 
 # ---------------------------------------------------------------------------
-# — Page composes the expected components
+# - Page composes the expected components
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.llm_providers
 class TestPageComposition:
-    """ — Source-level structural contract on page.tsx.
+    """ - Source-level structural contract on page.tsx.
 
  The Playwright MCP harness validates the DOM; this test pins the
  source-level contract so a refactor that removes a component is
@@ -268,7 +268,7 @@ class TestPageComposition:
 
 
 # ---------------------------------------------------------------------------
-# — Evidence emission + Playwright state coordination
+# - Evidence emission + Playwright state coordination
 # ---------------------------------------------------------------------------
 
 

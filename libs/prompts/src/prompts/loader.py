@@ -1,4 +1,4 @@
-"""Git-aware ``PromptLoader`` with 30-second mtime hot-reload.
+﻿"""Git-aware ``PromptLoader`` with 30-second mtime hot-reload.
 
 This module handles hot-reload, ``prompt_version`` tracking via short
 git hash, and template variable injection. :mod:`prompts.types` and
@@ -7,21 +7,21 @@ validator the loader delegates to.
 
 Behavioural contract:
 
-* ``load(name)`` — file-backed; cached by ``name``. First call reads
+* ``load(name)`` - file-backed; cached by ``name``. First call reads
   the prompt body from disk, calls ``git rev-parse --short HEAD --
   <path>`` to capture ``git_hash`` and stores a ``_PromptEntry``.
   Subsequent calls return the cached body.
-* ``version(name)`` — returns the cached ``git_hash``. ``load`` must
+* ``version(name)`` - returns the cached ``git_hash``. ``load`` must
   be called first; raises :class:`KeyError` otherwise.
-* ``render(name, vars=...)`` — performs ``body.format(**asdict(vars))``;
+* ``render(name, vars=...)`` - performs ``body.format(**asdict(vars))``;
   any :class:`KeyError` is converted to
   :class:`PromptTemplateError` so CI can fail the build.
-* ``poll_loop()`` — async ``while True`` that re-stats every cached
+* ``poll_loop()`` - async ``while True`` that re-stats every cached
   prompt once per ``poll_interval_s`` seconds and refreshes the cache
   if ``mtime`` advanced.
-* ``_read(path)`` — every read invokes
+* ``_read(path)`` - every read invokes
   ``git rev-parse --short HEAD -- <path>`` via :mod:`subprocess`;
-  fail-soft — when ``git`` is unavailable or the file is untracked,
+  fail-soft - when ``git`` is unavailable or the file is untracked,
   ``git_hash`` falls back to ``"unknown"`` and a ``warning`` is
   logged.
 
@@ -31,7 +31,7 @@ Implementation notes
 * The cache key is the *logical name* (eg. ``"assistant_chat"``), not
   the resolved path. ``_resolve(name)`` walks ``self._roots`` in
   insertion order and returns the first matching ``<root>/<name>.md``.
-  Resolution is intentionally simple — multi-root layering is a
+  Resolution is intentionally simple - multi-root layering is a
   layering primitive, not a complex include system.
 * Hot-reload is **fail-soft**:
   if ``_read`` raises mid-poll, the existing cache row is kept and a
@@ -52,7 +52,7 @@ from .errors import PromptNotFoundError, PromptTemplateError
 from .types import _PromptEntry
 from .validate import validate_template_format
 
-if TYPE_CHECKING:  # pragma: no cover — only needed for static type checkers
+if TYPE_CHECKING:  # pragma: no cover - only needed for static type checkers
     from .types import PromptVars
 
 
@@ -92,7 +92,7 @@ class PromptLoader:
         roots: Ordered tuple of directories to search for prompts.
             ``load("assistant_chat")`` resolves to the first
             ``<root>/assistant_chat.md`` that exists. Earlier roots
-            shadow later ones — typical layering is
+            shadow later ones - typical layering is
             ``(service_local_root, shared_root)``.
         poll_interval_s: Seconds between mtime polls in
             :meth:`poll_loop`. Defaults to 30.
@@ -106,7 +106,7 @@ class PromptLoader:
     ) -> None:
         if not roots:
             raise ValueError("PromptLoader requires at least one root path")
-        # Defensive copy — callers occasionally hand in a mutable
+        # Defensive copy - callers occasionally hand in a mutable
         # list; storing the input verbatim would let them mutate our
         # search order from the outside.
         self._roots: tuple[Path, ...] = tuple(Path(r) for r in roots)
@@ -124,7 +124,7 @@ class PromptLoader:
         calls return the cached body verbatim.
 
         Args:
-            name: Logical prompt identifier — matches the file stem
+            name: Logical prompt identifier - matches the file stem
                 under one of ``self._roots`` (eg. ``"assistant_chat"``
                 resolves to ``<root>/assistant_chat.md``).
 
@@ -164,7 +164,7 @@ class PromptLoader:
 
         The mapping passed to
         :meth:`str.format` is the ``dataclasses.asdict`` projection of
-        ``vars`` — every field of :class:`prompts.types.PromptVars`
+        ``vars`` - every field of :class:`prompts.types.PromptVars`
         becomes a placeholder. ``frozenset`` and ``tuple`` fields are
         converted to deterministic, comma-joined strings so the
         rendered output is stable across runs (audit reproducibility).
@@ -188,7 +188,7 @@ class PromptLoader:
         # Stable, deterministic projections for collection fields. We
         # do *not* rely solely on ``dataclasses.asdict`` because that
         # leaves ``frozenset`` / ``tuple`` as Python collections, which
-        # would render as ``frozenset({'a', 'b'})`` literals — useless
+        # would render as ``frozenset({'a', 'b'})`` literals - useless
         # to an LLM. Joining these values keeps rendered prompts
         # stable and readable.
         render_vars = dict(dataclasses.asdict(vars))
@@ -223,7 +223,7 @@ class PromptLoader:
 
         Each iteration walks every cached prompt, re-stats the file
         and replaces the cache row when ``mtime`` advanced. Failures
-        are **fail-soft** — a single broken read keeps the existing
+        are **fail-soft** - a single broken read keeps the existing
         cache row in place and logs a warning so callers continue to
         serve the last-known-good prompt.
         """
@@ -232,7 +232,7 @@ class PromptLoader:
             for name in list(self._cache.keys()):
                 try:
                     fresh = self._read(name)
-                except Exception as exc:  # noqa: BLE001 — fail-soft cache refresh
+                except Exception as exc:  # noqa: BLE001 - fail-soft cache refresh
                     _log.warning(
                         "prompt hot-reload read failed; keeping cached body",
                         extra={"prompt": name, "error": str(exc)},
@@ -242,7 +242,7 @@ class PromptLoader:
                 cached = self._cache.get(name)
                 if cached is None:
                     # Race: the cache row was evicted while we were
-                    # reading. Drop our fresh copy on the floor — the
+                    # reading. Drop our fresh copy on the floor - the
                     # next ``load(name)`` will repopulate.
                     continue
 

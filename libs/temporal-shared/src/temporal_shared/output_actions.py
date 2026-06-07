@@ -1,4 +1,4 @@
-"""``output_actions`` partition + ApplyResult shape.
+﻿"""``output_actions`` partition + ApplyResult shape.
 
 This module ships the *pure* part of the output-actions pipeline that
 the :class:`AgentRunnerWorkflow` needs to wire its ``_execute_output_actions``
@@ -7,7 +7,7 @@ actions plus the :class:`ApplyResult` shape that records per-action
 success / failure.
 
 The full ``apply()`` orchestrator lives separately because it needs to
-invoke activities — that decision belongs to the calling workflow, not
+invoke activities - that decision belongs to the calling workflow, not
 a shared helper. Keeping :func:`partition` and
 :class:`ApplyResult` here gives the workflow body a single import
 surface and a stable wire shape that property tests / unit tests can
@@ -16,13 +16,13 @@ assert against without mocking activity dispatch.
 Classification:
 
 * :data:`temporal_shared.messages.CRITICAL_OUTPUT_ACTION_KINDS` and
-  :data:`temporal_shared.messages.BEST_EFFORT_OUTPUT_ACTION_KINDS` —
+  :data:`temporal_shared.messages.BEST_EFFORT_OUTPUT_ACTION_KINDS` -
   the single-source-of-truth classification table.  ``partition``
   consults the kind, not the carried ``severity`` field, so a
   malformed action whose ``severity`` disagrees with the kind cannot
   bypass the policy; kind classification wins.
 
-Replay safety: all helpers here are pure — no clocks, no randomness,
+Replay safety: all helpers here are pure - no clocks, no randomness,
 no globals.  They are safe to call from a Temporal workflow body or a
 plain ``@dataclass``-only test.
 """
@@ -83,12 +83,12 @@ class ApplyResult:
         Surfaced verbatim in the final Jira comment but does NOT abort
         the run.
 
-    The dataclass is mutable (``slots=True`` only — no ``frozen``) so
+    The dataclass is mutable (``slots=True`` only - no ``frozen``) so
     the workflow body can append to the lists during a run without
     rebuilding the instance via :func:`dataclasses.replace`.  This is
     safe inside a Temporal workflow because each ``_execute_output_actions``
     invocation builds its own :class:`ApplyResult` and never shares
-    the instance across replays — the result is fully reconstructed
+    the instance across replays - the result is fully reconstructed
     from the activity event history on each replay.
     """
 
@@ -113,8 +113,8 @@ def partition(
 ) -> tuple[tuple[OutputAction, ...], tuple[OutputAction, ...]]:
     """Split *actions* into ``(critical, best_effort)`` tuples.
 
-    Classification is driven by ``action.kind`` — not ``action.severity``
-    — so a deliberately mis-labelled action (severity ``"critical"``
+    Classification is driven by ``action.kind`` - not ``action.severity``
+    - so a deliberately mis-labelled action (severity ``"critical"``
     on a kind that lives in :data:`BEST_EFFORT_OUTPUT_ACTION_KINDS`)
     cannot bypass the partition by setting its severity field
     independently.  This mirrors the classification invariant:
@@ -133,7 +133,7 @@ def partition(
     Returns
     -------
     tuple[tuple[OutputAction, ...], tuple[OutputAction, ...]]
-        ``(critical, best_effort)`` — both immutable tuples so the
+        ``(critical, best_effort)`` - both immutable tuples so the
         caller cannot accidentally mutate the partition.
 
     Raises

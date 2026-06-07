@@ -1,19 +1,19 @@
-"""Unit tests for ``POST /admin/departments/{id}/repo-mappings/sync``.
+﻿"""Unit tests for ``POST /admin/departments/{id}/repo-mappings/sync``.
 
 Exercises the FastAPI router end-to-end via :class:`TestClient` plus
 hand-rolled fakes for every collaborator (OIDC validator, Bitbucket
 scanner, departments registry, audit logger). Three endpoint behaviors
 are covered:
 
-* **Dry-run does not mutate** — POST without ``?apply=true`` runs
+* **Dry-run does not mutate** - POST without ``?apply=true`` runs
   the scan + diff and returns the partition JSON, but
   :meth:`SupportsDepartmentsRepo.update_repo_mappings` is **never**
   called.
-* **Apply mode mutates + audits** — POST with ``?apply=true`` calls
+* **Apply mode mutates + audits** - POST with ``?apply=true`` calls
   ``update_repo_mappings`` exactly once with the new mapping list
   and emits a single ``repo_mapping_synced`` audit row carrying the
   diff in the payload.
-* **Non-admin → 403** — an authenticated viewer (or any non-admin
+* **Non-admin → 403** - an authenticated viewer (or any non-admin
   role) receives HTTP 403 with an ``rbac_denied`` audit row; the
   scanner and the registry writer are **never** called.
 
@@ -35,7 +35,7 @@ from fastapi.testclient import TestClient
 
 
 # ---------------------------------------------------------------------------
-# Path setup — mirrors the sibling cancel-endpoint test so the unit
+# Path setup - mirrors the sibling cancel-endpoint test so the unit
 # suite can run without an editable install of every libs/* package.
 # ---------------------------------------------------------------------------
 
@@ -248,7 +248,7 @@ def _post_sync(
 
 
 # ---------------------------------------------------------------------------
-# Tests — dry-run mode
+# Tests - dry-run mode
 # ---------------------------------------------------------------------------
 
 
@@ -313,7 +313,7 @@ class TestDryRunDoesNotMutate:
 
 
 # ---------------------------------------------------------------------------
-# Tests — apply mode
+# Tests - apply mode
 # ---------------------------------------------------------------------------
 
 
@@ -332,7 +332,7 @@ class TestApplyModeMutatesAndAudits:
         assert resp.json()["applied"] is True
         # update_repo_mappings was called exactly once with the
         # composed new list: surviving entries first (payment-callbacks
-        # only — legacy-repo dropped), then added entries in slug
+        # only - legacy-repo dropped), then added entries in slug
         # order (fraud-rules, new-repo).
         assert len(departments_repo.update_calls) == 1
         called_dept_id, new_mappings = departments_repo.update_calls[0]
@@ -376,7 +376,7 @@ class TestApplyModeMutatesAndAudits:
 
         body = resp.json()
         assert body["applied"] is True
-        # Same diff fields as dry-run — apply mode does not change
+        # Same diff fields as dry-run - apply mode does not change
         # the response shape, only the side effect.
         assert sorted(body["added"]) == ["fraud-rules", "new-repo"]
         assert body["removed"] == ["legacy-repo"]
@@ -384,7 +384,7 @@ class TestApplyModeMutatesAndAudits:
 
 
 # ---------------------------------------------------------------------------
-# Tests — RBAC: non-admin → 403
+# Tests - RBAC: non-admin → 403
 # ---------------------------------------------------------------------------
 
 
@@ -395,7 +395,7 @@ class TestNonAdminForbidden:
         "token,expected_actor_id,expected_role",
         [
             ("token-viewer", "bob", "viewer"),
-            # dept_admin role is *not* the same as global admin — even
+            # dept_admin role is *not* the same as global admin - even
             # for the dept's own ``dept_id`` the global guard rejects
             # it because ``required_role="admin"`` only admits the
             # ``"admin"`` role.
@@ -464,14 +464,14 @@ class TestNonAdminForbidden:
             resp = _post_sync(client, token="token-viewer", apply=False)
 
         assert resp.status_code == 403
-        # Authorization failure must not also emit a "synced" event —
+        # Authorization failure must not also emit a "synced" event -
         # the audit trail should make the denial unambiguous.
         synced = [e for e in sink.events if e.action == "repo_mapping_synced"]
         assert synced == []
 
 
 # ---------------------------------------------------------------------------
-# Tests — token-level authentication failures (401)
+# Tests - token-level authentication failures (401)
 # ---------------------------------------------------------------------------
 
 

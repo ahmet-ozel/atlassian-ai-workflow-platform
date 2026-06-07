@@ -1,11 +1,11 @@
-"""``execution-runner-worker`` boot script (canonical location).
+﻿"""``execution-runner-worker`` boot script (canonical location).
 
 Hosts the **single** Temporal worker that polls the
 ``execution-runner-tq`` task queue (workflows-spec Requirements 1.1,
-1.2 — *"a worker SHALL listen on exactly one task queue"*). The
+1.2 - *"a worker SHALL listen on exactly one task queue"*). The
 queue name is sourced from
 :func:`temporal_shared.workflow_registry.task_queue_for` so the boot
-script and the workflow modules share a single source of truth — the
+script and the workflow modules share a single source of truth - the
 queue string is never duplicated as a string literal anywhere in the
 worker package.
 
@@ -18,11 +18,11 @@ the module remains importable on hosts without every transitive
 runtime dependency (used by AST inspection in tests).
 
 Configuration is read from the process environment (no ``.env`` file
-loader at this layer — Compose / Kubernetes injects the values). The
+loader at this layer - Compose / Kubernetes injects the values). The
 keys consumed are documented in
 ``platform/workers/execution-runner-worker/.env.example``.
 
-Validates Requirements: 1.1, 1.2 — single-queue / canonical-workflow
+Validates Requirements: 1.1, 1.2 - single-queue / canonical-workflow
 invariant.
 """
 
@@ -38,7 +38,7 @@ from typing import Any
 # ``temporalio`` is the only mandatory runtime import. Guarded so
 # tests that exercise the boot script via AST inspection / patching
 # can still import this module on a host without the SDK.
-try:  # pragma: no cover — exercised at boot only
+try:  # pragma: no cover - exercised at boot only
     from temporalio.client import Client
     from temporalio.worker import Worker
 except ImportError:  # pragma: no cover
@@ -47,7 +47,7 @@ except ImportError:  # pragma: no cover
 
 # Single source of truth for the queue this worker polls. The helper
 # raises ``KeyError`` for unknown workflow names, so adding a new
-# workflow to this worker also requires extending the registry —
+# workflow to this worker also requires extending the registry -
 # the boot cannot silently fall through to a default queue (R1.2).
 from temporal_shared.workflow_registry import task_queue_for
 
@@ -56,7 +56,7 @@ from temporal_shared.workflow_registry import task_queue_for
 #: side-effect-free so it is safe to run during module import.
 EXECUTION_RUNNER_TASK_QUEUE: str = task_queue_for("ExecutionRunWorkflow")
 
-#: Default Temporal cluster address — overridden via ``TEMPORAL_HOST``
+#: Default Temporal cluster address - overridden via ``TEMPORAL_HOST``
 #: in the worker's ``.env`` when the cluster runs on a non-default
 #: hostname / port.
 DEFAULT_TEMPORAL_HOST: str = "temporal:7233"
@@ -78,7 +78,7 @@ def _load_workflow() -> Any | None:
     worker out via ``Worker = None``.
     """
 
-    try:  # pragma: no cover — exercised at boot only
+    try:  # pragma: no cover - exercised at boot only
         from src.workflows.execution_run_workflow import (  # type: ignore[import-not-found]
             ExecutionRunWorkflow,
         )
@@ -104,7 +104,7 @@ def _load_activities() -> list[Any]:
     """
 
     activities: list[Any] = []
-    try:  # pragma: no cover — exercised at boot only
+    try:  # pragma: no cover - exercised at boot only
         from src.activities.docker import (  # type: ignore[import-not-found]
             docker_cleanup_container,
             docker_run_container,
@@ -134,13 +134,13 @@ def _load_activities() -> list[Any]:
                 # MinIO
                 minio_upload_artifact,
                 minio_download_artifact,
-                # Docker (P0 stubs — deferred to next spec)
+                # Docker (P0 stubs - deferred to next spec)
                 docker_run_container,
                 docker_stop_container,
                 docker_cleanup_container,
             ]
         )
-    except ImportError as exc:  # pragma: no cover — diagnostic-only
+    except ImportError as exc:  # pragma: no cover - diagnostic-only
         _LOG.warning(
             "execution-runner-worker: activity module import failed "
             "(%s); the worker will start with the activity list empty. "
@@ -202,7 +202,7 @@ async def _run_async() -> None:
     for sig in (signal.SIGTERM, signal.SIGINT):
         try:
             loop.add_signal_handler(sig, stop_event.set)
-        except NotImplementedError:  # pragma: no cover — Windows
+        except NotImplementedError:  # pragma: no cover - Windows
             pass
 
     worker_task = asyncio.create_task(worker.run())
@@ -222,9 +222,9 @@ def run() -> None:
 
     try:
         asyncio.run(_run_async())
-    except KeyboardInterrupt:  # pragma: no cover — operator interrupt
+    except KeyboardInterrupt:  # pragma: no cover - operator interrupt
         _LOG.info("execution-runner-worker stopped by signal")
-    except Exception:  # noqa: BLE001 — top-level guard
+    except Exception:  # noqa: BLE001 - top-level guard
         _LOG.exception("execution-runner-worker failed to start")
         sys.exit(1)
 

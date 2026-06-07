@@ -1,6 +1,6 @@
-"""External link extractor (W3 deeplink helper reuse).
+﻿"""External link extractor (W3 deeplink helper reuse).
 
-**Covers 8.4 (rule 8 / Q9 — `external_links` field on
+**Covers 8.4 (rule 8 / Q9 - `external_links` field on
 ``GET /admin/workflows/{wf_id}``).**
 
 The W3 deep-link concept (architecture notes §16.12 W3) standardises how the
@@ -18,16 +18,16 @@ verbatim URL value it finds for each link type. Audits emitted by
 ``automation-service`` and ``agent-runner-worker`` already carry these
 URL strings:
 
-* ``jira_issue_url`` / ``jira_issue_link`` / ``issue_url`` — set by
+* ``jira_issue_url`` / ``jira_issue_link`` / ``issue_url`` - set by
   ``jira_build_issue_link`` activity output (see
   :mod:`agent_runner.workflows.agent_runner_workflow`).
-* ``pr_url`` / ``bitbucket_pr_url`` — set by ``bitbucket_create_pr``
+* ``pr_url`` / ``bitbucket_pr_url`` - set by ``bitbucket_create_pr``
   activity output and the cost-comment poster.
-* ``page_url`` / ``confluence_page_url`` / ``confluence_url`` — set by
+* ``page_url`` / ``confluence_page_url`` / ``confluence_url`` - set by
   ``confluence_create_page`` activity output.
 
 When none of those keys are populated, the helper returns an empty
-dict — the FE renders no link rather than a broken stub URL. This
+dict - the FE renders no link rather than a broken stub URL. This
 matches the W3 deep-link contract: deep links are only surfaced when
 the underlying resource exists.
 """
@@ -40,7 +40,7 @@ from typing import Any, Final
 __all__ = ["build_external_links"]
 
 
-#: Audit payload keys we accept as a Jira issue URL. Order matters —
+#: Audit payload keys we accept as a Jira issue URL. Order matters -
 #: the first non-empty match wins, so ``jira_issue_url`` (the
 #: canonical key) is checked before ``issue_url`` (a generic fallback
 #: used by older audit emitters).
@@ -88,7 +88,7 @@ def _first_url(
 ) -> str | None:
     """Return the first valid URL found under ``keys`` across ``payloads``.
 
-    Iterates over each payload in chronological order (oldest first —
+    Iterates over each payload in chronological order (oldest first -
     callers preserve that order from the ``audit_chain`` query) and
     returns the first ``https://``-prefixed string match. Older audits
     win on the assumption that the URL surfaced earliest in the

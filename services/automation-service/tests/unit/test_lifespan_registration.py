@@ -1,4 +1,4 @@
-"""Tests for lifespan registration.
+﻿"""Tests for lifespan registration.
 
 Pins the contract that :func:`automation_service.app.create_app` returns a
 :class:`fastapi.FastAPI` whose ``router.lifespan_context`` resolves to the
@@ -36,7 +36,7 @@ def _walk_closure_for_lifespan(fn: object, target_qualname: str) -> bool:
     FastAPI wraps every sub-router-attached lifespan in
     :func:`fastapi.routing._merge_lifespan_context`, which stashes the
     nested handlers inside the wrapper's closure cells.  We walk those
-    cells recursively to locate the production ``lifespan`` symbol —
+    cells recursively to locate the production ``lifespan`` symbol -
     that proves ``lifespan=lifespan`` was passed to ``FastAPI(...)``
     even when FastAPI's include_router calls layer additional
     ``_merge_lifespan_context`` shells on top.

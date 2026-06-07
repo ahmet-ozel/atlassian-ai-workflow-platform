@@ -1,11 +1,11 @@
-[build-system]
+﻿[build-system]
 requires = ["hatchling>=1.21"]
 build-backend = "hatchling.build"
 
 [project]
 name = "admin-dashboard-api"
 version = "0.0.0"
-description = "Admin Dashboard API — FastAPI service backing the operator UI."
+description = "Admin Dashboard API - FastAPI service backing the operator UI."
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 license = { text = "Proprietary" }

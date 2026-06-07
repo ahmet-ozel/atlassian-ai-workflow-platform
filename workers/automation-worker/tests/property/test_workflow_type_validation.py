@@ -1,4 +1,4 @@
-"""Workflow type validation.
+﻿"""Workflow type validation.
 
 For any ``workflow_type`` value from YAML or LLM, the ``analyze_task``
 activity accepts it only if the value exists in :data:`VALID_WORKFLOW_TYPES`;
@@ -6,11 +6,11 @@ all other values cause task rejection with a Jira comment posted.
 
 The two complementary properties checked here are:
 
-* **Acceptance** — every value drawn from ``VALID_WORKFLOW_TYPES``
+* **Acceptance** - every value drawn from ``VALID_WORKFLOW_TYPES``
   results in ``status == "ready"`` (when confidence ≥ 0.7 and the
   department has ``web_search_enabled = True`` so the downgrade rule
   is bypassed).
-* **Rejection** — every text value whose stripped form is not in
+* **Rejection** - every text value whose stripped form is not in
   ``VALID_WORKFLOW_TYPES`` results in ``status == "rejected"`` and a
   Jira comment is posted reporting the invalid type.
 """
@@ -29,7 +29,7 @@ from hypothesis import given, settings, strategies as st
 
 # ---------------------------------------------------------------------------
 # sys.path bootstrap (matches the pattern used by other property tests
-# in this package — keeps the module importable without requiring an
+# in this package - keeps the module importable without requiring an
 # editable install).
 # ---------------------------------------------------------------------------
 
@@ -52,7 +52,7 @@ from automation_worker.activities.task_analyzer import (  # noqa: E402
 # ---------------------------------------------------------------------------
 # One-time module setup: create a stub prompt file and point the analyzer
 # at it.  The activity reads the prompt body to render the LLM input,
-# but the fake LLM ignores it — so the file just needs to exist.
+# but the fake LLM ignores it - so the file just needs to exist.
 # ---------------------------------------------------------------------------
 
 _TMP_PROMPT_DIR: Path = Path(tempfile.mkdtemp(prefix="task_analyzer_pbt_p9_"))
@@ -65,7 +65,7 @@ set_prompt_path(_PROMPT_PATH)
 
 
 # ---------------------------------------------------------------------------
-# In-memory fakes (same shape as the unit-test fakes — kept local so
+# In-memory fakes (same shape as the unit-test fakes - kept local so
 # the property module is self-contained).
 # ---------------------------------------------------------------------------
 
@@ -104,7 +104,7 @@ class _FakeCommenter:
 
 
 # A dept config with web_search_enabled=True keeps the analyzer on the
-# straight path — the research_with_web / research_publish_confluence
+# straight path - the research_with_web / research_publish_confluence
 # downgrade only fires when the dept disables web search.  Setting it
 # to True here makes the *acceptance* property a pure validation test.
 _DEPT_CONFIG: dict[str, Any] = {
@@ -121,7 +121,7 @@ _DEPT_CONFIG: dict[str, Any] = {
 def _make_input(issue_key: str = "PAY-9") -> TaskAnalysisInput:
     """Build a minimal TaskAnalysisInput with no YAML front-matter.
 
-    The description is plain text so the YAML branch never fires —
+    The description is plain text so the YAML branch never fires -
     every example flows through the LLM path where the scripted fake
     controls ``workflow_type``.
     """
@@ -203,7 +203,7 @@ def test_valid_workflow_types_are_accepted(workflow_type: str) -> None:
 
 # Generator: arbitrary text whose *stripped* form is not a valid
 # workflow_type.  We strip because ``_result_from_llm`` itself trims
-# whitespace before validating — without the filter, hypothesis would
+# whitespace before validating - without the filter, hypothesis would
 # generate counter-examples like ``"  multi_step  "`` that are
 # legitimately valid after normalisation.
 _INVALID_WORKFLOW_TYPE = st.text(min_size=0, max_size=80).filter(
@@ -218,7 +218,7 @@ def test_invalid_workflow_types_are_rejected_with_comment(
 ) -> None:
     """For any text value not in VALID_WORKFLOW_TYPES, ``analyze_task``
     produces ``status == "rejected"`` and posts a Jira comment listing
-    the invalid value.  The original LLM confidence is irrelevant —
+    the invalid value.  The original LLM confidence is irrelevant -
     validation runs *before* the confidence gate.
     """
     llm = _FakeLLM(response=_llm_payload(workflow_type))
@@ -241,7 +241,7 @@ def test_invalid_workflow_types_are_rejected_with_comment(
     issue_key, body, dept_id = commenter.comments[0]
     assert issue_key == "PAY-9"
     assert dept_id == "payments"
-    # The comment text must mention rejection — either the literal
+    # The comment text must mention rejection - either the literal
     # invalid value or the ``<missing>`` marker when the stripped form
     # is empty (``_str_or_none`` collapses whitespace-only inputs to
     # ``None`` so the comment shows ``<missing>``).

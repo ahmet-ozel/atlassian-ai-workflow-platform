@@ -1,4 +1,4 @@
-"""Provider credential validation fails fast.
+﻿"""Provider credential validation fails fast.
 
 
 
@@ -42,7 +42,7 @@ from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — expose the assistant-service src so we can
+# sys.path bootstrap - expose the assistant-service src so we can
 # import the config module directly.
 # ---------------------------------------------------------------------------
 
@@ -135,7 +135,7 @@ def _make_settings(
 
 
 # ---------------------------------------------------------------------------
-# OpenAI — empty/missing API key → ConfigurationError
+# OpenAI - empty/missing API key → ConfigurationError
 # ---------------------------------------------------------------------------
 
 
@@ -169,7 +169,7 @@ class TestOpenAICredentialFailFast:
 
 
 # ---------------------------------------------------------------------------
-# Anthropic — empty/missing API key → ConfigurationError
+# Anthropic - empty/missing API key → ConfigurationError
 # ---------------------------------------------------------------------------
 
 
@@ -204,7 +204,7 @@ class TestAnthropicCredentialFailFast:
 
 
 # ---------------------------------------------------------------------------
-# vLLM — empty/invalid URL → ConfigurationError
+# vLLM - empty/invalid URL → ConfigurationError
 # ---------------------------------------------------------------------------
 
 
@@ -227,7 +227,7 @@ class TestVllmCredentialFailFast:
         # Pre-filter: only test values that are actually invalid URLs
         # (the strategy should produce only invalid ones, but double-check)
         if _is_valid_url(base_url):
-            # Skip this example — it's actually a valid URL
+            # Skip this example - it's actually a valid URL
             from hypothesis import assume
 
             assume(False)
@@ -284,7 +284,7 @@ class TestVllmCredentialFailFast:
 
 
 # ---------------------------------------------------------------------------
-# Cross-provider — any credential-requiring provider with
+# Cross-provider - any credential-requiring provider with
 # invalid credentials → ConfigurationError
 # ---------------------------------------------------------------------------
 
@@ -325,7 +325,7 @@ class TestCrossProviderFailFast:
 
 
 # ---------------------------------------------------------------------------
-# /healthz behavior — when credentials are invalid,
+# /healthz behavior - when credentials are invalid,
 # the boot fails before llm_client is set, so /healthz returns 503
 # ---------------------------------------------------------------------------
 

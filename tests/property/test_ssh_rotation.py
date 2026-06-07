@@ -1,4 +1,4 @@
-"""Property-based tests for SSH dual-slot rotation invariants.
+﻿"""Property-based tests for SSH dual-slot rotation invariants.
 
 For an arbitrary sequence of ``rotate_ssh_key`` calls against the same
 ``runner_id``, the slot machine maintained by a :class:`VaultClient`
@@ -9,7 +9,7 @@ SHALL satisfy:
 2. After every subsequent rotation: the *active* slot holds the latest
    key (``RotationResult.active_path``); the *previous* slot holds the
    key that was active just before this call.
-3. Rotation never loses material in flight — between any two successive
+3. Rotation never loses material in flight - between any two successive
    rotations the previous slot is exactly the prior active key, so an
    in-flight SSH session that was still using key ``v_(n-1)`` can be
    re-validated until the operator clears the slot.
@@ -87,7 +87,7 @@ def _make_key(fp: str) -> SshKey:
 
 
 # ---------------------------------------------------------------------------
-# Backend factories — clean instance per Hypothesis example
+# Backend factories - clean instance per Hypothesis example
 # ---------------------------------------------------------------------------
 
 
@@ -239,7 +239,7 @@ def test_active_previous_slot_invariant(
             else:
                 assert result.previous_path is not None
                 assert result.previous_path.raw == expected_previous
-                # 3. Previous slot equals the *prior* active payload —
+                # 3. Previous slot equals the *prior* active payload -
                 #    so an in-flight SSH session using key v_(n-1) can
                 #    still validate after we cut over to v_n.
                 previous_value = dict(backend.read(result.previous_path))
@@ -253,7 +253,7 @@ def test_active_previous_slot_invariant(
                 f"{backend_name}: active slot mismatch at rotation #{index}"
             )
 
-            # 5. Slots never coincide — leaking the same payload into
+            # 5. Slots never coincide - leaking the same payload into
             #    both would defeat the dual-slot invariant.
             if result.previous_path is not None:
                 assert active_value != dict(backend.read(result.previous_path))
@@ -313,7 +313,7 @@ def test_rotation_is_per_runner(
     backend = factory(tmp_path)
     try:
         backend.rotate_ssh_key(runner_a, _make_key(fp_a))
-        # B has no key yet — reading its active slot must raise.
+        # B has no key yet - reading its active slot must raise.
         with pytest.raises(KeyError):
             backend.read(
                 VaultPath.parse(f"vault:ssh/runners/{runner_b}/active")

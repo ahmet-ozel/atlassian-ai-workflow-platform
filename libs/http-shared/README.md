@@ -1,4 +1,4 @@
-# http-shared
+﻿# http-shared
 
 Shared HTTP client factory for the platform services. Every outgoing
 MCP or Firecrawl call must originate from :func:`http_shared.make_mcp_client`
@@ -6,11 +6,11 @@ so that the `X-Client-Source` header is stamped consistently.
 
 ## Public API
 
-- `KNOWN_CLIENT_SOURCES: frozenset[str]` — the eight Component identities
+- `KNOWN_CLIENT_SOURCES: frozenset[str]` - the eight Component identities
   that may appear in `X-Client-Source`. The `automation-worker`
   identity is included for worker-originated MCP calls.
 - `make_mcp_client(client_source, *, timeout=30.0, **kwargs) -> httpx.AsyncClient`
-  — returns an `httpx.AsyncClient` whose default headers already include
+  - returns an `httpx.AsyncClient` whose default headers already include
   `X-Client-Source: <client_source>`. Caller-supplied `headers=` are
   merged in, but the factory header wins on key collision.
 

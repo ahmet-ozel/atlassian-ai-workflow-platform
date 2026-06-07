@@ -1,4 +1,4 @@
-"""Unit tests for ``src.lifecycle.audit_writer`` .
+﻿"""Unit tests for ``src.lifecycle.audit_writer`` .
 These tests exercise :class:`AuditWriter` against a hand-rolled fake
 :class:`asyncpg.Pool` so we can verify the contract without spinning up
 PostgreSQL:
@@ -121,7 +121,7 @@ class _FakePool:
         self.execute_log: list[tuple[str, tuple[Any, ...]]] = []
         self.raise_on_execute: BaseException | None = None
         self.closed = False
-        # When True, ``raise_on_execute`` is NOT consumed one-shot — every
+        # When True, ``raise_on_execute`` is NOT consumed one-shot - every
         # acquired connection keeps raising. Used by the precheck
         # connection-error tests to simulate a genuinely-down DB where the
         # writer's one-shot pool-reset retry must also fail (→ 502).
@@ -133,7 +133,7 @@ class _FakePool:
             raise_on_execute=self.raise_on_execute,
         )
         # One-shot: clear the failure trigger after handing it to the
-        # connection so the *next* acquire returns a healthy conn — unless
+        # connection so the *next* acquire returns a healthy conn - unless
         # ``persist_failure`` keeps the failure mode latched.
         if not self.persist_failure:
             self.raise_on_execute = None
@@ -246,7 +246,7 @@ def test_details_with_env_keys_with_empty_iterable() -> None:
 
 
 # ---------------------------------------------------------------------------
-#  precheck —
+#  precheck -
 # ---------------------------------------------------------------------------
 
 
@@ -340,7 +340,7 @@ def test_precheck_propagates_non_connection_errors_verbatim() -> None:
 
 
 # ---------------------------------------------------------------------------
-#  write —
+#  write -
 # ---------------------------------------------------------------------------
 
 
@@ -438,7 +438,7 @@ def test_write_before_start_raises_runtime_error() -> None:
 
 
 # ---------------------------------------------------------------------------
-#  write_with_retry —
+#  write_with_retry -
 # ---------------------------------------------------------------------------
 
 

@@ -1,4 +1,4 @@
-"""Docker Inspect Health State Mapping (Q14).
+﻿"""Docker Inspect Health State Mapping (Q14).
 Docker Inspect Health State Mapping (Q14)**
 For any docker inspect `.State.Health.Status` output `S`, the
 `_probe_assume_running` behaviour is deterministic:
@@ -14,13 +14,13 @@ Strategy
 --------
 We mock ``asyncio.create_subprocess_exec`` to return a fake process that
 yields a configurable stdout string. Hypothesis generates:
-1. **Known-good statuses** — drawn from the three mapped values
+1. **Known-good statuses** - drawn from the three mapped values
    (``"healthy"``, ``"unhealthy"``, ``"starting"``); the expected state
    is the same string.
-2. **Unmonitored statuses** — drawn from the empty string, the Go-template
+2. **Unmonitored statuses** - drawn from the empty string, the Go-template
    sentinel ``"<no value>"``, and arbitrary strings that are *not* in the
    known-good set; the expected state is always ``"running_unmonitored"``.
-3. **Subprocess failure modes** — ``FileNotFoundError`` on spawn and a
+3. **Subprocess failure modes** - ``FileNotFoundError`` on spawn and a
    simulated timeout; both must yield ``"running_unmonitored"``.
 All three groups are exercised as separate ``@given`` properties so that
 Hypothesis can shrink counterexamples independently."""
@@ -38,7 +38,7 @@ from hypothesis import settings as hyp_settings
 from hypothesis import strategies as st
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — allow running directly under tests/property/
+# sys.path bootstrap - allow running directly under tests/property/
 # ---------------------------------------------------------------------------
 
 _SERVICE_ROOT = Path(__file__).resolve().parents[2]
@@ -142,7 +142,7 @@ _UNKNOWN_STATUS = st.text(
 
 
 # ---------------------------------------------------------------------------
-#  — known-good statuses map deterministically
+#  - known-good statuses map deterministically
 # ---------------------------------------------------------------------------
 
 
@@ -156,7 +156,7 @@ def test_known_docker_status_maps_deterministically(
     docker_status: str,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """— known docker health statuses map to the correct HealthState.
+    """- known docker health statuses map to the correct HealthState.
     For every ``S ∈ {"healthy", "unhealthy", "starting"}``, calling
     ``_probe_assume_running`` with a mocked ``docker inspect`` that returns
     ``S`` must yield ``snapshot.state == S`` deterministically."""
@@ -192,7 +192,7 @@ def test_known_docker_status_maps_deterministically(
 
 
 # ---------------------------------------------------------------------------
-#  — sentinel / empty / unknown statuses → running_unmonitored
+#  - sentinel / empty / unknown statuses → running_unmonitored
 # ---------------------------------------------------------------------------
 
 
@@ -211,7 +211,7 @@ def test_unmonitored_docker_status_yields_running_unmonitored(
     docker_status: str,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """— empty / sentinel / unknown statuses → running_unmonitored.
+    """- empty / sentinel / unknown statuses → running_unmonitored.
     For any ``S ∉ {"healthy", "unhealthy", "starting"}``, including the
     empty string and the Go-template ``"<no value>"`` sentinel,
     ``_probe_assume_running`` must yield ``snapshot.state == "running_unmonitored"``."""
@@ -241,7 +241,7 @@ def test_unmonitored_docker_status_yields_running_unmonitored(
 
 
 # ---------------------------------------------------------------------------
-#  — subprocess failure modes → running_unmonitored
+#  - subprocess failure modes → running_unmonitored
 # ---------------------------------------------------------------------------
 
 
@@ -255,7 +255,7 @@ def test_subprocess_failure_yields_running_unmonitored(
     failure_mode: str,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """— subprocess failures always yield running_unmonitored.
+    """- subprocess failures always yield running_unmonitored.
     Three subprocess failure modes must all map to ``"running_unmonitored"``:
     * ``FileNotFoundError`` on spawn (no ``docker`` binary on PATH).
     * Timeout (``asyncio.TimeoutError`` from ``wait_for``).
@@ -325,7 +325,7 @@ def test_probe_assume_running_is_deterministic(
     docker_status: str,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """— _probe_assume_running is deterministic for any input.
+    """- _probe_assume_running is deterministic for any input.
     Calling ``_probe_assume_running`` twice with the same ``docker inspect``
     output must yield the same ``state`` both times. This confirms the
     mapping is a pure function of the docker status string."""
@@ -353,7 +353,7 @@ def test_probe_assume_running_is_deterministic(
 
     assert state1 == state2, (
         f"docker status {docker_status!r}: first call returned {state1!r}, "
-        f"second call returned {state2!r} — mapping must be deterministic"
+        f"second call returned {state2!r} - mapping must be deterministic"
     )
     assert call_count == 2, (
         "Expected exactly 2 docker inspect calls (one per probe), "

@@ -1,17 +1,17 @@
-"""SSE-based test runner with true line-by-line subprocess streaming.
+﻿"""SSE-based test runner with true line-by-line subprocess streaming.
 
 Implements the backend infrastructure for
 ``POST /admin/services/{service_name}/test?stream=true``.
 
 This module provides:
 
-1. :func:`stream_subprocess_sse` — an async generator that spawns a
+1. :func:`stream_subprocess_sse` - an async generator that spawns a
    subprocess and yields stdout/stderr line-by-line as SSE ``data:``
    events, with a final ``event: done`` carrying the exit code.
 
 2. A standalone :class:`~fastapi.APIRouter` (``router``) that mounts
    the endpoint directly. This router is registered in ``main.py``
-   only when the ``services_lifecycle`` router is unavailable — when
+   only when the ``services_lifecycle`` router is unavailable - when
    both are present, ``services_lifecycle`` takes precedence because
    it is mounted first and FastAPI resolves the first matching route.
 
@@ -174,11 +174,11 @@ async def stream_subprocess_sse(
                     timeout=0.5,
                 )
             except asyncio.TimeoutError:
-                # No output yet — loop back to check disconnect
+                # No output yet - loop back to check disconnect
                 continue
 
             if not line_bytes:
-                # EOF — process has finished writing
+                # EOF - process has finished writing
                 break
 
             line = line_bytes.decode("utf-8", errors="replace").rstrip("\n\r")
@@ -351,7 +351,7 @@ async def run_tests(
     duration_ms = int((time.monotonic() - started) * 1000)
 
     # Persist the run to automation.test_runs so the dashboard keeps a
-    # durable pass/fail trend (E4 — gereksinim.txt G9). Best-effort:
+    # durable pass/fail trend (E4 - gereksinim.txt G9). Best-effort:
     # a persistence failure must not fail the test-run response.
     recorded: dict | None = None
     try:

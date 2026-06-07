@@ -1,4 +1,4 @@
-"""Unit tests for ``temporal_shared.workflow_registry``.
+﻿"""Unit tests for ``temporal_shared.workflow_registry``.
 
 Validates the :data:`WORKFLOW_TASK_QUEUES` mapping shape and the
 :func:`task_queue_for` lookup helper against
@@ -18,7 +18,7 @@ from temporal_shared.workflow_registry import (
 
 
 # ---------------------------------------------------------------------------
-# WORKFLOW_TASK_QUEUES — structural shape
+# WORKFLOW_TASK_QUEUES - structural shape
 # ---------------------------------------------------------------------------
 
 
@@ -103,7 +103,7 @@ class TestMappingShape:
         """
 
         ``BotBranchRetention`` is a cron piggy-back on the automation
-        worker — it MUST share ``automation-tq`` with
+        worker - it MUST share ``automation-tq`` with
         ``AutomationWorkflow``.
         """
         assert (
@@ -114,7 +114,7 @@ class TestMappingShape:
 
 
 # ---------------------------------------------------------------------------
-# task_queue_for — pure lookup helper
+# task_queue_for - pure lookup helper
 # ---------------------------------------------------------------------------
 
 
@@ -175,7 +175,7 @@ class TestTaskQueueFor:
 
 
 # ---------------------------------------------------------------------------
-# SupportsWorkerBoot — structural protocol shape
+# SupportsWorkerBoot - structural protocol shape
 # ---------------------------------------------------------------------------
 
 
@@ -213,7 +213,7 @@ class TestSupportsWorkerBootProtocol:
         )
         assert worker.task_queue == "automation-tq"
         # Confirms the boot signature accepts a single task_queue value
-        # produced by ``task_queue_for`` — the contract used by every
+        # produced by ``task_queue_for`` - the contract used by every
         # worker in ``platform/workers/*/src/.../main.py``.
 
     def test_protocol_is_importable(self) -> None:

@@ -1,4 +1,4 @@
-"""Webhook HMAC verification with rotation overlap support.
+﻿"""Webhook HMAC verification with rotation overlap support.
 
 Implements the R6.8 acceptance criterion: an Atlassian webhook signed
 under either the *current* or the *previous* per-department secret
@@ -8,9 +8,9 @@ overlap window expires, only the new secret is accepted.
 The helper is shared across the Jira, Bitbucket, and Confluence
 webhook handlers in ``automation-service``; it intentionally lives in
 ``vault_client`` (rather than ``services/automation-service/...``)
-because the storage layout — ``vault:webhooks/<provider>/<dept_id>``
+because the storage layout - ``vault:webhooks/<provider>/<dept_id>``
 plus its sibling ``.../previous`` slot with an embedded
-``overlap_until`` ISO timestamp — is owned by this package's
+``overlap_until`` ISO timestamp - is owned by this package's
 :class:`~vault_client.client.VaultClient` rotation helpers.
 
 Overlap window semantics
@@ -30,7 +30,7 @@ Overlap window semantics
   3. Otherwise, ``False``.
 
 Both candidate secrets are *always* attempted to keep the function's
-running time independent of which secret happens to match — callers
+running time independent of which secret happens to match - callers
 that race on signature checks would otherwise leak which slot a
 particular request was signed against.
 """
@@ -47,7 +47,7 @@ from .path import VaultPath
 
 _ALGORITHM_PREFIX = "sha256="
 
-# Allowed providers — kept in lock-step with
+# Allowed providers - kept in lock-step with
 # :meth:`VaultClient.rotate_webhook_secret` so an unsupported value
 # fails fast instead of silently mis-routing the lookup.
 _ALLOWED_PROVIDERS: frozenset[str] = frozenset({"jira", "bitbucket", "confluence"})
@@ -57,7 +57,7 @@ def _signature_matches(secret: bytes, body: bytes, signature_header: str) -> boo
     """Constant-time HMAC-SHA256 check against an ``X-Hub-Signature`` header.
 
     Returns ``False`` for malformed headers (missing prefix, empty
-    digest) without raising — webhook handlers translate ``False`` to
+    digest) without raising - webhook handlers translate ``False`` to
     HTTP 401, while exceptions would surface as 500s.
     """
     if not signature_header or not signature_header.startswith(_ALGORITHM_PREFIX):
@@ -77,7 +77,7 @@ def _coerce_secret(value: str) -> bytes:
 def _parse_overlap_until(payload: Mapping[str, str]) -> datetime | None:
     """Decode the ``overlap_until`` ISO-8601 stamp set during rotation.
 
-    A missing or unparsable stamp is treated as "no longer valid" — the
+    A missing or unparsable stamp is treated as "no longer valid" - the
     previous-slot fallback path is gated on a present, well-formed
     expiry, never on best-effort defaults.
     """

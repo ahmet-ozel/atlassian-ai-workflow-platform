@@ -1,4 +1,4 @@
-"""BITBUCKET_CREATE_PR_CLOUD importable from mcp_client.
+﻿"""BITBUCKET_CREATE_PR_CLOUD importable from mcp_client.
 
 This file contains an invariant that locks in the public import behavior:
 ``from mcp_client import BITBUCKET_CREATE_PR_CLOUD`` raises
@@ -32,7 +32,7 @@ the ``__all__`` list in ``__init__.py``.
 FAILURE MODE DOCUMENTATION
 =============================================================================
 
-Failure Mode A — package-level public surface:
+Failure Mode A - package-level public surface:
 ----------------------------------------------------------------------
 When run on UNFIXED code, the test fails with:
 
@@ -50,7 +50,7 @@ When run on UNFIXED code, the test fails with:
  (symbol exists in the submodule)
  → The assertion that both accesses succeed AND yield the same object FAILS.
 
-Failure Mode B — Collection-time error in test_deployment_router.py:
+Failure Mode B - Collection-time error in test_deployment_router.py:
 ----------------------------------------------------------------------
 When pytest collects platform/tests/unit/test_deployment_router.py on UNFIXED
 code, it raises:
@@ -73,9 +73,9 @@ PUBLIC IMPORT CHECK
 =============================================================================
 
 The invariant below encodes this behavior via:
- 1. importlib.import_module("mcp_client") — package-level access
- 2. getattr(mcp_client_pkg, "BITBUCKET_CREATE_PR_CLOUD") — symbol on package surface
- 3. mcp_client.deployment_router.BITBUCKET_CREATE_PR_CLOUD — submodule access
+ 1. importlib.import_module("mcp_client") - package-level access
+ 2. getattr(mcp_client_pkg, "BITBUCKET_CREATE_PR_CLOUD") - symbol on package surface
+ 3. mcp_client.deployment_router.BITBUCKET_CREATE_PR_CLOUD - submodule access
  4. Assert both (2) and (3) succeed AND yield the same object (``is`` identity)
 
 On UNFIXED code: step (2) raises AttributeError → test FAILS (bug confirmed).
@@ -106,7 +106,7 @@ def test_surface3_bitbucket_create_pr_cloud_reexported() -> None:
  (symbol is on the package public surface).
  3. ``mcp_client.deployment_router.BITBUCKET_CREATE_PR_CLOUD`` succeeds
  (symbol exists in the canonical submodule).
- 4. Both accesses yield the same object (``is`` identity — the re-export
+ 4. Both accesses yield the same object (``is`` identity - the re-export
  points to the same constant, not a copy).
 
  On UNFIXED code: this test FAILS at step (2) with:
@@ -115,14 +115,14 @@ def test_surface3_bitbucket_create_pr_cloud_reexported() -> None:
  This confirms the constant is in the submodule but NOT re-exported
  from ``mcp_client/__init__.py``.
 
- After fix — add re-export to __init__.py): this test PASSES.
+ After fix - add re-export to __init__.py): this test PASSES.
 
 
  """
     # Step 1: Package-level import must succeed (the package itself is importable)
     mcp_client_pkg = importlib.import_module("mcp_client")
     assert mcp_client_pkg is not None, (
-        "importlib.import_module('mcp_client') returned None — "
+        "importlib.import_module('mcp_client') returned None - "
         "the mcp_client package is not installed or not on sys.path"
     )
 
@@ -133,7 +133,7 @@ def test_surface3_bitbucket_create_pr_cloud_reexported() -> None:
     deployment_router = importlib.import_module("mcp_client.deployment_router")
     submodule_value = getattr(deployment_router, "BITBUCKET_CREATE_PR_CLOUD", None)
     assert submodule_value is not None, (
-        "mcp_client.deployment_router.BITBUCKET_CREATE_PR_CLOUD is None or missing — "
+        "mcp_client.deployment_router.BITBUCKET_CREATE_PR_CLOUD is None or missing - "
         "the constant was removed from the canonical submodule. "
         "Expected: Final[str] = 'bitbucket_create_pull_request_cloud' "
         "at platform/libs/mcp_client/src/mcp_client/deployment_router.py:39"

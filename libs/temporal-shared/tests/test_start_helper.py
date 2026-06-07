@@ -1,4 +1,4 @@
-"""Unit tests for ``temporal_shared.start_helper``.
+﻿"""Unit tests for ``temporal_shared.start_helper``.
 
 Validates the idempotency contract
 §"WorkflowAlreadyStarted" and the idempotency contract:
@@ -18,7 +18,7 @@ two reasons:
 * The helper accepts a structurally-typed client (``SupportsStartWorkflow``);
   a fake records what the helper actually forwards.
 * It avoids importing the heavy ``temporalio.client.Client`` at test
-  time — only ``WorkflowAlreadyStartedError`` from
+  time - only ``WorkflowAlreadyStartedError`` from
   ``temporalio.exceptions`` is needed.
 
 """
@@ -68,7 +68,7 @@ class _RecordingClient:
 
 
 # ---------------------------------------------------------------------------
-# Happy path — fresh start
+# Happy path - fresh start
 # ---------------------------------------------------------------------------
 
 
@@ -153,12 +153,12 @@ class TestFreshStart:
         )
 
         positional, _ = client.calls[0]
-        # Only the workflow_type — no payload was supplied.
+        # Only the workflow_type - no payload was supplied.
         assert positional == ("NoopWorkflow",)
 
 
 # ---------------------------------------------------------------------------
-# Idempotency — duplicate start
+# Idempotency - duplicate start
 # ---------------------------------------------------------------------------
 
 
@@ -192,7 +192,7 @@ class TestDuplicateStart:
         """
 
         The helper must echo the caller's ``workflow_id`` rather than
-        whatever the SDK exception happens to carry — this keeps the
+        whatever the SDK exception happens to carry - this keeps the
         contract provable from the function inputs alone.
         """
         client = _RecordingClient(

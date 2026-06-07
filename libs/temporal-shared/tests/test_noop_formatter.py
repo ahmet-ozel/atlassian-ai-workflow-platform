@@ -1,4 +1,4 @@
-"""Unit tests for ``temporal_shared.noop_formatter``.
+﻿"""Unit tests for ``temporal_shared.noop_formatter``.
 
 Validates the pure :func:`format_noop_result_comment` Jira-comment
 formatter against worked examples: success with ``exit_code=0`` and
@@ -6,7 +6,7 @@ formatter against worked examples: success with ``exit_code=0`` and
 above 1024 characters.
 
 The module is **pure**: every test below constructs inputs locally,
-calls the formatter, and asserts on the returned string — no clocks,
+calls the formatter, and asserts on the returned string - no clocks,
 no I/O, no fixtures.  This mirrors the test style of
 ``test_confluence_dedup.py`` (the closest existing analogue in this
 package).
@@ -30,7 +30,7 @@ from temporal_shared.noop_formatter import (
 
 
 # ---------------------------------------------------------------------------
-# Module-level invariants — pinned constants
+# Module-level invariants - pinned constants
 # ---------------------------------------------------------------------------
 
 
@@ -64,7 +64,7 @@ class TestModuleSurface:
         """
 
         The marker is rendered verbatim inside a fenced code block
-        — its leading ellipsis character makes it visually distinct
+        - its leading ellipsis character makes it visually distinct
         from the captured runner output.
         """
         assert NOOP_TRUNCATION_MARKER == "… [truncated]"
@@ -185,7 +185,7 @@ class TestFailureCases:
         """
 
         A failed run that produced no stdout still renders the
-        ``<yok>`` marker — the failure prefix alone signals the
+        ``<yok>`` marker - the failure prefix alone signals the
         outcome.
         """
         body = format_noop_result_comment(exit_code=1, stdout="")
@@ -203,7 +203,7 @@ class TestTruncation:
     def test_stdout_at_cap_is_not_truncated(self) -> None:
         """
 
-        Output exactly at the cap is preserved verbatim — the
+        Output exactly at the cap is preserved verbatim - the
         truncation marker only fires when the cap is *exceeded*.
         """
         stdout = "a" * NOOP_STDOUT_TRUNCATE_CHARS
@@ -215,7 +215,7 @@ class TestTruncation:
         """
 
         One character over the cap is enough to trigger the marker
-        — the cap is strict by design.
+        - the cap is strict by design.
         """
         stdout = "a" * (NOOP_STDOUT_TRUNCATE_CHARS + 1)
         body = format_noop_result_comment(exit_code=0, stdout=stdout)
@@ -341,7 +341,7 @@ class TestPurity:
         """
 
         Two calls with identical inputs must return identical
-        strings — the formatter has no hidden state.
+        strings - the formatter has no hidden state.
         """
         first = format_noop_result_comment(exit_code=0, stdout="ok\n")
         second = format_noop_result_comment(exit_code=0, stdout="ok\n")
@@ -367,7 +367,7 @@ class TestPurity:
         )
         for needle in forbidden:
             assert needle not in source, (
-                f"noop_formatter must not import {needle!r} — it would "
+                f"noop_formatter must not import {needle!r} - it would "
                 "couple the comment text to a clock or RNG and break "
                 "replay determinism when invoked from a Temporal "
                 "workflow."

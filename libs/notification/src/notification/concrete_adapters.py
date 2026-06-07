@@ -1,13 +1,13 @@
-"""Concrete adapters for the notification dispatcher (task **8.1**).
+﻿"""Concrete adapters for the notification dispatcher (task **8.1**).
 
 Implements the three :class:`~typing.Protocol`-typed surfaces declared
 in :mod:`notification.adapters` against real transports:
 
-* :class:`AiohttpSlackAdapter` — POST to the resolved Slack webhook
+* :class:`AiohttpSlackAdapter` - POST to the resolved Slack webhook
   with a 1 msg/sec/channel token bucket back-pressure.
-* :class:`AiosmtplibEmailAdapter` — STARTTLS SMTP send using SMTP
+* :class:`AiosmtplibEmailAdapter` - STARTTLS SMTP send using SMTP
   credentials resolved from Vault.
-* :class:`AsyncpgNotificationLogStore` — backs ``shared.notification_log``
+* :class:`AsyncpgNotificationLogStore` - backs ``shared.notification_log``
   via ``asyncpg.Pool`` with ``ON CONFLICT (dedup_key) DO NOTHING``
   semantics returning ``True`` / ``False``.
 
@@ -144,7 +144,7 @@ class AiohttpSlackAdapter:
                 )
 
     async def send_admin_channel(self, body: str, *, alert_type: str) -> None:
-        # The admin webhook is a dedicated channel — share the same
+        # The admin webhook is a dedicated channel - share the same
         # token bucket using a stable key so concurrent admin alarms
         # serialise properly.
         await self.bucket.acquire("__admin_channel__")
@@ -182,7 +182,7 @@ class AiohttpSlackAdapter:
 # Verify protocol satisfaction at import time when aiohttp is missing
 # the runtime check still passes because ``AiohttpSlackAdapter`` has
 # both methods declared statically.
-_ = SlackAdapter  # noqa: B018 — keep the symbol referenced
+_ = SlackAdapter  # noqa: B018 - keep the symbol referenced
 
 
 # ---------------------------------------------------------------------------
@@ -257,7 +257,7 @@ class AiosmtplibEmailAdapter:
         return f"{self.subject_prefix} {first_line}"
 
 
-_ = EmailAdapter  # noqa: B018 — keep the symbol referenced
+_ = EmailAdapter  # noqa: B018 - keep the symbol referenced
 
 
 # ---------------------------------------------------------------------------
@@ -300,4 +300,4 @@ class AsyncpgNotificationLogStore:
         return row is not None
 
 
-_ = NotificationLogStore  # noqa: B018 — keep the symbol referenced
+_ = NotificationLogStore  # noqa: B018 - keep the symbol referenced

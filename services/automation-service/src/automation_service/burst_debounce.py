@@ -1,4 +1,4 @@
-"""Comment-burst debounce coordinator.
+﻿"""Comment-burst debounce coordinator.
 
 This module owns the **final** stage of the webhook filter chain: a
 3-second debounce window that collapses consecutive events targeting
@@ -9,7 +9,7 @@ Why this stage lives outside the workflow body
 ----------------------------------------------
 
 Every other stage in :mod:`automation_service.webhook_filters` is a
-**pure** decision function — given the same input it always returns
+**pure** decision function - given the same input it always returns
 the same :class:`~automation_service.webhook_filters.FilterDecision`.
 The burst debouncer is the deliberate exception: it is **not**
 replay-safe, because it must observe wall-clock timing across
@@ -20,7 +20,7 @@ rather than inside the Temporal workflow:
 
 * If we ran this logic inside :class:`AgentRunnerWorkflow`, every
   Temporal replay would have to reproduce the original timer firing
-  order — which is non-deterministic by definition (server load,
+  order - which is non-deterministic by definition (server load,
   network jitter). The Temporal SDK explicitly forbids such patterns
   in workflow code; ``temporalio`` would refuse to replay the
   history.
@@ -37,20 +37,20 @@ Coordinator behaviour
 Given a :class:`~automation_service.webhook_filters.WebhookEvent`
 keyed by ``issue_key`` (PR id is a future extension):
 
-1. **Fresh window** — if no buffer exists for the issue, the
+1. **Fresh window** - if no buffer exists for the issue, the
    coordinator dispatches the event *immediately* and arms a 3-second
    timer that flushes any further events that arrive during the
    window. The caller receives ``("dispatch_now", event)`` and is
    expected to proceed with ``signalWithStart``.
 
-2. **Within an open window** — the coordinator stores the event in
+2. **Within an open window** - the coordinator stores the event in
    the buffer (overwriting the previous payload, since the design
    says "son event'in payload'ı korunur"), appends the delivery_id to
    the running ``coalesced_with`` list, and tells the caller
    ``("buffered", coalesced_count)`` so the FastAPI handler can
    return ``200 OK`` without dispatching.
 
-3. **Timer fires** — when the 3-second window expires, the
+3. **Timer fires** - when the 3-second window expires, the
    coordinator invokes the caller-supplied ``dispatch_callback`` with
    the **last** observed event for that issue (whose
    ``coalesced_with`` field now lists every delivery_id collapsed
@@ -68,15 +68,15 @@ Process-local scope
 The coordinator stores its state in a plain ``dict`` guarded by an
 ``asyncio.Lock``; all timing is via ``loop.call_later``. That makes
 it correct for a **single** ``automation-service`` worker process.
-Horizontal scaling — multiple automation-service replicas behind a
-load balancer — would race because each replica owns an independent
+Horizontal scaling - multiple automation-service replicas behind a
+load balancer - would race because each replica owns an independent
 buffer. The design earmarks Redis (or Postgres advisory locks) as
 the cross-process backend; that wiring is tracked separately. Until then, the deployment topology must
 ensure webhook deliveries for the same issue land on the same
 replica (typical Atlassian Connect / app sticky-session arrangement
 already provides this).
 
-Determinism contract — what *is* preserved
+Determinism contract - what *is* preserved
 ------------------------------------------
 
 While the coordinator is intentionally non-replay-safe, its
@@ -85,7 +85,7 @@ While the coordinator is intentionally non-replay-safe, its
 * Two events with **different** ``issue_key`` values never coalesce.
 * The terminal event's payload is preserved verbatim (only its
   ``coalesced_with`` field is appended to).
-* The flush callback fires exactly once per window — never zero
+* The flush callback fires exactly once per window - never zero
   times (modulo explicit ``aclose``) and never twice.
 * Delivery ids in ``coalesced_with`` appear in observation order so
   the audit log can reconstruct the burst.
@@ -134,20 +134,20 @@ DEFAULT_BURST_WINDOW: Final[timedelta] = timedelta(seconds=3)
 #: The callback receives the **last** observed :class:`WebhookEvent`
 #: for the issue, whose ``coalesced_with`` field already lists every
 #: delivery_id collapsed into the burst (the first delivery_id is the
-#: event that originally opened the window — see
+#: event that originally opened the window - see
 #: :meth:`BurstDebounceCoordinator.observe` for the exact semantics).
 #:
 #: The callback is awaited inside the coordinator's flush task; any
 #: exception it raises is logged and swallowed so a downstream failure
 #: cannot leak into the asyncio loop's exception handler. The
-#: coordinator does **not** retry — the design treats burst flush as a
+#: coordinator does **not** retry - the design treats burst flush as a
 #: best-effort dispatch path, mirroring the foundation
 #: ``signalWithStart`` retry semantics elsewhere.
 DispatchCallback = Callable[[WebhookEvent], Awaitable[None]]
 
 
 # ---------------------------------------------------------------------------
-# Result tag — what the FastAPI handler does next
+# Result tag - what the FastAPI handler does next
 # ---------------------------------------------------------------------------
 
 
@@ -162,17 +162,17 @@ class CoalesceResult:
     Fields
     ------
 
-    * :attr:`action` — ``"dispatch_now"`` means the caller should
+    * :attr:`action` - ``"dispatch_now"`` means the caller should
       immediately push the event to ``signalWithStart``; the returned
       ``event`` is the canonical payload to dispatch (its
       ``coalesced_with`` is empty for a fresh-window event).
       ``"buffered"`` means the event was merged into an open window
       and the caller should reply ``200 OK`` without dispatching; the
       flush will arrive later via the dispatch callback.
-    * :attr:`event` — populated only when :attr:`action` is
+    * :attr:`event` - populated only when :attr:`action` is
       ``"dispatch_now"``. ``None`` for buffered events because the
       caller has nothing to do with the payload.
-    * :attr:`coalesced_count` — populated only when :attr:`action` is
+    * :attr:`coalesced_count` - populated only when :attr:`action` is
       ``"buffered"`` and reports how many delivery_ids (including the
       current one) are now stacked in the window. Useful for audit
       logging the "this event was the Nth in the burst" message.
@@ -184,7 +184,7 @@ class CoalesceResult:
 
 
 # ---------------------------------------------------------------------------
-# Buffered delivery — internal state
+# Buffered delivery - internal state
 # ---------------------------------------------------------------------------
 
 
@@ -195,18 +195,18 @@ class BufferedDelivery:
     The buffer captures everything the flush task needs to dispatch a
     coalesced signal:
 
-    * :attr:`last_event` — the most recent :class:`WebhookEvent` for
+    * :attr:`last_event` - the most recent :class:`WebhookEvent` for
       the issue (its payload is the one we forward to Temporal). The
       buffer's ``coalesced_with`` accumulates delivery_ids of every
       event seen during the window, in observation order.
-    * :attr:`delivery_ids` — running list of delivery_ids that landed
+    * :attr:`delivery_ids` - running list of delivery_ids that landed
       in this window, including the one that opened it. Stored as a
       list so order is preserved for the audit log; serialised into a
       tuple when assigned to :class:`WebhookEvent.coalesced_with`.
 
       .. note::
          :class:`WebhookEvent` does not currently expose a
-         ``coalesced_with`` field — it lives on
+         ``coalesced_with`` field - it lives on
          :class:`automation_service.webhook_filters.FilterDecision`
          (the chain's verdict). The coordinator therefore returns the
          coalesced delivery_ids alongside the dispatched event so the
@@ -214,10 +214,10 @@ class BufferedDelivery:
          :class:`FilterDecision`. See :class:`CoalesceResult` and
          :meth:`BurstDebounceCoordinator.observe` for the contract.
 
-    * :attr:`window_started_at` — monotonic ``loop.time()`` at which
+    * :attr:`window_started_at` - monotonic ``loop.time()`` at which
       the window opened. Captured for diagnostics; the actual flush
       timing relies on :attr:`flush_handle`.
-    * :attr:`flush_handle` — the ``asyncio.TimerHandle`` returned by
+    * :attr:`flush_handle` - the ``asyncio.TimerHandle`` returned by
       ``loop.call_later``. Kept so :meth:`BurstDebounceCoordinator.aclose`
       can cancel pending timers cleanly.
     """
@@ -245,7 +245,7 @@ class BurstDebounceCoordinator:
     ------------
 
     The coordinator is constructed once per ``automation-service``
-    process — typically inside the FastAPI app startup hook — and
+    process - typically inside the FastAPI app startup hook - and
     stored on the application state alongside the
     :class:`WebhookFilterChain`. The chain forwards
     pass-decisioned events to :meth:`observe`; the FastAPI handler
@@ -281,8 +281,8 @@ class BurstDebounceCoordinator:
     -------
 
     Call :meth:`aclose` during application shutdown to cancel all
-    pending timers. Failing to do so is not catastrophic — the timers
-    are anchored to the loop and will be GC'd when the loop closes —
+    pending timers. Failing to do so is not catastrophic - the timers
+    are anchored to the loop and will be GC'd when the loop closes -
     but it produces noisy ``Task was destroyed but it is pending``
     warnings in tests.
     """
@@ -367,7 +367,7 @@ class BurstDebounceCoordinator:
             an **empty** ``coalesced_with`` because no other deliveries
             have been merged yet; the flush callback (invoked when
             the window closes) receives the terminal event with the
-            full ``coalesced_with`` list — including the original
+            full ``coalesced_with`` list - including the original
             delivery_id.
 
         Raises
@@ -418,7 +418,7 @@ class BurstDebounceCoordinator:
                     window_started_at=window_start,
                     flush_handle=None,
                 )
-                # ``call_later`` is sync — it schedules the callback
+                # ``call_later`` is sync - it schedules the callback
                 # on the loop without awaiting. We pass the issue_key
                 # rather than the buffer so the flush task re-acquires
                 # the lock and reads the *latest* buffer state, which
@@ -450,7 +450,7 @@ class BurstDebounceCoordinator:
     async def aclose(self) -> None:
         """Cancel pending timers and prevent further observations.
 
-        Any buffered events are **discarded without flushing** —
+        Any buffered events are **discarded without flushing** -
         shutdown is a hard stop. Callers that need a graceful drain
         should instead call :meth:`flush_all` before :meth:`aclose`.
         """
@@ -500,7 +500,7 @@ class BurstDebounceCoordinator:
             await self._dispatch_buffered(buffer)
 
     # ------------------------------------------------------------------
-    # Internal — flush plumbing
+    # Internal - flush plumbing
     # ------------------------------------------------------------------
 
     def _resolve_loop(self) -> asyncio.AbstractEventLoop:
@@ -524,7 +524,7 @@ class BurstDebounceCoordinator:
         if self._closed:
             return
         loop = self._loop
-        if loop is None:  # pragma: no cover — unreachable post-observe
+        if loop is None:  # pragma: no cover - unreachable post-observe
             return
         task = loop.create_task(self._flush_one(issue_key))
         self._inflight_flushes.add(task)
@@ -548,7 +548,7 @@ class BurstDebounceCoordinator:
 
         The terminal event is reconstructed by copying the buffered
         ``last_event`` and overwriting its ``raw_payload`` with the
-        original — :class:`WebhookEvent` is frozen so we use
+        original - :class:`WebhookEvent` is frozen so we use
         :func:`dataclasses.replace`. The ``coalesced_with`` payload
         for the burst lives in
         :class:`~automation_service.webhook_filters.FilterDecision`
@@ -562,7 +562,7 @@ class BurstDebounceCoordinator:
         swallowed: a failed dispatch must not propagate into the
         loop's exception handler (which would abort other in-flight
         webhook deliveries). Retry / DLQ handling is the caller's
-        responsibility — the coordinator's contract ends at "callback
+        responsibility - the coordinator's contract ends at "callback
         invoked exactly once per window".
         """
 
@@ -572,18 +572,18 @@ class BurstDebounceCoordinator:
 
         try:
             await self._dispatch_callback(terminal_event)
-        except Exception:  # noqa: BLE001 — last-line defence
+        except Exception:  # noqa: BLE001 - last-line defence
             # We intentionally swallow because the callback is
             # caller-supplied. Logging is left to the callback (it
             # owns the audit context). A bare ``except`` would also
             # swallow ``KeyboardInterrupt`` / ``SystemExit``, which
-            # we do not want — ``Exception`` excludes those by
+            # we do not want - ``Exception`` excludes those by
             # design.
             pass
 
 
 # ---------------------------------------------------------------------------
-# Helper — attach the coalesced delivery_ids to the terminal event
+# Helper - attach the coalesced delivery_ids to the terminal event
 # ---------------------------------------------------------------------------
 
 
@@ -616,7 +616,7 @@ def _attach_coalesced_marker(
 def extract_coalesced_marker(event: WebhookEvent) -> tuple[str, ...]:
     """Read the burst marker back from *event*'s payload.
 
-    Returns an empty tuple when the marker is absent or malformed —
+    Returns an empty tuple when the marker is absent or malformed -
     callers can then assume the event was dispatched as a singleton
     rather than as the terminal of a burst. The chain calls this
     helper when promoting a debounced flush into the outgoing

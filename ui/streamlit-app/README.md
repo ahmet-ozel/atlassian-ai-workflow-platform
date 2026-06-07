@@ -1,11 +1,11 @@
-# streamlit-app
+﻿# streamlit-app
 
 The end-user Streamlit UI. It provides the per-session **Credentials**,
 **Chat** and **Task Creator** surfaces, backed by `assistant-service` and
 `atlassian-mcp`.
 
 Governance surfaces (Workflows, PO Review, Orphan Branches) intentionally live
-in the **admin dashboard** (admin-gated), not here — every user who opens
+in the **admin dashboard** (admin-gated), not here - every user who opens
 Streamlit must not see operator-only controls.
 
 The admin-only MCP debug pages (`3_explorer`, `7_mcp_inspector`) are reachable
@@ -59,18 +59,18 @@ docker run --rm --env-file .env -p 38501:8501 streamlit-app
 ## Configuration
 
 Runtime settings come from environment variables (this project uses `.env`
-files only — there is no `.env.example`). Key variables:
+files only - there is no `.env.example`). Key variables:
 
-- `STREAMLIT_HOST_PORT` — host port published by Compose (default `38501`);
+- `STREAMLIT_HOST_PORT` - host port published by Compose (default `38501`);
   the container always listens on `8501`.
-- `LOG_LEVEL` — defaults to `INFO`.
-- `ASSISTANT_BASE_URL` — base URL of `assistant-service`
+- `LOG_LEVEL` - defaults to `INFO`.
+- `ASSISTANT_BASE_URL` - base URL of `assistant-service`
   (e.g. `http://assistant-service:8081`, the internal container address).
-- `MCP_BASE_URL` — base URL of `atlassian-mcp`
+- `MCP_BASE_URL` - base URL of `atlassian-mcp`
   (e.g. `http://atlassian-mcp:8090`, the internal container address).
-- `LLM_PROVIDER` / `LLM_MODEL_NAME` / `OPENAI_API_KEY` — entered from the
+- `LLM_PROVIDER` / `LLM_MODEL_NAME` / `OPENAI_API_KEY` - entered from the
   Dashboard Start modal, not committed to `.env`.
-- `CLIENT_SOURCE` — optional override; defaults to `streamlit-app`.
+- `CLIENT_SOURCE` - optional override; defaults to `streamlit-app`.
 
 > Service-to-service URLs use the internal container ports (`:8081`, `:8090`)
 > and never change. Only host-published ports are configurable, via the

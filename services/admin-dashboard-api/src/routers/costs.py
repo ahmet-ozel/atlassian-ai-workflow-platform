@@ -1,4 +1,4 @@
-"""``CostsRouter`` (`operations surface` cost router wiring).
+﻿"""``CostsRouter`` (`operations surface` cost router wiring).
 
 
 Surfaces the dept / model / trend cost views that the admin
@@ -10,11 +10,11 @@ pool is missing so the panel renders a soft warning instead of a
 
 Three endpoints:
 
-* ``GET /admin/costs/dept/{dept_id}`` — total + per-user breakdown
+* ``GET /admin/costs/dept/{dept_id}`` - total + per-user breakdown
   for the configured dept over the last 30 days.
-* ``GET /admin/costs/model`` — per-model totals across all depts
+* ``GET /admin/costs/model`` - per-model totals across all depts
   the caller has admin RBAC for.
-* ``GET /admin/costs/trend`` — daily series for the last 30 days.
+* ``GET /admin/costs/trend`` - daily series for the last 30 days.
 
 Every aggregate filters on ``cost_tag = 'production'`` so sandbox /
 probe rows never inflate the numbers (invariant 7 / rule 5.5).
@@ -421,7 +421,7 @@ def _require_admin_or_dept_admin(claims: AuthClaims, dept_id: str) -> None:
     if f"dept_admin:{dept_id}" in claims.groups:
         return
     if "dept_admin" in claims.groups:
-        # Generic dept_admin — allowed for self-service on own dept
+        # Generic dept_admin - allowed for self-service on own dept
         return
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,

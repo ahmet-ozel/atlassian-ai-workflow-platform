@@ -1,4 +1,4 @@
-"""Property-based tests for Runner Queue Status endpoint logic.
+﻿"""Property-based tests for Runner Queue Status endpoint logic.
 
 Background
 ----------
@@ -6,12 +6,12 @@ Background
 The ``GET /admin/runner/queue-status`` endpoint queries
 ``automation.execution_workspaces`` to compute:
 
-* ``active_count`` — workspaces with ``status='running'``.
-* ``queued_count`` — workspaces with ``status='queued'``.
-* ``avg_wait_seconds`` — mean of ``started_at - queued_at`` for the
+* ``active_count`` - workspaces with ``status='running'``.
+* ``queued_count`` - workspaces with ``status='queued'``.
+* ``avg_wait_seconds`` - mean of ``started_at - queued_at`` for the
   last 10 completed workspaces (ordered by ``finished_at DESC``).
-* ``max_concurrent_global`` — ``RUNNER_MAX_CONCURRENT`` env (default 5).
-* ``by_dept`` — per-department active/queued breakdown with quota.
+* ``max_concurrent_global`` - ``RUNNER_MAX_CONCURRENT`` env (default 5).
+* ``by_dept`` - per-department active/queued breakdown with quota.
 
 Strategy
 --------
@@ -44,7 +44,7 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — expose the admin-dashboard-api source root and
+# sys.path bootstrap - expose the admin-dashboard-api source root and
 # required shared libraries so we can import the router module.
 # ---------------------------------------------------------------------------
 

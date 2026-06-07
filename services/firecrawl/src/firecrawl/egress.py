@@ -1,4 +1,4 @@
-"""Egress allowlist enforcement.
+﻿"""Egress allowlist enforcement.
 
 This module is **the** authoritative implementation of the host-allowlist
 predicate that the firecrawl wrapper consults before performing any external
@@ -57,7 +57,7 @@ EgressVerdict = Literal["allowed", "denied"]
 class EgressDenied(Exception):
     """Raised by callers that prefer exception-driven control flow.
 
-    The FastAPI handler in :mod:`firecrawl.app` does NOT raise this — it
+    The FastAPI handler in :mod:`firecrawl.app` does NOT raise this - it
     inspects the :class:`EgressDecision` directly so the structured 403
     response and the audit metric stay in lock-step. The exception exists
     for non-HTTP callers (e.g. background workers) that want to short-circuit
@@ -104,7 +104,7 @@ def parse_allowlist(raw: str | None) -> tuple[str, ...]:
     """Normalise the comma-separated allowlist env value.
 
     The function is intentionally lenient about the exact shape of the env
-    string — operators often paste lists with stray spaces or trailing
+    string - operators often paste lists with stray spaces or trailing
     commas. We strip whitespace, drop empty entries, lower-case each host
     (DNS is case-insensitive), and de-duplicate while preserving the
     original order so log output is stable.
@@ -134,7 +134,7 @@ def is_host_allowed(host: str, allowlist: tuple[str, ...]) -> bool:
     ``api.example.com`` (where the entry is preceded by a dot in the host),
     but NOT ``barexample.com`` (no boundary).
 
-    The empty allowlist always returns ``False`` — the closed-by-default
+    The empty allowlist always returns ``False`` - the closed-by-default
     posture is a hard requirement for this wrapper.
     """
 
@@ -157,7 +157,7 @@ def is_host_allowed(host: str, allowlist: tuple[str, ...]) -> bool:
 def decide_egress(url: str, allowlist: tuple[str, ...]) -> EgressDecision:
     """Compute the allow/deny verdict for ``url`` against ``allowlist``.
 
-    The function never raises on a malformed URL — the caller can trust
+    The function never raises on a malformed URL - the caller can trust
     the returned :class:`EgressDecision` and translate it directly into
     an HTTP response or worker-side ``EgressDenied`` exception.
     """

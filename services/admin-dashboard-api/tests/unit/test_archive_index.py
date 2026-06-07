@@ -1,4 +1,4 @@
-"""Unit tests for ``src.audit.archive_index`` (the project 13.4).
+﻿"""Unit tests for ``src.audit.archive_index`` (the project 13.4).
 The tests exercise the MinIO archive index through an in-process
 :class:`httpx.MockTransport`; no real MinIO, no network, no disk I/O.
 Coverage
@@ -64,7 +64,7 @@ def _config(**overrides: object) -> ArchiveIndexConfig:
         "use_ssl": False,
     }
     base.update(overrides)
-    # mypy: ignore[arg-type] — the dict-merge keeps the keys aligned.
+    # mypy: ignore[arg-type] - the dict-merge keeps the keys aligned.
     return ArchiveIndexConfig(**base)  # type: ignore[arg-type]
 
 
@@ -269,7 +269,7 @@ async def test_search_single_day_returns_sorted_hits() -> None:
         assert isinstance(h, ArchivedAuditHit)
         assert h.archived is True
         assert h.summary.startswith("audit archive 2024-03-05")
-    # Exactly one ListObjectsV2 request — the day's prefix.
+    # Exactly one ListObjectsV2 request - the day's prefix.
     assert len(captured) == 1
 
 

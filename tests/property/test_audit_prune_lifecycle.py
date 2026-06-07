@@ -1,17 +1,17 @@
-"""AuditPruneWorkflow daily cycle, idempotency, failure alarm, and archive flag.
+﻿"""AuditPruneWorkflow daily cycle, idempotency, failure alarm, and archive flag.
 
 The workflow's correctness contract has four guarantees:
 
-(a) Daily cycle — running the workflow with cutoff `T` archives every
+(a) Daily cycle - running the workflow with cutoff `T` archives every
     audit row with `created_at < T` and deletes the same set.
-(b) Idempotent — re-running the workflow on the same day is a safe
+(b) Idempotent - re-running the workflow on the same day is a safe
     no-op (the SELECT bound by `created_at < cutoff` is empty
     after the first run, so the second run reports
     `archived=0, deleted=0`).
-(c) Fail alarm — when archive or delete raises, the workflow MUST
+(c) Fail alarm - when archive or delete raises, the workflow MUST
     invoke `notify_audit_prune_failed` before re-raising the
     original exception.
-(d) Archive flag — every row that lands in MinIO carries the same
+(d) Archive flag - every row that lands in MinIO carries the same
     archive URI structure
     (`audit-archive/{Y}/{M}/{D}/audit-N.jsonl.gz`).
 
@@ -49,7 +49,7 @@ def _run_cycle(
         audit.alarm_calls += 1
         raise RuntimeError("archive failed")
     if raise_on == "delete":
-        # Archive succeeded, delete fails — alarm still fires.
+        # Archive succeeded, delete fails - alarm still fires.
         audit.alarm_calls += 1
         raise RuntimeError("delete failed")
 

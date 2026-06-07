@@ -1,4 +1,4 @@
-"""Deterministic, traversal-safe workspace path builder for the execution runner.
+﻿"""Deterministic, traversal-safe workspace path builder for the execution runner.
 
 The execution-runner places task workspaces under a fixed layout::
 
@@ -10,17 +10,17 @@ template. To avoid drift, both ``runners/remote_ssh.py`` and
 **only** through
 :func:`build_workspace_path`.
 
-The helper is intentionally tiny and dependency-free — Python stdlib only —
+The helper is intentionally tiny and dependency-free - Python stdlib only -
 because it sits on the hot path of every execution-runner activity invocation
 and is exercised by the property test in
 ``platform/tests/property/test_runner_workspace_path.py``.
 
 Validation rules:
 
-* ``issue_key`` must match ``^[A-Z][A-Z0-9_]*-\\d+$`` — a Jira-style key
+* ``issue_key`` must match ``^[A-Z][A-Z0-9_]*-\\d+$`` - a Jira-style key
   (e.g. ``PAY-4211``, ``OPS_CORE-12``). Anything else (path traversal vectors
   like ``..``, ``../etc``, or shell metachars like ``;``, ``&``, ``|``,
-  newline, null-byte) is rejected with :class:`InvalidIssueKeyError` — the
+  newline, null-byte) is rejected with :class:`InvalidIssueKeyError` - the
   function never touches the filesystem with an unvalidated key.
 * ``iter_n`` must be an ``int`` in ``[0, 999]``; outside that range raises
   :class:`InvalidIterError`. Booleans are rejected (``bool`` is a subclass of
@@ -28,7 +28,7 @@ Validation rules:
   almost certainly a caller bug, not an intent).
 
 The function returns a plain string with forward-slash separators. It does
-**not** call ``os.path.join`` — the runner targets remote POSIX hosts via
+**not** call ``os.path.join`` - the runner targets remote POSIX hosts via
 SSH, where backslash separators on a Windows control-plane would corrupt
 the path.
 """
@@ -109,7 +109,7 @@ def build_workspace_path(base: str, issue_key: str, iter_n: int) -> str:
             is deterministic regardless of whether callers pass
             ``/var/ai-runner`` or ``/var/ai-runner/``.
         issue_key: Jira-style task key. MUST match
-            :data:`ISSUE_KEY_PATTERN` — see module docstring.
+            :data:`ISSUE_KEY_PATTERN` - see module docstring.
         iter_n: Iteration counter, ``0 <= iter_n <= 999``. Booleans are
             rejected (a ``bool`` iteration is almost always a caller bug).
 
@@ -137,7 +137,7 @@ def build_workspace_path(base: str, issue_key: str, iter_n: int) -> str:
         raise InvalidIssueKeyError(issue_key)
 
     # --- iter_n guard ------------------------------------------------------
-    # Reject booleans up-front — ``isinstance(True, int)`` is ``True`` in
+    # Reject booleans up-front - ``isinstance(True, int)`` is ``True`` in
     # Python and would otherwise quietly render as ``iter-1`` / ``iter-0``.
     if isinstance(iter_n, bool) or not isinstance(iter_n, int):
         raise InvalidIterError(iter_n)

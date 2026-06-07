@@ -1,4 +1,4 @@
-# Grafana dashboard provisioning manifest — loaded at boot by the
+﻿# Grafana dashboard provisioning manifest - loaded at boot by the
 # `grafana` service in `infra/docker-compose.observability.yml`. The
 # JSON files referenced live under `infra/observability/grafana-dashboards/`
 # and are loaded automatically at Grafana startup.

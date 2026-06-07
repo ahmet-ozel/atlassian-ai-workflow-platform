@@ -1,4 +1,4 @@
-"""``AuditEvent`` dataclass — the canonical audit row shape.
+﻿"""``AuditEvent`` dataclass - the canonical audit row shape.
 
 The schema follows the audit table shape:
 
@@ -23,13 +23,13 @@ for ``capability_denied``). It is serialised to the Postgres
 Rationale
 ---------
 
-* ``frozen=True`` — audit rows are append-only; mutating an in-flight
+* ``frozen=True`` - audit rows are append-only; mutating an in-flight
   event would defeat the purpose of the log. The dataclass is
   effectively a value object.
-* ``Literal`` types — they mirror the Postgres ``CHECK`` columns so a
+* ``Literal`` types - they mirror the Postgres ``CHECK`` columns so a
   typo at the application layer is caught at type-check time rather
   than only at INSERT time.
-* No defaults — every column on the audit table is mandatory by
+* No defaults - every column on the audit table is mandatory by
   design; making the dataclass mirror that shape
   forces callers to populate each field explicitly.
 """
@@ -83,7 +83,7 @@ class AuditEvent:
             processes this is the bot's account_id (eg.
             ``"bot.payment.jira"``).
         actor_role: One of the four RBAC roles or ``"system"`` for
-            background processes. Required — Postgres rejects
+            background processes. Required - Postgres rejects
             ``NULL`` and :class:`AuditLogger` rejects empty values.
         dept_id: Optional department id; ``None`` for cross-department
             system events (eg. global prompt change).
@@ -91,7 +91,7 @@ class AuditEvent:
             (eg. ``"capability_denied"``, ``"rbac_denied"``,
             ``"loop_guard_dropped"``, ``"webhook_dept_unresolved"``,
             ``"dept_duplicate_id"``).
-        resource: Identifier of the affected resource — typically a
+        resource: Identifier of the affected resource - typically a
             ``"workflow:<type>"`` or ``"department:<id>"`` URN-like
             string. The schema does not enforce a particular shape;
             callers should pick a stable convention per action.

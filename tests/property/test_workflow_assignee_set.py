@@ -1,4 +1,4 @@
-"""Workflow ilk-aksiyon assignee atama.
+﻿"""Workflow ilk-aksiyon assignee atama.
 
 For every ``(Department, issue_key)`` pair drawn from a
 schema-faithful Hypothesis strategy, the first activity of any
@@ -32,19 +32,19 @@ the layered contract:
 
 1. Resolve the bot's ``account_id`` from
    ``dept.bot.jira.account_id``. If the dept has no Jira bot or the
-   ``account_id`` is empty, the workflow cannot proceed — it audits
+   ``account_id`` is empty, the workflow cannot proceed - it audits
    ``assignee_set_failed`` and returns ``False``.
 2. Call the (mocked) ``set_assignee_to_bot(issue_key, account_id)``
    activity.
 3. If the call raises, audit ``assignee_set_failed`` and return
-   ``False`` — no second action runs.
+   ``False`` - no second action runs.
 4. Otherwise advance to the second action (a no-op MagicMock here)
    and return ``True``.
 
 Tests below assert each branch of the contract. When
 the real activity is wired in, the same property file can be re-pointed
 at the production import path with the ``run_workflow_first_action``
-helper retired — the assertions remain identical.
+helper retired - the assertions remain identical.
 """
 
 from __future__ import annotations
@@ -93,21 +93,21 @@ def _make_logger() -> tuple[AuditLogger, _CapturingAuditWriter]:
 
 @dataclass(frozen=True)
 class _StubJiraBot:
-    """Minimal ``BotEntry`` projection — only ``account_id`` matters here."""
+    """Minimal ``BotEntry`` projection - only ``account_id`` matters here."""
 
     account_id: str | None
 
 
 @dataclass(frozen=True)
 class _StubBot:
-    """Mirror of ``Department.bot`` — only Jira slot consulted."""
+    """Mirror of ``Department.bot`` - only Jira slot consulted."""
 
     jira: _StubJiraBot | None
 
 
 @dataclass(frozen=True)
 class _StubDepartment:
-    """Mirror of ``Department`` — minimal fields used by these tests."""
+    """Mirror of ``Department`` - minimal fields used by these tests."""
 
     id: str
     bot: _StubBot
@@ -169,7 +169,7 @@ async def run_workflow_first_action(
 
     # Resolve the bot's account_id. If the dept has no Jira bot or
     # the ``account_id`` is empty / whitespace, we cannot fulfil the
-    # contract — bail out before calling the activity.
+    # contract - bail out before calling the activity.
     jira_bot = dept.bot.jira
     account_id = jira_bot.account_id if jira_bot is not None else None
     if not isinstance(account_id, str) or not account_id.strip():
@@ -231,10 +231,10 @@ async def run_workflow_first_action(
 # Hypothesis strategies
 # ---------------------------------------------------------------------------
 
-#: Department ids — mirror ``departments.schema.json`` ``^[a-z][a-z0-9-]{1,30}$``.
+#: Department ids - mirror ``departments.schema.json`` ``^[a-z][a-z0-9-]{1,30}$``.
 _dept_ids = st.from_regex(r"^[a-z][a-z0-9-]{1,16}$", fullmatch=True)
 
-#: Jira issue keys — mirror schema ``^[A-Z][A-Z0-9_]{1,9}$`` for the
+#: Jira issue keys - mirror schema ``^[A-Z][A-Z0-9_]{1,9}$`` for the
 #: project prefix, joined to a numeric suffix.
 _issue_keys = st.builds(
     lambda prefix, num: f"{prefix}-{num}",
@@ -242,7 +242,7 @@ _issue_keys = st.builds(
     st.integers(min_value=1, max_value=99999),
 )
 
-#: Atlassian ``accountId`` shape — opaque alphanumeric / hyphen string.
+#: Atlassian ``accountId`` shape - opaque alphanumeric / hyphen string.
 #: Real values look like ``5b10ac8d82e05b22cc7d4ef5`` or
 #: ``557058:f58131cb-...``. The strategy keeps a permissive shape so
 #: the property covers UUID-like, hex, and colon-prefixed forms.
@@ -270,7 +270,7 @@ def _depts_with_jira_account_id(draw: st.DrawFn) -> _StubDepartment:
 def _depts_without_jira_account_id(draw: st.DrawFn) -> _StubDepartment:
     """Departments that lack a usable ``bot.jira.account_id``.
 
-    Three sub-cases — all three trigger the missing-account-id branch
+    Three sub-cases - all three trigger the missing-account-id branch
     of the reference helper:
 
     1. ``bot.jira`` is ``None`` (dept never registered a Jira bot).
@@ -293,7 +293,7 @@ def _depts_without_jira_account_id(draw: st.DrawFn) -> _StubDepartment:
 
 
 # ---------------------------------------------------------------------------
-# Helper — async test driver
+# Helper - async test driver
 # ---------------------------------------------------------------------------
 
 
@@ -501,7 +501,7 @@ class TestAssigneeSetFailureBlocksWorkflow:
         """The second action is not invoked when assignment fails.
 
         When ``set_assignee_to_bot`` raises, the second action MUST
-        NOT be invoked — the workflow is halted before any
+        NOT be invoked - the workflow is halted before any
         downstream effect.
         """
 
@@ -533,7 +533,7 @@ class TestAssigneeSetFailureBlocksWorkflow:
         """The failure path emits a single audit event.
 
         The failure path emits a single audit event with
-        ``action="assignee_set_failed"`` and ``result="error"`` —
+        ``action="assignee_set_failed"`` and ``result="error"`` -
         the canonical names used by the workflow.
         """
 
@@ -597,7 +597,7 @@ class TestAssigneeSetFailureBlocksWorkflow:
         payload = writer.events[0].payload or {}
         assert payload.get("expected_account_id") == dept.bot.jira.account_id  # type: ignore[union-attr]
         # The error type is recorded for triage but its specific
-        # value is implementation detail — we only assert it's a
+        # value is implementation detail - we only assert it's a
         # non-empty string.
         assert isinstance(payload.get("error_type"), str)
         assert payload["error_type"]
@@ -632,7 +632,7 @@ class TestMissingJiraAccountIdIsFailure:
         """With no usable account ID, the activity is not called.
 
         With no usable ``account_id`` the activity MUST NOT be
-        called at all — there is no valid value to pass for the
+        called at all - there is no valid value to pass for the
         ``assignee`` argument.
         """
 
@@ -701,7 +701,7 @@ class TestSingleCallPerRun:
 
 
     Workflows must not retry the assignee-set call from inside the
-    same first-action wrapper — Temporal's own retry policy applies
+    same first-action wrapper - Temporal's own retry policy applies
     at the activity boundary. The wrapper's job is single-shot.
     """
 
@@ -786,7 +786,7 @@ def test_canonical_example_payment_dept_assigns_to_bot() -> None:
 def test_canonical_example_dept_without_bot_audits_failure() -> None:
     """Audit payloads are JSON serializable.
 
-    Hand-rolled example for the missing-bot branch — pins the
+    Hand-rolled example for the missing-bot branch - pins the
     ``assignee_set_failed`` audit shape against a concrete dept
     whose ``bot.jira`` is ``None`` (eg. a research-only dept that
     never registered Jira credentials).
@@ -819,7 +819,7 @@ def test_canonical_example_dept_without_bot_audits_failure() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Sanity pin — audit ``actor_role`` is one of the allowed values
+# Sanity pin - audit ``actor_role`` is one of the allowed values
 # ---------------------------------------------------------------------------
 
 
@@ -828,7 +828,7 @@ def test_audit_actor_role_is_system(issue_key: str) -> None:
     """The assignee account ID comes from ``bot.jira.account_id``.
 
     Every event emitted by the first-action wrapper carries
-    ``actor_role="system"`` — the canonical role for background
+    ``actor_role="system"`` - the canonical role for background
     workflow steps (see ``audit_logger.AUDIT_ACTOR_ROLES``). This
     pins the dependency on ``actor_role`` being mandatory and drawn
     from the restricted vocabulary.

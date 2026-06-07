@@ -1,4 +1,4 @@
-"""Unit tests for ``execution_runner.main`` boot script.
+﻿"""Unit tests for ``execution_runner.main`` boot script.
 
 Validates the **single-queue-per-worker** invariant of
 the worker boot path:
@@ -30,7 +30,7 @@ import pytest
 
 
 # ---------------------------------------------------------------------------
-# ``sys.path`` bootstrapping — the canonical package ships under
+# ``sys.path`` bootstrapping - the canonical package ships under
 # ``src/execution_runner/`` (mirrors ``hatchling``
 # ``packages = ["src", "src/execution_runner"]``).
 # ---------------------------------------------------------------------------
@@ -173,7 +173,7 @@ class TestWorkerConstructorCallSite:
 
     def test_task_queue_kwarg_resolves_via_registry(self) -> None:
         """The ``task_queue=`` keyword must resolve through
-        ``task_queue_for("ExecutionRunWorkflow")`` — either directly
+        ``task_queue_for("ExecutionRunWorkflow")`` - either directly
         or via a module-level constant whose RHS is the same call.
         """
 
@@ -188,7 +188,7 @@ class TestWorkerConstructorCallSite:
             _assert_constant_resolves_to_task_queue_for(
                 tree, value.id, "ExecutionRunWorkflow"
             )
-        else:  # pragma: no cover — defensive
+        else:  # pragma: no cover - defensive
             pytest.fail(
                 "task_queue= kwarg must be either a direct call to "
                 "task_queue_for(...) or a module-level constant; "
@@ -196,7 +196,7 @@ class TestWorkerConstructorCallSite:
             )
 
     def test_no_hardcoded_queue_string_in_worker_call(self) -> None:
-        """The ``task_queue=`` kwarg must not be a string literal — that
+        """The ``task_queue=`` kwarg must not be a string literal - that
         would bypass the registry and break the single-source-of-truth
         invariant.
         """
@@ -204,7 +204,7 @@ class TestWorkerConstructorCallSite:
         (call,) = _find_worker_calls(_parse_main_module())
         value = _kwarg(call, "task_queue")
         assert not isinstance(value, ast.Constant), (
-            "task_queue= must not be a hardcoded string literal — use "
+            "task_queue= must not be a hardcoded string literal - use "
             "task_queue_for(...) from temporal_shared.workflow_registry"
         )
 
@@ -217,7 +217,7 @@ class TestWorkerWorkflowsRegistration:
     (``_load_workflow``) and assigns the result to ``workflow_cls``
     before passing it to ``Worker(...)``. This test follows that
     indirection so the call-site shape can evolve without breaking
-    the contract — what matters is that the canonical workflow class
+    the contract - what matters is that the canonical workflow class
     ends up in the registration list.
     """
 
@@ -244,14 +244,14 @@ class TestWorkerWorkflowsRegistration:
             f"got {ast.dump(value)}"
         )
 
-        # The set of identifiers that may appear is small — either
+        # The set of identifiers that may appear is small - either
         # ``ExecutionRunWorkflow`` directly or a local like
         # ``workflow_cls`` that the boot script binds to the canonical
         # class. We accept the local name pattern only when the source
         # also imports / references ``ExecutionRunWorkflow`` somewhere
-        # else in the module — the AST scan below verifies that.
+        # else in the module - the AST scan below verifies that.
         if "ExecutionRunWorkflow" in list_names:
-            return  # direct registration — done.
+            return  # direct registration - done.
 
         source = (_SRC_DIR / "execution_runner" / "main.py").read_text(
             encoding="utf-8"

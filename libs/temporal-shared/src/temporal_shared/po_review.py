@@ -1,18 +1,18 @@
-"""Pure set-algebra helpers for Orphan Branches + PO Review Inbox.
+﻿"""Pure set-algebra helpers for Orphan Branches + PO Review Inbox.
 
 This module hosts two **pure** decision helpers used by the
 ``automation-service`` API endpoints
 ``GET /api/orphan-branches`` and ``GET /api/po-review-inbox``
 for post-commit bot output:
 
-* :func:`compute_orphan_branches` — set-algebra helper that returns
+* :func:`compute_orphan_branches` - set-algebra helper that returns
   the subset of ``ai/*`` branches that **do not** appear as the
   ``source_branch`` of any pull request.  These are the "orphan"
   bot branches the platform produced via ``code_change_commit_only``
   but for which no PR was ever opened.  The Orphan Branches Streamlit
   page surfaces them so the PO can decide whether to open a draft PR
   or let the cron retention reaper sweep them out.
-* :func:`compute_po_review_inbox` — pure filter that returns the
+* :func:`compute_po_review_inbox` - pure filter that returns the
   draft pull requests authored by a known bot account.  These are
   the PRs the bot has prepared but the PO has not yet reviewed; the
   PO Review Inbox Streamlit page surfaces them with the "PR Aç
@@ -34,9 +34,9 @@ Purity contract
 ---------------
 Every public function in this module is **pure**:
 
-* No I/O — the caller reads the branches / PRs from Bitbucket via
+* No I/O - the caller reads the branches / PRs from Bitbucket via
   :mod:`mcp_client` and passes them in as plain dataclass values.
-* No clocks — the helpers do not consult ``last_commit_at``.  The
+* No clocks - the helpers do not consult ``last_commit_at``.  The
   branch ordering is the API endpoint's responsibility (the endpoint
   sorts the returned set by :attr:`Branch.last_commit_at` so the
   oldest orphan surfaces first); the helpers themselves are
@@ -56,7 +56,7 @@ Both helpers return a :class:`frozenset` rather than a bare ``set``:
 * The dataclasses are frozen, so :class:`frozenset` is well-defined
   on them.
 * Returning an immutable container makes the determinism invariant
-  trivially provable — the caller cannot mutate the
+  trivially provable - the caller cannot mutate the
   returned aggregate, so two calls with the same input always return
   equal aggregates.
 * The HTTP endpoint converts the result to a list and sorts it by
@@ -99,7 +99,7 @@ AI_BRANCH_PREFIX: Final[str] = "ai/"
 
 
 # ---------------------------------------------------------------------------
-# Branch — Bitbucket branch as the API endpoint sees it
+# Branch - Bitbucket branch as the API endpoint sees it
 # ---------------------------------------------------------------------------
 
 
@@ -115,7 +115,7 @@ class Branch:
         helper compares this verbatim against
         :attr:`PullRequest.source_branch`, so any normalisation
         (stripping ``refs/heads/`` etc.) is the caller's
-        responsibility — typically performed inside
+        responsibility - typically performed inside
         :mod:`mcp_client.bitbucket` when the branch list is fetched.
     last_commit_at:
         Timestamp of the most recent commit on this branch.  Optional
@@ -132,7 +132,7 @@ class Branch:
     inside a :class:`frozenset`.  ``slots=True`` keeps the per-row
     memory footprint small when the platform sweeps a large workspace
     via the orphan-branch endpoint.  The dataclass intentionally does
-    **not** carry the repo slug or the commit sha — those are part of
+    **not** carry the repo slug or the commit sha - those are part of
     the surrounding API response envelope, not part of the
     set-algebra decision.
     """
@@ -142,7 +142,7 @@ class Branch:
 
 
 # ---------------------------------------------------------------------------
-# PullRequest — Bitbucket PR as the API endpoint sees it
+# PullRequest - Bitbucket PR as the API endpoint sees it
 # ---------------------------------------------------------------------------
 
 
@@ -158,7 +158,7 @@ class PullRequest:
         the inbox or composes the per-PR action endpoints
         (``/api/po-review-inbox/{pr_id}/open-draft`` etc.).
     source_branch:
-        Branch the PR pulls from — compared verbatim against
+        Branch the PR pulls from - compared verbatim against
         :attr:`Branch.name` by :func:`compute_orphan_branches` so the
         caller is responsible for stripping any ``refs/heads/``
         prefix before constructing this dataclass.
@@ -214,7 +214,7 @@ def compute_orphan_branches(
        :attr:`PullRequest.source_branch`.
 
     The helper does not consult :attr:`PullRequest.is_draft` or any
-    other PR field — a closed, declined, merged, or draft PR all
+    other PR field - a closed, declined, merged, or draft PR all
     "claim" their source branch, so the branch is not orphan.  The
     Orphan Branches API endpoint wraps the returned set with sorting by
     :attr:`Branch.last_commit_at` (oldest-first) so the PO surfaces the
@@ -242,7 +242,7 @@ def compute_orphan_branches(
 
     The pull-request branch names are materialised once into a
     :class:`frozenset` so the per-branch membership check is
-    :math:`O(1)` rather than :math:`O(|P|)` — the orphan-branch
+    :math:`O(1)` rather than :math:`O(|P|)` - the orphan-branch
     endpoint may sweep a large Bitbucket workspace and the naive
     ``any(...)`` form is :math:`O(|B| \\cdot |P|)`.
 
@@ -256,7 +256,7 @@ def compute_orphan_branches(
       orphans`` whenever ``orphans`` is itself a subset of
       ``branches`` and no PR claims any branch in ``orphans``.
     * **Subset invariant.** The returned set is always a subset of
-      the input ``branches`` interpreted as a set — no branch is
+      the input ``branches`` interpreted as a set - no branch is
       synthesised.
     * **Filter invariants.** Every returned branch satisfies
       ``b.name.startswith(AI_BRANCH_PREFIX)`` and ``b.name`` is
@@ -267,7 +267,7 @@ def compute_orphan_branches(
     branches:
         Iterable of :class:`Branch` values.  May be empty, in which
         case the function returns an empty :class:`frozenset`.
-        Duplicates are tolerated — the helper materialises the input
+        Duplicates are tolerated - the helper materialises the input
         once via :class:`frozenset` semantics so a duplicate branch
         contributes a single entry to the result.
     prs:
@@ -296,7 +296,7 @@ def compute_orphan_branches(
     >>> orphans = compute_orphan_branches([b1, b2, b3], [p1])
     >>> orphans == {b2}
     True
-    >>> # Idempotent — feeding the orphans back returns the same set.
+    >>> # Idempotent - feeding the orphans back returns the same set.
     >>> compute_orphan_branches(orphans, [p1]) == orphans
     True
     >>> # Empty PR list → every ai/* branch is orphan.
@@ -339,7 +339,7 @@ def compute_po_review_inbox(
        caller-provided ``bot_ids`` set.
 
     The helper does not look at the PR title, description, source
-    branch, or any other field — the PO Review Inbox is intentionally
+    branch, or any other field - the PO Review Inbox is intentionally
     "every draft PR the bot prepared", and the human-vs-bot promotion
     check belongs to the API endpoint that surfaces the inbox, not to
     this set-algebra primitive.
@@ -365,7 +365,7 @@ def compute_po_review_inbox(
       result)`` is always True.
     * **Every result author is a bot.** ``all(pr.author_account_id
       in bot_ids for pr in result)`` is always True.
-    * **Subset invariant.** ``result <= set(prs)`` — no PR is
+    * **Subset invariant.** ``result <= set(prs)`` - no PR is
       synthesised.
     * **Determinism.** Two calls with the same input return equal
       :class:`frozenset` instances.
@@ -374,7 +374,7 @@ def compute_po_review_inbox(
     ----------
     prs:
         Iterable of :class:`PullRequest` values.  May be empty.
-        Duplicates are tolerated — the result is a :class:`frozenset`,
+        Duplicates are tolerated - the result is a :class:`frozenset`,
         so an identical PR contributes a single entry.
     bot_ids:
         :class:`frozenset` of bot ``account_id`` values for the

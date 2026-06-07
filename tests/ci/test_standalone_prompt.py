@@ -1,4 +1,4 @@
-"""CI gate — standalone task creation prompt (ops work).
+﻿"""CI gate - standalone task creation prompt (ops work).
 
 
 The standalone task creation prompt lives at

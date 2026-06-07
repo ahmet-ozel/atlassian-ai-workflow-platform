@@ -1,4 +1,4 @@
-"""LLM provider management feature package.
+﻿"""LLM provider management feature package.
 
 This package realises the ``llm-provider-management`` spec in
 ``llm-provider-management``: a FastAPI router under
@@ -9,7 +9,7 @@ repository pair, a Vault KV-v2 credential store and a per-provider
 validates upstream connectivity with a hard 10s budget and a fixed
 5-token cap.
 
-Cross-cutting concerns — admin auth, log redaction, audit logging — are
+Cross-cutting concerns - admin auth, log redaction, audit logging - are
 reused from existing infrastructure rather than reimplemented; see the
 design document's "Audit & redaction wiring" section for the exact
 hand-off points.

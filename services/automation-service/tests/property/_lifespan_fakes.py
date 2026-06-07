@@ -1,4 +1,4 @@
-"""Hand-rolled fakes for the ``automation-service-wiring`` property suite.
+﻿"""Hand-rolled fakes for the ``automation-service-wiring`` property suite.
 
 The lifespan property tests under
 ``tests/property/test_lifespan_p*.py`` exercise the production
@@ -33,7 +33,7 @@ if str(_AUTOMATION_ROOT) not in sys.path:
 
 
 # Trigger the submodule import and reach the actual module object via
-# ``sys.modules`` — ``automation_service.__init__`` re-exports the
+# ``sys.modules`` - ``automation_service.__init__`` re-exports the
 # FastAPI singleton as ``automation_service.app`` so the attribute
 # shadows the submodule under ``from automation_service import app``.
 import automation_service  # noqa: F401

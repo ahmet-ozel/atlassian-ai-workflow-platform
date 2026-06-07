@@ -1,4 +1,4 @@
-"""Unit tests for :class:`auth_shared.OIDCValidator`.
+﻿"""Unit tests for :class:`auth_shared.OIDCValidator`.
 
 Covers the four validator behaviours:
 
@@ -428,6 +428,6 @@ class TestJWKSCache:
             http_client=_make_jwks_client(jwks_document),
         )
 
-        # Internal attribute is intentional — this setting enforces a hard
+        # Internal attribute is intentional - this setting enforces a hard
         # lower bound that callers must not be able to weaken.
         assert validator._jwks_cache_ttl_seconds >= 300

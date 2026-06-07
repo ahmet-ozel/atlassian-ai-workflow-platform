@@ -4,7 +4,7 @@ Self-hosted, multi-department **AI automation for Jira, Confluence and
 Bitbucket**. Assign a Jira issue to the bot and the platform turns it into real
 work: it reasons over the task with an LLM, makes code changes on a runner,
 opens a draft Bitbucket pull request, publishes a Confluence page, and comments
-back on the issue — all driven by durable Temporal workflows.
+back on the issue - all driven by durable Temporal workflows.
 
 It ships as a single Docker Compose stack: a stateless Atlassian MCP gateway, a
 webhook intake service, Temporal workers, an admin dashboard for governance, and
@@ -184,7 +184,7 @@ A typical automation flow:
 - **Webhook setup:** [`docs/runbooks/webhook-setup.md`](docs/runbooks/webhook-setup.md).
 - **Department decommission:** [`docs/runbooks/dept-decommission.md`](docs/runbooks/dept-decommission.md).
 - **Environment variables:** [`docs/env-reference.md`](docs/env-reference.md).
-- **Connect an IDE / MCP credential headers:** [`docs/api-contracts/mcp-credential-headers.md`](docs/api-contracts/mcp-credential-headers.md) — Cloud vs Server/DC auth, Bearer/PAT vs Basic, and the SSRF allowlist.
+- **Connect an IDE / MCP credential headers:** [`docs/api-contracts/mcp-credential-headers.md`](docs/api-contracts/mcp-credential-headers.md) - Cloud vs Server/DC auth, Bearer/PAT vs Basic, and the SSRF allowlist.
 - **End-user task-creation guide:** [`docs/user-guide/`](docs/user-guide/).
 
 ## License

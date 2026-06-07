@@ -1,4 +1,4 @@
-"""Pydantic v2 schemas for the LLM provider management surface.
+﻿"""Pydantic v2 schemas for the LLM provider management surface.
 
 Implements the design's "Components › schemas.py" section: discriminated
 union over ``ProviderCreate``, an ``extra="forbid"`` ``ProviderUpdate``,
@@ -7,7 +7,7 @@ two test-only request models that reject prompt-shaping fields
 DTOs (``LLMProviderConfigDTO``, ``DeptOverrideDTO``,
 ``ConnectionTestResult``, ``ConnectionTestError``).
 
-The discriminated-union approach gives R2.1 — R2.4 their per-type
+The discriminated-union approach gives R2.1 - R2.4 their per-type
 required-field semantics for free; FastAPI surfaces validation failures
 as :class:`fastapi.exceptions.RequestValidationError` which the custom
 exception handler in :mod:`llm_providers.error_handlers` rewrites into
@@ -64,7 +64,7 @@ ReasoningEffort = Literal["minimal", "low", "medium", "high"]
 #: Responses API ``text.verbosity`` knob.
 Verbosity = Literal["low", "medium", "high"]
 
-#: Canonical list — used by the custom validation error handler to
+#: Canonical list - used by the custom validation error handler to
 #: populate the ``supported`` field of ``unsupported_provider_type``.
 PROVIDER_TYPES: Final[tuple[str, ...]] = (
     "vllm",
@@ -91,7 +91,7 @@ FORBIDDEN_TEST_FIELDS: Final[tuple[str, ...]] = (
 
 
 # ---------------------------------------------------------------------------
-# Create request models — discriminated union over ``provider_type``
+# Create request models - discriminated union over ``provider_type``
 # ---------------------------------------------------------------------------
 
 
@@ -107,7 +107,7 @@ class _ProviderBase(BaseModel):
 
 
 class VllmCreate(_ProviderBase):
-    """vLLM provider — requires ``base_url`` (R2.1)."""
+    """vLLM provider - requires ``base_url`` (R2.1)."""
 
     provider_type: Literal["vllm"]  # type: ignore[assignment]
     base_url: HttpUrl
@@ -115,7 +115,7 @@ class VllmCreate(_ProviderBase):
 
 
 class OpenAICreate(_ProviderBase):
-    """OpenAI-compatible provider — requires ``api_key`` (R2.2).
+    """OpenAI-compatible provider - requires ``api_key`` (R2.2).
 
     ``reasoning_effort`` and ``verbosity`` are optional tuning knobs the
     Responses API accepts for reasoning-capable models (o-series and the
@@ -133,7 +133,7 @@ class OpenAICreate(_ProviderBase):
 
 
 class AnthropicCreate(_ProviderBase):
-    """Anthropic provider — requires ``api_key`` (R2.3).
+    """Anthropic provider - requires ``api_key`` (R2.3).
 
     ``reasoning_effort`` maps to Claude extended-thinking on the models
     that support it; left ``None`` for models that don't.
@@ -145,13 +145,13 @@ class AnthropicCreate(_ProviderBase):
 
 
 class GeminiCreate(_ProviderBase):
-    """Google Gemini provider — requires ``api_key`` (R2.4)."""
+    """Google Gemini provider - requires ``api_key`` (R2.4)."""
 
     provider_type: Literal["gemini"]  # type: ignore[assignment]
     api_key: str = Field(min_length=1)
 
 
-#: Discriminated union — FastAPI dispatches on ``provider_type``.
+#: Discriminated union - FastAPI dispatches on ``provider_type``.
 ProviderCreate = Annotated[
     VllmCreate | OpenAICreate | AnthropicCreate | GeminiCreate,
     Field(discriminator="provider_type"),
@@ -159,12 +159,12 @@ ProviderCreate = Annotated[
 
 
 # ---------------------------------------------------------------------------
-# Update request model — every field optional, extra forbidden (R4.6, R8.4)
+# Update request model - every field optional, extra forbidden (R4.6, R8.4)
 # ---------------------------------------------------------------------------
 
 
 class ProviderUpdate(BaseModel):
-    """Partial-update payload — ``extra="forbid"`` so unknown fields 422.
+    """Partial-update payload - ``extra="forbid"`` so unknown fields 422.
 
     ``api_key`` omitted means *preserve existing credential* (R4.6);
     setting it to a non-empty string overwrites the Vault payload while
@@ -185,12 +185,12 @@ class ProviderUpdate(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Test request models — ``extra="forbid"`` rejects prompt-shaping fields
+# Test request models - ``extra="forbid"`` rejects prompt-shaping fields
 # ---------------------------------------------------------------------------
 
 
 class SavedTestRequest(BaseModel):
-    """Body for ``POST /admin/llm-providers/{id}/test`` — must be empty.
+    """Body for ``POST /admin/llm-providers/{id}/test`` - must be empty.
 
     The endpoint reads the persisted configuration + Vault credentials
     at request time; the caller may not supply prompt, message body or
@@ -201,7 +201,7 @@ class SavedTestRequest(BaseModel):
 
 
 class UnsavedTestRequest(_ProviderBase):
-    """Body for ``POST /admin/llm-providers/test`` — same shape as create.
+    """Body for ``POST /admin/llm-providers/test`` - same shape as create.
 
     Accepts a fresh provider configuration including ``api_key`` /
     ``org_id`` so an operator can probe a candidate before saving.  The
@@ -231,7 +231,7 @@ class ConnectionTestError(BaseModel):
 
 
 class ConnectionTestResult(BaseModel):
-    """Result envelope returned by the connection tester (R5.4 — R5.6).
+    """Result envelope returned by the connection tester (R5.4 - R5.6).
 
     On the timeout / non-2xx paths ``model`` is ``None`` and ``error``
     carries the diagnostic; on the 2xx path ``error`` is ``None`` and
@@ -250,7 +250,7 @@ class LLMProviderConfigDTO(BaseModel):
     """Read-side projection of an ``automation.llm_providers`` row.
 
     Every credential is masked through
-    :func:`llm_providers.masking.mask` before serialisation — the
+    :func:`llm_providers.masking.mask` before serialisation - the
     schema deliberately exposes ``api_key_masked`` (and the optional
     ``org_id_masked``) rather than the raw fields so accidental
     routes that return this DTO cannot leak a credential.
@@ -278,7 +278,7 @@ class LLMProviderConfigDTO(BaseModel):
 class DeptOverrideDTO(BaseModel):
     """Read-side projection of an ``automation.dept_llm_provider_overrides`` row.
 
-    ``provider`` is ``None`` when the dept has no pin (R10.2 — the
+    ``provider`` is ``None`` when the dept has no pin (R10.2 - the
     endpoint returns the documented null shape instead of 404 so the
     UI can render a clean "no override" panel).
     """

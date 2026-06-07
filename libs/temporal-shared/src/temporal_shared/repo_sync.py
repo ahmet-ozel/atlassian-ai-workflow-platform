@@ -1,4 +1,4 @@
-"""Pure repo-mapping diff helper for the auto-sync admin endpoint.
+﻿"""Pure repo-mapping diff helper for the auto-sync admin endpoint.
 
 This module is the **single source of truth** for the
 ``compute_repo_mapping_diff`` set-algebra computation used by the
@@ -7,12 +7,12 @@ This module is the **single source of truth** for the
 The helper splits a Bitbucket workspace scan against the dept's current
 ``departments.json`` ``repo_mappings`` array into three disjoint sets:
 
-* ``added``   — slugs scanned in Bitbucket that the dept does **not**
+* ``added``   - slugs scanned in Bitbucket that the dept does **not**
   yet have a mapping for. The admin should review and persist these.
-* ``removed`` — slugs the dept **has** a mapping for but Bitbucket no
+* ``removed`` - slugs the dept **has** a mapping for but Bitbucket no
   longer surfaces (repo deleted / moved). The admin should review and
   prune these.
-* ``unchanged`` — slugs present in both; nothing for the admin to do.
+* ``unchanged`` - slugs present in both; nothing for the admin to do.
 
 By isolating the decision into a **pure** function (no I/O, no clock,
 no random / uuid, no Temporal calls) we get four wins at once:
@@ -34,15 +34,15 @@ no random / uuid, no Temporal calls) we get four wins at once:
 
 Public API
 ----------
-* :class:`RepoMapping` — frozen dataclass mirroring one entry of
+* :class:`RepoMapping` - frozen dataclass mirroring one entry of
   ``departments.json -> bitbucket.repo_mappings[]``. Carries the
   human-readable ``name`` alongside the canonical ``slug`` so the
   admin UI can render either field; the diff itself is computed on
   ``slug`` membership only (slug is the stable identifier; ``name``
   may drift when a repo is renamed in the Bitbucket UI).
-* :class:`RepoMappingDiff` — frozen dataclass holding the three
+* :class:`RepoMappingDiff` - frozen dataclass holding the three
   ``frozenset[str]`` partitions. Hashable and replay-safe.
-* :func:`compute_repo_mapping_diff` — pure set-algebra computation.
+* :func:`compute_repo_mapping_diff` - pure set-algebra computation.
 """
 
 from __future__ import annotations
@@ -57,7 +57,7 @@ __all__ = [
 
 
 # ---------------------------------------------------------------------------
-# RepoMapping — frozen dataclass for one ``repo_mappings[]`` entry
+# RepoMapping - frozen dataclass for one ``repo_mappings[]`` entry
 # ---------------------------------------------------------------------------
 
 
@@ -70,7 +70,7 @@ class RepoMapping:
     a stable slug (the diff key) plus a human-readable name (the UI
     label). Any extra columns the production schema may carry (e.g.
     ``jira_project_key``, ``default_branch``) are intentionally
-    out-of-scope for this helper — the diff is purely about presence /
+    out-of-scope for this helper - the diff is purely about presence /
     absence of a slug, not about the metadata attached to it.
 
     The dataclass is frozen + slotted so instances are hashable and the
@@ -88,7 +88,7 @@ class RepoMapping:
         string when the source mapping omits a friendly name.
     slug:
         Canonical Bitbucket repository slug (e.g.
-        ``"payment-callbacks"``). This is the diff key — slugs are
+        ``"payment-callbacks"``). This is the diff key - slugs are
         what Bitbucket's API surfaces and what the admin will compare
         against the current ``departments.json`` document. Must be
         non-empty for a meaningful diff entry; the helper does not
@@ -102,7 +102,7 @@ class RepoMapping:
 
 
 # ---------------------------------------------------------------------------
-# RepoMappingDiff — output of :func:`compute_repo_mapping_diff`
+# RepoMappingDiff - output of :func:`compute_repo_mapping_diff`
 # ---------------------------------------------------------------------------
 
 
@@ -152,7 +152,7 @@ class RepoMappingDiff:
 
 
 # ---------------------------------------------------------------------------
-# compute_repo_mapping_diff — pure set-algebra computation
+# compute_repo_mapping_diff - pure set-algebra computation
 # ---------------------------------------------------------------------------
 
 
@@ -182,7 +182,7 @@ def compute_repo_mapping_diff(
     ``name``) collapse to a single entry in ``current_slugs`` because
     the helper folds the tuple into a set. This matches
     ``departments.schema.json`` which the wider system relies on to
-    reject duplicate repo_mappings entries at validation time — the
+    reject duplicate repo_mappings entries at validation time - the
     helper does not re-check that contract here, only that the
     set-algebra holds for whichever slugs the caller provided.
 

@@ -1,4 +1,4 @@
-"""Unit tests for :mod:`src.chat.handler`.
+﻿"""Unit tests for :mod:`src.chat.handler`.
 
 These tests exercise :class:`src.chat.handler.ChatHandler` end-to-end
 using fake collaborators that conform to the protocols declared on
@@ -20,7 +20,7 @@ six-step pipeline:
 Property-style enumerations live in
 ``platform/tests/property/test_write_action_intercept.py`` and
 ``platform/tests/property/test_sliding_window.py``; this file focuses
-on the **integration shape** of the handler — that
+on the **integration shape** of the handler - that
 the steps run in the right order and the right collaborator is called
 for each step.
 """
@@ -434,7 +434,7 @@ class TestPipelineWiring:
                 "bitbucket_create_pull_request_cloud",
             ),
         )
-        # Dept has only jira + bitbucket — confluence_* must drop.
+        # Dept has only jira + bitbucket - confluence_* must drop.
         dept = _build_dept(capabilities=frozenset({"jira", "bitbucket"}))
 
         asyncio.run(_drain(handler, _build_request("hi"), dept))
@@ -579,7 +579,7 @@ class TestAuditWrite:
 
     def test_pii_match_count_is_recorded(self) -> None:
         """The audit row carries the *count* of PII matches but never
-        the matched substrings — they are masked out before audit
+        the matched substrings - they are masked out before audit
         time."""
         orch = _ScriptedOrchestrator([SseEvent("done", {})])
         handler, audit, _, _ = _build_handler(orchestrator=orch)
@@ -598,7 +598,7 @@ class TestAuditWrite:
 
     def test_audit_failure_does_not_break_stream(self) -> None:
         """The handler must keep streaming the LLM output even if the
-        audit write blows up — audit_logger violations are
+        audit write blows up - audit_logger violations are
         programmer errors, not user-facing failures."""
 
         class _ExplodingAudit:
@@ -836,7 +836,7 @@ class TestTimeoutHandling:
             tool_dispatch=_RecordingDispatch(),  # type: ignore[arg-type]
             audit=audit,  # type: ignore[arg-type]
             token_cap=10_000,
-            timeout_s=1,  # 1 second timeout — orchestrator sleeps 2s
+            timeout_s=1,  # 1 second timeout - orchestrator sleeps 2s
             max_tokens_output=4096,
         )
         handler = ChatHandler(deps)
@@ -892,7 +892,7 @@ class TestTimeoutHandling:
             tool_dispatch=_RecordingDispatch(),  # type: ignore[arg-type]
             audit=audit,  # type: ignore[arg-type]
             token_cap=10_000,
-            timeout_s=5,  # 5 second timeout — orchestrator responds in 0.01s
+            timeout_s=5,  # 5 second timeout - orchestrator responds in 0.01s
             max_tokens_output=4096,
         )
         handler = ChatHandler(deps)
@@ -934,7 +934,7 @@ class TestTruncationHandling:
             audit=audit,  # type: ignore[arg-type]
             token_cap=10_000,
             timeout_s=60,
-            max_tokens_output=100,  # Low limit — will be exceeded
+            max_tokens_output=100,  # Low limit - will be exceeded
         )
         handler = ChatHandler(deps)
 
@@ -1029,7 +1029,7 @@ class TestTruncationHandling:
             audit=audit,  # type: ignore[arg-type]
             token_cap=10_000,
             timeout_s=60,
-            max_tokens_output=4096,  # High limit — won't be exceeded
+            max_tokens_output=4096,  # High limit - won't be exceeded
         )
         handler = ChatHandler(deps)
 

@@ -1,4 +1,4 @@
-"""SSHHealthcheckCronWorkflow — Temporal cron workflow for proactive SSH monitoring.
+﻿"""SSHHealthcheckCronWorkflow - Temporal cron workflow for proactive SSH monitoring.
 
 Runs every 5 minutes via Temporal cron schedule and monitors SSH runner
 health using the existing ``ssh_healthcheck`` activity.
@@ -39,11 +39,11 @@ _NOTIFY_ACTIVITY_TIMEOUT: timedelta = timedelta(seconds=60)
 #: Maximum delay before showing a warning.
 _MAX_HEALTHCHECK_DELAY_SECONDS: float = 120.0
 
-#: Retry policy for the healthcheck activity — single attempt since
+#: Retry policy for the healthcheck activity - single attempt since
 #: the cron itself handles consecutive failure tracking.
 _HEALTHCHECK_RETRY_POLICY: RetryPolicy = RetryPolicy(maximum_attempts=1)
 
-#: Retry policy for notification/recording activities — allow retries.
+#: Retry policy for notification/recording activities - allow retries.
 _SIDE_EFFECT_RETRY_POLICY: RetryPolicy = RetryPolicy(
     initial_interval=timedelta(seconds=2),
     backoff_coefficient=2.0,
@@ -228,10 +228,10 @@ class SSHHealthcheckCronWorkflow:
             )
             return result
         except Exception:  # noqa: BLE001
-            # Activity itself failed — treat as unhealthy
+            # Activity itself failed - treat as unhealthy
             workflow.logger.warning(
                 "SSHHealthcheckCronWorkflow: ssh_healthcheck activity "
-                "raised an exception — treating as unhealthy"
+                "raised an exception - treating as unhealthy"
             )
             return {
                 "healthy": False,
@@ -318,7 +318,7 @@ class SSHHealthcheckCronWorkflow:
                 retry_policy=_SIDE_EFFECT_RETRY_POLICY,
             )
         except Exception:  # noqa: BLE001
-            # Alert sending is best-effort — log and continue
+            # Alert sending is best-effort - log and continue
             workflow.logger.warning(
                 "SSHHealthcheckCronWorkflow: failed to send failure alert "
                 "(best-effort, continuing)"
@@ -328,7 +328,7 @@ class SSHHealthcheckCronWorkflow:
         """Mark SSH runner as unhealthy and block new SSH tasks."""
         workflow.logger.error(
             "SSHHealthcheckCronWorkflow: marking runner as UNHEALTHY. "
-            "host=%s port=%d — blocking new SSH tasks",
+            "host=%s port=%d - blocking new SSH tasks",
             host,
             port,
         )
@@ -379,7 +379,7 @@ class SSHHealthcheckCronWorkflow:
         """Restore SSH runner to healthy and remove task block."""
         workflow.logger.info(
             "SSHHealthcheckCronWorkflow: restoring runner to HEALTHY. "
-            "host=%s port=%d — removing task block",
+            "host=%s port=%d - removing task block",
             host,
             port,
         )
@@ -461,7 +461,7 @@ class SSHHealthcheckCronWorkflow:
         """Check if healthcheck is delayed and emit warning if needed."""
         # Parse last_check_time and compare with current time
         # Since we're in a workflow, we use workflow.now() for determinism
-        # The delay detection is approximate — based on expected 5-min interval
+        # The delay detection is approximate - based on expected 5-min interval
         # If last_check_time exists and the gap exceeds 7 minutes (5 min interval + 2 min tolerance),
         # we consider it delayed.
         try:

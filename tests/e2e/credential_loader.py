@@ -1,4 +1,4 @@
-"""
+﻿"""
 Credential loader for E2E tests.
 
 Parses credentials.md markdown file and provides typed access to all
@@ -31,8 +31,8 @@ class Credentials:
     # Bitbucket
     bitbucket_workspace: str
     bitbucket_repo: str
-    bitbucket_token_bearer: str  # Token A — ATCTT3x...
-    bitbucket_token_basic: str   # Token B — ATATT3x...
+    bitbucket_token_bearer: str  # Token A - ATCTT3x...
+    bitbucket_token_basic: str   # Token B - ATATT3x...
     bitbucket_username: str
 
     # OpenAI
@@ -128,7 +128,7 @@ def load_credentials(path: Path) -> Credentials:
         content, confluence_section, "Username"
     )
     # Confluence uses same token as Jira per the doc.
-    # The field may say "Jira ile aynı token" — in that case use Jira's token.
+    # The field may say "Jira ile aynı token" - in that case use Jira's token.
     try:
         confluence_api_token = _extract_table_value(
             content, confluence_section, "API Token"
@@ -148,13 +148,13 @@ def load_credentials(path: Path) -> Credentials:
         content, bitbucket_section, "Test Repo"
     )
 
-    # Token 1: Bearer (Workspace Access Token) — ATCTT3x prefix
+    # Token 1: Bearer (Workspace Access Token) - ATCTT3x prefix
     token1_section = r"### Token 1[^\n]*\n(.*?)(?=\n### |\n## |\Z)"
     bitbucket_token_bearer = _extract_table_value(
         content, token1_section, "Token"
     )
 
-    # Token 2: Basic Auth (Personal API Token) — ATATT3x prefix
+    # Token 2: Basic Auth (Personal API Token) - ATATT3x prefix
     token2_section = r"### Token 2[^\n]*\n(.*?)(?=\n### |\n## |\Z)"
     bitbucket_token_basic = _extract_table_value(
         content, token2_section, "Token"

@@ -1,4 +1,4 @@
-"""External Provider Probe Status Mapping.
+﻿"""External Provider Probe Status Mapping.
 
 
 
@@ -60,7 +60,7 @@ from hypothesis import HealthCheck, given, settings, assume
 from hypothesis import strategies as st
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — expose admin-dashboard-api src
+# sys.path bootstrap - expose admin-dashboard-api src
 # ---------------------------------------------------------------------------
 
 _PLATFORM_ROOT: Final[Path] = Path(__file__).resolve().parents[2]
@@ -87,7 +87,7 @@ from lifecycle.external_probe import (  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
-# Fake Audit Writer — collects audit entries in memory
+# Fake Audit Writer - collects audit entries in memory
 # ---------------------------------------------------------------------------
 
 
@@ -123,7 +123,7 @@ class FakeAuditWriter:
 
 
 # ---------------------------------------------------------------------------
-# Fake HTTP Transport — simulates external provider responses
+# Fake HTTP Transport - simulates external provider responses
 # ---------------------------------------------------------------------------
 
 
@@ -377,7 +377,7 @@ class TestCredentialInjection:
 
     @pytest.mark.asyncio
     async def test_vllm_no_credential_required(self) -> None:
-        """: vLLM does not require authentication — probe proceeds
+        """: vLLM does not require authentication - probe proceeds
  without credential injection."""
 
         clear_cache()
@@ -537,7 +537,7 @@ class TestAuditEmissionAndStreakAlerting:
 
     @pytest.mark.asyncio
     async def test_streak_alert_not_repeated(self) -> None:
-        """: The streak alert is emitted only once per streak —
+        """: The streak alert is emitted only once per streak -
  additional failures do not re-emit it."""
 
         reset_streak_state()
@@ -622,7 +622,7 @@ class TestAuditEmissionAndStreakAlerting:
     )
     async def test_streak_threshold_boundary(self, failure_count: int) -> None:
         """: Streak alert is emitted exactly when the threshold
- is reached — not before, not after (per streak)."""
+ is reached - not before, not after (per streak)."""
 
         reset_streak_state()
         audit_writer = FakeAuditWriter()
@@ -669,7 +669,7 @@ class TestCacheBehaviour:
 
         clear_cache()
 
-        # First probe — returns 200
+        # First probe - returns 200
         transport_ok = FakeTransport(status_code=200)
         entry = _make_entry(name="cache-test-provider")
 
@@ -678,7 +678,7 @@ class TestCacheBehaviour:
 
         assert result1.status == "ok"
 
-        # Second probe — transport would return 500, but cache should
+        # Second probe - transport would return 500, but cache should
         # return the previous 200 result
         transport_fail = FakeTransport(status_code=500)
         async with httpx.AsyncClient(transport=transport_fail) as client:
@@ -696,7 +696,7 @@ class TestCacheBehaviour:
 
         clear_cache()
 
-        # First probe — returns 200
+        # First probe - returns 200
         transport_ok = FakeTransport(status_code=200)
         entry = _make_entry(name="bypass-test-provider")
 
@@ -705,7 +705,7 @@ class TestCacheBehaviour:
 
         assert result1.status == "ok"
 
-        # Second probe with bypass_cache — should hit the new transport
+        # Second probe with bypass_cache - should hit the new transport
         transport_fail = FakeTransport(status_code=429)
         async with httpx.AsyncClient(transport=transport_fail) as client:
             result2 = await probe_external(

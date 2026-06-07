@@ -1,4 +1,4 @@
-"""``automation_service.admin`` — admin-only endpoints.
+﻿"""``automation_service.admin`` - admin-only endpoints.
 
 The package owns the FastAPI surface for the ``/admin/*`` endpoints
 used by ``admin-dashboard-api`` after the OIDC + RBAC pre-checks.

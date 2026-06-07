@@ -1,4 +1,4 @@
-"""Property-based tests for write-action intent intercept.
+﻿"""Property-based tests for write-action intent intercept.
 
 This file owns the write-action intent intercept behavior. It pins
 the deterministic decision table of
@@ -20,10 +20,10 @@ Universal property
 
 For any draw of ``(tool_name, intent)`` from
 
-* ``tool_name`` — drawn from a finite catalogue that mixes the seven
+* ``tool_name`` - drawn from a finite catalogue that mixes the seven
   members of :data:`WRITE_ACTION_TOOLS` with read-only / unknown
   names;
-* ``intent`` — drawn from ``{"write_action_requested", "read_action",
+* ``intent`` - drawn from ``{"write_action_requested", "read_action",
   None, <arbitrary string>}``;
 
 the predicate satisfies the three-row decision table:
@@ -74,7 +74,7 @@ from hypothesis import strategies as st
 
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — the assistant-service is *not* a shared library so
+# sys.path bootstrap - the assistant-service is *not* a shared library so
 # it is not on ``pytest.ini``'s ``pythonpath``. We insert its source
 # root manually so ``from src.chat.write_action import ...`` resolves.
 # The shared libs (``messages``, ``audit_logger``, ``pii-shared``,
@@ -139,7 +139,7 @@ _READ_ONLY_NAMES: tuple[str, ...] = (
     "bitbucket_get_pull_request",
     "bitbucket_list_branches",
     "bitbucket_get_commit",
-    "",  # empty string — degenerate, but still ∉ WRITE_ACTION_TOOLS
+    "",  # empty string - degenerate, but still ∉ WRITE_ACTION_TOOLS
     "totally_unknown_tool",
 )
 
@@ -148,7 +148,7 @@ _READ_ONLY_NAMES: tuple[str, ...] = (
 # this is true at strategy-construction time.
 assert set(_READ_ONLY_NAMES).isdisjoint(WRITE_ACTION_TOOLS), (
     "Test strategy invariant broken: _READ_ONLY_NAMES overlaps "
-    "WRITE_ACTION_TOOLS — fix the catalogue before the property "
+    "WRITE_ACTION_TOOLS - fix the catalogue before the property "
     "loses its discriminating power."
 )
 
@@ -198,7 +198,7 @@ _non_write_intent = st.one_of(
 
 
 # ---------------------------------------------------------------------------
-# Test fakes — minimal collaborators for ``ChatHandler``
+# Test fakes - minimal collaborators for ``ChatHandler``
 # ---------------------------------------------------------------------------
 
 
@@ -219,7 +219,7 @@ class _StubPromptLoader:
 
 @dataclass
 class _RecordingAudit:
-    """In-memory audit sink — captures every event written."""
+    """In-memory audit sink - captures every event written."""
 
     events: list[AuditEvent] = field(default_factory=list)
 
@@ -232,7 +232,7 @@ class _RecordingDispatch:
 
     The redirect branch must produce ``calls == []`` after a stream
     completes; the read-only branch is also expected to hit ``[]``
-    here because the *handler* does not invoke dispatch directly —
+    here because the *handler* does not invoke dispatch directly -
     the orchestrator's ``on_tool_call`` callback does. The scripted
     fake orchestrator below never calls the callback, which keeps
     this property self-contained.
@@ -410,7 +410,7 @@ class TestIsWriteIntentDecisionTable:
         unrelated.
 
         This is the safety net for an LLM that forgot to populate the
-        ``intent`` field — the catalogue is the source of truth.
+        ``intent`` field - the catalogue is the source of truth.
         """
 
         call = ToolCall(tool_name=tool_name)
@@ -428,7 +428,7 @@ class TestIsWriteIntentDecisionTable:
         """Row 3: ``tool_name ∉ WRITE_ACTION_TOOLS`` paired with any
         non-write intent (including ``None``) is *not* an intercept.
 
-        This pins the "no false positive" branch — the predicate must
+        This pins the "no false positive" branch - the predicate must
         let read-only calls through so the chat assistant remains
         useful.
         """
@@ -450,7 +450,7 @@ class TestIsWriteIntentDecisionTable:
         the inputs.
 
         Determinism is what makes the redirect SSE event safe to
-        replay across SSE reconnects (``Last-Event-Id``) — the same
+        replay across SSE reconnects (``Last-Event-Id``) - the same
         call always lands the same intercept decision.
         """
 
@@ -476,7 +476,7 @@ class TestIsWriteIntentDecisionTable:
 
         Two independent implementations agreeing on the same input
         space is a strong signal the function is what the design
-        document says — and a typo in either implementation surfaces
+        document says - and a typo in either implementation surfaces
         immediately.
         """
 
@@ -493,7 +493,7 @@ class TestWriteActionToolsCatalogueInvariants:
 
 
     Strict typing and cardinality guard against the most common
-    silent regression — an entry being added or removed without the
+    silent regression - an entry being added or removed without the
     accompanying spec / design update.
     """
 
@@ -620,7 +620,7 @@ class TestChatHandlerWriteActionIntercept:
           audit row.
 
         The property does *not* assert that ``tool_dispatch.invoke``
-        is called — the orchestrator owns that callback and the
+        is called - the orchestrator owns that callback and the
         scripted fake never invokes it. The contract under test is
         the **handler did not bypass** the orchestrator on the
         read-only branch.
@@ -686,7 +686,7 @@ class TestChatHandlerWriteActionIntercept:
         self, tool_name: str, intent: str | None
     ) -> None:
         """Replaying the handler with the same scripted event sequence
-        produces the same redirect outcome — required for SSE
+        produces the same redirect outcome - required for SSE
         ``Last-Event-Id`` replays to land on the same intercept."""
 
         call = ToolCall(tool_name=tool_name)
@@ -782,7 +782,7 @@ class TestWriteActionIntentDetection:
         """For any tool name NOT in WRITE_ACTION_TOOLS paired with
         any non-write intent, the predicate SHALL return False.
 
-        This ensures no false positives — read-only operations are
+        This ensures no false positives - read-only operations are
         never intercepted unless the LLM explicitly signals write
         intent.
         """
@@ -808,7 +808,7 @@ class TestWriteActionIntentDetection:
         SHALL always return True.
 
         This validates that the explicit LLM intent signal is the
-        highest-priority branch in the decision table — it overrides
+        highest-priority branch in the decision table - it overrides
         the tool-name catalogue check entirely.
         """
 
@@ -876,7 +876,7 @@ class TestWriteActionIntentDetection:
         ``redirect_to_task_creator`` with the intent metadata.
 
         This validates the explicit-intent branch at the handler
-        level — even read-only tools get redirected when the LLM
+        level - even read-only tools get redirected when the LLM
         explicitly classifies the call as a write action.
         """
 

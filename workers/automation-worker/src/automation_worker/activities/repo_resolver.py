@@ -1,4 +1,4 @@
-"""Repo Field Resolver activity for the automation-worker.
+﻿"""Repo Field Resolver activity for the automation-worker.
 
 Implements the ``resolve_repo_field`` Temporal activity that resolves
 the target repository for a task using a priority-based strategy:
@@ -136,8 +136,8 @@ class LLMRepoParserProtocol(Protocol):
 
  Returns:
  Dict with keys:
- - "repo_url": str | None — parsed repo identifier
- - "confidence": float — confidence score (0.0 to 1.0)
+ - "repo_url": str | None - parsed repo identifier
+ - "confidence": float - confidence score (0.0 to 1.0)
  """
         ...
 
@@ -428,7 +428,7 @@ async def resolve_repo_field(input: RepoResolveInput) -> RepoResolveResult:
                 ),
             )
 
-        # Structured field is valid — resolved successfully
+        # Structured field is valid - resolved successfully
         return RepoResolveResult(
             resolved=True,
             repo_url=repo_value,
@@ -512,7 +512,7 @@ async def resolve_repo_field(input: RepoResolveInput) -> RepoResolveResult:
             input.issue_key,
             exc,
         )
-        # LLM failure — ask user for repo info
+        # LLM failure - ask user for repo info
         try:
             await jira_commenter.add_comment(
                 input.issue_key,
@@ -538,7 +538,7 @@ async def resolve_repo_field(input: RepoResolveInput) -> RepoResolveResult:
     confidence: float = float(parse_result.get("confidence", 0.0))
 
     activity.logger.info(
-        "repo_resolver: LLM parse result — repo=%s, confidence=%.2f "
+        "repo_resolver: LLM parse result - repo=%s, confidence=%.2f "
         "(issue=%s)",
         parsed_repo,
         confidence,

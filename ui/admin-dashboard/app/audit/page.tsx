@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * Audit panel.
@@ -10,9 +10,9 @@
  *
  * E3 eklentisi: spec satır 27 "servis/seviye/departman bazında
  * filtrelenir" gereği üç filtre eklendi:
- *   - Servis (client_source) — server-side param
- *   - trace_id — server-side param (tek request'i servisler arası izleme)
- *   - Seviye (level) — sonuç satırlarına client-side uygulanır
+ *   - Servis (client_source) - server-side param
+ *   - trace_id - server-side param (tek request'i servisler arası izleme)
+ *   - Seviye (level) - sonuç satırlarına client-side uygulanır
  *     (audit-search endpoint'i ``level`` query param'ı tanımıyor).
  */
 
@@ -34,7 +34,7 @@ type Hit = {
   level?: string;
 };
 
-/** Bilinen client_source / servis değerleri — dropdown seçenekleri. */
+/** Bilinen client_source / servis değerleri - dropdown seçenekleri. */
 const SERVICE_OPTIONS = [
   "automation-service",
   "automation-worker",
@@ -46,7 +46,7 @@ const SERVICE_OPTIONS = [
   "streamlit-ui",
 ];
 
-/** Log seviyeleri — sonuçlara client-side uygulanan filtre. */
+/** Log seviyeleri - sonuçlara client-side uygulanan filtre. */
 const LEVEL_OPTIONS = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"];
 
 export default function AuditPage(): JSX.Element {
@@ -280,17 +280,17 @@ export default function AuditPage(): JSX.Element {
                         </div>
                       )}
                     </td>
-                    <td className="mono text-sm">{h.actor_id ?? "—"}</td>
-                    <td className="text-sm">{h.dept_id ?? "—"}</td>
+                    <td className="mono text-sm">{h.actor_id ?? "-"}</td>
+                    <td className="text-sm">{h.dept_id ?? "-"}</td>
                     <td className="text-sm">
                       {h.client_source ? (
                         <code className="text-xs">{h.client_source}</code>
                       ) : (
-                        "—"
+                        "-"
                       )}
                     </td>
                     <td>
-                      {h.level ? <LevelBadge level={h.level} /> : <span className="muted">—</span>}
+                      {h.level ? <LevelBadge level={h.level} /> : <span className="muted">-</span>}
                     </td>
                     <td className="muted text-sm">{h.at ?? ""}</td>
                     <td className="muted text-sm" style={{ maxWidth: 320 }}>

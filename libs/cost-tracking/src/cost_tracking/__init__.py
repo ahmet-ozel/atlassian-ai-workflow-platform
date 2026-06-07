@@ -1,10 +1,10 @@
-"""cost-tracking: idempotent cost insert + dept-vs-global predictor.
+﻿"""cost-tracking: idempotent cost insert + dept-vs-global predictor.
 
 Public surface for ``CostTracker`` and ``CostPredictor``:
 
-* :class:`CostTracker` — async idempotent insert into
+* :class:`CostTracker` - async idempotent insert into
   ``shared.cost_tracking``.
-* :func:`predict_cost` — pure function returning a :class:`CostPrediction`
+* :func:`predict_cost` - pure function returning a :class:`CostPrediction`
   with a clear ``source`` flag for the audit fallback contract.
 """
 

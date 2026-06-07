@@ -1,4 +1,4 @@
-"""
+﻿"""
 Test 27: Hypothesis MCP payload shape property test .
 
 **the invariant: MCP robustness under arbitrary input**
@@ -121,7 +121,7 @@ def _send_mcp_payload(payload: Any) -> dict:
                     result["is_valid_response"] = True
 
             except (json.JSONDecodeError, ValueError):
-                # Non-JSON response — check if it's a valid HTTP error
+                # Non-JSON response - check if it's a valid HTTP error
                 if resp.status_code in (400, 401, 403, 404, 405, 413, 422, 429):
                     result["is_valid_response"] = True
 
@@ -130,7 +130,7 @@ def _send_mcp_payload(payload: Any) -> dict:
                 break
 
         except httpx.ConnectError:
-            result["error"] = "Connection refused — MCP may have crashed"
+            result["error"] = "Connection refused - MCP may have crashed"
             result["crashed"] = True
             break
         except httpx.ReadTimeout:
@@ -216,7 +216,7 @@ class TestMCPPayloadRobustness:
 
  FOR ALL generated MCP payloads, the MCP SHALL return either a valid
  success response (with result field) OR a valid error response
- (with error.code + error.message) — never an unstructured crash.
+ (with error.code + error.message) - never an unstructured crash.
  """
 
     @settings(
@@ -243,7 +243,7 @@ class TestMCPPayloadRobustness:
 
         # Should get either a valid response or a connection (MCP not running)
         if result["error"] and "Connection refused" in result["error"]:
-            # MCP not running — skip this example
+            # MCP not running - skip this example
             assume(False)
 
         # If we got a response, it should be valid

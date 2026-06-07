@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * Security panel.
@@ -124,7 +124,7 @@ export default function SecurityPage(): JSX.Element {
                 <li key={`${r.dept_id}-${r.service}-${i}`} className="banner banner--warn">
                   <span className="banner__icon">⚠️</span>
                   <div className="banner__body">
-                    <strong>{r.dept_id}</strong> / {r.service} —{" "}
+                    <strong>{r.dept_id}</strong> / {r.service} -{" "}
                     <strong>{r.rotates_in_days} gün</strong> içinde rotasyon gerekli.
                   </div>
                 </li>

@@ -1,4 +1,4 @@
-"""Invariant test: Output actions sequential execution order.
+﻿"""Invariant test: Output actions sequential execution order.
 
 **: Output actions sequential execution order
 -----------------------------------------------------
@@ -192,7 +192,7 @@ class TestOutputActionsSequentialOrder:
     def test_no_actions_skipped_regardless_of_input_order(
         self, actions: list[OutputAction]
     ) -> None:
-        """For any input order, all actions are executed — none are
+        """For any input order, all actions are executed - none are
  skipped or dropped.
 
  **"""

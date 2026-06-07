@@ -1,5 +1,5 @@
-/**
- * Centralized runtime configuration — single source of truth for every
+﻿/**
+ * Centralized runtime configuration - single source of truth for every
  * external URL the admin dashboard talks to.
  *
  * Best-practice rationale
@@ -8,7 +8,7 @@
  * resolved here, once, from build-time public env vars
  * (``NEXT_PUBLIC_*``) injected by Compose / the deployment ``.env``. To
  * change a port you edit ``infra/.env`` (or the Compose ``environment:``
- * block) — never the TypeScript source.
+ * block) - never the TypeScript source.
  *
  * The fallback values below are DEV-ONLY conveniences for ``npm run dev``
  * without a backing ``.env``; in any real deployment the ``NEXT_PUBLIC_*``
@@ -16,9 +16,9 @@
  *
  * ``NEXT_PUBLIC_*`` is the only env surface a Next.js browser bundle can
  * read, so these are the canonical knobs:
- *   - ``NEXT_PUBLIC_ADMIN_API_BASE_URL`` — admin-dashboard-api base URL.
- *   - ``NEXT_PUBLIC_STREAMLIT_URL``      — end-user Streamlit base URL.
- *   - ``NEXT_PUBLIC_DEV_TOKEN``          — dev bearer token (AUTH_MODE=dev).
+ *   - ``NEXT_PUBLIC_ADMIN_API_BASE_URL`` - admin-dashboard-api base URL.
+ *   - ``NEXT_PUBLIC_STREAMLIT_URL``      - end-user Streamlit base URL.
+ *   - ``NEXT_PUBLIC_DEV_TOKEN``          - dev bearer token (AUTH_MODE=dev).
  */
 
 /** Strip a single trailing slash so callers can safely append paths. */

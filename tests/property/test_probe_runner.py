@@ -1,6 +1,6 @@
-"""Tests for ``automation_service.probe.ProbeRunner``.
+﻿"""Tests for ``automation_service.probe.ProbeRunner``.
 
-Probe runner — idempotent, auto-fetch, partial_orphan ve mismatch fail.
+Probe runner - idempotent, auto-fetch, partial_orphan ve mismatch fail.
 
 For all ``(dept_id, service ∈ {jira, bitbucket, confluence}, credential)``
 triples, the following invariants hold:
@@ -31,7 +31,7 @@ triples, the following invariants hold:
   configured ``account_id`` differs from the auto-fetched value, the
   caller can detect the mismatch by comparing the two values and the
   fail-fast error message can include both. The runner exposes the
-  building block — this property exercises the comparison primitive
+  building block - this property exercises the comparison primitive
   and verifies that **both values are surfaced**, never collapsed.
 
 The Atlassian client is replaced with an in-memory fake satisfying the
@@ -52,7 +52,7 @@ from hypothesis import HealthCheck, assume, given, settings
 from hypothesis import strategies as st
 
 # ---------------------------------------------------------------------------
-# Path setup — make ``automation_service.probe`` importable
+# Path setup - make ``automation_service.probe`` importable
 # ---------------------------------------------------------------------------
 #
 # The ``automation-service`` source tree co-exists with the
@@ -91,7 +91,7 @@ from automation_service.probe import (  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
-# Sentinel — used to detect plain-text token leakage in artifacts
+# Sentinel - used to detect plain-text token leakage in artifacts
 # ---------------------------------------------------------------------------
 
 #: A distinctive byte sequence we can grep for to detect plain-text token
@@ -321,7 +321,7 @@ def _targets(service: ProbeService) -> ProbeTargets | None:
 
     Jira does not need targets in the current implementation; Bitbucket
     needs a workspace+repo pair; Confluence needs a space key. The
-    fixed values we use are arbitrary — the runner only forwards them
+    fixed values we use are arbitrary - the runner only forwards them
     to the fake client which records them in ``calls``.
     """
 
@@ -385,7 +385,7 @@ def _write_methods_for(service: ProbeService) -> frozenset[str]:
 # Hypothesis strategies
 # ---------------------------------------------------------------------------
 
-#: Department identifier strategy — lowercase ASCII slug. Mirrors the
+#: Department identifier strategy - lowercase ASCII slug. Mirrors the
 #: ``departments.json`` ``id`` regex (``^[a-z][a-z0-9-]{1,30}$``) without
 #: importing it; Hypothesis only needs a non-empty distinguishable
 #: string for the runner to forward into the artifact dataclass.
@@ -411,7 +411,7 @@ _UNIX_TS = st.integers(min_value=1_500_000_000, max_value=2_000_000_000)
 #: before the runner is invoked. Exercises the cleanup loop.
 _STALE_COUNT = st.integers(min_value=0, max_value=4)
 
-#: A non-probe artifact title — used to verify cleanup leaves unrelated
+#: A non-probe artifact title - used to verify cleanup leaves unrelated
 #: artifacts alone. We deliberately exclude any string that happens to
 #: start with ``_AI_PROBE_`` so the property's invariant cannot be
 #: undermined by an adversarial generator.
@@ -520,7 +520,7 @@ def test_repeated_runs_leave_no_extra_probe_artifacts(
 
     first, second = asyncio.run(_twice())
 
-    # Both invocations succeed — no failure injection in this property.
+    # Both invocations succeed - no failure injection in this property.
     assert first.state == "ok", f"first run state was {first.state!r}"
     assert second.state == "ok", f"second run state was {second.state!r}"
 
@@ -575,7 +575,7 @@ def test_read_failure_skips_all_write_side_calls(
     * ``ProbeResult.read_ok is False`` and ``write_ok is False``.
     * **No** create / delete write-side method ever runs.
     * The sanitised ``error_message`` carries only the exception class
-      name — never the raw ``str(exc)``.
+      name - never the raw ``str(exc)``.
     """
 
     client = _FakeAtlassianClient(fail_read=service)
@@ -784,7 +784,7 @@ def test_manual_vs_auto_fetched_account_id_is_observable(
     this test verifies the building block the caller wires up.
     """
 
-    # The two values must be either equal or distinct — Hypothesis
+    # The two values must be either equal or distinct - Hypothesis
     # generates both variants on its own without an ``assume()``.
     client = _FakeAtlassianClient(
         jira_account_id=fetched_account_id,
@@ -802,7 +802,7 @@ def test_manual_vs_auto_fetched_account_id_is_observable(
     auto = result.auto_fetched_account_id
     assert auto == fetched_account_id
 
-    # Caller-side mismatch detection primitive — the building block
+    # Caller-side mismatch detection primitive - the building block
     # ``CredentialResolver`` / boot validation will use.
     is_mismatch = manual_account_id != auto
 
@@ -811,14 +811,14 @@ def test_manual_vs_auto_fetched_account_id_is_observable(
         assert manual_account_id == auto
         return
 
-    # Mismatch path — the caller's fail-fast error message must
+    # Mismatch path - the caller's fail-fast error message must
     # surface BOTH values so an operator can diagnose the
     # discrepancy without a round-trip to logs. We use ``!r``
     # formatting so values are quoted and any control characters /
     # backslashes are escaped (Python's ``repr`` is the canonical
     # round-trippable representation). The presence assertion
     # therefore checks ``repr(value)`` rather than the bare value
-    # — escaped backslashes and quote characters in the original
+    # - escaped backslashes and quote characters in the original
     # string are not byte-identical to their repr form.
     error_message = (
         f"account_id mismatch for dept={dept_id!r} service={service!r}: "
@@ -826,7 +826,7 @@ def test_manual_vs_auto_fetched_account_id_is_observable(
     )
     assert repr(manual_account_id) in error_message
     assert repr(auto) in error_message  # type: ignore[operator]
-    # And the runner must not have collapsed the two values into one —
+    # And the runner must not have collapsed the two values into one -
     # the caller still sees the auto-fetched one separately from the
     # manually configured one.
     assert auto != manual_account_id
@@ -857,7 +857,7 @@ def test_plain_text_token_never_appears_in_artifact_payloads(
     The probe runner sends only the canonical sentinel string into
     artifact bodies / branch names / comment markers. The
     :class:`_FakeAtlassianClient` records every method call's
-    arguments — none of them may contain :data:`_TOKEN_SENTINEL`.
+    arguments - none of them may contain :data:`_TOKEN_SENTINEL`.
     """
 
     client = _FakeAtlassianClient(fail_write_delete=service)

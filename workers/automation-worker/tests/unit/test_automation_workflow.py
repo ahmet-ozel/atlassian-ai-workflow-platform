@@ -1,15 +1,15 @@
-"""Unit tests for ``AutomationWorkflow``.
+﻿"""Unit tests for ``AutomationWorkflow``.
 
 The workflow body is exercised **without** a Temporal worker. Two
 strategies cover the surface area the task ships:
 
-* **AST inspection** — the workflow module obeys the determinism
+* **AST inspection** - the workflow module obeys the determinism
   contract: no ``datetime.now`` / ``time.time`` /
   ``random`` / ``uuid`` / ``os.environ`` reads in the workflow body,
   activities referenced by string name only, no import of activity
   modules at module scope.
 
-* **Direct pure-helper inspection** — the routing tables, the child
+* **Direct pure-helper inspection** - the routing tables, the child
   workflow specification builder, the rule coercer, and the
   early-exit helpers. These methods do not consult any Temporal
   primitives so we can call them with the class ``__init__()`` and a
@@ -17,7 +17,7 @@ strategies cover the surface area the task ships:
 
 The full ``run()`` body lives behind ``workflow.execute_activity`` and
 ``workflow.start_child_workflow`` calls, which require the Temporal
-sandbox to drive — those paths are covered in
+sandbox to drive - those paths are covered in
 ``tests/property/test_workflow_determinism_replay.py`` (history replay)
 and the integration suite. The tests here stay deterministic and fast.
 """
@@ -75,7 +75,7 @@ from temporal_shared.messages import (  # noqa: E402
 
 
 # ===========================================================================
-# 1. Determinism contract — static (AST) checks
+# 1. Determinism contract - static (AST) checks
 # ===========================================================================
 
 
@@ -143,7 +143,7 @@ class TestDeterminismStatic:
         self, module_source: str
     ) -> None:
         # Every activity used by the workflow must appear as a quoted
-        # string literal — confirms the workflow uses
+        # string literal - confirms the workflow uses
         # ``execute_activity("name", ...)`` rather than a callable
         # reference (which would force importing the activity module
         # at workflow-module import time).
@@ -163,7 +163,7 @@ class TestDeterminismStatic:
     ) -> None:
         # Imports inside ``with workflow.unsafe.imports_passed_through():``
         # are nested under a ``With`` node and therefore not part of
-        # ``module_tree.body`` — only top-level imports are scanned here.
+        # ``module_tree.body`` - only top-level imports are scanned here.
         for node in module_tree.body:
             if isinstance(node, (ast.Import, ast.ImportFrom)):
                 target = (
@@ -178,7 +178,7 @@ class TestDeterminismStatic:
 
 
 # ===========================================================================
-# 2. Routing tables — exhaustive coverage of WORKFLOW_TYPE_CAPABILITIES
+# 2. Routing tables - exhaustive coverage of WORKFLOW_TYPE_CAPABILITIES
 # ===========================================================================
 
 
@@ -322,7 +322,7 @@ class TestFormatters:
 
 
 # ===========================================================================
-# 5. ``_build_child_spec`` — routing decision logic
+# 5. ``_build_child_spec`` - routing decision logic
 # ===========================================================================
 
 
@@ -358,7 +358,7 @@ def _make_analysis(
 
 
 class TestBuildChildSpec:
-    """``_build_child_spec`` is a pure helper — no Temporal primitives
+    """``_build_child_spec`` is a pure helper - no Temporal primitives
     consulted, so we can call it on a fresh instance without setup."""
 
     def test_code_change_routes_to_agent_runner(self) -> None:
@@ -417,7 +417,7 @@ class TestBuildChildSpec:
 
     def test_child_id_is_deterministic_no_uuid(self) -> None:
         # The child id must depend only on the parent id and a fixed
-        # iteration counter — not on ``uuid.uuid4`` or
+        # iteration counter - not on ``uuid.uuid4`` or
         # ``workflow.uuid4`` (replay determinism).
         wf = AutomationWorkflow()
         analysis = _make_analysis("code_change_with_test")
@@ -435,7 +435,7 @@ class TestBuildChildSpec:
 
 
 # ===========================================================================
-# 6. ``_child_args`` — input dataclass shape per child
+# 6. ``_child_args`` - input dataclass shape per child
 # ===========================================================================
 
 
@@ -490,7 +490,7 @@ class TestChildArgs:
 
 
 # ===========================================================================
-# 7. ``_coerce_rules`` — config loader output normalisation
+# 7. ``_coerce_rules`` - config loader output normalisation
 # ===========================================================================
 
 
@@ -558,7 +558,7 @@ class TestCoerceRules:
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         # An object that raises during iteration must not crash the
-        # workflow body — the helper should return the pinned defaults.
+        # workflow body - the helper should return the pinned defaults.
         import logging
 
         monkeypatch.setattr(
@@ -586,7 +586,7 @@ class TestCoerceRules:
 
 
 # ===========================================================================
-# 8. ``_stop_to_output`` — early-exit envelope mapping
+# 8. ``_stop_to_output`` - early-exit envelope mapping
 # ===========================================================================
 
 
@@ -693,7 +693,7 @@ class TestNeedsInfoFormatters:
         )
         assert "Hangi repo?" in body
         assert "Hangi branch?" in body
-        # Bullets — render as • per the helper.
+        # Bullets - render as • per the helper.
         assert body.count("•") == 2
         # The user-facing reply guidance must mention the comment loop.
         assert "yorumun altına" in body
@@ -729,7 +729,7 @@ class TestNeedsInfoFormatters:
 
 
 class TestInfoReceivedSignalHandler:
-    """The signal handler is a pure mutator — no Temporal primitives,
+    """The signal handler is a pure mutator - no Temporal primitives,
     so we can call it on a fresh instance."""
 
     def test_string_payload_stored_and_flag_flipped(self) -> None:
@@ -790,7 +790,7 @@ class TestInfoReceivedSignalHandler:
             None,
         )
         # Some SDK versions store the definition on the underlying
-        # function instead of the bound method — fall back to the
+        # function instead of the bound method - fall back to the
         # function attribute when the bound-method probe missed.
         if defn is None:
             defn = getattr(
@@ -838,7 +838,7 @@ class TestNeedsInfoLoopFastPath:
             inp=_make_input(),
             analysis=analysis,
         )
-        # Medium confidence does NOT trigger the wait — the gateway
+        # Medium confidence does NOT trigger the wait - the gateway
         # proceeds to dispatch even when the LLM has open questions.
         assert result is analysis
 
@@ -847,7 +847,7 @@ class TestNeedsInfoLoopFastPath:
         self,
     ) -> None:
         # Low confidence without clarification questions has no
-        # actionable needs_info shape — falling through to dispatch
+        # actionable needs_info shape - falling through to dispatch
         # is the correct behaviour (the capability gate or LLM
         # workflow will surface a richer error if needed).
         wf = AutomationWorkflow()
@@ -864,7 +864,7 @@ class TestNeedsInfoLoopFastPath:
 
 
 class TestWithCommentAppended:
-    """``_with_comment_appended`` is a pure helper — currently a
+    """``_with_comment_appended`` is a pure helper - currently a
     pass-through but the contract is that calling it never throws
     and never mutates the input."""
 
@@ -874,7 +874,7 @@ class TestWithCommentAppended:
             inp, "Repo: org/foo"
         )
         assert result is inp
-        # Input is frozen — assert the field wasn't mutated.
+        # Input is frozen - assert the field wasn't mutated.
         assert result.issue_key == "PAY-1"
 
     def test_returns_input_unchanged_for_empty_string(self) -> None:
@@ -884,7 +884,7 @@ class TestWithCommentAppended:
 
 
 # ===========================================================================
-# 10. Determinism — the new wait_condition + signal additions still obey
+# 10. Determinism - the new wait_condition + signal additions still obey
 # the replay contract. These tests extend the AST-level
 # checks at the top of the file with the new activity name and confirm
 # that the only ``wait_condition`` call sits inside the needs_info

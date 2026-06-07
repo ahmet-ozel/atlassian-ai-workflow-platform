@@ -1,5 +1,5 @@
-"""
-Test 09: Jira real API smoke test — CRUD operations via Jira REST API.
+﻿"""
+Test 09: Jira real API smoke test - CRUD operations via Jira REST API.
 
 Validates that the platform can perform full Jira issue lifecycle operations
 (create, search, comment, transition, delete) against real Jira Cloud using
@@ -94,7 +94,7 @@ class TestJiraSmoke:
     _scenario_results: list[dict[str, Any]] = []
 
     def test_jira_create_issue(self, credentials, evidence_collector):
-        """R9.1: JIRA-CREATE — create issue in JOH project, assert key matches pattern.
+        """R9.1: JIRA-CREATE - create issue in JOH project, assert key matches pattern.
 
         WHEN scenario JIRA-CREATE is executed, THE Test_Framework SHALL invoke
         jira_create_issue with project JOH, summary containing timestamp and
@@ -152,7 +152,7 @@ class TestJiraSmoke:
         TestJiraSmoke._scenario_results.append(result)
 
     def test_jira_search_issue(self, credentials, evidence_collector):
-        """R9.2: JIRA-SEARCH — JQL search for created issue.
+        """R9.2: JIRA-SEARCH - JQL search for created issue.
 
         WHEN scenario JIRA-SEARCH is executed, THE Test_Framework SHALL invoke
         jira_search_issues with JQL and SHALL assert the created issue appears
@@ -173,7 +173,7 @@ class TestJiraSmoke:
             # which returns the same shape under ``issues``. See
             # https://developer.atlassian.com/changelog/#CHANGE-2046
             # The new /search/jql endpoint omits ``key`` from the
-            # response unless ``fields`` is requested explicitly — pass
+            # response unless ``fields`` is requested explicitly - pass
             # a minimal field list so the parser below can still read
             # ``issue["key"]``.
             response = client.get(
@@ -216,7 +216,7 @@ class TestJiraSmoke:
         TestJiraSmoke._scenario_results.append(result)
 
     def test_jira_add_comment(self, credentials, evidence_collector):
-        """R9.3: JIRA-COMMENT — add comment to created issue.
+        """R9.3: JIRA-COMMENT - add comment to created issue.
 
         WHEN scenario JIRA-COMMENT is executed, THE Test_Framework SHALL invoke
         jira_add_comment on the created issue and SHALL assert HTTP 2xx.
@@ -276,7 +276,7 @@ class TestJiraSmoke:
         TestJiraSmoke._scenario_results.append(result)
 
     def test_jira_transition_to_done(self, credentials, evidence_collector):
-        """R9.4: JIRA-TRANSITION — move issue to Done, verify status.
+        """R9.4: JIRA-TRANSITION - move issue to Done, verify status.
 
         WHEN scenario JIRA-TRANSITION is executed, THE Test_Framework SHALL
         move the issue to Done and SHALL verify the status change.
@@ -380,7 +380,7 @@ class TestJiraSmoke:
         TestJiraSmoke._scenario_results.append(result)
 
     def test_jira_delete_issue(self, credentials, evidence_collector):
-        """R9.5: JIRA-DELETE — delete issue, verify 404 on get.
+        """R9.5: JIRA-DELETE - delete issue, verify 404 on get.
 
         WHEN scenario JIRA-DELETE is executed, THE Test_Framework SHALL delete
         the issue and SHALL verify HTTP 404 on subsequent get.

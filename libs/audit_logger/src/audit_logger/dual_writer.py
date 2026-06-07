@@ -1,4 +1,4 @@
-"""Audit dual-write writer.
+﻿"""Audit dual-write writer.
 
 Wraps a primary asyncpg-backed audit writer with a best-effort
 Loki side-channel so every audit event is observable from both
@@ -108,7 +108,7 @@ class AuditDualWriter:
                 else None
             )
             await self.loki.push(labels=labels, line=line, ts_ns=ts_ns)
-        except Exception as exc:  # noqa: BLE001 — best-effort
+        except Exception as exc:  # noqa: BLE001 - best-effort
             _LOG.warning(
                 "Loki push failed for audit event (action=%s): %s",
                 event.action,

@@ -1,4 +1,4 @@
-"""Property test: Dept credential RBAC forward determinism.
+﻿"""Property test: Dept credential RBAC forward determinism.
 
 For any combination of ``(role, viewer_dept_ids, target_dept_id,
 action)`` the RBAC decision matrix is **deterministic** across the two
@@ -20,7 +20,7 @@ boundaries that guard the dept-credential CRUD + probe surface:
 The decision matrix this test pins:
 
   * ``admin``  → forwarded for **every** dept_id (no membership check).
-  * ``system`` → forwarded for **every** dept_id (router only — the
+  * ``system`` → forwarded for **every** dept_id (router only - the
     proxy never sees ``system`` actors because OIDC tokens never carry
     that role; it is reserved for the bot identity that calls the
     router directly without going through the proxy).
@@ -33,7 +33,7 @@ The decision matrix this test pins:
 Every denial path emits exactly one ``rbac_denied`` audit event so the
 denial trail is symmetrical with the success trail.
 
-The test deliberately avoids real Postgres / Vault / Temporal — every
+The test deliberately avoids real Postgres / Vault / Temporal - every
 collaborator is a hand-built fake.  The orchestrator
 :class:`DeptCredentialService` is replaced by a recording double so we
 can assert that **no mutating call leaks past a denial** (the contract
@@ -56,7 +56,7 @@ from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — mirrors the sibling property tests under this dir
+# sys.path bootstrap - mirrors the sibling property tests under this dir
 # ---------------------------------------------------------------------------
 
 _AUTOMATION_ROOT = Path(__file__).resolve().parents[2]
@@ -85,7 +85,7 @@ _LIB_SRC_DIRS = tuple(
 # services together, ``src`` resolves to whichever sibling was
 # imported first, which shadows the cross-service load.  We therefore
 # load ``proxy.py`` directly from its file path instead of relying on
-# the ``src.proxy`` package qualifier — this is the same isolation
+# the ``src.proxy`` package qualifier - this is the same isolation
 # trick used by the multi-service property suite under
 # ``platform/tests/property``.
 _ADMIN_API_ROOT = _PLATFORM_ROOT / "services" / "admin-dashboard-api"
@@ -139,7 +139,7 @@ from services.dept_credential_service import (  # noqa: E402
 )
 
 # ---------------------------------------------------------------------------
-# Hypothesis profile — deterministic + bounded for CI
+# Hypothesis profile - deterministic + bounded for CI
 # ---------------------------------------------------------------------------
 
 _PROFILE = settings(
@@ -153,10 +153,10 @@ _PROFILE = settings(
 )
 
 # ---------------------------------------------------------------------------
-# Domain constants — closed sets the strategies sample from
+# Domain constants - closed sets the strategies sample from
 # ---------------------------------------------------------------------------
 
-#: Valid dept ids — match the ``departments.schema.json`` regex
+#: Valid dept ids - match the ``departments.schema.json`` regex
 #: (``[a-z][a-z0-9_-]{0,63}``).  We pin a small closed set so the
 #: dept-membership matrix stays tractable.
 _DEPT_IDS: tuple[str, ...] = ("payments", "platform", "marketing", "ops")
@@ -167,7 +167,7 @@ _SERVICES: tuple[str, ...] = ("jira", "bitbucket", "confluence")
 #: All four OIDC-issuable roles plus ``system`` (router only).
 _ALL_ROLES: tuple[str, ...] = ("admin", "dept_admin", "lead", "viewer")
 
-#: Mutating dept-credential actions — every entry produces a path
+#: Mutating dept-credential actions - every entry produces a path
 #: classifiable by :func:`classify_admin_path` as ``required_role=
 #: dept_admin`` (dept-scoped catch-all).  ``GET`` is omitted because
 #: the spec only constrains the *mutating* surface.
@@ -379,7 +379,7 @@ def _expected_proxy_decision(
         return "forward"
     if role == "dept_admin":
         return "forward" if target_dept_id in viewer_dept_ids else "deny"
-    # ``lead`` / ``viewer`` — denied for the dept_admin policy.
+    # ``lead`` / ``viewer`` - denied for the dept_admin policy.
     return "deny"
 
 
@@ -413,7 +413,7 @@ def _request_kwargs_for(
     """
 
     if method == "POST" and path.endswith("/credentials/{service}".format(service="").rstrip("/")):
-        # Should not match — keep deterministic by checking suffix below.
+        # Should not match - keep deterministic by checking suffix below.
         pass
     if method == "POST" and "/credentials/" in path:
         return {"json": _VALID_CREDENTIAL_BODY}
@@ -421,7 +421,7 @@ def _request_kwargs_for(
 
 
 # ---------------------------------------------------------------------------
-# Property A — AdminProxy boundary RBAC determinism
+# Property A - AdminProxy boundary RBAC determinism
 # ---------------------------------------------------------------------------
 
 
@@ -452,7 +452,7 @@ class TestProxyBoundaryRbacDeterminism:
 
         # 1. The classifier resolves every mutating dept-credential
         #    path to ``(dept_admin, target_dept_id)``.  This is the
-        #    spec contract — ``lead`` / ``viewer`` are denied because
+        #    spec contract - ``lead`` / ``viewer`` are denied because
         #    they do not satisfy the ``dept_admin`` policy, and
         #    ``dept_admin`` itself is gated on dept membership.
         policy = classify_admin_path(method, path)
@@ -639,7 +639,7 @@ class TestProxyBoundaryRbacDeterminism:
         action: tuple[str, str],
     ) -> None:
         """``dept_admin`` is denied when ``target_dept_id`` is NOT in
-        the actor's dept_ids — symmetrical to the success path proven
+        the actor's dept_ids - symmetrical to the success path proven
         in :meth:`test_admin_and_dept_admin_member_are_forwarded`.
         """
 
@@ -726,7 +726,7 @@ class TestRouterDefenseInDepthRbacDeterminism:
             "X-Actor-Dept-Id": dept_header,
         }
 
-        # POST add/update — orchestrator returns AddCredentialResult.
+        # POST add/update - orchestrator returns AddCredentialResult.
         resp_post = client.post(
             f"/admin/departments/{target_dept_id}/credentials/{service}",
             json=_VALID_CREDENTIAL_BODY,
@@ -877,7 +877,7 @@ class TestRouterDefenseInDepthRbacDeterminism:
 
         Proves the ``admin`` shortcut in
         :func:`_enforce_dept_scope` is symmetric to the proxy's
-        global-admin admittance — a missing dept header must not
+        global-admin admittance - a missing dept header must not
         accidentally promote ``admin`` to a denial.
         """
 

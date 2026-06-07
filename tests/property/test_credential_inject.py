@@ -1,4 +1,4 @@
-"""invariant for MCP credential injection round-trip and header preservation.
+﻿"""invariant for MCP credential injection round-trip and header preservation.
 
 
 
@@ -8,7 +8,7 @@ This module uses Hypothesis to verify the following invariants of
 ``http_shared.auth_inject.with_atlassian_creds``:
 
 1. **Round-trip**: Credentials read from the resolver are injected into
- headers with exact fidelity — the header values inside the with-block
+ headers with exact fidelity - the header values inside the with-block
  match the credential fields byte-for-byte.
 
 2. **Header preservation**: All pre-existing headers on the client
@@ -17,7 +17,7 @@ This module uses Hypothesis to verify the following invariants of
 
 3. **Header restoration**: After the with-block exits (normally or via
  exception), the client's headers are restored to their pre-injection
- state — credential headers are removed if they didn't exist before,
+ state - credential headers are removed if they didn't exist before,
  or reverted to their original values if they did.
 
 4. **Service routing**: The correct header prefix is used for each
@@ -74,7 +74,7 @@ def _run_async(coro: Any) -> Any:
 # Strategies
 # ---------------------------------------------------------------------------
 
-# Printable ASCII excluding control characters — valid for HTTP header values.
+# Printable ASCII excluding control characters - valid for HTTP header values.
 _HEADER_CHAR = st.characters(min_codepoint=0x21, max_codepoint=0x7E)
 
 # Non-empty header value text (HTTP headers must be non-empty when present).
@@ -224,7 +224,7 @@ def test_round_trip_credential_values_match_exactly(
     dept_id: str,
     initial_headers: dict[str, str],
 ) -> None:
-    """invariant — credential values injected into headers match Vault values exactly.
+    """invariant - credential values injected into headers match Vault values exactly.
 
 
 
@@ -271,7 +271,7 @@ def test_existing_headers_preserved_inside_with_block(
     dept_id: str,
     initial_headers: dict[str, str],
 ) -> None:
-    """invariant — all pre-existing headers survive inside the with-block.
+    """invariant - all pre-existing headers survive inside the with-block.
 
 
 
@@ -323,7 +323,7 @@ def test_headers_restored_after_with_block_exit(
     dept_id: str,
     initial_headers: dict[str, str],
 ) -> None:
-    """invariant — headers are fully restored after with-block exits.
+    """invariant - headers are fully restored after with-block exits.
 
 
 
@@ -378,7 +378,7 @@ def test_headers_restored_after_exception_in_with_block(
     dept_id: str,
     initial_headers: dict[str, str],
 ) -> None:
-    """invariant — headers are restored even when an exception occurs.
+    """invariant - headers are restored even when an exception occurs.
 
 
 
@@ -424,7 +424,7 @@ def test_correct_header_prefix_per_service(
     cred: FakeCredential,
     dept_id: str,
 ) -> None:
-    """invariant — each service uses its designated header prefix.
+    """invariant - each service uses its designated header prefix.
 
 
 
@@ -480,7 +480,7 @@ def test_incomplete_credential_raises_credential_resolution_error(
     service: ServiceLiteral,
     dept_id: str,
 ) -> None:
-    """invariant — incomplete credentials raise CredentialResolutionError.
+    """invariant - incomplete credentials raise CredentialResolutionError.
 
 
 
@@ -529,7 +529,7 @@ def test_invalid_scope_raises_value_error(
     dept_id: str,
     invalid_scope: str,
 ) -> None:
-    """invariant — unknown scope raises ValueError.
+    """invariant - unknown scope raises ValueError.
 
 
 
@@ -573,7 +573,7 @@ def test_idempotent_double_injection_restores_correctly(
     service: ServiceLiteral,
     dept_id: str,
 ) -> None:
-    """invariant — nested with-blocks restore correctly.
+    """invariant - nested with-blocks restore correctly.
 
 
 
@@ -619,7 +619,7 @@ def test_idempotent_double_injection_restores_correctly(
 
 
 # ===========================================================================
-# invariant — Atomik departman ekleme + plain-text sızıntı yasağı 
+# invariant - Atomik departman ekleme + plain-text sızıntı yasağı 
 # ===========================================================================
 #
 #
@@ -635,15 +635,15 @@ def test_idempotent_double_injection_restores_correctly(
 # tower (fake Vault + fake DB connection + fake probe client + fake audit
 # writer) so the tests focus exclusively on the *secrecy* contract:
 #
-# P6a — token absent from the success response (``DepartmentCreateResult``).
-# P6b — token absent from every captured ``logging.LogRecord`` after the
+# P6a - token absent from the success response (``DepartmentCreateResult``).
+# P6b - token absent from every captured ``logging.LogRecord`` after the
 # platform's redaction filter runs.
-# P6c — token absent from every SQL parameter the orchestrator binds.
-# P6d — token absent from the on-disk bytes of the LocalDevBackend
+# P6c - token absent from every SQL parameter the orchestrator binds.
+# P6d - token absent from the on-disk bytes of the LocalDevBackend
 # encrypted store (sodium ``SecretBox`` envelope must hide the
-# plain-text bytes —.
-# P6e — the ``bytearray`` that carried the token is zeroed once the
-# orchestrator returns — best-effort heap scrub).
+# plain-text bytes -.
+# P6e - the ``bytearray`` that carried the token is zeroed once the
+# orchestrator returns - best-effort heap scrub).
 #
 # Hypothesis only varies the plain-text token here; the remaining inputs
 # (dept_id, services, urls, usernames) are fixed so the test focuses on the
@@ -664,7 +664,7 @@ from typing import Any as _Any, Mapping as _Mapping
 
 # ``automation_service`` lives under the service tree that is not on the
 # default ``sys.path``. The package's ``__init__.py`` re-exports the FastAPI
-# ``app``, which itself imports ``from src.config import Settings`` — so
+# ``app``, which itself imports ``from src.config import Settings`` - so
 # we add **both** the ``services/automation-service/`` directory (so
 # ``src.config`` resolves) and the inner ``src/`` directory (so the
 # top-level ``automation_service`` package import works). This mirrors the
@@ -711,14 +711,14 @@ from vault_client.local_dev_backend import (  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
-# Token strategy — opaque, high-entropy, distinctive
+# Token strategy - opaque, high-entropy, distinctive
 # ---------------------------------------------------------------------------
 
 # We need values that:
-# 1. Are **distinctive** — short common substrings (``a``, ``1234``)
+# 1. Are **distinctive** - short common substrings (``a``, ``1234``)
 # could accidentally appear in fixture text and trigger spurious
 # "leak" assertions, defeating the property.
-# 2. Are **utf-8 encodable** — the orchestrator decodes the bytearray
+# 2. Are **utf-8 encodable** - the orchestrator decodes the bytearray
 # via ``decode("utf-8")`` and rejects bad bytes with
 # ``StagingFailureError``.
 # 3. Stay within Atlassian PAT shape (printable ASCII, no whitespace).
@@ -749,7 +749,7 @@ class _FakeProbeClient:
 
  The orchestrator runs probes between the staging write and the DB
  insert. For the secrecy invariant we don't care about the
- probe semantics — we just need ``ProbeResult.state == "ok"`` so
+ probe semantics - we just need ``ProbeResult.state == "ok"`` so
  the run reaches the commit phase. The fake therefore returns a
  minimal ``myself``-shaped payload for every read call and a
  fresh artifact id for every write call.
@@ -829,7 +829,7 @@ class _RecordingConnection:
  injection cannot leak the token into the SQL string itself; the
  secrecy invariant we test is that **no parameter** ever contains
  the plain-text token (the canonical write path is Vault, not the
- DB row — / 6.1).
+ DB row - / 6.1).
  """
 
     def __init__(self) -> None:
@@ -926,7 +926,7 @@ def _new_local_dev_backend(tmpdir: _Path) -> _LocalDevBackend:
  We use a real:class:`LocalDevBackend` (libsodium ``SecretBox``)
  rather than an in-memory fake so invariant can read the on-disk
  bytes and verify the plain-text never appears in the encrypted
- envelope — local-dev backend rejects plain-text
+ envelope - local-dev backend rejects plain-text
  persistence).
  """
 
@@ -936,7 +936,7 @@ def _new_local_dev_backend(tmpdir: _Path) -> _LocalDevBackend:
 
 
 # ---------------------------------------------------------------------------
-# invariant — token absent from the success response
+# invariant - token absent from the success response
 # ---------------------------------------------------------------------------
 
 
@@ -949,13 +949,13 @@ def _new_local_dev_backend(tmpdir: _Path) -> _LocalDevBackend:
 def test_p6a_response_body_does_not_contain_plain_text_token(
     plain_token: str,
 ) -> None:
-    """invariant —:class:`DepartmentCreateResult` never carries the token.
+    """invariant -:class:`DepartmentCreateResult` never carries the token.
 
 
 
  For every randomly generated plain-text token, the orchestrator's
  success response (the value the FastAPI router serialises into
- JSON) must contain only Vault path references — never the token
+ JSON) must contain only Vault path references - never the token
  bytes.
  """
 
@@ -1003,7 +1003,7 @@ def test_p6a_response_body_does_not_contain_plain_text_token(
 
 
 # ---------------------------------------------------------------------------
-# invariant — token absent from log records (after redaction filter)
+# invariant - token absent from log records (after redaction filter)
 # ---------------------------------------------------------------------------
 
 
@@ -1016,7 +1016,7 @@ def test_p6a_response_body_does_not_contain_plain_text_token(
 def test_p6b_log_records_do_not_contain_plain_text_token(
     plain_token: str,
 ) -> None:
-    """invariant — captured log records carry no plain-text token bytes.
+    """invariant - captured log records carry no plain-text token bytes.
 
 
 
@@ -1070,7 +1070,7 @@ def test_p6b_log_records_do_not_contain_plain_text_token(
         _run_async(_go())
 
         # Every captured line MUST be free of the token bytes.
-        # We also tolerate the root logger missing the filter — the
+        # We also tolerate the root logger missing the filter - the
         # property still holds because dept_create itself never
         # interpolates the token into a log call.
         for line in captured:
@@ -1085,7 +1085,7 @@ def test_p6b_log_records_do_not_contain_plain_text_token(
 
 
 # ---------------------------------------------------------------------------
-# invariant — token absent from SQL parameter bindings
+# invariant - token absent from SQL parameter bindings
 # ---------------------------------------------------------------------------
 
 
@@ -1098,7 +1098,7 @@ def test_p6b_log_records_do_not_contain_plain_text_token(
 def test_p6c_db_parameters_do_not_contain_plain_text_token(
     plain_token: str,
 ) -> None:
-    """invariant — no SQL parameter ever carries the plain-text token.
+    """invariant - no SQL parameter ever carries the plain-text token.
 
 
 
@@ -1129,7 +1129,7 @@ def test_p6c_db_parameters_do_not_contain_plain_text_token(
 
         # Walk every recorded (sql, args) pair and assert the token
         # does not appear in any positional / keyword argument or in
-        # the SQL string itself (defence in depth — the orchestrator
+        # the SQL string itself (defence in depth - the orchestrator
         # uses parameterised queries, but a future regression that
         # builds a literal SQL string could still leak).
         for sql, args in connection.calls:
@@ -1178,7 +1178,7 @@ def test_p6c_db_parameters_do_not_contain_plain_text_token(
 
 
 # ---------------------------------------------------------------------------
-# invariant — token absent from on-disk Vault store bytes
+# invariant - token absent from on-disk Vault store bytes
 # ---------------------------------------------------------------------------
 
 
@@ -1191,7 +1191,7 @@ def test_p6c_db_parameters_do_not_contain_plain_text_token(
 def test_p6d_local_dev_store_bytes_do_not_contain_plain_text_token(
     plain_token: str,
 ) -> None:
-    """invariant — on-disk Vault store never carries the token bytes.
+    """invariant - on-disk Vault store never carries the token bytes.
 
 
 
@@ -1241,7 +1241,7 @@ def test_p6d_local_dev_store_bytes_do_not_contain_plain_text_token(
                 )
 
             # The envelope is always JSON with a single ``ciphertext``
-            # field — defence-in-depth check that the structure matches
+            # field - defence-in-depth check that the structure matches
             # the local-dev backend contract.
             try:
                 envelope = _json.loads(data.decode("utf-8"))
@@ -1252,7 +1252,7 @@ def test_p6d_local_dev_store_bytes_do_not_contain_plain_text_token(
                 # an unencrypted sibling field.
                 assert plain_token not in envelope.get("ciphertext", ""), (
                     "invariant violated: token appears in ciphertext "
-                    "field literally — encryption was not applied."
+                    "field literally - encryption was not applied."
                 )
                 for k, v in envelope.items():
                     if k == "ciphertext":
@@ -1267,7 +1267,7 @@ def test_p6d_local_dev_store_bytes_do_not_contain_plain_text_token(
 
 
 # ---------------------------------------------------------------------------
-# invariant — token bytearray is zeroed after the orchestrator returns
+# invariant - token bytearray is zeroed after the orchestrator returns
 # ---------------------------------------------------------------------------
 
 
@@ -1278,7 +1278,7 @@ def test_p6d_local_dev_store_bytes_do_not_contain_plain_text_token(
 )
 @given(plain_token=_p6_plain_token_text)
 def test_p6e_token_bytearray_is_zeroed_after_run(plain_token: str) -> None:
-    """invariant — the input ``personal_token`` bytearray is fully zeroed.
+    """invariant - the input ``personal_token`` bytearray is fully zeroed.
 
 
 
@@ -1315,7 +1315,7 @@ def test_p6e_token_bytearray_is_zeroed_after_run(plain_token: str) -> None:
 
         _run_async(_go())
 
-        # After the run the buffer must be all-zero ( — scrubbed
+        # After the run the buffer must be all-zero ( - scrubbed
         # before the DB transaction begins).
         assert len(token_buffer) == original_length, (
             "token buffer length must not change during scrub"
@@ -1330,15 +1330,15 @@ def test_p6e_token_bytearray_is_zeroed_after_run(plain_token: str) -> None:
 
 
 # ===========================================================================
-# invariant — Credential resolve önceliği: per-user > org-default 
+# invariant - Credential resolve önceliği: per-user > org-default 
 # ===========================================================================
 #
 #
 # invariant pins the priority rule for
 #:class:`automation_service.credentials.CredentialResolver`:
 #
-# 1. Per-user override — ``vault:atlassian/_user_session/<session_id>/<service>``
-# 2. Org-default bot — ``vault:atlassian/<dept_id>/<service>``
+# 1. Per-user override - ``vault:atlassian/_user_session/<session_id>/<service>``
+# 2. Org-default bot - ``vault:atlassian/<dept_id>/<service>``
 # 3. Neither present →:class:`CredentialMissing`
 # (``error_code == "credential_missing"``)
 #
@@ -1346,14 +1346,14 @@ def test_p6e_token_bytearray_is_zeroed_after_run(plain_token: str) -> None:
 # ``(per_user_present, org_default_present)`` against random
 # ``(session_id, dept_id, service)`` triples to lock down:
 #
-# P15a — (True, True) → output comes from the per-user path.
-# P15b — (True, False) → output still comes from the per-user path.
-# P15c — (False, True) → output comes from the org-default path.
-# P15d — (False, False) → ``CredentialMissing`` (a.k.a.
+# P15a - (True, True) → output comes from the per-user path.
+# P15b - (True, False) → output still comes from the per-user path.
+# P15c - (False, True) → output comes from the org-default path.
+# P15d - (False, False) → ``CredentialMissing`` (a.k.a.
 # ``credential_missing``) is raised; the resolver attempts both
 # paths in order and never returns a payload.
 #
-# A fifth invariant (P15e) pins the **call ordering** — the per-user
+# A fifth invariant (P15e) pins the **call ordering** - the per-user
 # path MUST be queried first regardless of org-default presence; this
 # enforces the "no implicit org leak when a user override exists"
 # property at the I/O level (the resolver doesn't read the org path
@@ -1363,7 +1363,7 @@ def test_p6e_token_bytearray_is_zeroed_after_run(plain_token: str) -> None:
 #
 # Strategies are deliberately tight: we only need printable ASCII
 # session/dept ids that survive the Vault path regex
-# (``[A-Za-z0-9_\-]+``). We do **not** vary the secret payload —
+# (``[A-Za-z0-9_\-]+``). We do **not** vary the secret payload -
 # its shape is irrelevant to the priority rule and varying it would
 # only burn Hypothesis budget without buying additional coverage.
 # ---------------------------------------------------------------------------
@@ -1423,7 +1423,7 @@ _p15_service: st.SearchStrategy[_P15Service] = st.sampled_from(
 
 
 # ---------------------------------------------------------------------------
-# In-memory Vault fake — duck-typed VaultReader (KeyError on miss)
+# In-memory Vault fake - duck-typed VaultReader (KeyError on miss)
 # ---------------------------------------------------------------------------
 
 
@@ -1448,7 +1448,7 @@ class _P15FakeVault:
 
 # Distinct sentinel payloads so the "which path wonsection" assertion is
 # unambiguous. Using the same dict for both sources would weaken the
-# property — equal output could mean either path was read.
+# property - equal output could mean either path was read.
 _P15_USER_SECRET: _Mapping[str, str] = {
     "url": "https://acme.atlassian.net",
     "email": "alice@acme.example",
@@ -1462,7 +1462,7 @@ _P15_ORG_SECRET: _Mapping[str, str] = {
 
 
 # ---------------------------------------------------------------------------
-# invariant — (per_user=True, org_default=True) → per-user wins
+# invariant - (per_user=True, org_default=True) → per-user wins
 # ---------------------------------------------------------------------------
 
 
@@ -1475,7 +1475,7 @@ _P15_ORG_SECRET: _Mapping[str, str] = {
 def test_p15a_user_present_org_present_returns_user(
     session_id: str, dept_id: str, service: _P15Service
 ) -> None:
-    """invariant — per-user override wins over org-default when both exist.
+    """invariant - per-user override wins over org-default when both exist.
 
 
  """
@@ -1497,7 +1497,7 @@ def test_p15a_user_present_org_present_returns_user(
     assert result.data == _P15_USER_SECRET
     # The resolver MUST short-circuit: no org-default lookup when the
     # per-user override is satisfied. This is part of the priority
-    # contract — observers of the Vault audit log should not see an
+    # contract - observers of the Vault audit log should not see an
     # org-default read on a user-served call.
     assert vault.calls == [user_path], (
         f"invariant violated: org-default path was queried even though "
@@ -1506,7 +1506,7 @@ def test_p15a_user_present_org_present_returns_user(
 
 
 # ---------------------------------------------------------------------------
-# invariant — (per_user=True, org_default=False) → per-user wins
+# invariant - (per_user=True, org_default=False) → per-user wins
 # ---------------------------------------------------------------------------
 
 
@@ -1519,7 +1519,7 @@ def test_p15a_user_present_org_present_returns_user(
 def test_p15b_user_present_org_absent_returns_user(
     session_id: str, dept_id: str, service: _P15Service
 ) -> None:
-    """invariant — per-user override resolves even with no org-default.
+    """invariant - per-user override resolves even with no org-default.
 
 
  """
@@ -1539,7 +1539,7 @@ def test_p15b_user_present_org_absent_returns_user(
 
 
 # ---------------------------------------------------------------------------
-# invariant — (per_user=False, org_default=True) → org-default wins
+# invariant - (per_user=False, org_default=True) → org-default wins
 # ---------------------------------------------------------------------------
 
 
@@ -1552,7 +1552,7 @@ def test_p15b_user_present_org_absent_returns_user(
 def test_p15c_user_absent_org_present_returns_org(
     session_id: str, dept_id: str, service: _P15Service
 ) -> None:
-    """invariant — fall back to org-default when per-user is missing.
+    """invariant - fall back to org-default when per-user is missing.
 
 
  """
@@ -1571,13 +1571,13 @@ def test_p15c_user_absent_org_present_returns_org(
     )
     assert result.path == org_path
     assert result.data == _P15_ORG_SECRET
-    # Per-user is queried first, then org-default. Ordering matters —
+    # Per-user is queried first, then org-default. Ordering matters -
     # see P15e below.
     assert vault.calls == [user_path, org_path]
 
 
 # ---------------------------------------------------------------------------
-# invariant — (per_user=False, org_default=False) → credential_missing
+# invariant - (per_user=False, org_default=False) → credential_missing
 # ---------------------------------------------------------------------------
 
 
@@ -1590,7 +1590,7 @@ def test_p15c_user_absent_org_present_returns_org(
 def test_p15d_user_absent_org_absent_raises_credential_missing(
     session_id: str, dept_id: str, service: _P15Service
 ) -> None:
-    """invariant — both paths missing → ``credential_missing`` raised.
+    """invariant - both paths missing → ``credential_missing`` raised.
 
 
  """
@@ -1611,7 +1611,7 @@ def test_p15d_user_absent_org_absent_raises_credential_missing(
     assert err.dept_id == dept_id
     assert err.service == service
     assert err.attempted_paths == (user_path, org_path)
-    # Both paths must have been tried before raising — the resolver
+    # Both paths must have been tried before raising - the resolver
     # cannot short-circuit and call ``credential_missing`` without
     # actually checking the org-default fallback.
     assert vault.calls == [user_path, org_path], (
@@ -1623,7 +1623,7 @@ def test_p15d_user_absent_org_absent_raises_credential_missing(
 
 
 # ---------------------------------------------------------------------------
-# invariant — call ordering invariant across the entire 2x2 matrix
+# invariant - call ordering invariant across the entire 2x2 matrix
 # ---------------------------------------------------------------------------
 
 
@@ -1646,7 +1646,7 @@ def test_p15e_lookup_order_is_user_then_org_default(
     per_user_present: bool,
     org_default_present: bool,
 ) -> None:
-    """invariant — full 2x2 matrix: priority + call ordering.
+    """invariant - full 2x2 matrix: priority + call ordering.
 
 
 

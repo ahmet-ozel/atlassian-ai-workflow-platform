@@ -1,4 +1,4 @@
-"""``post_cost_prediction_comment`` — best-effort Jira yorum yazma.
+﻿"""``post_cost_prediction_comment`` - best-effort Jira yorum yazma.
 
 Posts the cost prediction comment after :class:`BudgetCapPolicy.enforce`
 returns ``allow``.
@@ -41,7 +41,7 @@ Every outbound Atlassian HTTP call goes through the
 ``http_shared.make_mcp_client`` + ``http_shared.with_atlassian_creds``
 plumbing that the ``agent-runner-worker`` activities use for
 ``jira_add_comment``. The outbound call invokes the ``jira_add_comment``
-MCP tool over JSON-RPC ``tools/call`` — identical surface to
+MCP tool over JSON-RPC ``tools/call`` - identical surface to
 ``platform/workers/agent-runner-worker/src/activities/jira.py`` so the
 two callers stay observationally indistinguishable from the MCP's
 perspective (cred header layout, body shape, error mapping).
@@ -88,7 +88,7 @@ _LOG = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# Constants — body templates and MCP wiring
+# Constants - body templates and MCP wiring
 # ---------------------------------------------------------------------------
 
 #: MCP streamable-http endpoint path; identical to
@@ -101,16 +101,16 @@ _MCP_PATH: Final[str] = "/mcp"
 _CLIENT_SOURCE: Final[str] = "automation-service"
 
 #: Default per-call timeout (seconds). The body is small and the call
-#: is best-effort — keeping the timeout tight prevents a slow MCP
+#: is best-effort - keeping the timeout tight prevents a slow MCP
 #: from delaying workflow start.
 _DEFAULT_TIMEOUT_SECONDS: Final[float] = 15.0
 
 #: Body line listing the prediction with its 80% confidence interval.
 #: The prefix is "🤖 Tahmini maliyet" and the source label
-#: is rendered verbatim — ``dept`` or ``global_fallback`` — so admins
+#: is rendered verbatim - ``dept`` or ``global_fallback`` - so admins
 #: can grep for it in Jira.
 _BODY_HEADER_TEMPLATE: Final[str] = (
-    "🤖 Tahmini maliyet: ${predicted} (CI %80: ${low}–${high}). "
+    "🤖 Tahmini maliyet: ${predicted} (CI %80: ${low}-${high}). "
     "Kaynak: {source}."
 )
 
@@ -128,7 +128,7 @@ _USD_QUANT: Final[Decimal] = Decimal("0.01")
 
 
 # ---------------------------------------------------------------------------
-# Protocols — keep the module decoupled from concrete dependency types
+# Protocols - keep the module decoupled from concrete dependency types
 # ---------------------------------------------------------------------------
 
 
@@ -140,7 +140,7 @@ class CostPredictionLike(Protocol):
     these four attributes. Declaring the dependency as a Protocol
     keeps this module compilable and testable without an import-time
     coupling on a sibling library that may still be evolving. The
-    real dataclass — once available — satisfies the Protocol via
+    real dataclass - once available - satisfies the Protocol via
     structural subtyping; tests inject a tiny ``@dataclass(frozen=True)``
     that does the same.
 
@@ -192,7 +192,7 @@ class JiraCommentPoster(Protocol):
 #: Optional resolver that turns a ``dept_id`` into a deep-link URL for
 #: the admin dashboard ``/costs?dept_id=...`` panel. When set, the
 #: comment includes a "Departman maliyet panelini aç" link. Returning
-#: ``None`` skips the link silently — production wiring may not have
+#: ``None`` skips the link silently - production wiring may not have
 #: a stable public URL in dev environments.
 DeptCostPanelLinker = Callable[[str], str | None]
 
@@ -216,7 +216,7 @@ class CostCommentOutcome:
     The function is best-effort and never raises on transport /
     credential / MCP errors; callers inspect this dataclass when they
     care to surface the result (eg. structured logs or a debug
-    response field). The dataclass is intentionally minimal — it
+    response field). The dataclass is intentionally minimal - it
     carries enough to describe **what happened** without leaking the
     Jira body or the MCP response, both of which would expand the
     audit trail beyond the required operational fields.
@@ -230,7 +230,7 @@ class CostCommentOutcome:
             structured logs can correlate without a separate field.
         body_chars: Length of the rendered body, measured **after**
             template substitution. Useful as a smoke-check for
-            unbounded growth — the comment is bounded above by the
+            unbounded growth - the comment is bounded above by the
             template + a deep-link URL, so anything > a few hundred
             chars points at a regression.
         error: Short error description on ``"failed"``; ``None``
@@ -245,7 +245,7 @@ class CostCommentOutcome:
 
 
 # ---------------------------------------------------------------------------
-# Body composer (pure function — easy to unit test)
+# Body composer (pure function - easy to unit test)
 # ---------------------------------------------------------------------------
 
 
@@ -254,7 +254,7 @@ def _format_usd(value: Decimal) -> str:
 
     Quantises to two decimal places using ``ROUND_HALF_EVEN``
     (Python's :class:`Decimal` default). The output is plain digits
-    with a single ``.`` separator and no thousands grouping — easy to
+    with a single ``.`` separator and no thousands grouping - easy to
     parse downstream and consistent with how ``departments.json``
     serialises cap values.
     """
@@ -273,11 +273,11 @@ def _compose_body(
     unit-tested without standing up an MCP transport. The body has
     three layered sections:
 
-    1. Header line — always present; contains the predicted value,
+    1. Header line - always present; contains the predicted value,
        the 80% CI bounds, and the source label.
-    2. Global-fallback disclosure — appended only when
+    2. Global-fallback disclosure - appended only when
        ``prediction.source == "global_fallback"``.
-    3. Cost panel deep-link — appended only when ``cost_panel_url``
+    3. Cost panel deep-link - appended only when ``cost_panel_url``
        is a non-empty string. Allows the comment author to point at
        the live dashboard without forcing a stable URL on every dept
        at this stage of the rollout.
@@ -306,7 +306,7 @@ def _compose_body(
 
 
 # ---------------------------------------------------------------------------
-# JSON-RPC helpers — kept tiny so the module stays self-contained
+# JSON-RPC helpers - kept tiny so the module stays self-contained
 # ---------------------------------------------------------------------------
 
 
@@ -323,7 +323,7 @@ def _build_jsonrpc_request(
     via ``X-Client-Source``). Kept inline here rather than imported
     from the worker because the worker's helpers live behind a
     Temporal activity decorator import path that pulls in the
-    ``temporalio`` runtime — a heavyweight dependency the
+    ``temporalio`` runtime - a heavyweight dependency the
     HTTP-only ``automation-service`` does not need on a best-effort
     Jira write.
     """
@@ -401,7 +401,7 @@ async def post_cost_prediction_comment(
         issue_key: The originating Jira issue key (eg. ``"PAY-4211"``).
             Empty values raise :class:`ValueError` because the call
             site is the workflow start handler, which always knows
-            the issue at this point — passing an empty value indicates
+            the issue at this point - passing an empty value indicates
             a programming error rather than a recoverable runtime
             condition.
         prediction: The cost prediction value object produced by the
@@ -414,7 +414,7 @@ async def post_cost_prediction_comment(
             and (optionally) the deep-link URL.
         credential_resolver: A :class:`CredentialResolver`-like object
             (anything compatible with :func:`http_shared.with_atlassian_creds`'s
-            duck-typed contract — must expose async ``get(dept_id,
+            duck-typed contract - must expose async ``get(dept_id,
             service, scope=...)``).
         mcp_base_url: The ``atlassian_unified`` MCP base URL. Threaded
             through from ``automation_service.config`` rather than
@@ -439,7 +439,7 @@ async def post_cost_prediction_comment(
             without a live MCP.
         timeout_seconds: Per-call HTTP timeout. Defaults to
             :data:`_DEFAULT_TIMEOUT_SECONDS`; the function does not
-            retry — best-effort means a single attempt.
+            retry - best-effort means a single attempt.
         clock: Callable returning a timezone-aware UTC ``datetime``;
             defaults to ``datetime.now(timezone.utc)``. Tests inject
             a fake so audit timestamps are deterministic.
@@ -492,7 +492,7 @@ async def post_cost_prediction_comment(
     if dept_cost_panel_linker is not None:
         try:
             cost_panel_url = dept_cost_panel_linker(dept_id)
-        except Exception as exc:  # noqa: BLE001 — best-effort
+        except Exception as exc:  # noqa: BLE001 - best-effort
             # A misbehaving linker must not break the comment path;
             # log at warning and proceed without the deep-link.
             _LOG.warning(
@@ -517,7 +517,7 @@ async def post_cost_prediction_comment(
             mcp_client_factory=factory,
             timeout_seconds=timeout_seconds,
         )
-    except Exception as exc:  # noqa: BLE001 — best-effort wrapper
+    except Exception as exc:  # noqa: BLE001 - best-effort wrapper
         # Map the failure to a short error string for both the audit
         # payload and the outcome, then return without re-raising. The
         # exception is logged at WARNING (not ERROR) because the
@@ -576,7 +576,7 @@ async def post_cost_prediction_comment(
 
 
 # ---------------------------------------------------------------------------
-# Helpers — MCP transport + audit emission
+# Helpers - MCP transport + audit emission
 # ---------------------------------------------------------------------------
 
 
@@ -645,7 +645,7 @@ async def _emit_audit(
     Centralised so every code path in
     :func:`post_cost_prediction_comment` audits with the same shape:
 
-    * ``actor_role="system"`` — the workflow start handler invokes
+    * ``actor_role="system"`` - the workflow start handler invokes
       this on the user's behalf, but the comment itself is a system
       action (no human pressed "post comment"). The ``actor_id``
       field carries the human attribution when the caller passes it.
@@ -678,7 +678,7 @@ async def _emit_audit(
 
 
 def _default_clock() -> datetime:
-    """Return ``datetime.now(timezone.utc)`` — overridable for tests."""
+    """Return ``datetime.now(timezone.utc)`` - overridable for tests."""
 
     return datetime.now(timezone.utc)
 
@@ -689,7 +689,7 @@ def _default_mcp_client_factory(
     timeout: float,
     base_url: str,
 ) -> httpx.AsyncClient:
-    """Production wiring — defer to :func:`http_shared.make_mcp_client`.
+    """Production wiring - defer to :func:`http_shared.make_mcp_client`.
 
     Wrapped in a thin function (rather than referenced directly) so
     the module's public surface lists :data:`McpClientFactory` as the

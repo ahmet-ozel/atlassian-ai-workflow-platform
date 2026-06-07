@@ -1,5 +1,5 @@
-"""
-Test 06: Setup Wizard Steps 5-6 — Workers and Services.
+﻿"""
+Test 06: Setup Wizard Steps 5-6 - Workers and Services.
 
 Validates that the Playwright MCP browser automation can click through
 the Workers (Step 5) and Services (Step 6) wizard steps, each step
@@ -372,7 +372,7 @@ def _capture_container_logs(service_name: str, platform_dir: Path, tail: int = 5
 
 
 # ---------------------------------------------------------------------------
-# Tests — Step 5: Configure Workers
+# Tests - Step 5: Configure Workers
 # ---------------------------------------------------------------------------
 
 class TestWizardStep5Workers:
@@ -425,7 +425,7 @@ class TestWizardStep5Workers:
         completion = _wait_for_step_completion(WIZARD_STEP_5_NAME, STEP_5_TIMEOUT)
 
         if not completion["completed"]:
-            # Step didn't complete via API polling — this may be expected
+            # Step didn't complete via API polling - this may be expected
             # if the wizard requires Playwright MCP browser interaction.
             pytest.skip(
                 f"Workers step did not complete within {STEP_5_TIMEOUT}s via API polling. "
@@ -501,7 +501,7 @@ class TestWizardStep5Workers:
 
 
 # ---------------------------------------------------------------------------
-# Tests — Step 6: Configure Services
+# Tests - Step 6: Configure Services
 # ---------------------------------------------------------------------------
 
 class TestWizardStep6Services:
@@ -612,7 +612,7 @@ class TestWizardStep6Services:
 
 
 # ---------------------------------------------------------------------------
-# Tests — Docker Health Verification
+# Tests - Docker Health Verification
 # ---------------------------------------------------------------------------
 
 class TestWizardWorkersServicesDockerHealth:
@@ -745,7 +745,7 @@ class TestWizardWorkersServicesDockerHealth:
 
 
 # ---------------------------------------------------------------------------
-# Tests — Failure Handling
+# Tests - Failure Handling
 # ---------------------------------------------------------------------------
 
 class TestWizardWorkersFailureHandling:
@@ -800,7 +800,7 @@ class TestWizardWorkersFailureHandling:
 
 
 # ---------------------------------------------------------------------------
-# Tests — Comprehensive Evidence
+# Tests - Comprehensive Evidence
 # ---------------------------------------------------------------------------
 
 class TestWizardWorkersEvidence:

@@ -1,5 +1,5 @@
-"""
-VPS Open Issue Logger — cross-cutting helper (B6).
+﻿"""
+VPS Open Issue Logger - cross-cutting helper (B6).
 
 Provides a single API for all harness scripts to log Open Issues
 into `vps-test-evidence/open-issues.json` with strict schema validation.
@@ -35,7 +35,7 @@ REQUIREMENT_ID_REGEX = re.compile(r"^R(1[0-9]|2[0-3]|[1-9])$")
 EVIDENCE_PATH_PREFIX = "vps-test-evidence/"
 MAX_SUMMARY_LENGTH = 160
 
-# Evidence directory and file path — relative to workspace root.
+# Evidence directory and file path - relative to workspace root.
 # The workspace root is determined by walking up from this script's location
 # until we find the `vps-test-evidence` parent or default to two levels up
 # from `platform/scripts/`.
@@ -138,7 +138,7 @@ def log_open_issue(
     # Ensure evidence directory exists
     EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Load existing issues (append-only — R16.4)
+    # Load existing issues (append-only - R16.4)
     if OPEN_ISSUES_FILE.exists():
         with open(OPEN_ISSUES_FILE, "r", encoding="utf-8") as f:
             issues: list[dict] = json.load(f)

@@ -1,8 +1,8 @@
-# audit_logger
+﻿# audit_logger
 
 Audit event dataclass + writer. The package
-captures every state-changing action — capability gating decisions,
-RBAC denials, webhook drops, credential rotations, and the like — so
+captures every state-changing action - capability gating decisions,
+RBAC denials, webhook drops, credential rotations, and the like - so
 operators can trace every effect back to a concrete actor, role, and
 department.
 
@@ -34,7 +34,7 @@ declared in `infra/postgres/init/10_automation.sql`.
 
 `AuditLogger.write()` raises `ValueError` if `event.actor_role` is
 `None` (or the empty string). Postgres also enforces this with a
-`CHECK (actor_role IS NOT NULL ...)` constraint — the application
+`CHECK (actor_role IS NOT NULL ...)` constraint - the application
 check exists so callers fail fast with a clear message *before* the
 round-trip to Postgres. This is the same defence-in-depth pattern
 covered by `test_audit_one_to_one.py` in

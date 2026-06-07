@@ -1,4 +1,4 @@
-"""Firecrawl egress allowlist behavior.
+﻿"""Firecrawl egress allowlist behavior.
 
 
 
@@ -27,7 +27,7 @@ matching predicate or the side-effect emission shows up here.
 Why this file talks to multiple layers
 --------------------------------------
 
-The the operational rule names two enforcement surfaces — the pure-Python allowlist
+The the operational rule names two enforcement surfaces - the pure-Python allowlist
 helper *and* the FastAPI 403 / log / metric triple. We exercise both: the
 fast pure-function class drives Hypothesis at high iteration counts to
 shake out boundary conditions, and a smaller TestClient class samples the
@@ -79,14 +79,14 @@ from firecrawl.metrics import metrics  # noqa: E402
 # Hypothesis strategies
 # ---------------------------------------------------------------------------
 
-#: A DNS label: lowercase ASCII letters / digits / single hyphen, 1–20 chars.
+#: A DNS label: lowercase ASCII letters / digits / single hyphen, 1-20 chars.
 #: Hyphens are allowed but never leading or trailing.
 _dns_label = st.from_regex(r"\A[a-z0-9](?:[a-z0-9-]{0,18}[a-z0-9])?\Z", fullmatch=True)
 
 
 @st.composite
 def _hostnames(draw: st.DrawFn) -> str:
-    """Build a 1–4-label DNS hostname (no scheme, no port)."""
+    """Build a 1-4-label DNS hostname (no scheme, no port)."""
 
     n = draw(st.integers(min_value=1, max_value=4))
     labels = [draw(_dns_label) for _ in range(n)]
@@ -95,7 +95,7 @@ def _hostnames(draw: st.DrawFn) -> str:
 
 @st.composite
 def _allowlists(draw: st.DrawFn) -> tuple[str, ...]:
-    """Build a non-empty allowlist of 1–5 distinct host suffixes."""
+    """Build a non-empty allowlist of 1-5 distinct host suffixes."""
 
     n = draw(st.integers(min_value=1, max_value=5))
     hosts: list[str] = []
@@ -139,7 +139,7 @@ def _denied_pairs(draw: st.DrawFn) -> tuple[str, tuple[str, ...]]:
     host = draw(_hostnames())
     assume(not is_host_allowed(host, allowlist))
     # Defensive guard: also assume the host doesn't accidentally match a
-    # confusable parent — the assumption above already covers it but we
+    # confusable parent - the assumption above already covers it but we
     # keep the explicit check for readability.
     for entry in allowlist:
         assume(host != entry)
@@ -277,7 +277,7 @@ class TestObservableEgressDeniedRecord:
  These tests exercise the FastAPI surface so the property captures
  the *observable* part of: HTTP 403 response, ``egress_denied``
  in the structured log, and a bumped Prometheus counter. We use a
- single TestClient per example (cheap — no network) and rely on
+ single TestClient per example (cheap - no network) and rely on
  Hypothesis to drive the matrix of allowlists and target hosts.
  """
 
@@ -370,7 +370,7 @@ class TestObservableEgressDeniedRecord:
  SHALL **not** produce an ``egress_denied`` log record and the
  denial counter SHALL **not** advance. We do not assert on the
  forwarded HTTP status (the built-in fetcher would attempt a
- real network call) — instead we install a metrics-and-log
+ real network call) - instead we install a metrics-and-log
  check that is invariant to the upstream branch.
  """
 

@@ -1,4 +1,4 @@
-"""Atlassian MCP client — skeleton import point.
+﻿"""Atlassian MCP client - skeleton import point.
 
 This module is intentionally a thin client import point. The real
 Jira / Bitbucket / Confluence HTTP wiring lives behind the Atlassian
@@ -10,7 +10,7 @@ Design context
 --------------
 
 Every outbound Atlassian call goes through the
-``atlassian_mcp_bitbucket`` MCP service — never directly
+``atlassian_mcp_bitbucket`` MCP service - never directly
 from a Python module to ``api.atlassian.com``. This client is the
 **caller-side wrapper** around that MCP. By owning a single class
 here we keep the banned tool filter and PR draft enforcement at one
@@ -166,7 +166,7 @@ class AtlassianClient:
 
         Args:
             raw_catalog: The MCP-side tool catalog. Any iterable of
-                tool descriptors is accepted — see
+                tool descriptors is accepted - see
                 :func:`mcp_client.tool_filter.filter_tools` for the
                 supported shapes.
 
@@ -190,7 +190,7 @@ class AtlassianClient:
         actor_role: str = "system",
         dept_id: str | None = None,
     ) -> dict[str, Any]:
-        """Skeleton — coerce ``draft=True`` and raise NotImplementedError.
+        """Skeleton - coerce ``draft=True`` and raise NotImplementedError.
 
         The HTTP wiring lives outside this package; here we exercise
         the enforcement helper and then raise so any caller that
@@ -214,7 +214,7 @@ class AtlassianClient:
             dept_id: Audit event ``dept_id`` (``None`` allowed).
 
         Raises:
-            NotImplementedError: Always — the HTTP transport is
+            NotImplementedError: Always - the HTTP transport is
                 delivered by the next spec.
         """
 

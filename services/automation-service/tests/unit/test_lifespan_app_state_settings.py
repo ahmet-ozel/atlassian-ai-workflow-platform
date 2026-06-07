@@ -1,4 +1,4 @@
-"""Tests for ``create_app`` settings state wiring.
+﻿"""Tests for ``create_app`` settings state wiring.
 
 Pins the contract that :func:`automation_service.app.create_app` stashes
 the resolved :class:`Settings` instance on ``app.state.settings``. The
@@ -30,7 +30,7 @@ from src.config import Settings  # noqa: E402
 def test_create_app_settings_state_is_caller_supplied() -> None:
     """A caller-supplied ``Settings`` survives the round trip identically.
 
-    ``create_app(s).state.settings is s`` — the factory MUST NOT clone /
+    ``create_app(s).state.settings is s`` - the factory MUST NOT clone /
     re-validate the instance. Tests that inject ``Settings`` overrides
     (e.g. an in-memory ``postgres_dsn``) rely on this identity so the
     lifespan handler reads the exact override.

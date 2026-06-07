@@ -1,4 +1,4 @@
-"""Unit tests for ``temporal_shared.capabilities``.
+﻿"""Unit tests for ``temporal_shared.capabilities``.
 
 Validates the :data:`WORKFLOW_TYPE_CAPABILITIES` mapping shape, the
 :func:`derive_capabilities` rule table, and the :func:`gate` set-algebra
@@ -29,7 +29,7 @@ from temporal_shared.capabilities import (
 
 @dataclass(frozen=True)
 class _BotEntry:
-    """Bot entry test fake — the real one lives in a later task."""
+    """Bot entry test fake - the real one lives in a later task."""
 
     present: bool = True
 
@@ -55,7 +55,7 @@ def _empty_env() -> Mapping[str, str]:
 
 
 # ---------------------------------------------------------------------------
-# WORKFLOW_TYPE_CAPABILITIES — structural shape
+# WORKFLOW_TYPE_CAPABILITIES - structural shape
 # ---------------------------------------------------------------------------
 
 
@@ -149,7 +149,7 @@ class TestMappingShape:
 
 
 # ---------------------------------------------------------------------------
-# derive_capabilities — rule table
+# derive_capabilities - rule table
 # ---------------------------------------------------------------------------
 
 
@@ -227,7 +227,7 @@ class TestDeriveCapabilities:
         """
 
         Setting ``SSH_RUNNER_DEPT_PINNING_ENABLED`` to any value must not
-        change the result of :func:`derive_capabilities` — the flag is
+        change the result of :func:`derive_capabilities` - the flag is
         outside this function's scope (default off).
         """
         d = _Dept(bot=_Bot())
@@ -287,7 +287,7 @@ class TestDeriveCapabilities:
 
 
 # ---------------------------------------------------------------------------
-# gate — set-algebra
+# gate - set-algebra
 # ---------------------------------------------------------------------------
 
 

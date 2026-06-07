@@ -1,4 +1,4 @@
-"""Credential cleanup guarantee.
+﻿"""Credential cleanup guarantee.
 
 *For any* git push operation result (success or failure), the
 Credential_Injector removes temporary credential configuration
@@ -22,7 +22,7 @@ from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — ensure ``src.activities.credential_injector`` is
+# sys.path bootstrap - ensure ``src.activities.credential_injector`` is
 # importable when pytest is invoked from any working directory.
 # ---------------------------------------------------------------------------
 
@@ -143,7 +143,7 @@ class TestCredentialCleanupGuarantee:
     ) -> None:
         """Even if the SSH execution raises an error during cleanup,
         the function handles it gracefully (best-effort) without
-        propagating the exception — ensuring the cleanup attempt
+        propagating the exception - ensuring the cleanup attempt
         was made regardless of push outcome.
         """
         from src.activities.credential_injector import CredentialInjectorError

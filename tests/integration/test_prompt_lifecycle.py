@@ -1,4 +1,4 @@
-"""Integration smoke — Prompt lifecycle (`ops work` the implementation).
+﻿"""Integration smoke - Prompt lifecycle (`ops work` the implementation).
 
 End-to-end ``/admin/prompts`` round-trip: list prompts, read one,
 create a draft branch, open a PR. Gated by ``--run-docker``.

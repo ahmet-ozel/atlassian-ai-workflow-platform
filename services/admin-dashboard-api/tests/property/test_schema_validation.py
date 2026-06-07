@@ -1,7 +1,7 @@
-"""— schema validation rejects malformed payloads.
+﻿"""- schema validation rejects malformed payloads.
 spec: every malformed ``ProviderCreate`` body the operator could
 submit is rejected with HTTP 422 carrying one of four documented
-shapes — ``validation_failed`` (missing field or single reason),
+shapes - ``validation_failed`` (missing field or single reason),
 ``unsupported_provider_type``, or ``extra_fields_not_allowed``."""
 
 from __future__ import annotations
@@ -85,7 +85,7 @@ def test_unsupported_provider_type_returns_documented_shape(
     # Discriminator failures may fall through to either the
     # unsupported-type shape or the generic ``validation_failed``
     # shape depending on Pydantic's internal error type. Both are
-    # acceptable per the spec — the property only forbids the raw
+    # acceptable per the spec - the property only forbids the raw
     # Pydantic ``detail: [...]`` shape leaking through.
     assert body.get("error") in {
         "unsupported_provider_type",

@@ -1,6 +1,6 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
-VPS Report Generator — TEST_REPORT.md renderer (B6).
+VPS Report Generator - TEST_REPORT.md renderer (B6).
 
 Reads all evidence artifacts from vps-test-evidence/ and produces the
 canonical TEST_REPORT.md at the workspace root.
@@ -42,7 +42,7 @@ REQUIREMENTS: list[tuple[str, str, str]] = [
     ("R14", "Jira webhook subscription ve event teslimi", "14-jira-webhook.json"),
     ("R15", "Bitbucket webhook subscription ve event teslimi", "15-bitbucket-webhook.json"),
     ("R16", "Open_Issues ve root-cause sınıflandırması", "open-issues.json"),
-    ("R17", "Observability — log, Postgres, Temporal", "17-observability.json"),
+    ("R17", "Observability - log, Postgres, Temporal", "17-observability.json"),
     ("R18", "make down ile graceful shutdown", "18-shutdown.txt"),
     ("R19", "VPS imha, faturalama ve credential sweep", "19-teardown.txt"),
 ]
@@ -262,7 +262,7 @@ def render_property_tests(evidence_dir: Path, open_issues: list[dict[str, Any]])
                     else:
                         pt_results[test_name] = ("pass", "")
                 else:
-                    # Test not found in output — might not exist in repo
+                    # Test not found in output - might not exist in repo
                     pt_results[test_name] = ("n/a", "not in repo")
         except OSError:
             pass
@@ -337,7 +337,7 @@ def render_open_issues(open_issues: list[dict[str, Any]]) -> str:
 
 
 def render_evidence_index(evidence_dir: Path) -> str:
-    """Render Evidence Index — list all files in vps-test-evidence/ (R20.1)."""
+    """Render Evidence Index - list all files in vps-test-evidence/ (R20.1)."""
     lines = ["## Evidence Index", ""]
 
     if not evidence_dir.exists():
@@ -399,7 +399,7 @@ def render_cost_and_cleanup(evidence_dir: Path) -> str:
         hours_num = float(billed_hours.split()[0].replace(",", "."))
         if hours_num > 8:
             lines.append(
-                "- ⚠️ [BUDGET] VPS runtime exceeded 8h target — review test efficiency"
+                "- ⚠️ [BUDGET] VPS runtime exceeded 8h target - review test efficiency"
             )
     except (ValueError, IndexError):
         pass

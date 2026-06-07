@@ -1,4 +1,4 @@
-# Alignment note: tests assert the SIMPLE/collapsed vocabulary
+﻿# Alignment note: tests assert the SIMPLE/collapsed vocabulary
 # ({"jira","bitbucket","confluence","execution","web_search"}) emitted by
 # ``temporal_shared.capabilities.required_capabilities`` rather than the raw
 # split vocabulary stored in ``WORKFLOW_TYPE_CAPABILITIES``. This uses the
@@ -35,7 +35,7 @@ from temporal_shared.capabilities import (
 # ``"confluence_write"``) down to their simple service names
 # (``"jira"`` / ``"bitbucket"`` / ``"confluence"``). This mirror table is
 # kept inline rather than re-imported from the production module so the
-# test catches accidental edits to the collapse logic — a regression that
+# test catches accidental edits to the collapse logic - a regression that
 # would otherwise hide if both sides shared a single source.
 # ---------------------------------------------------------------------------
 
@@ -56,7 +56,7 @@ def _expected_simple_capabilities(wf_type: str) -> frozenset[str]:
     """Collapsed form of ``WORKFLOW_TYPE_CAPABILITIES[wf_type]``.
 
     Returns the simple-vocabulary frozenset that ``required_capabilities``
-    emits for *wf_type* — i.e. the split tokens folded via
+    emits for *wf_type* - i.e. the split tokens folded via
     :data:`SPLIT_TO_SIMPLE` and any non-split tokens passed through.
     """
 
@@ -99,7 +99,7 @@ class TestRequiredCapabilities:
         (``automation_worker.activities.task_analyzer.VALID_WORKFLOW_TYPES``)
         as task-analyzer aliases, while ``WORKFLOW_TYPE_CAPABILITIES`` ships
         the base keys (``research_basic`` / ``research_with_web``)
-        — see the comment on this in
+        - see the comment on this in
         ``platform/tests/property/test_task_analysis_parser.py``. So
         ``required_capabilities("research_summary_jira")`` raises ``KeyError``
         rather than returning a capability frozenset, mirroring the

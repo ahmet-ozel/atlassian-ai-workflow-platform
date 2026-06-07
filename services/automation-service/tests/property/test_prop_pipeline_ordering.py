@@ -1,4 +1,4 @@
-"""Property test: Webhook pipeline ordering guarantee.
+﻿"""Property test: Webhook pipeline ordering guarantee.
 
 Stages always execute in dedup → loop_guard → dispatcher order.
 
@@ -29,7 +29,7 @@ from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — mirrors sibling property tests
+# sys.path bootstrap - mirrors sibling property tests
 # ---------------------------------------------------------------------------
 
 _AUTOMATION_SRC = Path(__file__).resolve().parents[2] / "src"
@@ -223,7 +223,7 @@ class TestPipelineOrderingGuarantee:
         self, payload: WebhookPayload
     ) -> None:
         """When dedup drops the event, only dedup executes. Loop_guard
-        and dispatcher are never reached — but the ordering of what
+        and dispatcher are never reached - but the ordering of what
         DID execute is still correct (dedup is first).
         """
         execution_log: list[str] = []

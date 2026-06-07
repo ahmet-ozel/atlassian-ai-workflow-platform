@@ -1,4 +1,4 @@
-"""invariant 17 — Jira Issue Template fiziksel deploy idempotency.
+﻿"""invariant 17 - Jira Issue Template fiziksel deploy idempotency.
 
 
 
@@ -26,7 +26,7 @@ encodes the documented contract:
  diff so that subsequent reads return the desired payload.
 
 The fallback exists so this invariant (12.7) can land before the
-script (12.2) and still exercise the documented contract — the
+script (12.2) and still exercise the documented contract - the
 property holds for every correct implementation of that contract.
 
 Test strategy
@@ -58,7 +58,7 @@ from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 # ---------------------------------------------------------------------------
-# Mock Atlassian client — minimal Jira admin surface for issue templates
+# Mock Atlassian client - minimal Jira admin surface for issue templates
 # ---------------------------------------------------------------------------
 
 
@@ -144,7 +144,7 @@ class MockJiraClient:
 
 
 # ---------------------------------------------------------------------------
-# Reference idempotent deploy — used when the production script is absent
+# Reference idempotent deploy - used when the production script is absent
 # ---------------------------------------------------------------------------
 
 
@@ -217,7 +217,7 @@ def _resolve_deploy_callable() -> Callable[[Any, dict[str, Any]], Any]:
 
 
 # ---------------------------------------------------------------------------
-# Hypothesis strategies — random Issue Template configurations
+# Hypothesis strategies - random Issue Template configurations
 # ---------------------------------------------------------------------------
 
 #: Field types Jira's Cloud REST API supports for custom field create.
@@ -286,7 +286,7 @@ def _screen_scheme_strategy() -> st.SearchStrategy[dict[str, Any]]:
 
 def _template_strategy() -> st.SearchStrategy[dict[str, Any]]:
     """Build a random complete Issue Template configuration."""
-    # Field names must be unique within the template — duplicate field
+    # Field names must be unique within the template - duplicate field
     # names would be rejected by Jira's create-field endpoint, and the
     # idempotency property is only well-defined when the template
     # itself is consistent.
@@ -303,7 +303,7 @@ def _template_strategy() -> st.SearchStrategy[dict[str, Any]]:
 
 
 # ---------------------------------------------------------------------------
-# invariant: ardışık iki deploy çağrısı — ikincisi net değişiklik yapmaz
+# invariant: ardışık iki deploy çağrısı - ikincisi net değişiklik yapmaz
 # ---------------------------------------------------------------------------
 
 
@@ -330,17 +330,17 @@ def test_deploy_jira_issue_template_is_idempotent(template: dict[str, Any]) -> N
     deploy = _resolve_deploy_callable()
     client = MockJiraClient()
 
-    # First run — establishes the desired state in the mock Jira.
+    # First run - establishes the desired state in the mock Jira.
     deploy(client, template)
     state_after_first = client.snapshot()
     mutations_after_first = client.mutations
 
-    # Second run — must be a strict no-op.
+    # Second run - must be a strict no-op.
     deploy(client, template)
     state_after_second = client.snapshot()
     mutations_after_second = client.mutations
 
-    # 1. State equality — the second deploy must not drift the state.
+    # 1. State equality - the second deploy must not drift the state.
     assert state_after_first == state_after_second, (
         "invariant violation: second deploy mutated Jira state.\n"
         f" After run #1: {state_after_first}\n"
@@ -349,7 +349,7 @@ def test_deploy_jira_issue_template_is_idempotent(template: dict[str, Any]) -> N
         f"{client.call_log[mutations_after_first:]}"
     )
 
-    # 2. Zero net mutations on the second run — the most direct
+    # 2. Zero net mutations on the second run - the most direct
     # expression of the documented "no net change" contract.
     second_run_mutations = mutations_after_second - mutations_after_first
     assert second_run_mutations == 0, (
@@ -360,7 +360,7 @@ def test_deploy_jira_issue_template_is_idempotent(template: dict[str, Any]) -> N
 
 
 # ---------------------------------------------------------------------------
-# Companion sanity test — empty Jira → first deploy populates everything
+# Companion sanity test - empty Jira → first deploy populates everything
 # ---------------------------------------------------------------------------
 
 
@@ -398,7 +398,7 @@ def test_first_deploy_populates_all_template_entities(
 
 
 # ---------------------------------------------------------------------------
-# Companion test — drift detection: a manual edit to Jira between runs
+# Companion test - drift detection: a manual edit to Jira between runs
 # is corrected, then the system stabilises (idempotency from run #2 on)
 # ---------------------------------------------------------------------------
 
@@ -431,7 +431,7 @@ def test_deploy_corrects_drift_and_then_stabilises(
     drifted = client.get_issue_type(name)
     assert drifted is not None  # populated by run #1
     drifted["description"] = drifted.get("description", "") + "_DRIFT"
-    # Bypass the mutation counter — this is the "operator edit" event,
+    # Bypass the mutation counter - this is the "operator edit" event,
     # not a deploy call.
     client.issue_types[name] = drifted
 
@@ -446,7 +446,7 @@ def test_deploy_corrects_drift_and_then_stabilises(
     # At least one mutation occurred to heal the drift.
     assert mutations_during_run_2 >= 1
 
-    # Run #3 must be a no-op — the system has converged.
+    # Run #3 must be a no-op - the system has converged.
     mutations_before_run_3 = client.mutations
     deploy(client, template)
     state_after_run_3 = client.snapshot()

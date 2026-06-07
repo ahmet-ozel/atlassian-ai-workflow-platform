@@ -1,14 +1,14 @@
-"""Unit tests for ``temporal_shared.pdf_render``.
+﻿"""Unit tests for ``temporal_shared.pdf_render``.
 
 Covers deterministic PDF rendering and ``jira_attachment`` format
 handling for ``pdf`` and ``md`` outputs.
 
 The test suite is split into two halves:
 
-* **Pure-Python contract** — Jinja2 input validation, error
+* **Pure-Python contract** - Jinja2 input validation, error
   classification, public constant pinning.  These tests run on every
   host and do not require WeasyPrint's native runtime.
-* **End-to-end PDF rendering** — exercised behind
+* **End-to-end PDF rendering** - exercised behind
   :func:`pytest.importorskip` so a developer workstation that has
   not yet installed the Pango / Cairo / GLib system packages still
   gets a green ``pytest libs/temporal-shared`` run.  The CI image
@@ -68,11 +68,11 @@ class TestModuleSurface:
         The ``jira_attachment`` activity loads the default template
         from ``platform/prompts/pdf_templates/default.html.j2``.  We
         check the file exists, is non-empty, and pins A4 + a Turkish
-        glyph–capable font stack.
+        glyph-capable font stack.
         """
         # Walk up from the test file to the workspace root, then into
         # the prompts tree.  ``__file__`` is platform/libs/temporal-shared/
-        # tests/test_pdf_render.py — three parents lands us at the
+        # tests/test_pdf_render.py - three parents lands us at the
         # workspace root regardless of the local checkout layout.
         here = Path(__file__).resolve()
         workspace_root = here.parents[3]  # platform/
@@ -131,7 +131,7 @@ class TestInputValidation:
     def test_undefined_variable_is_rejected(self) -> None:
         """
 
-        :class:`jinja2.StrictUndefined` is on by design — a missing
+        :class:`jinja2.StrictUndefined` is on by design - a missing
         ``context`` key would otherwise silently emit an empty string
         into the PDF, masking activity-layer bugs.
         """
@@ -144,7 +144,7 @@ class TestInputValidation:
 # ---------------------------------------------------------------------------
 
 # WeasyPrint loads native libraries (Pango, Cairo, GLib) on import via
-# cffi.  On developer workstations — especially Windows — those
+# cffi.  On developer workstations - especially Windows - those
 # libraries are often missing, so we gate the e2e half of the suite on
 # a successful import.  ``pytest.importorskip`` raises an ``ImportError``
 # only; WeasyPrint's failure mode is :class:`OSError`, which we have
@@ -154,7 +154,7 @@ try:
 
     _WEASYPRINT_AVAILABLE = True
     _WEASYPRINT_SKIP_REASON = ""
-except (ImportError, OSError) as _exc:  # pragma: no cover — env-specific
+except (ImportError, OSError) as _exc:  # pragma: no cover - env-specific
     _WEASYPRINT_AVAILABLE = False
     _WEASYPRINT_SKIP_REASON = (
         "WeasyPrint native runtime unavailable on this host: "
@@ -260,10 +260,10 @@ class TestRenderPdfEndToEnd:
             template_source,
             {
                 "lang": "tr",
-                "title": "Araştırma özeti — Türkçe",
+                "title": "Araştırma özeti - Türkçe",
                 "subtitle": "Q2 2026",
                 "body_html": (
-                    "<p>Özet metni — çğıöşü ÇĞİÖŞÜ.</p>"
+                    "<p>Özet metni - çğıöşü ÇĞİÖŞÜ.</p>"
                     "<ul><li>Bir madde</li><li>İkinci madde</li></ul>"
                 ),
                 "footer": "🤖 AI provenance",

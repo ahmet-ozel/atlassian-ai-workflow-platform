@@ -1,4 +1,4 @@
-"""``LocalDevBackend`` — encrypted-file Vault backend for development.
+﻿"""``LocalDevBackend`` - encrypted-file Vault backend for development.
 
 Implements :class:`vault_client.client.VaultClient` against a single
 file on disk whose payload is encrypted end-to-end with libsodium's
@@ -18,7 +18,7 @@ Threat model
   end up with an "encryption" backend that silently writes secrets in
   the clear.
 * The on-disk format is a JSON file whose top-level value is a
-  base64-encoded ``nonce || ciphertext`` blob — the JSON wrapper exists
+  base64-encoded ``nonce || ciphertext`` blob - the JSON wrapper exists
   only so the file can carry forward-compatible metadata; the wrapper
   itself never contains a plain-text secret.
 
@@ -186,7 +186,7 @@ class LocalDevBackend(VaultClient):
             ensure_ascii=False,
         ).encode("utf-8")
         # ``encrypt`` produces an ``EncryptedMessage`` whose default
-        # ``bytes()`` representation is ``nonce || ciphertext`` — that's
+        # ``bytes()`` representation is ``nonce || ciphertext`` - that's
         # the value we store. Decryption needs the same bytes back.
         nonce = nacl.utils.random(nacl.secret.SecretBox.NONCE_SIZE)
         encrypted = self._box.encrypt(plaintext, nonce)
@@ -219,7 +219,7 @@ class LocalDevBackend(VaultClient):
         if not isinstance(data, Mapping):
             raise TypeError("LocalDevBackend.write expected Mapping[str, str]")
         # Coerce all keys/values to ``str`` and reject obviously wrong
-        # shapes (e.g. nested dicts) — KV-v2 storage is intentionally
+        # shapes (e.g. nested dicts) - KV-v2 storage is intentionally
         # flat so callers cannot smuggle structured plain-text payloads.
         flat: dict[str, str] = {}
         for k, v in data.items():

@@ -1,4 +1,4 @@
-"""Behavioral tests for Rate Limiter middleware.
+﻿"""Behavioral tests for Rate Limiter middleware.
 
 For any sequence of requests from the same key (IP or user_id) within a
 sliding window, the rate limiter SHALL allow the first N requests (where N
@@ -158,7 +158,7 @@ def test_rate_limiter_path_exemption(path: str, num_requests: int) -> None:
     app = _create_exempt_test_app()
     client = TestClient(app)
 
-    # Send many requests to the exempt path — none should get 429
+    # Send many requests to the exempt path - none should get 429
     for i in range(num_requests):
         response = client.get(path)
         assert response.status_code != 429, (

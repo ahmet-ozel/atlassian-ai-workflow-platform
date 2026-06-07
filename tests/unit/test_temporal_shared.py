@@ -1,4 +1,4 @@
-# Alignment note: these tests assert the split vocabulary
+﻿# Alignment note: these tests assert the split vocabulary
 # (jira_read/jira_write/bitbucket_read/bitbucket_write/confluence_read/
 # confluence_write) emitted by production WORKFLOW_TYPE_CAPABILITIES.
 """Unit tests for ``WORKFLOW_TYPE_CAPABILITIES`` dictionary integrity.
@@ -44,7 +44,7 @@ from temporal_shared.messages import (
 # Authoritative reference values, mirrored verbatim from
 # ``temporal_shared.capabilities.WORKFLOW_TYPE_CAPABILITIES``. Keeping them
 # inline (rather than re-importing from the library under test) ensures the
-# test catches accidental edits to the library's literal — a regression that
+# test catches accidental edits to the library's literal - a regression that
 # would otherwise hide if we used the same source on both sides.
 #
 # Vocabulary alignment: assertions use the split vocabulary
@@ -279,7 +279,7 @@ def test_each_value_is_frozenset(key: str) -> None:
         f"got {type(value).__name__}"
     )
     # Sanity: a frozenset of one element of an unrelated runtime type
-    # would still satisfy ``isinstance(..., frozenset)`` — guard the
+    # would still satisfy ``isinstance(..., frozenset)`` - guard the
     # element type as well so a stray ``frozenset({1, 2})`` is caught.
     for element in value:
         assert isinstance(element, str), (

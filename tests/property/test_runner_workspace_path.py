@@ -1,4 +1,4 @@
-"""Property-based tests for workspace path determinism and traversal safety.
+﻿"""Property-based tests for workspace path determinism and traversal safety.
 
 Scope
 -----
@@ -10,15 +10,15 @@ and the ``RUNNER_BASE_PATH > SSH_BASE_PATH > default`` alias chain on
 
 1. **Determinism.** For every valid input
    ``(base, issue_key, iter_n)`` the helper returns
-   ``f"{base.rstrip('/')}/{issue_key}/iter-{iter_n}"`` byte-for-byte —
+   ``f"{base.rstrip('/')}/{issue_key}/iter-{iter_n}"`` byte-for-byte -
    independent of how many trailing slashes the caller passes on
    ``base``, and idempotent across repeated calls.
 
 2. **Path-traversal safety.** Any ``issue_key`` that
-   does not match ``^[A-Z][A-Z0-9_]*-\\d+$`` — including the canonical
+   does not match ``^[A-Z][A-Z0-9_]*-\\d+$`` - including the canonical
    path-traversal vectors (``..``, ``../etc``, absolute paths,
    embedded slashes) and shell-metachar vectors (``;``, ``&``, ``|``,
-   backticks, ``$``, newline, null-byte) — is rejected up-front with
+   backticks, ``$``, newline, null-byte) - is rejected up-front with
    :class:`InvalidIssueKeyError`. The helper never touches its
    formatter when validation fails, so no metachar can ever appear in
    the rendered output. The same guard rejects out-of-range
@@ -37,9 +37,9 @@ Design notes
 The execution-runner ships its code under the ``src.`` package name,
 which collides with the ``src.`` namespace already pinned by the
 ``agent-runner-worker`` integration suite (see
-``tests/integration/_worker_path.py``). To stay hermetic — and to
+``tests/integration/_worker_path.py``). To stay hermetic - and to
 avoid forcing the rest of the property suite into ``isolate_worker``
-gymnastics — we load ``workspace_path.py`` and ``config.py`` as
+gymnastics - we load ``workspace_path.py`` and ``config.py`` as
 standalone modules under synthetic top-level names via
 ``importlib.util.spec_from_file_location``. This mirrors the pattern
 used by ``test_burst_debounce.py`` and ``test_replay_dedup.py``
@@ -64,7 +64,7 @@ from hypothesis import strategies as st
 
 
 # ---------------------------------------------------------------------------
-# Module loading — the execution-runner ships under ``src.*`` which the
+# Module loading - the execution-runner ships under ``src.*`` which the
 # integration suite already pins; load standalone copies under unique
 # synthetic names so this property test stays hermetic.
 # ---------------------------------------------------------------------------
@@ -80,7 +80,7 @@ def _load_module(name: str, file_path: Path) -> Any:
 
     Registering the module under a unique name keeps the system import
     cache from pulling in (and clobbering) ``src.runners.workspace_path``
-    — which the agent-runner integration tests reserve for the *other*
+    - which the agent-runner integration tests reserve for the *other*
     worker tree.
     """
 
@@ -116,7 +116,7 @@ Settings = _config_mod.Settings
 # Hypothesis strategies
 # ---------------------------------------------------------------------------
 
-# Project-key prefix: ``[A-Z][A-Z0-9_]*`` — one upper-case letter then
+# Project-key prefix: ``[A-Z][A-Z0-9_]*`` - one upper-case letter then
 # any mix of upper-case letters, digits, or underscores. Length capped
 # at 8 for speed; the regex pattern is what matters, not the size.
 _VALID_PROJECT_PREFIX = st.builds(
@@ -129,7 +129,7 @@ _VALID_PROJECT_PREFIX = st.builds(
     ),
 )
 
-# Issue-id suffix: ``\d+`` — at least one digit; ``\d`` matches more
+# Issue-id suffix: ``\d+`` - at least one digit; ``\d`` matches more
 # than just ``[0-9]`` in Unicode, but the helper's regex uses ``re.ASCII``
 # implicitly via the source pattern, so we restrict to ASCII digits.
 _VALID_ISSUE_SUFFIX = st.text(
@@ -231,8 +231,8 @@ _INVALID_ITER_N = st.one_of(
 def test_valid_inputs_produce_canonical_path(
     base: str, issue_key: str, iter_n: int
 ) -> None:
-    """For every valid triple, output equals the canonical formula —
-    ``{base.rstrip('/')}/{issue_key}/iter-{iter_n}`` — and the helper
+    """For every valid triple, output equals the canonical formula -
+    ``{base.rstrip('/')}/{issue_key}/iter-{iter_n}`` - and the helper
     is idempotent (repeated calls return byte-for-byte equal strings).
     """
 
@@ -307,7 +307,7 @@ def test_invalid_issue_keys_are_rejected(
     """Any ``issue_key`` outside the canonical pattern raises
     :class:`InvalidIssueKeyError`. The exception preserves the
     offending value for audit. No ``InvalidIterError`` is raised
-    because ``iter_n`` is valid — order of validation must surface the
+    because ``iter_n`` is valid - order of validation must surface the
     issue-key violation when both could otherwise apply.
     """
 
@@ -412,7 +412,7 @@ def _build_settings() -> Any:
 
 
 # Generator for env values: any non-empty string without ``=`` and
-# without NUL — both would cause ``os.environ`` itself to refuse the
+# without NUL - both would cause ``os.environ`` itself to refuse the
 # write. We only care that whatever the env carries round-trips into
 # ``settings.runner_base_path``.
 _ENV_VALUE = st.text(
@@ -516,8 +516,8 @@ def test_settings_to_build_workspace_path_round_trip(
     iter_n: int,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The two public surfaces — :class:`Settings.runner_base_path` and
-    :func:`build_workspace_path` — compose deterministically. Setting
+    """The two public surfaces - :class:`Settings.runner_base_path` and
+    :func:`build_workspace_path` - compose deterministically. Setting
     ``RUNNER_BASE_PATH=<X>`` followed by
     ``build_workspace_path(settings.runner_base_path, issue_key, iter_n)``
     yields ``f"{X.rstrip('/')}/{issue_key}/iter-{iter_n}"``. This is

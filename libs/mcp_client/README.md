@@ -1,13 +1,13 @@
-# mcp_client
+﻿# mcp_client
 
 Foundation MCP client library for the platform.
 This package owns the **single-source enforcement points** for two
 critical routing rules:
 
-- **Banned MCP tool list** — `tool_filter.filter_tools`
+- **Banned MCP tool list** - `tool_filter.filter_tools`
   removes the canonical banned tools (`bitbucket_merge_pr`,
   `confluence_delete_page`) from any tool catalog handed to an LLM.
-- **PR draft enforcement** — `pr_draft.enforce_pr_draft`
+- **PR draft enforcement** - `pr_draft.enforce_pr_draft`
   rewrites outgoing PR payloads so that `draft` is always `True`,
   regardless of what an LLM produced, and emits an audit
   `pr_draft_enforced` event when it had to flip a `False` (or absent)
@@ -41,7 +41,7 @@ safe_payload = enforce_pr_draft(
 )
 ```
 
-The audit dependency is optional — passing `audit_logger=None` keeps
+The audit dependency is optional - passing `audit_logger=None` keeps
 `enforce_pr_draft` usable in tests / pure-function call paths. When a
 logger is supplied, the function `await`s it and writes an
 `AuditEvent` with `action="pr_draft_enforced"` only when the

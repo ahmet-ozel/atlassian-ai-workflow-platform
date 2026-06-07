@@ -1,4 +1,4 @@
-"""Workflow-type → required capability set mapping and capability gate.
+﻿"""Workflow-type → required capability set mapping and capability gate.
 
 This module is the **single source of truth** for the workflow-type →
 capability mapping. Other modules import these
@@ -12,23 +12,23 @@ Capability vocabulary (closed set):
 * ``jira_read``, ``jira_write``
 * ``bitbucket_read``, ``bitbucket_write``
 * ``confluence_read``, ``confluence_write``
-* ``execution`` — at least one ``SSH_HOST`` env variable is defined
-  (canonical) — ``SSH_HOST_1`` is accepted as a deprecated alias for
+* ``execution`` - at least one ``SSH_HOST`` env variable is defined
+  (canonical) - ``SSH_HOST_1`` is accepted as a deprecated alias for
   backwards compatibility
-* ``web_search`` — both ``Department.web_search_enabled`` and
+* ``web_search`` - both ``Department.web_search_enabled`` and
   ``FIRECRAWL_ENABLED == "true"``
 
 Public API:
 
-* :data:`WORKFLOW_TYPE_CAPABILITIES` — immutable mapping (13 entries —
+* :data:`WORKFLOW_TYPE_CAPABILITIES` - immutable mapping (13 entries -
   includes ``script_execute``, ``research_publish_confluence``,
   and ``research_summary_jira`` to match
   ``task_analyzer.VALID_WORKFLOW_TYPES``)
-* :func:`derive_capabilities` — pure function (no I/O)
-* :func:`gate` — pure function returning :class:`GateDecision`
-* :class:`GateDecision` — frozen dataclass with ``allowed`` and ``missing``
-* :class:`HasCredential` — structural protocol for bot entries
-* :class:`SupportsBot`, :class:`SupportsDepartment` — structural protocols
+* :func:`derive_capabilities` - pure function (no I/O)
+* :func:`gate` - pure function returning :class:`GateDecision`
+* :class:`GateDecision` - frozen dataclass with ``allowed`` and ``missing``
+* :class:`HasCredential` - structural protocol for bot entries
+* :class:`SupportsBot`, :class:`SupportsDepartment` - structural protocols
   used by ``derive_capabilities`` (duck-typed; the concrete ``Department``
   loader is intentionally not required here)
 
@@ -200,7 +200,7 @@ class SupportsDepartment(Protocol):
 
 
 # ---------------------------------------------------------------------------
-# GateDecision — return type of :func:`gate`
+# GateDecision - return type of :func:`gate`
 # ---------------------------------------------------------------------------
 
 
@@ -221,7 +221,7 @@ class GateDecision:
 
 
 # ---------------------------------------------------------------------------
-# derive_capabilities — pure function
+# derive_capabilities - pure function
 # ---------------------------------------------------------------------------
 
 
@@ -326,7 +326,7 @@ def derive_capabilities(
 
 
 # ---------------------------------------------------------------------------
-# gate — pure function
+# gate - pure function
 # ---------------------------------------------------------------------------
 
 
@@ -338,7 +338,7 @@ def gate(
     """Decide whether *dept* may start a workflow of *workflow_type*.
 
     Computes the set difference ``required - have`` and packages the
-    answer into a :class:`GateDecision`. Pure function — no I/O
+    answer into a :class:`GateDecision`. Pure function - no I/O
     .
 
     Args:
@@ -368,8 +368,8 @@ def gate(
 # The :data:`WORKFLOW_TYPE_CAPABILITIES` table uses the *split* capability
 # vocabulary (``"jira_read"`` / ``"jira_write"`` / ``"bitbucket_read"``…)
 # that mirrors the workflow capability table. Most call
-# sites — :class:`AutomationWorkflow.run`, the automation-service webhook
-# decision layer, and the integration tests — talk in the simpler service
+# sites - :class:`AutomationWorkflow.run`, the automation-service webhook
+# decision layer, and the integration tests - talk in the simpler service
 # vocabulary (``"jira"`` / ``"bitbucket"`` / ``"confluence"`` / ``"execution"``
 # / ``"web_search"``) because that is what departments register and what
 # user-facing comments name. The helpers below collapse the split form to
@@ -432,7 +432,7 @@ def required_capabilities(workflow_type: str) -> frozenset[str]:
     KeyError
         If *workflow_type* is not a key of
         :data:`WORKFLOW_TYPE_CAPABILITIES`. ``"multi_step"`` and unknown
-        workflow types raise here by design — callers must handle the
+        workflow types raise here by design - callers must handle the
         exception (see the workflow-type guard in
         :class:`AutomationWorkflow.run`).
 

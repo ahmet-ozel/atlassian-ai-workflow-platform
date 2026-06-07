@@ -1,8 +1,8 @@
-"""``ProviderService`` — business logic for LLM provider management.
+﻿"""``ProviderService`` - business logic for LLM provider management.
 
 Orchestrates the (asyncpg transaction, Vault write) pair, applies
 masking, dispatches to :class:`~llm_providers.connection_tester.ConnectionTester`
-and emits audit events. The class is intentionally thin — every method
+and emits audit events. The class is intentionally thin - every method
 is a single, named-purpose flow that the router (in
 :mod:`routers.llm_providers`) calls as an HTTP shim.
 
@@ -25,7 +25,7 @@ Error handling
 * Vault delete failure → leave the row, raise
   :class:`VaultDeleteFailed` (→ 502 ``vault_delete_failed``) and emit
   ``llm_provider_delete_vault_failed`` audit (R3.7).
-* Sink failures are swallowed at WARNING log level — they NEVER mask
+* Sink failures are swallowed at WARNING log level - they NEVER mask
   the underlying HTTP response (R12.7).
 """
 
@@ -148,7 +148,7 @@ class ProviderInactive(Exception):
 
 
 # ---------------------------------------------------------------------------
-# Audit sink protocol — narrow enough that LoggingAuditSink + the asyncpg
+# Audit sink protocol - narrow enough that LoggingAuditSink + the asyncpg
 # writer both satisfy it.
 # ---------------------------------------------------------------------------
 
@@ -219,7 +219,7 @@ class ProviderService:
 
         Reads every row, fetches each provider's Vault payload, and
         projects through :func:`mask`. Vault read failures degrade
-        gracefully to an empty masked credential — the DTO still
+        gracefully to an empty masked credential - the DTO still
         renders so the operator sees the row in the UI and can
         diagnose the missing credential separately.
         """
@@ -525,7 +525,7 @@ class ProviderService:
     ) -> ConnectionTestResult:
         """Run a connection test against an unsaved provider config.
 
-        The handler does not touch Postgres or Vault — the caller's
+        The handler does not touch Postgres or Vault - the caller's
         credentials are used directly. Used by the UI's "Test
         Connection" button before the operator commits the form.
         """
@@ -569,7 +569,7 @@ class ProviderService:
     async def get_override(self, dept_id: str) -> DeptOverrideDTO:
         """Return the per-dept override (or the documented null shape).
 
-        Never returns ``None`` — when the dept has no pin we surface
+        Never returns ``None`` - when the dept has no pin we surface
         ``DeptOverrideDTO(dept_id=..., provider=None)`` so the UI
         can render a clean "no override" panel.
         """
@@ -709,7 +709,7 @@ class ProviderService:
         payload: dict[str, Any],
         dept_id: str | None = None,
     ) -> None:
-        """Best-effort audit emission — sink failures never escape (R12.7)."""
+        """Best-effort audit emission - sink failures never escape (R12.7)."""
 
         event = AuditEvent(
             actor_id=actor_id,

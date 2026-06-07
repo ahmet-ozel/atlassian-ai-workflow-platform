@@ -1,4 +1,4 @@
-"""End-to-end integration test for the ``code_change_with_test`` flow.
+﻿"""End-to-end integration test for the ``code_change_with_test`` flow.
 
 
 Flow under test::
@@ -33,7 +33,7 @@ Test environment
 ----------------
 
 The ``temporalio.testing.WorkflowEnvironment.start_time_skipping``
-test server is used so the suite is hermetic — no external Temporal
+test server is used so the suite is hermetic - no external Temporal
 cluster, no Docker. Activities are mocked in-process with the names
 ``AutomationWorkflow`` invokes (``jira_add_comment``, ``jira_get_issue``,
 ``llm_analyze_task``, ``jira_transition_issue``, ``update_work_item_status``).
@@ -50,7 +50,7 @@ flag the workspace already exposes.
 
 OpenCode and Atlassian MCP are mocked at the activity boundary (rather
 than at the HTTP / fixture level) because ``AutomationWorkflow`` itself
-never speaks HTTP — it dispatches the `AgentRunnerWorkflow` child which
+never speaks HTTP - it dispatches the `AgentRunnerWorkflow` child which
 owns those clients. Mocking at the activity boundary keeps the test
 focused on workflow orchestration and avoids re-testing transport
 plumbing that is covered by the per-activity unit tests.
@@ -110,12 +110,12 @@ class _RecordedState:
 
 
 # ---------------------------------------------------------------------------
-# AgentRunnerWorkflow double — imported from a sandbox-safe sibling module
+# AgentRunnerWorkflow double - imported from a sandbox-safe sibling module
 # ---------------------------------------------------------------------------
 #
 # ``temporalio`` re-imports any module containing a ``@workflow.defn``
 # class under its sandbox to validate the workflow body. That sandbox
-# bans calls like ``Path(__file__).resolve`` — which this test module
+# bans calls like ``Path(__file__).resolve`` - which this test module
 # performs at import time for the sys.path bootstrap. Keeping the
 # workflow double in a separate, minimal module
 # (``_e2e_doubles.py``) lets the test do its own setup at import time

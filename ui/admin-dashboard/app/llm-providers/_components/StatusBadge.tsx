@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * Pure status pill for an LLM provider row.
@@ -12,7 +12,7 @@
  * - **Grey** when the provider has never been tested
  *   (`last_tested_at == null`).
  *
- * The component renders nothing else — no labels, no tooltips, no
+ * The component renders nothing else - no labels, no tooltips, no
  * click handlers. Composition with the rest of the provider table is
  * the parent's job.
  */

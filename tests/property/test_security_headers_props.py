@@ -1,4 +1,4 @@
-"""Behavioral tests for security header presence.
+﻿"""Behavioral tests for security header presence.
 
 *For any* HTTP request to any endpoint on Admin_Dashboard_API,
 Assistant_Service, or Automation_Service, the response SHALL contain all
@@ -61,14 +61,14 @@ _CLIENT = TestClient(_APP)
 # HTTP methods the middleware must handle.
 _HTTP_METHODS = st.sampled_from(["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"])
 
-# Arbitrary URL paths — alphanumeric segments separated by slashes.
+# Arbitrary URL paths - alphanumeric segments separated by slashes.
 _PATH_SEGMENTS = st.from_regex(r"[a-z0-9_\-]{1,20}", fullmatch=True)
 _PATHS = st.lists(_PATH_SEGMENTS, min_size=1, max_size=4).map("/".join)
 
 # Content types the response may use.
 _CONTENT_TYPES = st.sampled_from(["json", "plain"])
 
-# HTTP status codes — covers success, redirect, client error, server error.
+# HTTP status codes - covers success, redirect, client error, server error.
 _STATUS_CODES = st.sampled_from([200, 201, 204, 301, 400, 401, 403, 404, 422, 429, 500, 502, 503])
 
 

@@ -1,4 +1,4 @@
-"""Vault activity module for the execution-runner-worker.
+﻿"""Vault activity module for the execution-runner-worker.
 
 Provides :func:`vault_fetch_ssh_credentials`, a Temporal activity that
 reads SSH connection credentials from HashiCorp Vault KV-v2 and returns
@@ -206,7 +206,7 @@ async def vault_fetch_ssh_credentials(
     ALWAYS read the fixed
     ``VAULT_SSH_SECRET_PATH`` env (default ``ssh/runner/current``). That
     made the admin SSH runner pool (``infrastructure.ssh_runners`` +
-    ``dept_ssh_assignments`` + ``runner_resolver``) decorative — runners
+    ``dept_ssh_assignments`` + ``runner_resolver``) decorative - runners
     configured via the admin panel were never actually used. Now we
     accept an explicit ``vault_path`` (set by the workflow from
     ``runner_resolver``'s :class:`RunnerResolution.vault_path`) and read

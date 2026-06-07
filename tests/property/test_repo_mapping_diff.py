@@ -1,4 +1,4 @@
-"""Property-based tests for ``compute_repo_mapping_diff``.
+﻿"""Property-based tests for ``compute_repo_mapping_diff``.
 
 This file owns the property-based test surface for the pure
 set-algebra helper :func:`temporal_shared.repo_sync.compute_repo_mapping_diff`
@@ -15,25 +15,25 @@ helper must satisfy the following invariants. Each one is encoded
 as a separate Hypothesis ``@given`` test below so a failure points
 at the specific algebraic axiom that broke.
 
-1. **Disjointness** — the three partitions are pairwise disjoint::
+1. **Disjointness** - the three partitions are pairwise disjoint::
 
        added ∩ removed   == ∅
        added ∩ unchanged == ∅
        removed ∩ unchanged == ∅
 
-2. **Reconstruction** — the partitions reconstruct both inputs::
+2. **Reconstruction** - the partitions reconstruct both inputs::
 
        added ∪ unchanged == scanned_repos
        removed ∪ unchanged == {m.slug for m in current_mappings}
 
-3. **Idempotence on equal inputs** — when ``scanned_repos`` equals
+3. **Idempotence on equal inputs** - when ``scanned_repos`` equals
    the set of current slugs, both ``added`` and ``removed`` are
    empty and ``unchanged`` equals the shared set.
 
-4. **Determinism** — calling the helper twice with the same input
+4. **Determinism** - calling the helper twice with the same input
    produces equal outputs (no clocks, no random, no I/O).
 
-5. **Empty inputs** — degenerate cases (empty scan, empty mappings,
+5. **Empty inputs** - degenerate cases (empty scan, empty mappings,
    both empty) produce the expected empty / projection partitions.
 
 Together these properties exhaustively pin the helper's contract:
@@ -45,7 +45,7 @@ pure Python set arithmetic.
 Source of truth
 ---------------
 
-* :mod:`temporal_shared.repo_sync` — module under test.
+* :mod:`temporal_shared.repo_sync` - module under test.
 * The admin repo-mapping sync endpoint uses this helper as its diff engine.
 """
 
@@ -59,7 +59,7 @@ from hypothesis import strategies as st
 
 
 # ---------------------------------------------------------------------------
-# Path setup — make ``temporal_shared`` importable without a wheel
+# Path setup - make ``temporal_shared`` importable without a wheel
 # install. Mirrors the bootstrap used by sibling property tests.
 # ---------------------------------------------------------------------------
 
@@ -91,7 +91,7 @@ _SLUG = st.text(
     max_size=16,
 ).filter(lambda s: s[0] in "abcdefghijklmnopqrstuvwxyz0123456789")
 
-# Human-readable repo name — any printable character is fine for the
+# Human-readable repo name - any printable character is fine for the
 # diff helper since it operates on slugs only. We keep it short so
 # the generated counterexamples remain readable.
 _NAME = st.text(min_size=0, max_size=20)
@@ -120,7 +120,7 @@ def _current_mappings(
     """Build a tuple of :class:`RepoMapping` (the dept's current array).
 
     The strategy may produce duplicates (two entries with the same
-    slug but different names) — the helper folds the tuple into a
+    slug but different names) - the helper folds the tuple into a
     set internally so duplicates collapse, but generating them is
     the easiest way to exercise that branch.
     """
@@ -291,7 +291,7 @@ def test_deterministic_two_invocations(
 ) -> None:
     """Two invocations with identical inputs return equal
     :class:`RepoMappingDiff` instances. Equivalent to "the helper is
-    pure" — no clock, no random, no global state. Replay-safety for
+    pure" - no clock, no random, no global state. Replay-safety for
     any future caller that wants to schedule the auto-sync as a
     Temporal cron workflow follows from this.
     """
@@ -338,7 +338,7 @@ def test_empty_scan_means_everything_is_removed(
 ) -> None:
     """Bitbucket workspace empty (or unreachable for the moment): every
     current slug is ``removed``; ``added`` and ``unchanged`` are
-    empty. (The endpoint's apply mode would prune all mappings —
+    empty. (The endpoint's apply mode would prune all mappings -
     operator review of the dry-run output is what stops a
     catastrophic prune from happening automatically.)
     """
@@ -397,7 +397,7 @@ def test_duplicate_current_mappings_collapse(
     diff = compute_repo_mapping_diff(scanned, duplicates)
 
     # Every slug in any of the partitions must come from the union
-    # of ``scanned`` and ``{slug}`` — and ``slug`` itself must
+    # of ``scanned`` and ``{slug}`` - and ``slug`` itself must
     # appear in exactly one partition.
     assert diff.added | diff.removed | diff.unchanged <= scanned | {slug}
     if slug in scanned:

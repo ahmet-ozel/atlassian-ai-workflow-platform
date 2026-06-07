@@ -1,4 +1,4 @@
-"""Test override wins per lifespan slot.
+﻿"""Test override wins per lifespan slot.
 
 Pins the contract that the production lifespan handler skips populating
 any ``app.state.<slot>`` whose value is already set before startup runs.
@@ -9,7 +9,7 @@ Every shared infrastructure object (asyncpg pool, Vault client, audit
 logger, Temporal client, ``httpx.AsyncClient``) is replaced with a
 hand-rolled fake so the lifespan can run in milliseconds without
 touching the network. The fakes implement just enough surface for the
-production wiring to construct each ``*EndpointDeps`` container — the
+production wiring to construct each ``*EndpointDeps`` container - the
 slots we *don't* pre-populate are still expected to receive a fresh
 production container.
 """
@@ -100,7 +100,7 @@ class _FakeTemporal:
     """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        # Accept arbitrary positional / keyword arguments — the production
+        # Accept arbitrary positional / keyword arguments - the production
         # constructor takes ``host`` and ``namespace`` and we don't want
         # the fake to break when those names rotate.
         self.connected = False

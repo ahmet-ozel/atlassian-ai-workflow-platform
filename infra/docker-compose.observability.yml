@@ -1,5 +1,5 @@
-# =============================================================================
-# infra/docker-compose.observability.yml — opt-in observability stack
+﻿# =============================================================================
+# infra/docker-compose.observability.yml - opt-in observability stack
 # =============================================================================
 # Adds Prometheus, Loki and Grafana to a
 # running platform stack without touching the foundation Compose file's
@@ -15,7 +15,7 @@
 #       --profile observability up -d
 #
 # All three services live behind the ``observability`` Compose profile so
-# the default ``docker compose up`` does not start them — operators
+# the default ``docker compose up`` does not start them - operators
 # explicitly opt in.
 #
 # Wiring

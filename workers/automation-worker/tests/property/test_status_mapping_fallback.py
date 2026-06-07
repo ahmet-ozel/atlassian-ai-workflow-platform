@@ -1,4 +1,4 @@
-"""Status mapping resolution with fallback.
+﻿"""Status mapping resolution with fallback.
 
 For any logical status, the resolver first checks department status_mapping
 case-insensitively. If no mapping is found, it applies the fallback
@@ -59,7 +59,7 @@ def test_no_mapping_uses_fallback(logical_status: str) -> None:
 @settings(max_examples=50, deadline=None)
 @given(logical_status=st.sampled_from(sorted(SUPPORTED_LOGICAL_STATES)))
 def test_case_insensitive_mapping(logical_status: str) -> None:
-    """Mapping keys can be uppercase — match still works."""
+    """Mapping keys can be uppercase - match still works."""
     mapping = {logical_status.upper(): "Custom Status"}
     result = asyncio.run(resolve_jira_status(logical_status, mapping))
     assert result.resolved is True

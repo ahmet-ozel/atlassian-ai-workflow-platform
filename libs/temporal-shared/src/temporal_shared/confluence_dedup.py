@@ -1,17 +1,17 @@
-"""Pure skip-decision predicates for the ``confluence_doc_update`` flow.
+﻿"""Pure skip-decision predicates for the ``confluence_doc_update`` flow.
 
 This module hosts three **pure** decision helpers used by the
 ``AgentRunnerWorkflow`` before it invokes a ``confluence_update_page``
 MCP tool call:
 
-* :func:`should_skip_section_update` — returns a :class:`SkipDecision`
+* :func:`should_skip_section_update` - returns a :class:`SkipDecision`
   reporting whether the four-tuple
   ``(workflow_id, page_id, section_path, content_hash)`` is already
   present in an in-memory hash table.
-* :func:`should_skip_overwrite` — returns a :class:`SkipDecision`
+* :func:`should_skip_overwrite` - returns a :class:`SkipDecision`
   reporting whether a Confluence page was edited in the recent
   freshness window by a non-bot user.
-* :func:`is_probe_page` — predicate matching the canonical
+* :func:`is_probe_page` - predicate matching the canonical
   ``_AI_PROBE_*`` sentinel title format produced by the foundation
   ``ProbeRunner``.
 
@@ -30,11 +30,11 @@ Purity contract
 ---------------
 Every public function in this module is **pure**:
 
-* No I/O — the caller provides the hash table / freshness inputs as
+* No I/O - the caller provides the hash table / freshness inputs as
   arguments, and the audit emission is the caller's responsibility
   (the :class:`SkipDecision` carries the audit action name so the
   caller knows what to log).
-* No clocks — ``now`` and ``last_edit_at`` are passed explicitly.  A
+* No clocks - ``now`` and ``last_edit_at`` are passed explicitly.  A
   Temporal workflow caller sources ``now`` from ``workflow.now()``
   (replay-safe); a non-workflow caller may source it from
   ``datetime.now(tz=timezone.utc)``.  The helpers themselves never
@@ -123,7 +123,7 @@ DEFAULT_OVERWRITE_FRESHNESS: Final[timedelta] = timedelta(minutes=5)
 
 #: Title prefix used by the foundation ``ProbeRunner`` for write-probe
 #: artifacts. Mirrors
-#: :data:`automation_service.probe.PROBE_ARTIFACT_PREFIX` — duplicated
+#: :data:`automation_service.probe.PROBE_ARTIFACT_PREFIX` - duplicated
 #: here as a string literal so :mod:`temporal_shared` does not depend
 #: on :mod:`automation_service` (the dependency direction is the
 #: reverse: services consume libs).  An integration test asserts the
@@ -132,7 +132,7 @@ PROBE_PAGE_TITLE_PREFIX: Final[str] = "_AI_PROBE_"
 
 
 # ---------------------------------------------------------------------------
-# SkipDecision — return type for the predicates
+# SkipDecision - return type for the predicates
 # ---------------------------------------------------------------------------
 
 
@@ -149,7 +149,7 @@ class SkipDecision:
         :data:`AUDIT_CONFLUENCE_SECTION_DEDUP_SKIP` /
         :data:`AUDIT_CONFLUENCE_OVERWRITE_PROTECTED` when the helper
         decides to skip; ``None`` when ``skip=False`` (no audit
-        emission required for the proceed branch — successful writes
+        emission required for the proceed branch - successful writes
         are audited by the activity itself).
 
     The two attributes are kept together as a frozen dataclass so the
@@ -175,7 +175,7 @@ class SkipDecision:
             )
 
 
-#: Singleton "proceed" decision — the helpers return this exact
+#: Singleton "proceed" decision - the helpers return this exact
 #: instance when the predicate fires negative.  Reusing the singleton
 #: keeps the hot path allocation-free and lets callers rely on the
 #: ``is`` identity for branch-coverage assertions in tests.
@@ -205,7 +205,7 @@ def should_skip_section_update(
 
     The DB-backed equivalent lives in
     :class:`automation_service.confluence_section_hashes.ConfluenceSectionHashRepo`
-    — that helper performs an idempotent ``INSERT ... ON CONFLICT``.
+    - that helper performs an idempotent ``INSERT ... ON CONFLICT``.
     This pure helper is for the workflow path: the workflow holds
     the hash table in :class:`temporal_shared.IterationState`-adjacent
     state, passes it
@@ -215,11 +215,11 @@ def should_skip_section_update(
     Parameters
     ----------
     workflow_id:
-        Workflow id of the AgentRunnerWorkflow that owns the update —
+        Workflow id of the AgentRunnerWorkflow that owns the update -
         formatted via :mod:`temporal_shared.identifiers`.  Encodes the
         department boundary.
     page_id:
-        Confluence page id (string — Confluence ids are opaque
+        Confluence page id (string - Confluence ids are opaque
         tokens, not integers).
     section_path:
         Slash-delimited path of the section being updated
@@ -319,8 +319,8 @@ def should_skip_overwrite(
     * ``now - last_edit_at < freshness`` (the human edit is fresh
       enough to count as ongoing collaboration).
 
-    When either side is missing — no recorded editor, no recorded
-    timestamp, or the timestamp is older than the freshness window —
+    When either side is missing - no recorded editor, no recorded
+    timestamp, or the timestamp is older than the freshness window -
     the function returns the proceed decision and the bot's update
     goes ahead.  Bot-on-bot edits never block (the bot is allowed to
     update its own page during an iteration).
@@ -330,10 +330,10 @@ def should_skip_overwrite(
     last_editor_account_id:
         Atlassian ``account_id`` of the last user that edited the
         page.  ``None`` when the page has never been edited (a
-        freshly created page) — that case never blocks.
+        freshly created page) - that case never blocks.
     last_edit_at:
         UTC timestamp of the last edit.  ``None`` when no edit has
-        ever been recorded — that case never blocks.  Naive
+        ever been recorded - that case never blocks.  Naive
         :class:`datetime` instances are rejected so the freshness
         comparison cannot silently mix timezones.
     now:
@@ -349,7 +349,7 @@ def should_skip_overwrite(
     freshness:
         Window during which a non-bot edit blocks the bot update.
         Defaults to :data:`DEFAULT_OVERWRITE_FRESHNESS` (5 minutes,
-        by default). Must be **positive** — a zero or negative window
+        by default). Must be **positive** - a zero or negative window
         would either always-block or never-block, both of which are
         contract violations.
 
@@ -484,7 +484,7 @@ def is_probe_page(page_title: str) -> bool:
     write-probe artifact left behind by a credential probe.
 
     The check is deliberately **prefix-only** so it stays robust
-    against historical formats and human-edited variants — the same
+    against historical formats and human-edited variants - the same
     looseness used by
     :func:`automation_service.probe.is_probe_artifact_title`.  The two
     helpers are kept in sync by an integration test that imports both

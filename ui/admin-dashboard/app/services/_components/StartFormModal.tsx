@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * StartFormModal - Servis Yapilandirma Formu.
@@ -29,7 +29,7 @@ import { isSensitiveEnvKey } from "@platform/web-shared";
 import { apiFetch } from "../../../lib/api-client";
 
 // ---------------------------------------------------------------------------
-// Wire types — kept in sync with services/admin-dashboard-api/src/routers/_models.py
+// Wire types - kept in sync with services/admin-dashboard-api/src/routers/_models.py
 // ---------------------------------------------------------------------------
 
 /**
@@ -68,7 +68,7 @@ type ErrorEnvelope = {
 
 /**
  * Public props of {@link StartFormModal}. The catalog page is in
- * charge of mounting / unmounting the modal — the component itself
+ * charge of mounting / unmounting the modal - the component itself
  * never decides to close.
  */
 export type StartFormModalProps = {
@@ -240,7 +240,7 @@ export default function StartFormModal({
   const formRef = useRef<HTMLFormElement | null>(null);
 
   // -------------------------------------------------------------------------
-  // Schema fetch — runs once per mount.
+  // Schema fetch - runs once per mount.
   // -------------------------------------------------------------------------
 
   useEffect(() => {
@@ -257,7 +257,7 @@ export default function StartFormModal({
         if (cancelled) return;
         if (!res.ok) {
           // Surface 4xx (e.g. 404 unknown service) inline instead of
-          // throwing — operator should still be able to dismiss.
+          // throwing - operator should still be able to dismiss.
           const detail = await safeReadDetail(res);
           setLoadError(
             `Failed to load form schema (HTTP ${res.status}): ${detail}`,
@@ -303,7 +303,7 @@ export default function StartFormModal({
   }, [onClose, submitting]);
 
   // -------------------------------------------------------------------------
-  // Submit handler — only fires on explicit user
+  // Submit handler - only fires on explicit user
   // action (form's onSubmit). preventDefault() blocks the implicit GET
   // navigation Next.js would otherwise pick up.
   // -------------------------------------------------------------------------
@@ -353,7 +353,7 @@ export default function StartFormModal({
 
       if (trimmed.length > 0) {
         // Always preserve the operator-typed value verbatim (no trim
-        // for sensitive values — leading/trailing whitespace can be
+        // for sensitive values - leading/trailing whitespace can be
         // semantically significant for tokens).
         envOverrides[field.key] = sensitive ? raw : trimmed;
         continue;
@@ -365,7 +365,7 @@ export default function StartFormModal({
           envOverrides[field.key] = "";
           continue;
         }
-        // Sensitive_Env_Key default_value is *never* used — the
+        // Sensitive_Env_Key default_value is *never* used - the
         // operator must explicitly type one.
         newValidationErrors[field.key] =
           `${field.key} is required for LLM_PROVIDER=${effectiveProvider}.`;
@@ -406,7 +406,7 @@ export default function StartFormModal({
         return;
       }
 
-      // 409 feature_flag_disabled — delegate to parent modal.
+      // 409 feature_flag_disabled - delegate to parent modal.
       if (res.status === 409) {
         try {
           const ct = res.headers.get("content-type") ?? "";
@@ -520,7 +520,7 @@ export default function StartFormModal({
                       {fieldRequired && (
                         <span
                           aria-label="sensitive"
-                          title="Sensitive_Env_Key — must be entered explicitly"
+                          title="Sensitive_Env_Key - must be entered explicitly"
                           style={{ marginLeft: "0.4rem", color: "#b00" }}
                         >
                           *
@@ -554,7 +554,7 @@ export default function StartFormModal({
                         name={field.key}
                         type={sensitive ? "password" : "text"}
                       // Sensitive fields never display the .env.example
-                      // default — operator must type one explicitly
+                      // default - operator must type one explicitly
                       // Non-sensitive fields show the
                       // default as the placeholder so the operator can
                       // submit blank to accept it.

@@ -1,23 +1,23 @@
-"""``ChatHandler.stream`` — SSE pipeline for ``POST /api/chat/stream``.
+﻿"""``ChatHandler.stream`` - SSE pipeline for ``POST /api/chat/stream``.
 
 This module wires the deterministic chat tool-call loop.
 
 The handler is the **single funnel** every chat request flows
 through. It executes a fixed six-step pipeline:
 
-1. **PII mask** — :func:`pii_shared.mask` is invoked on the
+1. **PII mask** - :func:`pii_shared.mask` is invoked on the
    user-provided text *before* any other processing.
-2. **Sliding window** — the history + masked message is trimmed to
+2. **Sliding window** - the history + masked message is trimmed to
    the last ``CHAT_SLIDING_WINDOW_N`` (default 20) entries with a
    summary system prefix.
-3. **System prompt render** — ``prompt_loader.render("assistant_chat",
+3. **System prompt render** - ``prompt_loader.render("assistant_chat",
    vars=...)`` injects the dept-scoped template variables into the
    git-tracked system prompt.
-4. **Tool filter** — ``mcp_client.filter_tools`` strips the foundation
+4. **Tool filter** - ``mcp_client.filter_tools`` strips the foundation
    banned-tool list (``bitbucket_merge_pr``,
    ``confluence_delete_page``); ``capability_gate`` then narrows the
    catalogue to the dept's capability set.
-5. **LLM tool-call loop** — ``llm.stream_with_tool_loop(...)`` yields
+5. **LLM tool-call loop** - ``llm.stream_with_tool_loop(...)`` yields
    SSE events. The handler intercepts each ``tool_call`` event:
    * If :func:`is_write_intent` returns ``True`` it emits a
      ``redirect_to_task_creator`` event and **stops** without calling
@@ -25,7 +25,7 @@ through. It executes a fixed six-step pipeline:
    * Otherwise the call is dispatched and a ``tool_result`` event is
      yielded (the orchestrator continues the loop until ``done`` /
      ``rate_limit_exhausted`` / ``token_cap_exceeded``).
-6. **Audit** — a ``chat_message`` row is written with the prompt's
+6. **Audit** - a ``chat_message`` row is written with the prompt's
    git short hash, token usage and cost.
 
 The collaborators (sliding-window compressor, LLM orchestrator, tool
@@ -155,7 +155,7 @@ class CapabilityGateLike(Protocol):
 class ToolDispatchLike(Protocol):
     """Tool dispatcher invoked by the LLM orchestrator's callback path.
 
-    The handler does **not** call ``invoke`` directly — it forwards the
+    The handler does **not** call ``invoke`` directly - it forwards the
     bound coroutine to ``llm.stream_with_tool_loop(on_tool_call=...)``.
     The protocol is exposed so :class:`ChatHandlerDeps` can carry the
     dispatcher in one place and the property tests can swap a fake.
@@ -198,7 +198,7 @@ class DeptContext:
     """Snapshot of dept-scoped data needed to render the system prompt.
 
     The handler does not pull this from a config store on every call
-    — FastAPI dependency wiring builds it once per request from
+    - FastAPI dependency wiring builds it once per request from
     the OIDC ``AuthContext`` plus the ``departments.json`` lookup,
     and hands the frozen value to :meth:`ChatHandler.stream`.
     """
@@ -288,7 +288,7 @@ class ChatHandlerDeps:
     token_cap: int
     sliding_window_n: int = DEFAULT_SLIDING_WINDOW_N
     prompt_name: str = "assistant_chat"
-    # The MCP catalogue accessor — typed as a callable so the handler
+    # The MCP catalogue accessor - typed as a callable so the handler
     # is decoupled from the concrete client. ``list_tools()`` returns
     # the full tool descriptors before banned-tool / capability-gate
     # filtering. The foundation ``mcp_client`` is wired here.
@@ -392,7 +392,7 @@ class ChatHandler:
         counters = _StreamCounters()
 
         # ------------------------------------------------------------------
-        # 1. PII mask — MUST be the first thing the handler does to
+        # 1. PII mask - MUST be the first thing the handler does to
         #    user-provided text.
         # ------------------------------------------------------------------
         masked_text, pii_matches = pii_mask(request.user_message)
@@ -408,7 +408,7 @@ class ChatHandler:
             )
 
         # ------------------------------------------------------------------
-        # 2. Sliding window — append the masked user message to the
+        # 2. Sliding window - append the masked user message to the
         #    history, then trim to ``sliding_window_n``.
         # ------------------------------------------------------------------
         history_with_user: tuple[Message, ...] = (
@@ -422,7 +422,7 @@ class ChatHandler:
         )
 
         # ------------------------------------------------------------------
-        # 3. System prompt render — load (cache hit after boot) +
+        # 3. System prompt render - load (cache hit after boot) +
         #    inject dept template variables.
         # ------------------------------------------------------------------
         prompt_vars = PromptVars(
@@ -438,7 +438,7 @@ class ChatHandler:
         prompt_version = deps.prompt_loader.version(deps.prompt_name)
 
         # ------------------------------------------------------------------
-        # 4. Tool filter — banned-tool list
+        # 4. Tool filter - banned-tool list
         #    THEN dept capability gate. Banned-tool filtering is the
         #    single source of truth in ``mcp_client.filter_tools``;
         #    no literal ``BANNED_TOOLS`` membership is hard-coded here.
@@ -454,7 +454,7 @@ class ChatHandler:
         )
 
         # ------------------------------------------------------------------
-        # 5. LLM tool-call loop — the orchestrator owns retry,
+        # 5. LLM tool-call loop - the orchestrator owns retry,
         #    fallback, token cap. The handler intercepts ``tool_call``
         #    events for the write-action gate and
         #    forwards everything else verbatim.
@@ -481,7 +481,7 @@ class ChatHandler:
                     on_tool_call=deps.tool_dispatch.invoke,
                     token_cap=deps.token_cap,
                 ):
-                    # 5a. Write-action intercept — the orchestrator surfaces
+                    # 5a. Write-action intercept - the orchestrator surfaces
                     #     each tool call before dispatch via a ``tool_call``
                     #     event. We inspect the call and the LLM-supplied
                     #     intent field; when either flags a write action we
@@ -509,7 +509,7 @@ class ChatHandler:
                         )
                         return
 
-                    # 5b. Token / cost accounting — the orchestrator emits the
+                    # 5b. Token / cost accounting - the orchestrator emits the
                     #     token usage on every event payload; we keep a
                     #     running tally for the audit row.
                     _accumulate_tokens(event, counters)
@@ -543,14 +543,14 @@ class ChatHandler:
 
                     yield event
 
-                    # 5c. Terminal events — ``done`` /
+                    # 5c. Terminal events - ``done`` /
                     #     ``rate_limit_exhausted`` / ``token_cap_exceeded`` /
                     #     ``error`` close the loop. The orchestrator already
                     #     stops the iteration after these, but we exit
                     #     defensively in case the protocol implementation
                     #     keeps yielding.
                     if event.type in _TERMINAL_EVENT_TYPES:
-                        # 5d. Intent detection — when the LLM stream ends with
+                        # 5d. Intent detection - when the LLM stream ends with
                         #     ``done`` and the payload carries
                         #     ``intent == "write_action_requested"``, emit an
                         #     additional ``intent`` SSE event before closing.
@@ -644,7 +644,7 @@ class ChatHandler:
         )
         try:
             await self._deps.audit.write(event)
-        except Exception as exc:  # noqa: BLE001 — fail-soft per ops policy
+        except Exception as exc:  # noqa: BLE001 - fail-soft per ops policy
             # Audit write failure must not break the SSE response;
             # ``audit_logger`` itself raises only on contract
             # violations (eg. missing actor_role), which would be a
@@ -692,7 +692,7 @@ class ChatHandler:
         )
         try:
             await self._deps.audit.write(event)
-        except Exception as exc:  # noqa: BLE001 — fail-soft per ops policy
+        except Exception as exc:  # noqa: BLE001 - fail-soft per ops policy
             _LOG.warning(
                 "assistant_llm_timeout audit write failed",
                 extra={
@@ -722,7 +722,7 @@ _TERMINAL_EVENT_TYPES: frozenset[str] = frozenset(
 def _summarise_pii(matches: list[PiiMatch]) -> Mapping[str, int]:
     """Return ``{kind: count}`` for the PII matches.
 
-    Used only for structured logging — never written to the audit
+    Used only for structured logging - never written to the audit
     payload (the audit row carries the *count* only, never the kinds,
     so a redacted value cannot be inferred from the log + audit row
     correlation).
@@ -739,7 +739,7 @@ def _is_write_call(event: SseEvent) -> bool:
 
     The orchestrator embeds the structured tool call and the
     LLM-supplied ``intent`` field in the SSE payload. We re-package
-    them into the predicate :func:`is_write_intent` exposes —
+    them into the predicate :func:`is_write_intent` exposes -
     delegating the decision keeps the rule in one place
     (``src/chat/write_action.py``) and keeps the redirect event easy to
     parameterise.
@@ -793,12 +793,12 @@ def _extract_intent_event(done_event: SseEvent) -> SseEvent | None:
     redirect the user to Task Creator.
 
     The payload carries:
-        * ``intent`` — always ``"write_action_requested"``.
-        * ``suggested_workflow_type`` — LLM-suggested workflow type
+        * ``intent`` - always ``"write_action_requested"``.
+        * ``suggested_workflow_type`` - LLM-suggested workflow type
           (e.g. ``"code_change_with_test"``).
-        * ``context_summary`` — human-readable summary of the
+        * ``context_summary`` - human-readable summary of the
           conversation context.
-        * ``prefill`` — structured fields for Task Creator form
+        * ``prefill`` - structured fields for Task Creator form
           pre-population: ``{title, description, repo, branch}``.
 
     Returns ``None`` if the ``done`` event does not carry a
@@ -829,8 +829,8 @@ def _accumulate_tokens(event: SseEvent, counters: _StreamCounters) -> None:
     have to populate every field.
 
     Keys recognised:
-        * ``token_in``, ``token_out`` — additive counters.
-        * ``cost_usd`` — additive counter.
+        * ``token_in``, ``token_out`` - additive counters.
+        * ``cost_usd`` - additive counter.
         * The ``tool_call`` event type increments ``tool_calls``.
     """
 

@@ -1,9 +1,9 @@
-"""Prompt-management sub-package for admin-dashboard-api.
+﻿"""Prompt-management sub-package for admin-dashboard-api.
 
 Hosts deterministic helpers that the ``/admin/prompts`` HTTP layer
 (:mod:`src.routers.prompts_git`) depends on. The current modules:
 
-* :mod:`.pr_renderer` — canonical Markdown PR description renderer
+* :mod:`.pr_renderer` - canonical Markdown PR description renderer
   used when the caller of ``POST /admin/prompts/{path}/pr`` does not
   override the description. The renderer is a pure function: every
   input is passed in, no app state is read, no I/O is performed.

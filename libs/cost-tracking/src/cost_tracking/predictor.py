@@ -1,7 +1,7 @@
-"""``predict_cost`` — pure dept-vs-global cost predictor.
+﻿"""``predict_cost`` - pure dept-vs-global cost predictor.
 
 The predictor returns a :class:`CostPrediction` whose ``source`` field carries the
-fallback audit signal — when
+fallback audit signal - when
 ``dept_history.task_count < GLOBAL_FALLBACK_MIN_TASKS`` (30), the
 caller emits a ``cost_prediction_using_global_fallback`` audit row so
 the operator can see the dept transitioning between cold-start and
@@ -99,7 +99,7 @@ class CostPrediction:
             average was used. Caller emits the
             ``cost_prediction_using_global_fallback`` audit event when
             the value is ``"global_fallback"``.
-        scaling_factor: The factor applied to the mean — surfaced so
+        scaling_factor: The factor applied to the mean - surfaced so
             the caller can log "we scaled by 1.5× because repo had X
             LOC and Y iterations" without re-deriving.
     """
@@ -184,7 +184,7 @@ def predict_cost(
 
     # Apply scaling factor uniformly to mean and bounds. We use a
     # locale-agnostic ``__mul__`` so a Decimal-typed mean is preserved
-    # and a float-typed mean stays a float — matching whichever shape
+    # and a float-typed mean stays a float - matching whichever shape
     # the caller provided.
     predicted = mean_value * factor
     low = _max_zero(low_value * factor)
@@ -207,7 +207,7 @@ def _scaling_factor(repo_size_loc: int, estimated_iterations: int):
     return type is ``Decimal`` when called with Decimal inputs (the
     property test does this) but Python's ``*`` between an ``int`` /
     ``float`` mean and the returned value still produces the right
-    result because the predictor only multiplies — never adds — the
+    result because the predictor only multiplies - never adds - the
     factor against the mean.
     """
 

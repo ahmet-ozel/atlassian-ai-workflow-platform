@@ -3,7 +3,7 @@
 /**
  * Workflow detail page.
  *
- * Dynamic route `/workflows/[id]` — renders the full drill-down view for a
+ * Dynamic route `/workflows/[id]` - renders the full drill-down view for a
  * single Temporal workflow: header, event history timeline, activity list,
  * LLM usage table, audit chain, external links and a RBAC-aware cancel button.
  *

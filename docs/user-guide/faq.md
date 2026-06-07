@@ -1,4 +1,4 @@
-# SSS — Sıkça Sorulan Sorular
+﻿# SSS - Sıkça Sorulan Sorular
 
 > 25 soru, kısa cevap. Daha geniş bilgi için ilgili sayfaya yönlendirme bağlantıları.
 
@@ -39,7 +39,7 @@ regression test, Task → serbest, Epic → multi_step.
 
 ### 7. Hangi repo'lar bot'a açık?
 
-Streamlit Task Creator'daki dropdown'da görünür — departmanına atanmış repo'lar. Yenisi
+Streamlit Task Creator'daki dropdown'da görünür - departmanına atanmış repo'lar. Yenisi
 yoksa AI Admin'e başvur.
 
 ### 8. Tek task'ta iki repo değiştirebilir mi?
@@ -62,7 +62,7 @@ yaz.
 ### 11. Bot 30 dakika sürdü, normal mi?
 
 `code_change_with_test` workflow'u 10-30 dk normal aralık. 60 dk+ uzunsa AI Admin'e
-bildir — prompt veya repo özel sebebi olabilir.
+bildir - prompt veya repo özel sebebi olabilir.
 
 ### 12. Bot hata aldıysa nereden öğrenirim?
 
@@ -122,7 +122,7 @@ Departmanın space'inde sayfa oluşturur veya günceller. Sayfa silinmişse sana
 
 ### 23. Bot Epic aldı, tüm subtask'ları yapacak mı?
 
-Evet — `multi_step` workflow'uyla sırayla. Bir subtask fail ederse Epic durur, sana
+Evet - `multi_step` workflow'uyla sırayla. Bir subtask fail ederse Epic durur, sana
 bildirir.
 
 ### 24. Bot kritik dosyaya dokunacaksa ne olur?

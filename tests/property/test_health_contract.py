@@ -1,10 +1,10 @@
-"""invariant for HTTP ``/healthz`` and ``/readyz`` contract.
+﻿"""invariant for HTTP ``/healthz`` and ``/readyz`` contract.
 
 
 invariant: HTTP service ``/healthz`` and ``/readyz`` contract.
 
 Also validates that the ``HealthState`` accepted state set includes
-``"running_unmonitored"`` ( / Q14) — the state emitted by
+``"running_unmonitored"`` ( / Q14) - the state emitted by
 ``_probe_assume_running`` when a Compose container has no
 ``healthcheck`` block or when ``docker inspect`` fails.
 
@@ -143,7 +143,7 @@ _SERVICE_MODULES: dict[str, ModuleType] = {
 
 
 # ---------------------------------------------------------------------------
-# invariant — invariant
+# invariant - invariant
 # ---------------------------------------------------------------------------
 
 
@@ -161,7 +161,7 @@ def test_health_and_ready_contract(
     probe_ready: bool,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """invariant — health + readiness contract holds for every HTTP service.
+    """invariant - health + readiness contract holds for every HTTP service.
 
 
 
@@ -192,7 +192,7 @@ def test_health_and_ready_contract(
     _patch_readiness_module(component, probe_ready, monkeypatch)
 
     with TestClient(main_module.app) as client:
-        # /healthz — must be 200 + {"status":"ok"} regardless of probe.
+        # /healthz - must be 200 + {"status":"ok"} regardless of probe.
         health_resp = client.get("/healthz")
         assert health_resp.status_code == 200, (
             f"{component.name}: /healthz must always return 200, "
@@ -203,7 +203,7 @@ def test_health_and_ready_contract(
             f'{{"status":"ok"}}, got {health_resp.json()!r}'
         )
 
-        # /readyz — branches on the probe value.
+        # /readyz - branches on the probe value.
         ready_resp = client.get("/readyz")
 
         if probe_ready:
@@ -287,7 +287,7 @@ def _patch_readiness_module(
 
 
 # ---------------------------------------------------------------------------
-# Accepted HealthState set — running_unmonitored ( / Q14)
+# Accepted HealthState set - running_unmonitored ( / Q14)
 # ---------------------------------------------------------------------------
 
 # The admin-dashboard-api service root is two levels up from the
@@ -322,11 +322,11 @@ def test_health_state_accepted_set_includes_running_unmonitored() -> None:
 
     assert "running_unmonitored" in accepted_states, (
         "HealthState accepted set must include 'running_unmonitored' "
-        "(the operational rule / Q14 — Compose containers without healthcheck blocks "
+        "(the operational rule / Q14 - Compose containers without healthcheck blocks "
         "must be classified as running_unmonitored, not unknown)"
     )
 
-    # Verify the full expected set is present (additive check — does not
+    # Verify the full expected set is present (additive check - does not
     # break if new states are added in the future).
     expected_minimum = frozenset(
         {"healthy", "unhealthy", "starting", "unknown", "running_unmonitored"}

@@ -1,4 +1,4 @@
-# MCP Credential Headers — Canonical Contract
+﻿# MCP Credential Headers - Canonical Contract
 
 > HTTP headers that callers (`automation-service`, `agent-runner-worker`,
 > `assistant-service`, `streamlit-app`, IDE proxies, future services) MUST set
@@ -140,7 +140,7 @@ headers as any other caller. A minimal working config:
 
 For **Atlassian Cloud**, swap each `*-Personal-Token` for the Cloud Basic Auth
 pair (`*-Username` = account email + `*-Api-Token` = API token), or use
-`Authorization: Bearer` + `X-Atlassian-Cloud-Id` for OAuth. See §2–§4 for the
+`Authorization: Bearer` + `X-Atlassian-Cloud-Id` for OAuth. See §2-§4 for the
 full per-service header sets and the auth resolution order.
 
 **Rules that avoid the common failures:**
@@ -148,7 +148,7 @@ full per-service header sets and the auth resolution order.
 - **Server/DC uses Bearer, not Basic.** Send only `X-Atlassian-<Service>-Url`
   and `X-Atlassian-<Service>-Personal-Token`. The gateway applies the PAT as
   `Authorization: Bearer <token>`. **Do not** also send `*-Username` /
-  `*-Api-Token` for a DC host — the gateway has no `*-Api-Token` PAT branch, so
+  `*-Api-Token` for a DC host - the gateway has no `*-Api-Token` PAT branch, so
   with no recognised credential it falls through to the Cloud OAuth path and
   fails with `Cloud OAuth authentication requires a valid cloud_id`.
 - **Why Bearer matters for DC:** Basic auth can hit Jira/Confluence Seraph
@@ -205,7 +205,7 @@ headers above. Bitbucket tools are not listed by `tools/list` in this mode but
 
 ## 5. Caller-side helper
 
-Use `mcp_client.AtlassianClient` (in `libs/mcp_client/`) — **never** assemble
+Use `mcp_client.AtlassianClient` (in `libs/mcp_client/`) - **never** assemble
 these headers by hand. The client library enforces the contract and the
 `X-Client-Source` requirement:
 
@@ -262,6 +262,6 @@ fails the build on drift.
 - **Never persist** credential headers to disk, audit log, or trace
   exporter. Audit rows reference credentials by `vault:<path>`, not by
   value.
-- **Vault path convention:** `vault:atlassian/<dept_id>/<service>` —
+- **Vault path convention:** `vault:atlassian/<dept_id>/<service>` -
   resolved by `automation-service.credentials.CredentialResolver` and
   passed in-memory to the MCP via the headers above.

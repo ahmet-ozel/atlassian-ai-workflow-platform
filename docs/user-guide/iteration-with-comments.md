@@ -1,4 +1,4 @@
-# Comment ile Düzeltme (İterasyon)
+﻿# Comment ile Düzeltme (İterasyon)
 
 > Bot ilk denemede istediğini tam yapmadıysa, comment ile yönlendirip yeniden çalıştırırsın.
 
@@ -35,7 +35,7 @@ ve mevcut PR/branch'e yeni commit atar.
 Default **iterasyon limiti 5** (departman config'inde değiştirilebilir). Limite ulaşırsan bot şunu der:
 
 > 🤖 Bu task için 5 iterasyon tamamlandı. Daha fazla düzeltme istiyorsan **yeni bir
-> task aç** — orada baştan başlayabilirim.
+> task aç** - orada baştan başlayabilirim.
 
 Bu kural sonsuz döngüyü ve LLM cost patlamasını engeller.
 
@@ -54,7 +54,7 @@ güncellenmiş olarak kalır. Eğer:
 ### Sadece "yanlış" demeden ne istediğini söyle
 
 ❌ "Hayır, böyle değil"
-✅ "Hayır, send_webhook fonksiyonunu sarma — yeni fonksiyon yaz: send_webhook_with_retry"
+✅ "Hayır, send_webhook fonksiyonunu sarma - yeni fonksiyon yaz: send_webhook_with_retry"
 
 ### Atomik istekler ver
 
@@ -103,7 +103,7 @@ Bot bazı işleri yapmadan önce onayını ister:
 
 Tahmini maliyet limit'in %70'ine ulaşırsa:
 
-> 🤖 Tahmini maliyet $0.85 — limitin %70'i üstünde ($1.00). Devam edeyim mi?
+> 🤖 Tahmini maliyet $0.85 - limitin %70'i üstünde ($1.00). Devam edeyim mi?
 > (`onaylıyorum` veya `iptal`)
 
 ### Kritik dosya onayı
@@ -132,8 +132,8 @@ Herhangi bir noktada `[cancel]` yazarsan bot temiz şekilde durur:
 Bot kapsamı yanlış anladıysa:
 
 1. Mevcut PR'ı kapat (decline)
-2. Description'ı düzelt — daha açık yaz
-3. Yeni task aç — eskisini "Done" yap
+2. Description'ı düzelt - daha açık yaz
+3. Yeni task aç - eskisini "Done" yap
 
 Bot eski branch'i değil yeni branch açar (eski merge edilmediği için temiz başlangıç).
 
@@ -141,14 +141,14 @@ Bot eski branch'i değil yeni branch açar (eski merge edilmediği için temiz b
 
 3 iterasyondan sonra hâlâ aynı hatayı yapıyorsa:
 
-- Description ve önceki comment'ler **çelişebilir** — bot ikisini birlikte okuyor.
+- Description ve önceki comment'ler **çelişebilir** - bot ikisini birlikte okuyor.
   Description'ı güncelleyip task'ı yeniden bot'a ata.
-- Prompt sorunu olabilir — AI Admin'e bildir.
+- Prompt sorunu olabilir - AI Admin'e bildir.
 
 ## Auto `[fix]` (CI Fail Sonrası)
 
 Eğer departmanında `auto_fix_on_ci_fail` açıksa, PR CI'sı fail olduğunda bot
-**otomatik** `[fix]` çalıştırır — sen comment yazmadan.
+**otomatik** `[fix]` çalıştırır - sen comment yazmadan.
 
 ---
 

@@ -1,14 +1,14 @@
-"""SQL migration runner — applies versioned ``*.sql`` files idempotently.
+﻿"""SQL migration runner - applies versioned ``*.sql`` files idempotently.
 
 Postgres ``docker-entrypoint-initdb.d`` only runs top-level ``.sql`` files at
 first boot and **does not recurse**
 into subdirectories. The repo has migration files under
 ``infra/postgres/migrations/`` (and previously ``config/migrations/``)
-that nothing applies on boot — so tables like ``infrastructure.ssh_runners``,
+that nothing applies on boot - so tables like ``infrastructure.ssh_runners``,
 ``llm_providers``, ``test_runs``, ``bootstrap_tokens`` don't exist on a
 fresh deployment and the admin features that depend on them return 500.
 
-This module provides :func:`apply_migrations` — a small, dependency-light
+This module provides :func:`apply_migrations` - a small, dependency-light
 applier that:
 
 1. Creates ``shared.schema_migrations(version text PRIMARY KEY,
@@ -23,10 +23,10 @@ applier that:
 4. Records the applied version + checksum so subsequent runs are no-ops.
 
 Designed to be safe to call:
-* from a FastAPI lifespan startup (admin-dashboard-api) — runs on every
+* from a FastAPI lifespan startup (admin-dashboard-api) - runs on every
   boot, idempotent;
-* from a ``make migrate`` CLI target — same code path;
-* from a Setup Wizard step — exposes a structured ``AppliedMigration``
+* from a ``make migrate`` CLI target - same code path;
+* from a Setup Wizard step - exposes a structured ``AppliedMigration``
   result the UI can render.
 
 Usage::
@@ -90,7 +90,7 @@ class AppliedMigration:
 class ChecksumMismatch:
     """An already-applied migration whose file content changed on disk.
 
-    Migrations are immutable by contract — the on-disk file should never
+    Migrations are immutable by contract - the on-disk file should never
     change after it has been applied to any deployed database. A mismatch
     is logged as a warning so operators can investigate; the runner does
     **not** re-apply the migration to avoid corrupting downstream state.
@@ -132,7 +132,7 @@ class MigrationError(RuntimeError):
 
 
 # ---------------------------------------------------------------------------
-# Pool / connection protocol — keeps the runner asyncpg-flavoured but
+# Pool / connection protocol - keeps the runner asyncpg-flavoured but
 # doesn't hard-import asyncpg so tests can swap a fake.
 # ---------------------------------------------------------------------------
 
@@ -145,7 +145,7 @@ class _SupportsAcquire(Protocol):
     and ``fetch()``.
     """
 
-    def acquire(self) -> Any:  # pragma: no cover — protocol
+    def acquire(self) -> Any:  # pragma: no cover - protocol
         ...
 
 
@@ -228,7 +228,7 @@ async def apply_migrations(
         An ``asyncpg.Pool`` (or anything implementing :class:`_SupportsAcquire`).
     migrations_dir:
         Directory containing the ``*.sql`` files. Files are applied in
-        sorted-filename order — the existing zero-padded numeric prefix
+        sorted-filename order - the existing zero-padded numeric prefix
         on the migrations defines the dependency graph.
 
     Returns
@@ -256,7 +256,7 @@ async def apply_migrations(
 
     async with pool.acquire() as conn:
         # 1. Make sure the tracking table exists. Wrapping in a
-        #    transaction keeps the DDL atomic — important on PG where
+        #    transaction keeps the DDL atomic - important on PG where
         #    bare CREATE TABLE is transactional.
         async with conn.transaction():
             await conn.execute(SCHEMA_MIGRATIONS_DDL)
@@ -277,7 +277,7 @@ async def apply_migrations(
                 if stored != current:
                     logger.warning(
                         "apply_migrations: %s already applied but checksum "
-                        "drifted (stored=%s current=%s) — NOT re-applying; "
+                        "drifted (stored=%s current=%s) - NOT re-applying; "
                         "investigate by hand",
                         version,
                         stored,
@@ -294,7 +294,7 @@ async def apply_migrations(
                     result.already_applied.append(version)
                 continue
 
-            # Un-applied — read SQL and execute in a transaction.
+            # Un-applied - read SQL and execute in a transaction.
             sql = migration_path.read_text(encoding="utf-8")
             logger.info(
                 "apply_migrations: applying %s (%d bytes, checksum=%s)",
@@ -330,7 +330,7 @@ async def apply_migrations(
             )
 
     logger.info(
-        "apply_migrations: done — newly_applied=%d already_applied=%d "
+        "apply_migrations: done - newly_applied=%d already_applied=%d "
         "checksum_mismatches=%d (total_discovered=%d)",
         len(result.newly_applied),
         len(result.already_applied),

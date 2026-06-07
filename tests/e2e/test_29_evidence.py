@@ -1,4 +1,4 @@
-"""
+﻿"""
 Test 29: Evidence collection verification (R29).
 
 Validates that the e2e-evidence/ directory is properly organized with
@@ -112,7 +112,7 @@ class TestEvidenceCollection:
 
         # Log files are captured by EvidenceCollector.capture_container_logs()
         # They may not exist if no failures occurred
-        # This is informational — we verify the mechanism works
+        # This is informational - we verify the mechanism works
         if not log_files:
             # Check if any log-like content exists in JSON evidence
             json_files = list(evidence_dir.rglob("*.json"))
@@ -162,7 +162,7 @@ class TestEvidenceCollection:
             except (json.JSONDecodeError, OSError):
                 continue
 
-        # DB snapshots are optional — they're captured when DB tests run
+        # DB snapshots are optional - they're captured when DB tests run
         # This test verifies the JSON structure is correct when present
         if not has_db_snapshot and len(json_files) > 0:
             # At least JSON evidence exists, which is the minimum

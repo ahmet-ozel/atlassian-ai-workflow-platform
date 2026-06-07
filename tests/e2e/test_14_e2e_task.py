@@ -1,5 +1,5 @@
-"""
-Test 14: Full AI task workflow — end-to-end from Streamlit UI to Jira Done.
+﻿"""
+Test 14: Full AI task workflow - end-to-end from Streamlit UI to Jira Done.
 
 Validates that a task submitted via the Streamlit UI (localhost:8501) flows
 through the full automation pipeline:
@@ -245,7 +245,7 @@ def _query_audit_events(correlation_id: Optional[str] = None) -> dict[str, Any]:
 
         # POSTGRES_USER/PASSWORD/DB come from the compose default
         # block (POSTGRES_USER=ai, POSTGRES_DB=ai). The host port is
-        # 5433 (mapped from container 5432) — see ``ports`` block of
+        # 5433 (mapped from container 5432) - see ``ports`` block of
         # ``infra/docker-compose.yml::postgres``.
         conn = psycopg2.connect(
             host="localhost",
@@ -259,7 +259,7 @@ def _query_audit_events(correlation_id: Optional[str] = None) -> dict[str, Any]:
             cur = conn.cursor()
 
             # Schema has ``action`` (no ``event_type``) and no
-            # ``correlation_id`` column — correlation_id lives in
+            # ``correlation_id`` column - correlation_id lives in
             # ``payload`` JSONB.
             if correlation_id:
                 cur.execute(
@@ -322,7 +322,7 @@ def _query_audit_events_via_docker(correlation_id: Optional[str] = None) -> dict
 
     # Schema lives in DB ``ai`` (per ``POSTGRES_DB=ai``), schema
     # ``automation``. Columns are ``id, actor_id, actor_role, dept_id,
-    # action, resource, result, payload, created_at`` — there is no
+    # action, resource, result, payload, created_at`` - there is no
     # ``event_type`` or ``correlation_id`` column. We approximate the
     # legacy filter by matching ``action LIKE 'task%'`` and look for
     # the correlation id inside the ``payload`` JSONB blob.

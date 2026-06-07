@@ -1,4 +1,4 @@
-"""Unit tests for ``temporal_shared.identifiers`` — workflow ID, branch, and
+﻿"""Unit tests for ``temporal_shared.identifiers`` - workflow ID, branch, and
 artifact-key formatters.
 
 Validated invariants:
@@ -221,7 +221,7 @@ class TestPurityInvariant:
         for forbidden in ("import datetime", "import random", "import uuid",
                           "from datetime", "from random", "from uuid"):
             assert forbidden not in source, (
-                f"identifiers.py must not contain '{forbidden}' — "
+                f"identifiers.py must not contain '{forbidden}' - "
                 "all formatters must be pure string operations"
             )
 

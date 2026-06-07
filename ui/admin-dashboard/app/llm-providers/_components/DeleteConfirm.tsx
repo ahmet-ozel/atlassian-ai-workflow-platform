@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * Delete-confirmation dialog for a provider row (R14.8, R14.9).
@@ -79,7 +79,7 @@ export default function DeleteConfirm({
             data-testid="llm-provider-delete-conflict-toast"
           >
             <p className="font-medium">
-              Cannot delete — provider in use
+              Cannot delete - provider in use
             </p>
             <p>
               The following departments still pin this provider:

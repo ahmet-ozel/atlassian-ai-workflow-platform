@@ -1,4 +1,4 @@
-"""Unit tests for the ``VaultClient`` LLM-credential methods.
+﻿"""Unit tests for the ``VaultClient`` LLM-credential methods.
 
 Covers:
 * Successful write / read / delete round-trip against an in-memory
@@ -154,7 +154,7 @@ async def test_delete_idempotent_on_404() -> None:
     client = _make_client(store)
     provider_id = uuid4()
 
-    # No prior write — the path doesn't exist; delete must NOT raise.
+    # No prior write - the path doesn't exist; delete must NOT raise.
     await client.delete_llm_credentials(provider_id=provider_id)
 
 

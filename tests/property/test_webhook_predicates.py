@@ -1,4 +1,4 @@
-"""Webhook predicate guards (loop, assignee, changelog, event-type).
+﻿"""Webhook predicate guards (loop, assignee, changelog, event-type).
 
 Invariants tested:
   7a. is_self_actor(actor_id, bot_ids) ↔ actor_id ∈ bot_ids
@@ -11,7 +11,7 @@ Invariants tested:
       "ignored" for all others
   7e. Short-circuit ordering composition: if is_self_actor is True,
       no further predicate evaluation is needed (the event is skipped)
-  7f. Determinism: all predicates are pure functions — same inputs
+  7f. Determinism: all predicates are pure functions - same inputs
       always produce the same output
 """
 
@@ -52,7 +52,7 @@ _account_ids = st.text(
     max_size=40,
 )
 
-#: Bot registry: a frozenset of 0–10 account IDs.
+#: Bot registry: a frozenset of 0-10 account IDs.
 _bot_registries = st.frozensets(_account_ids, min_size=0, max_size=10)
 
 #: Optional account ID (can be None).
@@ -64,7 +64,7 @@ _supported_event_types = st.sampled_from(sorted(_ACCEPTED_EVENT_TYPES))
 #: Arbitrary event type strings (may or may not be supported).
 _arbitrary_event_types = st.text(min_size=0, max_size=60)
 
-#: Changelog item strategy — produces a dict with field and to keys.
+#: Changelog item strategy - produces a dict with field and to keys.
 _changelog_fields = st.sampled_from(
     ["assignee", "status", "priority", "summary", "description", "labels"]
 )
@@ -190,7 +190,7 @@ class TestIsBotAssigneeMembership:
 
 
 # ---------------------------------------------------------------------------
-# assignee_changed_to_bot — changelog invariants
+# assignee_changed_to_bot - changelog invariants
 # ---------------------------------------------------------------------------
 
 
@@ -280,7 +280,7 @@ class TestAssigneeChangedToBot:
 
 
 # ---------------------------------------------------------------------------
-# route — event type classification
+# route - event type classification
 # ---------------------------------------------------------------------------
 
 
@@ -309,7 +309,7 @@ class TestRouteEventType:
     def test_route_return_type_is_literal(self) -> None:
         """route() always returns exactly "accepted" or "ignored".
 
-        route() always returns exactly "accepted" or "ignored" — no
+        route() always returns exactly "accepted" or "ignored" - no
         other values are possible.
         """
         for et in _ACCEPTED_EVENT_TYPES:
@@ -401,7 +401,7 @@ class TestShortCircuitOrdering:
         # Loop guard does NOT fire
         assert is_self_actor(actor_id, bot_ids) is False
 
-        # Further checks are now meaningful — route must still classify
+        # Further checks are now meaningful - route must still classify
         assert route(event_type) == "accepted"
 
     @settings(max_examples=200, deadline=2000)
@@ -426,11 +426,11 @@ class TestShortCircuitOrdering:
 
         # Even if the bot is also the assignee, the loop guard takes priority
         assert is_bot_assignee(bot_id, bot_ids) is True  # would pass step 2
-        # But step 1 already decided "skip" — composition invariant holds
+        # But step 1 already decided "skip" - composition invariant holds
 
 
 # ---------------------------------------------------------------------------
-# Determinism — all predicates are pure functions
+# Determinism - all predicates are pure functions
 # ---------------------------------------------------------------------------
 
 
@@ -506,7 +506,7 @@ class TestDeterminism:
 # When a webhook event's ``actor.account_id`` equals *any*
 # department's ``bot.<service>.account_id``, the event is dropped and
 # audited as ``loop_guard_dropped``. The "*any*" quantifier is the
-# subtle part — a bot in department A must trigger the loop guard for
+# subtle part - a bot in department A must trigger the loop guard for
 # events received on a webhook routed to department B (the bot may
 # legitimately work across projects). The strategies below build a
 # multi-department ``BotRegistry`` so the property quantifies over the
@@ -535,12 +535,12 @@ class _BotRegistry:
     """``{dept_id: {service: account_id}}`` for round-trip checks."""
 
     union: frozenset[str]
-    """Flat union of every ``account_id`` — what the loop guard checks."""
+    """Flat union of every ``account_id`` - what the loop guard checks."""
 
 
 @st.composite
 def _multi_dept_bot_registries(draw: st.DrawFn) -> _BotRegistry:
-    """Generate a multi-department bot registry (1–5 depts × 1–3 services).
+    """Generate a multi-department bot registry (1-5 depts × 1-3 services).
 
     Each department gets a non-empty subset of services; each service
     gets a unique ``account_id``. Uniqueness is enforced via
@@ -566,7 +566,7 @@ def _multi_dept_bot_registries(draw: st.DrawFn) -> _BotRegistry:
 
     # Total bot count = sum over depts of "1 to 3 services". Pre-draw
     # a flat pool of unique account IDs and slice it as we walk the
-    # departments — keeps Hypothesis' shrinker happy.
+    # departments - keeps Hypothesis' shrinker happy.
     max_total = dept_count * len(_SERVICES)
     pool = draw(
         st.lists(
@@ -601,7 +601,7 @@ def _multi_dept_bot_registries(draw: st.DrawFn) -> _BotRegistry:
         for service in services:
             if pool_idx >= len(pool):
                 # Pool exhausted; skip silently. The remaining services
-                # for this dept are dropped — the registry shape stays
+                # for this dept are dropped - the registry shape stays
                 # well-formed.
                 break
             services_for_dept[service] = pool[pool_idx]
@@ -623,7 +623,7 @@ class TestBotSelfActionLoopGuard:
     The webhook handler must drop events whose ``actor.account_id``
     matches *any* bot in *any* department, regardless of which service
     that bot belongs to. These properties check the predicate at the
-    set-membership layer — the I/O side (audit ``loop_guard_dropped``,
+    set-membership layer - the I/O side (audit ``loop_guard_dropped``,
     HTTP 200 silent drop) is owned by the integration tests.
     """
 
@@ -645,7 +645,7 @@ class TestBotSelfActionLoopGuard:
         """
 
         # The strategy can produce empty registries (when the pool
-        # exhausts before any service is filled). Skip those — the
+        # exhausts before any service is filled). Skip those - the
         # property is vacuous when the union is empty.
         if not registry.union:
             return
@@ -716,7 +716,7 @@ class TestBotSelfActionLoopGuard:
         """The bot registry union is deterministic.
 
         The loop guard fires regardless of which Atlassian service
-        the bot is registered against — Jira, Bitbucket, and
+        the bot is registered against - Jira, Bitbucket, and
         Confluence bot account IDs all live in the same union and
         all short-circuit the webhook.
         """
@@ -747,7 +747,7 @@ class TestBotSelfActionLoopGuard:
         ``actor.account_id`` is ``None`` for system-emitted events
         (eg. lifecycle hooks Atlassian fires without a user
         attribution). Those must pass the loop guard regardless of
-        the registry contents — the predicate cannot match ``None``
+        the registry contents - the predicate cannot match ``None``
         against any string ID.
         """
 
@@ -780,7 +780,7 @@ class TestBotSelfActionLoopGuard:
         (``route``, ``is_bot_assignee``) become operationally
         irrelevant. We assert the predicate's truth value because
         the audit-side effect (``action="loop_guard_dropped"``) is
-        owned by the handler integration test — but the predicate is
+        owned by the handler integration test - but the predicate is
         the only entry point that can decide "drop or not".
         """
 
@@ -790,7 +790,7 @@ class TestBotSelfActionLoopGuard:
         # Loop guard fires regardless of ``foreign_actor`` content.
         assert is_self_actor(bot_account_id, registry.union) is True
         # The "non-bot" branch must remain reachable for genuine
-        # human authors — otherwise the platform would never start
+        # human authors - otherwise the platform would never start
         # any workflow.
         assume(foreign_actor not in registry.union)
         assert is_self_actor(foreign_actor, registry.union) is False
@@ -822,11 +822,11 @@ class TestBotSelfActionLoopGuard:
 #
 # - When the project key resolves to a department, dept_id-resolution
 #   passes and the chain proceeds to HMAC verification (which fails
-#   here because we never sign the body — but that's the *next* leg,
+#   here because we never sign the body - but that's the *next* leg,
 #   audited as ``webhook_hmac_failed``, not ``webhook_dept_unresolved``).
 #
 # These properties drive the real router with hand-rolled fakes for
-# every collaborator so the test stays self-contained — no Postgres,
+# every collaborator so the test stays self-contained - no Postgres,
 # no Vault HTTP, no Temporal client. The fakes implement just enough
 # of each Protocol (``DeptResolver``, ``VaultClient``, ``AuditLogger``,
 # ``SupportsStartWorkflow``) for the chain to reach the dept_id-
@@ -845,7 +845,7 @@ from fastapi.testclient import TestClient
 # the bootstrap at the top of this file (``_AUTOMATION_SRC``).
 # ``automation_service.app`` imports ``from src.config import Settings``,
 # which requires the *automation-service root* (the directory that
-# contains ``src/``) on ``sys.path`` as well — without it, the relative
+# contains ``src/``) on ``sys.path`` as well - without it, the relative
 # ``src`` package cannot be located when pytest collects this module.
 _AUTOMATION_ROOT = Path(__file__).resolve().parents[1].parent / "services" / "automation-service"
 for _bootstrap_path in (_AUTOMATION_ROOT, _AUTOMATION_ROOT / "src"):
@@ -923,7 +923,7 @@ class _AlwaysFailingVault:
     verification, so for the properties in this section the Vault
     client is never reached when dept_id resolution fails. For the
     "resolution succeeds" property we set up a stub that returns no
-    secret (``KeyError``) — ``verify_webhook_hmac`` then returns
+    secret (``KeyError``) - ``verify_webhook_hmac`` then returns
     ``False`` and the chain produces HTTP 401, *not* HTTP 400. That
     distinction is what the tests assert.
     """
@@ -962,7 +962,7 @@ class _RecordingAuditLogger:
 class _FakeWorkflowClient:
     """``SupportsStartWorkflow`` stand-in.
 
-    Never reached by the dept_id-resolution properties — the handler
+    Never reached by the dept_id-resolution properties - the handler
     short-circuits with HTTP 400 before this client is consulted. We
     nonetheless implement a permissive stub so accidental control-flow
     regressions surface as test-double calls instead of attribute
@@ -1062,7 +1062,7 @@ def _payloads_with_extra_project_keys(draw: st.DrawFn) -> dict:
 
     Some real Atlassian payloads carry the project key at
     ``project.key`` rather than ``issue.fields.project.key``. The
-    extractor accepts both shapes — the property here ensures the
+    extractor accepts both shapes - the property here ensures the
     fallback path also feeds the resolver correctly.
     """
     project_key = draw(_project_keys)
@@ -1242,8 +1242,8 @@ class TestWebhookDeptUnresolved:
 
         With a registered department for the payload's project_key,
         the handler MUST NOT return ``webhook_dept_unresolved``. The
-        next gate is HMAC verification — which fails here because no
-        secret is provisioned — so the response is HTTP 401, not
+        next gate is HMAC verification - which fails here because no
+        secret is provisioned - so the response is HTTP 401, not
         HTTP 400. This negation property is what disambiguates a
         broken dept-resolver wiring from a correct one.
         """
@@ -1273,7 +1273,7 @@ class TestWebhookDeptUnresolved:
             f"actions={actions!r}"
         )
         # The next gate (HMAC verify) must fail because we provisioned
-        # no secret — HTTP 401 ``unauthorized`` with a
+        # no secret - HTTP 401 ``unauthorized`` with a
         # ``webhook_hmac_failed`` audit row.
         assert resp.status_code == 401
         assert "webhook_hmac_failed" in actions
@@ -1292,7 +1292,7 @@ class TestWebhookDeptUnresolved:
         Older / alternative Jira payload shapes carry the project
         key at the top level (``payload["project"]["key"]``). The
         handler's extractor falls back to that location when
-        ``issue.fields.project`` is missing — the dept resolver still
+        ``issue.fields.project`` is missing - the dept resolver still
         receives a non-None ``project_key`` and the dept_id-resolution
         gate passes (no ``webhook_dept_unresolved`` audit).
         """
@@ -1367,10 +1367,10 @@ class TestWebhookDeptUnresolved:
 #
 # Strategies in this block:
 #
-# * ``_chain_event_strategies`` — random :class:`WebhookEvent`
+# * ``_chain_event_strategies`` - random :class:`WebhookEvent`
 #   generators for both Jira and Bitbucket dialects.
-# * ``_bot_id_pools``           — random bot account-id sets.
-# * ``_body_text_options``      — random body text including
+# * ``_bot_id_pools``           - random bot account-id sets.
+# * ``_body_text_options``      - random body text including
 #   ``[bot:``-prefixed lines and unrelated chatter.
 #
 # We intentionally re-use the foundation strategies above for actor
@@ -1395,7 +1395,7 @@ from automation_service.webhook_filters import (  # noqa: E402
 import pytest  # noqa: E402  (used by ``pytest.raises`` in the tests below)
 
 
-# Strategies — minimal but exhaustive enough for the three stages.
+# Strategies - minimal but exhaustive enough for the three stages.
 
 _chain_actor_ids = st.text(
     alphabet=st.characters(
@@ -1515,7 +1515,7 @@ class TestChainVerifyHmacProperty:
         callback set to no-op pass-through, the result is either
         ``filter_chain_pass`` (no other stage fires) or a
         loop-guard regex drop (when ``actor is None`` and the body
-        text matches — in this test we keep ``body_text=None`` so
+        text matches - in this test we keep ``body_text=None`` so
         only the pass branch fires).
         """
 
@@ -1567,7 +1567,7 @@ class TestChainVerifyHmacProperty:
         """HMAC failure has precedence.
 
         HMAC failure raises **regardless** of whether dept resolves
-        or the actor is in the bot registry — the verify stage runs
+        or the actor is in the bot registry - the verify stage runs
         first.
         """
 
@@ -1684,7 +1684,7 @@ class TestChainLoopGuardActorIdProperty:
 
         Picking *any* account_id from the registry produces a drop
         with reason ``loop_guard_dropped``. The chain consults the
-        flat union, so any bot in any dept short-circuits — this
+        flat union, so any bot in any dept short-circuits - this
         mirrors the self-action loop guard invariant at the
         chain level.
         """
@@ -1818,7 +1818,7 @@ class TestChainLoopGuardRegexFallbackProperty:
         the regex, the chain produces
         :data:`REASON_LOOP_GUARD_DROPPED` (the actor-id reason),
         not the regex reason. The regex fallback exists specifically
-        for the case where the actor is missing — it never fires
+        for the case where the actor is missing - it never fires
         when the actor is present.
         """
 
@@ -1876,9 +1876,9 @@ class TestChainLoopGuardDeterminism:
 # This block extends the chain-level coverage above with the
 # four mid-chain stages:
 #
-# * ``streamlit_bypass``                  — V12 ``[bot:hear]`` bypass
-# * ``replay_dedup``                       — duplicate ``delivery_id`` drop
-# * ``mention_filter`` (Y6 + Z6 merged)    — comment authorisation
+# * ``streamlit_bypass``                  - V12 ``[bot:hear]`` bypass
+# * ``replay_dedup``                       - duplicate ``delivery_id`` drop
+# * ``mention_filter`` (Y6 + Z6 merged)    - comment authorisation
 #
 # The composite stage-ordering invariants live in their own classes so
 # Hypothesis can shrink to the smallest counter-example for each
@@ -1908,17 +1908,17 @@ from automation_service.webhook_filters import (  # noqa: E402
 # Re-uses the foundation strategies (``_chain_actor_ids``,
 # ``_chain_bot_registries``, etc.) but adds:
 #
-# * ``_chain_event_types``     — the supported Jira event types so we
+# * ``_chain_event_types``     - the supported Jira event types so we
 #   can sample comment vs. non-comment scenarios.
-# * ``_chain_iter_counts``     — small ints that span the Z6 boundary
+# * ``_chain_iter_counts``     - small ints that span the Z6 boundary
 #   (``0``, ``1``, ``> 1``).
-# * ``_chain_mention_sets``    — small frozensets of bot-mentioned
+# * ``_chain_mention_sets``    - small frozensets of bot-mentioned
 #   account ids; deliberately overlaps with ``_chain_actor_ids`` so
 #   Hypothesis can produce both "actor ∈ mention_set" and "actor ∉
 #   mention_set" examples.
-# * ``_chain_bypass_bodies``   — bodies that contain the
+# * ``_chain_bypass_bodies``   - bodies that contain the
 #   ``[bot:hear]`` tag in random casings / positions.
-# * ``_chain_no_bypass_bodies``— bodies that do **not** contain the
+# * ``_chain_no_bypass_bodies``- bodies that do **not** contain the
 #   tag.
 
 _chain_event_types = st.sampled_from(
@@ -1930,7 +1930,7 @@ _chain_event_types = st.sampled_from(
     ]
 )
 
-#: Iteration counter values — span the Z6 boundary deliberately so the
+#: Iteration counter values - span the Z6 boundary deliberately so the
 #: ``iter == 1 + actor == reporter`` predicate is exercised on both
 #: sides.
 _chain_iter_counts = st.integers(min_value=0, max_value=20)
@@ -1940,7 +1940,7 @@ _chain_iter_counts = st.integers(min_value=0, max_value=20)
 #: probability.
 _chain_mention_sets = st.frozensets(_chain_actor_ids, min_size=0, max_size=4)
 
-#: Issue keys — narrow alphabet so Hypothesis can re-use the same key
+#: Issue keys - narrow alphabet so Hypothesis can re-use the same key
 #: across generated events when checking call-order invariants.
 _chain_issue_keys = st.from_regex(r"^[A-Z]{2,4}-[1-9][0-9]{0,3}$", fullmatch=True)
 
@@ -1987,7 +1987,7 @@ def _chain_no_bypass_bodies(
 ) -> str | None:
     """Bodies that do NOT contain the ``[bot:hear]`` tag.
 
-    Filters out the tag entirely — case-insensitive — so the strategy
+    Filters out the tag entirely - case-insensitive - so the strategy
     never accidentally produces a body that would trigger the
     streamlit-bypass stage.
     """
@@ -2069,7 +2069,7 @@ class TestChainReplayDedupProperty:
     """``replay_dedup`` runs after streamlit_bypass and before mention_filter.
 
 
-    The dedup stage is the idempotency anchor for the chain — it must
+    The dedup stage is the idempotency anchor for the chain - it must
     catch every duplicate ``delivery_id`` that did not match the
     ``[bot:hear]`` bypass. The property below pins both the positive
     drop verdict and the precedence relations on either side of the
@@ -2088,7 +2088,7 @@ class TestChainReplayDedupProperty:
 
 
         Hypothesis varies the delivery_id and actor across the full
-        valid space; the dedup verdict must not depend on either —
+        valid space; the dedup verdict must not depend on either -
         once ``is_processed`` returns True, the chain drops with the
         canonical reason.
         """
@@ -2155,7 +2155,7 @@ class TestChainReplayDedupProperty:
 
         With both stages firing (``is_processed`` True AND iter > 1
         + unauthorised actor), the chain must produce
-        ``duplicate_event_dropped`` — operators want to know the
+        ``duplicate_event_dropped`` - operators want to know the
         event was a duplicate of a real prior delivery, not that
         the actor was unauthorised. Hypothesis varies iter / actor /
         mention_set across the full Y6 input space to catch any
@@ -2466,7 +2466,7 @@ class TestChainStreamlitBypassCaseInsensitiveProperty:
 
 
         The negative property is what proves the bypass is precisely
-        the design's tag — not a false-positive on other ``[bot:``
+        the design's tag - not a false-positive on other ``[bot:``
         prefixes (eg. the loop-guard regex's ``[bot:speak]``). The
         chain falls through to the next stage and ultimately to
         ``filter_chain_pass`` because the body never matches.
@@ -2566,7 +2566,7 @@ class TestChainMidChainDeterminismProperty:
 #   :class:`FilterDecision` with ``action="drop"`` and
 #   ``reason=REASON_BURST_COALESCED``.
 # * Independent windows: events with different ``issue_key`` never
-#   coalesce — they live in separate buffers.
+#   coalesce - they live in separate buffers.
 # * Anchor delivery never appears in ``coalesced_with``: the design
 #   contract reserves that list for *dropped* deliveries.
 #
@@ -2597,7 +2597,7 @@ _chain_burst_issue_keys = st.from_regex(
     r"^[A-Z]{2,4}-[1-9][0-9]{0,3}$", fullmatch=True
 )
 
-#: Delivery ids — short alphanumerics so Hypothesis can shrink
+#: Delivery ids - short alphanumerics so Hypothesis can shrink
 #: efficiently. The strategy enforces uniqueness inside any list
 #: that uses it, but at the leaf level we only need printable ids.
 _chain_burst_delivery_ids = st.text(
@@ -2608,7 +2608,7 @@ _chain_burst_delivery_ids = st.text(
     max_size=12,
 )
 
-#: Payload values — keep them tiny so the property fixture stays
+#: Payload values - keep them tiny so the property fixture stays
 #: cheap. We test the "latest payload wins" invariant by varying a
 #: single ``v`` field; the chain doesn't introspect the payload so
 #: shape variation is irrelevant.
@@ -2653,7 +2653,7 @@ def _build_burst_chain(
         if decision == "coalesce_dropped":
             # Reach into the buffer to read the running coalesced
             # list non-destructively. The test_burst_debounce module
-            # uses the same trick — see its docstring for the
+            # uses the same trick - see its docstring for the
             # rationale. Safe inside tests because production wires a
             # sweeper that consults ``flush_window`` directly.
             buffer = burst._buffers.get(event.issue_key)  # noqa: SLF001
@@ -2916,7 +2916,7 @@ class TestChainBurstDebounceLastPayloadWinsProperty:
         )
         dropped, latest_payload = flushed
 
-        # The flushed dropped list excludes the anchor — exactly one
+        # The flushed dropped list excludes the anchor - exactly one
         # drop per non-anchor register call, in observation order.
         assert dropped == deliveries[1:]
         # The latest payload wins; design contract.
@@ -2940,7 +2940,7 @@ class TestChainBurstDebounceLastPayloadWinsProperty:
     ) -> None:
         """Two-event burst: flush returns the *second* event's payload.
 
-        The simplest "last wins" case — pinned separately so any
+        The simplest "last wins" case - pinned separately so any
         regression that accidentally preserves the anchor payload
         surfaces with a minimal counter-example.
         """
@@ -3022,7 +3022,7 @@ class TestChainBurstDebounceIndependentWindowsProperty:
 
         assert first.action == "pass"
         assert first.reason == REASON_FILTER_CHAIN_PASS
-        # Distinct key opens its own window — anchor for ``key_b``.
+        # Distinct key opens its own window - anchor for ``key_b``.
         assert second.action == "pass"
         assert second.reason == REASON_FILTER_CHAIN_PASS
 
@@ -3072,7 +3072,7 @@ class _SequenceEvent:
     The strategy below builds a list of these and the test materialises
     them into :class:`WebhookEvent` objects on each pass. Storing the
     raw fields (rather than the :class:`WebhookEvent` itself) makes the
-    Hypothesis shrinker more effective — the dataclass is hashable and
+    Hypothesis shrinker more effective - the dataclass is hashable and
     its fields shrink independently.
     """
 
@@ -3183,7 +3183,7 @@ def _build_full_chain(
 ) -> tuple[WebhookFilterChain, BurstWindow]:
     """Wire a fully-loaded chain whose callbacks are derived from *specs*.
 
-    The callbacks are *pure functions of the spec list* — they read
+    The callbacks are *pure functions of the spec list* - they read
     the relevant fields of the spec for the event currently under
     evaluation. We index each spec by its delivery_id so the
     callbacks can match an inbound event to its spec without relying
@@ -3192,7 +3192,7 @@ def _build_full_chain(
     """
 
     by_delivery: dict[str, _SequenceEvent] = {s.delivery_id: s for s in specs}
-    # Per-issue current iter / mention set / reporter — pulled from
+    # Per-issue current iter / mention set / reporter - pulled from
     # the *latest* spec for that issue so the callbacks behave
     # deterministically across the sequence. This mirrors how the
     # production chain pulls the current state from Postgres at the
@@ -3268,7 +3268,7 @@ class TestChainCompositeSequenceDeterminism:
     seven filter stages, four of which are stateful (replay-dedup
     table reads, mention-set lookups, iteration counter reads, and the
     burst-debounce coordinator). Despite that, two passes over the
-    same event sequence — each starting from a fresh state — must
+    same event sequence - each starting from a fresh state - must
     produce the same list of verdicts. Catches:
 
     * Stages that accidentally read the wall-clock or process-local
@@ -3298,7 +3298,7 @@ class TestChainCompositeSequenceDeterminism:
         events_a = [_materialise_event(s) for s in specs]
         decisions_a = [chain_a.evaluate(ev) for ev in events_a]
 
-        # Run 2 — fresh chain + fresh burst window + fresh event
+        # Run 2 - fresh chain + fresh burst window + fresh event
         # objects (no shared state with run 1).
         chain_b, _burst_b = _build_full_chain(specs)
         events_b = [_materialise_event(s) for s in specs]
@@ -3349,7 +3349,7 @@ class TestChainCompositeSequenceDeterminism:
 
         Pins the chain's vocabulary so a stage cannot accidentally
         invent a new reason string. The set of valid reasons matches
-        the design's decision table exactly — adding a new stage
+        the design's decision table exactly - adding a new stage
         means updating both the production chain and this test.
         """
 

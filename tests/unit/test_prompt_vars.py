@@ -1,4 +1,4 @@
-"""Unit tests for ``prompts.types`` — :class:`PromptVars` + helper.
+﻿"""Unit tests for ``prompts.types`` - :class:`PromptVars` + helper.
 
 These tests pin the contract for the prompt rendering layer:
 

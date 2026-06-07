@@ -1,4 +1,4 @@
-"""Unit tests for the ``audit_prune`` activities.
+﻿"""Unit tests for the ``audit_prune`` activities.
 
 These tests cover archive/delete behavior for audit_events older than
 ``RETENTION_DAYS`` and the failure path that invokes the mandatory admin
@@ -19,7 +19,7 @@ spin up in unit tests:
 Each is replaced with a small in-memory fake registered through the
 module-level ``set_*`` setters; ``httpx`` traffic to MinIO is
 intercepted with ``MockTransport``. The activities themselves run as
-plain coroutines — ``@activity.defn`` does not change the calling
+plain coroutines - ``@activity.defn`` does not change the calling
 contract for direct invocation.
 """
 
@@ -188,7 +188,7 @@ def cutoff_utc() -> datetime:
 
 
 # ===========================================================================
-# 1. get_retention_setting — env / DB / default fallback
+# 1. get_retention_setting - env / DB / default fallback
 # ===========================================================================
 
 
@@ -313,7 +313,7 @@ class TestGetRetentionSetting:
 
 
 # ===========================================================================
-# 2. archive_audit_to_minio — JSONL+gzip + deterministic key
+# 2. archive_audit_to_minio - JSONL+gzip + deterministic key
 # ===========================================================================
 
 
@@ -337,7 +337,7 @@ def _install_minio_capture() -> dict[str, Any]:
 def patch_httpx_client(monkeypatch: pytest.MonkeyPatch):
     """Replace ``httpx.AsyncClient`` inside the activity module.
 
-    Returns a tuple ``(captured_dict, install_fn)`` — the test calls
+    Returns a tuple ``(captured_dict, install_fn)`` - the test calls
     ``install_fn()`` to wire the mock transport, then inspects
     ``captured_dict`` after the activity completes.
     """
@@ -402,7 +402,7 @@ class TestArchiveAuditToMinio:
         # Two pages: first returns the rows, second returns empty
         # (terminates the pagination loop). The first page has 2
         # rows < ARCHIVE_BATCH_SIZE so the loop exits immediately
-        # — second page is unused but harmless to pre-populate.
+        # - second page is unused but harmless to pre-populate.
         conn = _FakeConn(fetch_pages=[rows, []])
         set_db_pool(_FakePool(conn))
         set_minio_settings(_FakeMinioSettings())
@@ -486,7 +486,7 @@ class TestArchiveAuditToMinio:
         cutoff_utc: datetime,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        # Simulate a 500 from MinIO — activity must surface a
+        # Simulate a 500 from MinIO - activity must surface a
         # transport error so the workflow's failure path triggers
         # the admin alarm.
         rows = [
@@ -534,7 +534,7 @@ class TestArchiveAuditToMinio:
 
 
 # ===========================================================================
-# 3. delete_audit_older_than — DELETE both audit + cost rows
+# 3. delete_audit_older_than - DELETE both audit + cost rows
 # ===========================================================================
 
 
@@ -601,7 +601,7 @@ class TestDeleteAuditOlderThan:
 
 
 # ===========================================================================
-# 4. notify_audit_prune_failed — mandatory admin Slack alarm
+# 4. notify_audit_prune_failed - mandatory admin Slack alarm
 # ===========================================================================
 
 
@@ -618,7 +618,7 @@ class TestNotifyAuditPruneFailed:
 
     def test_propagates_service_exception(self) -> None:
         # If the notification service itself raises, the activity does
-        # NOT swallow the exception — Temporal's retry policy on the
+        # NOT swallow the exception - Temporal's retry policy on the
         # workflow side will retry per ``_NOTIFY_RETRY``. The
         # workflow's ``_notify_failure`` helper finally swallows so
         # the *original* prune exception propagates; this is a

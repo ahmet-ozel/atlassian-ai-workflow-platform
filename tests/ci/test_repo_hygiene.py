@@ -1,4 +1,4 @@
-"""CI gate — repo hygiene.
+﻿"""CI gate - repo hygiene.
 
 Some development sessions accidentally redirected Python REPL output
 (`type(x).__name__`, `dir(x)`, ad-hoc print statements) to disk and
@@ -45,18 +45,18 @@ from conftest import WORKSPACE_ROOT  # noqa: E402
 #: applied against the leaf filename only. The list covers accidental
 #: Python type-hint leakage:
 #:
-#: * ``{*``         — anything starting with ``{`` (``{key``,
+#: * ``{*``         - anything starting with ``{`` (``{key``,
 #:                    ``{value: int}``, …).
-#: * ``0,``         — literal name ``0,`` (REPL tuple-printing).
-#: * ``bytes``      — literal name ``bytes`` with no extension
+#: * ``0,``         - literal name ``0,`` (REPL tuple-printing).
+#: * ``bytes``      - literal name ``bytes`` with no extension
 #:                    (``type(x).__name__`` redirected to disk).
-#: * ``dict[*``     — anything starting with ``dict[`` (``dict[str``,
+#: * ``dict[*``     - anything starting with ``dict[`` (``dict[str``,
 #:                    ``dict[str, Any]``, …).
-#: * ``list[*``     — same family as ``dict[…``; future-proofs the gate
+#: * ``list[*``     - same family as ``dict[…``; future-proofs the gate
 #:                    against the closely-related leakage.
-#: * ``None``       — literal name ``None`` with no extension.
-#: * ``set()``      — literal name ``set()`` with no extension.
-#: * ``str``        — literal name ``str`` with no extension.
+#: * ``None``       - literal name ``None`` with no extension.
+#: * ``set()``      - literal name ``set()`` with no extension.
+#: * ``str``        - literal name ``str`` with no extension.
 #:
 #: Matching is done with ``fnmatch.fnmatchcase`` against the basename so
 #: extensions matter: a file named ``str.py`` is *not* flagged.
@@ -192,7 +192,7 @@ def test_atlassian_mcp_bitbucket_subtree_has_no_venv_or_nested_git() -> None:
 
 
 def test_forbidden_basename_patterns_are_well_formed() -> None:
-    """Self-test — every pattern is a non-empty string ``fnmatch`` can parse.
+    """Self-test - every pattern is a non-empty string ``fnmatch`` can parse.
 
     A regression here (e.g. an empty string slipping into the tuple)
     would cause ``fnmatch.fnmatchcase('', '')`` to spuriously match

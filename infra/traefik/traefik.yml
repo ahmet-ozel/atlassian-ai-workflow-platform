@@ -1,4 +1,4 @@
-# =============================================================================
+﻿# =============================================================================
 # Traefik Static Configuration
 # =============================================================================
 # Production TLS reverse proxy configuration
@@ -90,7 +90,7 @@ certificatesResolvers:
 # TLS Configuration
 # ---------------------------------------------------------------------------
 tls:
-  # Default TLS store — used when no certResolver is specified or in
+  # Default TLS store - used when no certResolver is specified or in
   # development mode. Traefik auto-generates a self-signed certificate
   # when defaultGeneratedCert is enabled.
   stores:
@@ -118,7 +118,7 @@ tls:
 # Providers
 # ---------------------------------------------------------------------------
 providers:
-  # Docker provider — label-based routing
+  # Docker provider - label-based routing
   docker:
     # Traefik watches Docker events for container labels
     endpoint: "unix:///var/run/docker.sock"
@@ -127,7 +127,7 @@ providers:
     # Watch for container changes
     watch: true
 
-  # File provider — dynamic routing rules from the dynamic/ directory
+  # File provider - dynamic routing rules from the dynamic/ directory
   file:
     directory: /etc/traefik/dynamic
     watch: true

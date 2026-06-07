@@ -1,8 +1,8 @@
-"""``POST /api/workflows/{workflow_id}/cancel`` endpoint and predicate.
+﻿"""``POST /api/workflows/{workflow_id}/cancel`` endpoint and predicate.
 
-* :func:`is_cancel_authorized` — pure RBAC predicate. ``True`` iff the
+* :func:`is_cancel_authorized` - pure RBAC predicate. ``True`` iff the
   caller is the issue reporter or appears in the past assignees set.
-* :data:`router` — ``POST /api/workflows/{workflow_id}/cancel``
+* :data:`router` - ``POST /api/workflows/{workflow_id}/cancel``
   FastAPI router. Extracts the actor from the OIDC token via the
   injected validator, looks up the workflow's underlying Jira issue
   (reporter + past assignees) via a caller-supplied callback, and on
@@ -81,7 +81,7 @@ def is_cancel_authorized(
     been listed as an ``assignee`` (the "past assignees" set
     maintained by ``AgentRunnerWorkflow.iter_advance``).
 
-    The function is **pure** — no I/O, no clock, no globals — so it
+    The function is **pure** - no I/O, no clock, no globals - so it
     can be replayed deterministically from a workflow body and reused
     inside Hypothesis property tests without monkey-patching anything.
 
@@ -101,7 +101,7 @@ def is_cancel_authorized(
 
     # Defensive: an empty string is never authorized regardless of
     # what the issue lookup returns. An unauthenticated request should
-    # never reach this predicate (see ``router`` below — it raises 401 first), but
+    # never reach this predicate (see ``router`` below - it raises 401 first), but
     # if it does the answer must be ``False``.
     if not actor_user_id:
         return False
@@ -112,7 +112,7 @@ def is_cancel_authorized(
 
 
 # ---------------------------------------------------------------------------
-# Dependency container — injected via ``request.app.state.cancel``
+# Dependency container - injected via ``request.app.state.cancel``
 # ---------------------------------------------------------------------------
 
 
@@ -310,7 +310,7 @@ def _make_audit_event(
 
 
 async def _emit_audit(audit_logger: AuditLogger, event: AuditEvent) -> None:
-    """Best-effort audit write — never let an audit error 500 the call.
+    """Best-effort audit write - never let an audit error 500 the call.
 
     Mirrors the pattern used by ``webhooks_handlers._emit_audit`` and
     ``inbound.slack_to_task._emit_audit``: failures are warning-logged
@@ -357,7 +357,7 @@ async def cancel_workflow(
        HTTP 202 with ``{"workflow_id": ..., "cancel_requested":
        true}``.
 
-    The body of the request is currently ignored — a future revision
+    The body of the request is currently ignored - a future revision
     may accept ``{"reason": "..."}`` and forward
     it to the audit payload. The endpoint already accepts arbitrary
     JSON without parsing it so the body shape can be extended without
@@ -395,7 +395,7 @@ async def cancel_workflow(
     issue: IssueRef | None
     try:
         issue = await deps.issue_lookup(workflow_id)
-    except Exception as exc:  # noqa: BLE001 — translate to 502
+    except Exception as exc:  # noqa: BLE001 - translate to 502
         _LOG.warning(
             "cancel.issue_lookup_failed workflow_id=%s err=%s",
             workflow_id,
@@ -443,7 +443,7 @@ async def cancel_workflow(
     try:
         handle = deps.temporal_client.get_workflow_handle(workflow_id)
         await handle.cancel()
-    except Exception as exc:  # noqa: BLE001 — translate to 502
+    except Exception as exc:  # noqa: BLE001 - translate to 502
         await _emit_audit(
             deps.audit_logger,
             _make_audit_event(

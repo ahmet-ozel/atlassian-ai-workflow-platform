@@ -1,4 +1,4 @@
-"""Integration coverage for ``probe_atlassian.py`` script end-to-end.
+﻿"""Integration coverage for ``probe_atlassian.py`` script end-to-end.
 
 
 
@@ -6,7 +6,7 @@ Scenario coverage
 -----------------
 
 The script under test
-(:mod:`automation_service.scripts.probe_atlassian` — installed at
+(:mod:`automation_service.scripts.probe_atlassian` - installed at
 ``platform/services/automation-service/src/scripts/probe_atlassian.py``)
 is the ``connectivity_probe_command`` referenced from
 ``platform/config/services.manifest.json`` for the ``automation-service``
@@ -24,10 +24,10 @@ Per the script MUST:
 
 The test exercises both branches against a real
 :class:`vault_client.LocalDevBackend` (an encrypted-file Vault that
-provides a hermetic encrypted-file Vault for the run — the file lives
+provides a hermetic encrypted-file Vault for the run - the file lives
 under :func:`tmp_path` and is teared down by
 pytest) and a real :class:`httpx.MockTransport` (the in-tree
-equivalent of ``pytest-httpx`` — same wire-level mock semantics
+equivalent of ``pytest-httpx`` - same wire-level mock semantics
 without the extra dependency the workspace's ``tests/requirements.txt``
 deliberately keeps lean).
 
@@ -42,12 +42,12 @@ FastAPI app against in-memory stubs of every collaborator.
 What the test deliberately does NOT cover
 -----------------------------------------
 
-* The Vault factory's ``hashicorp`` backend selection — covered by
+* The Vault factory's ``hashicorp`` backend selection - covered by
  :mod:`platform.libs.vault_client.tests.test_basic`.
-* The manifest schema for ``connectivity_probe_command`` — covered by
+* The manifest schema for ``connectivity_probe_command`` - covered by
  :mod:`platform.tests.ci.test_manifest_schema`.
 * ``LifecycleService.start`` connectivity-probe wiring (subprocess invocation,
- state cache update, audit emission) — covered by
+ state cache update, audit emission) - covered by
  :mod:`platform.services.admin-dashboard-api.tests.property.test_connectivity_probe`.
 """
 
@@ -108,7 +108,7 @@ _PROBE_PATHS = {
 
 
 # ---------------------------------------------------------------------------
-# Fake asyncpg connection — returns a fixed list of bot rows
+# Fake asyncpg connection - returns a fixed list of bot rows
 # ---------------------------------------------------------------------------
 
 
@@ -151,7 +151,7 @@ class _FakeConnection:
 
 
 # ---------------------------------------------------------------------------
-# Mock transport — emulates Atlassian "who am I?" endpoints
+# Mock transport - emulates Atlassian "who am I?" endpoints
 # ---------------------------------------------------------------------------
 
 
@@ -218,7 +218,7 @@ def _make_transport(
 
         # Success-shaped JSON. Atlassian Cloud returns slightly
         # different shapes per service, but the script only inspects
-        # the HTTP status — any 2xx body is fine.
+        # the HTTP status - any 2xx body is fine.
         return httpx.Response(
             200,
             json={"accountId": "stub-account", "displayName": "Bot"},
@@ -396,13 +396,13 @@ def test_all_credentials_succeed_returns_exit_zero_and_no_stderr(
         f"script must hit the canonical 'who am I?' endpoint per service "
         f"; got {served_paths!r} expected {expected_urls!r}"
     )
-    # Every request must carry HTTP Basic auth — never anonymous.
+    # Every request must carry HTTP Basic auth - never anonymous.
     assert all(call.auth_header and call.auth_header.startswith("Basic ")
                for call in recorded), (
         "every probe request must use HTTP Basic auth derived from the "
         f"Vault secret; got headers={[c.auth_header for c in recorded]!r}"
     )
-    # The token MUST NOT appear in stderr (defence-in-depth — the
+    # The token MUST NOT appear in stderr (defence-in-depth - the
     # script's reason labels are structural; tokens are out-of-band).
     assert "tok-payments-jira" not in captured.err
     assert "tok-payments-confluence" not in captured.err
@@ -450,7 +450,7 @@ def test_any_credential_failure_returns_exit_one_with_dept_service_reason_lines(
         _Row("payments", "bitbucket", "vault:atlassian/payments/bitbucket"),
     )
 
-    # Force the bitbucket probe to come back 401 — the canonical
+    # Force the bitbucket probe to come back 401 - the canonical
     # signal for a token that's been revoked or has the wrong scope.
     transport = _make_transport(
         failures={
@@ -514,7 +514,7 @@ def test_multiple_failures_emit_one_stderr_line_per_failed_probe(
     env = _vault_env(tmp_path)
     env["POSTGRES_DSN"] = "postgresql://probe:probe@localhost:5432/probe"
 
-    # Two depts — separate Atlassian sites — make the per-line
+    # Two depts - separate Atlassian sites - make the per-line
     # ``dept=`` field meaningful.
     secrets = {
         "vault:atlassian/payments/jira": {
@@ -624,7 +624,7 @@ def test_vault_missing_credential_is_reported_with_vault_missing_reason(
         ),
     )
 
-    # The transport must never be hit — if the script tries to fetch
+    # The transport must never be hit - if the script tries to fetch
     # an HTTP endpoint without a secret, the test fails loudly.
     recorded: list[_RecordedCall] = []
     transport = _make_transport(record=recorded)
@@ -673,7 +673,7 @@ def test_no_registered_bots_returns_exit_zero(
     env = _vault_env(tmp_path)
     env["POSTGRES_DSN"] = "postgresql://probe:probe@localhost:5432/probe"
     # Touch the Vault store so ``make_client`` can be called without
-    # blowing up if we were to reach it (we shouldn't — empty rows
+    # blowing up if we were to reach it (we shouldn't - empty rows
     # short-circuits before Vault is even instantiated).
     _seed_vault(
         env,

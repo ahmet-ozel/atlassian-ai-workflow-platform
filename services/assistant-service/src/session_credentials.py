@@ -1,11 +1,11 @@
-"""Per-user session credential relay endpoint.
+﻿"""Per-user session credential relay endpoint.
 
 The Streamlit UI (``platform/ui/streamlit-app/pages/0_credentials.py``)
 posts plain-text Atlassian credentials to this router so they land in
 Vault under
 ``vault:atlassian/_user_session/<session_id>/<service>``. The router
 is the **only** place plain-text user-supplied tokens land on the
-server — they are forwarded to Vault and the in-memory bytearray is
+server - they are forwarded to Vault and the in-memory bytearray is
 zeroed before the response is returned.
 
 Lifecycle:
@@ -15,11 +15,11 @@ Lifecycle:
   remove the path so ``CredentialResolver.resolve`` falls back to
   the org-default.
 * ``GET /session/credentials/{session_id}/{service}`` is **not**
-  exposed over HTTP — the only consumer is
+  exposed over HTTP - the only consumer is
   :class:`automation_service.credentials.CredentialResolver` which
   reaches Vault directly via :class:`vault_client.VaultClient`.
 
-The router does not authenticate the caller — Streamlit's session
+The router does not authenticate the caller - Streamlit's session
 context is the gate (the Streamlit page is only reachable from the
 authenticated UI). In production the endpoint sits behind the
 admin-dashboard-api proxy whose OIDC layer enforces the user's
@@ -44,7 +44,7 @@ from fastapi.responses import JSONResponse
 # ``automation_service.credentials.build_user_session_path`` is the
 # canonical path-builder. We import it lazily to keep the
 # assistant-service free of an import-time dependency on the
-# automation-service package — production wiring exposes the
+# automation-service package - production wiring exposes the
 # function from a shared lib in a future spec.
 
 __all__ = ["SessionCredentialDeps", "build_user_session_path", "router"]
@@ -72,7 +72,7 @@ def build_user_session_path(session_id: str, service: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Vault client protocol — duck-typed
+# Vault client protocol - duck-typed
 # ---------------------------------------------------------------------------
 
 
@@ -125,7 +125,7 @@ def _to_vault_path(raw: str) -> Any:
     """Lazily build a :class:`vault_client.VaultPath` if the lib is present.
 
     The relay is happy to call ``vault.write(path_str, data)`` when
-    the backend accepts strings — keeps the assistant-service free
+    the backend accepts strings - keeps the assistant-service free
     of a hard import-time dependency on ``vault_client``. When the
     lib is available we wrap the string in :class:`VaultPath` for
     the structural validation + canonical regex enforcement.
@@ -242,7 +242,7 @@ async def delete_session_credential(
     try:
         deps.vault.delete(path)
     except KeyError:
-        # Idempotent delete — already gone.
+        # Idempotent delete - already gone.
         return JSONResponse(
             status_code=status.HTTP_200_OK,
             content={"status": "absent", "vault_path": raw_path},

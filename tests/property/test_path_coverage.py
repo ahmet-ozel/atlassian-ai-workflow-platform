@@ -1,4 +1,4 @@
-"""Directory tree completeness checks.
+﻿"""Directory tree completeness checks.
 
 Every Component declared in :data:`COMPONENT_MANIFEST` must ship the
 type-level baseline of files (``src/main.py``, ``Dockerfile``,
@@ -191,7 +191,7 @@ def test_infra_and_lib_required_path_exists(relative_path: str) -> None:
 # * an aggregated full-scan assertion that every scanner returns zero
 #   findings against the live source tree,
 # * a Hypothesis property that samples a single source file at a time
-#   and confirms the per-file invariant — this gives fine-grained
+#   and confirms the per-file invariant - this gives fine-grained
 #   shrinking when a single file regresses,
 # * scanner self-checks against synthetic source snippets so the
 #   detection logic itself is exercised even when the production
@@ -221,13 +221,13 @@ from _path_whitelist import (  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
-# Aggregate assertions — one assertion per scanner against the live tree
+# Aggregate assertions - one assertion per scanner against the live tree
 # ---------------------------------------------------------------------------
 #
 # Each scanner is run against the platform root with the default
 # whitelist plus the shared-test-fixture whitelist (so e.g. unit tests
 # for ``libs/llm-orchestrator`` itself can import the package by name
-# without violating the LLM path boundary — the orchestrator library is the
+# without violating the LLM path boundary - the orchestrator library is the
 # single source of truth and its tests legitimately exercise it).
 #
 # Scanner-level findings are aggregated into a list and the assertion
@@ -248,7 +248,7 @@ def test_property2_no_atlassian_http_outside_whitelist() -> None:
         whitelist=tuple(ATLASSIAN_HTTP_WHITELIST) + SHARED_TEST_FIXTURE_WHITELIST,
     )
     assert not findings, (
-        "Atlassian HTTP call violation — call "
+        "Atlassian HTTP call violation - call "
         "found outside the atlassian_mcp_bitbucket MCP whitelist. Route every "
         "Jira/Bitbucket/Confluence call through the MCP.\n"
         + format_findings(findings)
@@ -267,7 +267,7 @@ def test_property2_no_ssh_docker_outside_execution_runner() -> None:
         whitelist=tuple(SSH_DOCKER_WHITELIST) + SHARED_TEST_FIXTURE_WHITELIST,
     )
     assert not findings, (
-        "SSH or Docker access violation — access "
+        "SSH or Docker access violation - access "
         "found outside execution-runner-worker.\n"
         + format_findings(findings)
     )
@@ -284,7 +284,7 @@ def test_property2_no_activity_start_workflow_calls() -> None:
 
     findings = scan_activities_start_workflow()
     assert not findings, (
-        "Workflow-start violation — call "
+        "Workflow-start violation - call "
         "inside activity module. Move workflow-decision logic to "
         "workers/*/workflows/.\n"
         + format_findings(findings)
@@ -292,7 +292,7 @@ def test_property2_no_activity_start_workflow_calls() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Hypothesis property — per-file invariant
+# Hypothesis property - per-file invariant
 # ---------------------------------------------------------------------------
 #
 # Sampling a single source file at a time gives Hypothesis tight
@@ -363,7 +363,7 @@ def test_property2_per_file_no_findings(path: Path) -> None:
 
     Sampling rather than enumerating gives Hypothesis a chance to
     minimise the failing example to a single file when a regression
-    occurs — the report points at exactly one offending file even
+    occurs - the report points at exactly one offending file even
     when the aggregate ``test_property2_*`` assertions above would
     otherwise lump multiple findings together.
     """
@@ -377,7 +377,7 @@ def test_property2_per_file_no_findings(path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Scanner self-tests — synthetic source snippets
+# Scanner self-tests - synthetic source snippets
 # ---------------------------------------------------------------------------
 #
 # The aggregate / per-file assertions above are only as strong as the
@@ -398,7 +398,7 @@ def _write(tmp: Path, rel: str, src: str) -> Path:
 
 class TestProperty2ScannerSelfChecks:
     """Self-tests guaranteeing the path whitelist scanners actually flag
-    violations on synthetic source — without this layer the production
+    violations on synthetic source - without this layer the production
     tests above could pass vacuously after a scanner regression.
     """
 
@@ -424,7 +424,7 @@ class TestProperty2ScannerSelfChecks:
         """Direct Atlassian HTTP calls inside approved paths are allowed.
 
         Aynı kod ``services/atlassian_mcp_bitbucket/`` altında (whitelist'in
-        kendisi excluded_dirs içinde) bulunduğunda finding üretmez —
+        kendisi excluded_dirs içinde) bulunduğunda finding üretmez -
         bu zaten varsayılan exclude'lu yürüyüşle örtülür ve
         gateway subtree'i ayrı tutulur.
         ``libs/http-shared/`` whitelist içinde olduğundan benzer şekilde
@@ -447,7 +447,7 @@ class TestProperty2ScannerSelfChecks:
         """Host literals without HTTP client calls are ignored.
 
         Salt host literal'i (docstring, sabit URL, log mesajı)
-        flag'lenmez — yalnızca **HTTP çağrısı + host**
+        flag'lenmez - yalnızca **HTTP çağrısı + host**
         kombinasyonunu yasaklar.
         """
 
@@ -465,7 +465,7 @@ class TestProperty2ScannerSelfChecks:
         """Generic HTTP clients without Atlassian hosts are ignored.
 
         Genel ``httpx`` kullanımı (Atlassian host'u referansı
-        olmadan) flag'lenmez — hedefli host'lara
+        olmadan) flag'lenmez - hedefli host'lara
         çağrıyı yasaklar, generic HTTP istemcisini değil.
         """
 
@@ -625,7 +625,7 @@ class TestProperty2ScannerSelfChecks:
         """Workflow-start calls inside workflow directories are ignored.
 
         ``workers/*/workflows/`` altında ``start_workflow``
-        çağrılarına bu scanner dokunmaz — workflow karar mantığının
+        çağrılarına bu scanner dokunmaz - workflow karar mantığının
         yeri burasıdır.
         """
 
@@ -646,7 +646,7 @@ class TestProperty2ScannerSelfChecks:
     ) -> None:
         """Workflow-start method names outside activity paths are ignored.
 
-        Activity dışı yollarda ``start_workflow`` adı flag'lenmez —
+        Activity dışı yollarda ``start_workflow`` adı flag'lenmez -
         scanner yalnız ``/activities/`` fragment içeren path'leri
         inspect eder.
         """
@@ -668,7 +668,7 @@ class TestProperty2ScannerSelfChecks:
     ) -> None:
         """Syntax-broken files do not crash the scanners.
 
-        Syntax-broken bir dosya scan'i çökertmez — scanner bu dosyayı
+        Syntax-broken bir dosya scan'i çökertmez - scanner bu dosyayı
         sessizce atlar; production `test_workflow_file_parses` gibi
         ayrı bir test bu dosyaları yakalar.
         """

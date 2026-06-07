@@ -1,6 +1,6 @@
-"""Workflow determinism static AST invariant tests.
+﻿"""Workflow determinism static AST invariant tests.
 
-Workflow determinism — banned-call AST invariant.
+Workflow determinism - banned-call AST invariant.
 ``WORKFLOW_TYPE_CAPABILITIES`` single-source AST invariant.
 Workflow modülü replay determinism statik tarama.
 
@@ -42,11 +42,11 @@ This module also enforces activity timeout and retry configuration:
   misconfigured activity cannot run unbounded).
 
 Activities permitted inside the Temporal sandbox escape hatch
-``with workflow.unsafe.imports_passed_through():`` are ignored — that
+``with workflow.unsafe.imports_passed_through():`` are ignored - that
 block contains *imports*, not workflow-time calls, and the imports
 themselves are explicitly exempted by the Temporal SDK.
 
-This is a static check — the AST is the source of truth. The replay
+This is a static check - the AST is the source of truth. The replay
 flavour is implemented separately in ``test_workflow_determinism_replay.py``.
 """
 
@@ -80,7 +80,7 @@ WORKFLOW_DIRS: tuple[Path, ...] = (
 # directly when the helper is purely deterministic).  A non-deterministic
 # call hidden in one of these helpers would taint every workflow that
 # imports it, so the same banned-call list applies here at *module
-# scope* — not just inside ``@workflow.defn`` classes.
+# scope* - not just inside ``@workflow.defn`` classes.
 SHARED_REPLAY_SAFE_DIRS: tuple[Path, ...] = (
     _PLATFORM_ROOT / "libs" / "temporal-shared" / "src" / "temporal_shared",
 )
@@ -89,7 +89,7 @@ SHARED_REPLAY_SAFE_DIRS: tuple[Path, ...] = (
 def _iter_workflow_files() -> Iterator[Path]:
     """Yield every ``.py`` file under both workflow directories.
 
-    ``__init__.py`` and stub modules are included intentionally — the
+    ``__init__.py`` and stub modules are included intentionally - the
     AST scan must hold for *every* file in the workflows package so a
     future contributor cannot smuggle a non-deterministic import or
     helper next to the workflow definitions.
@@ -159,7 +159,7 @@ BANNED_DOTTED: frozenset[str] = frozenset(
 # ``random.*`` and ``requests.*``, plus the workflows
 # spec additions: any direct ``aiohttp.*`` / ``openai.*`` / ``anthropic.*``
 # call must go through an ``@activity.defn`` activity, not the workflow
-# body — i.e. the workflow may only call into these libraries via
+# body - i.e. the workflow may only call into these libraries via
 # Temporal activities.
 BANNED_MODULE_PREFIXES: frozenset[str] = frozenset(
     {"random", "requests", "aiohttp", "openai", "anthropic"}
@@ -229,10 +229,10 @@ def _classify_call_target(func: ast.expr) -> tuple[str, str] | None:
 
     Returns ``(category, dotted_repr)`` if the call target is banned,
     where ``category`` is one of:
-        - ``"dotted"``     — exact match in BANNED_DOTTED
-        - ``"prefix"``     — root module is in BANNED_MODULE_PREFIXES
-        - ``"bare"``       — bare name in BANNED_BARE_NAMES
-        - ``"sleep"``      — ``time.sleep`` or ``asyncio.sleep`` (special-cased
+        - ``"dotted"``     - exact match in BANNED_DOTTED
+        - ``"prefix"``     - root module is in BANNED_MODULE_PREFIXES
+        - ``"bare"``       - bare name in BANNED_BARE_NAMES
+        - ``"sleep"``      - ``time.sleep`` or ``asyncio.sleep`` (special-cased
                               for the sleep/wait positive assertion)
     Returns ``None`` if the call is acceptable.
     """
@@ -253,7 +253,7 @@ def _classify_call_target(func: ast.expr) -> tuple[str, str] | None:
         if dotted in BANNED_BARE_NAMES:
             return ("bare", dotted)
         if dotted in BANNED_MODULE_PREFIXES:
-            # ``random()`` as a direct callable — extremely unlikely
+            # ``random()`` as a direct callable - extremely unlikely
             # but caught for completeness.
             return ("prefix", dotted)
         return None
@@ -310,7 +310,7 @@ def _walk_workflow_class(cls: ast.ClassDef) -> Iterator[ast.AST]:
         if isinstance(node, (ast.With, ast.AsyncWith)) and _is_workflow_unsafe_imports_block(
             node
         ):
-            # Skip body — those are import statements behind the
+            # Skip body - those are import statements behind the
             # Temporal sandbox escape hatch. The with-item itself has
             # already been yielded above; classification will see
             # ``workflow.unsafe.imports_passed_through`` which is not
@@ -340,7 +340,7 @@ def test_workflow_dirs_exist() -> None:
     for directory in WORKFLOW_DIRS:
         assert directory.is_dir(), (
             f"workflow directory missing: {directory.relative_to(_PLATFORM_ROOT)} "
-            "— static workflow determinism cannot be enforced if the directory is absent."
+            "- static workflow determinism cannot be enforced if the directory is absent."
         )
 
 
@@ -350,7 +350,7 @@ def test_at_least_one_workflow_file_collected() -> None:
     """
 
     assert len(WORKFLOW_FILES) > 0, (
-        "no .py files found under workflow directories — "
+        "no .py files found under workflow directories - "
         f"checked: {[str(d) for d in WORKFLOW_DIRS]}"
     )
 
@@ -413,19 +413,19 @@ def test_workflow_module_has_no_banned_calls(path: Path) -> None:
                     category, dotted = hit
                     rel = path.relative_to(_PLATFORM_ROOT)
                     violations.append(
-                        f"{rel}:{node.lineno} — banned {category} call "
+                        f"{rel}:{node.lineno} - banned {category} call "
                         f"in @workflow.defn class {cls.name!r}: {dotted}(...)"
                     )
 
             if isinstance(node, ast.Subscript) and _is_environ_subscript(node):
                 rel = path.relative_to(_PLATFORM_ROOT)
                 violations.append(
-                    f"{rel}:{node.lineno} — banned os.environ[...] subscript "
+                    f"{rel}:{node.lineno} - banned os.environ[...] subscript "
                     f"in @workflow.defn class {cls.name!r}"
                 )
 
     assert not violations, (
-        "Static workflow determinism violation — workflow body must not call "
+        "Static workflow determinism violation - workflow body must not call "
         "non-deterministic or I/O symbols. Use workflow.now(), "
         "workflow.sleep(...), workflow.wait_condition(...), and "
         "@activity.defn for I/O.\n  - "
@@ -464,14 +464,14 @@ def test_workflow_module_sleep_uses_workflow_helpers(path: Path) -> None:
             if dotted in {"asyncio.sleep", "time.sleep"}:
                 rel = path.relative_to(_PLATFORM_ROOT)
                 bad_sleeps.append(
-                    f"{rel}:{node.lineno} — {dotted}(...) inside "
+                    f"{rel}:{node.lineno} - {dotted}(...) inside "
                     f"@workflow.defn class {cls.name!r}; use "
                     f"{ACCEPTABLE_SLEEP} instead"
                 )
 
     # Negative bound: zero non-workflow sleeps allowed.
     assert not bad_sleeps, (
-        "Static workflow determinism violation — workflow sleep/wait must use "
+        "Static workflow determinism violation - workflow sleep/wait must use "
         "workflow.sleep(...) or workflow.wait_condition(...).\n  - "
         + "\n  - ".join(bad_sleeps)
     )
@@ -686,7 +686,7 @@ import datetime, random, time, uuid, os, asyncio, httpx, requests
 
 class NotAWorkflow:
     def helper(self) -> str:
-        # All of these are fine — class is NOT decorated with @workflow.defn
+        # All of these are fine - class is NOT decorated with @workflow.defn
         _ = datetime.datetime.now()
         _ = random.randint(1, 10)
         _ = time.time()
@@ -716,7 +716,7 @@ def _scan_source(source: str) -> list[str]:
 class TestScannerSelfChecks:
     """Self-tests that lock in scanner behaviour against synthetic inputs.
 
-    These guard against regressions in the scanner itself — the
+    These guard against regressions in the scanner itself - the
     parametrised production-file tests are only as strong as the
     scanner that powers them.
     """
@@ -779,7 +779,7 @@ class TestScannerSelfChecks:
         """Non-workflow classes are ignored.
 
         Banned calls in classes NOT decorated with ``@workflow.defn``
-        are not part of this scan — only the workflow body is.
+        are not part of this scan - only the workflow body is.
         """
         assert _scan_source(_NON_WORKFLOW_CLASS_SRC) == []
 
@@ -829,7 +829,7 @@ class Foo:
         """Direct aiohttp calls are detected.
 
         Direct ``anthropic.*`` calls inside a workflow body are banned
-        by the workflow policy — every LLM call must go
+        by the workflow policy - every LLM call must go
         through an activity.
         """
         violations = _scan_source(_BAD_ANTHROPIC_SRC)
@@ -869,7 +869,7 @@ class Foo:
 # ``WORKFLOW_TYPE_CAPABILITIES`` on the LHS of an assignment (or
 # annotated assignment / augmented assignment). Re-binding the
 # imported reference (``from ... import WORKFLOW_TYPE_CAPABILITIES``)
-# is fine — that's how every legitimate consumer accesses it. A type
+# is fine - that's how every legitimate consumer accesses it. A type
 # alias like ``CapMap = WORKFLOW_TYPE_CAPABILITIES`` is also fine
 # because it does not shadow the name.
 
@@ -952,7 +952,7 @@ def _name_appears_as_target(node: ast.expr, name: str) -> bool:
 
     Handles ``Name``, ``Tuple``/``List`` of names, and ``Starred``
     targets. Subscript / Attribute LHS (e.g. ``obj.X = ...``) does NOT
-    count — that is a member assignment, not a name shadowing.
+    count - that is a member assignment, not a name shadowing.
     """
 
     if isinstance(node, ast.Name):
@@ -984,7 +984,7 @@ def workflow_type_capabilities_assignments() -> list[tuple[str, int]]:
 
         # Walk top-level + class-body statements (the only places a
         # module-level constant can be re-defined). We deliberately
-        # *include* nested classes but *exclude* function bodies — a
+        # *include* nested classes but *exclude* function bodies - a
         # local rebinding inside a function does not shadow the
         # imported module-level constant.
         stack: list[ast.AST] = list(tree.body)
@@ -997,7 +997,7 @@ def workflow_type_capabilities_assignments() -> list[tuple[str, int]]:
             # also count as redefinitions).
             if isinstance(node, ast.ClassDef):
                 stack.extend(node.body)
-            # Do NOT descend into function/method bodies — those are
+            # Do NOT descend into function/method bodies - those are
             # local rebindings and cannot shadow the module-level
             # constant for other importers.
     return findings
@@ -1149,7 +1149,7 @@ class TestCapabilitiesAssignmentScanner:
         """Aliases to the canonical constant are ignored.
 
         Defining a different-name alias (``CapMap = WORKFLOW_TYPE_CAPABILITIES``)
-        is fine — it doesn't shadow the canonical name.
+        is fine - it doesn't shadow the canonical name.
         """
         src = (
             "from temporal_shared.capabilities import WORKFLOW_TYPE_CAPABILITIES\n"
@@ -1170,7 +1170,7 @@ class TestCapabilitiesAssignmentScanner:
 
 
 # ---------------------------------------------------------------------------
-# Activity start_workflow ban — workflow-decision logic
+# Activity start_workflow ban - workflow-decision logic
 # must not appear in activity modules.
 # ---------------------------------------------------------------------------
 #
@@ -1182,7 +1182,7 @@ class TestCapabilitiesAssignmentScanner:
 # This is the static AST counterpart of the runtime "workers crash →
 # Temporal redelegate" guarantee. If an activity smuggles a
 # ``start_workflow`` call, the workflow's history becomes
-# nondeterministic from the workflow engine's perspective — a future
+# nondeterministic from the workflow engine's perspective - a future
 # replay could observe the workflow start as an activity-side effect
 # rather than a workflow-side decision.
 #
@@ -1213,7 +1213,7 @@ def test_activities_have_no_start_workflow_calls() -> None:
 
     findings = _pw_scan_activities_start_workflow()
     assert not findings, (
-        "Workflow-start violation — call inside "
+        "Workflow-start violation - call inside "
         "activity module. Workflow-decision logic must live in "
         "workers/*/workflows/, not activities/.\n"
         + _pw_format_findings(findings)
@@ -1227,9 +1227,9 @@ def test_activities_have_no_start_workflow_calls() -> None:
 # Modules under :data:`SHARED_REPLAY_SAFE_DIRS` are imported by Temporal
 # workflow code (either directly or through the
 # ``workflow.unsafe.imports_passed_through()`` sandbox escape hatch).
-# A non-deterministic call hidden in any of these helpers — for example
+# A non-deterministic call hidden in any of these helpers - for example
 # a stray ``datetime.now()`` at the top level of a helper that the
-# workflow imports — would taint *every* workflow that uses the helper.
+# workflow imports - would taint *every* workflow that uses the helper.
 #
 # This scanner walks the *entire* module tree (not just inside
 # ``@workflow.defn`` classes) and reports any banned call. Function
@@ -1259,7 +1259,7 @@ def _walk_module_for_banned_calls(tree: ast.Module) -> list[tuple[ast.AST, str, 
 
     Returns a list of ``(node, category, dotted)`` tuples. Skips the
     body of any ``with workflow.unsafe.imports_passed_through():`` block
-    (the Temporal sandbox escape hatch — same exemption as the
+    (the Temporal sandbox escape hatch - same exemption as the
     decorated-class scanner).
     """
 
@@ -1271,7 +1271,7 @@ def _walk_module_for_banned_calls(tree: ast.Module) -> list[tuple[ast.AST, str, 
         if isinstance(node, (ast.With, ast.AsyncWith)) and _is_workflow_unsafe_imports_block(
             node
         ):
-            # Skip body — those are import statements behind the
+            # Skip body - those are import statements behind the
             # Temporal sandbox escape hatch.
             continue
 
@@ -1299,7 +1299,7 @@ def test_shared_replay_safe_dirs_exist() -> None:
     for directory in SHARED_REPLAY_SAFE_DIRS:
         assert directory.is_dir(), (
             f"shared replay-safe directory missing: "
-            f"{directory.relative_to(_PLATFORM_ROOT)} — replay-safe shared module scanning cannot "
+            f"{directory.relative_to(_PLATFORM_ROOT)} - replay-safe shared module scanning cannot "
             "be enforced if the directory is absent."
         )
 
@@ -1311,7 +1311,7 @@ def test_shared_replay_safe_files_collected() -> None:
     """
 
     assert len(SHARED_REPLAY_SAFE_FILES) > 0, (
-        "no .py files found under shared replay-safe directories — "
+        "no .py files found under shared replay-safe directories - "
         f"checked: {[str(d) for d in SHARED_REPLAY_SAFE_DIRS]}"
     )
 
@@ -1342,15 +1342,15 @@ def test_shared_replay_safe_module_has_no_banned_calls(path: Path) -> None:
     for node, category, dotted in findings:
         if category == "subscript":
             violations.append(
-                f"{rel}:{node.lineno} — banned os.environ[...] subscript"
+                f"{rel}:{node.lineno} - banned os.environ[...] subscript"
             )
         else:
             violations.append(
-                f"{rel}:{node.lineno} — banned {category} call: {dotted}(...)"
+                f"{rel}:{node.lineno} - banned {category} call: {dotted}(...)"
             )
 
     assert not violations, (
-        "Replay-safe shared module violation — "
+        "Replay-safe shared module violation - "
         "module must not call non-deterministic or I/O symbols at any "
         "scope. Use deterministic helpers (caller passes "
         "``workflow.now()``-derived timestamps), and keep I/O inside "
@@ -1366,7 +1366,7 @@ def test_shared_replay_safe_module_has_no_banned_calls(path: Path) -> None:
 # An activity that takes longer than its
 # ``start_to_close_timeout`` is restarted by the Temporal cluster.
 # Without an explicit ``start_to_close_timeout`` the activity attempt
-# would be unbounded — the operator loses the back-pressure signal that
+# would be unbounded - the operator loses the back-pressure signal that
 # differentiates "slow but progressing" from "stuck".  This static
 # scanner enforces that *every* workflow-side activity / child workflow
 # launch call inside a ``@workflow.defn`` class names the keyword
@@ -1383,8 +1383,8 @@ def test_shared_replay_safe_module_has_no_banned_calls(path: Path) -> None:
 #   * ``workflow.start_local_activity``
 #   * ``workflow.start_local_activity_method``
 #
-# (The child-workflow variants — ``execute_child_workflow`` /
-# ``start_child_workflow`` — accept ``execution_timeout`` /
+# (The child-workflow variants - ``execute_child_workflow`` /
+# ``start_child_workflow`` - accept ``execution_timeout`` /
 # ``run_timeout`` instead and are out of scope for the activity-timeout
 # timeout clause.)
 
@@ -1443,7 +1443,7 @@ def test_activity_launches_pass_start_to_close_timeout(path: Path) -> None:
     """Every ``workflow.execute_activity`` (and its sibling launch
     methods) call inside a ``@workflow.defn`` class MUST pass the
     ``start_to_close_timeout`` keyword. Implicit defaults are not
-    acceptable — the workflows spec design document calls out an
+    acceptable - the workflows spec design document calls out an
     activity timeout configured per call site so the operator can tune
     long-running steps independently from short ones.
     """
@@ -1459,13 +1459,13 @@ def test_activity_launches_pass_start_to_close_timeout(path: Path) -> None:
         for call, dotted in _iter_activity_launch_calls_in_class(cls):
             if not _has_kwarg(call, "start_to_close_timeout"):
                 violations.append(
-                    f"{rel}:{call.lineno} — {dotted}(...) inside "
+                    f"{rel}:{call.lineno} - {dotted}(...) inside "
                     f"@workflow.defn class {cls.name!r} is missing the "
                     "start_to_close_timeout keyword"
                 )
 
     assert not violations, (
-        "Activity timeout violation — activity launch is missing "
+        "Activity timeout violation - activity launch is missing "
         "start_to_close_timeout. Pass an explicit timedelta so the "
         "Temporal cluster can detect a stuck activity and re-dispatch "
         "it (workflow body should compute the timeout from input or a "
@@ -1566,7 +1566,7 @@ class TestActivityLaunchTimeoutScanner:
     def test_kwargs_splat_does_not_satisfy_static_check(self) -> None:
         """``**opts`` does not satisfy the static check.
 
-        ``**opts`` defeats the static guarantee — the scanner cannot
+        ``**opts`` defeats the static guarantee - the scanner cannot
         prove the dict carries ``start_to_close_timeout`` and so must
         flag the call to keep the invariant tight.
         """
@@ -1586,7 +1586,7 @@ class TestActivityLaunchTimeoutScanner:
         """Non-workflow classes are ignored.
 
         A bare ``execute_activity`` call outside a ``@workflow.defn``
-        class is outside this scan — only workflow bodies are.
+        class is outside this scan - only workflow bodies are.
         """
         src = """
 from temporalio import workflow

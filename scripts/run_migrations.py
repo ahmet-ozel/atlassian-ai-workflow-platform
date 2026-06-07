@@ -1,7 +1,7 @@
-"""CLI entrypoint for the ``make migrate`` Makefile target (K1).
+﻿"""CLI entrypoint for the ``make migrate`` Makefile target (K1).
 
 Applies every un-applied SQL migration in ``infra/postgres/migrations/``
-against the configured Postgres DSN. Idempotent — safe to run repeatedly.
+against the configured Postgres DSN. Idempotent - safe to run repeatedly.
 
 Usage:
     python scripts/run_migrations.py            # uses POSTGRES_DSN env
@@ -9,9 +9,9 @@ Usage:
     python scripts/run_migrations.py --dir ...  # explicit migrations dir
 
 Exit codes:
-    0 — success (newly_applied may be 0, that's fine — it's idempotent)
-    1 — migration failure
-    2 — invalid CLI arguments
+    0 - success (newly_applied may be 0, that's fine - it's idempotent)
+    1 - migration failure
+    2 - invalid CLI arguments
 """
 
 from __future__ import annotations
@@ -35,7 +35,7 @@ def _build_arg_parser() -> argparse.ArgumentParser:
         prog="run_migrations.py",
         description=(
             "Apply un-applied SQL migrations to the platform Postgres "
-            "instance. Idempotent — safe to re-run."
+            "instance. Idempotent - safe to re-run."
         ),
     )
     p.add_argument(
@@ -89,7 +89,7 @@ async def _run(dsn: str, migrations_dir: Path) -> int:
     for m in result.newly_applied:
         print(f"  + {m.version}  (checksum={m.checksum[:12]})")
     if result.checksum_mismatches:
-        print("\nDRIFT DETECTED — these files were modified after apply:")
+        print("\nDRIFT DETECTED - these files were modified after apply:")
         for mm in result.checksum_mismatches:
             print(
                 f"  ! {mm.version}  stored={mm.stored_checksum[:12]} "

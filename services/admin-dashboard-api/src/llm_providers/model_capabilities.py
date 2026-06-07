@@ -1,4 +1,4 @@
-"""Per-model tuning-capability lookup.
+﻿"""Per-model tuning-capability lookup.
 
 A small, dependency-free registry that answers two questions about a
 model identifier:
@@ -79,7 +79,7 @@ def supports_verbosity(model: str) -> bool:
 def model_capabilities(model: str) -> dict[str, bool]:
     """Return the capability flags for *model* as a plain dict.
 
-    Shape: ``{"reasoning_effort": bool, "verbosity": bool}`` — consumed
+    Shape: ``{"reasoning_effort": bool, "verbosity": bool}`` - consumed
     by the read-side DTO so the UI can render the right inputs without
     re-deriving the rules client-side for an already-saved provider.
     """

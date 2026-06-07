@@ -1,6 +1,6 @@
-🚨 AuditPruneWorkflow başarısız
+﻿🚨 AuditPruneWorkflow başarısız
 
-Günlük audit retention cron'u (03:00 UTC) hata verdi. `audit_events` arşivleme veya silme adımı başarısız oldu — operatör müdahalesi gerekli.
+Günlük audit retention cron'u (03:00 UTC) hata verdi. `audit_events` arşivleme veya silme adımı başarısız oldu - operatör müdahalesi gerekli.
 
 **Hata:**
 ```

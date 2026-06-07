@@ -1,4 +1,4 @@
-"""Asyncio entrypoint for the ``execution-runner-worker`` Temporal worker.
+﻿"""Asyncio entrypoint for the ``execution-runner-worker`` Temporal worker.
 
 The worker connects to the Temporal cluster pointed at by the
 ``TEMPORAL_HOST`` environment variable (default ``temporal:7233``) and
@@ -42,7 +42,7 @@ async def main() -> None:
 
     # Install the redaction filter immediately after basicConfig. The
     # execution-runner-worker
-    # handles SSH credentials and Vault tokens — leaks here have the
+    # handles SSH credentials and Vault tokens - leaks here have the
     # widest blast radius. Idempotent: re-installing on the same root
     # is a no-op (Python ``addFilter`` deduplicates).
     from http_shared import install_redaction_filter  # noqa: PLC0415
@@ -143,7 +143,7 @@ async def main() -> None:
             cleanup_git_credentials,
             resolve_runner,
             check_disk_quota,
-            # Single-runner canonical contract — G2: workspace disk
+            # Single-runner canonical contract - G2: workspace disk
             # auto-prune activities driven by
             # ``WorkspaceCleanupSchedulerWorkflow`` (hosted in
             # ``automation-worker``). The activities are hosted here
@@ -176,7 +176,7 @@ async def main() -> None:
             await pool.close()
     except ImportError:
         logger.debug(
-            "asyncpg not available — skipping default runner seed "
+            "asyncpg not available - skipping default runner seed "
             "(expected in minimal test environments)"
         )
     except Exception as exc:  # noqa: BLE001
@@ -184,7 +184,7 @@ async def main() -> None:
         # Execution capability may be limited until runners are
         # configured via the admin panel.
         logger.warning(
-            "Default runner seed failed (non-fatal): %s — "
+            "Default runner seed failed (non-fatal): %s - "
             "execution capability may be unavailable until runners "
             "are configured via the admin panel.",
             exc,

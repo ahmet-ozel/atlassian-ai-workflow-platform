@@ -1,4 +1,4 @@
-"""HTTP-backed:class:`MCPCallerProtocol` implementation for the
+﻿"""HTTP-backed:class:`MCPCallerProtocol` implementation for the
 ``automation-worker``.
 
 The:mod:`output_actions` activity dispatches every action (Jira
@@ -7,13 +7,13 @@ transition) through the protocol declared in:mod:`automation_worker.activities.o
 in-memory fake; production wires:class:`HttpMCPCaller` here so each
 outgoing MCP request carries:
 
-* ``X-Client-Source: automation-worker`` — set by:func:`http_shared.make_mcp_client` so the
+* ``X-Client-Source: automation-worker`` - set by:func:`http_shared.make_mcp_client` so the
  observability layer can break MCP traffic down by origin Component.
-* ``X-Trace-Id`` — injected per-request by the trace-id event hook
+* ``X-Trace-Id`` - injected per-request by the trace-id event hook
  attached to every client returned by ``make_mcp_client``; the value reflects the trace_id installed on the activity's
  context by the workflow input plumbing.
 * The three Atlassian credential headers (``-Url``, ``-Username``,
- ``-Personal-Token``) for the requested *service* — injected for the
+ ``-Personal-Token``) for the requested *service* - injected for the
  duration of the JSON-RPC call by:func:`http_shared.with_atlassian_creds` and then restored.
 
 The caller is intentionally thin: it is the integration glue between
@@ -109,7 +109,7 @@ class MCPHttpError(RuntimeError):
         if self.is_permission_denied:
             suffix = (
                 " | permission_denied: bot hesabının ilgili Confluence "
-                "space/sayfasına yazma yetkisi yok — yönetici bu hesaba "
+                "space/sayfasına yazma yetkisi yok - yönetici bu hesaba "
                 "izin vermeli ya da farklı bir bot hesabı atanmalı"
             )
         super().__init__(
@@ -139,7 +139,7 @@ class MCPHttpError(RuntimeError):
 def infer_service_from_tool(tool_name: str) -> str:
     """Return the Atlassian service whose credentials *tool_name* needs.
 
- Defaults to ``"jira"`` when the tool is unknown — every action the:mod:`output_actions` activity emits today is either explicitly in:data:`_TOOL_SERVICE_MAP` or routed through Jira (e.g. transitions
+ Defaults to ``"jira"`` when the tool is unknown - every action the:mod:`output_actions` activity emits today is either explicitly in:data:`_TOOL_SERVICE_MAP` or routed through Jira (e.g. transitions
  and comments).
  """
 

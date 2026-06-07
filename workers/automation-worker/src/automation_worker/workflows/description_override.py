@@ -1,4 +1,4 @@
-"""Pure helpers that merge a:class:`TaskAnalysisResult` description
+﻿"""Pure helpers that merge a:class:`TaskAnalysisResult` description
 override on top of department defaults.
 
 This module hosts the *deterministic, side-effect-free* logic used by:class:`AutomationWorkflow` to lift the description-override fields the
@@ -9,23 +9,23 @@ consumed by downstream child workflows.
 Why a separate module?
 ----------------------
 
-* The merge logic is completely pure — it operates on plain dataclasses
+* The merge logic is completely pure - it operates on plain dataclasses
  and primitive values. Keeping it out of
  ``automation_workflow.py`` lets the workflow body stay focused on
  Temporal-flavoured wiring (``execute_activity`` / signal handling),
  and lets unit tests cover the merge contract without instantiating
  the workflow.
 * Temporal's determinism contract treats helpers imported by the
- workflow as ``unsafe.imports_passed_through`` — splitting the
+ workflow as ``unsafe.imports_passed_through`` - splitting the
  helpers into a dedicated module documents the boundary explicitly
  and lets static AST scanners (eg. ``tests/property/
  test_workflow_determinism_static.py``) ignore the file.
 
 ----------------------
 
-* **–** — analyser drives the workflow_type / capability
+* **-** - analyser drives the workflow_type / capability
  routing that ``apply_description_override`` consumes.
-* **–** — per-task description override fields applied on
+* **-** - per-task description override fields applied on
  top of dept defaults; invalid YAML field values are filtered by
  the description parser, so this layer only performs the merge.
 
@@ -39,10 +39,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
-if TYPE_CHECKING:  # pragma: no cover — typing only
+if TYPE_CHECKING:  # pragma: no cover - typing only
     # ``TaskAnalysisResult`` lives in the activity module; importing
     # it at runtime would force the workflow module to drag in the
-    # activity-side deps. Type-checking time is fine — the import is
+    # activity-side deps. Type-checking time is fine - the import is
     # eliminated at runtime by ``TYPE_CHECKING``.
     from automation_worker.activities.task_analyzer import (
         TaskAnalysisResult,
@@ -67,7 +67,7 @@ class DescriptionOverride:
 
  Each field carries either an analyser-supplied value (YAML
  front-matter or LLM output) or ``None`` to indicate the dept
- default should win. The merge is *non-destructive* — the
+ default should win. The merge is *non-destructive* - the
  workflow keeps its dept defaults around and only overrides the
  specific fields the analyser produced.
 
@@ -83,10 +83,10 @@ class DescriptionOverride:
  Whether the workflow body should enable web search. Only
  meaningful for research-flavoured workflow types; the dept
  ``web_search_enabled`` flag still wins (the analyser already
- downgrades:attr:`workflow_type` accordingly — see).
+ downgrades:attr:`workflow_type` accordingly - see).
  target_repo:
  Repository slug or ``None``. Mirrors the structured
- ``AI Bot Repo`` Jira custom field with equal priority — the
+ ``AI Bot Repo`` Jira custom field with equal priority - the
  analyser handles the ranking before populating this field.
  target_branch:
  Branch name or ``None``. ``"auto"`` is materialised to the
@@ -99,7 +99,7 @@ class DescriptionOverride:
  list). The workflow translates each entry to an:class:`temporal_shared.messages.OutputAction` at dispatch
  time.
  workflow_type:
- Resolved workflow_type — already routed through the
+ Resolved workflow_type - already routed through the
  web-search downgrade and the ``VALID_WORKFLOW_TYPES`` set.
  """
 
@@ -125,16 +125,16 @@ def build_description_override(
 
  The analyser already merged dept defaults into its returned:class:`TaskAnalysisResult` (see ``_result_from_frontmatter`` /
  ``_result_from_llm`` in:mod:`task_analyzer`), so this helper is
- primarily a *projection* — it keeps the workflow body blissfully
+ primarily a *projection* - it keeps the workflow body blissfully
  unaware of the activity-side data class shape.
 
  Pure / replay-safe: only reads attributes from the input.
 
- –11.7.
+ -11.7.
  """
 
     # ``output_actions`` is a list of dicts on the analyser side
-    # (``{"type": "...", "params": {...}}`` shape — see
+    # (``{"type": "...", "params": {...}}`` shape - see
     # ``description_parser._coerce_output``). We freeze the
     # mapping into a tuple-of-pairs envelope so the override
     # itself is immutable / hashable / replay-safe.
@@ -146,7 +146,7 @@ def build_description_override(
     }
     for raw in analysis.output_actions or ():
         if not isinstance(raw, dict):
-            # Defensive — the analyser already validated the shape but
+            # Defensive - the analyser already validated the shape but
             # a future change could regress. Skip unknown entries
             # rather than crash the workflow.
             continue
@@ -182,7 +182,7 @@ def to_llm_analysis_result(
  by the existing capability-gate / branch-rule / dispatch path.
 
  The two dataclasses describe the *same* logical decision but with
- different field naming and confidence representations — the
+ different field naming and confidence representations - the
  analyser uses a numeric ``confidence ∈ [0, 1]`` (threshold
  0.7), whereas:class:`LlmAnalysisResult` (older spec) uses the
  literal ``"high" | "medium" | "low"`` triple. This bridge keeps
@@ -206,7 +206,7 @@ def to_llm_analysis_result(
  """
 
     # Local imports inside the helper keep the static AST determinism
-    # checks happy (no top-level activity / message imports here —
+    # checks happy (no top-level activity / message imports here -
     # ``LlmAnalysisResult`` is only referenced through this function
     # and the workflow's existing sandbox-passed-through import).
     from temporal_shared.messages import (  # noqa: PLC0415
@@ -233,7 +233,7 @@ def to_llm_analysis_result(
     # Map ``output_actions`` (list of dicts) onto the strongly-typed
     #:class:`OutputAction` tuple expected by ``LlmAnalysisResult``.
     # Severity is omitted from the analyser output (the description
-    # parser does not gate on severity) — we default unknown action
+    # parser does not gate on severity) - we default unknown action
     # kinds to ``"best_effort"`` so an upstream change introducing
     # critical actions has to opt in explicitly.
     out_actions: list[OutputAction] = []
@@ -268,10 +268,10 @@ def to_llm_analysis_result(
 
     # ``needs_info_questions`` is empty here because the analyser
     # already drained the needs_info loop before returning a ``ready``
-    # result (see ``analyze_task`` post-processing — confidence < 0.7
+    # result (see ``analyze_task`` post-processing - confidence < 0.7
     # paths short-circuit into a ``needs_info`` status which the
     # workflow handles via its own front-door branch). We pass the
-    # ``missing_fields`` through verbatim for completeness — operator
+    # ``missing_fields`` through verbatim for completeness - operator
     # log lines downstream still benefit from the list.
     questions = tuple(analysis.missing_fields or ())
 

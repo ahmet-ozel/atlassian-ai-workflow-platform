@@ -1,14 +1,14 @@
-"""invariant for atomic department-create rollback, invariant).
+﻿"""invariant for atomic department-create rollback, invariant).
 
 
 
-invariant — atomic department creation rolls back cleanly under arbitrary
+invariant - atomic department creation rolls back cleanly under arbitrary
 DB failures. The companion module ``test_credential_inject.py`` covers the
 plain-text leak invariants on the *success* path (response body, log
 records, DB parameters, on-disk Vault store, heap scrub). This module
 covers the *failure* path:
 
-* **6f — staging keys deleted on DB INSERT failure**: when any
+* **6f - staging keys deleted on DB INSERT failure**: when any
  ``connection.execute`` call raises a generic ``Exception`` (RDBMS
  outage, connection reset, constraint violation that isn't a duplicate
  key, etc.) the orchestrator must:
@@ -16,17 +16,17 @@ covers the *failure* path:
  2. emit a ``dept_create_failed`` audit row carrying the offending
  request's ``actor_role``, AND
  3. NOT promote any staging path to the final ``vault:atlassian/<dept>/<service>``
- location (no half-committed Vault state —.
+ location (no half-committed Vault state -.
 
-* **6g — duplicate id surfaces as ``DepartmentAlreadyExistsError``**: when
+* **6g - duplicate id surfaces as ``DepartmentAlreadyExistsError``**: when
  the dept INSERT raises a unique-violation, the orchestrator emits
  ``dept_duplicate_id`` audit and the staging keys are
  still deleted.
 
-* **6h — failure during Vault staging→final promotion rolls Vault forward
+* **6h - failure during Vault staging→final promotion rolls Vault forward
  back**: when the final-path write itself fails mid-promotion, any
  already-promoted final paths are deleted before the surrounding
- transaction rolls back — no partially promoted
+ transaction rolls back - no partially promoted
  Vault tree on the failure path).
 
 The tests use Hypothesis to vary three inputs:
@@ -79,7 +79,7 @@ from audit_logger import AuditEvent  # noqa: E402
 
 # ``automation_service.admin.__init__`` eagerly imports the FastAPI
 # router from ``automation_service.admin.router``. The real router
-# module now ships with, so no stub is needed — the import
+# module now ships with, so no stub is needed - the import
 # below resolves to the production router.
 from automation_service.admin.dept_create import (  # noqa: E402
     DepartmentAlreadyExistsError,
@@ -127,7 +127,7 @@ class _FakeVaultBackend:
     """Tiny in-memory ``VaultClient``-shaped backend.
 
  Records every read/write/delete so the test can assert which
- paths exist after the orchestrator returns. We do **not** use:class:`LocalDevBackend` here — the secrecy invariants (encrypted
+ paths exist after the orchestrator returns. We do **not** use:class:`LocalDevBackend` here - the secrecy invariants (encrypted
  on disk) are covered by invariant in the sibling module; this
  module focuses on *path lifecycle* (staging deleted, no final
  promotion on failure).
@@ -303,7 +303,7 @@ _p6_token_text = st.text(
 # 5. INSERT INTO automation.department_project_keys...
 # 6. COMMIT (allowed through unconditionally)
 #
-# We inject the failure at index 3 (departments INSERT — realistic
+# We inject the failure at index 3 (departments INSERT - realistic
 # constraint violation surface), index 4 (department_bots INSERT),
 # or index 5 (project_keys INSERT). Indices 0-2 are protocol /
 # session-config calls that are not realistic failure surfaces; index
@@ -379,7 +379,7 @@ def _final_paths(vault: _FakeVaultBackend) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
-# invariant — staging keys deleted on arbitrary DB INSERT failure
+# invariant - staging keys deleted on arbitrary DB INSERT failure
 # ---------------------------------------------------------------------------
 
 
@@ -393,7 +393,7 @@ def test_p6f_staging_keys_deleted_on_db_insert_failure(
     plain_token: str,
     failure_index: int,
 ) -> None:
-    """invariant — DB failure during INSERT triggers full staging cleanup.
+    """invariant - DB failure during INSERT triggers full staging cleanup.
 
 
 
@@ -461,7 +461,7 @@ def test_p6f_staging_keys_deleted_on_db_insert_failure(
     # iterates over every staging path in ``_best_effort_delete_staging``.
     assert vault.delete_calls, (
         "invariant violated: orchestrator did not invoke any vault.delete "
-        "during rollback — the operational rule requires explicit cleanup."
+        "during rollback - the operational rule requires explicit cleanup."
     )
     for deleted_path in vault.delete_calls:
         assert "_staging" in deleted_path or deleted_path.startswith(
@@ -499,7 +499,7 @@ def test_p6f_staging_keys_deleted_on_db_insert_failure(
 
 
 # ---------------------------------------------------------------------------
-# invariant — duplicate id raises DepartmentAlreadyExistsError + cleanup
+# invariant - duplicate id raises DepartmentAlreadyExistsError + cleanup
 # ---------------------------------------------------------------------------
 
 
@@ -512,7 +512,7 @@ def test_p6f_staging_keys_deleted_on_db_insert_failure(
 def test_p6g_duplicate_id_emits_audit_and_clears_staging(
     plain_token: str,
 ) -> None:
-    """invariant — duplicate id surfaces ``DepartmentAlreadyExistsError``.
+    """invariant - duplicate id surfaces ``DepartmentAlreadyExistsError``.
 
 
 
@@ -534,7 +534,7 @@ def test_p6g_duplicate_id_emits_audit_and_clears_staging(
     )
     # Failure index 3 is the dept INSERT (BEGIN, SET LOCAL x2, INSERT
     # departments). The duplicate-id error must be raised by the
-    # ``departments`` INSERT specifically — that's the table whose
+    # ``departments`` INSERT specifically - that's the table whose
     # primary key collides with an existing department.
     connection = _FailingConnection(failure_index=3, failure_exc=failure_exc)
     audit = _RecordingAuditLogger()
@@ -587,7 +587,7 @@ def test_p6g_duplicate_id_emits_audit_and_clears_staging(
 
 
 # ---------------------------------------------------------------------------
-# invariant — failure during Vault staging→final promotion rolls back
+# invariant - failure during Vault staging→final promotion rolls back
 # ---------------------------------------------------------------------------
 
 
@@ -600,7 +600,7 @@ def test_p6g_duplicate_id_emits_audit_and_clears_staging(
 def test_p6h_promotion_failure_rolls_back_vault_and_db(
     plain_token: str,
 ) -> None:
-    """invariant — Vault promotion failure cleans up partial state.
+    """invariant - Vault promotion failure cleans up partial state.
 
 
 
@@ -653,7 +653,7 @@ def test_p6h_promotion_failure_rolls_back_vault_and_db(
     )
 
     # The staging path may or may not still be present depending on
-    # rollback order — what we MUST guarantee is that no *final* path
+    # rollback order - what we MUST guarantee is that no *final* path
     # leaks. The promotion itself failed, so writes to the final path
     # must have raised; if the write failure path also leaves the
     # staging untouched we still get the cleanup via the surrounding

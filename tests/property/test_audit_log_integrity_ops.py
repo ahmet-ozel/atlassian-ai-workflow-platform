@@ -1,4 +1,4 @@
-"""invariant 5 — Audit log integrity (ops scope).
+﻿"""invariant 5 - Audit log integrity (ops scope).
 
 
 
@@ -29,12 +29,12 @@ from the universe::
 the application-layer ``audit_logger.AuditLogger.write`` MUST satisfy
 five simultaneous invariants:
 
-(a) **1:1 write contract** — every accepted ``AuditEvent`` produces
+(a) **1:1 write contract** - every accepted ``AuditEvent`` produces
  exactly one ``insert_audit`` call on the underlying writer. The
  audit log is append-only; no batching,
  coalescing, or deduplication happens at this layer.
 
-(b) **actor_role NOT NULL** — every written row carries an
+(b) **actor_role NOT NULL** - every written row carries an
  ``actor_role`` in:data:`AUDIT_ACTOR_ROLES`. ``None`` / empty /
  whitespace-only / unknown values are rejected with:class:`ValueError` *before* the writer is reached, mirroring
  the Postgres ``CHECK (actor_role IS NOT NULL...)`` constraint
@@ -42,32 +42,32 @@ five simultaneous invariants:
  the foundation invariant invariant carried forward into the
  ops event universe (parity, not redefinition).
 
-(c) **System-triggered events use ``actor_role='system'``** — events
+(c) **System-triggered events use ``actor_role='system'``** - events
  that are emitted by background processes (audit-prune cron,
  budget-cap enforcer, cost-prediction Jira commenter, notification
  dispatcher) MUST carry ``actor_role='system'``. The ``"system"``
  role is the canonical synthetic actor for unattributed background
  activity.
 
-(d) **chat_message payload contract** — a ``chat_message`` event MUST
+(d) **chat_message payload contract** - a ``chat_message`` event MUST
  carry the four mandatory payload fields ``prompt_version``,
  ``token_in``, ``token_out``, ``cost_usd``. Missing-field events are
  rejected with:class:`ValueError` at write time. The contract is enforced by:func:`validate_chat_message_payload` so call sites
  (``services/assistant-service/src/chat/handler.py``) and tests
  share a single validator.
 
-(e) **No idempotent suppression** — two events with the same logical
+(e) **No idempotent suppression** - two events with the same logical
  ``(actor_id, action, resource, payload)`` tuple produced inside a
  1-second time bucket BOTH land in the audit log (each becomes a
  distinct row). Duplicate detection is the responsibility of a
  different layer (``shared.cost_tracking.activity_id`` UNIQUE
- index — invariant); the audit layer is intentionally
+ index - invariant); the audit layer is intentionally
  write-everything so a buggy caller cannot silently lose events.
 
 Strategy
 --------
 
-* ``events`` — Hypothesis composite strategy that emits sequences of
+* ``events`` - Hypothesis composite strategy that emits sequences of
  3..30 ops events. Each event is drawn from the action universe
  above with role / dept_id / payload populated to match its
  semantic class:
@@ -82,16 +82,16 @@ Strategy
  ``cost_prediction_comment_*``, ``notification_dispatch_*``) →
  ``actor_role='system'``.
 
-* ``invalid_chat_payloads`` — Hypothesis strategy producing
+* ``invalid_chat_payloads`` - Hypothesis strategy producing
  ``chat_message`` payloads with one of the four mandatory fields
  removed (or set to ``None``). Each must be rejected by:func:`validate_chat_message_payload` with:class:`ValueError`.
 
-* ``invalid_actor_roles`` — Hypothesis strategy producing role values
+* ``invalid_actor_roles`` - Hypothesis strategy producing role values
  that are ``None``, empty, whitespace-only, or unknown literals.
  Each must be rejected by:meth:`AuditLogger.write` (foundation
  invariant surface, replayed under the ops action universe).
 
-This test is a **parity extension** — it does NOT re-implement the
+This test is a **parity extension** - it does NOT re-implement the
 foundation ``test_audit_one_to_one`` test (which covers the
 admin dashboard lifecycle action set under correlation_id semantics).
 Instead it broadens the universe to the
@@ -207,11 +207,11 @@ def validate_chat_message_payload(event: AuditEvent) -> None:
  A ``chat_message``:class:`AuditEvent` MUST carry a non-``None``
  ``payload`` dict with all four mandatory fields:
 
- * ``prompt_version`` — git short hash of the system prompt that
+ * ``prompt_version`` - git short hash of the system prompt that
  was injected into the LLM call.
- * ``token_in`` — total prompt tokens consumed.
- * ``token_out`` — total completion tokens emitted.
- * ``cost_usd`` — USD cost of the activity.
+ * ``token_in`` - total prompt tokens consumed.
+ * ``token_out`` - total completion tokens emitted.
+ * ``cost_usd`` - USD cost of the activity.
 
  Any of the following is a contract violation and raises:class:`ValueError` BEFORE the event reaches:meth:`AuditLogger.write`:
 
@@ -297,7 +297,7 @@ class _RecordingAuditWriter:
 # ---------------------------------------------------------------------------
 
 
-# Short printable strings — used for actor_id / dept_id / resource. We
+# Short printable strings - used for actor_id / dept_id / resource. We
 # constrain the alphabet to printable ASCII (excluding control chars)
 # so values remain JSON-serialisable without needing escape handling
 # inside the in-memory fake.
@@ -468,7 +468,7 @@ def _invalid_chat_message_event(draw: st.DrawFn) -> AuditEvent:
 
  Three failure modes are sampled with equal probability:
 
- 1. ``payload=None`` — no payload at all.
+ 1. ``payload=None`` - no payload at all.
  2. one of the four mandatory keys is *absent* from the dict.
  3. one of the four mandatory keys is present but ``None``.
  """
@@ -510,7 +510,7 @@ def _invalid_chat_message_event(draw: st.DrawFn) -> AuditEvent:
 
 
 # ---------------------------------------------------------------------------
-# invariant (a) + (b) + (c) + (e) — 1:1 write contract under the
+# invariant (a) + (b) + (c) + (e) - 1:1 write contract under the
 # ops action universe with role / system semantics enforced.
 # ---------------------------------------------------------------------------
 
@@ -591,7 +591,7 @@ def test_ops_audit_writes_one_row_per_event(events: list[AuditEvent]) -> None:
 
 
 # ---------------------------------------------------------------------------
-# invariant (b) — invalid actor_role is rejected (foundation parity)
+# invariant (b) - invalid actor_role is rejected (foundation parity)
 # ---------------------------------------------------------------------------
 
 
@@ -676,7 +676,7 @@ def test_ops_audit_rejects_null_or_invalid_actor_role(
 
 
 # ---------------------------------------------------------------------------
-# invariant (d) — chat_message payload contract enforcement
+# invariant (d) - chat_message payload contract enforcement
 # ---------------------------------------------------------------------------
 
 
@@ -765,7 +765,7 @@ def test_system_action_must_use_system_role() -> None:
 
  Background actions are written under the synthetic ``system`` role.
  The writer accepts the role
- (positive branch) — the invariant above asserts that a
+ (positive branch) - the invariant above asserts that a
  *non-system* role on a system action would be a bug at the
  *emitter*, not at the writer (the writer admits any valid role).
  """

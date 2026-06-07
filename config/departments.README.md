@@ -1,14 +1,14 @@
-# `config/departments.json`
+﻿# `config/departments.json`
 
 This directory holds the bootstrap department roster consumed by
 `automation-service` and the admin dashboard.
 
 ## Files
 
-- `departments.json` — three example departments (`payment`, `hr`, `legal`)
+- `departments.json` - three example departments (`payment`, `hr`, `legal`)
   used as the initial roster. Every `bot.{jira,bitbucket,confluence}.account_id`
   is intentionally `""` (empty string).
-- `departments.schema.json` — JSON Schema 2020-12 validator. Strict
+- `departments.schema.json` - JSON Schema 2020-12 validator. Strict
   (`additionalProperties: false` at every level).
 
 ## Why are all `account_id` values empty?
@@ -34,7 +34,7 @@ The Atlassian `accountId` for each bot service is resolved on first contact:
   This README is the durable home for that comment so the JSON file
   remains schema-valid and idempotent for tooling.
 
-## `mode` enum — `active` / `shadow` / `disabled`
+## `mode` enum - `active` / `shadow` / `disabled`
 
 `Department.mode` üç değerden birini alır:
 
@@ -66,7 +66,7 @@ The Atlassian `accountId` for each bot service is resolved on first contact:
    `docs/runbooks/dept-decommission.md` runbook'u izlenir; ilk adım her zaman
    `mode=disabled` set etmektir.
 
-### Vault path konvansiyonu — `credential_ref`
+### Vault path konvansiyonu - `credential_ref`
 
 `BotEntry.credential_ref` (ve `api_token_ref`, `slack_webhook_url`,
 `api_key_ref`, `fallback_api_key_ref`) alanları için schema regex pattern'i
@@ -186,7 +186,7 @@ audit'e `feature_flag_toggled` event'i ile yazılır.
    `slack_webhook_ref`, `notify_email`, `feature_flag_overrides`) opsiyoneldir;
    eksiklerse default davranışlar (`false`, `[]`, `null`, `{}`) uygulanır.
 
-## DEPRECATED — `ssh_workspace_quota_mb`
+## DEPRECATED - `ssh_workspace_quota_mb`
 
 > **Status:** Deprecated since the single-runner model was adopted. The field is preserved in the schema for backwards
 > compatibility with existing `departments.json` files but the runtime
@@ -196,7 +196,7 @@ audit'e `feature_flag_toggled` event'i ile yazılır.
 
 The platform runs **exactly one** SSH runner host shared by all
 departments under `RUNNER_BASE_PATH`. Per-department disk quotas
-no longer make sense in this topology — the disk is a single shared
+no longer make sense in this topology - the disk is a single shared
 resource, not partitioned per dept. Disk pressure is now managed
 globally by `WorkspaceCleanupSchedulerWorkflow` using two
 host-wide thresholds:
@@ -218,23 +218,23 @@ host-wide thresholds:
 
 ### Migration
 
-You can leave the field as-is in your `departments.json` — it will
+You can leave the field as-is in your `departments.json` - it will
 simply be ignored. To clean up your config:
 
 1. Set `RUNNER_DISK_WARN_PCT` and `RUNNER_DISK_EVICT_PCT` in your
    `execution-runner-worker/.env` (defaults are sane for most
    deployments).
 2. Remove `ssh_workspace_quota_mb` from each department entry in
-   `departments.json` (optional — schema keeps accepting it).
+   `departments.json` (optional - schema keeps accepting it).
 3. Confirm `WorkspaceCleanupSchedulerWorkflow` is registered in
    Temporal (the `automation-worker` boot script registers it
    automatically on startup).
 
-## DEPRECATED — `ssh.host` and any per-dept SSH host overrides
+## DEPRECATED - `ssh.host` and any per-dept SSH host overrides
 
 The same single-runner contract removes any concept of a per-department
 SSH host. There is no schema field for per-dept SSH hosts (and there
-never has been one in the canonical schema — only ad-hoc references in
+never has been one in the canonical schema - only ad-hoc references in
 older `capabilities.py` paths). All departments share `SSH_HOST`
 (canonical env var, with `SSH_HOST_1` accepted as a deprecated alias
 for backwards compatibility).

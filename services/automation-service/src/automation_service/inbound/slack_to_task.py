@@ -1,6 +1,6 @@
-"""Slack → Jira task adapter.
+﻿"""Slack → Jira task adapter.
 
-Exposes ``POST /webhooks/inbound/slack`` — the public surface that
+Exposes ``POST /webhooks/inbound/slack`` - the public surface that
 Slack's incoming-webhook / Events API delivers to. The chain mirrors
 the Jira webhook handler (:mod:`automation_service.webhooks_handlers`)
 to keep the audit / RBAC / loop-guard behaviour consistent across
@@ -24,7 +24,7 @@ trigger types:
    for retries), and respond 202 with the resulting workflow id.
 
 The handler intentionally does **not** call the Atlassian MCP
-directly — Jira issue creation is the workflow's job. This keeps the
+directly - Jira issue creation is the workflow's job. This keeps the
 single-source-of-truth contract for the bot loop guard and capability
 gate, just like the Jira webhook handler.
 
@@ -115,7 +115,7 @@ def _make_audit_event(
 
 
 async def _emit_audit(audit_logger: AuditLogger, event: AuditEvent) -> None:
-    """Best-effort audit write — log the failure locally and continue."""
+    """Best-effort audit write - log the failure locally and continue."""
 
     try:
         await audit_logger.write(event)
@@ -263,14 +263,14 @@ async def post_slack_inbound(request: Request) -> JSONResponse:  # noqa: PLR0911
             status_code=status.HTTP_400_BAD_REQUEST,
         )
 
-    # Slack URL-verification handshake — respond with the challenge
+    # Slack URL-verification handshake - respond with the challenge
     # immediately. We still verify the signature first so an attacker
     # cannot use the handshake path to bypass HMAC.
     envelope_type = payload.get("type")
     if envelope_type == "url_verification":
         # Verify against the global (no-dept) secret. The verifier
         # treats ``dept_id=None`` as "use the platform-default secret"
-        # — production wires this to ``vault:notifications/slack_inbound/_default``.
+        # - production wires this to ``vault:notifications/slack_inbound/_default``.
         ok = await ctx.slack_verifier.verify(
             dept_id=None,
             timestamp=timestamp,
@@ -474,7 +474,7 @@ async def post_slack_inbound(request: Request) -> JSONResponse:  # noqa: PLR0911
                 ctx=ctx,
             ),
         )
-        # Slack will retry on 5xx — surface a 500 so the platform's
+        # Slack will retry on 5xx - surface a 500 so the platform's
         # health monitoring catches the upstream failure.
         raise
 

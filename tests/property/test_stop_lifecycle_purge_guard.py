@@ -1,8 +1,8 @@
-"""Stop lifecycle purge profile guard property tests.
+﻿"""Stop lifecycle purge profile guard property tests.
 
 The ``ServicesLifecycleRouter.stop`` endpoint MUST refuse a
 ``purge_vault=true`` flag when the deployment profile is
-``production`` — the dev-only Vault purge is a developer-tool
+``production`` - the dev-only Vault purge is a developer-tool
 escape hatch and must never apply on a production cluster.
 
 The test exercises a tiny state-machine guard that mirrors the

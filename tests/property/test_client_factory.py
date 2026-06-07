@@ -1,4 +1,4 @@
-"""invariant for ``http_shared.make_mcp_client`` header injection
+﻿"""invariant for ``http_shared.make_mcp_client`` header injection
 and ``LLMProviderFactory.from_env`` dispatch correctness.
 
 
@@ -61,7 +61,7 @@ def _close(client: httpx.AsyncClient) -> None:
 )
 @given(client_source=_CLIENT_SOURCE_TEXT)
 def test_make_mcp_client_injects_x_client_source(client_source: str) -> None:
-    """invariant — header value equals the supplied ``client_source``.
+    """invariant - header value equals the supplied ``client_source``.
 
  For every ``client_source`` string the factory accepts, the resulting
  client must echo it back via ``client.headers["X-Client-Source"]``.
@@ -98,7 +98,7 @@ def test_make_mcp_client_injects_x_client_source(client_source: str) -> None:
 def test_caller_supplied_x_client_source_is_overridden(
     client_source: str, spoofed: str, spoof_key: str
 ) -> None:
-    """invariant — factory header wins over caller-supplied header.
+    """invariant - factory header wins over caller-supplied header.
 
  Even when callers pass ``headers={"X-Client-Source": "..."}`` (or any
  case variant of the same name), the factory's value must win on the
@@ -136,7 +136,7 @@ def test_caller_supplied_x_client_source_is_overridden(
 def test_unrelated_caller_headers_are_preserved(
     client_source: str, other_key: str, other_value: str
 ) -> None:
-    """invariant — non-colliding caller headers survive intact.
+    """invariant - non-colliding caller headers survive intact.
 
  The factory must merge unrelated caller-supplied headers without
  touching them; only the ``X-Client-Source`` slot is reserved.
@@ -154,7 +154,7 @@ def test_unrelated_caller_headers_are_preserved(
 
 @pytest.mark.parametrize("known_source", sorted(KNOWN_CLIENT_SOURCES))
 def test_make_mcp_client_accepts_every_known_client_source(known_source: str) -> None:
-    """Smoke check — each documented Component identity round-trips."""
+    """Smoke check - each documented Component identity round-trips."""
 
     client = make_mcp_client(known_source)
     try:
@@ -168,7 +168,7 @@ def test_make_mcp_client_accepts_every_known_client_source(known_source: str) ->
     ["X-Client-Source", "x-client-source", "X-CLIENT-SOURCE", "x-Client-source"],
 )
 def test_caller_cannot_spoof_known_identity(spoof_key: str) -> None:
-    """Concrete example — caller-supplied identity is overridden."""
+    """Concrete example - caller-supplied identity is overridden."""
 
     client = make_mcp_client(
         "automation-service", headers={spoof_key: "agent-runner-worker"}
@@ -180,7 +180,7 @@ def test_caller_cannot_spoof_known_identity(spoof_key: str) -> None:
 
 
 def test_caller_supplied_headers_can_be_httpx_headers_object() -> None:
-    """Concrete example — ``httpx.Headers`` input is normalised correctly."""
+    """Concrete example - ``httpx.Headers`` input is normalised correctly."""
 
     caller_headers: Any = httpx.Headers(
         [("Accept", "application/json"), ("X-Client-Source", "spoofed")]
@@ -194,7 +194,7 @@ def test_caller_supplied_headers_can_be_httpx_headers_object() -> None:
 
 
 def test_caller_supplied_headers_can_be_iterable_of_pairs() -> None:
-    """Concrete example — iterable-of-tuples input is normalised correctly."""
+    """Concrete example - iterable-of-tuples input is normalised correctly."""
 
     pairs = [("Accept", "application/json"), ("X-Client-Source", "spoofed")]
     client = make_mcp_client("assistant-service", headers=pairs)
@@ -216,7 +216,7 @@ from llm_orchestrator.provider import (
     VLLMProvider,
 )
 
-# Mapping from provider key to expected class — mirrors the internal registry.
+# Mapping from provider key to expected class - mirrors the internal registry.
 _EXPECTED_PROVIDER_CLASS: dict[str, type] = {
     "vllm": VLLMProvider,
     "openai": OpenAIProvider,
@@ -253,7 +253,7 @@ def _make_env_for_provider(provider_key: str) -> dict[str, str]:
 )
 @given(provider_key=_VALID_PROVIDERS)
 def test_provider_factory_dispatch_returns_correct_class(provider_key: str) -> None:
-    """invariant — factory returns the correct provider class for each valid key.
+    """invariant - factory returns the correct provider class for each valid key.
 
 
 
@@ -277,7 +277,7 @@ def test_provider_factory_dispatch_returns_correct_class(provider_key: str) -> N
 )
 @given(provider_key=_VALID_PROVIDERS)
 def test_provider_factory_dispatch_satisfies_protocol(provider_key: str) -> None:
-    """invariant — factory-produced instance satisfies the LLMProvider protocol.
+    """invariant - factory-produced instance satisfies the LLMProvider protocol.
 
 
 
@@ -319,7 +319,7 @@ def test_provider_factory_dispatch_satisfies_protocol(provider_key: str) -> None
 def test_provider_factory_dispatch_case_insensitive(
     provider_key: str, case_variant: str
 ) -> None:
-    """invariant — factory dispatch is case-insensitive and whitespace-tolerant.
+    """invariant - factory dispatch is case-insensitive and whitespace-tolerant.
 
 
 
@@ -361,7 +361,7 @@ def test_provider_factory_dispatch_case_insensitive(
 def test_provider_factory_known_providers_includes_all_valid(
     provider_key: str,
 ) -> None:
-    """invariant — known_providers always contains all valid provider keys.
+    """invariant - known_providers always contains all valid provider keys.
 
 
 

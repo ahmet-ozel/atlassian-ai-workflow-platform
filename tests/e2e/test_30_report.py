@@ -1,4 +1,4 @@
-"""
+﻿"""
 Test 30: Report generation verification (R30).
 
 Validates that the ReportGenerator produces a complete E2E_REPORT.md
@@ -44,7 +44,7 @@ REQUIRED_SECTIONS = [
 # R1-R36 were the original ``local-e2e-real-test`` catalog; R37-R39
 # were added after the ``automation-service-wiring`` and
 # ``llm-provider-management`` specs landed; R40 was added with the
-# Streamlit Task Creator E2E test (E5 — gereksinim.txt G8/G10) so the
+# Streamlit Task Creator E2E test (E5 - gereksinim.txt G8/G10) so the
 # verdict table covers every spec the live stack now exercises.
 TOTAL_REQUIREMENTS = 40
 

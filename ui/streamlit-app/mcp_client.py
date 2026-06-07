@@ -1,14 +1,14 @@
-"""MCP / assistant-service HTTP client wrapper for the Streamlit UI.
+﻿"""MCP / assistant-service HTTP client wrapper for the Streamlit UI.
 
 Provides two client factories:
 
-1. :func:`make_mcp_client` — Direct MCP client for the Explorer page
+1. :func:`make_mcp_client` - Direct MCP client for the Explorer page
    (read-only Atlassian queries). Carries ``X-Client-Source: streamlit-app``
    and per-request credential headers.
 
-2. :func:`make_assistant_client` — Proxied client for Chat and Task Creator
+2. :func:`make_assistant_client` - Proxied client for Chat and Task Creator
    pages that routes through ``assistant-service`` (PII filter, audit, cost
-   tracking, rate-limit, prompt versioning — all in one place).
+   tracking, rate-limit, prompt versioning - all in one place).
 
 Both factories delegate to ``libs/http-shared``'s :func:`make_mcp_client`
 for the ``X-Client-Source`` header injection. Going through the shared
@@ -22,14 +22,14 @@ The Atlassian MCP is stateless: every request MUST carry the credential
 in headers. The client injects credentials from the Streamlit session
 state (populated by ``components/credential_form.py``) into each request.
 
-Usage (Explorer page — direct MCP)::
+Usage (Explorer page - direct MCP)::
 
     from mcp_client import MCPClient
 
     client = MCPClient.from_session()
     issues = await client.call_tool("jira_search", {"jql": "project=PAY"})
 
-Usage (Chat page — via assistant-service)::
+Usage (Chat page - via assistant-service)::
 
     from mcp_client import AssistantClient
 
@@ -53,9 +53,9 @@ from config import Settings
 # ``X-Client-Source: streamlit-app``. Use the shared factory so the
 # header (and the trace-id hook it carries) is wired identically with
 # the workers.
-try:  # pragma: no cover — exercised when http_shared is installed.
+try:  # pragma: no cover - exercised when http_shared is installed.
     from http_shared import make_mcp_client as _make_http_shared_client
-except Exception:  # pragma: no cover — defensive fallback for envs
+except Exception:  # pragma: no cover - defensive fallback for envs
     # without the shared lib on the path.
     _make_http_shared_client = None  # type: ignore[assignment]
 
@@ -159,7 +159,7 @@ def _get_active_dept_id() -> str | None:
 
 
 # ---------------------------------------------------------------------------
-# MCPClient — Direct MCP access (Explorer, MCP Inspector)
+# MCPClient - Direct MCP access (Explorer, MCP Inspector)
 # ---------------------------------------------------------------------------
 
 
@@ -187,7 +187,7 @@ class MCPClient:
                 base_url=self.base_url,
                 timeout=self.timeout,
             )
-        else:  # pragma: no cover — defensive only
+        else:  # pragma: no cover - defensive only
             self._client = httpx.AsyncClient(
                 base_url=self.base_url,
                 timeout=self.timeout,
@@ -294,7 +294,7 @@ class MCPClient:
 
 
 # ---------------------------------------------------------------------------
-# AssistantClient — Proxied through assistant-service (Chat, Task Creator)
+# AssistantClient - Proxied through assistant-service (Chat, Task Creator)
 # ---------------------------------------------------------------------------
 
 
@@ -312,7 +312,7 @@ class AssistantClient:
     _client: httpx.AsyncClient = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
-        # See ``MCPClient.__post_init__`` — same shared-factory contract
+        # See ``MCPClient.__post_init__`` - same shared-factory contract
         # so the assistant proxy traffic also carries
         # ``X-Client-Source: streamlit-app``.
         if _make_http_shared_client is not None:
@@ -321,7 +321,7 @@ class AssistantClient:
                 base_url=self.base_url,
                 timeout=self.timeout,
             )
-        else:  # pragma: no cover — defensive only
+        else:  # pragma: no cover - defensive only
             self._client = httpx.AsyncClient(
                 base_url=self.base_url,
                 timeout=self.timeout,

@@ -1,4 +1,4 @@
-"""Unit tests for the ``POST /admin/vault/init`` endpoint.
+﻿"""Unit tests for the ``POST /admin/vault/init`` endpoint.
 
 These tests cover the main Vault init outcomes:
 
@@ -58,7 +58,7 @@ class TestVaultInitEndpoint:
         self, client, mock_http_client
     ) -> None:
         """Already initialized → 409 Conflict."""
-        # Mock the /v1/sys/init GET check — Vault reports initialized
+        # Mock the /v1/sys/init GET check - Vault reports initialized
         init_check_response = MagicMock()
         init_check_response.status_code = 200
         init_check_response.json.return_value = {"initialized": True}
@@ -75,12 +75,12 @@ class TestVaultInitEndpoint:
         self, client, mock_http_client
     ) -> None:
         """Successful init returns unseal keys and root token."""
-        # Mock the /v1/sys/init GET check — Vault is NOT initialized
+        # Mock the /v1/sys/init GET check - Vault is NOT initialized
         init_check_response = MagicMock()
         init_check_response.status_code = 200
         init_check_response.json.return_value = {"initialized": False}
 
-        # Mock the /v1/sys/init PUT — successful init
+        # Mock the /v1/sys/init PUT - successful init
         init_response = MagicMock()
         init_response.status_code = 200
         init_response.json.return_value = {
@@ -122,12 +122,12 @@ class TestVaultInitEndpoint:
         self, client, mock_http_client
     ) -> None:
         """Custom key shares and threshold are accepted."""
-        # Mock the /v1/sys/init GET check — Vault is NOT initialized
+        # Mock the /v1/sys/init GET check - Vault is NOT initialized
         init_check_response = MagicMock()
         init_check_response.status_code = 200
         init_check_response.json.return_value = {"initialized": False}
 
-        # Mock the /v1/sys/init PUT — successful init with 3 shares
+        # Mock the /v1/sys/init PUT - successful init with 3 shares
         init_response = MagicMock()
         init_response.status_code = 200
         init_response.json.return_value = {
@@ -192,12 +192,12 @@ class TestVaultInitEndpoint:
         self, client, mock_http_client
     ) -> None:
         """Vault init PUT returns non-200 → 502."""
-        # Mock the /v1/sys/init GET check — Vault is NOT initialized
+        # Mock the /v1/sys/init GET check - Vault is NOT initialized
         init_check_response = MagicMock()
         init_check_response.status_code = 200
         init_check_response.json.return_value = {"initialized": False}
 
-        # Mock the /v1/sys/init PUT — failure
+        # Mock the /v1/sys/init PUT - failure
         init_response = MagicMock()
         init_response.status_code = 500
         init_response.text = "Internal Server Error"
@@ -214,13 +214,13 @@ class TestVaultInitEndpoint:
     def test_root_token_write_failure_is_non_fatal(
         self, client, mock_http_client
     ) -> None:
-        """Root token write failure is non-fatal — keys still returned."""
-        # Mock the /v1/sys/init GET check — Vault is NOT initialized
+        """Root token write failure is non-fatal - keys still returned."""
+        # Mock the /v1/sys/init GET check - Vault is NOT initialized
         init_check_response = MagicMock()
         init_check_response.status_code = 200
         init_check_response.json.return_value = {"initialized": False}
 
-        # Mock the /v1/sys/init PUT — successful init
+        # Mock the /v1/sys/init PUT - successful init
         init_response = MagicMock()
         init_response.status_code = 200
         init_response.json.return_value = {
@@ -229,7 +229,7 @@ class TestVaultInitEndpoint:
             "root_token": "s.my-root-token",
         }
 
-        # Mock the root token write — fails
+        # Mock the root token write - fails
         mock_http_client.get = AsyncMock(return_value=init_check_response)
         mock_http_client.put = AsyncMock(return_value=init_response)
         mock_http_client.post = AsyncMock(
@@ -238,7 +238,7 @@ class TestVaultInitEndpoint:
 
         response = client.post("/admin/vault/init")
 
-        # Should still succeed — the write-back is best-effort
+        # Should still succeed - the write-back is best-effort
         assert response.status_code == 200
         body = response.json()
         assert body["root_token"] == "s.my-root-token"
@@ -266,12 +266,12 @@ class TestVaultInitEndpoint:
         self, client, mock_http_client
     ) -> None:
         """Default request uses 5 shares and 3 threshold."""
-        # Mock the /v1/sys/init GET check — Vault is NOT initialized
+        # Mock the /v1/sys/init GET check - Vault is NOT initialized
         init_check_response = MagicMock()
         init_check_response.status_code = 200
         init_check_response.json.return_value = {"initialized": False}
 
-        # Mock the /v1/sys/init PUT — successful init
+        # Mock the /v1/sys/init PUT - successful init
         init_response = MagicMock()
         init_response.status_code = 200
         init_response.json.return_value = {

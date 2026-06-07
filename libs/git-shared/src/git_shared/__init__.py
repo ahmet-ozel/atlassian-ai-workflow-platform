@@ -1,4 +1,4 @@
-"""git-shared — GitPython-backed adapter for prompt CRUD / PR flows.
+﻿"""git-shared - GitPython-backed adapter for prompt CRUD / PR flows.
 
 Re-exports the public API so callers can simply do::
 

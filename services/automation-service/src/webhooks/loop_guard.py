@@ -1,4 +1,4 @@
-"""Loop Guard pipeline stage — drops webhooks triggered by bot's own actions.
+﻿"""Loop Guard pipeline stage - drops webhooks triggered by bot's own actions.
 
 This module implements the stateful ``LoopGuard`` class that participates
 in the webhook processing pipeline (Event_Dedup → **Loop_Guard** →
@@ -12,7 +12,7 @@ Webhook_Dispatcher). Unlike the pure predicates in
 - Sends admin notifications on loop storm detection.
 
 Approval Gate ``[approve]``/``[reject]`` comments are **exempt** from
-the loop guard even when authored by a bot — but a bot cannot approve
+the loop guard even when authored by a bot - but a bot cannot approve
 its own work (the approval signal is only processed when the comment
 author differs from the issue assignee).
 """
@@ -238,7 +238,7 @@ class LoopGuard:
 
         Approval Gate ``[approve]``/``[reject]`` comments are exempt
         from the loop guard even when authored by a bot. However, a
-        bot cannot approve **itself** — the comment author must differ
+        bot cannot approve **itself** - the comment author must differ
         from the issue assignee.
 
         Parameters

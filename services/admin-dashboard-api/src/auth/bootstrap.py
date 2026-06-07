@@ -1,4 +1,4 @@
-"""One-time admin bootstrap token management.
+﻿"""One-time admin bootstrap token management.
 
 This module implements the :class:`BootstrapTokenService` which handles
 the initial admin access flow described in behavior 2. On first boot
@@ -12,7 +12,7 @@ Once OIDC is configured the bootstrap mechanism is disabled entirely
 (behavior 2.5).
 
 Security properties:
-- Plain token is NEVER persisted — only the SHA-256 hash is stored.
+- Plain token is NEVER persisted - only the SHA-256 hash is stored.
 - Token has a 1-hour TTL after which it becomes invalid.
 - Token is single-use: consumed on first successful validation.
 - Token generation is idempotent: if a valid (unexpired, unconsumed)
@@ -59,7 +59,7 @@ class BootstrapTokenService:
             )
             if admin_exists:
                 logger.info(
-                    "bootstrap token generation skipped — admin already "
+                    "bootstrap token generation skipped - admin already "
                     "bootstrapped"
                 )
                 return None
@@ -76,7 +76,7 @@ class BootstrapTokenService:
             )
             if valid_token_exists:
                 logger.info(
-                    "bootstrap token generation skipped — valid pending "
+                    "bootstrap token generation skipped - valid pending "
                     "token already exists"
                 )
                 return None
@@ -106,7 +106,7 @@ class BootstrapTokenService:
             )
 
             logger.info(
-                "bootstrap token generated — expires at %s",
+                "bootstrap token generated - expires at %s",
                 expires_at.isoformat(),
             )
 
@@ -138,7 +138,7 @@ class BootstrapTokenService:
 
             if row is None:
                 logger.warning(
-                    "bootstrap token validation failed — token not found, "
+                    "bootstrap token validation failed - token not found, "
                     "expired, or already consumed"
                 )
                 return False
@@ -173,7 +173,7 @@ class BootstrapTokenService:
 
         if is_configured:
             logger.info(
-                "OIDC provider is configured (issuer=%s) — bootstrap "
+                "OIDC provider is configured (issuer=%s) - bootstrap "
                 "mechanism disabled",
                 oidc_issuer,
             )

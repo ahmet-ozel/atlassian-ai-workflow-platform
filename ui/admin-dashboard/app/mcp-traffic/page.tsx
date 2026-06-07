@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * MCP traffic page.
@@ -11,7 +11,7 @@
  * The page offers three independent filters (client_source, tool,
  * status) and auto-refreshes every 60 seconds. The MCP counters are
  * cumulative since the MCP process started (documented snapshot
- * framing — see mcp_traffic.py module docstring).
+ * framing - see mcp_traffic.py module docstring).
  */
 
 import {

@@ -1,4 +1,4 @@
-"""Public surface of the ``libs/notification`` package.
+﻿"""Public surface of the ``libs/notification`` package.
 
 The dispatch policy implemented here:
 
@@ -8,7 +8,7 @@ The dispatch policy implemented here:
   dept's Slack channel regardless of dept config).
 * Each dispatch attempt writes one row to ``shared.notification_log`` whose
   ``dedup_key`` (sha256 of ``workflow_id`` + ``channel`` + ``kind``) is
-  ``UNIQUE`` — a retried call cannot double-deliver.
+  ``UNIQUE`` - a retried call cannot double-deliver.
 
 Concrete ``aiohttp`` / ``aiosmtplib`` adapter implementations are provided
 separately; this package only depends on the

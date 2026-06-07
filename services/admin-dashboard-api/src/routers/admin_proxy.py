@@ -1,20 +1,20 @@
-"""FastAPI router that mounts :class:`src.proxy.AdminProxy`.
+﻿"""FastAPI router that mounts :class:`src.proxy.AdminProxy`.
 
 This router wires the BFF proxy from admin proxy wiring of
 ``platform foundation`` into the admin-dashboard-api FastAPI
 app. It registers a catch-all handler on the admin endpoints that are
 **owned by automation-service**:
 
-* ``/admin/departments`` and ``/admin/departments/...`` — atomic dept
+* ``/admin/departments`` and ``/admin/departments/...`` - atomic dept
   create, setup wizard, credential rotation, dept disable.
-* ``/admin/probe-artifacts`` and ``/admin/probe-artifacts/...`` —
+* ``/admin/probe-artifacts`` and ``/admin/probe-artifacts/...`` -
   partial-orphan listing / cleanup.
-* ``/admin/ssh-runners`` / ``/admin/ssh-runners/...`` — SSH runner
+* ``/admin/ssh-runners`` / ``/admin/ssh-runners/...`` - SSH runner
   configuration for admins only.
-* ``/admin/prompts/global`` / ``/admin/prompts/global/...`` — global
+* ``/admin/prompts/global`` / ``/admin/prompts/global/...`` - global
   prompt change for admins only.
 
-The router deliberately does **not** mount under bare ``/admin`` —
+The router deliberately does **not** mount under bare ``/admin`` -
 the existing ``/admin/services`` surface from the
 admin-dashboard-api is owned locally by admin-dashboard-api (Compose
 orchestration on the local Docker socket) and must keep its routes.
@@ -35,7 +35,7 @@ returns an :class:`AuthClaims` object with only ``sub`` + ``groups``;
 :class:`auth_shared.AuthContext` carries the richer ``actor_role`` /
 ``dept_ids`` shape needed by the proxy. We bridge the two by extracting
 an :class:`AuthContext` from the validated JWT claim dict via
-:func:`auth_shared.extract_auth_context` — the dependency reads the
+:func:`auth_shared.extract_auth_context` - the dependency reads the
 raw token once, validates it, and then derives both projections.
 """
 
@@ -61,7 +61,7 @@ logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# Bearer token parsing — duplicated from ``src.auth.dependencies`` so this
+# Bearer token parsing - duplicated from ``src.auth.dependencies`` so this
 # router does not depend on its private constants.
 # ---------------------------------------------------------------------------
 
@@ -116,7 +116,7 @@ async def require_auth_context(
         claims = validator.validate(token)
         return extract_auth_context(claims)
     except InvalidTokenError:
-        # Both signature failures and missing-claim cases land here —
+        # Both signature failures and missing-claim cases land here -
         # ``MissingClaimError`` is a subclass of ``InvalidTokenError``.
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -149,14 +149,14 @@ def get_admin_proxy(request: Request) -> AdminProxy:
 
 
 # ---------------------------------------------------------------------------
-# Router — catch-all forwarder
+# Router - catch-all forwarder
 # ---------------------------------------------------------------------------
 
 
 router = APIRouter(tags=["admin-proxy"])
 
 
-# Methods we forward. ``HEAD`` and ``OPTIONS`` are *not* in the list —
+# Methods we forward. ``HEAD`` and ``OPTIONS`` are *not* in the list -
 # CORS preflight (OPTIONS) is handled by FastAPI's CORSMiddleware when
 # enabled, and HEAD is rarely used by admin endpoints. Explicitly
 # listing methods is preferred over a wildcard so the OpenAPI surface
@@ -166,7 +166,7 @@ _FORWARDED_METHODS = ("GET", "POST", "PUT", "PATCH", "DELETE")
 
 
 # Path prefixes covered by this proxy. ``/admin/services`` is
-# intentionally absent — that surface is owned by
+# intentionally absent - that surface is owned by
 # ``src.routers.services_lifecycle``.
 _PROXIED_PREFIXES: tuple[str, ...] = (
     "/admin/departments",
@@ -209,7 +209,7 @@ async def _forward(
 
     The handler reads the raw request body once, then hands every
     detail to the proxy. The proxy returns a :class:`ProxyResponse`
-    which we translate verbatim into a FastAPI :class:`Response` —
+    which we translate verbatim into a FastAPI :class:`Response` -
     body, status code and (filtered) headers.
 
     On RBAC denial the proxy returns ``status_code=403`` with a fixed

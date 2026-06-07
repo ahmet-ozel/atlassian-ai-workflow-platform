@@ -1,17 +1,17 @@
-"""Pure formatters for Confluence page titles and provenance footers.
+﻿"""Pure formatters for Confluence page titles and provenance footers.
 
 This module hosts two **pure** helper functions used by the
 ``confluence_doc_create`` and ``confluence_doc_update`` flows of the
 ``AgentRunnerWorkflow``:
 
-* :func:`format_page_title` — composes a Confluence page title in the
+* :func:`format_page_title` - composes a Confluence page title in the
   format ``{topic_in_target_lang} - {YYYY-MM-DD}``.
-* :func:`compute_provenance_footer` — returns the collapsible markdown
+* :func:`compute_provenance_footer` - returns the collapsible markdown
   provenance footer that is appended to every bot-authored Confluence
   page.
 
 Both functions perform **string composition + structural validation
-only** — no I/O, no clocks, no random numbers, no UUIDs, no external
+only** - no I/O, no clocks, no random numbers, no UUIDs, no external
 calls.  This is a hard precondition for being safe to invoke from
 inside Temporal workflow code: a workflow that called
 ``datetime.now()`` here would break replay determinism.  The caller
@@ -63,7 +63,7 @@ _DEFAULT_TARGET_LANG: Final[TargetLang] = "tr"
 #: (``"KVKK Yönetmelik Analizi - 2026-05-14"``).
 PAGE_TITLE_DATE_FORMAT: Final[str] = "%Y-%m-%d"
 
-#: The literal separator (`` - `` — space, hyphen-minus, space) inserted
+#: The literal separator (`` - `` - space, hyphen-minus, space) inserted
 #: between ``topic`` and the formatted date in the page title.  Pinned
 #: as a module constant so tests and downstream callers can reference
 #: it without re-deriving the format string.
@@ -98,7 +98,7 @@ _DISALLOWED_TITLE_CHARS_RE: Final[re.Pattern[str]] = re.compile(
 
 # Jira issue links are HTTPS URLs that contain ``/browse/{ISSUE_KEY}``.
 # We accept any HTTPS URL whose path includes ``/browse/`` followed by
-# a valid issue key (``[A-Z][A-Z0-9_]+-\d+``) — this matches both
+# a valid issue key (``[A-Z][A-Z0-9_]+-\d+``) - this matches both
 # Atlassian Cloud (``https://acme.atlassian.net/browse/PAY-1``) and
 # self-hosted DC instances (``https://jira.acme.example/browse/PAY-1``)
 # without coupling the helper to a specific tenant hostname.
@@ -117,8 +117,8 @@ class InvalidTopicError(ValueError):
 
     The error fires for an empty / whitespace-only topic, a topic that
     contains control characters or XML-reserved characters that would
-    break Confluence storage format, or a topic that — after composition
-    — would exceed :data:`PAGE_TITLE_MAX_LENGTH`.
+    break Confluence storage format, or a topic that - after composition
+    - would exceed :data:`PAGE_TITLE_MAX_LENGTH`.
     """
 
     def __init__(self, topic: object, *, reason: str) -> None:
@@ -183,7 +183,7 @@ def format_page_title(
     ``date`` inside a property test).
 
     The ``topic`` argument is assumed to **already be expressed in
-    ``target_lang``** — the upstream LLM activity is responsible for
+    ``target_lang``** - the upstream LLM activity is responsible for
     translation. This helper does **not**
     translate; it only composes and validates.  The ``target_lang``
     argument is therefore part of the structural contract (the
@@ -246,7 +246,7 @@ def format_page_title(
     # ``datetime`` is a subclass of ``date``; reject it explicitly so
     # callers cannot accidentally embed a wall-clock timestamp (which
     # would silently leak into the title's date suffix).
-    from datetime import datetime as _datetime  # local import — keeps
+    from datetime import datetime as _datetime  # local import - keeps
     # the public namespace tight.
 
     if current_date is None:
@@ -324,7 +324,7 @@ def compute_provenance_footer(jira_issue_link: str) -> str:
         (e.g. ``"https://acme.atlassian.net/browse/PAY-4211"``).  The
         URL is required to be HTTPS, contain a recognisable
         ``/browse/{ISSUE_KEY}`` path, and contain no whitespace or
-        control characters — these constraints prevent the verbatim
+        control characters - these constraints prevent the verbatim
         embedding from corrupting the resulting Confluence storage
         format.
 

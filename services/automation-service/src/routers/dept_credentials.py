@@ -1,4 +1,4 @@
-"""FastAPI router — per-service department credential CRUD + probe.
+﻿"""FastAPI router - per-service department credential CRUD + probe.
 
 The router is the **thin shim** layer for department and bot
 credential management: every endpoint parses the request, dispatches
@@ -9,15 +9,15 @@ HTTP responses.
 Endpoints
 ---------
 
-* ``GET /admin/departments`` — list every department with its bot
+* ``GET /admin/departments`` - list every department with its bot
   credential refs (mask edilmiş).
-* ``GET /admin/departments/{id}`` — full detail for a single
+* ``GET /admin/departments/{id}`` - full detail for a single
   department (bots, project keys, space keys, mode).
-* ``POST /admin/departments/{id}/credentials/{service}`` — atomic
+* ``POST /admin/departments/{id}/credentials/{service}`` - atomic
   add or update of the ``(dept_id, service)`` bot credential.
-* ``DELETE /admin/departments/{id}/credentials/{service}`` —
+* ``DELETE /admin/departments/{id}/credentials/{service}`` -
   idempotent removal.
-* ``POST /admin/departments/{id}/probe`` — re-run the connectivity
+* ``POST /admin/departments/{id}/probe`` - re-run the connectivity
   probe for one (``?service=...``) or all of the dept's bots.
 
 Wiring contract (``app.state.dept_credentials``)
@@ -27,12 +27,12 @@ The :func:`automation_service.app.create_app` factory populates
 ``request.app.state.dept_credentials`` with a single
 :class:`DeptCredentialEndpointDeps` instance.  It carries:
 
-* ``service`` — the :class:`DeptCredentialService` instance.
-* ``connection_factory`` — async factory returning a fresh
+* ``service`` - the :class:`DeptCredentialService` instance.
+* ``connection_factory`` - async factory returning a fresh
   :class:`db_shared.AsyncConnection`.  Used only by the read-side
-  endpoints (list / detail) — the mutating endpoints delegate
+  endpoints (list / detail) - the mutating endpoints delegate
   ownership of the SQL session to the orchestrator.
-* ``clock`` — optional UTC-now factory; defaults to
+* ``clock`` - optional UTC-now factory; defaults to
   :func:`datetime.now(timezone.utc)`.  Tests inject a deterministic
   clock to exercise audit timestamps.
 
@@ -43,15 +43,15 @@ The router sits **behind** the ``admin-dashboard-api`` ``AdminProxy``.
 The proxy performs the OIDC + RBAC pre-check and stamps three headers
 on every forwarded request:
 
-* ``X-Actor-Id`` — the OIDC ``sub`` of the human admin (or the bot
+* ``X-Actor-Id`` - the OIDC ``sub`` of the human admin (or the bot
   ``account_id`` for a system caller).
-* ``X-Actor-Role`` — one of ``"admin"``, ``"dept_admin"``,
+* ``X-Actor-Role`` - one of ``"admin"``, ``"dept_admin"``,
   ``"lead"``, ``"viewer"``, ``"system"``.
-* ``X-Actor-Dept-Id`` — populated only for dept-scoped routes;
+* ``X-Actor-Dept-Id`` - populated only for dept-scoped routes;
   contains the dept_id parsed by
   :func:`admin_dashboard_api.proxy.classify_admin_path`.
 
-Direct (un-proxied) requests fall back to the ``"system"`` actor —
+Direct (un-proxied) requests fall back to the ``"system"`` actor -
 production deploys mark ``admin-dashboard-api`` as the only ingress
 so this fallback is only reachable by integration tests that bypass
 the proxy.
@@ -146,7 +146,7 @@ _READ_ROLES: frozenset[str] = frozenset(
 
 
 # ---------------------------------------------------------------------------
-# Dependency container — injected via ``app.state.dept_credentials``
+# Dependency container - injected via ``app.state.dept_credentials``
 # ---------------------------------------------------------------------------
 
 
@@ -184,7 +184,7 @@ def _deps(request: Request) -> DeptCredentialEndpointDeps:
     """Pull the :class:`DeptCredentialEndpointDeps` off ``app.state``.
 
     Surfaces a 500 if the application factory neglected to wire the
-    collaborators — making the deployment misconfiguration explicit
+    collaborators - making the deployment misconfiguration explicit
     rather than letting a downstream attribute access throw a less
     helpful error.
     """
@@ -405,7 +405,7 @@ class _Actor:
 
     Attributes:
         actor_id: The ``X-Actor-Id`` header (or ``"system"`` if
-            absent — only reachable by integration tests that
+            absent - only reachable by integration tests that
             bypass the proxy).
         actor_role: One of the recognised RBAC roles, normalised to
             ``"system"`` for unknown values so a malformed proxy
@@ -431,7 +431,7 @@ def _extract_actor(request: Request) -> _Actor:
     ``admin-dashboard-api`` is the only ingress that populates the
     ``X-Actor-*`` headers (after running its OIDC + RBAC
     pre-checks).  Direct requests (integration tests, smoke probes)
-    fall back to the ``"system"`` actor — production deployments
+    fall back to the ``"system"`` actor - production deployments
     enforce the proxy via Compose-level network isolation so the
     fallback is never reachable in real traffic.
     """
@@ -464,7 +464,7 @@ def _audit_role(
     if role in ("admin", "dept_admin", "system"):
         return role  # type: ignore[return-value]
     # ``lead`` / ``viewer`` are denied earlier; this branch is
-    # defensive — fall back to ``system`` so the audit row is still
+    # defensive - fall back to ``system`` so the audit row is still
     # well-formed if a caller bypasses the guard.
     return "system"
 
@@ -487,10 +487,10 @@ async def _enforce_dept_scope(
 
     Rules (mirror the design's RBAC matrix):
 
-    * ``admin`` / ``system`` — allowed for any dept.
-    * ``dept_admin`` — allowed only when ``actor.dept_id`` matches
+    * ``admin`` / ``system`` - allowed for any dept.
+    * ``dept_admin`` - allowed only when ``actor.dept_id`` matches
       ``target_dept_id``.  Used for both reads and mutations.
-    * ``lead`` / ``viewer`` — denied on mutating endpoints; allowed
+    * ``lead`` / ``viewer`` - denied on mutating endpoints; allowed
       on read endpoints (the AdminProxy classifier already restricts
       these paths to ``dept_admin``+, so this branch is a defence-in-
       depth guard for direct calls).
@@ -563,7 +563,7 @@ async def _audit_rbac_denied(
 ) -> None:
     """Write a single ``rbac_denied`` audit row.
 
-    The router never raises from this helper — audit writes are
+    The router never raises from this helper - audit writes are
     best-effort so a transient sink failure does not turn a clean
     403 into a 500.
     """
@@ -618,7 +618,7 @@ def _parse_credential_body(
     """Translate a JSON body into an :class:`AddCredentialRequest`.
 
     Enforces only the structural pre-conditions the orchestrator
-    does not itself validate — the orchestrator runs its own
+    does not itself validate - the orchestrator runs its own
     ``_validate_request`` guard before any side-effects.
     """
 
@@ -746,7 +746,7 @@ def _validate_service_path_param(service: str) -> ProbeService:
     """Validate the ``{service}`` path segment.
 
     The AdminProxy classifier admits any dept-scoped path, so the
-    service segment reaches the router unchecked — the closed set
+    service segment reaches the router unchecked - the closed set
     must be enforced here.
     """
 
@@ -1135,7 +1135,7 @@ def _get_bulk_import_service(request: Request) -> BulkImportService:
     """Pull the :class:`BulkImportService` off ``app.state``.
 
     Surfaces a 500 if the application factory neglected to wire the
-    service — making the deployment misconfiguration explicit.
+    service - making the deployment misconfiguration explicit.
     """
 
     svc = getattr(request.app.state, "bulk_import_service", None)
@@ -1240,7 +1240,7 @@ async def bulk_import_departments(
         # Partial success: some imported, some failed
         http_status = 207  # Multi-Status
     elif result.failed and not result.imported:
-        # All failed — still return 207 so the caller can inspect per-dept errors
+        # All failed - still return 207 so the caller can inspect per-dept errors
         http_status = 207
     else:
         # All succeeded
@@ -1265,7 +1265,7 @@ async def _select_departments(
     """Read every (or the actor's) department + bot rows.
 
     For ``dept_admin`` callers we narrow the result set to a single
-    dept whose id matches ``actor.dept_id`` — keeping the API
+    dept whose id matches ``actor.dept_id`` - keeping the API
     consistent with the per-dept RBAC model rather than exposing
     the whole catalogue and relying on the UI to filter.
     """
@@ -1465,7 +1465,7 @@ def _serialise_bulk_import_result(result: BulkImportResult) -> dict[str, Any]:
     The response shape matches the design contract:
     ``{txn_id, total, validated, imported, failed, probe_results, dry_run}``.
 
-    Plain-text tokens are never included in the response — the service
+    Plain-text tokens are never included in the response - the service
     layer already strips them; this serialiser only exposes dept_id,
     status, error, and per-service probe outcomes.
     """
@@ -1523,7 +1523,7 @@ def _iso(value: Any) -> str | None:
 
 
 # ---------------------------------------------------------------------------
-# Async DB helpers — protocol-agnostic shims
+# Async DB helpers - protocol-agnostic shims
 # ---------------------------------------------------------------------------
 
 
@@ -1532,7 +1532,7 @@ async def _fetchrow(
     query: str,
     *args: Any,
 ) -> Any:
-    """Compatibility shim — see :meth:`DeptCredentialService._fetchrow`."""
+    """Compatibility shim - see :meth:`DeptCredentialService._fetchrow`."""
 
     fetchrow = getattr(conn, "fetchrow", None)
     if fetchrow is None:
@@ -1546,7 +1546,7 @@ async def _fetch(
     query: str,
     *args: Any,
 ) -> Sequence[Mapping[str, Any]]:
-    """Compatibility shim — see :meth:`DeptCredentialService._fetch`."""
+    """Compatibility shim - see :meth:`DeptCredentialService._fetch`."""
 
     fetch = getattr(conn, "fetch", None)
     if fetch is None:

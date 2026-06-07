@@ -1,4 +1,4 @@
-"""Property-based tests for Setup Wizard step order and completion invariants.
+﻿"""Property-based tests for Setup Wizard step order and completion invariants.
 
 Background
 ----------
@@ -9,7 +9,7 @@ to bootstrap the platform.
 ``STEP_ORDER``, preserving the existing six steps unchanged.
 
 The ``all_complete`` field in the ``GET /api/v1/setup/status`` response
-MUST remain ``false`` until every step — including the new final step —
+MUST remain ``false`` until every step - including the new final step -
 is marked ``completed``.
 
 The final step's completion logic (``POST /api/v1/setup/add_first_department/check``)
@@ -20,7 +20,7 @@ step stays ``pending``.
 Strategy
 --------
 
-The tests are fully deterministic — no Hypothesis strategies needed.
+The tests are fully deterministic - no Hypothesis strategies needed.
 We import ``STEP_ORDER`` and the wizard state machinery directly from
 the ``setup_wizard`` module and verify the three invariants:
 
@@ -42,7 +42,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 # ---------------------------------------------------------------------------
-# ``sys.path`` bootstrap — expose the admin-dashboard-api source root
+# ``sys.path`` bootstrap - expose the admin-dashboard-api source root
 # so we can import the setup_wizard module directly.
 # ---------------------------------------------------------------------------
 
@@ -307,7 +307,7 @@ class TestAddFirstDepartmentCheckEndpoint:
         """When no DB pool is available, returns current state without crash."""
         from httpx import ASGITransport, AsyncClient
 
-        # Don't set app.state.pg_pool — simulates no DB connection
+        # Don't set app.state.pg_pool - simulates no DB connection
 
         async with AsyncClient(
             transport=ASGITransport(app=app), base_url="http://test"

@@ -1,4 +1,4 @@
-"""Invariant test: Output action execution audit completeness.
+﻿"""Invariant test: Output action execution audit completeness.
 
 Feature:,: For any executed action
 (regardless of outcome: success, failed, skipped, or timeout), an
@@ -86,7 +86,7 @@ def test_all_outcomes_have_status_field(statuses: list[str]) -> None:
     ]
 
     # Every result must have a valid status, an integer index, an action_type,
-    # and a timestamp — audit completeness.
+    # and a timestamp - audit completeness.
     for r in results:
         assert r.status in _VALID_STATUSES
         assert isinstance(r.index, int)

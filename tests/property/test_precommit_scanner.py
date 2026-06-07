@@ -1,4 +1,4 @@
-"""Property-based test for the pre-commit secret scan.
+﻿"""Property-based test for the pre-commit secret scan.
 
 Hypothesis-driven verification of the ``precommit_scanner`` activity's
 pure regex-based detection core,
@@ -63,17 +63,17 @@ coverage at
 ``platform/workers/agent-runner-worker/tests/unit/test_precommit_scan.py``
 and ``platform/tests/unit/test_precommit_scanner.py``. The property
 oracle here is the *deterministic regex sweep*, which lives in the
-pure :func:`scan_diff` helper — exercising it directly keeps the
+pure :func:`scan_diff` helper - exercising it directly keeps the
 property test self-contained, free of ``asyncio.run`` overhead, and
 trivially replay-safe.
 
 Hypothesis configuration
 ------------------------
 
-* ``max_examples=100`` — sample budget;
+* ``max_examples=100`` - sample budget;
   matches the rest of this property suite (``test_fix_keyword.py``,
   ``test_explain_keyword.py``).
-* ``deadline=None`` — the regex sweep is fast but pytest's default
+* ``deadline=None`` - the regex sweep is fast but pytest's default
   deadline trips on debug builds and CI cold-starts; mirrors the
   pattern used by every other property test in this directory.
 """
@@ -89,7 +89,7 @@ from hypothesis import strategies as st
 
 
 # ---------------------------------------------------------------------------
-# ``sys.path`` bootstrap — the precommit scanner ships under the worker
+# ``sys.path`` bootstrap - the precommit scanner ships under the worker
 # tree at ``platform/workers/agent-runner-worker/src/activities/``.
 # ``platform/pytest.ini`` only injects ``libs/*/src`` onto ``pythonpath``,
 # so we wire the worker root in ahead of the import. This mirrors the
@@ -108,7 +108,7 @@ if _worker_root_str not in sys.path:
     sys.path.insert(0, _worker_root_str)
 
 
-# noqa: E402 below — imports follow the sys.path bootstrap above.
+# noqa: E402 below - imports follow the sys.path bootstrap above.
 try:
     from src.activities.precommit_scan import (  # noqa: E402
         SECRET_PATTERNS,
@@ -130,7 +130,7 @@ except ImportError as exc:  # pragma: no cover - defensive guard
 
 
 #: The four documented secret pattern names. Mirrors the keys of
-#: :data:`SECRET_PATTERNS` exactly — assert at module load time so a
+#: :data:`SECRET_PATTERNS` exactly - assert at module load time so a
 #: rename in the production module surfaces as a clean error here
 #: rather than an opaque generator failure.
 _PATTERN_NAMES: tuple[str, ...] = (
@@ -354,7 +354,7 @@ def test_clean_diff_returns_pass(diff: str) -> None:
         "clean diff produced non-empty matched_patterns: "
         f"{result.matched_patterns!r}"
     )
-    # Frozen-dataclass equality cross-check — guards against an
+    # Frozen-dataclass equality cross-check - guards against an
     # accidental override of ``__eq__`` that happens to satisfy the
     # field assertions above but breaks structural equality.
     assert result == ScanResult(decision="pass", matched_patterns=())
@@ -372,14 +372,14 @@ def test_dirty_diff_blocks_with_matched_pattern(
     names it injected. :func:`scan_diff` MUST:
 
     * return ``decision == "block"``,
-    * include every injected pattern name in ``matched_patterns`` —
+    * include every injected pattern name in ``matched_patterns`` -
       i.e. ``injected_names ⊆ set(matched_patterns)``. Equality is
       *not* asserted because a particular literal could legitimately
       satisfy more than one regex (eg. a generated body containing
       ``Bearer`` would also fire the bearer regex); the contract is
       "block decision must include the injected pattern", not
       "exactly that and nothing else".
-    * carry a non-empty ``matched_patterns`` tuple — the
+    * carry a non-empty ``matched_patterns`` tuple - the
       "secret_pattern_matched field" clause.
     """
 
@@ -391,7 +391,7 @@ def test_dirty_diff_blocks_with_matched_pattern(
         f"injected={sorted(injected_names)} diff={diff!r}"
     )
     # The "block decision must include ``secret_pattern_matched``
-    # field" clause is satisfied by the non-empty tuple — the field
+    # field" clause is satisfied by the non-empty tuple - the field
     # is named ``matched_patterns`` by the helper contract.
     assert result.matched_patterns, (
         "block decision missing matched_patterns enumeration "
@@ -412,7 +412,7 @@ def test_dirty_diff_blocks_with_matched_pattern(
 @given(diff=st.one_of(_clean_text, _dirty_diffs().map(lambda p: p[0])))
 @_PROFILE
 def test_scan_is_idempotent(diff: str) -> None:
-    """(P3) Idempotence — ``scan_diff(d) == scan_diff(d)`` for every ``d``.
+    """(P3) Idempotence - ``scan_diff(d) == scan_diff(d)`` for every ``d``.
 
     The task brief frames this as "scanning the same diff twice
     yields same decision". We assert structural equality on the
@@ -440,7 +440,7 @@ def test_scan_is_idempotent(diff: str) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Static sanity — generator escape guard
+# Static sanity - generator escape guard
 # ---------------------------------------------------------------------------
 
 

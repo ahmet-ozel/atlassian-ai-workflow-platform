@@ -1,5 +1,5 @@
-/**
- * Sensitive_Env_Key matcher — TypeScript half of the TS↔Python ikiz modül.
+﻿/**
+ * Sensitive_Env_Key matcher - TypeScript half of the TS↔Python ikiz modül.
  *
  * This module is the **single source of truth** for which environment
  * variable keys count as a Sensitive_Env_Key on the browser/Next.js side
@@ -17,7 +17,7 @@
  * A key is *sensitive* iff it ends with one of the suffixes `_TOKEN`,
  * `_KEY`, `_SECRET`, `_PASSWORD`, `_DSN`, `_CREDENTIAL`, **or** contains
  * the infix `_PRIVATE_`. Bare names like `TOKEN` (no leading underscore)
- * do not match — this mirrors the glob notation `*_TOKEN`.
+ * do not match - this mirrors the glob notation `*_TOKEN`.
  *
  * The module is intentionally **pure** (no side effects, no I/O) and
  * safe to import from React Server Components, client components and
@@ -43,8 +43,8 @@ export declare const SENSITIVE_ENV_KEY_PATTERNS: readonly RegExp[];
  * Return `true` iff `key` matches a {@link SENSITIVE_ENV_KEY_PATTERNS}
  * entry.
  *
- * The check is case-sensitive — environment variable conventions in
- * this codebase are uppercase-only — and uses `RegExp.prototype.test`,
+ * The check is case-sensitive - environment variable conventions in
+ * this codebase are uppercase-only - and uses `RegExp.prototype.test`,
  * so suffix anchors (`$`) bind to the end of the string and the infix
  * pattern (`_PRIVATE_`) matches anywhere inside.
  *

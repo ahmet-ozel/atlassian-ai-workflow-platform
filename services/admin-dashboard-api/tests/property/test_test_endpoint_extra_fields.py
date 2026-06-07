@@ -1,4 +1,4 @@
-"""— Test endpoint refuses prompt-shaping fields.
+﻿"""- Test endpoint refuses prompt-shaping fields.
 ``{prompt, messages, content, max_tokens, max_output_tokens,
 temperature, top_p, system}`` mixed into a saved or unsaved test
 body MUST be rejected with HTTP 422 ``extra_fields_not_allowed`` and
@@ -40,7 +40,7 @@ def _build_app() -> tuple[TestClient, list[httpx.Request]]:
     The route validates the body against the matching schema and, on
     success, would call the connection tester through the supplied
     ``httpx.AsyncClient``. The mock transport's call counter MUST stay
-    at zero across every property iteration — validation failures
+    at zero across every property iteration - validation failures
     short-circuit before any upstream request is sent.
     """
 

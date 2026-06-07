@@ -1,4 +1,4 @@
-"""Unit tests for the ``noop_test`` smoke-flow defaults pinned by
+﻿"""Unit tests for the ``noop_test`` smoke-flow defaults pinned by
 :class:`ExecutionRunWorkflow`.
 
 The canonical :class:`ExecutionRunWorkflow` applies an opt-in safety
@@ -16,7 +16,7 @@ replay against an older history) cannot accidentally launch an
 open-ended smoke run on the SSH runner.  The tests below exercise the
 workflow-private constants (``_NOOP_TEST_DEFAULT_COMMAND``,
 ``_NOOP_TEST_START_TO_CLOSE``) without spinning up a Temporal worker
-— driving the workflow body itself requires a Temporal cluster, which
+- driving the workflow body itself requires a Temporal cluster, which
 the integration-test layer covers separately.
 
 """
@@ -29,7 +29,7 @@ from pathlib import Path
 
 
 # ---------------------------------------------------------------------------
-# ``sys.path`` bootstrapping — mirror test_main_execution_runner_task_queue.py
+# ``sys.path`` bootstrapping - mirror test_main_execution_runner_task_queue.py
 # so the in-tree ``src/`` package import resolves without an editable install.
 # ---------------------------------------------------------------------------
 
@@ -82,7 +82,7 @@ class TestNoopTestSmokeDefaults:
     def test_workflow_type_discriminator_is_noop_test(self) -> None:
         """The discriminator string must match the
         :data:`temporal_shared.capabilities.WORKFLOW_TYPE_CAPABILITIES`
-        key verbatim — a typo would silently disable the safety net.
+        key verbatim - a typo would silently disable the safety net.
         """
 
         from temporal_shared.capabilities import WORKFLOW_TYPE_CAPABILITIES
@@ -150,7 +150,7 @@ class TestExecutionRunWorkflowInputDefaults:
 
 
 class TestExecutionRunWorkflowSafetyNetBranches:
-    """Pure decisions inside the safety-net branch — exercised without
+    """Pure decisions inside the safety-net branch - exercised without
     spinning up a Temporal worker by re-implementing the branch over
     the workflow's pinned constants."""
 
@@ -166,7 +166,7 @@ class TestExecutionRunWorkflowSafetyNetBranches:
         the same logic without a Temporal cluster.
 
         The implementation is intentionally a copy of the workflow's
-        five lines so a regression in either copy fails the test —
+        five lines so a regression in either copy fails the test -
         kept short to preserve the value of the assertion.
         """
 
@@ -207,7 +207,7 @@ class TestExecutionRunWorkflowSafetyNetBranches:
 
     def test_noop_with_explicit_timeout_keeps_caller_value(self) -> None:
         """The caller may want a tighter or looser bound for a specific
-        runner — the safety net only fires when the field is unset.
+        runner - the safety net only fires when the field is unset.
         """
 
         cmd, sto = self._safety_net(
@@ -220,7 +220,7 @@ class TestExecutionRunWorkflowSafetyNetBranches:
 
     def test_non_noop_with_empty_command_does_not_substitute(self) -> None:
         """``remote_ssh_test_only`` and friends must never have their
-        command silently rewritten — an empty command for those
+        command silently rewritten - an empty command for those
         types should surface as a runner-side error so the
         misconfiguration is caught at dispatch time.
         """
@@ -235,7 +235,7 @@ class TestExecutionRunWorkflowSafetyNetBranches:
 
     def test_workflow_type_none_is_legacy_contract(self) -> None:
         """Existing call sites that build the input without the new
-        ``workflow_type`` field land here — the input is consumed
+        ``workflow_type`` field land here - the input is consumed
         verbatim.
         """
 

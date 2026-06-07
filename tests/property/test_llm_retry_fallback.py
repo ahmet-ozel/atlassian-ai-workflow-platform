@@ -1,4 +1,4 @@
-"""LLM rate-limit retry and provider fallback behavior.
+﻿"""LLM rate-limit retry and provider fallback behavior.
 
 
 
@@ -18,7 +18,7 @@ This file pins the deterministic retry / fallback semantics of:class:`llm_orches
  fallback and emits exactly one ``fallback_provider_active`` SSE
  event; otherwise the exception propagates.
 * The ``attempts_429`` counter is **not** reset by an interleaving
- successful chunk — it is a global counter for the whole stream.
+ successful chunk - it is a global counter for the whole stream.
 * Determinism: the same ``(failure_sequence, primary_downtime_s)``
  with the same monkey-patched clock produces the same SSE event
  sequence on every run.
@@ -52,7 +52,7 @@ Until the real orchestrator is importable, this property is also
 exercised against a *reference* orchestrator that re-states the
 expected state machine. The two-layer setup means:
 
-* The expected behavior is encoded once and tested twice — against
+* The expected behavior is encoded once and tested twice - against
  the production class (when present) and against the oracle.
 * When the production layer is available, it becomes the primary
  signal and the oracle layer doubles as a regression net for the
@@ -85,7 +85,7 @@ from hypothesis import strategies as st
 
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — make ``messages`` and (when present)
+# sys.path bootstrap - make ``messages`` and (when present)
 # ``llm_orchestrator.orchestrator`` importable when the file is run
 # directly via ``python -m pytest`` from any cwd. The workspace
 # ``pytest.ini`` already adds the lib ``src`` directories for the
@@ -107,7 +107,7 @@ for _src in _LIB_SRC_DIRS:
 from messages import Message, SseEvent  # noqa: E402
 
 # ---------------------------------------------------------------------------
-# Optional production-layer import — may not have landed yet.
+# Optional production-layer import - may not have landed yet.
 # When the import fails we set ``_REAL_ORCHESTRATOR`` to ``None``; the
 # production-layer test class is then skipped via ``pytest.mark.skipif``.
 # This mirrors the pattern in ``test_sliding_window.py``.
@@ -137,7 +137,7 @@ FALLBACK_DOWNTIME_THRESHOLD_S: int = 60
 
 
 # ---------------------------------------------------------------------------
-# Failure model — the input alphabet for the property's strategies.
+# Failure model - the input alphabet for the property's strategies.
 # ---------------------------------------------------------------------------
 
 
@@ -168,11 +168,11 @@ class _Failure:
  ``kind`` selects the runtime behaviour the fake provider should
  exhibit on the next ``stream`` invocation:
 
- * ``"success"`` — yield one terminal token-chunk and a ``done``
+ * ``"success"`` - yield one terminal token-chunk and a ``done``
  event; the orchestrator's outer loop returns afterwards.
- * ``"rate_limit"`` — raise ``RateLimitError`` mid-stream so the
+ * ``"rate_limit"`` - raise ``RateLimitError`` mid-stream so the
  orchestrator's ``except RateLimitError`` branch fires.
- * ``"unavailable"`` — raise ``ProviderUnavailable`` mid-stream so
+ * ``"unavailable"`` - raise ``ProviderUnavailable`` mid-stream so
  the orchestrator's ``except ProviderUnavailable`` branch fires.
  """
 
@@ -206,7 +206,7 @@ _primary_downtime_strategy: st.SearchStrategy[int] = st.integers(
 
 
 # ---------------------------------------------------------------------------
-# Reference oracle — re-implementation of the expected state machine.
+# Reference oracle - re-implementation of the expected state machine.
 # ---------------------------------------------------------------------------
 
 
@@ -215,7 +215,7 @@ class _SleepRecorder:
     """Captures every ``asyncio.sleep`` invocation as a (delay, attempt) pair.
 
  The oracle and the production orchestrator both call into this
- recorder via the ``sleep`` keyword argument — patching the
+ recorder via the ``sleep`` keyword argument - patching the
  coroutine instead of monkey-patching ``asyncio.sleep`` keeps the
  test self-contained and immune to other concurrent tests that
  might also stub the global function.
@@ -276,7 +276,7 @@ class _FakeProvider:
         # chunk, an error element raises mid-iteration.
         self.calls += 1
         if self._cursor >= len(self._plan):
-            # Exhausted plan — emit a terminal success so the
+            # Exhausted plan - emit a terminal success so the
             # outer loop returns. This keeps the oracle bounded
             # even when Hypothesis draws a sequence that under-
             # specifies the trailing behaviour.
@@ -291,10 +291,10 @@ class _FakeProvider:
         if step.kind == "rate_limit":
             # Important: raise *after* the ``yield`` keyword so the
             # async generator semantics match the production
-            # ``async for chunk in provider.stream(...)`` loop —
+            # ``async for chunk in provider.stream(...)`` loop -
             # the orchestrator's ``except`` clause should catch
             # this regardless of whether any chunk was emitted.
-            if False:  # pragma: no cover — keeps mypy happy
+            if False:  # pragma: no cover - keeps mypy happy
                 yield _Chunk(text="", token_count=0, is_final=False, kind="text")
             raise _RateLimitError("simulated 429")
         if step.kind == "unavailable":
@@ -411,7 +411,7 @@ def _split_primary_fallback(
  The first half drives the primary provider; the second half drives
  the fallback. We split deterministically (slice at midpoint) so
  Hypothesis can shrink predictably and the fallback branch always
- has at least one element — when the original sequence has length
+ has at least one element - when the original sequence has length
  1 we duplicate the single element so both providers have a plan.
  """
 
@@ -436,7 +436,7 @@ def _expected_terminal_event(
  provider.
  * ``None`` when the sequence ends with a ``ProviderUnavailable``
  whose downtime is below the fallback threshold (the
- orchestrator re-raises in that case — surfaced as a Python
+ orchestrator re-raises in that case - surfaced as a Python
  exception, not an SSE event).
 
  The tests use this oracle as one of two cross-checks
@@ -811,7 +811,7 @@ class TestReferenceOrchestrator:
  """
 
         downtime = max(primary_downtime_s, FALLBACK_DOWNTIME_THRESHOLD_S)
-        # Primary fails, fallback succeeds — the orchestrator must
+        # Primary fails, fallback succeeds - the orchestrator must
         # cross over and produce a ``done`` terminal.
         primary = _FakeProvider(
             failure_plan=(_Failure(kind="unavailable"),),
@@ -1037,7 +1037,7 @@ class TestBackoffPinnedExamples:
         events = asyncio.run(_run())
 
         # The third 429 exits via ``return`` *before* the
-        # ``await asyncio.sleep(...)`` line — so we observe at most
+        # ``await asyncio.sleep(...)`` line - so we observe at most
         # ``MAX_429_ATTEMPTS - 1 == 2`` delays.
         assert len(recorder.delays) == MAX_429_ATTEMPTS - 1, recorder.delays
         # And the second delay is double the first (exponential).
@@ -1046,7 +1046,7 @@ class TestBackoffPinnedExamples:
 
 
 # ---------------------------------------------------------------------------
-# Production-layer checks — skipped until the real class is importable.
+# Production-layer checks - skipped until the real class is importable.
 # ---------------------------------------------------------------------------
 
 

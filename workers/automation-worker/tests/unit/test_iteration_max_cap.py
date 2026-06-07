@@ -1,4 +1,4 @@
-"""Unit tests for the per-issue iteration storm-guard cap.
+﻿"""Unit tests for the per-issue iteration storm-guard cap.
 
 The activity-side and workflow-side behaviour are exercised
 independently:
@@ -16,7 +16,7 @@ independently:
   ``max_iteration_exceeded``, posts a Turkish-prose Jira comment via
   the ``jira_add_comment`` activity, and writes an audit row with
   ``action="iteration_max_exceeded"``. The workflow returns its
-  ``unauthorized`` envelope rather than raising — a stray
+  ``unauthorized`` envelope rather than raising - a stray
   ``[iterate]`` storm must never crash the worker.
 
 Strategy
@@ -46,7 +46,7 @@ from typing import Any
 import pytest
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — keep parity with sibling unit tests
+# sys.path bootstrap - keep parity with sibling unit tests
 # ---------------------------------------------------------------------------
 
 _WORKER_ROOT: Path = Path(__file__).resolve().parents[2]
@@ -162,7 +162,7 @@ def _make_record(*, issue_key: str, iteration_number: int) -> IterationRecord:
 
 
 # ===========================================================================
-# 1. Activity layer — storm-guard boundary
+# 1. Activity layer - storm-guard boundary
 # ===========================================================================
 
 
@@ -172,7 +172,7 @@ class TestActivityStormGuard:
 
     The cap is *inclusive* on the current count: ``current_count == 10``
     means the next ``[iterate]`` is rejected. The boundary at
-    ``current_count == 9`` is the last allowed slot — it produces
+    ``current_count == 9`` is the last allowed slot - it produces
     ``next_iteration_n = 10`` with ``authorized=True``.
     """
 
@@ -210,7 +210,7 @@ class TestActivityStormGuard:
         assert result.authorized is False
         assert result.reason == "max_iteration_exceeded"
         assert result.current_count == 10
-        # No new row inserted — the storm-guard runs before the
+        # No new row inserted - the storm-guard runs before the
         # workspace path / insert step.
         assert len(store.rows) == 1
 
@@ -218,7 +218,7 @@ class TestActivityStormGuard:
         """Above the cap: count=15 → reject + ``current_count=15``.
 
         Defends against the cap being implemented as ``== cap``
-        rather than ``>= cap`` — without the explicit ``>=`` guard
+        rather than ``>= cap`` - without the explicit ``>=`` guard
         an issue with 15 prior iterations would slip through.
         """
         store = _InMemoryStore(
@@ -249,7 +249,7 @@ class TestActivityStormGuard:
 
 
 # ===========================================================================
-# 2. Workflow layer — Jira comment + audit row + no child dispatch
+# 2. Workflow layer - Jira comment + audit row + no child dispatch
 # ===========================================================================
 #
 # Driven through the Temporal test environment so the workflow body
@@ -295,7 +295,7 @@ async def test_workflow_max_iteration_exceeded_handling() -> None:
     ``prepare_iteration`` activity is stubbed to return a canned
     ``max_iteration_exceeded`` context; ``jira_add_comment`` and
     ``audit_write`` are stubbed to record their invocations. The
-    child :class:`AutomationWorkflow` is *not* registered — if the
+    child :class:`AutomationWorkflow` is *not* registered - if the
     workflow attempts to start it the test fails with a clear
     ``unable to find workflow`` error.
     """
@@ -358,7 +358,7 @@ async def test_workflow_max_iteration_exceeded_handling() -> None:
                 task_queue=task_queue,
             )
 
-    # Workflow returned a clean ``unauthorized`` envelope — never
+    # Workflow returned a clean ``unauthorized`` envelope - never
     # raised, no child started.
     assert result.decision == "unauthorized"
     assert result.reason == "max_iteration_exceeded"
@@ -411,7 +411,7 @@ async def test_workflow_authorized_path_does_not_emit_storm_guard() -> None:
     async def fake_prepare_iteration(
         _: PrepareIterationInput,
     ) -> IterationContext:
-        # ``not_authorized`` reason — the dispatcher rejected the
+        # ``not_authorized`` reason - the dispatcher rejected the
         # comment author, the activity confirmed. Storm-guard side
         # effects MUST NOT fire here.
         return IterationContext(
@@ -470,6 +470,6 @@ async def test_workflow_authorized_path_does_not_emit_storm_guard() -> None:
     assert result.decision == "unauthorized"
     assert result.reason == "not_authorized"
     # Crucially: no storm-guard side effects for the not_authorized
-    # reason — the dispatcher's audit row is the only record.
+    # reason - the dispatcher's audit row is the only record.
     assert recorder.jira_calls == []
     assert recorder.audit_calls == []

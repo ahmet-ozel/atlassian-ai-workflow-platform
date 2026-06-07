@@ -1,4 +1,4 @@
-"""Unit tests for the workspace disk-quota gate in
+﻿"""Unit tests for the workspace disk-quota gate in
 :class:`ExecutionRunWorkflow` and :class:`LegacyExecutionRunWorkflow`.
 
 Both workflow bodies invoke the ``check_disk_quota`` activity *before*
@@ -14,22 +14,22 @@ gate is opt-in:
   :attr:`~ExecutionRunInput.dept_id` pair.
 
 When either field is unset the gate is skipped entirely and the
-existing observable behaviour is preserved verbatim — every existing
+existing observable behaviour is preserved verbatim - every existing
 integration test stays green.
 
 Scenarios covered
 -----------------
 
-1. ``workspace_quota_mb`` is ``None`` — gate is skipped, ``ssh_run_test``
+1. ``workspace_quota_mb`` is ``None`` - gate is skipped, ``ssh_run_test``
    runs normally (canonical).
-2. ``dept_id`` is empty — gate is skipped (canonical).
-3. Quota cap = 1024 MB, runner reports 500 MB — gate allows the run,
+2. ``dept_id`` is empty - gate is skipped (canonical).
+3. Quota cap = 1024 MB, runner reports 500 MB - gate allows the run,
    ``ssh_run_test`` runs normally (canonical).
-4. Quota cap = 1024 MB, runner reports 1100 MB — gate rejects with
+4. Quota cap = 1024 MB, runner reports 1100 MB - gate rejects with
    ``ApplicationError(type="DiskQuotaExceeded")``, ``ssh_run_test``
    is **never** invoked (canonical).
 5. SSH probe fails (activity returns ``allowed=True`` with an
-   ``error`` field — best-effort allow) — gate allows the run
+   ``error`` field - best-effort allow) - gate allows the run
    (canonical).
 6. Legacy :class:`LegacyExecutionRunWorkflow` mirrors the same
    behaviour:
@@ -61,7 +61,7 @@ from temporalio.worker import Worker
 
 
 # ---------------------------------------------------------------------------
-# ``sys.path`` bootstrapping — mirror the pattern used by
+# ``sys.path`` bootstrapping - mirror the pattern used by
 # ``test_execution_run_workflow_git_push.py`` so the in-tree ``src/``
 # package import resolves without an editable install.
 # ---------------------------------------------------------------------------
@@ -75,7 +75,7 @@ if str(_SRC_DIR) not in sys.path:
 
 
 # Module-level imports of the symbols referenced by activity-stub type
-# hints — see the comment in ``test_execution_run_workflow_git_push.py``
+# hints - see the comment in ``test_execution_run_workflow_git_push.py``
 # for the rationale (Temporal introspects activity stubs at decorator
 # application time, which evaluates forward references against the
 # *defining module's* globals).
@@ -132,7 +132,7 @@ def _canonical_activities(
     """Build the activity stub bundle for the canonical workflow.
 
     The canonical workflow body invokes:
-      * ``ssh_healthcheck`` (always — pre-gate)
+      * ``ssh_healthcheck`` (always - pre-gate)
       * ``check_disk_quota`` (only when quota_mb + dept_id set)
       * ``ssh_run_test`` (only when the gate allows)
       * ``apply_cleanup_policy`` (best-effort, post-run)
@@ -264,7 +264,7 @@ async def test_canonical_gate_skipped_when_quota_none() -> None:
 
     Every existing call site builds an :class:`ExecutionRunWorkflowInput`
     without ``workspace_quota_mb``, so the default ``None`` must skip
-    the gate entirely — no ``check_disk_quota`` activity invocation.
+    the gate entirely - no ``check_disk_quota`` activity invocation.
     """
 
     log = _ActivityCallLog()
@@ -419,7 +419,7 @@ async def test_canonical_gate_rejects_when_usage_exceeds_cap() -> None:
     With quota=1024 MB and reported usage=1100 MB the gate rejects the
     run.  The workflow surfaces ``ApplicationError(type="DiskQuotaExceeded",
     non_retryable=True)`` and the (non-idempotent) ``ssh_run_test``
-    activity is **never** invoked — preventing a storm of failing runs
+    activity is **never** invoked - preventing a storm of failing runs
     against an already-full disk.
     """
 
@@ -483,7 +483,7 @@ async def test_canonical_gate_allows_when_probe_fails_best_effort() -> None:
     When the SSH probe fails the activity returns ``allowed=True`` with
     a non-empty ``error`` field (matching the contract pinned in
     ``activities/disk_quota.py``).  The workflow logs a diagnostic and
-    proceeds to ``ssh_run_test`` as normal — a transient network blip
+    proceeds to ``ssh_run_test`` as normal - a transient network blip
     must not wedge every run on a flaky check.
     """
 
@@ -710,7 +710,7 @@ async def test_legacy_gate_rejects_when_usage_exceeds_cap() -> None:
 
     names = log.names()
     assert "check_disk_quota" in names, names
-    # The SSH command must not have run — fail-fast contract.
+    # The SSH command must not have run - fail-fast contract.
     assert "ssh_connect_and_run" not in names, names
     # And no artifacts were uploaded.
     assert "minio_upload_artifact" not in names, names
@@ -734,7 +734,7 @@ async def test_legacy_gate_skipped_when_quota_fields_unset() -> None:
 
     Every existing legacy call site builds an :class:`ExecutionRunInput`
     without the optional ``workspace_quota_mb`` / ``dept_id`` pair, so the
-    defaults (``None`` / ``None``) must skip the gate entirely — no
+    defaults (``None`` / ``None``) must skip the gate entirely - no
     ``check_disk_quota`` invocation.  The full legacy flow runs exactly
     as before.
     """

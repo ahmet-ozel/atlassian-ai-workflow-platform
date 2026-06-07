@@ -1,28 +1,28 @@
-"""Shared Vault staging helpers for atomic department create flows.
+﻿"""Shared Vault staging helpers for atomic department create flows.
 
 This module owns the small set of pure helpers used by both the
-"single-shot" atomic create endpoint (task 5.3 — ``POST
-/admin/departments``) and the multi-step setup wizard (task 5.4 —
+"single-shot" atomic create endpoint (task 5.3 - ``POST
+/admin/departments``) and the multi-step setup wizard (task 5.4 -
 ``POST /admin/departments/wizard``):
 
-* :data:`VALID_SERVICES` — the closed set of Atlassian services a
+* :data:`VALID_SERVICES` - the closed set of Atlassian services a
   department bot may probe (``jira``, ``bitbucket``, ``confluence``).
-* :func:`staging_vault_path` — canonical ``vault:atlassian/_staging/...``
+* :func:`staging_vault_path` - canonical ``vault:atlassian/_staging/...``
   path layout used during the staging phase of an atomic create.
-* :func:`final_vault_path` — canonical ``vault:atlassian/<dept>/...``
+* :func:`final_vault_path` - canonical ``vault:atlassian/<dept>/...``
   path layout used after a successful commit.
-* :func:`scrub_plain_text_token` — best-effort heap zeroing for a
+* :func:`scrub_plain_text_token` - best-effort heap zeroing for a
   plain-text token bytearray. Returns nothing; callers MUST drop the
   reference after the scrub.
-* :func:`build_credential_payload` — minimal, schema-aligned mapping
+* :func:`build_credential_payload` - minimal, schema-aligned mapping
   written into Vault for a single ``(dept_id, service)`` pair.
 
 Both endpoints rely on the same Vault path conventions documented in
 ``design.md`` §"Vault path domeni":
 
-* ``vault:atlassian/_staging/<request_id>/<service>`` — temporary
+* ``vault:atlassian/_staging/<request_id>/<service>`` - temporary
   staging slot, deleted on rollback (R3.6).
-* ``vault:atlassian/<dept_id>/<service>`` — final slot, written after
+* ``vault:atlassian/<dept_id>/<service>`` - final slot, written after
   the DB transaction commits (R3.4).
 
 The helpers are deliberately framework-agnostic: no FastAPI / asyncpg
@@ -70,7 +70,7 @@ VALID_SERVICES: Final[frozenset[str]] = frozenset({"jira", "bitbucket", "conflue
 #: Vault path layer.
 _DEPT_ID_PATTERN: Final[re.Pattern[str]] = re.compile(r"^[a-z][a-z0-9-]{1,30}$")
 
-#: Request-id pattern. UUID v4 / opaque slug — the staging path is
+#: Request-id pattern. UUID v4 / opaque slug - the staging path is
 #: only addressable by the service, but we still constrain the
 #: character class so a buggy caller cannot smuggle path traversal
 #: characters.
@@ -177,9 +177,9 @@ def scrub_plain_text_token(buffer: bytearray) -> None:
 
     The function overwrites every byte of ``buffer`` with zero so a
     later memory snapshot does not surface the plain-text credential
-    (R3.4 — "plain-text token … heap'ten ``bytearray.zero()`` ile
+    (R3.4 - "plain-text token … heap'ten ``bytearray.zero()`` ile
     silinir"). Python does not guarantee the GC will not have already
-    copied the value elsewhere, so this is **best-effort** — callers
+    copied the value elsewhere, so this is **best-effort** - callers
     SHOULD still drop their reference immediately after the call.
 
     Calling this on an immutable ``bytes`` object is a no-op (you
@@ -215,11 +215,11 @@ def build_credential_payload(
     The shape mirrors what :class:`automation_service.probe.ResolvedCredential`
     expects on the read side:
 
-    * ``username`` — Atlassian email or username.
-    * ``personal_token`` — API token / app password. Stored verbatim
+    * ``username`` - Atlassian email or username.
+    * ``personal_token`` - API token / app password. Stored verbatim
       in Vault; never echoed in HTTP responses, logs or DB columns
       (R3.4).
-    * ``account_id`` — Optional. Populated by the auto-fetch step
+    * ``account_id`` - Optional. Populated by the auto-fetch step
       (task 6.2) when known at write time so subsequent reads do not
       need a second round-trip to the IdP.
 

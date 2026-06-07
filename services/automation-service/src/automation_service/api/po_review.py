@@ -1,19 +1,19 @@
-"""``GET /api/orphan-branches`` + PO Review Inbox API endpoints.
+﻿"""``GET /api/orphan-branches`` + PO Review Inbox API endpoints.
 
-* ``GET /api/orphan-branches?dept_id=<id>`` — list ``ai/*`` branches
+* ``GET /api/orphan-branches?dept_id=<id>`` - list ``ai/*`` branches
   in the dept's Bitbucket workspace that have no associated pull
   request. Each entry carries an LLM-rendered diff summary served
   through :class:`DiffSummaryCacheRepo` (cache hit path: only the
   *first* observer of a given
   ``diff_hash`` pays the LLM call).
-* ``GET /api/po-review-inbox?dept_id=<id>`` — list the dept's draft
+* ``GET /api/po-review-inbox?dept_id=<id>`` - list the dept's draft
   pull requests authored by a known bot account (the "PO Review
   Inbox" surfaced in the Streamlit page).
-* ``POST /api/po-review-inbox/{pr_id}/open-draft`` — flip a
+* ``POST /api/po-review-inbox/{pr_id}/open-draft`` - flip a
   closed/declined draft PR back to ``open`` so the bot can re-iterate.
-* ``POST /api/po-review-inbox/{pr_id}/request-changes`` — post a
+* ``POST /api/po-review-inbox/{pr_id}/request-changes`` - post a
   PO-side "request changes" review on the PR.
-* ``POST /api/po-review-inbox/{pr_id}/approve-note`` — post a
+* ``POST /api/po-review-inbox/{pr_id}/approve-note`` - post a
   PO-side approval **note** (an inline comment, **not** a Bitbucket
   approval) so the bot can advance without claiming the human
   promoted the PR.
@@ -24,7 +24,7 @@ Authorization
 Every endpoint is gated by :func:`auth_shared.check`:
 
 * ``viewer`` role (or higher) is required to *read* the two list
-  endpoints — the PO Review pages render in the Streamlit dashboard
+  endpoints - the PO Review pages render in the Streamlit dashboard
   and any authenticated user with dept membership may consult them.
 * ``lead`` role (or higher) is required to *act* on a PR (open-draft,
   request-changes, approve-note). ``lead`` is the lowest role that
@@ -34,8 +34,8 @@ Every endpoint is gated by :func:`auth_shared.check`:
   ``dept_id`` receives HTTP 403 + ``rbac_denied`` audit.
 * ``admin`` is global and bypasses the dept-scope check.
 
-The dept-scope check is a single line — ``check(actor_ctx,
-required_role, dept_id=...)`` — because the foundation
+The dept-scope check is a single line - ``check(actor_ctx,
+required_role, dept_id=...)`` - because the foundation
 :func:`auth_shared.check` already encodes "admin always passes;
 dept-scoped roles must match ``dept_ids``".
 
@@ -46,7 +46,7 @@ dept-scoped roles must match ``dept_ids``".
 The module mirrors the dependency-container pattern used by
   :mod:`automation_service.api.cancel` and
   :mod:`automation_service.api.repo_sync` for collaborator
-  injection — the router itself is stateless; tests build a
+  injection - the router itself is stateless; tests build a
   :class:`PoReviewEndpointDeps` directly.
 
 Pure pieces of the decision live in
@@ -105,7 +105,7 @@ _LOG = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# Audit action / resource constants — single source of truth
+# Audit action / resource constants - single source of truth
 # ---------------------------------------------------------------------------
 
 #: Audit ``action`` token written when a non-bot actor reads the
@@ -126,7 +126,7 @@ _AUDIT_ACTION_OPEN_DRAFT: str = "po_review_open_draft"
 _AUDIT_ACTION_REQUEST_CHANGES: str = "po_review_request_changes"
 
 #: Audit ``action`` token written when an actor posts an approve
-#: **note** on a PR (deliberately *not* a Bitbucket approval — the
+#: **note** on a PR (deliberately *not* a Bitbucket approval - the
 #: human is leaving feedback, not promoting the PR).
 _AUDIT_ACTION_APPROVE_NOTE: str = "po_review_approve_note"
 
@@ -140,7 +140,7 @@ _AUDIT_ACTION_SCAN_FAILED: str = "po_review_scan_failed"
 
 
 # ---------------------------------------------------------------------------
-# Collaborator protocols — keep the router trivially mockable
+# Collaborator protocols - keep the router trivially mockable
 # ---------------------------------------------------------------------------
 
 
@@ -187,7 +187,7 @@ class BitbucketPullRequestScanner(Protocol):
 
 #: Async callable producing an LLM diff summary for ``diff_hash``.
 #: The endpoint passes this to
-#: :meth:`DiffSummaryProvider.get_or_compute` — production wiring
+#: :meth:`DiffSummaryProvider.get_or_compute` - production wiring
 #: binds the LLM-side render coroutine; tests inject a fake that
 #: returns canned strings.
 LlmDiffCallback = Callable[[str], Awaitable[str]]
@@ -244,7 +244,7 @@ class PoReviewActions(Protocol):
 
 
 # ---------------------------------------------------------------------------
-# Dependency container — injected via ``request.app.state.po_review``
+# Dependency container - injected via ``request.app.state.po_review``
 # ---------------------------------------------------------------------------
 
 
@@ -283,7 +283,7 @@ class PoReviewEndpointDeps:
     llm_diff_callback:
         Async callable that produces the LLM summary for a given
         ``diff_hash`` on cache miss. The endpoint never calls this
-        directly — it hands it to
+        directly - it hands it to
         :meth:`DiffSummaryProvider.get_or_compute`.
     actions:
         :class:`PoReviewActions` adapter the three POST endpoints
@@ -334,7 +334,7 @@ def _now(deps: PoReviewEndpointDeps) -> datetime:
 
 
 # ---------------------------------------------------------------------------
-# AuthN helpers — bearer token extraction + OIDC validation
+# AuthN helpers - bearer token extraction + OIDC validation
 # ---------------------------------------------------------------------------
 
 
@@ -385,7 +385,7 @@ def _build_auth_context(claims: Mapping[str, Any]) -> AuthContext | None:
     The role is read from the canonical ``role`` claim; missing or
     non-string roles fall through to ``"viewer"`` (the lowest
     privilege) so the foundation guard rejects elevated requests by
-    default — matching the wider service convention of preferring
+    default - matching the wider service convention of preferring
     "deny on ambiguous" for sensitive endpoints.
     """
 
@@ -436,7 +436,7 @@ def _make_audit_event(
     """Construct an :class:`AuditEvent` with a safe ``actor_role``.
 
     Mirrors :mod:`automation_service.api.cancel` /
-    :mod:`automation_service.api.repo_sync` — unrecognised roles
+    :mod:`automation_service.api.repo_sync` - unrecognised roles
     fall back to ``"system"`` and the original role is stashed on
     ``payload["claimed_role"]`` so audit forensics can still see
     what was offered.
@@ -464,11 +464,11 @@ def _make_audit_event(
 
 
 async def _emit_audit(audit_logger: AuditLogger, event: AuditEvent) -> None:
-    """Best-effort audit write — never let an audit error 500 the call."""
+    """Best-effort audit write - never let an audit error 500 the call."""
 
     try:
         await audit_logger.write(event)
-    except Exception as exc:  # noqa: BLE001 — best-effort
+    except Exception as exc:  # noqa: BLE001 - best-effort
         _LOG.warning(
             "po_review.audit_write_failed action=%s resource=%s err=%s",
             event.action,
@@ -478,7 +478,7 @@ async def _emit_audit(audit_logger: AuditLogger, event: AuditEvent) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Authorisation gate — shared by every endpoint in this router
+# Authorisation gate - shared by every endpoint in this router
 # ---------------------------------------------------------------------------
 
 
@@ -498,7 +498,7 @@ async def _authorize(
     2. Builds an :class:`AuthContext` from the OIDC claims (HTTP 401
        when the token is missing the ``account_id`` / ``sub`` claim).
     3. Calls :func:`auth_shared.check(actor_ctx, required_role,
-       dept_id=dept_id)` — failure raises :class:`PermissionDenied`,
+       dept_id=dept_id)` - failure raises :class:`PermissionDenied`,
        which we translate into HTTP 403 + a single ``rbac_denied``
        audit row carrying the rejected request's ``required_role``
        and ``dept_id``.
@@ -561,7 +561,7 @@ async def _authorize(
 
 
 # ---------------------------------------------------------------------------
-# Branch / PR projection helpers — fold MCP responses into pure helpers
+# Branch / PR projection helpers - fold MCP responses into pure helpers
 # ---------------------------------------------------------------------------
 
 
@@ -580,7 +580,7 @@ def _project_branches(
       lookup contains :data:`None` when the MCP did not supply a
       hash (degenerate branches with no commits yet).
 
-    Malformed entries (missing ``name``) are silently skipped — they
+    Malformed entries (missing ``name``) are silently skipped - they
     are not actionable for the operator.
     """
 
@@ -616,7 +616,7 @@ def _project_pull_requests(
     """Project the MCP PR response into :class:`PullRequest` values.
 
     Malformed entries (missing ``id``, ``source_branch``, or
-    ``author_account_id``) are silently skipped — they are not
+    ``author_account_id``) are silently skipped - they are not
     actionable for the operator and the pure helpers only need the
     well-typed subset.
     """
@@ -662,7 +662,7 @@ def _age_days(now: datetime, last_commit_at: datetime | None) -> int | None:
     is missing). Both timestamps are assumed UTC; mismatched
     tzinfo is normalised by ``timedelta`` arithmetic on
     ``datetime.now(timezone.utc)`` and ``last_commit_at`` so a
-    naive timestamp would surface as a noisy age — we prefer that
+    naive timestamp would surface as a noisy age - we prefer that
     over silently returning ``0``.
     """
 
@@ -729,7 +729,7 @@ async def list_orphan_branches(
     try:
         raw_branches = await deps.branch_scanner(dept_id)
         raw_prs = await deps.pr_scanner(dept_id)
-    except Exception as exc:  # noqa: BLE001 — translate to 502
+    except Exception as exc:  # noqa: BLE001 - translate to 502
         await _emit_audit(
             deps.audit_logger,
             _make_audit_event(
@@ -758,7 +758,7 @@ async def list_orphan_branches(
 
     # ---------- Sort oldest-first by last_commit_at --------------------------
     # ``None`` last_commit_at sorts *first* (oldest position) so a
-    # branch with missing commit metadata is still surfaced — the PO
+    # branch with missing commit metadata is still surfaced - the PO
     # would otherwise miss it forever. Using a plain tuple key keeps
     # the comparison total without resorting to ``functools.cmp``.
     sorted_orphans = sorted(
@@ -781,7 +781,7 @@ async def list_orphan_branches(
                 summary: str | None = await deps.diff_summary_cache.get_or_compute(
                     diff_hash, deps.llm_diff_callback
                 )
-            except Exception as exc:  # noqa: BLE001 — non-fatal
+            except Exception as exc:  # noqa: BLE001 - non-fatal
                 _LOG.warning(
                     "po_review.diff_summary_failed branch=%s err=%s",
                     branch.name,
@@ -860,7 +860,7 @@ async def list_po_review_inbox(
     try:
         raw_prs = await deps.pr_scanner(dept_id)
         bot_ids = await deps.bot_account_ids(dept_id)
-    except Exception as exc:  # noqa: BLE001 — translate to 502
+    except Exception as exc:  # noqa: BLE001 - translate to 502
         await _emit_audit(
             deps.audit_logger,
             _make_audit_event(
@@ -924,7 +924,7 @@ async def list_po_review_inbox(
 
 
 # ---------------------------------------------------------------------------
-# POST action endpoints — open-draft / request-changes / approve-note
+# POST action endpoints - open-draft / request-changes / approve-note
 # ---------------------------------------------------------------------------
 
 
@@ -942,14 +942,14 @@ async def _run_pr_action(
     """Run a single Bitbucket-side action behind the audit envelope.
 
     The three action endpoints share the same surrounding audit
-    plumbing — only the actual MCP call differs. Factoring the
+    plumbing - only the actual MCP call differs. Factoring the
     plumbing out keeps the per-endpoint bodies small and ensures
     every action emits exactly one audit row regardless of outcome.
     """
 
     try:
         await invoke()
-    except Exception as exc:  # noqa: BLE001 — translate to 502
+    except Exception as exc:  # noqa: BLE001 - translate to 502
         await _emit_audit(
             deps.audit_logger,
             _make_audit_event(
@@ -1092,7 +1092,7 @@ async def request_changes(
             "endpoint": "POST /api/po-review-inbox/{pr_id}/request-changes",
             "pr_id": pr_id,
             # Record only the length of the comment so audit rows
-            # never embed the full PO message — keeps the audit
+            # never embed the full PO message - keeps the audit
             # table small and avoids accidental PII echo.
             "comment_length": len(comment),
         },
@@ -1121,7 +1121,7 @@ async def approve_note(
     """Post an approve **note** on a draft bot PR.
 
     Required role: ``lead``. The note is an inline comment, *not* a
-    Bitbucket approval — the platform never marks a bot-authored
+    Bitbucket approval - the platform never marks a bot-authored
     PR as approved on the human's behalf. The note signals intent so the workflow can
     advance without the human relinquishing the merge decision.
     """
@@ -1173,7 +1173,7 @@ async def approve_note(
 
 
 # ---------------------------------------------------------------------------
-# Body-parsing helpers — accept JSON, but tolerate empty / non-JSON body
+# Body-parsing helpers - accept JSON, but tolerate empty / non-JSON body
 # ---------------------------------------------------------------------------
 
 
@@ -1189,7 +1189,7 @@ async def _read_optional_json_body(request: Request) -> dict[str, Any] | None:
 
     try:
         raw = await request.body()
-    except Exception:  # noqa: BLE001 — defensive; treat as "no body"
+    except Exception:  # noqa: BLE001 - defensive; treat as "no body"
         return None
     if not raw:
         return None

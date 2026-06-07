@@ -1,5 +1,5 @@
-"""
-Test 05: Setup Wizard Step 4 — MCP Server (Credential UI Entry & Connection Test).
+﻿"""
+Test 05: Setup Wizard Step 4 - MCP Server (Credential UI Entry & Connection Test).
 
 Validates that the Playwright MCP browser automation can fill the MCP Server
 credential form with Jira/Confluence credentials from credentials.md, test
@@ -476,7 +476,7 @@ class TestMCPConnectionTest:
         test_result = _test_mcp_connection(credentials)
 
         if not test_result["tested"]:
-            # Connection test endpoint not available via API — this is expected
+            # Connection test endpoint not available via API - this is expected
             # when the wizard requires Playwright MCP browser interaction.
             pytest.skip(
                 f"Connection test could not be triggered via API. "
@@ -515,7 +515,7 @@ class TestMCPStepCompletion:
         completion = _wait_for_step_completion(WIZARD_STEP_NAME, STEP_4_TIMEOUT)
 
         if not completion["completed"]:
-            # Step didn't complete via API polling — this may be expected
+            # Step didn't complete via API polling - this may be expected
             # if the wizard requires Playwright MCP browser interaction.
             pytest.skip(
                 f"MCP Server step did not complete within {STEP_4_TIMEOUT}s via API polling. "

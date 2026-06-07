@@ -1,4 +1,4 @@
-"""invariant for ``config/departments.schema.json`` accept/reject behaviour.
+﻿"""invariant for ``config/departments.schema.json`` accept/reject behaviour.
 
 invariant: ``departments.schema.json`` validates
 iff bot has at least one of ``{jira, bitbucket, confluence}`` and ``id``
@@ -14,7 +14,7 @@ The invariant covers these behaviours:
  (c) the department object MUST NOT contain extra ``has_jira``,
  ``has_bitbucket``, or ``has_confluence`` flags; capabilities are
  derived solely from credential presence under ``bot``
- — "Credential var = Servis var").
+ - "Credential var = Servis var").
  (d) ``departments.json`` MUST NOT contain two departments with the
  same ``id``; the second entry is rejected.
  ``additionalProperties: false`` on every nested object enforces
@@ -26,22 +26,22 @@ load at startup. This module exercises the JSON
 Schema 2020-12 dialect via ``jsonschema.Draft202012Validator`` and
 asserts:
 
-1. **Accept** — every department whose ``id`` matches
+1. **Accept** - every department whose ``id`` matches
  ``^[a-z][a-z0-9-]{1,30}$`` AND whose ``bot`` has ≥1 of
  ``{jira, bitbucket, confluence}`` populated SHALL validate without
  raising.
-2. **Reject** — every department whose ``id`` violates the regex OR whose
+2. **Reject** - every department whose ``id`` violates the regex OR whose
  ``bot`` is empty (``{}``) SHALL raise ``ValidationError``.
-3. **Subset coverage** — all 7 non-empty subsets of
+3. **Subset coverage** - all 7 non-empty subsets of
  ``{jira, bitbucket, confluence}`` are accepted; the empty subset is
  rejected.
-4. **credential_ref regex** — every randomly drawn ``vault:<...>`` path
+4. **credential_ref regex** - every randomly drawn ``vault:<...>`` path
  that matches the schema's character class is accepted; every random
  non-conforming string is rejected.
-5. **No has_* flags** — any department object carrying a top-level
+5. **No has_* flags** - any department object carrying a top-level
  ``has_jira`` / ``has_bitbucket`` / ``has_confluence`` flag is rejected
  thanks to ``additionalProperties: false``.
-6. **Duplicate id rejection** — at the loader level, two departments
+6. **Duplicate id rejection** - at the loader level, two departments
  with the same ``id`` in a single document are rejected before the
  schema-validated payload is committed.
 
@@ -114,7 +114,7 @@ valid_id = st.from_regex(r"^[a-z][a-z0-9-]{1,30}$", fullmatch=True)
 # Each branch produces a string that is guaranteed *not* to satisfy the
 # valid regex. The five branches cover the distinct invalid-id shapes.
 invalid_id = st.one_of(
-    # Empty string — fails the leading-char anchor.
+    # Empty string - fails the leading-char anchor.
     st.just(""),
     # Starts with an uppercase letter; the valid pattern requires [a-z].
     st.from_regex(r"^[A-Z].*", fullmatch=True),
@@ -122,7 +122,7 @@ invalid_id = st.one_of(
     st.from_regex(r"^[0-9].*", fullmatch=True),
     # Contains an underscore; the valid character class is [a-z0-9-].
     st.from_regex(r".*_.*", fullmatch=True),
-    # Too long: 32–64 characters of allowed alphabet (max valid length is 31).
+    # Too long: 32-64 characters of allowed alphabet (max valid length is 31).
     st.text(
         min_size=32,
         max_size=64,
@@ -195,7 +195,7 @@ def _make_dept(
 
 
 # ---------------------------------------------------------------------------
-# invariant — ACCEPT: valid id AND bot has ≥1 of {jira, bitbucket, confluence}
+# invariant - ACCEPT: valid id AND bot has ≥1 of {jira, bitbucket, confluence}
 # ---------------------------------------------------------------------------
 
 
@@ -226,7 +226,7 @@ def test_accept_when_id_valid_and_bot_nonempty(
 
 
 # ---------------------------------------------------------------------------
-# invariant — REJECT: id violates regex OR bot is {}
+# invariant - REJECT: id violates regex OR bot is {}
 # ---------------------------------------------------------------------------
 
 
@@ -334,7 +334,7 @@ def test_all_seven_non_empty_subsets_are_accepted(
 ) -> None:
     """Every non-empty subset of ``{jira, bitbucket, confluence}`` validates.
 
- Validates — the schema's ``anyOf`` over the three
+ Validates - the schema's ``anyOf`` over the three
  services must accept Jira-only, Bitbucket-only, Confluence-only,
  every two-service combination, and the full triple.
  """
@@ -360,7 +360,7 @@ def test_all_seven_non_empty_subsets_are_accepted(
 def test_empty_subset_is_rejected(validator: Draft202012Validator) -> None:
     """The empty bot subset (``{}``) is the one case that MUST fail.
 
- Validates — ``minProperties: 1`` + the ``anyOf``
+ Validates - ``minProperties: 1`` + the ``anyOf``
  block both fire on an empty ``bot``.
  """
 
@@ -376,11 +376,11 @@ def test_empty_subset_is_rejected(validator: Draft202012Validator) -> None:
 # The four sub-properties below exercise the schema behaviours
 # not already covered by the kebab-id / non-empty-bot tests above:
 #
-# (b) ``credential_ref`` regex — ``^vault:[a-zA-Z0-9/_-]+$``
+# (b) ``credential_ref`` regex - ``^vault:[a-zA-Z0-9/_-]+$``
 # (c) ``has_*`` flag prohibition (closed-world via additionalProperties)
 # (d) duplicate ``id`` rejection at the loader level
 #
-# Sub-property (a) — "schema-conforming objects validate" — is covered by
+# Sub-property (a) - "schema-conforming objects validate" - is covered by
 # the existing accept/reject pair; we add an explicit smoke check that
 # the on-disk ``config/departments.json`` document validates as written
 #: "schema dışı her durum servis başlangıcını başarısız
@@ -389,7 +389,7 @@ def test_empty_subset_is_rejected(validator: Draft202012Validator) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Vault path strategies (invariant) — schema regex ^vault:[a-zA-Z0-9/_-]+$
+# Vault path strategies (invariant) - schema regex ^vault:[a-zA-Z0-9/_-]+$
 # ---------------------------------------------------------------------------
 
 #: Compiled regex matching the schema's ``credential_ref`` pattern. The
@@ -412,7 +412,7 @@ valid_credential_ref = st.from_regex(
 # regex. Each branch picks one specific failure mode so the failure is
 # explainable when a counter-example is shrunk.
 invalid_credential_ref = st.one_of(
-    # Empty string — fails both the prefix anchor and minimum-length.
+    # Empty string - fails both the prefix anchor and minimum-length.
     st.just(""),
     # Wrong scheme prefix.
     st.text(
@@ -486,7 +486,7 @@ def test_credential_ref_rejects_when_violates_vault_regex(
  overall document fails validation.
 
  Validates (no plain-text token, no basic-auth, no
- base64 fallback in the credential_ref slot) — invariant(b).
+ base64 fallback in the credential_ref slot) - invariant(b).
  """
 
     assume(not VAULT_REF_RE.fullmatch(ref))
@@ -505,7 +505,7 @@ def test_credential_ref_rejects_when_violates_vault_regex(
 
 
 # ---------------------------------------------------------------------------
-# invariant(c) — has_* flag prohibition
+# invariant(c) - has_* flag prohibition
 # ---------------------------------------------------------------------------
 
 #: The three forbidden flag names that some legacy configs add at the
@@ -542,10 +542,10 @@ def test_reject_when_dept_has_forbidden_has_flag(
 
  The ``Department`` object declares ``additionalProperties: false``,
  so any unknown top-level key surfaces as a ``ValidationError``.
- This is the schema-level enforcement of — capability
+ This is the schema-level enforcement of - capability
  derivation is single-sourced from ``bot.<svc>.credential_ref``.
 
- Validates — invariant(c).
+ Validates - invariant(c).
  """
 
     dept = _make_dept(dept_id=dept_id, bot=bot)
@@ -579,7 +579,7 @@ def test_on_disk_departments_carry_no_has_flags(
 
 
 # ---------------------------------------------------------------------------
-# invariant(d) — duplicate id rejection
+# invariant(d) - duplicate id rejection
 # ---------------------------------------------------------------------------
 
 
@@ -590,7 +590,7 @@ def _detect_duplicate_dept_ids(document: dict[str, Any]) -> list[str]:
  ``document["departments"]`` (empty when there are no duplicates).
  The function exists in this test module rather than in a shared lib
  because (a) the loader implementation lands in a later task
- (1.1/3.x) and (b) the property must hold *prior* to that work — the
+ (1.1/3.x) and (b) the property must hold *prior* to that work - the
  contract is "duplicate ids are detectable at parse time".
  """
 
@@ -630,7 +630,7 @@ def test_duplicate_dept_id_is_detected(
  check lives at the loader layer; the property still belongs to the
  schema test module because the same data shape is the input.
 
- Validates — invariant(d).
+ Validates - invariant(d).
  """
 
     dept_a = _make_dept(dept_id=dept_id, bot=bot, display_name="A")
@@ -697,7 +697,7 @@ def test_on_disk_departments_have_unique_ids(repo_root: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# invariant(a) — on-disk smoke check
+# invariant(a) - on-disk smoke check
 # ---------------------------------------------------------------------------
 
 

@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 /**
- * PO Review panel — admin-only review of bot-opened draft PRs.
+ * PO Review panel - admin-only review of bot-opened draft PRs.
  *
  * Moved out of the Streamlit end-user app: PO review is a governance
  * action that must be gated by admin auth, not exposed to every
@@ -63,7 +63,7 @@ export default function PoReviewPage(): JSX.Element {
         setDepartments(list);
         if (list.length > 0) setDeptId((prev) => prev || list[0].id);
       } catch {
-        /* ignore — dept selector simply stays empty */
+        /* ignore - dept selector simply stays empty */
       }
     })();
   }, []);
@@ -157,7 +157,7 @@ export default function PoReviewPage(): JSX.Element {
               onChange={(e) => setDeptId(e.target.value)}
               disabled={loading}
             >
-              {departments.length === 0 && <option value="">— departman yok —</option>}
+              {departments.length === 0 && <option value="">- departman yok -</option>}
               {departments.map((d) => (
                 <option key={d.id} value={d.id}>
                   {d.display_name ? `${d.display_name} (${d.id})` : d.id}

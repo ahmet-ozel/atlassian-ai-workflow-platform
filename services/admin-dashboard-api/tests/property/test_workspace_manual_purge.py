@@ -1,4 +1,4 @@
-#
+﻿#
 # Workspace Purge Input Validation + SSH Safety (Q15)
 #
 """Workspace Purge Input Validation + SSH Safety (Q15).
@@ -16,14 +16,14 @@ For any ``issue_key`` string that could be a path-traversal attack vector,
 Strategy
 --------
 Hypothesis generates:
-1. **Valid keys** — strings matching ``^[A-Z][A-Z0-9_]*-\\d+$`` — and
+1. **Valid keys** - strings matching ``^[A-Z][A-Z0-9_]*-\\d+$`` - and
    asserts the endpoint returns 200 and the SSH client is called exactly
    once with the unmodified key.
-2. **Invalid keys** — arbitrary text strings (including path-traversal
-   vectors, shell metacharacters, lower-case, empty strings, unicode) —
+2. **Invalid keys** - arbitrary text strings (including path-traversal
+   vectors, shell metacharacters, lower-case, empty strings, unicode) -
    and asserts the endpoint returns 400 and the SSH client is never
    called.
-3. **Shell-metachar safety** — for every valid key the ``_purge_logic``
+3. **Shell-metachar safety** - for every valid key the ``_purge_logic``
    helper is called directly and the resulting SSH argv is inspected to
    confirm no forbidden characters appear.
 The router is exercised through :class:`fastapi.testclient.TestClient`
@@ -96,14 +96,14 @@ def _is_url_safe(key: str) -> bool:
 
     httpx raises ``InvalidURL`` for non-printable ASCII characters
     (null-byte, newline, carriage-return, etc.). We skip such keys in
-    tests that make HTTP requests — the safety invariant still holds
+    tests that make HTTP requests - the safety invariant still holds
     because the HTTP layer rejects them before the router runs.
     """
     return _URL_UNSAFE_PATTERN.search(key) is None
 
 
 # ---------------------------------------------------------------------------
-# Test doubles (minimal — mirrors test_runner_workspaces_router.py)
+# Test doubles (minimal - mirrors test_runner_workspaces_router.py)
 # ---------------------------------------------------------------------------
 
 
@@ -234,7 +234,7 @@ _INVALID_KEY_STRATEGY = st.one_of(
 
 
 # ---------------------------------------------------------------------------
-#  — valid keys → 200 + SSH client called exactly once
+#  - valid keys → 200 + SSH client called exactly once
 # ---------------------------------------------------------------------------
 
 
@@ -247,7 +247,7 @@ _INVALID_KEY_STRATEGY = st.one_of(
 def test_valid_issue_key_returns_200_and_calls_ssh_client(
     issue_key: str,
 ) -> None:
-    """— valid issue_key → 200 + SSH client called exactly once.
+    """- valid issue_key → 200 + SSH client called exactly once.
     For any ``issue_key`` matching ``^[A-Z][A-Z0-9_]*-\\d+$``:
     - The endpoint returns HTTP 200.
     - The SSH client's ``purge_workspace`` is called exactly once with
@@ -310,7 +310,7 @@ def test_valid_issue_key_returns_200_and_calls_ssh_client(
 
 
 # ---------------------------------------------------------------------------
-#  — invalid keys → 400 + SSH client NEVER called
+#  - invalid keys → 400 + SSH client NEVER called
 # ---------------------------------------------------------------------------
 
 
@@ -323,12 +323,12 @@ def test_valid_issue_key_returns_200_and_calls_ssh_client(
 def test_invalid_issue_key_returns_400_and_never_calls_ssh_client(
     issue_key: str,
 ) -> None:
-    """— invalid issue_key → 400 + SSH client NEVER called.
+    """- invalid issue_key → 400 + SSH client NEVER called.
     For any ``issue_key`` that does NOT match ``^[A-Z][A-Z0-9_]*-\\d+$``:
     - The endpoint returns HTTP 400.
     - The response body contains ``{"error": "invalid_issue_key_format"}``.
     - The SSH client's ``purge_workspace`` is **never** called (zero
-      side effects — no SSH command is constructed or executed).
+      side effects - no SSH command is constructed or executed).
     - No ``workspace_purge_failed`` audit event is written (the rejection
       audit ``workspace_purge_rejected_invalid_key`` may be written, but
       the failure audit must not appear).
@@ -341,7 +341,7 @@ def test_invalid_issue_key_returns_400_and_never_calls_ssh_client(
 
     # Skip keys that httpx cannot encode as a URL path component (e.g.
     # null-byte, newline). These are rejected at the HTTP transport layer
-    # before the router runs — the safety invariant still holds (SSH
+    # before the router runs - the safety invariant still holds (SSH
     # client is never called), but we cannot make the HTTP request.
     assume(_is_url_safe(issue_key))
 
@@ -358,11 +358,11 @@ def test_invalid_issue_key_returns_400_and_never_calls_ssh_client(
     )
 
     # The response must be 400 (or 404 for path-traversal vectors that
-    # Starlette normalises away before reaching the handler — both
+    # Starlette normalises away before reaching the handler - both
     # satisfy the safety invariant: SSH client was never called).
     # 405 occurs when an empty key resolves to the collection endpoint
     # (DELETE /admin/runner/workspaces/ → Method Not Allowed on the
-    # GET-only collection route) — also a valid rejection.
+    # GET-only collection route) - also a valid rejection.
     assert response.status_code in (400, 404, 405, 422), (
         f"Expected 400/404/405/422 for invalid key {issue_key!r}; "
         f"got {response.status_code}: {response.text}"
@@ -382,7 +382,7 @@ def test_invalid_issue_key_returns_400_and_never_calls_ssh_client(
     )
 
     # No workspace_purge_failed audit (the rejection audit is OK, but
-    # the failure audit implies the SSH command ran and failed — it must
+    # the failure audit implies the SSH command ran and failed - it must
     # not appear for a rejected key).
     assert "workspace_purge_failed" not in sink.actions(), (
         f"'workspace_purge_failed' audit must not be written for invalid "
@@ -391,7 +391,7 @@ def test_invalid_issue_key_returns_400_and_never_calls_ssh_client(
 
 
 # ---------------------------------------------------------------------------
-#  — shell metachar safety in SSH argv
+#  - shell metachar safety in SSH argv
 # ---------------------------------------------------------------------------
 
 
@@ -404,14 +404,14 @@ def test_invalid_issue_key_returns_400_and_never_calls_ssh_client(
 def test_valid_key_produces_no_shell_metachar_in_ssh_argv(
     issue_key: str,
 ) -> None:
-    """— valid key produces no shell metachar in SSH argv.
+    """- valid key produces no shell metachar in SSH argv.
     For any valid ``issue_key``, the value forwarded to the SSH client
     must not contain shell metacharacters (``;``, ``&``, ``|``, ``$``,
     backtick, newline, null-byte). This verifies that the router's
     regex guard is tight enough that no valid key can carry injection
     payloads, and that the client receives a clean value.
     Additionally, the key as it would appear in a ``shlex.quote``-escaped
-    shell command must not introduce any metacharacters — confirming that
+    shell command must not introduce any metacharacters - confirming that
     the ``shlex.quote`` contract holds for
     all valid keys."""
     assert _VALID_KEY_REGEX.fullmatch(issue_key) is not None
@@ -475,7 +475,7 @@ def test_purge_decision_is_deterministic(
     issue_key: str,
     freed_bytes: int,
 ) -> None:
-    """— purge decision is deterministic.
+    """- purge decision is deterministic.
     For any ``issue_key``, calling the endpoint twice with the same key
     must produce the same HTTP status code. This confirms the validation
     logic is a pure function of the key (no hidden state, no randomness)."""
@@ -503,7 +503,7 @@ def test_purge_decision_is_deterministic(
 
 
 # ---------------------------------------------------------------------------
-#  — ISSUE_KEY_PATTERN agrees with router behaviour
+#  - ISSUE_KEY_PATTERN agrees with router behaviour
 # ---------------------------------------------------------------------------
 
 
@@ -516,7 +516,7 @@ def test_purge_decision_is_deterministic(
 def test_issue_key_pattern_constant_matches_valid_keys(
     issue_key: str,
 ) -> None:
-    """— ISSUE_KEY_PATTERN constant matches all valid keys.
+    """- ISSUE_KEY_PATTERN constant matches all valid keys.
     The exported ``ISSUE_KEY_PATTERN`` constant must match every key
     that the strategy generates as valid. This ensures the pattern used
     by the router and the pattern used by the execution-runner-worker's
@@ -535,7 +535,7 @@ def test_issue_key_pattern_constant_matches_valid_keys(
 def test_issue_key_pattern_constant_rejects_invalid_keys(
     issue_key: str,
 ) -> None:
-    """(inverse) — ISSUE_KEY_PATTERN rejects all invalid keys.
+    """(inverse) - ISSUE_KEY_PATTERN rejects all invalid keys.
     The exported ``ISSUE_KEY_PATTERN`` constant must reject every key
     that the strategy generates as invalid. This confirms the pattern
     is tight enough to block path-traversal and shell-injection vectors."""
@@ -548,7 +548,7 @@ def test_issue_key_pattern_constant_rejects_invalid_keys(
 
 
 # ---------------------------------------------------------------------------
-#  — audit action set for valid vs invalid keys
+#  - audit action set for valid vs invalid keys
 # ---------------------------------------------------------------------------
 
 
@@ -561,7 +561,7 @@ def test_issue_key_pattern_constant_rejects_invalid_keys(
 def test_valid_key_writes_purged_audit_not_rejected_audit(
     issue_key: str,
 ) -> None:
-    """— valid key writes purged audit, not rejected audit.
+    """- valid key writes purged audit, not rejected audit.
     For a valid key, the audit sink must receive exactly one
     ``workspace_manually_purged`` event and zero
     ``workspace_purge_rejected_invalid_key`` events."""
@@ -594,7 +594,7 @@ def test_valid_key_writes_purged_audit_not_rejected_audit(
 def test_invalid_key_writes_rejected_audit_not_purged_audit(
     issue_key: str,
 ) -> None:
-    """(inverse) — invalid key writes rejected audit, not purged.
+    """(inverse) - invalid key writes rejected audit, not purged.
     For an invalid key, the audit sink must receive zero
     ``workspace_manually_purged`` events and zero
     ``workspace_purge_failed`` events. The rejection audit
@@ -603,7 +603,7 @@ def test_invalid_key_writes_rejected_audit_not_purged_audit(
     assume(_VALID_KEY_REGEX.fullmatch(issue_key) is None)
 
     # Skip keys that httpx cannot encode as a URL path component.
-    # These are rejected at the HTTP transport layer — the safety
+    # These are rejected at the HTTP transport layer - the safety
     # invariant (SSH client never called) still holds, but we cannot
     # make the HTTP request to inspect the audit sink.
     assume(_is_url_safe(issue_key))
@@ -616,7 +616,7 @@ def test_invalid_key_writes_rejected_audit_not_purged_audit(
         f"/admin/runner/workspaces/{issue_key}"
     )
 
-    # 400/404/405/422 are all acceptable — the key was rejected.
+    # 400/404/405/422 are all acceptable - the key was rejected.
     # 405 occurs when an empty key resolves to the collection endpoint
     # (DELETE /admin/runner/workspaces/ → Method Not Allowed).
     assert response.status_code in (400, 404, 405, 422), (
@@ -630,7 +630,7 @@ def test_invalid_key_writes_rejected_audit_not_purged_audit(
         f"{issue_key!r}; got {sink.actions()!r}"
     )
 
-    # No failure audit (implies SSH ran and failed — it must not have run).
+    # No failure audit (implies SSH ran and failed - it must not have run).
     assert "workspace_purge_failed" not in sink.actions(), (
         f"'workspace_purge_failed' must not appear for invalid key "
         f"{issue_key!r}; got {sink.actions()!r}"

@@ -1,20 +1,20 @@
-"""Jira webhook handler — ``POST /webhooks/jira``.
+﻿"""Jira webhook handler - ``POST /webhooks/jira``.
 
 Receives Jira Cloud webhook events (``jira:issue_created``,
 ``jira:issue_assigned``, ``jira:issue_updated``, ``jira:comment_created``)
 and either starts an ``AutomationWorkflow`` or signals an existing
 workflow with a ``new_comment`` payload.
 
-Guard chain (sequential — each step short-circuits with the documented
+Guard chain (sequential - each step short-circuits with the documented
 response shape and audit-log entry):
 
   (a) Read the raw request body.
-  (b) ``hmac_verify.verify(...)`` — 401 ``unauthorized`` on failure.
-  (c) ``replay.check_and_insert(...)`` SHA-256 dedup — 200 ``duplicate``
+  (b) ``hmac_verify.verify(...)`` - 401 ``unauthorized`` on failure.
+  (c) ``replay.check_and_insert(...)`` SHA-256 dedup - 200 ``duplicate``
       on dup.
-  (d) ``loop_guard.is_self_actor(...)`` — 200 ``loop_guard`` when the
+  (d) ``loop_guard.is_self_actor(...)`` - 200 ``loop_guard`` when the
       actor is a registered bot.
-  (e) ``loop_guard.route(...)`` event-type classification — 200
+  (e) ``loop_guard.route(...)`` event-type classification - 200
       ``ignored`` for unsupported event types.
   (f) ``jira:comment_created`` → ``temporal.signal_workflow(...)``
       ``new_comment`` signal, 200 ``signal_forwarded``.
@@ -23,7 +23,7 @@ response shape and audit-log entry):
       ``not_bot_assignee``.
   (h) ``jira:issue_updated`` → ``loop_guard.assignee_changed_to_bot``?
       Otherwise 200 ``not_bot_assignee``.
-  (i) ``capability_gate.has_jira_credential(...)`` — 200
+  (i) ``capability_gate.has_jira_credential(...)`` - 200
       ``missing_capability`` if the resolved department lacks a Jira
       bot credential.
   (j) INSERT INTO ``automation.work_items`` with ``status='pending'``.
@@ -34,7 +34,7 @@ response shape and audit-log entry):
   (m) 200 ``{"status": "accepted", "workflow_id": ...}``.
 
 A ``WorkflowAlreadyStartedError`` raised from step (k) collapses to a
-200 ``duplicate`` response — Temporal native idempotency layered on top
+200 ``duplicate`` response - Temporal native idempotency layered on top
 of the SHA-256 replay guard.
 """
 
@@ -163,7 +163,7 @@ def _get_ack_comment_fn(request: Request) -> AckCommentFn | None:
 #: comment-restart branch uses it to read the current
 #: state of an issue when ``signal_workflow`` reports
 #: ``WorkflowNotFound``.  The handler treats ``None`` as "no restart
-#: possible" — the request degrades gracefully to ``ignored``.
+#: possible" - the request degrades gracefully to ``ignored``.
 JiraFetchIssueFn = Callable[[str, str], Awaitable[tuple[str | None, str | None]]]
 
 
@@ -217,25 +217,25 @@ async def _resolve_webhook_secret_two_stage(
 ) -> tuple[bytes | None, str | None, str]:
     """Two-stage HMAC secret lookup (per-dept then global).
 
-    Stage 1 — best-effort body parse for ``project_key`` →
+    Stage 1 - best-effort body parse for ``project_key`` →
     ``automation.department_project_keys`` lookup → resolver call with
     the resolved ``dept_id``. The body parse happens *before* HMAC
     verification, so any parse failure is silently absorbed and we fall
     through to the global secret.
 
-    Stage 2 — resolver call with the sentinel ``"__global__"``
+    Stage 2 - resolver call with the sentinel ``"__global__"``
     (Vault path ``secret/webhook/global/secret``) used when stage 1
     cannot resolve a dept-specific secret.
 
     Returns ``(secret_bytes, dept_id, source)`` where ``source`` is one
     of:
 
-    * ``"dept"``  — stage 1 succeeded; ``dept_id`` is the resolved id.
+    * ``"dept"``  - stage 1 succeeded; ``dept_id`` is the resolved id.
       The handler MUST NOT fall back to global when the dept secret
       yields a verify failure (security isolation: a dept's misuse
       can't be laundered through the global secret).
-    * ``"global"`` — stage 2 succeeded; ``dept_id`` is ``None``.
-    * ``"missing"`` — neither stage produced a secret; ``dept_id`` is
+    * ``"global"`` - stage 2 succeeded; ``dept_id`` is ``None``.
+    * ``"missing"`` - neither stage produced a secret; ``dept_id`` is
       ``None`` and the handler returns 503.
     """
     dept_id_resolved: str | None = None
@@ -259,7 +259,7 @@ async def _resolve_webhook_secret_two_stage(
             return secret, dept_id_resolved, "dept"
 
     # Stage 2: global fallback. The ``"__global__"`` sentinel keeps the
-    # resolver contract uniform with stage 1 — callers that still pass
+    # resolver contract uniform with stage 1 - callers that still pass
     # ``dept_id=None`` (legacy / dev-loop) keep working because the
     # resolver-less branch falls back to ``app.state.jira_webhook_secret``.
     global_secret = await _resolve_webhook_secret(
@@ -369,7 +369,7 @@ async def _jira_bot_account_ids_for_dept(
 
     Used by the ``comment_created`` restart branch so the eligibility
     check is scoped to the dept that owns the
-    issue's project key — a cross-dept bot must not trigger a restart
+    issue's project key - a cross-dept bot must not trigger a restart
     on another dept's issue.
     """
     bots: list[DeptBotRow] = await creds.list_dept_bots()
@@ -459,7 +459,7 @@ async def _insert_work_item(
     """Insert a ``work_items`` row in ``pending`` state.
 
     ``workflow_id`` is ``UNIQUE`` so the ``ON CONFLICT DO NOTHING``
-    clause makes the insert idempotent — returns ``True`` when a new
+    clause makes the insert idempotent - returns ``True`` when a new
     row was created, ``False`` when it already existed.
     """
     async with db.acquire() as conn:
@@ -489,7 +489,7 @@ def _audit(event_name: str, **fields: Any) -> None:
     Field names follow the webhook audit schema.  ``None`` values are
     silently dropped so the JSON output is compact and stable.  The
     helper's first positional parameter is named ``event_name`` because
-    structlog reserves ``event`` for the log message slot — call sites
+    structlog reserves ``event`` for the log message slot - call sites
     therefore use ``event_type=...`` for the original Atlassian event
     string.
     """
@@ -504,7 +504,7 @@ def _audit(event_name: str, **fields: Any) -> None:
 
 @router.post("/jira")
 async def post_jira_webhook(request: Request) -> JSONResponse:  # noqa: PLR0911, PLR0912, PLR0915
-    """Handle ``POST /webhooks/jira`` — see module docstring for the chain."""
+    """Handle ``POST /webhooks/jira`` - see module docstring for the chain."""
 
     # ---- (a) raw body --------------------------------------------------
     raw_body: bytes = await request.body()
@@ -537,7 +537,7 @@ async def post_jira_webhook(request: Request) -> JSONResponse:  # noqa: PLR0911,
     ack_comment_fn = _get_ack_comment_fn(request)
 
     # ---- (b) two-stage HMAC verify -------------------------------------
-    # Best-effort parse first — we need ``project_key`` to look up the
+    # Best-effort parse first - we need ``project_key`` to look up the
     # dept-specific secret (Stage 1) BEFORE HMAC verify. Any parse
     # error/non-dict body silently degrades to the global secret
     # (Stage 2). The "real" parse error response is still emitted
@@ -904,12 +904,12 @@ async def _handle_comment_created(
     (default ``["To Do", "Open"]``) **and** the assignee is one of
     the dept's registered Jira bots, we ``signal_with_start`` a fresh
     ``AutomationWorkflow`` with the same workflow id and forward the
-    comment as the ``new_comment`` start signal — 200
+    comment as the ``new_comment`` start signal - 200
     ``restarted``. Any other shape (different status, non-bot
     assignee, missing dept config, fetch failure) degrades silently
     to 200 ``ignored`` (``comment_ignored_no_pending_workflow``).
     Generic transport / RPC failures from the initial ``signal_workflow``
-    fall back to the legacy 200 ``no_active_workflow`` branch — they
+    fall back to the legacy 200 ``no_active_workflow`` branch - they
     are best-effort.
     """
     comment = payload.get("comment")
@@ -992,7 +992,7 @@ async def _maybe_restart_workflow_from_comment(
     """Decide whether a comment on an issue with no live workflow
     should restart one.
 
-    The decision is intentionally conservative — every "unknown" or
+    The decision is intentionally conservative - every "unknown" or
     "missing data" branch falls through to ``ignored`` so we never
     spawn a workflow we can't justify.
     """

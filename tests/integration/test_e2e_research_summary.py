@@ -1,4 +1,4 @@
-"""End-to-end integration test for the ``research_summary_jira`` flow.
+﻿"""End-to-end integration test for the ``research_summary_jira`` flow.
 
 
 This test exercises the parent → child workflow boundary using
@@ -12,7 +12,7 @@ test server. The flow under test:
  → jira_add_comment (research summary on the issue)
  → completion comment + Done transition
 
-Test scope decision (option (a) — minimal AgentRunnerWorkflow stub)
+Test scope decision (option (a) - minimal AgentRunnerWorkflow stub)
 -------------------------------------------------------------------
 
 The production ``AgentRunnerWorkflow`` is currently an empty stub
@@ -22,7 +22,7 @@ a *test-local* class under the same Temporal name
 and implements only the ``research_summary_jira`` branch.
 
 When the production workflow body lands (spec the implementation), the test will
-transparently switch over — both register under the same name and the
+transparently switch over - both register under the same name and the
 activity-call contract is identical.
 
 Activities are mocked: no LLM provider, no Firecrawl, no Atlassian MCP
@@ -173,7 +173,7 @@ async def test_research_summary_jira_e2e_flow() -> None:
 
         # ----- Child (AgentRunnerWorkflow stub) activity mocks ---------
         #
-        # ``llm_research`` returns a ResearchData-shaped dict — the child
+        # ``llm_research`` returns a ResearchData-shaped dict - the child
         # stub only needs the ``summary`` field for the Jira comment.
 
         @activity.defn(name="llm_research")

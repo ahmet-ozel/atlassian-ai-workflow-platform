@@ -1,9 +1,9 @@
-"""— Auth gate blocks every endpoint before any side-effect.
+﻿"""- Auth gate blocks every endpoint before any side-effect.
 the test asserts:
 * A request with no ``Authorization`` header → HTTP 401.
 * A request with a valid token whose principal is not admin → HTTP 403.
 * The asyncpg fake, ``VaultClient`` fake and ``httpx.MockTransport``
-  recorded ZERO calls in either case — the gate short-circuits before
+  recorded ZERO calls in either case - the gate short-circuits before
   any router-level logic runs."""
 
 from __future__ import annotations

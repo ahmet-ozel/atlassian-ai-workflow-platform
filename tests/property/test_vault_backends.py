@@ -1,4 +1,4 @@
-"""Vault backend equivalence property tests.
+﻿"""Vault backend equivalence property tests.
 
 For both pluggable backends (``HashicorpBackend`` against an in-process
 ``httpx.MockTransport`` simulating a Hashicorp KV-v2 mount, and
@@ -24,7 +24,7 @@ implements just enough of the KV-v2 wire shape (``/v1/<mount>/data/<rel>``
 GET / POST / DELETE with the ``{"data": {"data": {...}}}`` envelope) for
 the round-trip property to be meaningful. The store is a per-test
 in-memory ``dict``, so every Hypothesis example starts from a clean
-state — Hypothesis cannot accidentally observe state leaked from a
+state - Hypothesis cannot accidentally observe state leaked from a
 previous example.
 """
 
@@ -74,7 +74,7 @@ def vault_paths(draw: st.DrawFn) -> VaultPath:
     return VaultPath.parse("vault:" + "/".join(segs))
 
 
-# Flat ``str → str`` payloads — KV v2 stores at most a flat dict per
+# Flat ``str → str`` payloads - KV v2 stores at most a flat dict per
 # secret. Keys must be non-empty and free of NUL characters; values are
 # arbitrary printable text. Limiting the dict to 4 entries keeps test
 # wall-time low while still exercising multi-field round-trips.
@@ -91,7 +91,7 @@ _payloads = st.dictionaries(_payload_keys, _payload_values, min_size=1, max_size
 
 
 # ---------------------------------------------------------------------------
-# Backend factories — one per backend, each returning a fresh instance
+# Backend factories - one per backend, each returning a fresh instance
 # ---------------------------------------------------------------------------
 
 
@@ -124,7 +124,7 @@ def _make_hashicorp_backend() -> VaultClient:
       envelope. Returns 404 with an ``errors: []`` body when absent.
     * ``POST /v1/<mount>/data/<rel>``: records ``request.json()["data"]``.
     * ``DELETE /v1/<mount>/data/<rel>``: removes the stored entry; 404
-      when already absent (idempotent — matches the real KV-v2 behaviour
+      when already absent (idempotent - matches the real KV-v2 behaviour
       that ``HashicorpBackend.delete`` relies on).
     """
 

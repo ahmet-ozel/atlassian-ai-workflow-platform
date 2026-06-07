@@ -1,10 +1,10 @@
-"""Helper module: AST-based path-whitelist scanner.
+﻿"""Helper module: AST-based path-whitelist scanner.
 
 
 
 This module is a *reusable* scanning library consumed by other invariant in this directory:
 
-*:mod:`test_path_coverage` (invariant — sensitive call path whitelist)
+*:mod:`test_path_coverage` (invariant - sensitive call path whitelist)
 *:mod:`test_llm_call_paths` (LLM-specific subset)
 *:mod:`test_workflow_determinism_static` (already in-tree; this module
  augments it with the ``client.start_workflow`` activity check)
@@ -18,7 +18,7 @@ file path, line number, and a short symbolic key naming the violation.
 Scanners
 --------
 
-*:func:`scan_atlassian_http_calls` — Jira / Bitbucket / Confluence
+*:func:`scan_atlassian_http_calls` - Jira / Bitbucket / Confluence
  hosts reached via ``httpx`` / ``requests`` / ``aiohttp`` outside the
  ``atlassian_mcp_bitbucket`` MCP and the ``http-shared`` lib. The scan
  recognises both module-level imports (``import httpx`` /
@@ -26,21 +26,21 @@ Scanners
  ``requests.get(...)``, ``aiohttp.ClientSession(...)``) inside files
  whose source mentions an Atlassian host (``atlassian.net``,
  ``atlassian-mcp``, ``bitbucket.org``, ``api.bitbucket.org``,
- ``confluence``) — the host literal is the second hop that
+ ``confluence``) - the host literal is the second hop that
  distinguishes a generic HTTP client from an Atlassian-specific call.
 
-*:func:`scan_ssh_docker_calls` — ``paramiko`` / ``asyncssh`` imports
+*:func:`scan_ssh_docker_calls` - ``paramiko`` / ``asyncssh`` imports
  and ``subprocess`` calls whose first positional argument starts with
- ``ssh`` or ``scp`` — SSH only inside
+ ``ssh`` or ``scp`` - SSH only inside
  ``execution-runner-worker``).
 
-*:func:`scan_llm_calls` — ``openai`` / ``anthropic`` imports and
- imports of the ``llm_orchestrator`` library — LLM
+*:func:`scan_llm_calls` - ``openai`` / ``anthropic`` imports and
+ imports of the ``llm_orchestrator`` library - LLM
  only inside ``assistant-service`` and ``agent-runner-worker``).
 
-*:func:`scan_activities_start_workflow` — searches files under
+*:func:`scan_activities_start_workflow` - searches files under
  ``workers/*/activities/`` for ``client.start_workflow``-shaped calls
- — workflow decisions live in workflow modules only).
+ - workflow decisions live in workflow modules only).
 
 Each scanner accepts a tuple of *whitelist roots* (workspace-relative
 path prefixes) and returns only:class:`Finding` instances whose file
@@ -50,7 +50,7 @@ root are inspected but never reported.
 Design notes
 ------------
 
-* The scanner is *static* — it never imports the inspected modules,
+* The scanner is *static* - it never imports the inspected modules,
  so a missing transitive dependency in the workspace does not skew
  results. The same approach is used by:mod:`test_workflow_determinism_static` and is documented in design
  §6.3 (invariant → Test mapping).
@@ -62,7 +62,7 @@ Design notes
  downstream tests can extend it.
 * A file's *own tests* (``tests/`` subtree under any component path)
  is included by default because the same invariants must hold in
- test source as in production source — for example, an integration
+ test source as in production source - for example, an integration
  test that smuggles ``import paramiko`` outside the execution-runner
  worker would defeat the property.
 
@@ -154,15 +154,15 @@ class Finding:
 #
 # The defaults below mirror the the operational rule language verbatim:
 #
-# * ATLASSIAN_HTTP_WHITELIST — Atlassian HTTP only
+# * ATLASSIAN_HTTP_WHITELIST - Atlassian HTTP only
 # through the ``atlassian_mcp_bitbucket`` MCP. The MCP itself is excluded
 # at the walk level via SCAN_EXCLUDED_DIRS, but the ``http-shared``
 # library is the legitimate transport for callers (it builds the
 # ``httpx`` client wired to the MCP) and the ``mcp_client`` lib (when
 # it is wired) is the shared caller-side source.
-# * SSH_DOCKER_WHITELIST —: SSH and Docker only in the
+# * SSH_DOCKER_WHITELIST -: SSH and Docker only in the
 # ``execution-runner-worker``.
-# * LLM_WHITELIST —: LLM calls only in the
+# * LLM_WHITELIST -: LLM calls only in the
 # ``assistant-service`` and ``agent-runner-worker`` (and the
 # ``llm-orchestrator`` library that defines them).
 
@@ -182,7 +182,7 @@ LLM_WHITELIST: tuple[str, ...] = (
     "libs/llm-orchestrator/",
 )
 
-# Roots that always permit *test fixtures* — these are pure test projects
+# Roots that always permit *test fixtures* - these are pure test projects
 # and never run in production. We allow violations in shared
 # ``tests/property/`` _scanners_ themselves (this module + sibling
 # invariant) because they reference the symbols by name in
@@ -251,7 +251,7 @@ def _parse(path: Path) -> ast.Module | None:
     """Parse *path* into an AST module, returning None on syntax error.
 
  A syntax error in a non-whitelisted file should not crash the
- scanner — the file is simply skipped and the caller can choose to
+ scanner - the file is simply skipped and the caller can choose to
  surface it via a separate parse-validation test.
  """
 
@@ -293,7 +293,7 @@ def _imported_modules(tree: ast.Module) -> set[str]:
 
  Captures both ``import x.y`` (yields ``"x"``) and ``from x.y import
  z`` (yields ``"x"``). Relative imports (``from. import...``) are
- ignored — they cannot reach a third-party package by definition.
+ ignored - they cannot reach a third-party package by definition.
  """
 
     modules: set[str] = set()
@@ -321,7 +321,7 @@ def _imported_modules(tree: ast.Module) -> set[str]:
 #
 # Important: ``atlassian-mcp`` (the MCP proxy hostname Compose service
 # at ``http://atlassian-mcp:8090``) is **NOT** on this list. The MCP is
-# the *allowed* path for every Atlassian call — forbids
+# the *allowed* path for every Atlassian call - forbids
 # only direct upstream calls that bypass the MCP. Files that use
 # ``httpx`` to talk to ``atlassian-mcp`` are therefore not flagged.
 #
@@ -329,7 +329,7 @@ def _imported_modules(tree: ast.Module) -> set[str]:
 # unambiguously identifies a real Atlassian upstream (``*.atlassian.net``
 # Cloud sites, ``*.bitbucket.org`` Cloud sites, REST API path prefixes
 # that only exist on the upstream APIs). Bare words like ``"jira"``,
-# ``"bitbucket"``, or ``"confluence"`` are deliberately *not* listed —
+# ``"bitbucket"``, or ``"confluence"`` are deliberately *not* listed -
 # those appear in docstrings, dataclass names, log messages, and
 # fixture identifiers and would produce false positives.
 ATLASSIAN_HOST_PATTERNS: tuple[str, ...] = (
@@ -353,7 +353,7 @@ def _file_mentions_atlassian_host(tree: ast.Module) -> bool:
     """Return True if any string literal in *tree* references an Atlassian host.
 
  The check runs over:class:`ast.Constant` nodes whose value is a
- string — this catches both bare URL literals and f-string fragments
+ string - this catches both bare URL literals and f-string fragments
  (Python lowers f-strings into ``JoinedStr`` containing ``Constant``
  leaves).
  """
@@ -390,7 +390,7 @@ def scan_atlassian_http_calls(
  2. the same file's source contains a string literal that matches
  any of:data:`ATLASSIAN_HOST_PATTERNS`.
 
- The two-condition gate is critical — generic HTTP clients are
+ The two-condition gate is critical - generic HTTP clients are
  permitted everywhere, and Atlassian host literals appear in
  docstrings and tests. The conjunction (HTTP client + Atlassian
  host literal in the *same* file) is the signal that the operational rule is being violated.
@@ -495,11 +495,11 @@ def scan_ssh_docker_calls(
  Three signal sources are considered:
 
  1. ``import paramiko`` / ``import asyncssh`` (or ``from`` variants)
- — reported as ``category="ssh"``, ``symbol="paramiko"`` etc.
- 2. ``import docker`` (the Docker SDK) — reported as
+ - reported as ``category="ssh"``, ``symbol="paramiko"`` etc.
+ 2. ``import docker`` (the Docker SDK) - reported as
  ``category="docker"``, ``symbol="docker"``.
  3. ``subprocess.run("ssh...")`` / ``subprocess.Popen(["scp",...])``
- — reported as ``category="ssh"``, ``symbol="subprocess+ssh"``.
+ - reported as ``category="ssh"``, ``symbol="subprocess+ssh"``.
  """
 
     findings: list[Finding] = []
@@ -631,9 +631,9 @@ def _subprocess_first_arg_is_ssh(call: ast.Call) -> bool:
 
  Two shapes are recognised:
 
- * ``subprocess.run("ssh user@host echo hi")`` — string literal
+ * ``subprocess.run("ssh user@host echo hi")`` - string literal
  whose first whitespace-separated token is ``ssh`` or ``scp``.
- * ``subprocess.run(["ssh", "user@host",...])`` — list literal
+ * ``subprocess.run(["ssh", "user@host",...])`` - list literal
  whose first element is the string ``"ssh"`` or ``"scp"``.
 
  Anything dynamic (variables, ``shlex.split(...)``, formatted
@@ -792,9 +792,9 @@ def scan_activities_start_workflow(
  For every ``.py`` file whose workspace-relative path contains
  ``/activities/``, the scanner walks the AST and reports any:class:`ast.Call` whose target is a method named ``start_workflow``,
  ``execute_workflow``, or ``start_child_workflow`` (regardless of
- receiver — ``client.start_workflow``, ``self.client.start_workflow``,
+ receiver - ``client.start_workflow``, ``self.client.start_workflow``,
  ``temporal_client.start_workflow``, etc.). The ``Await`` wrapper
- around the call is not relevant — the scan inspects the call node
+ around the call is not relevant - the scan inspects the call node
  directly.
 
  Workflow-decision mantığı yalnız workflow modüllerinde olmalıdır;
@@ -862,7 +862,7 @@ class ScanReport:
     """Aggregated results from running every scanner once.
 
  Each list contains:class:`Finding` instances filtered by the
- scanner's whitelist. The aggregator is intentionally lightweight —
+ scanner's whitelist. The aggregator is intentionally lightweight -
  callers in invariant typically inspect the list lengths and
  surface the findings via ``assert not findings, format_findings(findings)``.
  """
@@ -904,14 +904,14 @@ def format_findings(findings: Sequence[Finding]) -> str:
     """Render *findings* as a multi-line bulleted string for assert messages.
 
  Each line follows the format
- ``<path>:<lineno> [<category>] <symbol> — <detail>``
+ ``<path>:<lineno> [<category>] <symbol> - <detail>``
  so a failing invariant surfaces every offending file at once.
  """
 
     if not findings:
         return ""
     lines = [
-        f" - {f.path}:{f.lineno} [{f.category}] {f.symbol} — {f.detail}"
+        f" - {f.path}:{f.lineno} [{f.category}] {f.symbol} - {f.detail}"
         for f in findings
     ]
     return "\n".join(lines)

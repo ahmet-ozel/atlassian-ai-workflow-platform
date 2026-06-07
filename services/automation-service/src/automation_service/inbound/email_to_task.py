@@ -1,4 +1,4 @@
-"""Email → Jira task adapter.
+﻿"""Email → Jira task adapter.
 
 Polls an IMAP mailbox at a fixed cadence and creates a Jira task per
 accepted message. Configured by the ``EMAIL_INBOUND_ADDRESS`` env var
@@ -6,14 +6,14 @@ plus the IMAP connection block (``EMAIL_INBOUND_IMAP_HOST``,
 ``EMAIL_INBOUND_IMAP_USER``, ``EMAIL_INBOUND_IMAP_PASSWORD_REF``).
 
 Like the Slack adapter, the poller never calls the Atlassian MCP
-directly — it forwards parsed messages to ``AutomationWorkflow`` via
+directly - it forwards parsed messages to ``AutomationWorkflow`` via
 :func:`start_workflow_idempotent` so the audit / capability / loop
 guard chain stays consistent with the Jira webhook flow.
 
 Architecture
 ------------
 
-The poller is a *transport* — it knows how to fetch messages from
+The poller is a *transport* - it knows how to fetch messages from
 IMAP and how to translate them into :class:`InboundTaskRequest`
 values; it does not know how to talk to Vault, Temporal or audit. All
 of those collaborators are injected through :class:`InboundContext`,
@@ -131,7 +131,7 @@ class EmailInboundConfig:
         imap_username: IMAP login user.
         imap_folder: Folder to poll. Defaults to ``"INBOX"``.
         poll_interval_s: Cadence between polls in seconds. Must be
-            positive — the poller treats zero or negatives as a
+            positive - the poller treats zero or negatives as a
             configuration error.
         use_ssl: Whether to use IMAPS. Defaults to ``True``; the
             ``False`` branch exists for the local dev mailcatcher.
@@ -192,7 +192,7 @@ class ImapMailbox(Protocol):
 
     Production wires this to an ``aioimaplib``-backed adapter. Tests
     inject an in-memory fake yielding fixture messages. The protocol
-    is intentionally narrow — only the operations the poller needs
+    is intentionally narrow - only the operations the poller needs
     are part of the contract.
     """
 
@@ -249,7 +249,7 @@ def _extract_text_body(msg: Message) -> str:
     Scans MIME parts in document order and returns the first
     ``text/plain`` payload that is not an attachment. Multipart
     messages without any plain alternative fall back to the empty
-    string — the poller still creates the task using the subject as
+    string - the poller still creates the task using the subject as
     the title hint.
     """
 
@@ -309,7 +309,7 @@ def parse_inbound_email(
 
     Returns ``None`` for messages we cannot decode at all (malformed
     envelope). The caller logs an audit event and continues to the
-    next message — a single bad email must never wedge the poll loop.
+    next message - a single bad email must never wedge the poll loop.
     """
 
     try:
@@ -445,7 +445,7 @@ class EmailToTaskPoller:
     async def run(self) -> None:
         """Run the poll loop until :meth:`stop` is called.
 
-        The loop is best-effort — failures inside :meth:`poll_once`
+        The loop is best-effort - failures inside :meth:`poll_once`
         are caught and logged so the daemon does not die on a single
         IMAP hiccup. The cadence is :attr:`EmailInboundConfig.poll_interval_s`.
         """
@@ -701,7 +701,7 @@ class EmailToTaskPoller:
 def config_from_env(env: dict[str, str]) -> EmailInboundConfig | None:
     """Build an :class:`EmailInboundConfig` from a dict-style env mapping.
 
-    Returns ``None`` when ``EMAIL_INBOUND_ADDRESS`` is unset — the
+    Returns ``None`` when ``EMAIL_INBOUND_ADDRESS`` is unset - the
     poller stays disabled in dev / standalone modes that do not need
     inbound email. Raises :class:`ValueError` when the address is set
     but other required keys are missing.
@@ -716,7 +716,7 @@ def config_from_env(env: dict[str, str]) -> EmailInboundConfig | None:
     if not host or not user:
         raise ValueError(
             "EMAIL_INBOUND_ADDRESS is set but EMAIL_INBOUND_IMAP_HOST / "
-            "EMAIL_INBOUND_IMAP_USER are missing — inbound email cannot "
+            "EMAIL_INBOUND_IMAP_USER are missing - inbound email cannot "
             "be configured without the IMAP transport."
         )
 

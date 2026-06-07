@@ -1,4 +1,4 @@
-"""
+﻿"""
 Test 23: Verify pytest collection fix (R23).
 
 Validates that pytest can collect all tests in the `tests/` directory without
@@ -53,7 +53,7 @@ def _run_cmd(cmd: list[str], cwd: str, timeout: int = COMMAND_TIMEOUT) -> subpro
 # ---------------------------------------------------------------------------
 
 class TestPytestCollectionFix:
-    """R23: Verify pytest collection fix — all tests collect without errors."""
+    """R23: Verify pytest collection fix - all tests collect without errors."""
 
     def test_collect_only_exits_zero(self, platform_root):
         """pytest tests/ --collect-only must exit 0 (no collection errors).
@@ -78,8 +78,8 @@ class TestPytestCollectionFix:
 
         Exit codes:
         - 0: all tests passed
-        - 1: some tests failed (acceptable — tests ran to completion)
-        - 5: no tests collected (acceptable — collection succeeded)
+        - 1: some tests failed (acceptable - tests ran to completion)
+        - 5: no tests collected (acceptable - collection succeeded)
         - 2: test execution interrupted / collection error (NOT acceptable)
         - 3: internal error (NOT acceptable)
         - 4: usage error (NOT acceptable)

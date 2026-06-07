@@ -1,4 +1,4 @@
-"""Atlassian connectivity probe for automation-service.
+﻿"""Atlassian connectivity probe for automation-service.
 
 This module is the script referenced by the
 ``connectivity_probe_command`` field on the ``automation-service``
@@ -47,7 +47,7 @@ Exit contract
     dept=<dept_id> service=<service> reason=<short reason>
 
   No personal tokens, full URLs, or Basic-auth headers are ever
-  written to stdout / stderr — the ``reason`` is a structural label
+  written to stdout / stderr - the ``reason`` is a structural label
   ("http_401", "http_500", "vault_missing", "incomplete_secret",
   "transport_error:<class-name>", ...).
 
@@ -58,14 +58,14 @@ The script is configured purely through environment variables so
 the same image / command line works in Compose, in the LifecycleService
 subprocess, and in operator shells:
 
-* ``POSTGRES_DSN`` — required; standard ``postgresql://...`` URI used
+* ``POSTGRES_DSN`` - required; standard ``postgresql://...`` URI used
   by the rest of the automation-service.
 * ``VAULT_BACKEND`` / ``VAULT_ADDR`` / ``VAULT_TOKEN`` /
-  ``VAULT_KV_MOUNT`` — forwarded verbatim to
+  ``VAULT_KV_MOUNT`` - forwarded verbatim to
   :func:`vault_client.make_client`.
-* ``PROBE_HTTP_TIMEOUT_SECONDS`` — optional float, default ``10``.
+* ``PROBE_HTTP_TIMEOUT_SECONDS`` - optional float, default ``10``.
   Per-request HTTP timeout for the Atlassian read probe.
-* ``PROBE_DRY_RUN`` — optional truthy flag. When set, the script
+* ``PROBE_DRY_RUN`` - optional truthy flag. When set, the script
   enumerates the rows it would probe and exits ``0`` without making
   any HTTP requests. Useful for smoke-testing the manifest wiring
   without touching real Atlassian instances.
@@ -106,7 +106,7 @@ ProbeService = Literal["jira", "bitbucket", "confluence"]
 
 _SERVICE_PATHS: Final[Mapping[ProbeService, str]] = {
     # Cloud Jira REST v3 "who am I?" endpoint. The DC equivalent
-    # ``/rest/api/2/myself`` returns the same shape — the script
+    # ``/rest/api/2/myself`` returns the same shape - the script
     # treats either as success because Atlassian Cloud and DC both
     # return 200 OK for a valid Basic-auth pair.
     "jira": "/rest/api/3/myself",
@@ -170,9 +170,9 @@ class _ProbeFailure:
 async def _fetch_bot_rows(dsn: str) -> tuple[_BotRow, ...]:
     """Read every ``(department_id, service, credential_ref)`` triple.
 
-    The query joins through ``automation.department_bots`` only —
+    The query joins through ``automation.department_bots`` only -
     the same table :class:`automation_service.decision.credential_resolver.CredentialResolver`
-    consumes — so the script always probes the *same* set of
+    consumes - so the script always probes the *same* set of
     credentials the worker actually uses.
 
     Returns:
@@ -255,7 +255,7 @@ async def _probe_one(
 ) -> _ProbeFailure | None:
     """Issue a single authenticated GET; return ``None`` on success.
 
-    The function never raises — every error path is converted into a
+    The function never raises - every error path is converted into a
     :class:`_ProbeFailure` with a sanitised reason label so the
     caller's aggregation stays branchless.
     """
@@ -281,7 +281,7 @@ async def _probe_one(
         )
     except httpx.HTTPError as exc:
         # ``httpx.HTTPError`` covers TimeoutException, ConnectError,
-        # ReadError, etc. Surface only the class name — the message
+        # ReadError, etc. Surface only the class name - the message
         # may include the URL or other operationally-sensitive
         # detail.
         return _ProbeFailure(
@@ -289,7 +289,7 @@ async def _probe_one(
             service=row.service,
             reason=f"transport_error:{type(exc).__name__}",
         )
-    except Exception as exc:  # noqa: BLE001 — defensive, never echo message
+    except Exception as exc:  # noqa: BLE001 - defensive, never echo message
         return _ProbeFailure(
             department_id=row.department_id,
             service=row.service,
@@ -369,7 +369,7 @@ async def _run(env: Mapping[str, str]) -> int:
     dsn = env.get("POSTGRES_DSN", "").strip()
     if not dsn:
         # Treat missing DSN as a probe-wide failure rather than a
-        # crash — uyumluluk Q10 expects exit_code=1 on *any* probe
+        # crash - uyumluluk Q10 expects exit_code=1 on *any* probe
         # problem so the dashboard banner surfaces it.
         print(
             "dept=<all> service=<all> reason=missing_postgres_dsn",
@@ -379,7 +379,7 @@ async def _run(env: Mapping[str, str]) -> int:
 
     try:
         rows = await _fetch_bot_rows(dsn)
-    except Exception as exc:  # noqa: BLE001 — surface as structural label
+    except Exception as exc:  # noqa: BLE001 - surface as structural label
         print(
             "dept=<all> service=<all> "
             f"reason=postgres_error:{type(exc).__name__}",

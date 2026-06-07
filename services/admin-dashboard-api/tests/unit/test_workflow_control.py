@@ -1,4 +1,4 @@
-"""Unit tests for ``src.routers.workflow_control``.
+﻿"""Unit tests for ``src.routers.workflow_control``.
 
 The router exposes admin-only Temporal control endpoints:
 
@@ -19,7 +19,7 @@ These tests inject:
   while still exercising the FastAPI request pipeline through
   :class:`fastapi.testclient.TestClient`.
 
-The tests do not depend on the ``temporalio`` SDK — the router is wired
+The tests do not depend on the ``temporalio`` SDK - the router is wired
 against the :class:`SupportsTemporalControl` protocol so a tiny in-memory
 stub is enough.
 """
@@ -402,7 +402,7 @@ def test_signal_workflow_delivers_payload_and_audits_signal_name() -> None:
     ]
 
     # Audit row carries the signal name but **not** the payload itself
-    # (privacy by default — the signal body may carry sensitive data).
+    # (privacy by default - the signal body may carry sensitive data).
     actions = _audit_actions(audit)
     assert actions == [("workflow_control", "signal", "ok")]
     payload = audit.events[0].payload or {}
@@ -546,7 +546,7 @@ def test_endpoints_require_admin_role() -> None:
 
     The default ``require_admin`` dependency reads the
     ``Authorization`` header, which the TestClient does not provide,
-    so we get the bearer-token-missing 401 — proof that the dependency
+    so we get the bearer-token-missing 401 - proof that the dependency
     is actually wired.
     """
 

@@ -1,4 +1,4 @@
-"""Static AST invariant: no hard-coded Jira ``customfield_*`` ids.
+﻿"""Static AST invariant: no hard-coded Jira ``customfield_*`` ids.
 
 
 
@@ -32,14 +32,14 @@ Whitelist
 
 Two classes of in-scope files are exempted:
 
-1. **Test subtrees** — anything under a ``tests/`` directory inside
+1. **Test subtrees** - anything under a ``tests/`` directory inside
  the scope. Tests legitimately *assert against* field ids (e.g.
  invariant that pin a fixture's expected output) and we want
  that to keep working without registering every test file
  one-by-one. The convention "production code never references
  field ids; tests assert against them after a resolve" is what
  the rule enforces.
-2. **The resolver module itself** — ``jira_field_resolver.py``
+2. **The resolver module itself** - ``jira_field_resolver.py``
  mentions ``customfield_*`` only inside docstrings and example
  strings (never as a runtime constant). Allow-listing the file is
  simpler than threading "string is in a docstring" through the AST
@@ -58,7 +58,7 @@ Implementation notes
 --------------------
 
 * The walker descends through every ``.py`` file with:mod:`ast`,
- so f-strings (``f"customfield_{n}"``) are NOT flagged — those
+ so f-strings (``f"customfield_{n}"``) are NOT flagged - those
  cannot match the ``^customfield_\\d+$`` regex once Python parses
  them into a ``JoinedStr`` whose ``Constant`` parts are
  ``"customfield_"`` (no digit suffix). This is intentional: a
@@ -129,8 +129,8 @@ _PRUNED_DIRS: frozenset[str] = frozenset(
 #: literal ban. A file is exempt iff *any* of these substrings appears
 #: in its workspace-relative path.
 #:
-#: ``/tests/`` — test code legitimately asserts against field ids.
-#: ``jira_field_resolver.py`` — the resolver module mentions the
+#: ``/tests/`` - test code legitimately asserts against field ids.
+#: ``jira_field_resolver.py`` - the resolver module mentions the
 #: prefix only in docstrings and the literal would not be a
 #: hard-coded id even if it appeared. Allow-listing avoids any
 #: docstring-extraction subtlety.
@@ -140,7 +140,7 @@ _WHITELIST_FRAGMENTS: tuple[str, ...] = (
 )
 
 #: The regex flags exact Jira field-id literals. Anchored at both ends so the
-#: literal must be *exactly* ``customfield_<digits>`` — generic
+#: literal must be *exactly* ``customfield_<digits>`` - generic
 #: mentions in surrounding prose do not match.
 _FIELD_ID_RE: re.Pattern[str] = re.compile(r"^customfield_\d+$")
 
@@ -284,7 +284,7 @@ def test_no_hardcoded_field_id_literals() -> None:
         "automation_service.jira_field_resolver.JiraFieldResolver to "
         "translate field display names at runtime.\n - "
         + "\n - ".join(
-            f"{path}:{lineno} — {literal!r}"
+            f"{path}:{lineno} - {literal!r}"
             for path, lineno, literal in offences
         )
     )

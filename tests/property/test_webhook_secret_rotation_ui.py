@@ -1,4 +1,4 @@
-"""Webhook Secret Rotation Overlap Window.
+﻿"""Webhook Secret Rotation Overlap Window.
 
 Background
 ----------
@@ -47,7 +47,7 @@ from hypothesis import strategies as st
 import pytest
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — expose vault_client and automation-worker
+# sys.path bootstrap - expose vault_client and automation-worker
 # ---------------------------------------------------------------------------
 
 _PLATFORM_ROOT: Final[Path] = Path(__file__).resolve().parents[2]
@@ -76,7 +76,7 @@ from vault_client.webhook_hmac import verify_webhook_hmac  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
-# Fake Vault Backend — in-memory dual-slot store for webhook secrets
+# Fake Vault Backend - in-memory dual-slot store for webhook secrets
 # ---------------------------------------------------------------------------
 
 
@@ -169,7 +169,7 @@ class FakeWebhookVault:
 
 
 # ---------------------------------------------------------------------------
-# Fake Gateway — HMAC signature generator
+# Fake Gateway - HMAC signature generator
 # ---------------------------------------------------------------------------
 
 
@@ -229,7 +229,7 @@ def auto_finalize_expired(
         now = now.replace(tzinfo=timezone.utc)
 
     if overlap_until <= now:
-        # Overlap expired — finalize
+        # Overlap expired - finalize
         finalize(vault, dept_id, provider)
         return True
 
@@ -240,7 +240,7 @@ def auto_finalize_expired(
 # Hypothesis strategies
 # ---------------------------------------------------------------------------
 
-#: Department ID strategy — alphanumeric + hyphens, valid for VaultPath.
+#: Department ID strategy - alphanumeric + hyphens, valid for VaultPath.
 _DEPT_ID_ALPHABET = "abcdefghijklmnopqrstuvwxyz0123456789-"
 _dept_id_strategy = st.text(
     alphabet=_DEPT_ID_ALPHABET,
@@ -248,15 +248,15 @@ _dept_id_strategy = st.text(
     max_size=20,
 ).filter(lambda s: s[0].isalpha())
 
-#: Provider strategy — one of the three supported providers.
+#: Provider strategy - one of the three supported providers.
 _provider_strategy = st.sampled_from(["jira", "bitbucket", "confluence"])
 
-#: Request body strategy — random bytes simulating webhook payload.
+#: Request body strategy - random bytes simulating webhook payload.
 _body_strategy = st.binary(min_size=10, max_size=500)
 
 
 # ---------------------------------------------------------------------------
-# Overlap Window — Both Secrets Accepted After Rotation
+# Overlap Window - Both Secrets Accepted After Rotation
 # ---------------------------------------------------------------------------
 
 
@@ -292,7 +292,7 @@ class TestOverlapWindowBothSecretsAccepted:
         initial_secret = generate_secret()
         vault.rotate_webhook_secret(provider, dept_id, initial_secret)
 
-        # Perform rotation — new secret replaces current
+        # Perform rotation - new secret replaces current
         new_secret = rotate(vault, dept_id, provider)
 
         # Sign request with the NEW secret
@@ -391,7 +391,7 @@ class TestOverlapWindowBothSecretsAccepted:
         self, dept_id: str, provider: str, body: bytes, num_rotations: int
     ) -> None:
         """After multiple rotations, only the current and
-        immediately previous secrets are accepted — older secrets
+        immediately previous secrets are accepted - older secrets
         are discarded."""
 
         vault = FakeWebhookVault()
@@ -547,7 +547,7 @@ class TestFinalizeRestrictsToCurrentOnly:
         finalize(vault, dept_id, provider)
         assert not vault.has_previous_slot(provider, dept_id)
 
-        # Second finalize — should not raise
+        # Second finalize - should not raise
         finalize(vault, dept_id, provider)
         assert not vault.has_previous_slot(provider, dept_id)
 
@@ -580,7 +580,7 @@ class TestAutoFinalizeOnOverlapExpiry:
         self, dept_id: str, provider: str, body: bytes
     ) -> None:
         """After the overlap window expires, the previous
-        secret is no longer accepted even without explicit finalize —
+        secret is no longer accepted even without explicit finalize -
         the verify function checks overlap_until."""
 
         vault = FakeWebhookVault()
@@ -734,7 +734,7 @@ class TestAutoFinalizeOnOverlapExpiry:
         self, dept_id: str, provider: str
     ) -> None:
         """Running auto-finalize multiple times after expiry is
-        safe — subsequent calls are no-ops."""
+        safe - subsequent calls are no-ops."""
 
         vault = FakeWebhookVault()
 
@@ -750,7 +750,7 @@ class TestAutoFinalizeOnOverlapExpiry:
         result1 = auto_finalize_expired(vault, provider, dept_id, expired_time)
         assert result1 is True
 
-        # Second auto-finalize — should be no-op (previous already cleared)
+        # Second auto-finalize - should be no-op (previous already cleared)
         result2 = auto_finalize_expired(vault, provider, dept_id, expired_time)
         assert result2 is False, (
             "Second auto-finalize should be no-op (previous already cleared)"
@@ -769,7 +769,7 @@ class TestAutoFinalizeOnOverlapExpiry:
     def test_full_lifecycle_rotate_overlap_autofinalize(
         self, dept_id: str, provider: str, body: bytes
     ) -> None:
-        """Full lifecycle — rotate → overlap window
+        """Full lifecycle - rotate → overlap window
         (both accepted) → auto-finalize → only current accepted."""
 
         vault = FakeWebhookVault()
@@ -782,7 +782,7 @@ class TestAutoFinalizeOnOverlapExpiry:
         # Phase 2: Rotate
         new_secret = rotate(vault, dept_id, provider)
 
-        # Phase 3: During overlap — both accepted
+        # Phase 3: During overlap - both accepted
         during_overlap = datetime.now(timezone.utc) + timedelta(seconds=1800)
 
         sig_current = gateway.sign(new_secret, body)
@@ -795,7 +795,7 @@ class TestAutoFinalizeOnOverlapExpiry:
             vault, provider, dept_id, body, sig_previous, during_overlap
         ) is True
 
-        # Phase 4: After overlap expires — auto-finalize triggers
+        # Phase 4: After overlap expires - auto-finalize triggers
         after_overlap = datetime.now(timezone.utc) + timedelta(seconds=3601)
         auto_finalize_expired(vault, provider, dept_id, after_overlap)
 

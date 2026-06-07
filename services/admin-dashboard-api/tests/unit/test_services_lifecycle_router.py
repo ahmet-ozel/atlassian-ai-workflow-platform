@@ -1,4 +1,4 @@
-"""Unit tests for ``src.routers.services_lifecycle``.
+﻿"""Unit tests for ``src.routers.services_lifecycle``.
 
 The router is exercised through :class:`fastapi.testclient.TestClient`
 against a stub :class:`LifecycleService` that records every call. The
@@ -8,7 +8,7 @@ so we can verify the gate without instantiating a real OIDC validator.
 
 Coverage matrix:
 
-* Each of the eight endpoints — ``GET /admin/services``,
+* Each of the eight endpoints - ``GET /admin/services``,
   ``GET /admin/services/{name}``,
   ``POST /admin/services/{name}/start``,
   ``POST /admin/services/{name}/stop``,
@@ -208,7 +208,7 @@ class _StubLifecycleService:
         )
 
     def build_log_redaction_pattern(self, entry: ManagedServiceEntry):
-        return None  # no redaction in the stub — tests don't exercise it
+        return None  # no redaction in the stub - tests don't exercise it
 
     # ---- mutating surface ---------------------------------------------
 
@@ -330,7 +330,7 @@ def _build_app(
 ) -> FastAPI:
     """Return a FastAPI app wired to the router with stub dependencies.
 
-    ``actor_sub=None`` causes ``require_admin`` to raise 401 — used to
+    ``actor_sub=None`` causes ``require_admin`` to raise 401 - used to
     cover the auth-gate path without instantiating an OIDC validator.
 
     ``deployment_profile`` drives the stop guard. Default ``"dev"``
@@ -370,7 +370,7 @@ def _build_app(
 
 
 # ---------------------------------------------------------------------------
-# 401 — auth gate
+# 401 - auth gate
 # ---------------------------------------------------------------------------
 
 
@@ -388,7 +388,7 @@ def test_list_services_returns_401_when_require_admin_fails() -> None:
 
     assert response.status_code == 401
     assert stub.start_calls == []  # short-circuit before lifecycle
-    # And so are POST routes — sanity check one of them.
+    # And so are POST routes - sanity check one of them.
     response_post = client.post(
         "/admin/services/automation-service/start",
         json={"env_overrides": {}},
@@ -812,12 +812,12 @@ def test_stop_502_on_compose_failure() -> None:
 
 
 # ---------------------------------------------------------------------------
-# POST /admin/services/{name}/stop — purge_vault production guard
+# POST /admin/services/{name}/stop - purge_vault production guard
 # ---------------------------------------------------------------------------
 
 
 def test_stop_purge_vault_default_false_does_not_invoke_guard() -> None:
-    """``purge_vault`` defaults to ``False`` — production profile is
+    """``purge_vault`` defaults to ``False`` - production profile is
     irrelevant on this path.
 
     The body explicitly omits ``purge_vault`` so the guard cannot fire
@@ -844,7 +844,7 @@ def test_stop_purge_vault_default_false_does_not_invoke_guard() -> None:
 
     assert response.status_code == 200
     assert response.json()["state"] == "stopped"
-    # Guard never fired — no audit row written.
+    # Guard never fired - no audit row written.
     assert stub.purge_vault_blocked_calls == []
     # Stop *was* invoked because the body's ``purge_vault`` defaulted
     # to false.
@@ -862,7 +862,7 @@ def test_stop_purge_vault_true_in_production_returns_403() -> None:
       ``purge_vault_forbidden_in_production`` error envelope.
     * Write a ``purge_vault_blocked_in_production`` audit row via
       :meth:`LifecycleService.record_purge_vault_blocked`.
-    * NOT invoke ``LifecycleService.stop`` — Compose must remain
+    * NOT invoke ``LifecycleService.stop`` - Compose must remain
       untouched.
     """
 
@@ -889,7 +889,7 @@ def test_stop_purge_vault_true_in_production_returns_403() -> None:
     # Audit row recorded with the canonical actor + service name.
     assert len(stub.purge_vault_blocked_calls) == 1
     assert stub.purge_vault_blocked_calls[0]["name"] == "automation-service"
-    # ``svc.stop`` MUST NOT have been called — Compose stays untouched.
+    # ``svc.stop`` MUST NOT have been called - Compose stays untouched.
     assert stub.stop_calls == []
 
 
@@ -982,7 +982,7 @@ def test_stop_purge_vault_true_unknown_service_returns_404() -> None:
     )
 
     assert response.status_code == 404
-    # No audit row — guard short-circuited on the 404 path.
+    # No audit row - guard short-circuited on the 404 path.
     assert stub.purge_vault_blocked_calls == []
     assert stub.stop_calls == []
 
@@ -991,7 +991,7 @@ def test_stop_purge_vault_true_audit_unreachable_still_returns_403() -> None:
     """Audit write is best-effort.
 
     A transient audit-DB outage MUST NOT escalate the 403 into a 502
-    — the guard still has to refuse the destructive request. The
+    - the guard still has to refuse the destructive request. The
     audit row is the observability layer; the response code is the
     canonical security boundary.
     """
@@ -1015,7 +1015,7 @@ def test_stop_purge_vault_true_audit_unreachable_still_returns_403() -> None:
         response.json()["detail"]["error"]
         == "purge_vault_forbidden_in_production"
     )
-    # The helper *was* called — the AuditUnreachableError fired
+    # The helper *was* called - the AuditUnreachableError fired
     # inside, but the router caught it and proceeded with the 403.
     assert len(stub.purge_vault_blocked_calls) == 1
     assert stub.stop_calls == []

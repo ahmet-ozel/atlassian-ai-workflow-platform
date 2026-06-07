@@ -1,4 +1,4 @@
-"""CI gate — Template placeholder ↔ render context dict matching.
+﻿"""CI gate - Template placeholder ↔ render context dict matching.
 
 
 For each template in the minimum set , this test extracts the
@@ -229,17 +229,17 @@ def test_documented_context_matches_header_comment(template_rel: str) -> None:
     expected_vars = _EXPECTED_CONTEXT[template_rel]
 
     # Extract variable names from the comment header.
-    # Pattern: lines like " - variable_name : type — description"
-    # or " * ``variable_name`` — ..." (pdf template style)
+    # Pattern: lines like " - variable_name : type - description"
+    # or " * ``variable_name`` - ..." (pdf template style)
     header_vars: set[str] = set()
 
-    # Style 1: " - var_name : type — description"
+    # Style 1: " - var_name : type - description"
     for match in re.finditer(
         r"^\s*-\s+(\w+)\s*:", source, re.MULTILINE
     ):
         header_vars.add(match.group(1))
 
-    # Style 2: " * ``var_name`` — ..." (used in pdf_templates)
+    # Style 2: " * ``var_name`` - ..." (used in pdf_templates)
     for match in re.finditer(
         r"^\s*\*\s+``(\w+)``", source, re.MULTILINE
     ):
@@ -253,7 +253,7 @@ def test_documented_context_matches_header_comment(template_rel: str) -> None:
         header_vars.add(match.group(1))
 
     if not header_vars:
-        # Template doesn't have a parseable header — skip this check
+        # Template doesn't have a parseable header - skip this check
         pytest.skip(
             f"Could not extract documented variables from header of "
             f"'{template_rel}'"

@@ -1,6 +1,6 @@
-"""Unit tests for ``src.prompts.audit_writer`` (the project 6.3).
+﻿"""Unit tests for ``src.prompts.audit_writer`` (the project 6.3).
 Exercises the asyncpg-backed audit sink that the PromptsGitRouter
-writes through. The tests do not stand up a real Postgres instance —
+writes through. The tests do not stand up a real Postgres instance -
 they inject a fake pool whose ``acquire`` context manager yields a
 fake connection that records every ``execute`` call. That keeps the
 test suite hermetic while still validating:
@@ -14,14 +14,14 @@ test suite hermetic while still validating:
   .
 * Connection-level errors (``OSError``,
   ``ConnectionRefusedError``, ``asyncio.TimeoutError``) are
-  swallowed at WARNING — the audit write must never mask the
+  swallowed at WARNING - the audit write must never mask the
   underlying request outcome.
 * Non-connection errors (eg. CHECK constraint violations) are also
   swallowed but logged at ERROR.
 * All four prompt mutation event actions
   (``prompt_draft_created``, ``prompt_pr_opened``,
   ``prompt_render_failed``, ``prompt_pr_conflict``) round-trip
-  cleanly — the writer is not action-aware."""
+  cleanly - the writer is not action-aware."""
 
 from __future__ import annotations
 
@@ -91,7 +91,7 @@ class _FakeAcquireContext:
 class _FakePool:
     """Asyncpg-pool-shaped fake.
 
-    ``acquire`` returns a single shared connection — the writer
+    ``acquire`` returns a single shared connection - the writer
     issues exactly one ``execute`` per ``insert_audit`` call so a
     shared connection is sufficient.
     """
@@ -133,7 +133,7 @@ def event_factory():
 
 
 # ---------------------------------------------------------------------------
-# AsyncpgAuditEventsWriter — happy path
+# AsyncpgAuditEventsWriter - happy path
 # ---------------------------------------------------------------------------
 
 
@@ -244,7 +244,7 @@ class TestFailureHandling:
         writer = AsyncpgAuditEventsWriter(pool=pool)
 
         with caplog.at_level(logging.WARNING):
-            # Returns cleanly — must NOT propagate the connection error.
+            # Returns cleanly - must NOT propagate the connection error.
             await writer.insert_audit(event_factory())
 
         assert any(
@@ -273,7 +273,7 @@ class TestFailureHandling:
     ) -> None:
         # A simulated CHECK-constraint violation (any non-connection
         # exception). The writer logs at ERROR but still does not
-        # raise — audit failures must not mask request outcome.
+        # raise - audit failures must not mask request outcome.
         pool = _FakePool(raise_on_execute=ValueError("CHECK violation"))
         writer = AsyncpgAuditEventsWriter(pool=pool)
 
@@ -325,7 +325,7 @@ class TestConnectionErrorClassifier:
 
 
 # ---------------------------------------------------------------------------
-# AsyncpgAuditSink — application-layer guard
+# AsyncpgAuditSink - application-layer guard
 # ---------------------------------------------------------------------------
 
 
@@ -335,7 +335,7 @@ class TestAsyncpgAuditSinkGuards:
         self, event_factory
     ) -> None:
         """``AuditLogger.write`` rejects None ``actor_role`` upfront.
-        This is 's application-layer guard — the
+        This is 's application-layer guard - the
         Postgres CHECK constraint enforces the same at the database
         layer, but the application guard means we never even open a
         connection for a malformed event."""
@@ -348,7 +348,7 @@ class TestAsyncpgAuditSinkGuards:
         with pytest.raises(ValueError):
             await sink.write(bad_event)
 
-        # No SQL was issued — the guard fired before delegation.
+        # No SQL was issued - the guard fired before delegation.
         assert pool.connection.calls == []
 
     @pytest.mark.asyncio

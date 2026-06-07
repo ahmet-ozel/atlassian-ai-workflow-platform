@@ -1,4 +1,4 @@
-"""Unit tests for ``git_shared.GitRepo``.
+﻿"""Unit tests for ``git_shared.GitRepo``.
 
 These tests exercise the full mutation flow against a real on-disk
 repository created in a ``tmp_path`` so the ``IndexFile`` /
@@ -169,7 +169,7 @@ class TestWriteAndCommit:
         assert commit.branch == "draft/edit-1"
         assert len(commit.short_sha) == 7
         # The committed content is reachable on the draft branch but
-        # NOT on main — i.e. main is untouched.
+        # NOT on main - i.e. main is untouched.
         assert gr.read_file(
             "prompts/seed.md",
             branch="draft/edit-1",

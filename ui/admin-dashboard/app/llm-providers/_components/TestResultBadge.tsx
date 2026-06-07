@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * Inline badge for a `ConnectionTestResult` (R14.3, R14.5).
@@ -7,7 +7,7 @@
  * - A green check + `{latency_ms}ms` on `success === true`.
  * - A red cross + the redacted `error.message` on `success === false`.
  *
- * The component never reaches into raw credential material — the
+ * The component never reaches into raw credential material - the
  * backend has already projected the result through
  * `http_shared.redact_text` before returning the body, so the
  * `error.message` we render is safe to display verbatim.

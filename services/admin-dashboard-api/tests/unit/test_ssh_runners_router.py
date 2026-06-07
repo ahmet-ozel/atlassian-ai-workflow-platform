@@ -1,12 +1,12 @@
-"""Unit tests for ``src.routers.ssh_runners``.
+﻿"""Unit tests for ``src.routers.ssh_runners``.
 
 The router exposes five endpoints:
 
-* ``GET  /admin/ssh-runners``                    — list all runners.
-* ``POST /admin/ssh-runners``                    — create a new runner.
-* ``PATCH /admin/ssh-runners/{runner_id}``       — update runner fields.
-* ``GET  /admin/departments/{dept_id}/ssh-runners``  — dept's runners.
-* ``POST /admin/departments/{dept_id}/ssh-runners``  — update assignments.
+* ``GET  /admin/ssh-runners``                    - list all runners.
+* ``POST /admin/ssh-runners``                    - create a new runner.
+* ``PATCH /admin/ssh-runners/{runner_id}``       - update runner fields.
+* ``GET  /admin/departments/{dept_id}/ssh-runners``  - dept's runners.
+* ``POST /admin/departments/{dept_id}/ssh-runners``  - update assignments.
 
 Tests cover:
 
@@ -189,13 +189,13 @@ def _build_app(
 
 
 # ---------------------------------------------------------------------------
-# Tests — GET /admin/ssh-runners
+# Tests - GET /admin/ssh-runners
 # ---------------------------------------------------------------------------
 
 
 class TestListSshRunners:
     def test_returns_runners(self) -> None:
-        """Happy path — returns list of runners with active count."""
+        """Happy path - returns list of runners with active count."""
         pool = _FakePool(
             fetch_results=[
                 [
@@ -256,13 +256,13 @@ class TestListSshRunners:
 
 
 # ---------------------------------------------------------------------------
-# Tests — POST /admin/ssh-runners
+# Tests - POST /admin/ssh-runners
 # ---------------------------------------------------------------------------
 
 
 class TestCreateSshRunner:
     def test_creates_runner(self) -> None:
-        """Happy path — creates runner and writes key to Vault."""
+        """Happy path - creates runner and writes key to Vault."""
         pool = _FakePool(fetchval_result=None)  # No existing runner
         vault = _FakeVaultClient()
         app = _build_app(pool=pool, vault=vault)
@@ -343,13 +343,13 @@ class TestCreateSshRunner:
 
 
 # ---------------------------------------------------------------------------
-# Tests — PATCH /admin/ssh-runners/{runner_id}
+# Tests - PATCH /admin/ssh-runners/{runner_id}
 # ---------------------------------------------------------------------------
 
 
 class TestUpdateSshRunner:
     def test_updates_status(self) -> None:
-        """Happy path — updates runner status."""
+        """Happy path - updates runner status."""
         updated_row = _make_runner_row("runner-01", status="disabled")
         pool = _FakePool(fetchrow_result=updated_row)
         app = _build_app(pool=pool)
@@ -387,13 +387,13 @@ class TestUpdateSshRunner:
 
 
 # ---------------------------------------------------------------------------
-# Tests — GET /admin/departments/{dept_id}/ssh-runners
+# Tests - GET /admin/departments/{dept_id}/ssh-runners
 # ---------------------------------------------------------------------------
 
 
 class TestListDeptSshRunners:
     def test_returns_assigned_runners(self) -> None:
-        """Happy path — returns runners assigned to dept."""
+        """Happy path - returns runners assigned to dept."""
         pool = _FakePool(
             fetch_results=[
                 [_make_runner_row("runner-01"), _make_runner_row("runner-02")]
@@ -418,13 +418,13 @@ class TestListDeptSshRunners:
 
 
 # ---------------------------------------------------------------------------
-# Tests — POST /admin/departments/{dept_id}/ssh-runners
+# Tests - POST /admin/departments/{dept_id}/ssh-runners
 # ---------------------------------------------------------------------------
 
 
 class TestUpdateDeptSshRunners:
     def test_assigns_runners(self) -> None:
-        """Happy path — assigns runners and emits audit events."""
+        """Happy path - assigns runners and emits audit events."""
         # First fetch: validate runner_ids exist
         # Second fetch: get current assignments (empty)
         pool = _FakePool(
@@ -478,7 +478,7 @@ class TestUpdateDeptSshRunners:
 
     def test_returns_400_on_missing_runners(self) -> None:
         """Non-existent runner_ids → 400."""
-        # First fetch: validate runner_ids — returns only runner-01
+        # First fetch: validate runner_ids - returns only runner-01
         pool = _FakePool(
             fetch_results=[
                 [_FakeRow(runner_id="runner-01")],

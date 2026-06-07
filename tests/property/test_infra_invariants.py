@@ -1,18 +1,18 @@
-"""invariant for pure infrastructural invariants.
+﻿"""invariant for pure infrastructural invariants.
 
 
 
-invariant (1, 2, 3, 4): Pure infrastructural invariants — artifact path
+invariant (1, 2, 3, 4): Pure infrastructural invariants - artifact path
 naming, draft PR coercion, cleanup decision truth table.
 
 This module tests three categories of pure-function invariants:
 
-1. **Artifact path naming** — ``agent_artifact_key`` always produces keys
+1. **Artifact path naming** - ``agent_artifact_key`` always produces keys
  starting with ``artifacts/`` and ``execution_artifact_key`` always
  produces keys starting with ``executions/``.
-2. **Draft PR coercion** — ``coerce_draft_true(x)`` returns ``True`` for
+2. **Draft PR coercion** - ``coerce_draft_true(x)`` returns ``True`` for
  any input value ( §1 Kural 10).
-3. **Cleanup decision truth table** — ``should_cleanup(policy, exit_code)``
+3. **Cleanup decision truth table** - ``should_cleanup(policy, exit_code)``
  matches the documented truth table for all combinations of policy and
  exit code.
 """
@@ -111,7 +111,7 @@ _ANY_VALUE = st.one_of(
 
 
 # ---------------------------------------------------------------------------
-# invariant: Artifact path naming (agent) — always starts with
+# invariant: Artifact path naming (agent) - always starts with
 # "artifacts/" prefix
 # ---------------------------------------------------------------------------
 
@@ -148,7 +148,7 @@ def test_agent_artifact_key_format(
 
 
 # ---------------------------------------------------------------------------
-# invariant: Artifact path naming (execution) — always starts with
+# invariant: Artifact path naming (execution) - always starts with
 # "executions/" prefix
 # ---------------------------------------------------------------------------
 
@@ -181,7 +181,7 @@ def test_execution_artifact_key_format(workflow_id: str, name: str) -> None:
 
 
 # ---------------------------------------------------------------------------
-# invariant: Draft PR enforcement — coerce_draft_true always returns True
+# invariant: Draft PR enforcement - coerce_draft_true always returns True
 # ---------------------------------------------------------------------------
 
 
@@ -299,7 +299,7 @@ def test_should_cleanup_invalid_policy_raises() -> None:
 
 
 # ---------------------------------------------------------------------------
-# invariant (additional): Determinism — same inputs always produce
+# invariant (additional): Determinism - same inputs always produce
 # same output
 # ---------------------------------------------------------------------------
 

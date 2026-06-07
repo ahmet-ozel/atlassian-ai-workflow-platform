@@ -1,15 +1,15 @@
-"""Hand-rolled fakes shared by the LLM provider property suite.
+﻿"""Hand-rolled fakes shared by the LLM provider property suite.
 
 The fakes cover the four collaborators every ``ProviderService``
 exercise needs:
 
-* :class:`FakePool` — in-memory asyncpg pool with a transaction
+* :class:`FakePool` - in-memory asyncpg pool with a transaction
   rollback model that undoes speculative INSERTs.
-* :class:`FakeVault` — KV-v2 store with toggles for write / delete
+* :class:`FakeVault` - KV-v2 store with toggles for write / delete
   failures.
-* :class:`FakeTester` — :class:`ConnectionTester` stand-in that
+* :class:`FakeTester` - :class:`ConnectionTester` stand-in that
   records every :class:`TestRequest` it receives.
-* :class:`RecordingAuditSink` — captures every emitted audit event
+* :class:`RecordingAuditSink` - captures every emitted audit event
   for the property assertions.
 
 The helpers exist as a module so the various property tests share
@@ -45,7 +45,7 @@ from src.llm_providers.service import ProviderService  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
-# Pool fakes — transaction-aware so rollback semantics are observable.
+# Pool fakes - transaction-aware so rollback semantics are observable.
 # ---------------------------------------------------------------------------
 
 

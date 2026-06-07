@@ -1,4 +1,4 @@
-"""invariant for Dockerfile invariants.
+﻿"""invariant for Dockerfile invariants.
 
 
 invariant: Dockerfile invariants.
@@ -116,7 +116,7 @@ def _tokenize(dockerfile_text: str) -> tuple[_Directive, ...]:
         raw = physical_lines[i]
         stripped = raw.strip()
         # Skip blanks and comments (Dockerfile parser-directives like
-        # ``# syntax=...`` are also ignored — they are not instructions).
+        # ``# syntax=...`` are also ignored - they are not instructions).
         if not stripped or stripped.startswith("#"):
             i += 1
             continue
@@ -168,7 +168,7 @@ _FROM_AS_RE = re.compile(
 def _assert_multi_stage(
     component: ComponentSpec, directives: tuple[_Directive, ...]
 ) -> list[_Directive]:
-    """invariant — ≥2 ``FROM`` and the first stage is named ``builder``.
+    """invariant - ≥2 ``FROM`` and the first stage is named ``builder``.
 
  Returns the ordered list of ``FROM`` directives so subsequent
  clauses (base-image match) can reuse the parsed image strings.
@@ -198,7 +198,7 @@ _NODE_BASE_RE = re.compile(r"^node:20-[A-Za-z0-9_.-]+$")
 
 
 def _assert_base_image(component: ComponentSpec, froms: list[_Directive]) -> None:
-    """invariant — base image matches ``c.runtime``."""
+    """invariant - base image matches ``c.runtime``."""
 
     if component.runtime == "python":
         expected_re = _PYTHON_BASE_RE
@@ -233,7 +233,7 @@ _USER_DIRECTIVE_RE = re.compile(r"^\s*appuser\s*$")
 def _assert_non_root_user(
     component: ComponentSpec, directives: tuple[_Directive, ...]
 ) -> None:
-    """invariant — non-root ``appuser`` (uid 10001) and ``USER appuser``.
+    """invariant - non-root ``appuser`` (uid 10001) and ``USER appuser``.
 
  Asserts that:
  * Some ``RUN`` directive creates ``appuser`` with uid 10001 via
@@ -288,7 +288,7 @@ def _assert_non_root_user(
 def _assert_expose(
     component: ComponentSpec, directives: tuple[_Directive, ...]
 ) -> None:
-    """invariant — EXPOSE iff Component publishes a port."""
+    """invariant - EXPOSE iff Component publishes a port."""
 
     expose_directives = [d for d in directives if d.keyword == "EXPOSE"]
 
@@ -336,7 +336,7 @@ def _extract_healthcheck_cmd(directive: _Directive) -> str:
 def _assert_healthcheck(
     component: ComponentSpec, directives: tuple[_Directive, ...]
 ) -> None:
-    """invariant — healthcheck shape per Component type.
+    """invariant - healthcheck shape per Component type.
 
  HTTP services use ``curl -fsS http://localhost:<port>/healthz``;
  temporal workers use a ``python -c "..."`` Temporal-client probe;
@@ -349,7 +349,7 @@ def _assert_healthcheck(
         f"{component.name}: Dockerfile must declare a HEALTHCHECK "
         f"(the operational rule)"
     )
-    # Use the *last* HEALTHCHECK directive — Docker only honours one,
+    # Use the *last* HEALTHCHECK directive - Docker only honours one,
     # and the project ships exactly one per Component.
     cmd = _extract_healthcheck_cmd(healthchecks[-1])
 
@@ -430,7 +430,7 @@ def _assert_healthcheck(
 )
 @given(component=st.sampled_from(COMPONENT_MANIFEST))
 def test_dockerfile_invariants(component: ComponentSpec) -> None:
-    """invariant — Dockerfile shape invariants for every Component.
+    """invariant - Dockerfile shape invariants for every Component.
 
 
  """

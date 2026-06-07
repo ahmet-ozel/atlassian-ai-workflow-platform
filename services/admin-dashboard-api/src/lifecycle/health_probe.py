@@ -1,4 +1,4 @@
-"""Kind-aware health probe for Managed_Service entries.
+﻿"""Kind-aware health probe for Managed_Service entries.
 
 This module turns a :class:`~src.manifest.ManagedServiceEntry` into a
 fresh :class:`HealthSnapshot` by routing the probe to one of three
@@ -22,7 +22,7 @@ strategies based on the entry's ``kind`` and ``health_endpoint``:
    ``"starting" → "starting"``, and the empty string / ``"<no value>"``
    / subprocess failure (timeout, missing ``docker`` binary, exit
    code != 0) → ``"running_unmonitored"`` (Compose ``healthcheck``
-   block absent — the control plane records that the container is up
+   block absent - the control plane records that the container is up
    but unobservable via Docker).
 
 3. **HTTP service** (``health_endpoint is not None``): performs ``GET
@@ -104,7 +104,7 @@ class HealthSnapshot:
         ``healthcheck`` that is still in its initial probe window;
         ``running_unmonitored`` is emitted for entries with no probe
         (``health_endpoint is None`` and ``kind != "worker"``) whose
-        Compose container has no ``healthcheck`` block — the
+        Compose container has no ``healthcheck`` block - the
         container is up but the control plane cannot observe its
         health. ``unknown`` is retained on the type for
         backwards compatibility with persisted snapshots and is not
@@ -182,7 +182,7 @@ def _truncate_body(text: str) -> str:
 
     Slicing on a Python ``str`` is character-safe (operates on code
     points), so this is sufficient for the body-truncation rule in
-    the probe body limit — there is no need to worry about splitting a UTF-8
+    the probe body limit - there is no need to worry about splitting a UTF-8
     multibyte sequence mid-codepoint.
     """
 
@@ -226,7 +226,7 @@ class HealthProbe:
         Pre-configured :class:`httpx.AsyncClient`. The probe uses
         :data:`_PROBE_TIMEOUT_SECONDS` per request via
         :class:`httpx.Timeout`, so the client itself does **not** need
-        a matching default timeout — but it is the caller's
+        a matching default timeout - but it is the caller's
         responsibility to manage the client's lifecycle (open at
         startup, close at shutdown).
     temporal_host:
@@ -304,7 +304,7 @@ class HealthProbe:
         * unit tests can monkeypatch ``temporalio.client.Client``
           before any probe runs.
 
-        A successful ``Client.connect`` is treated as the ping itself —
+        A successful ``Client.connect`` is treated as the ping itself -
         the gRPC handshake exercises the same path the worker does on
         startup, which is the worker reachability check. Any
         :class:`asyncio.TimeoutError` or other exception flips the
@@ -346,7 +346,7 @@ class HealthProbe:
                 readyz_body=None,
                 state="unhealthy",
             )
-        except Exception as exc:  # noqa: BLE001 — record any failure shape.
+        except Exception as exc:  # noqa: BLE001 - record any failure shape.
             return HealthSnapshot(
                 ts=_utcnow(),
                 healthz_status=-1,
@@ -450,7 +450,7 @@ class HealthProbe:
         return names, "running container(s): " + ", ".join(names[:3])
 
     # ------------------------------------------------------------------
-    # Assume-running probe — docker inspect
+    # Assume-running probe - docker inspect
     # ------------------------------------------------------------------
 
     async def _probe_assume_running(
@@ -474,11 +474,11 @@ class HealthProbe:
         * ``"unhealthy"`` → ``state="unhealthy"``
         * ``"starting"`` → ``state="starting"``
 
-        Any other shape — empty string (no ``Health`` block in the
+        Any other shape - empty string (no ``Health`` block in the
         container's state), the literal ``"<no value>"`` (Go template
         rendering of a missing field), an unknown status, or a
         subprocess failure (timeout, missing ``docker`` binary, exit
-        code != 0, decode error) — is classified as
+        code != 0, decode error) - is classified as
         ``state="running_unmonitored"``: the container appears to be
         up but the control plane has no signal to confirm it
         (Compose ``healthcheck`` block likely absent). This honours
@@ -541,7 +541,7 @@ class HealthProbe:
                 stderr=asyncio.subprocess.PIPE,
             )
         except FileNotFoundError:
-            # No ``docker`` binary on PATH — typical in unit-test
+            # No ``docker`` binary on PATH - typical in unit-test
             # environments and CI containers without Docker-in-Docker.
             return "", (
                 "docker inspect unavailable: 'docker' binary not found "
@@ -559,7 +559,7 @@ class HealthProbe:
                 timeout=_DOCKER_INSPECT_TIMEOUT_SECONDS,
             )
         except asyncio.TimeoutError:
-            # The subprocess is still alive — try to terminate it so we
+            # The subprocess is still alive - try to terminate it so we
             # don't leak a process. ``kill`` is best-effort; if it
             # fails (proc already exited, or we lack permissions) we
             # swallow the error because the caller's only contract is
@@ -593,7 +593,7 @@ class HealthProbe:
             )
 
         # Empty string and the Go-template "<no value>" sentinel both
-        # mean "no Health block" — i.e. the Compose service has no
+        # mean "no Health block" - i.e. the Compose service has no
         # ``healthcheck`` directive. Surface a stable diagnostic so
         # operators can tell the difference between "healthcheck not
         # configured" and "healthcheck running".
@@ -646,7 +646,7 @@ class HealthProbe:
         """Probe ``/healthz`` and ``/readyz`` over the Compose network.
 
         URL shape: ``http://{compose_service_name}:{port}{path}``. The
-        service hostname is the Compose service key — Docker's internal
+        service hostname is the Compose service key - Docker's internal
         DNS resolves it within the project network, no host-side port
         publish required.
 

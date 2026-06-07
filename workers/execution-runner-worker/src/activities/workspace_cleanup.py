@@ -1,21 +1,21 @@
-"""Workspace cleanup activities for the runner-wide disk auto-prune cron.
+﻿"""Workspace cleanup activities for the runner-wide disk auto-prune cron.
 
 Single-runner canonical contract (G2). The execution-runner is the only
 worker with SSH credentials, so the four activities driven by
 ``WorkspaceCleanupSchedulerWorkflow`` (in ``automation-worker``) live
 here:
 
-* :func:`probe_workspace_disk_usage` — runs ``df`` against
+* :func:`probe_workspace_disk_usage` - runs ``df`` against
   ``RUNNER_BASE_PATH`` and returns a snapshot.
-* :func:`emit_workspace_disk_warning` — POSTs a warning to the
+* :func:`emit_workspace_disk_warning` - POSTs a warning to the
   admin-dashboard with 60-minute dedup. Decoupled from the per-dept
   ``check_disk_quota`` warning path: this one carries
   ``dept_id="*"`` to indicate "host-wide" and uses a separate dedup
   key so a host-wide alert never silences a per-dept one.
-* :func:`list_workspace_iter_dirs_oldest_first` — lists every
+* :func:`list_workspace_iter_dirs_oldest_first` - lists every
   ``iter-N`` directory under ``RUNNER_BASE_PATH`` sorted by mtime
   ascending (oldest first), with size estimates.
-* :func:`prune_workspace_iter` — ``rm -rf``'s a single ``iter-N``
+* :func:`prune_workspace_iter` - ``rm -rf``'s a single ``iter-N``
   directory and writes a ``workspace_auto_pruned`` audit event.
 
 Single-source-of-truth env resolution
@@ -25,7 +25,7 @@ Every activity in this module reads ``SSH_HOST`` (canonical) with
 ``SSH_HOST_1`` accepted as a deprecated alias, ``RUNNER_BASE_PATH``
 (canonical with ``SSH_BASE_PATH`` deprecated alias),
 ``RUNNER_DISK_WARN_PCT``, and ``RUNNER_DISK_EVICT_PCT``. The activities
-**never** read per-department config — this is the host-wide pruner.
+**never** read per-department config - this is the host-wide pruner.
 """
 
 from __future__ import annotations
@@ -61,10 +61,10 @@ __all__ = [
 DEFAULT_WARN_PCT: int = 80
 DEFAULT_EVICT_PCT: int = 90
 
-#: Timeout for the ``df`` probe — single short SSH command.
+#: Timeout for the ``df`` probe - single short SSH command.
 DISK_PROBE_TIMEOUT_S: float = 30.0
 
-#: Timeout for the ``find`` listing — may take a few seconds on a
+#: Timeout for the ``find`` listing - may take a few seconds on a
 #: saturated host.
 LIST_TIMEOUT_S: float = 60.0
 
@@ -152,7 +152,7 @@ def _resolve_thresholds() -> tuple[int, int]:
     warn = _parse("RUNNER_DISK_WARN_PCT", DEFAULT_WARN_PCT)
     evict = _parse("RUNNER_DISK_EVICT_PCT", DEFAULT_EVICT_PCT)
     if evict <= warn:
-        # Defensive — if an operator inverts them, restore sane order.
+        # Defensive - if an operator inverts them, restore sane order.
         warn, evict = DEFAULT_WARN_PCT, DEFAULT_EVICT_PCT
     return warn, evict
 
@@ -205,7 +205,7 @@ async def _ssh_exec(
 
 
 # ---------------------------------------------------------------------------
-# Activity 1 — probe_workspace_disk_usage
+# Activity 1 - probe_workspace_disk_usage
 # ---------------------------------------------------------------------------
 
 
@@ -327,7 +327,7 @@ async def probe_workspace_disk_usage() -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
-# Activity 2 — emit_workspace_disk_warning
+# Activity 2 - emit_workspace_disk_warning
 # ---------------------------------------------------------------------------
 
 
@@ -385,7 +385,7 @@ async def emit_workspace_disk_warning(payload: dict[str, Any]) -> dict[str, Any]
 
 
 # ---------------------------------------------------------------------------
-# Activity 3 — list_workspace_iter_dirs_oldest_first
+# Activity 3 - list_workspace_iter_dirs_oldest_first
 # ---------------------------------------------------------------------------
 
 
@@ -492,7 +492,7 @@ async def list_workspace_iter_dirs_oldest_first() -> list[dict[str, Any]]:
 
 
 # ---------------------------------------------------------------------------
-# Activity 4 — prune_workspace_iter
+# Activity 4 - prune_workspace_iter
 # ---------------------------------------------------------------------------
 
 
@@ -533,7 +533,7 @@ async def _write_audit_event(
     The ``WorkspaceCleanupSchedulerWorkflow`` itself does not write
     audit events directly (it stays purely deterministic); the
     activity does. Failure to write is logged but does not propagate
-    back to the workflow — the prune already succeeded at the SSH
+    back to the workflow - the prune already succeeded at the SSH
     layer.
     """
     url = f"{_admin_dashboard_api_url()}/api/v1/audit/events"
@@ -570,7 +570,7 @@ async def prune_workspace_iter(payload: dict[str, Any]) -> dict[str, Any]:
     ``freed_mb=0``.
 
     Refuses to prune paths outside ``RUNNER_BASE_PATH`` or paths that
-    do not contain ``/iter-`` — defence-in-depth even though the
+    do not contain ``/iter-`` - defence-in-depth even though the
     listing activity should never produce such paths.
     """
     path = str(payload.get("path", "")).strip()

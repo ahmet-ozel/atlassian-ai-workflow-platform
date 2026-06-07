@@ -1,4 +1,4 @@
-"""asyncpg-backed repository for ``automation.llm_providers``.
+﻿"""asyncpg-backed repository for ``automation.llm_providers``.
 
 Implements the design's "Components › repository.py" contract: a single
 class with narrow, single-purpose methods so the
@@ -6,7 +6,7 @@ class with narrow, single-purpose methods so the
 (transaction orchestration, Vault writes, audit emission) and the
 router stays a thin HTTP shim.
 
-The repository holds no state of its own — every method accepts an
+The repository holds no state of its own - every method accepts an
 asyncpg ``Connection`` (or ``Transaction`` member connection) so the
 service layer can wrap mutations in a single transaction.  This makes
 the repository trivially mockable in unit tests that bypass the
@@ -194,7 +194,7 @@ class LLMProviderRepository:
             "DELETE FROM automation.llm_providers WHERE id = $1",
             provider_id,
         )
-        # ``execute`` returns ``"DELETE <n>"`` — parse out the count.
+        # ``execute`` returns ``"DELETE <n>"`` - parse out the count.
         try:
             return int(result.split()[-1]) > 0
         except (ValueError, IndexError):
@@ -234,7 +234,7 @@ class LLMProviderRepository:
         """Return the ``dept_id`` set pinning to *provider_id* (R1.7).
 
         Used by :meth:`llm_providers.service.ProviderService.delete` as
-        a precondition for the ``provider_in_use`` 409 surface — the
+        a precondition for the ``provider_in_use`` 409 surface - the
         service refuses to delete a provider any dept still references.
         Returns ``[]`` when no dept pins to the provider.
         """

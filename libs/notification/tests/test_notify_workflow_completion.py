@@ -1,4 +1,4 @@
-"""Unit tests for ``NotificationService.notify_workflow_completion``.
+﻿"""Unit tests for ``NotificationService.notify_workflow_completion``.
 
 Covers the workflow notification decision table:
 
@@ -9,10 +9,10 @@ Covers the workflow notification decision table:
   ``dept.notify_on_success == False`` ⇒ no-op.
 * ``notify_on_success == True`` ⇒ dispatch on the dept's
   ``notify_channels`` set.
-* Idempotent retry — the same ``workflow_id`` + channel + kind hashes to
+* Idempotent retry - the same ``workflow_id`` + channel + kind hashes to
   the same ``dedup_key``; the second attempt skips the adapter send when
   the store reports a duplicate row.
-* Body redaction — the persisted ``target`` and ``body_hash`` are
+* Body redaction - the persisted ``target`` and ``body_hash`` are
   sha256 digests, never plain webhook URLs / email bodies.
 
 The tests run on lightweight in-memory fakes for the four injected
@@ -193,7 +193,7 @@ def test_completed_with_notify_on_success_false_is_noop() -> None:
         )
     )
 
-    # No render, no adapter call, no log row — pure no-op.
+    # No render, no adapter call, no log row - pure no-op.
     assert prompts.render_calls == []
     assert slack.sends == []
     assert email.sends == []
@@ -280,7 +280,7 @@ def test_failed_dispatches_slack_even_when_notify_on_success_false() -> None:
     """Failure-mandatory branch: Slack always fires."""
 
     service, slack, email, prompts, store = _service_with_fakes()
-    # notify_on_success=False AND notify_channels=∅ — dept opted out
+    # notify_on_success=False AND notify_channels=∅ - dept opted out
     # of every success notification. Failure path must still fire.
     dept = _dept(
         notify_on_success=False,
@@ -426,7 +426,7 @@ def test_idempotent_retry_skips_second_adapter_send() -> None:
             result=_result("completed"),
         )
     )
-    # Second call with the same workflow_id — store returns False, the
+    # Second call with the same workflow_id - store returns False, the
     # adapter is NOT called again.
     outcome_b = _run(
         service.notify_workflow_completion(

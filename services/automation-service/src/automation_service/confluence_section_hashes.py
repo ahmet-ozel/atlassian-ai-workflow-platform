@@ -1,4 +1,4 @@
-"""Confluence section-hash dedup repository.
+﻿"""Confluence section-hash dedup repository.
 
 Backs the ``confluence_doc_update`` workflow's section-level write
 dedup check. The :class:`ConfluenceSectionHashRepo`
@@ -9,7 +9,7 @@ which the AgentRunnerWorkflow consults before invoking the
 Operational contract:
 
 * The four-tuple ``(workflow_id, page_id, section_path, content_hash)``
-  is the natural idempotency key — its primary-key constraint is
+  is the natural idempotency key - its primary-key constraint is
   declared in ``platform/infra/postgres/11_workflows.sql``.
 * ``should_skip_section_update`` returns ``True`` iff the same
   four-tuple is already in ``automation.confluence_section_hashes``;
@@ -27,7 +27,7 @@ Operational contract:
   the cross-dept idempotency segment of the ``automation`` schema and
   is not subject to RLS.
 
-The module is intentionally tiny — every public method maps 1:1 onto a
+The module is intentionally tiny - every public method maps 1:1 onto a
 SQL statement against ``automation.confluence_section_hashes``.  The
 audit emission, overwrite-protection check, and ``_AI_PROBE_*`` filter
 are deliberately *not* implemented here; they are
@@ -109,11 +109,11 @@ class ConfluenceSectionHashRepo:
         ----------
         workflow_id:
             Workflow id of the AgentRunnerWorkflow that owns the
-            update — formatted via
+            update - formatted via
             :mod:`temporal_shared.identifiers`.  Encodes the
             department boundary.
         page_id:
-            Confluence page id (string — Confluence ids are
+            Confluence page id (string - Confluence ids are
             opaque tokens, not integers).
         section_path:
             Slash-delimited path of the section being updated
@@ -151,7 +151,7 @@ class ConfluenceSectionHashRepo:
                 section_path,
                 content_hash,
             )
-            # A non-None row means the INSERT actually wrote — i.e. this
+            # A non-None row means the INSERT actually wrote - i.e. this
             # is the first time we see the four-tuple, so we proceed
             # with the Confluence update.  None means ON CONFLICT
             # swallowed the insert and the four-tuple is already

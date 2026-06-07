@@ -1,11 +1,11 @@
-"""``agent-runner-worker`` boot script (canonical location).
+﻿"""``agent-runner-worker`` boot script (canonical location).
 
 Hosts the **single** Temporal worker that polls the
-``agent-runner-tq`` task queue (workflows-spec Requirements 1.1, 1.2 —
+``agent-runner-tq`` task queue (workflows-spec Requirements 1.1, 1.2 -
 *"a worker SHALL listen on exactly one task queue"*). The queue name
 is sourced from
 :func:`temporal_shared.workflow_registry.task_queue_for` so the boot
-script and the workflow modules share a single source of truth — the
+script and the workflow modules share a single source of truth - the
 queue string is never duplicated as a string literal anywhere in the
 worker package.
 
@@ -17,11 +17,11 @@ import path until the activity modules are relocated alongside the
 ``agent_runner`` package).
 
 Configuration is read from the process environment (no ``.env`` file
-loader at this layer — Compose / Kubernetes injects the values). The
+loader at this layer - Compose / Kubernetes injects the values). The
 keys consumed are documented in
 ``platform/workers/agent-runner-worker/.env.example``.
 
-Validates Requirements: 1.1, 1.2 — single-queue / canonical-workflow
+Validates Requirements: 1.1, 1.2 - single-queue / canonical-workflow
 invariant.
 """
 
@@ -37,7 +37,7 @@ from typing import Any
 # ``temporalio`` is the only mandatory runtime import. We guard it so
 # tests that exercise the boot script via AST inspection / patching can
 # still import this module on a host that does not ship the SDK.
-try:  # pragma: no cover — exercised at boot only
+try:  # pragma: no cover - exercised at boot only
     from temporalio.client import Client
     from temporalio.worker import Worker
 except ImportError:  # pragma: no cover
@@ -46,7 +46,7 @@ except ImportError:  # pragma: no cover
 
 # The single source of truth for the queue this worker polls. The
 # helper raises ``KeyError`` for unknown workflow names, so adding a
-# new workflow to this worker also requires extending the registry —
+# new workflow to this worker also requires extending the registry -
 # the boot cannot silently fall through to a default queue (R1.2).
 from temporal_shared.workflow_registry import task_queue_for
 
@@ -57,7 +57,7 @@ from agent_runner.workflows import AgentRunnerWorkflow
 #: side-effect-free so it is safe to run during module import.
 AGENT_RUNNER_TASK_QUEUE: str = task_queue_for("AgentRunnerWorkflow")
 
-#: Default Temporal cluster address — overridden via ``TEMPORAL_HOST``
+#: Default Temporal cluster address - overridden via ``TEMPORAL_HOST``
 #: in the worker's ``.env`` when the cluster runs on a non-default
 #: hostname / port.
 DEFAULT_TEMPORAL_HOST: str = "temporal:7233"
@@ -76,7 +76,7 @@ def _load_activities() -> list[Any]:
     Activity modules currently live under the legacy ``src.activities``
     namespace; the import is wrapped so the boot script remains
     importable on hosts that do not ship every transitive dependency
-    (httpx, jinja2, aiobotocore, ...) — production deployments do
+    (httpx, jinja2, aiobotocore, ...) - production deployments do
     ship them, tests stub the worker out.
 
     Each ``@activity.defn``-decorated callable is collected by name
@@ -86,7 +86,7 @@ def _load_activities() -> list[Any]:
     """
 
     activities: list[Any] = []
-    try:  # pragma: no cover — exercised at boot only
+    try:  # pragma: no cover - exercised at boot only
         from src.activities.jira import (  # type: ignore[import-not-found]
             jira_add_comment,
             jira_build_issue_link,
@@ -191,7 +191,7 @@ def _load_activities() -> list[Any]:
                 compensation_chain_run,
             ]
         )
-    except ImportError as exc:  # pragma: no cover — diagnostic-only
+    except ImportError as exc:  # pragma: no cover - diagnostic-only
         _LOG.warning(
             "agent-runner-worker: activity module import failed (%s); "
             "the worker will start with the activity list empty. "
@@ -290,7 +290,7 @@ async def _run_async() -> None:
     )
 
     # Graceful shutdown on SIGTERM / SIGINT. The signal handler set
-    # is best-effort — Windows does not implement
+    # is best-effort - Windows does not implement
     # ``loop.add_signal_handler`` so the boot still runs there for
     # tests but a Ctrl-C will fall through to KeyboardInterrupt in
     # ``run()``.
@@ -299,7 +299,7 @@ async def _run_async() -> None:
     for sig in (signal.SIGTERM, signal.SIGINT):
         try:
             loop.add_signal_handler(sig, stop_event.set)
-        except NotImplementedError:  # pragma: no cover — Windows
+        except NotImplementedError:  # pragma: no cover - Windows
             pass
 
     worker_task = asyncio.create_task(worker.run())
@@ -319,9 +319,9 @@ def run() -> None:
 
     try:
         asyncio.run(_run_async())
-    except KeyboardInterrupt:  # pragma: no cover — operator interrupt
+    except KeyboardInterrupt:  # pragma: no cover - operator interrupt
         _LOG.info("agent-runner-worker stopped by signal")
-    except Exception:  # noqa: BLE001 — top-level guard
+    except Exception:  # noqa: BLE001 - top-level guard
         _LOG.exception("agent-runner-worker failed to start")
         sys.exit(1)
 

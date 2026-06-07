@@ -1,4 +1,4 @@
-"""``WorkspaceCleanupSchedulerWorkflow`` — hourly Temporal cron for runner workspace disk auto-prune.
+﻿"""``WorkspaceCleanupSchedulerWorkflow`` - hourly Temporal cron for runner workspace disk auto-prune.
 
 Validates Requirements: **G2** (single-runner canonical contract gereği
 tek SSH host = tek darboğaz; ``cleanup_policy=never`` task'ları veya
@@ -14,7 +14,7 @@ Lifecycle (one cron tick)::
     2. If ``usage_pct < warn_pct``:                       → no-op
        If ``warn_pct <= usage_pct < evict_pct``:          → emit warn
        If ``usage_pct >= evict_pct``:                     → emit warn + evict
-    3. ``emit_workspace_disk_warning(snapshot)`` (idempotent — Admin
+    3. ``emit_workspace_disk_warning(snapshot)`` (idempotent - Admin
        Dashboard tracks the last warning timestamp and dedupes within
        a 60-minute window).
     4. ``list_workspace_iter_dirs_oldest_first()`` →
@@ -28,7 +28,7 @@ Lifecycle (one cron tick)::
 
     On any exception inside the probe / list / prune activities for a
     single entry: the error is recorded in the report but does NOT
-    abort the remaining entries — best-effort, mirroring
+    abort the remaining entries - best-effort, mirroring
     ``WebhookRotationFinalizeWorkflow``.
 
 Determinism contract
@@ -50,7 +50,7 @@ This workflow body uses **only** Temporal-deterministic primitives:
 Single-runner canonical contract (G1)
 -------------------------------------
 
-This workflow assumes **exactly one** SSH runner host — the platform
+This workflow assumes **exactly one** SSH runner host - the platform
 contract under G1. The probe activity implementation reads the
 canonical ``SSH_HOST`` env var (with ``SSH_HOST_1`` accepted as a
 deprecated alias) and ``RUNNER_BASE_PATH`` to bound the ``df`` and
@@ -66,7 +66,7 @@ the first tick has driven usage below ``evict_pct``:
 * ``emit_workspace_disk_warning`` is idempotent at the Admin Dashboard
   layer (60-minute dedup window for the same dept_id="*" / runner
   scope; mirrors ``disk_quota`` activity's existing dedup contract).
-* ``prune_workspace_iter`` is naturally idempotent — re-running
+* ``prune_workspace_iter`` is naturally idempotent - re-running
   ``rm -rf`` on a path that no longer exists succeeds at the SSH
   layer with exit_code=0 and ``freed_mb=0``.
 
@@ -114,17 +114,17 @@ AUTOMATION_TASK_QUEUE: str = "automation-tq"
 #: same ID across restarts means a single in-flight cron lineage.
 WORKSPACE_CLEANUP_SCHEDULER_WORKFLOW_ID: str = "workspace-cleanup-scheduler-cron"
 
-#: Cron schedule expression — every hour at minute 00.
+#: Cron schedule expression - every hour at minute 00.
 #: 5-field POSIX cron syntax. Temporal interprets in UTC.
 WORKSPACE_CLEANUP_SCHEDULER_CRON_SCHEDULE: str = "0 * * * *"
 
 
-#: Fallback warn threshold (%) — used only when the probe activity
+#: Fallback warn threshold (%) - used only when the probe activity
 #: cannot resolve ``RUNNER_DISK_WARN_PCT`` from env. Mirrors the
 #: ``.env.example`` default.
 DEFAULT_WARN_PCT: int = 80
 
-#: Fallback evict threshold (%) — used only when the probe activity
+#: Fallback evict threshold (%) - used only when the probe activity
 #: cannot resolve ``RUNNER_DISK_EVICT_PCT`` from env. Mirrors the
 #: ``.env.example`` default.
 DEFAULT_EVICT_PCT: int = 90
@@ -160,7 +160,7 @@ _ACT_PRUNE_WORKSPACE_ITER: str = "prune_workspace_iter"
 # Activity options
 # ---------------------------------------------------------------------------
 
-#: Timeout for the disk-usage probe — single ``df`` call over SSH.
+#: Timeout for the disk-usage probe - single ``df`` call over SSH.
 #: 30s is generous; the existing ``disk_quota`` activity uses the same
 #: budget for ``du -sm``.
 _PROBE_TIMEOUT: timedelta = timedelta(seconds=30)
@@ -284,7 +284,7 @@ class WorkspacePruneResult:
         The directory that was targeted.
     success:
         ``True`` when the activity acknowledged the removal (or the
-        directory no longer existed — both are idempotent successes).
+        directory no longer existed - both are idempotent successes).
     freed_mb:
         Bytes freed by the deletion, in MB. Zero when the directory
         was already gone or the activity did not measure size.
@@ -318,7 +318,7 @@ class WorkspaceCleanupReport:
     pruned_paths:
         List of directory paths successfully removed during this tick.
     pruned_count:
-        ``len(pruned_paths)`` — exposed for convenience and parity with
+        ``len(pruned_paths)`` - exposed for convenience and parity with
         ``WebhookRotationFinalizeReport``.
     freed_mb_total:
         Sum of ``freed_mb`` across all successful prunes.
@@ -407,7 +407,7 @@ class WorkspaceCleanupSchedulerWorkflow:
         if below_warn:
             workflow.logger.info(
                 "WorkspaceCleanupSchedulerWorkflow: usage %.1f%% below warn "
-                "threshold %d%% — no action",
+                "threshold %d%% - no action",
                 snapshot.usage_pct,
                 snapshot.warn_pct,
             )
@@ -451,7 +451,7 @@ class WorkspaceCleanupSchedulerWorkflow:
 
         below_evict = snapshot.usage_pct < snapshot.evict_pct
         if below_evict:
-            # Warn-only branch — no eviction needed yet.
+            # Warn-only branch - no eviction needed yet.
             return WorkspaceCleanupReport(
                 probed=True,
                 initial_usage_pct=initial_usage_pct,
@@ -578,7 +578,7 @@ class WorkspaceCleanupSchedulerWorkflow:
 
 
 # ---------------------------------------------------------------------------
-# Internal coercion helpers (replay-safe — pure dict → dataclass)
+# Internal coercion helpers (replay-safe - pure dict → dataclass)
 # ---------------------------------------------------------------------------
 
 

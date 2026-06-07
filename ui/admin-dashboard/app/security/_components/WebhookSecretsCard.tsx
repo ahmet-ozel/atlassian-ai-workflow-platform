@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 /**
- * WebhookSecretsCard — Displays webhook HMAC secrets per dept × provider
+ * WebhookSecretsCard - Displays webhook HMAC secrets per dept × provider
  * with rotation controls and live overlap countdown.
  *
  * Fetches data from `GET /admin/security/webhooks` and provides:
@@ -148,7 +148,7 @@ const statusBadge = (
 // ---------------------------------------------------------------------------
 
 function formatDate(dateStr: string | null): string {
-  if (!dateStr) return "—";
+  if (!dateStr) return "-";
   try {
     return new Date(dateStr).toLocaleString("tr-TR");
   } catch {
@@ -373,7 +373,7 @@ export default function WebhookSecretsCard(): JSX.Element {
                           ⏱ {formatCountdown(remaining)}
                         </span>
                       ) : (
-                        "—"
+                        "-"
                       )}
                     </td>
                     <td style={tdStyle}>
@@ -457,7 +457,7 @@ export default function WebhookSecretsCard(): JSX.Element {
             <p id="webhook-confirm-desc" style={{ margin: "0 0 1.25rem 0" }}>
               {confirmAction.type === "rotate"
                 ? "Webhook secret'ı döndürmek istediğinizden emin misiniz? Mevcut secret yedek slot'a taşınacak ve 1 saatlik overlap penceresi başlayacak."
-                : "Overlap penceresini sonlandırmak istediğinizden emin misiniz? Yedek (previous) secret silinecek — Atlassian/Bitbucket tarafında yeni secret'ı yapıştırdığınızdan emin olun."}
+                : "Overlap penceresini sonlandırmak istediğinizden emin misiniz? Yedek (previous) secret silinecek - Atlassian/Bitbucket tarafında yeni secret'ı yapıştırdığınızdan emin olun."}
             </p>
             <p style={{ fontSize: "0.85rem", color: "#6b7280" }}>
               Departman: <strong>{confirmAction.deptId}</strong> /{" "}
@@ -493,7 +493,7 @@ export default function WebhookSecretsCard(): JSX.Element {
       )}
 
       {/* ================================================================= */}
-      {/* Rotate Result Modal — new secret + 3-step guide                    */}
+      {/* Rotate Result Modal - new secret + 3-step guide                    */}
       {/* ================================================================= */}
       {rotateResult && (
         <div
@@ -556,7 +556,7 @@ export default function WebhookSecretsCard(): JSX.Element {
               }}
             >
               ℹ️ Overlap penceresi boyunca hem eski hem yeni secret kabul
-              edilir — geçiş sırasında kesinti yaşanmaz.
+              edilir - geçiş sırasında kesinti yaşanmaz.
             </div>
 
             <div style={codeBlockStyle}>{rotateResult.newSecret}</div>

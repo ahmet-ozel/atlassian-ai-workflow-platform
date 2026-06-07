@@ -1,4 +1,4 @@
-"""Surface 1 bug-condition exploration test: Capability Vocabulary Alignment.
+﻿"""Surface 1 bug-condition exploration test: Capability Vocabulary Alignment.
 
 This file contains invariant that surface the vocabulary drift
 between the legacy single-token capability vocabulary used in
@@ -63,14 +63,14 @@ split read/write vocabulary
 "confluence_read","confluence_write","execution","web_search"}) emitted by
 production ``WORKFLOW_TYPE_CAPABILITIES``. The alignment direction recorded in
 the comment header of ``test_temporal_shared.py`` (per is
-**test-side** — the production helper is the canonical emitter and was left
+**test-side** - the production helper is the canonical emitter and was left
 unchanged.
 
 After the fix, the ``TEST_TEMPORAL_SHARED_EXPECTED_MAPPING`` constant in this
 file (rebuilt by mirrors the post-fix ``EXPECTED_MAPPING`` from
 ``test_temporal_shared.py``. Re-running
 ``pytest platform/tests/property/test_capability_vocabulary_alignment.py::test_surface1_temporal_shared_vocabulary_aligned``
-now PASSES — the test asserts only split tokens, so the
+now PASSES - the test asserts only split tokens, so the
 ``asserted ∩ {"jira","bitbucket","confluence"}`` set is empty for every
 sampled tool name and isBugCondition_1(X) is False everywhere.
 
@@ -131,7 +131,7 @@ MCP_TOOL_TO_WORKFLOW_TYPE: dict[str, str] = {
 #: This dict MIRRORS the post-fix ``EXPECTED_MAPPING`` constant in
 #: ``platform/tests/unit/test_temporal_shared.py`` (the split-vocabulary form
 #: applied after the vocabulary alignment fix. It is the live oracle the invariant compares
-#: against; if either dict drifts, update BOTH sides — the source of truth is
+#: against; if either dict drifts, update BOTH sides - the source of truth is
 #: ``test_temporal_shared.py::EXPECTED_MAPPING`` and the production
 #: ``WORKFLOW_TYPE_CAPABILITIES`` literal in
 #: ``platform/libs/temporal-shared/src/temporal_shared/capabilities.py``.
@@ -215,7 +215,7 @@ def is_bug_condition_1(tool_name: str) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# invariant: Bug Condition — Capability Vocabulary Aligned in test_temporal_shared.py
+# invariant: Bug Condition - Capability Vocabulary Aligned in test_temporal_shared.py
 #
 # ---------------------------------------------------------------------------
 
@@ -225,7 +225,7 @@ def is_bug_condition_1(tool_name: str) -> bool:
 )
 @settings(max_examples=6, deadline=None)
 def test_surface1_temporal_shared_vocabulary_aligned(tool_name: str) -> None:
-    """invariant: Bug Condition — Capability Vocabulary Aligned in test_temporal_shared.py.
+    """invariant: Bug Condition - Capability Vocabulary Aligned in test_temporal_shared.py.
 
  For each MCP tool name drawn from the helper's domain, asserts that:
  1. tokens_emitted_by_production(tool) is non-empty
@@ -234,7 +234,7 @@ def test_surface1_temporal_shared_vocabulary_aligned(tool_name: str) -> None:
  3. The corresponding test in test_temporal_shared.py does NOT assert any token
  in {"jira","bitbucket","confluence"} (i.e., the test uses split vocabulary too)
 
- On UNFIXED code: this test FAILS because condition 3 is violated —
+ On UNFIXED code: this test FAILS because condition 3 is violated -
  test_temporal_shared.py still asserts legacy tokens while production
  emits only split tokens.
 
@@ -249,7 +249,7 @@ def test_surface1_temporal_shared_vocabulary_aligned(tool_name: str) -> None:
 
     # Condition 1: production emits something for this tool
     assert len(emitted) > 0, (
-        f"tokens_emitted_by_production({tool_name!r}) is empty — "
+        f"tokens_emitted_by_production({tool_name!r}) is empty - "
         f"tool name not mapped to a workflow type or workflow type not in "
         f"WORKFLOW_TYPE_CAPABILITIES"
     )
@@ -258,13 +258,13 @@ def test_surface1_temporal_shared_vocabulary_aligned(tool_name: str) -> None:
     emitted_legacy = emitted & LEGACY_TOKENS
     assert not emitted_legacy, (
         f"tokens_emitted_by_production({tool_name!r}) contains legacy tokens "
-        f"{sorted(emitted_legacy)} — production should only emit split vocabulary "
+        f"{sorted(emitted_legacy)} - production should only emit split vocabulary "
         f"(jira_read/jira_write/bitbucket_read/bitbucket_write/confluence_read/confluence_write). "
         f"Full emitted set: {sorted(emitted)}"
     )
 
     # Condition 3 (the bug condition): test_temporal_shared.py must NOT assert
-    # legacy tokens — it should use the same split vocabulary as production.
+    # legacy tokens - it should use the same split vocabulary as production.
     # On UNFIXED code this assertion FAILS because the test still uses legacy tokens.
     asserted_legacy = asserted & LEGACY_TOKENS
     assert not asserted_legacy, (
@@ -356,10 +356,10 @@ def test_surface1_temporal_shared_vocabulary_aligned(tool_name: str) -> None:
 #
 # After the fix, ``tokens_asserted_by_capability_helpers_test`` in this file
 # (rebuilt by mirrors the post-fix assertion oracle from
-# ``test_capability_helpers.py`` — it computes the COLLAPSED-SIMPLE form using
+# ``test_capability_helpers.py`` - it computes the COLLAPSED-SIMPLE form using
 # the same ``_SPLIT_TO_SIMPLE`` mirror table. Re-running
 # ``pytest platform/tests/property/test_capability_vocabulary_alignment.py::test_surface2_capability_helpers_vocabulary_aligned``
-# now PASSES — the asserted oracle and the emitted value both yield the
+# now PASSES - the asserted oracle and the emitted value both yield the
 # collapsed-simple form, so ``asserted == emitted`` for every sampled tool
 # name and isBugCondition_2(X) is False everywhere.
 #
@@ -372,7 +372,7 @@ from temporal_shared.capabilities import required_capabilities
 # Mirror of ``temporal_shared.capabilities._SPLIT_TO_SIMPLE`` (the collapse
 # map used by ``required_capabilities``). Kept inline here to mirror the
 # post-fix oracle in ``test_capability_helpers.py`` without re-importing
-# from the production module — accidental edits to the collapse logic
+# from the production module - accidental edits to the collapse logic
 # would otherwise hide if both sides shared a single source.
 _SPLIT_TO_SIMPLE: Mapping[str, str] = {
     "jira_read": "jira",
@@ -393,7 +393,7 @@ def tokens_emitted_by_capability_helpers(tool_name: str) -> frozenset[str]:
     """Return the capability tokens emitted by ``required_capabilities`` for the given MCP tool name.
 
  Maps the tool name to its associated workflow type, then calls
- ``required_capabilities(workflow_type)`` — the function under test in
+ ``required_capabilities(workflow_type)`` - the function under test in
  ``test_capability_helpers.py``.
 
  Returns an empty frozenset if the tool name is not in the mapping.
@@ -416,7 +416,7 @@ def tokens_asserted_by_capability_helpers_test(tool_name: str) -> frozenset[str]
  table to the simple-vocabulary frozenset that ``required_capabilities``
  actually emits.
 
- So the "asserted" set post-fix is the COLLAPSED-SIMPLE form — the split
+ So the "asserted" set post-fix is the COLLAPSED-SIMPLE form - the split
  tokens folded via:data:`_SPLIT_TO_SIMPLE`, with non-split tokens
  (``"execution"``, ``"web_search"``) passed through unchanged.
 
@@ -441,7 +441,7 @@ def is_bug_condition_2(tool_name: str) -> bool:
  - asserted = WORKFLOW_TYPE_CAPABILITIES[wf_type] (split vocab, no legacy tokens)
  - emitted = required_capabilities(wf_type) (simple/collapsed vocab, has legacy tokens)
  - asserted ≠ emitted (True)
- - emitted ∩ {"jira","bitbucket","confluence"} ≠ ∅ (True — simple vocab has these)
+ - emitted ∩ {"jira","bitbucket","confluence"} ≠ ∅ (True - simple vocab has these)
  → isBugCondition_2 = True
  """
     asserted = tokens_asserted_by_capability_helpers_test(tool_name)
@@ -457,7 +457,7 @@ def is_bug_condition_2(tool_name: str) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# invariant: Bug Condition — Capability Vocabulary Aligned in test_capability_helpers.py
+# invariant: Bug Condition - Capability Vocabulary Aligned in test_capability_helpers.py
 #
 # ---------------------------------------------------------------------------
 
@@ -467,11 +467,11 @@ def is_bug_condition_2(tool_name: str) -> bool:
 )
 @settings(max_examples=6, deadline=None)
 def test_surface2_capability_helpers_vocabulary_aligned(tool_name: str) -> None:
-    """invariant: Bug Condition — Capability Vocabulary Aligned in test_capability_helpers.py.
+    """invariant: Bug Condition - Capability Vocabulary Aligned in test_capability_helpers.py.
 
  For each MCP tool name drawn from the helper's domain, asserts that
  ``required_capabilities(workflow_type)`` returns the same set as
- ``WORKFLOW_TYPE_CAPABILITIES[workflow_type]`` — i.e., the function under
+ ``WORKFLOW_TYPE_CAPABILITIES[workflow_type]`` - i.e., the function under
  test in ``test_capability_helpers.py`` emits the same vocabulary that the
  test asserts.
 
@@ -497,7 +497,7 @@ def test_surface2_capability_helpers_vocabulary_aligned(tool_name: str) -> None:
  """
     workflow_type = MCP_TOOL_TO_WORKFLOW_TYPE.get(tool_name)
     assert workflow_type is not None, (
-        f"tool_name {tool_name!r} not in MCP_TOOL_TO_WORKFLOW_TYPE — "
+        f"tool_name {tool_name!r} not in MCP_TOOL_TO_WORKFLOW_TYPE - "
         f"strategy should only generate known tool names"
     )
 

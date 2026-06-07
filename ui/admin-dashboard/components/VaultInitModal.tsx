@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 /**
- * VaultInitModal — Production Vault Init step for the Setup Wizard.
+ * VaultInitModal - Production Vault Init step for the Setup Wizard.
  *
  * Calls `POST /admin/vault/init` and
  * displays the 5 unseal keys in a one-time modal dialog. The modal
@@ -97,7 +97,7 @@ export default function VaultInitModal({ onComplete }: VaultInitModalProps) {
     onComplete?.();
   }, [onComplete]);
 
-  // ---- Render: Idle state — show init button ----
+  // ---- Render: Idle state - show init button ----
   if (state.phase === "idle") {
     return (
       <div style={stepContainerStyle}>
@@ -211,7 +211,7 @@ export default function VaultInitModal({ onComplete }: VaultInitModalProps) {
           </span>
         </label>
 
-        {/* Close button — disabled until confirmed */}
+        {/* Close button - disabled until confirmed */}
         <button
           type="button"
           onClick={handleClose}

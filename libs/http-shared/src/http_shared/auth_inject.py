@@ -1,4 +1,4 @@
-"""MCP credential injection helper for Atlassian services.
+﻿"""MCP credential injection helper for Atlassian services.
 
 Provides :func:`with_atlassian_creds`, an async context manager that
 injects department-specific Atlassian credentials (URL, username,
@@ -135,8 +135,8 @@ def _credential_headers(
 
 #: Credential scopes accepted in P0+R2 (uyumluluk Q7).
 #:
-#: - ``"org"`` — worker bot scope (Vault path ``secret/atlassian/{dept_id}/...``).
-#: - ``"user"`` — Streamlit per-user scope (Vault path
+#: - ``"org"`` - worker bot scope (Vault path ``secret/atlassian/{dept_id}/...``).
+#: - ``"user"`` - Streamlit per-user scope (Vault path
 #:   ``secret/atlassian/_user_session/{session_id}/...``).
 #:
 #: ``"bot"`` is kept as a deprecated alias for ``"org"`` for backward

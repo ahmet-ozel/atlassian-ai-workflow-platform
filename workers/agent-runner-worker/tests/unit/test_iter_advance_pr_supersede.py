@@ -1,10 +1,10 @@
-"""Unit tests for ``iter_advance_pr_supersede`` activity.
+﻿"""Unit tests for ``iter_advance_pr_supersede`` activity.
 
 Validates the contract documented on
 :func:`agent_runner.activities.iter_advance.iter_advance_pr_supersede`:
 
 * No-op when ``old_pr_id is None`` (first iteration of a fresh
-  issue) — neither Bitbucket nor the supersede ledger is touched.
+  issue) - neither Bitbucket nor the supersede ledger is touched.
 * Open old PR → label add + banner prepend + ledger insert all fire.
 * Closed / merged old PR → Bitbucket calls are skipped, ledger row
   is still recorded (audit trail invariant).
@@ -12,7 +12,7 @@ Validates the contract documented on
   ``(workflow_id, old_pr_id, new_pr_id)`` triple is a no-op:
 
   * the existing label is silently re-added (Bitbucket-side
-    idempotency — 409 is treated as success);
+    idempotency - 409 is treated as success);
   * the description-prepend is short-circuited because the banner
     is already present;
   * the ledger row insert returns ``False`` (PK conflict).
@@ -35,7 +35,7 @@ import httpx
 import pytest
 
 # ---------------------------------------------------------------------------
-# ``sys.path`` bootstrap — mirror the existing unit-test pattern.
+# ``sys.path`` bootstrap - mirror the existing unit-test pattern.
 # ---------------------------------------------------------------------------
 
 _WORKER_ROOT: Path = Path(__file__).resolve().parents[2]
@@ -57,7 +57,7 @@ for _candidate in (
     if _candidate.is_dir() and _str not in sys.path:
         sys.path.insert(0, _str)
 
-# noqa: E402 — imports after sys.path bootstrap.
+# noqa: E402 - imports after sys.path bootstrap.
 
 from agent_runner.activities import iter_advance as iter_advance_mod  # noqa: E402
 from agent_runner.activities.iter_advance import (  # noqa: E402
@@ -189,7 +189,7 @@ def repo_record_log() -> list[tuple[str, int, int]]:
             old_pr_id: int,
             new_pr_id: int,
         ) -> bool:
-            # PK = (workflow_id, old_pr_id) — the new_pr_id is not part
+            # PK = (workflow_id, old_pr_id) - the new_pr_id is not part
             # of the key, so a retried iter_advance with the same
             # (workflow_id, old_pr_id) returns False even when
             # new_pr_id differs (which mirrors the real repo's
@@ -209,7 +209,7 @@ def repo_record_log() -> list[tuple[str, int, int]]:
 
 
 # ---------------------------------------------------------------------------
-# 1. Pure helpers — banner build + idempotency guard
+# 1. Pure helpers - banner build + idempotency guard
 # ---------------------------------------------------------------------------
 
 
@@ -242,7 +242,7 @@ class TestPureHelpers:
 
 
 # ---------------------------------------------------------------------------
-# 2. ``old_pr_id is None`` — first-iteration no-op
+# 2. ``old_pr_id is None`` - first-iteration no-op
 # ---------------------------------------------------------------------------
 
 
@@ -301,7 +301,7 @@ class TestNoOpWhenNoOldPr:
 
 
 # ---------------------------------------------------------------------------
-# 3. Closed / merged old PR — Bitbucket no-op, ledger still records
+# 3. Closed / merged old PR - Bitbucket no-op, ledger still records
 # ---------------------------------------------------------------------------
 
 
@@ -332,14 +332,14 @@ class TestClosedOldPrSkipsBitbucket:
             )
         )
 
-        # Only the GET fired — no label add, no description update.
+        # Only the GET fired - no label add, no description update.
         called_paths = [p for p, _ in patch_mcp.calls]
         assert called_paths == ["/api/bitbucket/pull-requests/get"]
         assert result.label_added is False
         assert result.description_updated is False
         assert result.superseded is False
 
-        # Ledger row still recorded — audit trail invariant.
+        # Ledger row still recorded - audit trail invariant.
         assert len(repo_record_log) == 1
         assert repo_record_log[0] == ("automation-bb-x-pr-200", 199, 200)
         assert result.log_row_inserted is True
@@ -470,7 +470,7 @@ class TestOpenOldPrHappyPath:
 
 
 # ---------------------------------------------------------------------------
-# 5. Idempotency — second call for the same triple is a no-op
+# 5. Idempotency - second call for the same triple is a no-op
 # ---------------------------------------------------------------------------
 
 
@@ -486,7 +486,7 @@ class TestIdempotentSecondCall:
         # Simulate the second call: the GET now returns a description
         # that already starts with the supersede banner (as written by
         # a previous successful run). The activity must NOT issue a
-        # second description PUT — that would yield a doubly-prefixed
+        # second description PUT - that would yield a doubly-prefixed
         # body.
         existing = _build_banner(200) + "Original description body"
         patch_mcp._responses = {
@@ -507,7 +507,7 @@ class TestIdempotentSecondCall:
         )
 
         called_paths = [p for p, _ in patch_mcp.calls]
-        # Only get + labels — NO update.
+        # Only get + labels - NO update.
         assert called_paths == [
             "/api/bitbucket/pull-requests/get",
             "/api/bitbucket/pull-requests/labels",
@@ -515,7 +515,7 @@ class TestIdempotentSecondCall:
         assert result.description_updated is False
         # Label add still fires (Bitbucket-side idempotent).
         assert result.label_added is True
-        # Superseded reflects "something happened" — label add counts.
+        # Superseded reflects "something happened" - label add counts.
         assert result.superseded is True
 
     def test_two_consecutive_calls_record_one_ledger_row(
@@ -543,7 +543,7 @@ class TestIdempotentSecondCall:
         )
         assert first.log_row_inserted is True
 
-        # Second call — same triple, banner now in place upstream.
+        # Second call - same triple, banner now in place upstream.
         patch_mcp.calls = []  # reset call recorder
         patch_mcp._responses = {
             "/api/bitbucket/pull-requests/get": _make_response(
@@ -588,7 +588,7 @@ class TestRepoRegistryIsolation:
     def test_no_repo_registered_yields_log_row_inserted_false(
         self, patch_mcp: _FakeAuthClient, fake_repo: RepoRef
     ) -> None:
-        # Explicitly clear the registry — no fixture configures it.
+        # Explicitly clear the registry - no fixture configures it.
         set_pr_supersede_log_repo(None)
         patch_mcp._responses = {
             "/api/bitbucket/pull-requests/get": _make_response(
@@ -616,7 +616,7 @@ class TestRepoRegistryIsolation:
 
 
 # ---------------------------------------------------------------------------
-# 7. Workflow wiring — `_handle_code_change_with_test` invokes the activity
+# 7. Workflow wiring - `_handle_code_change_with_test` invokes the activity
 # ---------------------------------------------------------------------------
 
 

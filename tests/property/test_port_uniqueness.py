@@ -1,4 +1,4 @@
-"""Property-based test for host-port uniqueness across published Components.
+﻿"""Property-based test for host-port uniqueness across published Components.
 
 For any two distinct Components ``c1, c2`` in
 :data:`COMPONENT_MANIFEST` whose ``host_port`` is not ``None``, the
@@ -66,7 +66,7 @@ from conftest import (  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
-# Property test — pair-wise uniqueness over COMPONENT_MANIFEST
+# Property test - pair-wise uniqueness over COMPONENT_MANIFEST
 # ---------------------------------------------------------------------------
 
 
@@ -92,7 +92,7 @@ def test_host_port_pairwise_uniqueness(
     """
 
     if c1.host_port is None or c2.host_port is None:
-        # Temporal workers expose no host port — out of this check's scope.
+        # Temporal workers expose no host port - out of this check's scope.
         return
 
     if c1.host_port == c2.host_port:
@@ -104,7 +104,7 @@ def test_host_port_pairwise_uniqueness(
 
 
 # ---------------------------------------------------------------------------
-# Deterministic checks — full (Component ∪ infra) port universe
+# Deterministic checks - full (Component ∪ infra) port universe
 # ---------------------------------------------------------------------------
 
 
@@ -133,7 +133,7 @@ def test_component_plus_infra_ports_are_globally_unique() -> None:
     Build the full ``(owner, port)`` list from ``COMPONENT_MANIFEST``
     plus ``INFRA_PUBLISHED_PORTS`` and assert:
 
-    1. The number of unique ports equals the number of entries — i.e.
+    1. The number of unique ports equals the number of entries - i.e.
        no two owners share a host port.
     2. Each ``(owner, port)`` entry is itself unique (the manifest +
        infra map should never declare the same row twice).
@@ -223,7 +223,7 @@ def test_compose_published_ports_match_universe() -> None:
     Parse ``infra/docker-compose.yml`` and assert:
 
     1. There are no duplicate host ports across the compose file
-       itself (defence in depth — a YAML edit that breaks this would
+       itself (defence in depth - a YAML edit that breaks this would
        also break ``docker compose up`` at runtime).
     2. Every ``services[*].ports`` entry that publishes a host port
        maps to exactly one owner in the canonical universe (Component
@@ -335,7 +335,7 @@ def test_compose_published_ports_match_universe() -> None:
 
 # ===========================================================================
 # Service topology and compose-manifest checks
-# shape tutarlılığı — port uniqueness across the 10-entry topology.
+# shape tutarlılığı - port uniqueness across the 10-entry topology.
 #
 # Compose services and manifest aliases are cross-checked below.
 #
@@ -343,7 +343,7 @@ def test_compose_published_ports_match_universe() -> None:
 # uniqueness checks with two foundation-specific invariants:
 #
 # 1. Every foundation Compose service that publishes host ports
-#    publishes them on globally unique values — re-asserted across
+#    publishes them on globally unique values - re-asserted across
 #    the dynamically-loaded Compose document so newly-added services
 #    cannot quietly reuse a port already taken by an existing one.
 #
@@ -355,7 +355,7 @@ def test_compose_published_ports_match_universe() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Foundation manifest discovery (kept lightweight — no extra deps).
+# Foundation manifest discovery (kept lightweight - no extra deps).
 # ---------------------------------------------------------------------------
 
 import json as _json  # noqa: E402  (deferred import keeps top tidy)
@@ -498,7 +498,7 @@ def test_foundation_sidecar_publishes_no_host_ports(sidecar_name: str) -> None:
     published = [_published_host_port(p) for p in ports]
     nonempty = [p for p in published if p is not None]
     assert not nonempty and not ports, (
-        f"sidecar {sidecar_name!r}: MUST NOT declare 'ports:' — "
+        f"sidecar {sidecar_name!r}: MUST NOT declare 'ports:' - "
         f"sidecars use Compose-internal ``expose:`` only "
         f"(sidecar services must not publish host ports); got ports={ports!r}"
     )

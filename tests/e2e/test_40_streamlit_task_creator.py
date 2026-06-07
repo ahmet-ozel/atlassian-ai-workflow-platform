@@ -1,8 +1,8 @@
-"""
-Test 40: Streamlit Task Creator — End-to-End (E5 — gereksinim.txt G8/G10).
+﻿"""
+Test 40: Streamlit Task Creator - End-to-End (E5 - gereksinim.txt G8/G10).
 
 Validates the Streamlit assistant's Task Creator page
-(``ui/streamlit-app/pages/2_task_creator.py``) — the surface a
+(``ui/streamlit-app/pages/2_task_creator.py``) - the surface a
 department member uses to chat about a task they want to create and turn
 that conversation into a complete Jira task description. ``gereksinim.txt``
 satır 13/19 bu sayfanın kullanıcıya task oluşturmada yardımcı olmasını
@@ -12,7 +12,7 @@ Test stratejisi (test_39 ile aynı desen):
 
 * ``httpx`` ile Streamlit sunucusu + ``/task_creator`` route 200 mü
   kontrolü.
-* Kaynak seviyesi sözleşme — ``2_task_creator.py`` dosyasının chat-only
+* Kaynak seviyesi sözleşme - ``2_task_creator.py`` dosyasının chat-only
   task description asistanı olduğunu ve doğrudan Jira create/form akışı
   içermediğini pinler.
 * Gerçek Playwright tarayıcısı ile sayfanın hidrate olup chat inputunu
@@ -20,11 +20,11 @@ Test stratejisi (test_39 ile aynı desen):
 * Render edilen HTML'de hiçbir kimlik bilgisi sızıntısı olmadığını
   doğrular.
 
-Bu sayfa **task'ı gerçekten Jira'ya GÖNDERMEZ** — task açacak kullanıcıya
+Bu sayfa **task'ı gerçekten Jira'ya GÖNDERMEZ** - task açacak kullanıcıya
 sohbet içinde eksik bilgi listesi ve description taslağı üretir. Jira issue oluşturma
 akışı MCP/automation tarafındadır.
 
-Requirements: R40.1 — R40.5
+Requirements: R40.1 - R40.5
 """
 
 from __future__ import annotations
@@ -81,7 +81,7 @@ FORBIDDEN_SOURCE_ANCHORS: tuple[str, ...] = (
     "render_bot_identity_card",
 )
 
-#: Credential markers — the rendered HTML must never carry a verbatim
+#: Credential markers - the rendered HTML must never carry a verbatim
 #: secret prefix (Sensitive_Field_Set, llm-provider-management R13.1).
 SENSITIVE_MARKERS: tuple[str, ...] = (
     "sk-ant-",
@@ -130,12 +130,12 @@ def _task_creator_source_path() -> Path:
 
 
 # ---------------------------------------------------------------------------
-# R40.1 — Streamlit server + task creator route reachable
+# R40.1 - Streamlit server + task creator route reachable
 # ---------------------------------------------------------------------------
 
 
 class TestStreamlitTaskCreatorReachable:
-    """R40.1 — Streamlit serves the Task Creator page."""
+    """R40.1 - Streamlit serves the Task Creator page."""
 
     def test_streamlit_health_ok(self) -> None:
         _require_streamlit_or_skip()
@@ -154,12 +154,12 @@ class TestStreamlitTaskCreatorReachable:
 
 
 # ---------------------------------------------------------------------------
-# R40.2 — Source contract: the chat-only assistant flow is intact
+# R40.2 - Source contract: the chat-only assistant flow is intact
 # ---------------------------------------------------------------------------
 
 
 class TestTaskCreatorSourceContract:
-    """R40.2 — ``2_task_creator.py`` keeps the chat-only assistant contract."""
+    """R40.2 - ``2_task_creator.py`` keeps the chat-only assistant contract."""
 
     def test_source_file_exists(self) -> None:
         path = _task_creator_source_path()
@@ -169,7 +169,7 @@ class TestTaskCreatorSourceContract:
     def test_source_contains_anchor(self, anchor: str) -> None:
         source = _task_creator_source_path().read_text(encoding="utf-8")
         assert anchor in source, (
-            f"Task Creator source no longer contains {anchor!r} — the "
+            f"Task Creator source no longer contains {anchor!r} - the "
             "chat-only assistant contract may have regressed."
         )
 
@@ -183,19 +183,19 @@ class TestTaskCreatorSourceContract:
 
 
 # ---------------------------------------------------------------------------
-# R40.3 — Page hydrates and renders the chat surface (real Playwright)
+# R40.3 - Page hydrates and renders the chat surface (real Playwright)
 # ---------------------------------------------------------------------------
 
 
 class TestTaskCreatorRenders:
-    """R40.3 — The page hydrates without crashing.
+    """R40.3 - The page hydrates without crashing.
 
     The Task Creator keeps the main task-prep flow as a chat surface. If an
     unauthenticated session gate appears, the page must still avoid Python
     crashes.
     Streamlit session (``render_dept_switcher`` shows "Oturum
     bulunamadı" when no session is present). A headless test without
-    credentials therefore sees the session gate — that is still a
+    credentials therefore sees the session gate - that is still a
     *correct* render of a working page module. The test asserts:
 
     * the Streamlit app hydrates (``stApp`` visible),
@@ -229,7 +229,7 @@ class TestTaskCreatorRenders:
         # The page module must not have crashed at import / run time.
         exception_count = page.get_by_test_id("stException").count()
         assert exception_count == 0, (
-            "Task Creator page raised a Python exception during render — "
+            "Task Creator page raised a Python exception during render - "
             "the page module is broken."
         )
 
@@ -261,12 +261,12 @@ class TestTaskCreatorRenders:
 
 
 # ---------------------------------------------------------------------------
-# R40.4 — No credential leakage in the rendered page
+# R40.4 - No credential leakage in the rendered page
 # ---------------------------------------------------------------------------
 
 
 class TestTaskCreatorNoCredentialLeak:
-    """R40.4 — The rendered HTML carries no verbatim secret."""
+    """R40.4 - The rendered HTML carries no verbatim secret."""
 
     def test_no_sensitive_markers_in_html(self) -> None:
         _require_streamlit_or_skip()
@@ -280,12 +280,12 @@ class TestTaskCreatorNoCredentialLeak:
 
 
 # ---------------------------------------------------------------------------
-# R40.5 — Evidence
+# R40.5 - Evidence
 # ---------------------------------------------------------------------------
 
 
 class TestEmitEvidence:
-    """R40.5 — Capture the reachability + contract results."""
+    """R40.5 - Capture the reachability + contract results."""
 
     def test_emit_evidence(
         self,
@@ -323,11 +323,11 @@ class TestEmitEvidence:
             data={
                 "snapshot": snapshot,
                 "requirements_validated": [
-                    "R40.1 — Streamlit serves /task_creator (HTTP 200)",
-                    "R40.2 — 2_task_creator.py keeps chat-only assistant contract",
-                    "R40.3 — Page hydrates and renders the chat task-description assistant",
-                    "R40.4 — No Sensitive_Field_Set markers in rendered HTML",
-                    "R40.5 — Evidence emitted to e2e-evidence/",
+                    "R40.1 - Streamlit serves /task_creator (HTTP 200)",
+                    "R40.2 - 2_task_creator.py keeps chat-only assistant contract",
+                    "R40.3 - Page hydrates and renders the chat task-description assistant",
+                    "R40.4 - No Sensitive_Field_Set markers in rendered HTML",
+                    "R40.5 - Evidence emitted to e2e-evidence/",
                 ],
             },
         )

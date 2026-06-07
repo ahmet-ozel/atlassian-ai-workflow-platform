@@ -1,4 +1,4 @@
-"""Application configuration for assistant-service.
+﻿"""Application configuration for assistant-service.
 
 Pydantic v2 Settings reading environment variables. The
 ``dependencies_reachable`` method is used by ``/readyz``.
@@ -13,7 +13,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class ConfigurationError(Exception):
-    """Provider credential eksik — boot fail-fast."""
+    """Provider credential eksik - boot fail-fast."""
 
 
 def _is_valid_url(url: str) -> bool:
@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     port: int = Field(default=8081, description="HTTP listen port.")
     log_level: str = Field(default="INFO", description="Standard logging level name.")
 
-    # Dependency endpoints — placeholders only; real probes added later.
+    # Dependency endpoints - placeholders only; real probes added later.
     postgres_dsn: str = Field(
         default="postgresql://ai:ai_dev_only@postgres:5432/ai",
         description="Postgres DSN for the assistant schema.",
@@ -60,7 +60,7 @@ class Settings(BaseSettings):
         description="Default value for the X-Client-Source HTTP header.",
     )
 
-    # LLM block — assistant-service is an LLM consumer.
+    # LLM block - assistant-service is an LLM consumer.
     llm_provider: str = Field(default="openai")
     vllm_base_url: str = Field(default="http://host.docker.internal:8000/v1")
     vllm_api_key: str = Field(default="")
@@ -88,7 +88,7 @@ class Settings(BaseSettings):
         """Validate that required credentials are present for the configured LLM provider.
 
         Called at boot time. Raises ``ConfigurationError`` for missing or
-        invalid credentials — fail-fast behaviour.
+        invalid credentials - fail-fast behaviour.
 
         A credential is considered missing/invalid if it is empty or
         contains only whitespace characters.

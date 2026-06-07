@@ -1,9 +1,9 @@
-"""Unit tests for ``AuditPruneWorkflow``.
+﻿"""Unit tests for ``AuditPruneWorkflow``.
 
 The tests exercise the workflow body **without** spinning up a Temporal
 worker. Two strategies cover the surface:
 
-* **AST/source inspection** — verifies the workflow module obeys the
+* **AST/source inspection** - verifies the workflow module obeys the
   determinism contract: no
   ``datetime.now``, ``time.time``, ``random``, ``uuid``, ``os.environ``
   reads in the workflow body; activities referenced by string name
@@ -51,7 +51,7 @@ if str(_SRC_DIR) not in sys.path:
 #
 # The module imports ``temporalio.workflow`` (and ``temporalio.common``)
 # at import time. ``temporalio`` is a runtime dependency of the worker;
-# we let it import normally — the module is import-clean even outside a
+# we let it import normally - the module is import-clean even outside a
 # Temporal sandbox because it never actually *invokes* workflow
 # primitives at module scope. The runtime tests below replace
 # ``workflow.execute_activity`` and ``workflow.now`` per-test using
@@ -99,7 +99,7 @@ class TestPublicConstants:
 
 
 # ===========================================================================
-# 2. Determinism contract — static (AST) checks
+# 2. Determinism contract - static (AST) checks
 # ===========================================================================
 
 
@@ -120,7 +120,7 @@ class TestDeterminismStatic:
 
     def test_no_datetime_now_call(self, module_tree: ast.Module) -> None:
         # ``datetime.now()`` and ``datetime.utcnow()`` are non-deterministic
-        # — replay would produce different cutoffs. Only ``workflow.now()``
+        # - replay would produce different cutoffs. Only ``workflow.now()``
         # is allowed for the time source.
         for node in ast.walk(module_tree):
             if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
@@ -194,7 +194,7 @@ class TestDeterminismStatic:
         self, module_source: str
     ) -> None:
         # Every activity used by the workflow must appear as a quoted
-        # string literal somewhere in the source — confirms the
+        # string literal somewhere in the source - confirms the
         # workflow uses ``execute_activity("name", ...)`` rather than a
         # callable reference.
         for activity_name in (
@@ -236,7 +236,7 @@ class TestRetryPolicyConfiguration:
         assert policy.backoff_coefficient == 2.0
 
     def test_notify_retry_has_three_attempts(self) -> None:
-        # The mandatory admin alarm must retry — operators cannot
+        # The mandatory admin alarm must retry - operators cannot
         # learn about the failure unless Slack receives the message.
         policy = audit_prune_mod._NOTIFY_RETRY  # noqa: SLF001
         assert policy.maximum_attempts == 3
@@ -252,7 +252,7 @@ class TestRetryPolicyConfiguration:
 
 
 # ===========================================================================
-# 4. ``run`` execution — activity sequence, idempotence, failure path
+# 4. ``run`` execution - activity sequence, idempotence, failure path
 # ===========================================================================
 
 
@@ -273,14 +273,14 @@ class _FakeWorkflow:
     Replaces the three workflow primitives the audit prune workflow
     body actually uses:
 
-    * ``workflow.now()`` — returns ``self.now_value`` exactly. Tests
+    * ``workflow.now()`` - returns ``self.now_value`` exactly. Tests
       assert the cutoff is derived from this.
-    * ``workflow.execute_activity(name, *args, ...)`` — records the
+    * ``workflow.execute_activity(name, *args, ...)`` - records the
       call into ``self.calls`` and returns the next value from
       ``self.responses[name]`` (a list; popped left-to-right). If the
       response value is an ``Exception`` instance it is *raised*
       instead of returned, modelling activity failures.
-    * ``workflow.logger`` — a no-op ``logging.Logger`` so
+    * ``workflow.logger`` - a no-op ``logging.Logger`` so
       ``workflow.logger.error(...)`` calls inside the workflow body
       do not blow up.
 
@@ -296,7 +296,7 @@ class _FakeWorkflow:
         default_factory=lambda: logging.getLogger("test.audit_prune")
     )
 
-    def now(self) -> datetime:  # noqa: D401 — mirror Temporal API
+    def now(self) -> datetime:  # noqa: D401 - mirror Temporal API
         return self.now_value
 
     async def execute_activity(
@@ -393,7 +393,7 @@ class TestRunHappyPath:
         self, fake_workflow: _FakeWorkflow
     ) -> None:
         # ``archive_audit_to_minio`` must run before
-        # ``delete_audit_older_than`` — deleting before archiving
+        # ``delete_audit_older_than`` - deleting before archiving
         # would lose audit data on a partial failure.
         fake_workflow.responses = {
             "get_retention_setting": [90],
@@ -442,7 +442,7 @@ class TestRunHappyPath:
         _run_workflow()
 
         by_name = {c.name: c for c in fake_workflow.calls}
-        # noqa references silence "private member access" — these are
+        # noqa references silence "private member access" - these are
         # the source of truth for the activity options under test.
         assert (
             by_name["get_retention_setting"].start_to_close_timeout
@@ -472,7 +472,7 @@ class TestRunHappyPath:
     def test_falsy_retention_falls_back_to_default(
         self, fake_workflow: _FakeWorkflow, fixed_now: datetime
     ) -> None:
-        # Defensive default — a misconfigured ``get_retention_setting``
+        # Defensive default - a misconfigured ``get_retention_setting``
         # returning 0 / None must not silently delete the entire audit
         # log. The workflow falls back to ``DEFAULT_RETENTION_DAYS``
         # (90) instead.
@@ -522,7 +522,7 @@ class TestRunHappyPath:
 
 
 # ---------------------------------------------------------------------------
-# Failure path — mandatory admin Slack alarm
+# Failure path - mandatory admin Slack alarm
 # ---------------------------------------------------------------------------
 
 
@@ -607,7 +607,7 @@ class TestFailurePathMandatoryAlarm:
         self, fake_workflow: _FakeWorkflow
     ) -> None:
         # The lookup activity is *outside* the explicit try/except in
-        # the workflow body — its retry policy already gives us 3
+        # the workflow body - its retry policy already gives us 3
         # attempts. If even those fail we want the original exception
         # to propagate; we deliberately do **not** alarm in this
         # phase because the workflow has not yet computed a cutoff /
@@ -643,7 +643,7 @@ class TestIdempotentRunSemantics:
     def test_two_runs_with_zero_rows_each_succeed(
         self, fake_workflow: _FakeWorkflow, fixed_now: datetime
     ) -> None:
-        # Run #1 — empty archive / empty delete.
+        # Run #1 - empty archive / empty delete.
         fake_workflow.responses = {
             "get_retention_setting": [90, 90],
             "archive_audit_to_minio": [
@@ -728,7 +728,7 @@ class TestWorkflowRegistration:
             name for name in vars(AuditPruneWorkflow) if "temporal" in name.lower()
         ]
         assert markers, (
-            "AuditPruneWorkflow must be decorated with @workflow.defn — "
+            "AuditPruneWorkflow must be decorated with @workflow.defn - "
             f"no temporal-namespace attributes found on the class: "
             f"{list(vars(AuditPruneWorkflow))}"
         )
@@ -737,6 +737,6 @@ class TestWorkflowRegistration:
         import inspect
 
         assert inspect.iscoroutinefunction(AuditPruneWorkflow.run), (
-            "AuditPruneWorkflow.run must be an async coroutine — "
+            "AuditPruneWorkflow.run must be an async coroutine - "
             "Temporal workflows are awaited by the worker."
         )

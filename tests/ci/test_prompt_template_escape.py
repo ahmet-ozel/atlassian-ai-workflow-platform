@@ -1,4 +1,4 @@
-"""CI gate — prompt template escape (ops work).
+﻿"""CI gate - prompt template escape (ops work).
 
 
 Every Markdown file under any ``prompts/`` directory MUST pass
@@ -39,7 +39,7 @@ def _prompt_files() -> list[Path]:
         return []
     for md in chat_prompts.rglob("*.md"):
         rel_parts = md.relative_to(_PLATFORM_ROOT).parts
-        # Skip the notifications subtree — its templates use a
+        # Skip the notifications subtree - its templates use a
         # different placeholder vocabulary owned by libs/notification.
         if "notifications" in rel_parts:
             continue

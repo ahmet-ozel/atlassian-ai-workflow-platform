@@ -1,4 +1,4 @@
-"""FastAPI application factory for the ``automation-service``.
+﻿"""FastAPI application factory for the ``automation-service``.
 
 This module owns the canonical FastAPI ``app`` object for the
 automation-service. It exposes a minimal, dependency-free
@@ -100,7 +100,7 @@ from temporal_shared import (
     parse_workflow_id,
 )
 
-# Webhook filter chain — the production wiring builds a
+# Webhook filter chain - the production wiring builds a
 # single :class:`WebhookFilterChain` from the shared Vault / DB /
 # audit collaborators and folds it into the
 # :class:`WebhooksEndpointDeps` container the router pulls off
@@ -109,7 +109,7 @@ from .webhook_filters import WebhookFilterChain
 from .processed_events import ProcessedEventsRepo as _ProcessedEventsRepo
 from vault_client import verify_webhook_hmac
 
-# Webhook v2 / webhooks_handlers — the Jira issue webhook
+# Webhook v2 / webhooks_handlers - the Jira issue webhook
 # ``POST /webhooks/jira/issue_*`` handlers pull their collaborators
 # off ``app.state.webhook_v2`` (a :class:`WebhookContext`).
 from .webhooks_handlers import (
@@ -150,7 +150,7 @@ class _PoolConnectionLease:
         self._released = True
         await self._pool.release(self._connection)
 
-# Diff-summary cache repo — the PO Review router consumes a
+# Diff-summary cache repo - the PO Review router consumes a
 # :class:`DiffSummaryProvider` (typically the asyncpg-backed
 # :class:`DiffSummaryCacheRepo`) to serve cached LLM diff summaries.
 from .diff_summary_cache import DiffSummaryCacheRepo
@@ -169,7 +169,7 @@ from .diff_summary_cache import DiffSummaryCacheRepo
 from routers.dept_credentials import DeptCredentialEndpointDeps
 from services.dept_credential_service import DeptCredentialService
 
-# ``AdminEndpointDeps`` / ``DepartmentCreateOrchestrator`` —
+# ``AdminEndpointDeps`` / ``DepartmentCreateOrchestrator`` -
 # the production wiring for ``app.state.admin`` builds the orchestrator
 # from the shared Vault / DB / probe / audit collaborators and folds it
 # into the dataclass shape the admin router pulls off ``app.state.admin``
@@ -200,7 +200,7 @@ async def _close_quietly(
     during shutdown.
 
     A missing ``close`` attribute (which raises :class:`AttributeError`
-    when ``coro_factory`` is invoked — for example because the
+    when ``coro_factory`` is invoked - for example because the
     ``TemporalClient`` wrapper does not expose ``close``) is treated as
     a successful "no-close": the call is logged at WARNING and shutdown
     continues. This keeps the lifespan tolerant of resource wrappers
@@ -257,7 +257,7 @@ class _AsyncpgInboundDeptResolver:
     for an unmapped channel signal.
 
     The class implements the runtime-checkable
-    :class:`InboundDeptResolver` ``Protocol`` structurally — the
+    :class:`InboundDeptResolver` ``Protocol`` structurally - the
     resolver does not inherit from it, since :func:`isinstance` against
     a runtime-checkable protocol verifies attribute presence at the
     call site (the inbound route never inspects the resolver type, it
@@ -279,7 +279,7 @@ class _AsyncpgInboundDeptResolver:
         400 ``inbound_dept_unresolved`` response.
         """
 
-        # Pool reference held for forward compatibility — see class
+        # Pool reference held for forward compatibility - see class
         # docstring. The lookup is a no-op until the mapping table
         # exists; structuring the call site this way means the
         # production wiring already routes through the shared pool
@@ -307,7 +307,7 @@ class _VaultBackedSlackSignatureVerifier:
     the service.
 
     Vault paths follow the convention documented in
-    ``services/automation-service/.env.example`` — the active secret
+    ``services/automation-service/.env.example`` - the active secret
     lives at ``vault:notifications/slack_inbound/<dept_id>`` (or
     ``.../_default`` for the URL-verification handshake) under the
     flat ``"secret"`` key, mirroring the
@@ -318,7 +318,7 @@ class _VaultBackedSlackSignatureVerifier:
     (missing secret, malformed payload at the Vault path, missing
     ``"secret"`` key) so the inbound route emits a single
     ``inbound_slack_hmac_failed`` audit event regardless of root
-    cause — see :func:`verify_slack_signature` for the rationale.
+    cause - see :func:`verify_slack_signature` for the rationale.
     """
 
     __slots__ = ("_vault",)
@@ -421,7 +421,7 @@ class _VaultBackedSlackSignatureVerifier:
 class _AsyncpgDepartmentsRepo:
     """Production :class:`SupportsDepartmentsRepo` over an asyncpg pool.
 
-    Reads and writes the ``automation.repo_mappings`` table — the
+    Reads and writes the ``automation.repo_mappings`` table - the
     canonical Postgres mirror of the dept's ``repo_mappings`` array
     documented in ``config/departments.json``. The ``slug`` field
     consumed by the diff helper is sourced from
@@ -465,7 +465,7 @@ class _AsyncpgDepartmentsRepo:
         ``department_id`` and projects each row into a
         :class:`temporal_shared.RepoMapping` instance. The result is
         ordered by ``bitbucket_repo`` so two consecutive reads over
-        the same data produce an identical tuple — the diff helper
+        the same data produce an identical tuple - the diff helper
         does not require this, but it keeps the audit-row payload
         deterministic across replays.
         """
@@ -535,7 +535,7 @@ async def _bitbucket_list_repos_via_mcp(dept_id: str) -> list[dict[str, str]]:
     """Stand-in for ``mcp_client.atlassian_client.bitbucket_list_repos``.
 
     The production ``bitbucket_scanner`` routes through
-    ``mcp_client.atlassian_client.bitbucket_list_repos`` — a helper
+    ``mcp_client.atlassian_client.bitbucket_list_repos`` - a helper
     that talks to the ``atlassian_unified`` MCP service to enumerate
     the dept's Bitbucket workspace. The HTTP wiring follows the same
     contract :class:`automation_service.atlassian.AtlassianProbeClient`
@@ -586,12 +586,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     Startup is split into construction and state publication:
 
-    * **Phase A — fail-fast construction.** The handler builds every
+    * **Phase A - fail-fast construction.** The handler builds every
       shared singleton in dependency order. Each successful step
       appends its closer to a local ``cleanup`` list; any exception
       walks the list in reverse under :func:`_close_quietly` and
       re-raises so uvicorn aborts startup.
-    * **Phase B — stash on ``app.state``.** Once construction
+    * **Phase B - stash on ``app.state``.** Once construction
       succeeds, the handler parks every singleton on
       :attr:`app.state` so shutdown can reach them and the per-router
       wiring helpers can wire
@@ -600,7 +600,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     Phase C (per-router wiring + ``wire_webhook_pipeline``) and
     Phase D (the ``yield`` plus reverse-order shutdown) are added by
     the shutdown block. Until then the handler ends with a temporary ``yield``
-    so the function remains a valid asynccontextmanager generator —
+    so the function remains a valid asynccontextmanager generator -
     registering it on FastAPI is the application factory's responsibility.
 
     Args:
@@ -623,12 +623,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     cleanup: list[Callable[[], Awaitable[None]]] = []
 
     try:
-        # 1. Shared HTTP client — used by Vault, Atlassian probe,
+        # 1. Shared HTTP client - used by Vault, Atlassian probe,
         #    OIDC validator and any future outbound HTTP collaborator.
         http_client = httpx.AsyncClient(timeout=10.0)
         cleanup.append(http_client.aclose)
 
-        # 2. Asyncpg pool — sized for the per-process request rate
+        # 2. Asyncpg pool - sized for the per-process request rate
         #    target (min=1 / max=8) with a 10s
         #    command timeout so a stuck statement never wedges a
         #    request worker indefinitely.
@@ -640,7 +640,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         )
         cleanup.append(pool.close)
 
-        # 3. Vault client — env-driven backend selection
+        # 3. Vault client - env-driven backend selection
         #    (``VAULT_BACKEND=hashicorp`` vs ``local-dev``). The
         #    factory is synchronous and the resulting client does
         #    not require an explicit close, so no cleanup entry is
@@ -648,7 +648,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         #    client which is closed above).
         vault = vault_factory.make_client(os.environ)
 
-        # 4. Audit logger — wraps the asyncpg-backed events writer
+        # 4. Audit logger - wraps the asyncpg-backed events writer
         #    so the application-layer ``actor_role`` invariant
         #    fires before any SQL runs. No
         #    explicit close: the logger holds the pool by reference
@@ -656,7 +656,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         #    cleanup stack.
         audit_logger = AuditLogger(writer=AsyncpgAuditEventsWriter(pool=pool))
 
-        # 5. Temporal client — connects lazily to the cluster.
+        # 5. Temporal client - connects lazily to the cluster.
         #    ``connect()`` is awaited here so a Temporal outage
         #    aborts startup (fail-fast) instead of surfacing as a
         #    500 on the first webhook.  The ``TemporalClient``
@@ -682,7 +682,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
         cleanup.append(_close_temporal)
 
-        # 6. Atlassian probe client — concrete shell built from the
+        # 6. Atlassian probe client - concrete shell built from the
         #    shared HTTP client + MCP routing metadata (see
         #    :mod:`automation_service.atlassian` for the wiring
         #    contract).
@@ -692,17 +692,17 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             settings.client_source,
         )
 
-        # 7. OIDC validator — env-driven configuration honouring
+        # 7. OIDC validator - env-driven configuration honouring
         #    ``AUTH_PROVIDER`` (``oidc`` vs ``local``).  The
         #    validator does not own any resource that needs
         #    closing.
         oidc_validator = OIDCValidator(OIDCConfig.from_env(os.environ))
 
-        # 8. Processed events repo — webhook ``delivery_id`` ledger
+        # 8. Processed events repo - webhook ``delivery_id`` ledger
         #    backed by the shared pool.
         processed_events = ProcessedEventsRepo(pool=pool)
 
-        # 9. Connection-factory closure — each call returns a fresh
+        # 9. Connection-factory closure - each call returns a fresh
         #    pool-acquired connection so the credential / department
         #    orchestrators can run ``with_dept_session(...)`` blocks
         #    against pool-managed connections.  Releasing the
@@ -721,7 +721,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             await _close_quietly(getattr(closer, "__qualname__", "resource"), closer)
         raise
 
-    # Phase B — stash every shared singleton on ``app.state`` so the
+    # Phase B - stash every shared singleton on ``app.state`` so the
     # per-router wiring helpers can fan them out into
     # ``*EndpointDeps`` containers without re-reading any environment
     # variable, and shutdown can reach them.
@@ -736,7 +736,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.connection_factory = connection_factory
 
     # ------------------------------------------------------------------
-    # Phase C — fan the shared singletons out into per-router
+    # Phase C - fan the shared singletons out into per-router
     # ``*EndpointDeps`` containers and stash them on ``app.state.<slot>``.
     #
     # Each ``_wire_*`` helper opens with the "skip if slot already set"
@@ -831,7 +831,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         )
 
     # ------------------------------------------------------------------
-    # Phase D — yield to FastAPI for traffic serving, then close every
+    # Phase D - yield to FastAPI for traffic serving, then close every
     # owned resource in reverse construction order under
     # ``_close_quietly``. The ``finally`` block must never re-raise so
     # one resource's close error cannot block the others
@@ -971,7 +971,7 @@ def _wire_webhooks(
     are available. The ``verify_hmac``
     closure reads the event's stashed ``(body, signature)`` payload
     and dispatches to :func:`vault_client.verify_webhook_hmac`
-    against the shared :class:`VaultClient` — but only when the
+    against the shared :class:`VaultClient` - but only when the
     event carries a resolvable dept slug (``project_key`` /
     ``repo_slug``); otherwise it returns ``False`` so the chain
     raises :class:`WebhookHmacInvalidError` and the router maps to
@@ -1024,7 +1024,7 @@ def _wire_webhooks(
                 signature,
                 utc_now(),
             )
-        except Exception:  # noqa: BLE001 — verifier surfaces False on any failure
+        except Exception:  # noqa: BLE001 - verifier surfaces False on any failure
             _LOG.warning(
                 "webhook.hmac_verify_failed provider=%s",
                 event.provider,
@@ -1038,7 +1038,7 @@ def _wire_webhooks(
         Returns ``None`` until the dept-by-project / dept-by-repo
         snapshot ships.  The chain then raises
         :class:`WebhookDeptUnresolvedError` and the router maps to
-        HTTP 400 ``"webhook_dept_unresolved"`` — the documented
+        HTTP 400 ``"webhook_dept_unresolved"`` - the documented
         behaviour for an unresolved event.
         Pool held by reference for forward compatibility.
         """
@@ -1058,7 +1058,7 @@ def _wire_webhooks(
         idempotency guarantee comes from the subsequent
         :meth:`ProcessedEventsRepo.claim` call on the dispatch path,
         which is async and atomic.  Returning ``False`` defers all
-        dedup work to that claim — consistent with the test fixtures
+        dedup work to that claim - consistent with the test fixtures
         in ``tests/unit/test_webhooks.py``.
         """
 
@@ -1072,13 +1072,13 @@ def _wire_webhooks(
         return frozenset()
 
     def _iter_count_for(issue_key: str) -> int:
-        """Per-issue iteration counter (placeholder — defaults to 0)."""
+        """Per-issue iteration counter (placeholder - defaults to 0)."""
 
         _ = issue_key
         return 0
 
     def _reporter_for(issue_key: str) -> str:
-        """Per-issue reporter resolver (placeholder — empty string)."""
+        """Per-issue reporter resolver (placeholder - empty string)."""
 
         _ = issue_key
         return ""
@@ -1119,7 +1119,7 @@ def _wire_cancel(
     The closure parses the workflow_id via
     :func:`temporal_shared.parse_workflow_id` and returns ``None``
     when the workflow_id does not match the canonical Jira /
-    Bitbucket format — the router translates that into a HTTP 404.
+    Bitbucket format - the router translates that into a HTTP 404.
     The reporter / past_assignees lookup against the live Jira
     issue is not wired here; until that lookup is available the
     closure returns ``None`` for every
@@ -1140,15 +1140,15 @@ def _wire_cancel(
         """Resolve a workflow_id to its underlying :class:`IssueRef`.
 
         Closes over the shared asyncpg ``pool`` (held by reference
-        so future schema additions — for example
-        ``automation.workflow_issues`` — can be wired without
+        so future schema additions - for example
+        ``automation.workflow_issues`` - can be wired without
         re-plumbing the lifespan handler).  The current schema does
         not persist a reporter / past_assignees mapping, so the
         lookup short-circuits to ``None`` after validating the
         workflow_id format.
 
         Returning ``None`` causes the cancel endpoint to respond
-        with HTTP 404 ``"no issue found for workflow_id=..."`` —
+        with HTTP 404 ``"no issue found for workflow_id=..."`` -
         the documented behaviour for an unresolved workflow id.
         """
 
@@ -1156,7 +1156,7 @@ def _wire_cancel(
             parse_workflow_id(workflow_id)
         except InvalidWorkflowIdError:
             return None
-        # Pool reference held for forward compatibility — the lookup
+        # Pool reference held for forward compatibility - the lookup
         # is a no-op until the issue-mapping table ships.  Structuring
         # the call site this way means the production wiring already
         # routes through the shared pool the day the table exists.
@@ -1184,10 +1184,10 @@ def _wire_repo_sync(
 
     Builds the two collaborators the
     :class:`automation_service.api.repo_sync.RepoSyncEndpointDeps`
-    container declares — an asyncpg-backed
+    container declares - an asyncpg-backed
     :class:`SupportsDepartmentsRepo` adapter and a Bitbucket-scan
     callable bound to ``mcp_client.atlassian_client.bitbucket_list_repos``
-    — folds them with the shared OIDC validator + audit logger + the
+    - folds them with the shared OIDC validator + audit logger + the
     canonical :func:`utc_now` clock used by the rest of the routers,
     and parks the result on ``app.state.repo_sync`` for the
     :func:`automation_service.api.repo_sync.sync_repo_mappings`
@@ -1205,7 +1205,7 @@ def _wire_repo_sync(
     a hand-rolled :class:`BitbucketRepoScanner` fake before entering
     the lifespan.
 
-    The ``http_client`` parameter is currently unused — kept on the
+    The ``http_client`` parameter is currently unused - kept on the
     helper signature so the lifespan call site stays self-documenting
     and the eventual MCP-routed scanner (which will issue HTTP calls
     through the shared client) can drop in without re-plumbing the
@@ -1271,7 +1271,7 @@ def _wire_po_review(
         """Return ``(credential, workspace, repo)`` for *dept_id*.
 
         ``None`` when the dept has no Bitbucket bot credential or no
-        repo mapping — the caller treats this as "nothing to scan".
+        repo mapping - the caller treats this as "nothing to scan".
         """
 
         async with pool.acquire() as conn:  # type: ignore[attr-defined]
@@ -1460,7 +1460,7 @@ def _wire_inbound(
     address mapping) can be picked up without re-wiring the
     application. Until those mapping tables exist the resolver returns
     ``None`` for every lookup, which the route translates into a
-    400 ``inbound_dept_unresolved`` response — the documented
+    400 ``inbound_dept_unresolved`` response - the documented
     behaviour for an unresolved channel signal.
 
     The Slack verifier reads the per-dept signing secret from Vault
@@ -1516,7 +1516,7 @@ def _wire_webhook_v2(
 
     The dept resolver returns ``None`` for every lookup until the
     ``automation.departments`` snapshot is available; the handler
-    surfaces this as ``webhook_dept_unresolved`` — the documented
+    surfaces this as ``webhook_dept_unresolved`` - the documented
     behaviour for an unresolved event.  Tests bypass this entirely
     by pre-populating ``app.state.webhook_v2`` with a hand-rolled
     :class:`WebhookContext`.
@@ -1538,7 +1538,7 @@ def _wire_webhook_v2(
         Until that snapshot ships both methods return conservative
         defaults (``None`` for the project_key lookup, empty list for
         the bot account id registry) so the handler emits
-        ``webhook_dept_unresolved`` / "no bots known" — the documented
+        ``webhook_dept_unresolved`` / "no bots known" - the documented
         behaviour for an unresolved event.
         """
 
@@ -1858,7 +1858,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     # Stash the resolved :class:`Settings` on ``app.state`` immediately
     # after constructing the FastAPI object. This is the contract the
-    # production lifespan handler relies on — it reads
+    # production lifespan handler relies on - it reads
     # ``app.state.settings`` to resolve ``postgres_dsn``,
     # ``temporal_host``, ``mcp_base_url`` and friends without re-reading
     # the environment. Test code that calls ``create_app(settings)`` to
@@ -1870,7 +1870,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # Mount the trace_id propagation middleware FIRST so every other
     # middleware / route handler observes the resolved trace_id via
     # :func:`observability.get_trace_id`.  Starlette's
-    # ``add_middleware`` prepends to the middleware stack — the
+    # ``add_middleware`` prepends to the middleware stack - the
     # *latest* registered middleware sits on the outermost layer of
     # the chain.  We add ``TraceMiddleware`` immediately after
     # :class:`FastAPI` construction (and before any router includes
@@ -1887,7 +1887,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.get("/healthz")
     async def healthz() -> dict[str, str]:
-        """Liveness probe — 200 while the process is alive."""
+        """Liveness probe - 200 while the process is alive."""
 
         return {"status": "ok"}
 
@@ -1941,7 +1941,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # signature verifier, audit logger, env, clock) from
     # ``app.state.inbound`` at request time. The IMAP-based email
     # adapter (:class:`EmailToTaskPoller`) shares the same context but
-    # is started as a background task by the service startup hook —
+    # is started as a background task by the service startup hook -
     # FastAPI does not own its lifecycle.
     from .inbound import slack_router as inbound_slack_router
 
@@ -1994,7 +1994,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # :class:`WebhooksEndpointDeps`) during startup; tests inject a
     # stub container directly.  The router is mounted under
     # ``/webhooks`` so the final URLs are ``/webhooks/jira`` and
-    # ``/webhooks/bitbucket`` — distinct from the legacy
+    # ``/webhooks/bitbucket`` - distinct from the legacy
     # ``/webhooks/jira/issue_created`` paths exposed by
     # :mod:`automation_service.webhooks_handlers` so both surfaces
     # can co-exist during the migration.
@@ -2027,7 +2027,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # mounted at the ASGI layer when production wiring runs
     # :func:`wire_webhook_pipeline` below) sits in front of this
     # endpoint so the pipeline only sees HMAC-authenticated payloads
-    # — keeping the HMAC verify → dedup → loop_guard → dispatcher
+    # - keeping the HMAC verify → dedup → loop_guard → dispatcher
     # ordering intact.
     #
     # Production wiring populates ``app.state.webhook_pipeline`` (a
@@ -2067,7 +2067,7 @@ def wire_webhook_pipeline(
     The HMAC verification middleware
     (:class:`middleware.webhook_auth.WebhookAuthMiddleware`) MUST be
     added separately (typically before this call) so that it sits in
-    front of the pipeline — only authenticated payloads should ever
+    front of the pipeline - only authenticated payloads should ever
     reach the dedup → loop_guard → dispatcher chain
     for the dedup, loop-guard, and dispatcher pipeline.
 

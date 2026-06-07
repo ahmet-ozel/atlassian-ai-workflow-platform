@@ -1,7 +1,7 @@
-"""Idempotent Jira Issue Template deploy script.
+﻿"""Idempotent Jira Issue Template deploy script.
 
-Deploys the platform's standard Issue Template — issue type, custom
-fields and screen scheme — to a target Jira tenant. The script reads
+Deploys the platform's standard Issue Template - issue type, custom
+fields and screen scheme - to a target Jira tenant. The script reads
 the desired template from a YAML / JSON configuration file (or an
 in-memory dict for direct programmatic use) and aligns the live Jira
 state with that desired state via per-entity ``read → diff → write``
@@ -16,13 +16,13 @@ SHALL leave Jira in identical states:
 1. The first run creates / updates every entity until live state
    matches the template.
 2. The second run reads each entity, compares it to the template,
-   and **issues no mutating call** when they match — the deploy is a
+   and **issues no mutating call** when they match - the deploy is a
    strict no-op.
 3. If an operator edits Jira between runs ("drift"), the next run
    heals the drift with a single mutation per drifted entity, and
    the run after that is again a no-op.
 
-The script never deletes entities — Jira admin objects can be
+The script never deletes entities - Jira admin objects can be
 referenced by historical issues, so the cleanup of removed fields /
 issue types is a separate operator-driven workflow.
 
@@ -32,7 +32,7 @@ Dependency on ``atlassian_mcp_bitbucket`` MCP
 Production usage routes every Jira call through the
 ``atlassian_mcp_bitbucket`` MCP service. The
 ``deploy`` function accepts any client that satisfies the structural
-:class:`JiraTemplateClient` protocol — production wiring binds an
+:class:`JiraTemplateClient` protocol - production wiring binds an
 MCP-backed implementation; the property test
 ``platform/tests/property/test_jira_template_deploy.py`` injects a
 hand-built fake.
@@ -132,7 +132,7 @@ class TemplateDeployResult:
 
     @property
     def total_mutations(self) -> int:
-        """Sum of all mutations — useful for "is this a no-op?" checks."""
+        """Sum of all mutations - useful for "is this a no-op?" checks."""
 
         return (
             self.issue_type_changes
@@ -152,7 +152,7 @@ def _entity_unchanged(current: Mapping[str, Any], desired: Mapping[str, Any]) ->
     The comparison is a deep dict equality. Both sides must be plain
     dictionaries (lists / scalars compare with ``==`` semantics
     inside the dict). The function is the **single source of truth**
-    for "do we need to mutate this entity?" — every per-entity
+    for "do we need to mutate this entity?" - every per-entity
     branch in :func:`deploy` consults it so the script's
     idempotency guarantees rest on a single comparison.
     """
@@ -269,7 +269,7 @@ def load_template(path: str) -> dict[str, Any]:
 
     The deploy script accepts either format so the same artifact can
     be checked in alongside the Compose / config files. YAML support
-    is optional — the function falls back to JSON parsing when
+    is optional - the function falls back to JSON parsing when
     ``PyYAML`` is not installed.
     """
 
@@ -303,7 +303,7 @@ def load_template(path: str) -> dict[str, Any]:
 def _make_default_client(base_url: str) -> JiraTemplateClient:
     """Construct the production MCP-backed client.
 
-    Stub for now — the full MCP-backed Jira admin client is wired by
+    Stub for now - the full MCP-backed Jira admin client is wired by
     the runtime layer. The CLI path is exposed so an operator can run
     the deploy step against that client without changing the script.
     """

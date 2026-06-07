@@ -1,5 +1,5 @@
-"""
-Test 08: Full stack healthcheck — all 12+ services running and healthy.
+﻿"""
+Test 08: Full stack healthcheck - all 12+ services running and healthy.
 
 Validates that after the Setup Wizard completes, the entire Local_Stack
 (all 12 expected services) reports running and healthy via `docker compose ps`.
@@ -293,7 +293,7 @@ class TestFullStackHealthcheck:
             )
 
         # If no unhealthy services found, this test passes silently
-        # (all services are healthy — no failure report needed)
+        # (all services are healthy - no failure report needed)
 
     def test_boot_to_full_stack_timing(
         self, platform_root, stack_state, evidence_collector

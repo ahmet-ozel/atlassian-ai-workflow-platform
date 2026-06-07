@@ -1,4 +1,4 @@
-"""Dept bulk import atomicity.
+﻿"""Dept bulk import atomicity.
 
 
 
@@ -28,7 +28,7 @@ are injected to verify:
 
 (a) Schema-invalid payloads raise SchemaValidationError (→ HTTP 422).
 (b) Departments whose probe fails are skipped; successful ones commit.
-(c) Each department is processed atomically — failure of one does not
+(c) Each department is processed atomically - failure of one does not
  affect others.
 (d) dry_run=True never writes any state (Vault or DB).
 """
@@ -96,7 +96,7 @@ _staging_mod = _import_module_from_path(
     _AUTOMATION_SRC / "automation_service" / "staging.py",
 )
 
-# Pre-load the probe module — but we need to handle its own imports.
+# Pre-load the probe module - but we need to handle its own imports.
 # The probe module imports from typing_extensions and other stdlib;
 # it also uses a Protocol class. We load it carefully.
 _probe_mod = _import_module_from_path(
@@ -304,10 +304,10 @@ class _TestableBulkImportService(BulkImportService):
 # Hypothesis strategies
 # ---------------------------------------------------------------------------
 
-#: Department ID strategy — matches ^[a-z][a-z0-9-]{1,30}$
+#: Department ID strategy - matches ^[a-z][a-z0-9-]{1,30}$
 _dept_id_strategy = st.from_regex(r"^[a-z][a-z0-9\-]{1,10}$", fullmatch=True)
 
-#: Jira project key strategy — matches ^[A-Z][A-Z0-9_]{1,9}$
+#: Jira project key strategy - matches ^[A-Z][A-Z0-9_]{1,9}$
 _jira_key_strategy = st.from_regex(r"^[A-Z][A-Z0-9]{1,5}$", fullmatch=True)
 
 #: Display name strategy
@@ -327,7 +327,7 @@ def _valid_dept_entry(draw: st.DrawFn) -> dict[str, Any]:
         st.lists(_jira_key_strategy, min_size=1, max_size=3, unique=True)
     )
 
-    # Generate bot config — at least one service required
+    # Generate bot config - at least one service required
     services_to_include = draw(
         st.lists(
             st.sampled_from(["jira", "bitbucket", "confluence"]),
@@ -673,7 +673,7 @@ class TestProbeFailSkipsDept:
 
         service, vault, conn, audit = _make_service(raise_probe_for=raise_ids)
 
-        # Should NOT raise — exceptions are caught per-dept
+        # Should NOT raise - exceptions are caught per-dept
         result = asyncio.run(
             service.bulk_import(
                 json.dumps(payload).encode("utf-8"),

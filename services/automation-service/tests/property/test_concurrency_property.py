@@ -1,35 +1,35 @@
-"""Property test: Per-department concurrency limit enforcement.
+﻿"""Property test: Per-department concurrency limit enforcement.
 
 For every ``(max_concurrent, current_count)`` pair, ``check_dept_concurrency``
 behaviour satisfies the following invariants:
 
-(A) **None-cap allow** — ``max_concurrent is None`` →
+(A) **None-cap allow** - ``max_concurrent is None`` →
     the check passes regardless of ``current_count``. The returned
     :class:`ConcurrencyCheckResult` has ``max_allowed is None`` and
     ``current == observed_count``.
 
-(B) **Under-cap allow** — ``current_count < max_concurrent`` →
+(B) **Under-cap allow** - ``current_count < max_concurrent`` →
     the check returns a :class:`ConcurrencyCheckResult` with
     ``current == observed_count`` and ``max_allowed == max_concurrent``;
     no exception is raised.
 
-(C) **At-or-over-cap reject** — ``current_count >= max_concurrent``
+(C) **At-or-over-cap reject** - ``current_count >= max_concurrent``
     (and ``max`` is not ``None``) → :class:`ConcurrencyLimitExceeded` is
     raised. The exception carries ``.current == observed_count``,
     ``.max_allowed == max_concurrent``, and ``.dept_id`` matching the
     caller-provided dept.
 
-(D) **N+1 boundary transition** — for any ``max ∈ [1, 50]``, the
+(D) **N+1 boundary transition** - for any ``max ∈ [1, 50]``, the
     ``(max - 1)`` check passes and the ``max`` check rejects. This is
     the explicit "departman aynı anda çalıştırabileceği N+1. workflow'u
     reddedilmeli" behavior.
 
-(E) **Source label propagation** — the ``source`` field of the
+(E) **Source label propagation** - the ``source`` field of the
     success result and of the exception is ``"temporal"`` when the
     Visibility client answers without raising, and ``"postgres"`` when
     the Visibility client raises (fallback) or is ``None``.
 
-(F) **``extract_max_concurrent`` defensive parsing** — only positive
+(F) **``extract_max_concurrent`` defensive parsing** - only positive
     integers (excluding ``bool``, which is a Python ``int`` subclass)
     map to themselves; everything else (``None``, missing key, ``0``,
     negatives, ``bool``, ``float``, ``str``, non-dict) maps to ``None``.
@@ -51,7 +51,7 @@ from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — matches tests/unit/test_concurrency.py so the
+# sys.path bootstrap - matches tests/unit/test_concurrency.py so the
 # top-level ``concurrency`` module (i.e. ``src/concurrency.py``) imports
 # cleanly without first installing the service wheel.
 # ---------------------------------------------------------------------------
@@ -80,7 +80,7 @@ _PROFILE = settings(
 )
 
 # ---------------------------------------------------------------------------
-# Fakes — reused / duplicated from tests/unit/test_concurrency.py.
+# Fakes - reused / duplicated from tests/unit/test_concurrency.py.
 #
 # We duplicate rather than import because property tests should remain
 # self-contained: a refactor of the unit-test fixtures must not silently
@@ -314,7 +314,7 @@ class TestNPlusOneBoundary:
         self,
         max_concurrent: int,
     ) -> None:
-        """The comparison is ``>=`` not ``>`` — ``current == max`` rejects."""
+        """The comparison is ``>=`` not ``>`` - ``current == max`` rejects."""
         pool = _FakePool(count=max_concurrent)
         with pytest.raises(ConcurrencyLimitExceeded):
             asyncio.run(
@@ -445,7 +445,7 @@ class TestSourceLabelPropagation:
         assert count == pg_count
         assert source == "postgres"
 
-        # Re-issue through check_dept_concurrency — must agree.
+        # Re-issue through check_dept_concurrency - must agree.
         if pg_count >= max_concurrent:
             with pytest.raises(ConcurrencyLimitExceeded) as exc_info:
                 asyncio.run(
@@ -478,7 +478,7 @@ class TestExtractMaxConcurrentParsing:
     """``extract_max_concurrent`` is strict about types.
 
     Only positive integers (excluding ``bool``) round-trip; everything
-    else maps to ``None``. This guards the dispatcher's gate input —
+    else maps to ``None``. This guards the dispatcher's gate input -
     a corrupt config row must default to "no cap" rather than crash.
     """
 
@@ -496,7 +496,7 @@ class TestExtractMaxConcurrentParsing:
     @_PROFILE
     @given(value=st.booleans())
     def test_bool_returns_none(self, value: bool) -> None:
-        # ``bool`` is an ``int`` subclass — the helper must reject it
+        # ``bool`` is an ``int`` subclass - the helper must reject it
         # explicitly (otherwise ``True`` would silently cap at 1).
         assert extract_max_concurrent({"max_concurrent_workflows": value}) is None
 

@@ -1,4 +1,4 @@
-"""Jira assignee activity for AgentRunnerWorkflow."""
+﻿"""Jira assignee activity for AgentRunnerWorkflow."""
 
 from __future__ import annotations
 
@@ -50,7 +50,7 @@ async def _resolve_current_jira_account_id(
     When the current-user lookup is unavailable (``Unknown tool`` /
     transport error) we return ``None`` so the caller can treat the
     assignee step as a best-effort no-op rather than failing the whole
-    workflow — claiming the issue for the bot is a convenience, not a
+    workflow - claiming the issue for the bot is a convenience, not a
     prerequisite for producing the task output.
     """
 

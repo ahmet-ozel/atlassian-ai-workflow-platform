@@ -1,4 +1,4 @@
-"""Budget enforcement primitives for ``automation-service``.
+﻿"""Budget enforcement primitives for ``automation-service``.
 
 This package owns the runtime gate that translates the dept-level
 ``budget_caps`` configuration (``config/departments.json`` mirrored
@@ -8,20 +8,20 @@ on every workflow start request.
 
 Public surface:
 
-* :class:`BudgetCaps` — frozen mirror of the dept config block.
-* :class:`BudgetUsage` — running production-cost aggregate.
-* :class:`BudgetDecision` — allow / deny outcome with scope label.
-* :class:`BudgetCheckResult` — enhanced outcome with 90% warnings.
-* :class:`BudgetCapPolicy` — async ``enforce(dept_id, user_id)``
+* :class:`BudgetCaps` - frozen mirror of the dept config block.
+* :class:`BudgetUsage` - running production-cost aggregate.
+* :class:`BudgetDecision` - allow / deny outcome with scope label.
+* :class:`BudgetCheckResult` - enhanced outcome with 90% warnings.
+* :class:`BudgetCapPolicy` - async ``enforce(dept_id, user_id)``
   helper that the workflow start endpoint calls.
-* :func:`check_budget` — enhanced pre-workflow check with 90%
+* :func:`check_budget` - enhanced pre-workflow check with 90%
   threshold warnings and Jira comment posting.
-* :func:`pre_llm_budget_guard` — inline guard before LLM calls.
-* :func:`get_budget_usage_snapshot` — Admin Dashboard data exposure.
-* :func:`post_cost_prediction_comment` — best-effort Jira yorum
+* :func:`pre_llm_budget_guard` - inline guard before LLM calls.
+* :func:`get_budget_usage_snapshot` - Admin Dashboard data exposure.
+* :func:`post_cost_prediction_comment` - best-effort Jira yorum
   poster invoked **after** ``BudgetCapPolicy.enforce`` returns
   ``allow``.
-* :class:`CostCommentOutcome` / :class:`CostPredictionLike` — value
+* :class:`CostCommentOutcome` / :class:`CostPredictionLike` - value
   objects exposed alongside the function above so callers can type
   their integration without importing the implementation module.
 

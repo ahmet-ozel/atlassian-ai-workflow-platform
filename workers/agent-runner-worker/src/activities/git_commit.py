@@ -1,4 +1,4 @@
-"""Deployment-agnostic Bitbucket commit via Git-over-HTTPS.
+﻿"""Deployment-agnostic Bitbucket commit via Git-over-HTTPS.
 
 The MCP server exposes read tools plus ``create_branch`` /
 ``create_pull_request`` for Bitbucket, but it has **no** file-write or
@@ -11,7 +11,7 @@ push`` over HTTPS. Git-over-HTTPS is identical on Bitbucket Cloud and on
 Bitbucket Server / Data Center, so the same code path works for both;
 only the remote host and repository path differ, and both are derived
 from the department's bot credential (URL + username + token). The
-credential never lands on disk — it lives only inside the in-memory
+credential never lands on disk - it lives only inside the in-memory
 remote URL used for the single clone/push and is masked from logs.
 """
 
@@ -267,7 +267,7 @@ async def bitbucket_commit_via_git(
         activity.heartbeat(f"committing on {branch}")
         code, out = await _run_git(["commit", "-m", message], cwd=repo_dir, secret=token)
         if code != 0:
-            # ``nothing to commit`` is not an error — the generated set
+            # ``nothing to commit`` is not an error - the generated set
             # matched the current tree. Surface a stable hash so the PR
             # step still has the branch head to point at.
             if "nothing to commit" in out.lower():

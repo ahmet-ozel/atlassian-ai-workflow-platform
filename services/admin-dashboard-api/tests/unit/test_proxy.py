@@ -1,4 +1,4 @@
-"""Unit tests for ``src.proxy.AdminProxy``.
+﻿"""Unit tests for ``src.proxy.AdminProxy``.
 
 Covers the proxy behaviour matrix:
 
@@ -64,7 +64,7 @@ class _ListAuditSink:
     """List-backed audit sink for unit tests.
 
     Records every event written via ``write(event)`` so assertions can
-    inspect the wire shape. The sink never raises — failures are
+    inspect the wire shape. The sink never raises - failures are
     caught by the proxy's best-effort wrapper, but in tests we only
     care about successful writes.
     """
@@ -138,7 +138,7 @@ def _make_proxy(
 
 
 # ---------------------------------------------------------------------------
-# classify_admin_path — pure path classification
+# classify_admin_path - pure path classification
 # ---------------------------------------------------------------------------
 
 
@@ -221,7 +221,7 @@ class TestClassifyAdminPath:
         assert policy == PathPolicy(required_role="admin", dept_id=None)
 
     def test_non_admin_path_raises_value_error(self) -> None:
-        # The proxy is scoped to /admin/* — non-admin paths must
+        # The proxy is scoped to /admin/* - non-admin paths must
         # never reach the classifier.
         with pytest.raises(ValueError, match="/admin/\\*"):
             classify_admin_path("GET", "/healthz")
@@ -236,7 +236,7 @@ class TestClassifyAdminPath:
 
 
 # ---------------------------------------------------------------------------
-# Successful forward — happy path
+# Successful forward - happy path
 # ---------------------------------------------------------------------------
 
 
@@ -341,7 +341,7 @@ class TestSuccessfulForward:
 
 
 # ---------------------------------------------------------------------------
-# RBAC denial — HTTP 403 + audit row
+# RBAC denial - HTTP 403 + audit row
 # ---------------------------------------------------------------------------
 
 
@@ -387,7 +387,7 @@ class TestRbacDenial:
 
     @pytest.mark.asyncio
     async def test_dept_admin_cannot_disable_own_department(self) -> None:
-        # Disabling is admin-only — even the
+        # Disabling is admin-only - even the
         # dept's own admin cannot retire it.
         sink = _ListAuditSink()
         proxy, client, captured = _make_proxy(
@@ -410,7 +410,7 @@ class TestRbacDenial:
         assert len(sink.events) == 1
         event = sink.events[0]
         # The dept_id is still surfaced on the audit row even though
-        # the policy is admin-only — that lets the admin see who
+        # the policy is admin-only - that lets the admin see who
         # tried to disable what.
         assert event.dept_id == "payments"
 
@@ -623,7 +623,7 @@ class TestHeaderFiltering:
         # ``host`` headers, so we cannot simply assert the absence of
         # those keys on the upstream side. Instead we send unusual
         # values for the hop-by-hop headers and verify the upstream
-        # did *not* see those values — i.e. the proxy stripped them
+        # did *not* see those values - i.e. the proxy stripped them
         # before httpx re-added its own.
         proxy, client, captured = _make_proxy(
             handler=lambda req: httpx.Response(200),
@@ -651,7 +651,7 @@ class TestHeaderFiltering:
         assert forwarded.headers.get("connection") != "close"
         # ``te: trailers`` is hop-by-hop; httpx does not re-add it.
         assert "te" not in {k.lower() for k in forwarded.headers}
-        # ``host`` should never be the spoofed value — httpx rebuilds
+        # ``host`` should never be the spoofed value - httpx rebuilds
         # this from the upstream URL.
         assert forwarded.headers.get("host") != "evil.example.com"
         # Application headers survive.

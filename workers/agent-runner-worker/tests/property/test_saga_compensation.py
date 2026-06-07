@@ -1,4 +1,4 @@
-"""Tests for AgentRunnerWorkflow saga compensation.
+﻿"""Tests for AgentRunnerWorkflow saga compensation.
 
 Saga compensation determinism and idempotence.
 
@@ -7,20 +7,20 @@ side-effecting activities (recorded in workflow state via append-only
 list) followed by a failure at activity ``a_{k+1}``, the saga
 compensation function ``compensate(H)`` SHALL satisfy *all* of:
 
-1. **Reverse order** — the inverse for ``a_k`` runs first, then
+1. **Reverse order** - the inverse for ``a_k`` runs first, then
    ``a_{k-1}``, ..., then ``a_1``.
-2. **Inverse-only** — only recorded actions whose name is present in the
+2. **Inverse-only** - only recorded actions whose name is present in the
    inverse table get an inverse call (read-only ops such as
    ``jira_get_issue`` have no inverse and are skipped).
-3. **Idempotence** — ``compensate(compensate(H)) == compensate(H)`` in
+3. **Idempotence** - ``compensate(compensate(H)) == compensate(H)`` in
    the sense that the second pass operates on an empty list (the
    workflow drops the history after compensation runs) and is a no-op,
    so the *total* multiset of inverse invocations across both passes is
    identical to the first pass alone.
-4. **Determinism** — the order of inverse invocations is a pure
+4. **Determinism** - the order of inverse invocations is a pure
    function of ``H``; running compensation twice on the same input
    produces byte-identical invocation logs (no clock, no random).
-5. **Empty history** — ``compensate([])`` is a no-op.
+5. **Empty history** - ``compensate([])`` is a no-op.
 
 The activity inverses are mocked (synchronous instrumented callables)
 so this suite does *not* require a Temporal worker, MinIO, Bitbucket,
@@ -46,7 +46,7 @@ from hypothesis import strategies as st
 # via ``sys.path`` injection (mirrors the unit-test pattern in
 # ``tests/unit/test_artifact_activity.py``). We avoid importing
 # ``temporalio`` or any activity module here because the helper under
-# test is a pure function — no Temporal runtime is required.
+# test is a pure function - no Temporal runtime is required.
 # ---------------------------------------------------------------------------
 
 _WORKER_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -54,7 +54,7 @@ _SRC_DIR = _WORKER_ROOT / "src"
 if str(_SRC_DIR) not in sys.path:
     sys.path.insert(0, str(_SRC_DIR))
 
-from workflows.compensation import (  # noqa: E402  — sys.path bootstrap above
+from workflows.compensation import (  # noqa: E402  - sys.path bootstrap above
     CompensableAction,
     compensate_actions_sync,
     plan_compensation,
@@ -122,7 +122,7 @@ def _build_instrumented_inverse_table() -> tuple[
 # Hypothesis strategies
 # ---------------------------------------------------------------------------
 
-# Action *names* — drawn from the union of "has inverse" and "no inverse"
+# Action *names* - drawn from the union of "has inverse" and "no inverse"
 # pools so the property tests cover both branches of the compensation
 # logic. We include a sprinkling of unknown names as well to ensure the
 # helper silently skips anything the workflow forgets to register.
@@ -137,7 +137,7 @@ _ACTION_NAMES = st.one_of(
     _UNKNOWN_NAMES,
 )
 
-# Inverse-call payloads — kept simple but heterogeneous so we cover the
+# Inverse-call payloads - kept simple but heterogeneous so we cover the
 # real-world shapes (``bitbucket_delete_branch(repo, branch, dept_id)``
 # uses positional args; ``artifact_delete(bucket, key)`` likewise).
 _PAYLOAD_SCALAR = st.one_of(
@@ -244,7 +244,7 @@ def test_only_recorded_actions_with_inverse_get_called(
     invoked_names = [name for (name, _, _) in call_log]
     for name in invoked_names:
         assert name in inverse_table, (
-            f"unexpected inverse call for {name!r} — not in inverse table"
+            f"unexpected inverse call for {name!r} - not in inverse table"
         )
 
     # Number of invocations equals number of compensable entries in H.
@@ -371,7 +371,7 @@ def test_realistic_code_change_history_compensates_in_p0_order() -> None:
         CompensableAction(
             name="bitbucket_create_branch",
             inverse_args=(
-                # repo, branch, dept_id — order matches activity signature
+                # repo, branch, dept_id - order matches activity signature
                 {"workspace": "acme", "repo": "service-x"},
                 "ai/PROJ-123/iter-1",
                 "dept-eng",
@@ -453,5 +453,5 @@ def test_history_with_only_non_compensable_actions_is_a_noop(
     assert call_log == []
 
 
-if __name__ == "__main__":  # pragma: no cover  — convenience entry point
+if __name__ == "__main__":  # pragma: no cover  - convenience entry point
     sys.exit(pytest.main([__file__, "-v"]))

@@ -1,4 +1,4 @@
-"""Unit tests for the per-model tuning-capability lookup.
+﻿"""Unit tests for the per-model tuning-capability lookup.
 
 Verifies which model identifiers expose ``reasoning_effort`` and/or
 ``verbosity`` so the provider form and the connection probe only emit
@@ -66,7 +66,7 @@ def test_verbosity_capable_models(model: str) -> None:
     ["gpt-4o-mini", "o3-mini", "claude-opus-4-20250514", "qwen2.5-coder", ""],
 )
 def test_verbosity_incapable_models(model: str) -> None:
-    # Only the gpt-5 family ships text.verbosity — o-series and Claude
+    # Only the gpt-5 family ships text.verbosity - o-series and Claude
     # are reasoning-capable but do NOT accept verbosity.
     assert supports_verbosity(model) is False
 

@@ -1,4 +1,4 @@
-"""Unit tests for :class:`auth_shared.AuthContext` claim extraction
+﻿"""Unit tests for :class:`auth_shared.AuthContext` claim extraction
 and :meth:`OIDCConfig.from_env`.
 
 Covers the three explicit environment and claim-extraction behaviors:
@@ -12,7 +12,7 @@ Covers the three explicit environment and claim-extraction behaviors:
    ``role`` / ``roles`` / ``groups`` claim → ``actor_role`` and the
    ``dept_ids`` / ``departments`` claim → ``dept_ids``.
 
-These tests intentionally avoid network I/O — every call path
+These tests intentionally avoid network I/O - every call path
 operates on plain dicts.
 """
 

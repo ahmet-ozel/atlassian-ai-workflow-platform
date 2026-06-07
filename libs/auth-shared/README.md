@@ -1,4 +1,4 @@
-# auth-shared
+﻿# auth-shared
 
 Shared OIDC/JWT validation primitives consumed by the HTTP services and
 Temporal workers in this monorepo. The package ships an `OIDCValidator`
@@ -31,5 +31,5 @@ python -m build
 
 Runtime dependencies:
 
-- `python-jose[cryptography]>=3.3,<4` — RS256 signature verification.
-- `httpx>=0.27,<1` — JWKS document fetch.
+- `python-jose[cryptography]>=3.3,<4` - RS256 signature verification.
+- `httpx>=0.27,<1` - JWKS document fetch.

@@ -1,4 +1,4 @@
-"""Tests for workflow_id idempotency and ID format determinism.
+﻿"""Tests for workflow_id idempotency and ID format determinism.
 
 * **workflow_id idempotency**
   *For all* valid ``workflow_id`` strings, two consecutive
@@ -97,7 +97,7 @@ _EXEC_ID_RE = re.compile(r"^exec-.+-\d+$")
 
 
 # ---------------------------------------------------------------------------
-# Format match — Jira workflow ID
+# Format match - Jira workflow ID
 # ---------------------------------------------------------------------------
 
 
@@ -114,7 +114,7 @@ def test_jira_workflow_id_format_match(issue_key: str) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Format match — Bitbucket workflow ID
+# Format match - Bitbucket workflow ID
 # ---------------------------------------------------------------------------
 
 
@@ -131,7 +131,7 @@ def test_bb_workflow_id_format_match(workspace: str, repo: str, pr_id: int) -> N
 
 
 # ---------------------------------------------------------------------------
-# Format match — Agent workflow ID
+# Format match - Agent workflow ID
 # ---------------------------------------------------------------------------
 
 
@@ -148,7 +148,7 @@ def test_agent_workflow_id_format_match(parent_id: str, iteration: int) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Format match — Execution workflow ID
+# Format match - Execution workflow ID
 # ---------------------------------------------------------------------------
 
 
@@ -165,7 +165,7 @@ def test_execution_workflow_id_format_match(parent_id: str, ts: int) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Idempotence — repeated calls yield identical output
+# Idempotence - repeated calls yield identical output
 # ---------------------------------------------------------------------------
 
 
@@ -220,7 +220,7 @@ def test_execution_workflow_id_idempotent(parent_id: str, ts: int) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Injectivity — distinct inputs produce distinct IDs
+# Injectivity - distinct inputs produce distinct IDs
 # ---------------------------------------------------------------------------
 
 
@@ -418,7 +418,7 @@ class _MockTemporalClient:
 
     Tracks which ``workflow_id`` values are "running" and raises
     :class:`temporalio.exceptions.WorkflowAlreadyStartedError` on any
-    second start with a known id — exactly mirroring the real SDK's
+    second start with a known id - exactly mirroring the real SDK's
     contract for the duplicate-start case.
     """
 
@@ -539,7 +539,7 @@ async def test_n_starts_with_same_id_yield_single_execution(
 
 
 # ---------------------------------------------------------------------------
-# Distinct workflow_ids produce distinct executions —
+# Distinct workflow_ids produce distinct executions -
 # idempotency is keyed strictly on the workflow_id, never collapsing
 # unrelated workflows.
 # ---------------------------------------------------------------------------
@@ -558,7 +558,7 @@ async def test_n_starts_with_same_id_yield_single_execution(
 async def test_distinct_ids_yield_distinct_executions(
     workflow_id_a: str, workflow_id_b: str
 ) -> None:
-    """Different workflow_ids must always produce separate executions —
+    """Different workflow_ids must always produce separate executions -
     the idempotency rule keys on workflow_id and nothing else.
     """
     client = _MockTemporalClient()
@@ -593,7 +593,7 @@ async def test_distinct_ids_yield_distinct_executions(
 
 # ---------------------------------------------------------------------------
 # The helper returns the caller-supplied workflow_id even
-# when the SDK exception happens to carry a different id — pinning the
+# when the SDK exception happens to carry a different id - pinning the
 # contract that the response id is provable from inputs alone.
 # ---------------------------------------------------------------------------
 
@@ -741,7 +741,7 @@ _PR_ID = st.integers(min_value=1, max_value=10**9)
 
 
 # ---------------------------------------------------------------------------
-# Format regex match — Jira
+# Format regex match - Jira
 # ---------------------------------------------------------------------------
 
 
@@ -768,7 +768,7 @@ def test_jira_workflow_id_matches_documented_regex(
 
 
 # ---------------------------------------------------------------------------
-# Format regex match — Bitbucket
+# Format regex match - Bitbucket
 # ---------------------------------------------------------------------------
 
 
@@ -795,7 +795,7 @@ def test_bitbucket_pr_workflow_id_matches_documented_regex(
 
 
 # ---------------------------------------------------------------------------
-# Round-trip — Jira
+# Round-trip - Jira
 # ---------------------------------------------------------------------------
 
 
@@ -825,7 +825,7 @@ def test_jira_workflow_id_round_trip(project_key: str, issue_num: int) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Round-trip — Bitbucket
+# Round-trip - Bitbucket
 # ---------------------------------------------------------------------------
 
 
@@ -854,7 +854,7 @@ def test_bitbucket_pr_workflow_id_round_trip(repo_slug: str, pr_id: int) -> None
 
 
 # ---------------------------------------------------------------------------
-# Injectivity — Jira (no two distinct inputs collide)
+# Injectivity - Jira (no two distinct inputs collide)
 # ---------------------------------------------------------------------------
 
 
@@ -880,7 +880,7 @@ def test_jira_workflow_id_injective(
 
 
 # ---------------------------------------------------------------------------
-# Injectivity — Bitbucket (no two distinct inputs collide)
+# Injectivity - Bitbucket (no two distinct inputs collide)
 # ---------------------------------------------------------------------------
 
 
@@ -914,7 +914,7 @@ def test_bitbucket_pr_workflow_id_injective(
 # Cross-namespace injectivity
 #
 # A Jira-formatted id and a Bitbucket-formatted id are always distinct,
-# regardless of inputs — the prefix alone (``automation-jira-`` vs
+# regardless of inputs - the prefix alone (``automation-jira-`` vs
 # ``automation-bb-``) keeps the namespaces disjoint, and parsing one
 # never yields the other's provider.
 # ---------------------------------------------------------------------------
@@ -974,7 +974,7 @@ def test_parse_rejects_strings_outside_both_regexes(junk: str) -> None:
     leading-zero numerics).
     """
     if _JIRA_WF_FMT_RE.fullmatch(junk) or _BB_WF_FMT_RE.fullmatch(junk):
-        # Inside the regex space — parsing must either succeed or raise
+        # Inside the regex space - parsing must either succeed or raise
         # only because of the layered structural rules (leading zeros,
         # double dashes in the slug, etc.).
         try:
@@ -983,6 +983,6 @@ def test_parse_rejects_strings_outside_both_regexes(junk: str) -> None:
             return
         assert ref.provider in {"jira", "bitbucket"}
     else:
-        # Outside both regexes — parser must reject.
+        # Outside both regexes - parser must reject.
         with pytest.raises(InvalidWorkflowIdError):
             parse_workflow_id(junk)

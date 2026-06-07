@@ -1,8 +1,8 @@
-/**
+﻿/**
  * Wire-shape TypeScript types mirroring the backend Pydantic schemas in
  * `platform/services/admin-dashboard-api/src/llm_providers/schemas.py`.
  *
- * Kept in lockstep with the schema module — every field on the
+ * Kept in lockstep with the schema module - every field on the
  * backend DTO has a matching property here. The masked-credential
  * fields (`api_key_masked`, `org_id_masked`) are the ONLY credential
  * material the UI ever sees; the raw `api_key` field exists only on

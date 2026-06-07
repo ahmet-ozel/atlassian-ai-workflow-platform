@@ -1,4 +1,4 @@
-"""invariant — Compose profile labels structural consistency.
+﻿"""invariant - Compose profile labels structural consistency.
 
 
 on for ``task-intake-service``).
@@ -8,14 +8,14 @@ Invariant statement
 The parsed ``infra/docker-compose.yml`` document MUST satisfy *all* of
 the following invariants jointly:
 
-1. **Boot_Bundle absence-of-profiles** — for every
+1. **Boot_Bundle absence-of-profiles** - for every
  service in the Boot_Bundle (``admin-dashboard-ui``,
  ``admin-dashboard-api``, ``postgres``, ``vault``) the ``profiles:``
  directive is either **absent** OR an explicitly empty list. Either
  shape causes Compose to include the service in the default
  profile-less ``up -d`` invocation, which is what Boot_Bundle
  semantics require.
-2. **Managed_Service self-naming** — for every
+2. **Managed_Service self-naming** - for every
  ``ManagedServiceEntry`` ``S`` declared in
  ``config/services.manifest.json``, the Compose service named
  ``S.compose_service_name`` MUST declare a non-empty ``profiles:``
@@ -23,7 +23,7 @@ the following invariants jointly:
  **byte-for-byte equal** to ``S.name``. This is the property that
  ``docker compose --profile <S.name> up -d <S.compose_service_name>``
  deterministically targets exactly one service.
-3. **task-intake backward-compat** — *if*
+3. **task-intake backward-compat** - *if*
  ``task-intake-service`` is listed in the manifest, its Compose
  ``profiles:`` list MUST contain BOTH the legacy ``"task-intake"``
  label and the new ``"task-intake-service"`` label. Removing the legacy label
@@ -87,7 +87,7 @@ from src.manifest import (  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
-# Boot_Bundle definition — / Glossary
+# Boot_Bundle definition - / Glossary
 # ---------------------------------------------------------------------------
 
 #: Infrastructure + control-plane services that ``docker compose -f
@@ -107,7 +107,7 @@ from src.manifest import (  # noqa: E402
 #: every other service. The two admin-dashboard entries therefore no
 #: longer carry ``profiles:`` in ``infra/docker-compose.yml`` (see the
 #: header comment block of that file). The ordering here is purely
-#: presentational — the property is set-shaped.
+#: presentational - the property is set-shaped.
 _BOOT_BUNDLE_SERVICES: tuple[str, ...] = (
     "admin-dashboard-ui",
     "admin-dashboard-api",
@@ -117,7 +117,7 @@ _BOOT_BUNDLE_SERVICES: tuple[str, ...] = (
 
 
 # ---------------------------------------------------------------------------
-# Compose document fixture — single read per session
+# Compose document fixture - single read per session
 # ---------------------------------------------------------------------------
 
 _COMPOSE_PATH: Path = _WORKSPACE_ROOT / "infra" / "docker-compose.yml"
@@ -158,7 +158,7 @@ _COMPOSE_SERVICES: dict[str, dict[str, Any]] = _COMPOSE_DOC["services"]
 
 
 # ---------------------------------------------------------------------------
-# Manifest discovery — drives ``st.sampled_from`` and parametrize ids
+# Manifest discovery - drives ``st.sampled_from`` and parametrize ids
 # ---------------------------------------------------------------------------
 
 #: Tuple of every Managed_Service entry, loaded once per session. The
@@ -194,7 +194,7 @@ assert _NON_BOOT_BUNDLE_MANAGED_SERVICES, (
 
 
 # ---------------------------------------------------------------------------
-# Helpers — normalise the ``profiles:`` field across YAML shapes
+# Helpers - normalise the ``profiles:`` field across YAML shapes
 # ---------------------------------------------------------------------------
 
 
@@ -203,10 +203,10 @@ def _profiles_of(service_name: str) -> list[str] | None:
 
  Compose YAML lets ``profiles`` be:
 
- * **Absent** — the service is included in the default ``up -d``.
- * **An explicit empty list** (``profiles: []``) — semantically
+ * **Absent** - the service is included in the default ``up -d``.
+ * **An explicit empty list** (``profiles: []``) - semantically
  identical to absent for the default-profile-set inclusion check.
- * **A non-empty list of strings** — the service is *only* included
+ * **A non-empty list of strings** - the service is *only* included
  when one of those profile names is activated.
 
  We return ``None`` for the absent case and a list (possibly empty)
@@ -243,7 +243,7 @@ def _profiles_of(service_name: str) -> list[str] | None:
 
 
 # ---------------------------------------------------------------------------
-# invariant (a) — Boot_Bundle services declare no profile gating
+# invariant (a) - Boot_Bundle services declare no profile gating
 # ---------------------------------------------------------------------------
 
 
@@ -254,7 +254,7 @@ def _profiles_of(service_name: str) -> list[str] | None:
     suppress_health_check=[HealthCheck.function_scoped_fixture],
 )
 def test_boot_bundle_services_have_no_profile_gating(boot_service: str) -> None:
-    """invariant (a) — Boot_Bundle services have absent or empty ``profiles:``.
+    """invariant (a) - Boot_Bundle services have absent or empty ``profiles:``.
 
 
 
@@ -262,7 +262,7 @@ def test_boot_bundle_services_have_no_profile_gating(boot_service: str) -> None:
  infra/docker-compose.yml up -d`` (no ``--profile`` flag) start
  exactly the four Boot_Bundle services. Compose includes a service
  in the default profile-less invocation iff its ``profiles:`` field
- is absent OR empty — any non-empty value gates the service behind
+ is absent OR empty - any non-empty value gates the service behind
  a profile flag. This property pins both shapes as acceptable and
  rejects any non-empty list for the Boot_Bundle members.
  """
@@ -275,7 +275,7 @@ def test_boot_bundle_services_have_no_profile_gating(boot_service: str) -> None:
 
 
 # ---------------------------------------------------------------------------
-# invariant (b) — every Managed_Service is self-named in profiles
+# invariant (b) - every Managed_Service is self-named in profiles
 # ---------------------------------------------------------------------------
 
 
@@ -288,7 +288,7 @@ def test_boot_bundle_services_have_no_profile_gating(boot_service: str) -> None:
 def test_managed_service_profiles_contain_self_name(
     entry: ManagedServiceEntry,
 ) -> None:
-    """invariant (b) — non-Boot_Bundle Managed_Service ``profiles:`` contains its own name.
+    """invariant (b) - non-Boot_Bundle Managed_Service ``profiles:`` contains its own name.
 
 
  Boot_Bundle exemption)
@@ -309,7 +309,7 @@ def test_managed_service_profiles_contain_self_name(
 
     profiles = _profiles_of(entry.compose_service_name)
 
-    # — directive present and non-empty.
+    # - directive present and non-empty.
     assert profiles is not None, (
         f"Managed_Service {entry.name!r} maps to Compose service "
         f"{entry.compose_service_name!r} which MUST declare a 'profiles:' "
@@ -321,7 +321,7 @@ def test_managed_service_profiles_contain_self_name(
         f"'profiles:' list (the operational rule); got an empty list"
     )
 
-    # — list contains the manifest ``name`` verbatim.
+    # - list contains the manifest ``name`` verbatim.
     assert entry.name in profiles, (
         f"Managed_Service {entry.name!r} maps to Compose service "
         f"{entry.compose_service_name!r} whose 'profiles:' list MUST "
@@ -331,7 +331,7 @@ def test_managed_service_profiles_contain_self_name(
 
 
 # ---------------------------------------------------------------------------
-# Concrete regression anchors — Boot_Bundle (parametrize)
+# Concrete regression anchors - Boot_Bundle (parametrize)
 # ---------------------------------------------------------------------------
 
 
@@ -341,7 +341,7 @@ def test_managed_service_profiles_contain_self_name(
     ids=list(_BOOT_BUNDLE_SERVICES),
 )
 def test_boot_bundle_anchor_no_profiles(boot_service: str) -> None:
-    """Concrete anchor — every Boot_Bundle service is profile-free.
+    """Concrete anchor - every Boot_Bundle service is profile-free.
 
  The Hypothesis-driven property above samples from the same set,
  but a wiring bug that accidentally narrowed
@@ -359,7 +359,7 @@ def test_boot_bundle_anchor_no_profiles(boot_service: str) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Concrete regression anchors — Managed_Service self-naming (parametrize)
+# Concrete regression anchors - Managed_Service self-naming (parametrize)
 # ---------------------------------------------------------------------------
 
 
@@ -371,7 +371,7 @@ def test_boot_bundle_anchor_no_profiles(boot_service: str) -> None:
 def test_managed_service_anchor_profiles_contains_own_name(
     entry: ManagedServiceEntry,
 ) -> None:
-    """Concrete anchor — every non-Boot_Bundle service's profile list includes its name.
+    """Concrete anchor - every non-Boot_Bundle service's profile list includes its name.
 
  Mirrors:func:`test_managed_service_profiles_contain_self_name`
  but as an exhaustive parametrize over the real manifest minus
@@ -394,7 +394,7 @@ def test_managed_service_anchor_profiles_contains_own_name(
 
 
 # ---------------------------------------------------------------------------
-# Concrete regression anchor — task-intake backward compatibility
+# Concrete regression anchor - task-intake backward compatibility
 # ---------------------------------------------------------------------------
 
 
@@ -413,7 +413,7 @@ _TASK_INTAKE_ENTRY: ManagedServiceEntry | None = next(
     reason="task-intake-service is not declared in services.manifest.json",
 )
 def test_task_intake_service_keeps_legacy_profile_label() -> None:
-    """Concrete anchor — ``task-intake-service`` keeps both labels.
+    """Concrete anchor - ``task-intake-service`` keeps both labels.
 
 
  The project keeps the original ``profiles: ["task-intake"]`` value for
@@ -445,7 +445,7 @@ def test_task_intake_service_keeps_legacy_profile_label() -> None:
 
 # ===========================================================================
 # invariant: Servis topolojisi ve compose-manifest
-# shape tutarlılığı — profile-side invariants.
+# shape tutarlılığı - profile-side invariants.
 #
 #
 # This block extends the invariant with the
@@ -467,7 +467,7 @@ def test_task_intake_service_keeps_legacy_profile_label() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Foundation 10-entry topology — required Compose service set
+# Foundation 10-entry topology - required Compose service set
 # ---------------------------------------------------------------------------
 
 #: Compose service names mandated by the required service topology. The set MUST
@@ -491,7 +491,7 @@ _FOUNDATION_REQUIRED_COMPOSE_SERVICES: frozenset[str] = frozenset(
 
 
 def test_foundation_compose_declares_all_canonical_services() -> None:
-    """invariant (compose-side) — every foundation service is in Compose.
+    """invariant (compose-side) - every foundation service is in Compose.
 
 
 
@@ -512,7 +512,7 @@ def test_foundation_compose_declares_all_canonical_services() -> None:
 
 
 # ---------------------------------------------------------------------------
-# invariant — Managed_Service profiles contain compose_service_name
+# invariant - Managed_Service profiles contain compose_service_name
 # ---------------------------------------------------------------------------
 
 
@@ -525,10 +525,10 @@ def test_foundation_compose_declares_all_canonical_services() -> None:
 def test_foundation_profiles_contain_compose_service_name(
     entry: ManagedServiceEntry,
 ) -> None:
-    """invariant — non-Boot_Bundle ``profiles:`` MUST contain ``compose_service_name``.
+    """invariant - non-Boot_Bundle ``profiles:`` MUST contain ``compose_service_name``.
 
 
- exemption — invariant).
+ exemption - invariant).
 
  Managed services expose their ``compose_service_name`` in the ``profiles`` list.
  The pre-existing invariant(b) checks that ``profiles`` contains ``entry.name``; this

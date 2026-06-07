@@ -1,11 +1,11 @@
-"""Multi-step graceful-skip dispatch — pure aggregator for ``multi_step``.
+﻿"""Multi-step graceful-skip dispatch - pure aggregator for ``multi_step``.
 
 This module is the **single source of truth** for the multi-step
 dispatch decision used for graceful skips in ``multi_step`` workflows.
 
 The ``multi_step`` workflow type orchestrates *N* child workflows on
 behalf of a single Jira issue.  The parent must
-**not** fail-fast when any individual child lacks a capability — it
+**not** fail-fast when any individual child lacks a capability - it
 must mark that child ``out_of_scope`` and continue dispatching the
 remaining children.  Splitting that decision out of the workflow body
 into a pure function keeps the behaviour replay-safe (no I/O, no
@@ -15,29 +15,29 @@ property-testable, and reusable from the
 
 Public API
 ----------
-* :class:`ChildProposal` — frozen dataclass describing one child the
+* :class:`ChildProposal` - frozen dataclass describing one child the
   LLM has asked the platform to dispatch (``workflow_type`` plus the
   fully-formed :class:`ChildWorkflowSpec`).
-* :class:`ChildPlan` — frozen dataclass with the discriminator
+* :class:`ChildPlan` - frozen dataclass with the discriminator
   ``action: Literal["start", "skip"]``, the same ``child_spec`` from
   the proposal, a snake_case ``reason`` token, and the
   ``missing_capabilities`` set (empty for ``"start"`` plans).
-* :class:`ChildOutcome` — frozen dataclass capturing the runtime
+* :class:`ChildOutcome` - frozen dataclass capturing the runtime
   outcome of a single child after the parent has either started it or
   skipped it: discriminator ``action: Literal["started", "skipped"]``,
   the original ``child_spec``, the dispatch ``reason``, the
   ``missing_capabilities`` (empty for started children), and an
   optional ``status`` / ``failure_reason`` lifted from the child's
   output dataclass.
-* :class:`AggregatedOutput` — frozen dataclass aggregating the
+* :class:`AggregatedOutput` - frozen dataclass aggregating the
   ``ChildOutcome`` tuple by ``action``.  Carries ``total = started +
   skipped`` and the asserted invariant
   ``started + skipped == len(child_outcomes)``.
-* :func:`multi_step_dispatch` — pure function that maps a sequence of
+* :func:`multi_step_dispatch` - pure function that maps a sequence of
   :class:`ChildProposal` to a list of :class:`ChildPlan`.  No Temporal
   calls; the workflow body consumes the list and calls
   ``start_child_workflow`` for the ``"start"`` plans.
-* :func:`aggregated_output` — pure aggregator over
+* :func:`aggregated_output` - pure aggregator over
   :class:`ChildOutcome` values; raises :class:`InvariantViolation`
   when the ``started + skipped == len(children)`` invariant breaks.
 
@@ -55,10 +55,10 @@ final Jira comment can name them.
 
 A child whose ``workflow_type`` is **not** a key of
 :data:`WORKFLOW_TYPE_CAPABILITIES` (including the meta-type
-``"multi_step"`` itself — nesting is forbidden by design) is skipped
+``"multi_step"`` itself - nesting is forbidden by design) is skipped
 with ``reason="unknown_workflow_type"`` and an empty
 ``missing_capabilities`` set.  Catching the ``KeyError`` here rather
-than letting it propagate keeps the dispatcher *total* — the parent
+than letting it propagate keeps the dispatcher *total* - the parent
 workflow always returns a plan list of the same length as its input
 (graceful skip; no child is silently dropped).
 
@@ -108,28 +108,28 @@ __all__ = [
 
 
 # ---------------------------------------------------------------------------
-# Audit reason tokens — single source of truth (snake_case)
+# Audit reason tokens - single source of truth (snake_case)
 # ---------------------------------------------------------------------------
 
-#: Plan / outcome reason — child skipped because dept lacks one or more
+#: Plan / outcome reason - child skipped because dept lacks one or more
 #: required capabilities.
 REASON_OUT_OF_SCOPE: Final[str] = "out_of_scope"
 
-#: Plan / outcome reason — child skipped because its ``workflow_type``
+#: Plan / outcome reason - child skipped because its ``workflow_type``
 #: is not a key of :data:`WORKFLOW_TYPE_CAPABILITIES`.
 REASON_UNKNOWN_WORKFLOW_TYPE: Final[str] = "unknown_workflow_type"
 
-#: Plan / outcome reason — child skipped because nesting ``multi_step``
+#: Plan / outcome reason - child skipped because nesting ``multi_step``
 #: inside a ``multi_step`` is forbidden by design (would produce a
 #: dispatch tree that cannot be statically capability-gated).
 REASON_NESTED_MULTI_STEP: Final[str] = "nested_multi_step_forbidden"
 
-#: Plan / outcome reason — child dispatched (capability gate passed).
+#: Plan / outcome reason - child dispatched (capability gate passed).
 REASON_DISPATCHED: Final[str] = "dispatched"
 
 
 # ---------------------------------------------------------------------------
-# InvariantViolation — raised by :func:`aggregated_output`
+# InvariantViolation - raised by :func:`aggregated_output`
 # ---------------------------------------------------------------------------
 
 
@@ -139,13 +139,13 @@ class InvariantViolation(AssertionError):
     Subclassed from :class:`AssertionError` so callers that prefer the
     standard ``assert`` semantics can ``except AssertionError`` while
     callers that want the specific category can target this class
-    directly.  The aggregator never produces a partial outcome — either
+    directly.  The aggregator never produces a partial outcome - either
     every child outcome is accounted for, or this exception fires.
     """
 
 
 # ---------------------------------------------------------------------------
-# ChildProposal — input to :func:`multi_step_dispatch`
+# ChildProposal - input to :func:`multi_step_dispatch`
 # ---------------------------------------------------------------------------
 
 
@@ -163,7 +163,7 @@ class ChildProposal:
     Attributes
     ----------
     workflow_type:
-        Sub-workflow type — must be a key of
+        Sub-workflow type - must be a key of
         :data:`temporal_shared.capabilities.WORKFLOW_TYPE_CAPABILITIES`
         **except** ``"multi_step"`` itself (nesting forbidden, see
         :data:`REASON_NESTED_MULTI_STEP`).  Unknown values do **not**
@@ -175,7 +175,7 @@ class ChildProposal:
         Fully-formed :class:`ChildWorkflowSpec` ready for
         ``start_child_workflow``.  The spec carries the registered
         workflow name, idempotency key, task queue, and tuple-encoded
-        input payload — the dispatcher does **not** validate or
+        input payload - the dispatcher does **not** validate or
         rewrite it.
     """
 
@@ -184,13 +184,13 @@ class ChildProposal:
 
 
 # ---------------------------------------------------------------------------
-# ChildPlan — output of :func:`multi_step_dispatch`
+# ChildPlan - output of :func:`multi_step_dispatch`
 # ---------------------------------------------------------------------------
 
 
 @dataclass(frozen=True, slots=True)
 class ChildPlan:
-    """Decision for one child — either ``"start"`` or ``"skip"``.
+    """Decision for one child - either ``"start"`` or ``"skip"``.
 
     Attributes
     ----------
@@ -227,7 +227,7 @@ class ChildPlan:
 
 
 # ---------------------------------------------------------------------------
-# ChildOutcome — runtime result of one child for :func:`aggregated_output`
+# ChildOutcome - runtime result of one child for :func:`aggregated_output`
 # ---------------------------------------------------------------------------
 
 
@@ -244,14 +244,14 @@ class ChildOutcome:
     Attributes
     ----------
     action:
-        Discriminator — ``"started"`` or ``"skipped"``.  Mirrors the
+        Discriminator - ``"started"`` or ``"skipped"``.  Mirrors the
         plan's :attr:`ChildPlan.action`, but in past tense, because at
         this point the dispatch has already happened.
     child_spec:
         The original :class:`ChildWorkflowSpec` (unchanged from the
         plan).
     reason:
-        Snake_case audit token — same vocabulary as
+        Snake_case audit token - same vocabulary as
         :class:`ChildPlan.reason`.  For ``"started"`` outcomes this is
         :data:`REASON_DISPATCHED` regardless of whether the child
         eventually succeeded or failed; the per-child success/failure
@@ -277,7 +277,7 @@ class ChildOutcome:
 
 
 # ---------------------------------------------------------------------------
-# AggregatedOutput — return type of :func:`aggregated_output`
+# AggregatedOutput - return type of :func:`aggregated_output`
 # ---------------------------------------------------------------------------
 
 
@@ -329,7 +329,7 @@ class AggregatedOutput:
 
 
 # ---------------------------------------------------------------------------
-# multi_step_dispatch — pure decision function
+# multi_step_dispatch - pure decision function
 # ---------------------------------------------------------------------------
 
 
@@ -363,7 +363,7 @@ def multi_step_dispatch(
 
     Total-length invariant: the returned list always
     has the same length as ``children``.  No child is silently
-    dropped — graceful skip is the only contract.
+    dropped - graceful skip is the only contract.
 
     Parameters
     ----------
@@ -420,7 +420,7 @@ def multi_step_dispatch(
     for child in children:
         wf_type = child.workflow_type
 
-        # Nested multi_step is forbidden by design — skip with a
+        # Nested multi_step is forbidden by design - skip with a
         # dedicated reason so the audit log can distinguish it from
         # other skip categories.
         if wf_type == "multi_step":
@@ -434,7 +434,7 @@ def multi_step_dispatch(
             )
             continue
 
-        # Unknown workflow type — guard the KeyError so the dispatcher
+        # Unknown workflow type - guard the KeyError so the dispatcher
         # remains total.  This matches graceful skip behavior:
         # the LLM may occasionally produce an unknown workflow type;
         # we record it and move on rather than aborting the whole run.
@@ -479,7 +479,7 @@ def multi_step_dispatch(
 
 
 # ---------------------------------------------------------------------------
-# aggregated_output — pure aggregator with invariant enforcement
+# aggregated_output - pure aggregator with invariant enforcement
 # ---------------------------------------------------------------------------
 
 
@@ -515,7 +515,7 @@ def aggregated_output(
         When any outcome carries an action outside
         ``{"started", "skipped"}``, or when the
         :class:`AggregatedOutput` constructor's own invariant fires
-        (which should be impossible given correct input — see the
+        (which should be impossible given correct input - see the
         constructor for the full check list).
 
     Examples

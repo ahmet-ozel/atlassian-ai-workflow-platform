@@ -1,4 +1,4 @@
-"""Integration test 1.4 — ``002_bot_license_caps.sql`` migration.
+﻿"""Integration test 1.4 - ``002_bot_license_caps.sql`` migration.
 
 .
 
@@ -11,7 +11,7 @@ migration applies cleanly on top of the workspace schema bootstrap
  ``max_workflows_per_day=100``, ``max_token_usd_per_month=1000.00``).
 2. ``automation.departments.license_id`` nullable FK column referencing
  ``bot_license_caps(license_id)``.
-3. The FK constraint is enforced — inserting a department row with a
+3. The FK constraint is enforced - inserting a department row with a
  ``license_id`` that does not exist in ``bot_license_caps`` is rejected.
 4. The migration is idempotent (re-running is a no-op).
 
@@ -545,7 +545,7 @@ class TestBotLicenseCapsMigration:
     def test_fk_allows_null_license_id(
         self, pg_container: str, sql_paths: tuple[Path, Path, Path]
     ) -> None:
-        """The FK column is nullable — opting out is allowed."""
+        """The FK column is nullable - opting out is allowed."""
 
         _apply_full_stack(pg_container, sql_paths)
 

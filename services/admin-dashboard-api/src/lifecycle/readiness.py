@@ -1,4 +1,4 @@
-"""Readiness probe module for real dependency health checks.
+﻿"""Readiness probe module for real dependency health checks.
 
 This module implements individual probes for each infrastructure
 dependency (PostgreSQL, Redis, Temporal, Vault) and an aggregation
@@ -11,7 +11,7 @@ probes and produces a summary suitable for the ``/readyz`` endpoint.
 
 Design references
 -----------------
-* design notes §Component 6 — Readiness Probe (Gerçek İmplementasyon).
+* design notes §Component 6 - Readiness Probe (Gerçek İmplementasyon).
 * behaviors 11.1, 11.2, 11.3, 11.4, 11.5, 11.6.
 """
 

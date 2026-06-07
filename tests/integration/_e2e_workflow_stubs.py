@@ -1,4 +1,4 @@
-"""Test-local ``@workflow.defn`` stubs for end-to-end integration tests.
+﻿"""Test-local ``@workflow.defn`` stubs for end-to-end integration tests.
 
 The production ``AgentRunnerWorkflow`` (under
 ``platform/workers/agent-runner-worker/src/workflows/agent_runner_workflow.py``)
@@ -12,7 +12,7 @@ under the same Temporal workflow name (``"AgentRunnerWorkflow"``) but
 exported under distinct Python class names so individual tests can
 import only the branch they exercise. **The Temporal SDK requires that
 only ONE class registered under a given workflow name be passed to a
-worker at a time** — every test that uses a stub here registers exactly
+worker at a time** - every test that uses a stub here registers exactly
 one of these classes per ``Worker(...)`` invocation.
 
 Why a dedicated module?
@@ -187,7 +187,7 @@ class PRReviewAgentRunnerStub:
  Flow: ``bitbucket_fetch_pr_diff`` → ``llm_review_code`` →
  ``bitbucket_add_pr_comment``.
 
- The child input encodes the target PR via ``output_actions`` — the
+ The child input encodes the target PR via ``output_actions`` - the
  first action's payload carries ``workspace``, ``repo_slug``, and
  ``pr_id``. This mirrors how the bitbucket webhook handler
  populates the child input for ``pullrequest:reviewer_added`` events.

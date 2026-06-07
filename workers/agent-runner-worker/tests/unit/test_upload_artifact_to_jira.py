@@ -1,20 +1,20 @@
-"""Unit tests for the ``upload_artifact_to_jira`` activity.
+﻿"""Unit tests for the ``upload_artifact_to_jira`` activity.
 
 Validates the MinIO → tempfile → MCP-jira pipeline contract:
 
-* Happy path — download, stage, MCP-call, cleanup.
-* Extension rejection — ``.exe`` and friends short-circuit before
+* Happy path - download, stage, MCP-call, cleanup.
+* Extension rejection - ``.exe`` and friends short-circuit before
   any download is attempted.
-* Size cap — payloads above 100 MB return ``file_too_large`` and
+* Size cap - payloads above 100 MB return ``file_too_large`` and
   the tempfile is never opened.
 * tempfile cleanup is guaranteed even when the MCP call raises.
 * MCP HTTP 4xx responses propagate as ``error_code`` on the result.
 
 Each test patches the two seams the activity exposes:
 
-* :func:`activities.jira_attachment_pipe.artifact_download` — replaced
+* :func:`activities.jira_attachment_pipe.artifact_download` - replaced
   with an in-memory fake to avoid touching MinIO.
-* :func:`activities.jira_attachment_pipe._invoke_mcp_attachment_tool` —
+* :func:`activities.jira_attachment_pipe._invoke_mcp_attachment_tool` -
   replaced with a fake that records the ``file_path`` it received and
   returns a scripted result.
 """
@@ -31,7 +31,7 @@ from typing import Any
 import pytest
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — mirrors the rest of the agent-runner unit tests.
+# sys.path bootstrap - mirrors the rest of the agent-runner unit tests.
 # ---------------------------------------------------------------------------
 
 _WORKER_ROOT: Path = Path(__file__).resolve().parents[2]
@@ -47,7 +47,7 @@ for _candidate in (_SRC_DIR, _LIBS_HTTP_SHARED, _LIBS_TEMPORAL_SHARED):
     if _candidate.is_dir() and _str not in sys.path:
         sys.path.insert(0, _str)
 
-# noqa: E402 — imports after sys.path bootstrap.
+# noqa: E402 - imports after sys.path bootstrap.
 
 from activities import jira_attachment_pipe as pipe_mod  # noqa: E402
 from activities.jira_attachment_pipe import (  # noqa: E402
@@ -114,7 +114,7 @@ class _MCPInvokeFake:
             }
         )
         # Snapshot whether the tempfile was on disk while the MCP
-        # call was in flight — the cleanup invariant is that it is
+        # call was in flight - the cleanup invariant is that it is
         # there during the call and gone after the activity returns.
         self.observed_path_existed.append(os.path.exists(file_path))
 
@@ -373,7 +373,7 @@ class TestTempfileCleanup:
     """The staged tempfile is always removed in the ``finally`` block."""
 
     def test_tempfile_removed_on_mcp_exception(self, patch_pipe) -> None:
-        """Download succeeded, MCP raised — tempfile still gone."""
+        """Download succeeded, MCP raised - tempfile still gone."""
 
         patch_pipe.download.payload = b"data"
         patch_pipe.mcp.result = RuntimeError("boom")

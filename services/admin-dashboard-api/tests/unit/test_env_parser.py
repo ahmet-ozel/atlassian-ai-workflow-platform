@@ -1,4 +1,4 @@
-"""Unit tests for ``src.lifecycle.env_parser.parse_env_example``.
+﻿"""Unit tests for ``src.lifecycle.env_parser.parse_env_example``.
 
 The tests cover assignment recognition, comment-buffer accumulation,
 blank-line reset, quote handling, ordering, and ``is_sensitive``
@@ -185,7 +185,7 @@ def test_comment_without_leading_space_is_preserved_verbatim() -> None:
 
 
 def test_comment_strips_only_one_leading_space() -> None:
-    """``#  indented`` keeps the second space — only one is consumed."""
+    """``#  indented`` keeps the second space - only one is consumed."""
 
     fields = parse_env_example("#  indented\nKEY=value\n")
     assert fields[0].comment == " indented"

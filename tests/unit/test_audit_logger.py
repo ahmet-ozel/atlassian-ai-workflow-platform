@@ -1,4 +1,4 @@
-"""Unit tests for the ``audit_logger`` package.
+﻿"""Unit tests for the ``audit_logger`` package.
 
 The tests cover three concerns:
 
@@ -78,7 +78,7 @@ def test_audit_event_is_frozen_dataclass() -> None:
     event = _ok_event()
     # ``frozen=True`` forbids attribute mutation; that's the invariant
     # we care about here. (The dataclass itself is not hashable because
-    # ``payload`` is a ``dict`` — append-only does not require hashing.)
+    # ``payload`` is a ``dict`` - append-only does not require hashing.)
     with pytest.raises(FrozenInstanceError):
         event.actor_id = "someone-else"  # type: ignore[misc]
 
@@ -116,7 +116,7 @@ def test_audit_event_result_runtime_set_matches_literal_type() -> None:
 
 
 # ---------------------------------------------------------------------------
-# AuditLogger.write — mandatory actor_role
+# AuditLogger.write - mandatory actor_role
 # ---------------------------------------------------------------------------
 
 

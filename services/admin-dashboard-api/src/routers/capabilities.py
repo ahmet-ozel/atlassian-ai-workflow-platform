@@ -1,4 +1,4 @@
-"""``CapabilitiesRouter`` capability router wiring.
+﻿"""``CapabilitiesRouter`` capability router wiring.
 
 
 Capability probe matrix surface for the admin dashboard. The router
@@ -6,9 +6,9 @@ exposes two endpoints that let an admin inspect the live connectivity
 between every department and every external service the platform
 talks to (Jira, Bitbucket, Confluence, LLM, SSH, Docker):
 
-* ``GET /api/v1/departments/capabilities`` — full ``dept × service``
+* ``GET /api/v1/departments/capabilities`` - full ``dept × service``
   matrix served from the cache.
-* ``POST /api/v1/departments/{dept_id}/probe/{service}`` — re-run a
+* ``POST /api/v1/departments/{dept_id}/probe/{service}`` - re-run a
   single probe synchronously and return the fresh result
   for the requested department and service.
 
@@ -19,13 +19,13 @@ The router is intentionally agnostic of *how* probes are executed and
 *where* their results live. Two Protocols sit between the FastAPI
 endpoints and the production wiring:
 
-* :class:`SupportsCapabilityProbeStore` — the cache backed by
+* :class:`SupportsCapabilityProbeStore` - the cache backed by
   ``shared.capability_probes``. Production wiring provides
   the asyncpg-backed implementation; this module also provides
   :class:`InMemoryCapabilityProbeStore` so the router can be wired
   end-to-end while capability persistence wiring is still in flight (and so unit tests
   do not need a Postgres).
-* :class:`SupportsCapabilityProber` — the actual probe runner that
+* :class:`SupportsCapabilityProber` - the actual probe runner that
   knows how to call ``/myself``, ``docker info``, etc. Production
   wires this against the foundation MCP / SSH / Vault clients;
   tests inject a stub that scripts each service's outcome.
@@ -45,10 +45,10 @@ Service value → probe action:
 
 Each probe returns a :class:`ProbeResult` with one of three statuses:
 
-* ``"healthy"``        — probe succeeded.
-* ``"unhealthy"``      — probe ran but failed (HTTP non-200, auth
+* ``"healthy"``        - probe succeeded.
+* ``"unhealthy"``      - probe ran but failed (HTTP non-200, auth
   rejected, connection refused, timeout, etc.).
-* ``"not_configured"`` — the department config does not declare the
+* ``"not_configured"`` - the department config does not declare the
   service (eg. dept has no ``bot.bitbucket`` section, or no
   ``llm_overrides`` block when ``service == "llm"``). This branch
   short-circuits the prober so we never call out to a non-existent
@@ -60,7 +60,7 @@ Status persistence
 After every probe the router upserts the result into
 ``shared.capability_probes`` via :class:`SupportsCapabilityProbeStore`.
 The matrix endpoint reads from the cache so the UI loads in <100ms
-even when a slow upstream is misbehaving — a stale row is preferable
+even when a slow upstream is misbehaving - a stale row is preferable
 to a 30-second hang.
 
 The ``GET`` endpoint does **not** trigger fresh probes; the UI's
@@ -108,7 +108,7 @@ logger = logging.getLogger(__name__)
 #: ``error`` / ``not_configured``. The router exposes these to the FE
 #: under the historical names ``healthy`` / ``unhealthy`` /
 #: ``not_configured`` so the UI's CSS classes
-#: continue to match — translation happens at the persistence boundary.
+#: continue to match - translation happens at the persistence boundary.
 ProbeStatus = Literal["healthy", "unhealthy", "not_configured"]
 
 #: The six services the matrix reports on. Order
@@ -125,7 +125,7 @@ SUPPORTED_SERVICES: tuple[str, ...] = (
 
 #: Translation from the in-memory ``ProbeStatus`` (FE-friendly) to the
 #: ``shared.capability_probes.status`` enum (DB column). The mapping is
-#: intentional — we surface ``healthy`` / ``unhealthy`` to the FE so
+#: intentional - we surface ``healthy`` / ``unhealthy`` to the FE so
 #: existing UI components keep working, but persist the canonical
 #: ``ok`` / ``error`` values so the schema matches the migration.
 _STATUS_TO_DB: Mapping[ProbeStatus, str] = {
@@ -228,7 +228,7 @@ class SupportsCapabilityProber(Protocol):
     * the foundation SSH runner (``paramiko`` / shared SSH client) for
       ``ssh`` and ``docker`` probes.
 
-    The router never inspects the implementation — it just calls
+    The router never inspects the implementation - it just calls
     :meth:`probe` and persists the returned :class:`ProbeResult`.
 
     Implementations MUST honour the ``not_configured`` short-circuit:
@@ -250,11 +250,11 @@ class SupportsCapabilityProbeStore(Protocol):
 
     The contract is intentionally minimal:
 
-    * :meth:`upsert` — persist the latest result for a
+    * :meth:`upsert` - persist the latest result for a
       ``(dept_id, service)`` pair (overwriting any previous row).
-    * :meth:`get_all` — return every row currently in the cache. The
+    * :meth:`get_all` - return every row currently in the cache. The
       matrix endpoint uses this to render the full grid in one call.
-    * :meth:`get_one` — return a single row, or ``None`` when the
+    * :meth:`get_one` - return a single row, or ``None`` when the
       pair has never been probed. The single-probe endpoint uses
       this to surface the previous error in the UI when a probe
       stays unhealthy.
@@ -280,7 +280,7 @@ class InMemoryCapabilityProbeStore:
     The store keeps the most recent row per ``(dept_id, service)``
     pair in a plain dict. It is **not** a long-term substitute for the
     asyncpg-backed adapter (probe history is lost on process restart)
-    — but it is sufficient for the matrix endpoint to round-trip data
+    - but it is sufficient for the matrix endpoint to round-trip data
     and for the unit tests in this package to verify routing /
     serialisation without standing up Postgres.
 
@@ -374,11 +374,11 @@ def _is_service_configured(dept: Mapping[str, Any], service: str) -> bool:
     ``not_configured`` when the dept config does not declare the
     service we are probing. Concretely:
 
-    * ``jira`` / ``bitbucket`` / ``confluence`` — require a non-empty
+    * ``jira`` / ``bitbucket`` / ``confluence`` - require a non-empty
       ``credential_ref`` under ``bot.{service}``.
-    * ``llm`` — require an ``llm_overrides.primary`` block (a dept
+    * ``llm`` - require an ``llm_overrides.primary`` block (a dept
       that inherits the global LLM has the ``llm_overrides`` key set
-      to ``null`` / missing — there is no per-dept override to probe).
+      to ``null`` / missing - there is no per-dept override to probe).
     * ``ssh`` / ``docker`` - require an explicit runner assignment or
       a legacy/env runner flag. Bitbucket credentials alone never
       imply execution capability.
@@ -420,7 +420,7 @@ def _is_service_configured(dept: Mapping[str, Any], service: str) -> bool:
         # Bitbucket credentials alone do not make SSH/Docker configured.
         return False
 
-    # Unknown service — treat as not configured rather than letting
+    # Unknown service - treat as not configured rather than letting
     # the endpoint crash with an obscure error.
     return False
 
@@ -462,7 +462,7 @@ def _get_prober(request: Request) -> SupportsCapabilityProber:
     """Return the wired :class:`SupportsCapabilityProber`.
 
     Returns 503 with ``reason="prober_unavailable"`` when the slot is
-    ``None`` — the same pattern :mod:`src.routers.workflow_control`
+    ``None`` - the same pattern :mod:`src.routers.workflow_control`
     uses for the Temporal client. The FE renders a clear "service
     not ready" badge instead of a stack trace.
     """
@@ -501,7 +501,7 @@ def _get_store(request: Request) -> SupportsCapabilityProbeStore:
 def _validate_service(service: str) -> str:
     """Reject service names outside :data:`SUPPORTED_SERVICES`.
 
-    A 400 is friendlier than a 404 here — the path matched the route
+    A 400 is friendlier than a 404 here - the path matched the route
     template, the value is just outside the documented enum.
     """
 
@@ -564,7 +564,7 @@ async def get_capability_matrix(request: Request) -> dict[str, Any]:
                                   "llm", "ssh", "docker"]
         }
 
-    The endpoint reads from the cache only — it does **not** trigger
+    The endpoint reads from the cache only - it does **not** trigger
     fresh probes. The UI's auto-refresh + the explicit "Yeniden Test
     Et" button (``POST .../probe/{service}``) are the two write paths
     into the cache.
@@ -573,7 +573,7 @@ async def get_capability_matrix(request: Request) -> dict[str, Any]:
     so the FE can render a grey placeholder. Cells whose dept config
     does not declare the service are reported as
     ``status="not_configured"`` even when no row has been written yet
-    — this keeps unconfigured cells marked as ``not_configured`` so an
+    - this keeps unconfigured cells marked as ``not_configured`` so an
     operator who has never run a probe still sees the
     right colour for a cell that *will* always be ``not_configured``.
     """
@@ -589,7 +589,7 @@ async def get_capability_matrix(request: Request) -> dict[str, Any]:
     for dept in departments:
         dept_id = dept.get("id")
         if not isinstance(dept_id, str):
-            # Defensive — schema validation rejects this in production
+            # Defensive - schema validation rejects this in production
             # but we don't want a malformed config to 500 the matrix.
             continue
         runner_ids = await _assigned_runner_ids(request, dept_id)
@@ -679,7 +679,7 @@ async def run_single_probe(
     # Short-circuit: never call out to a service the dept does not
     # declare. We persist the synthetic row so the
     # matrix endpoint and the single-probe endpoint stay consistent
-    # — both will see the same ``not_configured`` value.
+    # - both will see the same ``not_configured`` value.
     if not _is_service_configured(dept_with_runtime, service):
         result = ProbeResult(
             dept_id=dept_id,
@@ -691,7 +691,7 @@ async def run_single_probe(
         )
         try:
             await store.upsert(result)
-        except Exception as exc:  # noqa: BLE001 — cache write must not block
+        except Exception as exc:  # noqa: BLE001 - cache write must not block
             logger.warning(
                 "capability probe cache upsert failed for "
                 "dept=%s service=%s: %s",
@@ -704,8 +704,8 @@ async def run_single_probe(
     prober = _get_prober(request)
     try:
         result = await prober.probe(dept_id=dept_id, service=service)
-    except Exception as exc:  # noqa: BLE001 — translate into 502
-        # The prober contract is to never raise — every probe outcome
+    except Exception as exc:  # noqa: BLE001 - translate into 502
+        # The prober contract is to never raise - every probe outcome
         # should land on the ``ProbeResult`` channel. If a buggy
         # implementation raises, surface a 502 with a stable error
         # code so the FE renders a clear "upstream failure" badge
@@ -717,7 +717,7 @@ async def run_single_probe(
         )
         # Persist the failure so the matrix endpoint surfaces it on
         # the next read. We deliberately downgrade ``"unhealthy"``
-        # rather than ``"unknown"`` here — the prober *attempted* the
+        # rather than ``"unknown"`` here - the prober *attempted* the
         # call, it just blew up before returning a structured result.
         result = ProbeResult(
             dept_id=dept_id,
@@ -747,7 +747,7 @@ async def run_single_probe(
             },
         ) from exc
 
-    # Stamp ``probed_at`` server-side if the prober didn't — gives the
+    # Stamp ``probed_at`` server-side if the prober didn't - gives the
     # FE a stable timestamp even when the underlying implementation
     # forgets to fill the field.
     if result.probed_at is None:
@@ -762,7 +762,7 @@ async def run_single_probe(
 
     try:
         await store.upsert(result)
-    except Exception as exc:  # noqa: BLE001 — cache write must not block
+    except Exception as exc:  # noqa: BLE001 - cache write must not block
         logger.warning(
             "capability probe cache upsert failed for "
             "dept=%s service=%s: %s",

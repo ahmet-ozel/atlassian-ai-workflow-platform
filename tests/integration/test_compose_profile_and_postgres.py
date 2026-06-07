@@ -1,4 +1,4 @@
-"""Integration smoke tests: Compose profile gating, Postgres init, and RLS.
+﻿"""Integration smoke tests: Compose profile gating, Postgres init, and RLS.
 
 This module hosts three distinct integration tests that share the same
 ``--run-docker``-gated boot strategy but own *independent* Compose
@@ -115,7 +115,7 @@ class HealthEndpoint:
 
 #: The single profile-gated endpoint we assert on from the host. Other
 #: services (``automation-service``, ``assistant-service``, etc.) are
-#: covered by the implementation — repeating those probes here would just
+#: covered by the implementation - repeating those probes here would just
 #: lengthen the wall-clock without adding signal for the invariants
 #: this task validates.
 TASK_INTAKE_ENDPOINT: HealthEndpoint = HealthEndpoint(
@@ -313,7 +313,7 @@ def _list_postgres_schemas(
 
  Polls because ``docker compose up -d`` returns before Postgres has
  finished running its init scripts even when the healthcheck is
- green — the ``service_healthy`` condition only enforces
+ green - the ``service_healthy`` condition only enforces
  ``pg_isready``, which fires before ``00_schemas.sql`` has executed
  on a fresh data volume.
 
@@ -342,7 +342,7 @@ def _list_postgres_schemas(
                 "-f",
                 COMPOSE_FILE_REL,
                 "exec",
-                "-T",  # no TTY — we want clean stdout for parsing
+                "-T",  # no TTY - we want clean stdout for parsing
                 "postgres",
                 "psql",
                 "-U",
@@ -365,7 +365,7 @@ def _list_postgres_schemas(
                 if line.strip()
             }
             # Require all four expected schemas to be present before
-            # declaring success — init scripts may run sequentially and
+            # declaring success - init scripts may run sequentially and
             # we want the steady state, not an intermediate snapshot.
             if EXPECTED_SCHEMAS.issubset(schemas):
                 return schemas, None
@@ -488,7 +488,7 @@ def test_task_intake_profile_brings_up_service_and_postgres_schemas_exist(
             f"(URL {TASK_INTAKE_ENDPOINT.url}): {last_error}"
         )
 
-        # Cross-check via Compose ps — even with the host probe green,
+        # Cross-check via Compose ps - even with the host probe green,
         # we want to confirm the service is owned by Compose under the
         # active profile (rather than, say, a stale container left
         # over from a previous run).
@@ -532,7 +532,7 @@ def test_task_intake_profile_brings_up_service_and_postgres_schemas_exist(
 
 
 # ===========================================================================
-# the implementation — Postgres RLS dept isolation
+# the implementation - Postgres RLS dept isolation
 # ===========================================================================
 #
 
@@ -655,7 +655,7 @@ def _compose_down_with_volumes(repo_root: Path) -> None:
     """Tear the stack down including named volumes.
 
  ``-v`` is required so a subsequent run starts from a clean
- Postgres init-script state — critical for this test because the
+ Postgres init-script state - critical for this test because the
  seeded departments / audit rows must not leak between runs and
  the RLS policies are wired up in ``10_automation.sql`` which only
  runs on first-boot of an empty data volume.
@@ -742,12 +742,12 @@ async def _wait_for_pg_ready(
 async def _bootstrap_app_role(connection: Any) -> None:
     """Create the ``rls_app`` non-superuser role with table privileges.
 
- RLS — even with ``FORCE ROW LEVEL SECURITY`` — is bypassed by
+ RLS - even with ``FORCE ROW LEVEL SECURITY`` - is bypassed by
  Postgres superusers. The bootstrap user
  ``POSTGRES_USER`` (``ai`` in ``infra/docker-compose.yml``) is a
  superuser, so a ``dept_admin`` session opened on its connection
  would ALWAYS see every row regardless of ``app.current_dept_id``
- — and the test would silently pass even if the policy were
+ - and the test would silently pass even if the policy were
  broken. To exercise the policy faithfully, the dept_admin
  assertions run as a non-superuser app role created on the fly.
 
@@ -778,7 +778,7 @@ async def _bootstrap_app_role(connection: Any) -> None:
             f"CREATE ROLE {RLS_APP_ROLE} LOGIN PASSWORD '{safe_password}'"
         )
 
-    # Grants are idempotent — Postgres treats a re-grant as a no-op.
+    # Grants are idempotent - Postgres treats a re-grant as a no-op.
     # ``USAGE`` on the schema lets the role resolve table names;
     # CRUD on the two RLS tables lets the test exercise both the
     # SELECT and INSERT branches of the policy if a future variant
@@ -790,7 +790,7 @@ async def _bootstrap_app_role(connection: Any) -> None:
         f"TO {RLS_APP_ROLE}"
     )
     # Future tables added under the automation schema will not be
-    # auto-granted by the line above; that's intentional — the
+    # auto-granted by the line above; that's intentional - the
     # production grant policy is also explicit per-table so a new
     # table cannot accidentally widen the app role's surface.
 
@@ -800,7 +800,7 @@ async def _drop_app_role(connection: Any) -> None:
 
  The Compose ``down -v`` invocation in the test's ``finally``
  block drops the data volume, so this cleanup is not strictly
- required — but dropping the role explicitly makes the test safe
+ required - but dropping the role explicitly makes the test safe
  to re-run against a long-lived Postgres instance during local
  development (e.g. when iterating on the test itself with the
  Compose lifecycle pinned to a single boot).
@@ -825,11 +825,11 @@ async def _seed_two_departments_and_audit_rows(connection: Any) -> None:
  Runs on the bootstrap superuser connection so the seed step
  bypasses RLS entirely (mirroring how a future migration runner
  would seed the DB before the application takes over). The
- superuser bypass is intentional here — the dept_admin assertions
+ superuser bypass is intentional here - the dept_admin assertions
  run on a *separate* non-superuser connection where the policy is
  actually enforced.
 
- The seeded rows are intentionally minimal — just enough to make
+ The seeded rows are intentionally minimal - just enough to make
  the isolation invariant observable. ``config_json`` is set to
  ``'{}'::jsonb`` because the schema requires NOT NULL but the
  test does not need a real department config.
@@ -896,7 +896,7 @@ def test_postgres_rls_isolates_dept_admin_sessions_across_departments(
 
  The integration is end-to-end against a real Postgres container so
  drift between the SQL policy expressions and the helper's GUC
- names is caught — a unit test against a fake connection cannot
+ names is caught - a unit test against a fake connection cannot
  observe a typo in ``app.current_dept_id`` because the fake never
  enforces RLS.
  """
@@ -1066,7 +1066,7 @@ async def _run_rls_isolation_assertions() -> None:
         # The dept_isolation policy has an OR branch on
         # ``current_setting('app.current_role', true) = 'admin'`` so
         # an admin session bypasses the dept filter (despite running
-        # as the non-superuser ``rls_app`` connection — the bypass is
+        # as the non-superuser ``rls_app`` connection - the bypass is
         # at the policy level, not the role level). Verifying this
         # negative case proves the test is observing real isolation
         # in assertions 1 and 2 rather than a global filter that

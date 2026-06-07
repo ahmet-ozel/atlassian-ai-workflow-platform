@@ -1,4 +1,4 @@
-"""Cancel and compensation chain behavioral properties.
+﻿"""Cancel and compensation chain behavioral properties.
 
 Hypothesis-driven verification of the cancel and compensation contract:
 
@@ -37,7 +37,7 @@ Properties asserted
 **`COMPENSATION_STEPS` is an immutable tuple.** The exported
  ordering is a ``tuple`` (not a ``list`` / ``set``), and a
  deep-equality check across two import-time reads returns the
- same value — replay-safe order for every cancel run.
+ same value - replay-safe order for every cancel run.
 
 **Step name closed vocabulary.** Every entry in
  ``COMPENSATION_STEPS`` is one of the six step names enumerated
@@ -105,7 +105,7 @@ from hypothesis import strategies as st
 
 
 # ---------------------------------------------------------------------------
-# ``sys.path`` bootstrap — mirror the bootstrap in
+# ``sys.path`` bootstrap - mirror the bootstrap in
 # ``test_explain_keyword.py`` so this module remains importable from a
 # bare ``python -m pytest`` even when the workspace ``pytest.ini``
 # ``pythonpath`` is not active.
@@ -139,11 +139,11 @@ for _src in _REQUIRED_SRC_DIRS:
 #
 # The cancel signal handler helpers (RBAC role mapping +
 # ``CANCEL_*`` audit action constants) ship with the workflow body and
-# are imported eagerly — they never
+# are imported eagerly - they never
 # trigger the skip.
 # ---------------------------------------------------------------------------
 
-# noqa: E402 below — imports follow the sys.path bootstrap above.
+# noqa: E402 below - imports follow the sys.path bootstrap above.
 from temporal_shared.messages import (  # noqa: E402
     CompensationContext,
     CompensationReason,
@@ -169,13 +169,13 @@ except ImportError as exc:  # pragma: no cover - defensive guard
 
 
 # ---------------------------------------------------------------------------
-# Constants — closed vocabularies the production code is contracted to
+# Constants - closed vocabularies the production code is contracted to
 # expose. Defined as module-level frozensets so Hypothesis strategies
 # can sample them directly.
 # ---------------------------------------------------------------------------
 
 #: The closed vocabulary of cancel ``actor_role`` values that map to the
-#: *admin* audit action — mirrors ``_CANCEL_ADMIN_ROLES`` in
+#: *admin* audit action - mirrors ``_CANCEL_ADMIN_ROLES`` in
 #: ``agent_runner_workflow.py``. Re-defining the literal here (rather
 #: than importing the private symbol) is the explicit contract for the
 #: contract: a divergence between this set and the
@@ -209,7 +209,7 @@ _EXPECTED_STEP_ORDER: tuple[str, ...] = (
 # ---------------------------------------------------------------------------
 
 
-#: ``CompensationReason`` literal — drawn directly from the
+#: ``CompensationReason`` literal - drawn directly from the
 #: ``Literal["user_cancel", "admin_cancel"]`` alias in
 #::mod:`temporal_shared.messages`. Using ``get_args`` keeps the
 #: strategy in lockstep with the production type alias.
@@ -226,7 +226,7 @@ _short_id: st.SearchStrategy[str] = st.text(
     max_size=16,
 )
 
-#: ``actor_role`` strategy — *intentionally* mixes the recognised
+#: ``actor_role`` strategy - *intentionally* mixes the recognised
 #: closed-vocabulary values with arbitrary text and ``None`` so the strategy
 #: exercises the default-to-``end_user`` branch alongside the happy
 #: path.
@@ -248,7 +248,7 @@ def _compensation_contexts(draw: st.DrawFn) -> CompensationContext:
  Each optional field (``issue_key``, ``pr_id``, ``branch``,
  ``confluence_page_id``, ``minio_prefix``) independently flips
  between ``None`` and a populated value so the chain runner sees
- every cleanup-target combination — including the empty cancel
+ every cleanup-target combination - including the empty cancel
  (no PR, no branch, no Confluence page) which exercises the
  chain's "every step is a no-op" idempotent contract.
  """
@@ -281,7 +281,7 @@ def test_audit_action_admin_iff_recognised_admin_role(
  The audit action is
  ``workflow_cancelled_by_admin`` iff ``actor_role ∈ {admin,
  dept_admin}`` and ``workflow_cancelled_by_end_user`` for *every*
- other input — including ``None``, the empty string, and arbitrary
+ other input - including ``None``, the empty string, and arbitrary
  unknown strings (the "default to ``end_user``" rule).
  """
 
@@ -306,7 +306,7 @@ def test_audit_action_for_cancel_role_is_deterministic(
     """Determinism / purity of the cancel role mapping helper.
 
  Repeated invocations with identical inputs MUST yield identical
- outputs — replay-safe so the helper is callable from inside a
+ outputs - replay-safe so the helper is callable from inside a
  Temporal workflow body.
  """
 
@@ -342,7 +342,7 @@ def test_compensation_steps_is_a_tuple() -> None:
 def test_compensation_steps_order_is_deterministic_across_reads() -> None:
     """Two reads of ``COMPENSATION_STEPS`` MUST be identical.
 
- The order is a constant — replay-safe across
+ The order is a constant - replay-safe across
  every cancel run on every worker. A regression here would be a
  silent re-shuffle (e.g. someone converted the constant to a
  ``frozenset`` then back to a tuple via ``tuple(frozenset(...))``).
@@ -354,7 +354,7 @@ def test_compensation_steps_order_is_deterministic_across_reads() -> None:
     second = _compensation_mod.COMPENSATION_STEPS
     assert first == second
     assert first is second, (
-        "COMPENSATION_STEPS identity drift across reads — the constant "
+        "COMPENSATION_STEPS identity drift across reads - the constant "
         "should be the same tuple object on every access (the operational rule)"
     )
 
@@ -370,13 +370,13 @@ def test_compensation_steps_match_documented_order() -> None:
  Expected order:
  1. ``close_draft_pr_if_open``
  2. ``delete_ai_branch_if_unused``
- 3. ``label_confluence_page_cancelled`` (label only — never delete;)
+ 3. ``label_confluence_page_cancelled`` (label only - never delete;)
  4. ``leave_minio_artifacts_for_retention``
  5. ``post_cancel_jira_comment``
  6. ``transition_jira_issue_if_configured``
 
  A divergence from this exact sequence is *itself* the regression
- check catches — adding / removing / reordering a step
+ check catches - adding / removing / reordering a step
  changes the user-visible cleanup behaviour and would silently
  break compensation idempotency on re-cancel.
  """
@@ -410,7 +410,7 @@ def test_compensation_steps_contain_no_natural_termination_step() -> None:
     """: natural terminations bypass the chain.
 
  ``MAX_ITER`` and ``out_of_scope`` paths are workflow-level
- natural terminations — the *chain* never receives a step named
+ natural terminations - the *chain* never receives a step named
  after those concepts. This is a structural rule: if a future
  refactor accidentally hooked them up, the step name would leak
  into the closed vocabulary and this test would fire.
@@ -474,7 +474,7 @@ def test_confluence_label_step_ordered_after_pr_and_branch_cleanup() -> None:
 # combination of ``None`` / populated optional fields is reachable).
 # This grounds the "every step is idempotent / no-op when target
 # already cleaned up" rule: the chain's runner is contracted to
-# accept *any* CompensationContext shape — including the all-``None``
+# accept *any* CompensationContext shape - including the all-``None``
 # context that exercises the "everything already cleaned up" branch.
 # ---------------------------------------------------------------------------
 
@@ -491,7 +491,7 @@ def test_compensation_context_round_trips_unchanged(
     """``CompensationContext`` instances are immutable and hashable-friendly.
 
  The context is a frozen dataclass so the
- chain runner cannot accidentally mutate it between steps — every
+ chain runner cannot accidentally mutate it between steps - every
  step sees the same input on the second cancel as it did on the
  first (idempotency precondition). Re-construct the same context
  via ``dataclasses.replace`` with no overrides and confirm
@@ -502,7 +502,7 @@ def test_compensation_context_round_trips_unchanged(
 
     same = dataclasses.replace(ctx)
     assert same == ctx
-    # Frozen dataclass — direct attribute mutation must raise.
+    # Frozen dataclass - direct attribute mutation must raise.
     with pytest.raises(dataclasses.FrozenInstanceError):
         ctx.workflow_id = "mutated"  # type: ignore[misc]
 
@@ -566,7 +566,7 @@ def test_empty_cancel_context_is_well_formed(ctx: CompensationContext) -> None:
 # COMPENSATION_STEPS entry is named after a natural-termination path
 # (already covered by ``test_compensation_steps_contain_no_natural_termination_step``
 # above). The dedicated stub below acts as a discoverability anchor
-# for future maintainers — it points at the unit
+# for future maintainers - it points at the unit
 # coverage and asserts the structural rule a second time so a
 # ``grep`` for ``MAX_ITER`` / ``out_of_scope`` in this file finds it.
 # ---------------------------------------------------------------------------
@@ -581,7 +581,7 @@ def test_natural_terminations_have_no_chain_step() -> None:
  """
 
     # Mirrors ``test_compensation_steps_contain_no_natural_termination_step``
-    # — restated here for discoverability.
+    # - restated here for discoverability.
     forbidden_markers = ("max_iter", "out_of_scope", "needs_info")
     for step in COMPENSATION_STEPS:
         for marker in forbidden_markers:

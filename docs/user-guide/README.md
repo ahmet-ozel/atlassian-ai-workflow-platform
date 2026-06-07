@@ -1,16 +1,16 @@
-# Kullanıcı Rehberi (User Guide)
+﻿# Kullanıcı Rehberi (User Guide)
 
 Bu klasör, AI bot'a task açan ve sonucunu inceleyen son kullanıcılar (PO, lead, geliştirici)
 içindir. Mimarisini değil, **kullanımı** anlatır.
 
 ## Okuma Sırası
 
-1. **[Task açma](task-creation.md)** — bot'a iş atamadan önce nasıl bir task hazırlamalısın?
-2. **[Bot'u beklerken](waiting-for-bot.md)** — bot kaç dakika sürer, ne anda ne görürsün?
-3. **[Comment ile düzeltme](iteration-with-comments.md)** — bot ilk denemede istediğini yapamadıysa
+1. **[Task açma](task-creation.md)** - bot'a iş atamadan önce nasıl bir task hazırlamalısın?
+2. **[Bot'u beklerken](waiting-for-bot.md)** - bot kaç dakika sürer, ne anda ne görürsün?
+3. **[Comment ile düzeltme](iteration-with-comments.md)** - bot ilk denemede istediğini yapamadıysa
    nasıl yönlendirirsin? `[fix]` etiketi nasıl çalışır?
-4. **[Bot ne yapamaz](what-bot-cannot-do.md)** — sınırlar, yasaklı tool'lar, "out_of_scope" kararı
-5. **[SSS (FAQ)](faq.md)** — sıkça sorulan 25 soru, kısa cevaplar
+4. **[Bot ne yapamaz](what-bot-cannot-do.md)** - sınırlar, yasaklı tool'lar, "out_of_scope" kararı
+5. **[SSS (FAQ)](faq.md)** - sıkça sorulan 25 soru, kısa cevaplar
 
 ## Yazılmamış Bölümler (Backlog)
 

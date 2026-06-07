@@ -1,4 +1,4 @@
-"""invariant for HMAC-SHA256 sign-verify round-trip and tamper rejection.
+﻿"""invariant for HMAC-SHA256 sign-verify round-trip and tamper rejection.
 
 
 
@@ -13,7 +13,7 @@ Invariants tested:
  2e. The verify function uses hmac.compare_digest for constant-time
  comparison (AST inspection).
 
-invariant (appended below the invariant block): Webhook handler —
+invariant (appended below the invariant block): Webhook handler -
 per-dept HMAC, rotation overlap and dept_id resolution. The HMAC half
 of invariant lives here (per-dept secret isolation, 1h rotation
 overlap, missing-secret rejection, unsupported-provider error). The
@@ -44,15 +44,15 @@ from decision.hmac_verify import compute, verify
 # Strategies
 # ---------------------------------------------------------------------------
 
-# Secrets: 1–256 bytes (non-empty, realistic key sizes)
+# Secrets: 1-256 bytes (non-empty, realistic key sizes)
 _secrets = st.binary(min_size=1, max_size=256)
 
-# Payloads: 0–65536 bytes (empty payloads are valid webhook edge case)
+# Payloads: 0-65536 bytes (empty payloads are valid webhook edge case)
 _payloads = st.binary(min_size=0, max_size=65536)
 
 
 # ---------------------------------------------------------------------------
-# invariant: Round-trip — compute then verify always succeeds
+# invariant: Round-trip - compute then verify always succeeds
 # ---------------------------------------------------------------------------
 
 
@@ -63,7 +63,7 @@ _payloads = st.binary(min_size=0, max_size=65536)
 )
 @given(secret=_secrets, payload=_payloads)
 def test_hmac_sign_verify_round_trip(secret: bytes, payload: bytes) -> None:
-    """invariant — compute(payload, secret) → verify(payload, sig, secret) is True.
+    """invariant - compute(payload, secret) → verify(payload, sig, secret) is True.
 
  For every valid (secret, payload) pair, signing and then verifying
  with the same inputs must always succeed.
@@ -86,7 +86,7 @@ def test_hmac_sign_verify_round_trip(secret: bytes, payload: bytes) -> None:
 def test_hmac_tampered_payload_rejected(
     secret: bytes, payload: bytes, tampered_payload: bytes
 ) -> None:
-    """invariant — tampering with the payload invalidates the signature.
+    """invariant - tampering with the payload invalidates the signature.
 
  If the payload changes (even by one byte), the original signature
  must no longer verify.
@@ -115,7 +115,7 @@ def test_hmac_tampered_payload_rejected(
 def test_hmac_tampered_signature_rejected(
     secret: bytes, payload: bytes, tamper_index: int
 ) -> None:
-    """invariant — flipping any hex character in the signature invalidates it.
+    """invariant - flipping any hex character in the signature invalidates it.
 
  The signature format is 'sha256=' + 64 hex chars. We flip one hex
  character at a random position to simulate signature tampering.
@@ -149,7 +149,7 @@ def test_hmac_tampered_signature_rejected(
 def test_hmac_wrong_secret_rejected(
     secret: bytes, payload: bytes, wrong_secret: bytes
 ) -> None:
-    """invariant — using a different secret invalidates verification.
+    """invariant - using a different secret invalidates verification.
 
  If the verifier uses a different secret than the signer, the
  verification must fail.
@@ -166,7 +166,7 @@ def test_hmac_wrong_secret_rejected(
 
 
 def test_verify_uses_hmac_compare_digest() -> None:
-    """invariant — verify uses hmac.compare_digest for constant-time comparison.
+    """invariant - verify uses hmac.compare_digest for constant-time comparison.
 
  This is a structural assertion: the source code of verify must
  contain a call to hmac.compare_digest (or compare_digest) to prevent
@@ -200,10 +200,10 @@ def test_verify_uses_hmac_compare_digest() -> None:
 
 
 # ---------------------------------------------------------------------------
-# invariant — Webhook handler: per-dept HMAC + rotation overlap
+# invariant - Webhook handler: per-dept HMAC + rotation overlap
 # ---------------------------------------------------------------------------
 #
-# **invariant: Webhook handler — per-dept HMAC, rotation overlap ve
+# **invariant: Webhook handler - per-dept HMAC, rotation overlap ve
 # dept_id çözümlemesi**
 #
 #
@@ -214,14 +214,14 @@ def test_verify_uses_hmac_compare_digest() -> None:
 #
 # - **Per-dept secret**: a body signed with department A's secret
 # never validates against department B's secret, even when both
-# departments live in the same Vault store. ( — "tek bir global
+# departments live in the same Vault store. ( - "tek bir global
 # webhook secret kullanmaz".)
 #
 # - **Rotation overlap**: after rotating
 # ``vault:webhooks/<provider>/<dept_id>``, both the *previous* and
 # the *new* secret SHALL verify successfully for one hour; once the
 # overlap window expires, only the new secret is accepted, and the
-# old secret SHALL be rejected. ( — "1 saatlik bir overlap
+# old secret SHALL be rejected. ( - "1 saatlik bir overlap
 # penceresi".)
 #
 # - **Tamper rejection under rotation**: tampering with the body
@@ -234,7 +234,7 @@ def test_verify_uses_hmac_compare_digest() -> None:
 #
 # These properties drive ``verify_webhook_hmac`` against a
 #:class:`vault_client.LocalDevBackend` so the tests stay
-# self-contained — no Hashicorp HTTP round-trip and no shared global
+# self-contained - no Hashicorp HTTP round-trip and no shared global
 # state. The local-dev backend's slot encoding (``active`` /
 # ``previous`` with ``overlap_until``) is the same shape the
 # Hashicorp backend produces under KV-v2 versioning, so the property
@@ -282,7 +282,7 @@ def _sign_with_secret(secret: str, body: bytes) -> str:
 #: keeps the Vault paths well-formed under:func:`VaultPath.parse`.
 _dept_ids = st.from_regex(r"^[a-z][a-z0-9-]{1,30}$", fullmatch=True)
 
-#: Webhook secrets — non-empty printable ASCII so the HMAC layer is
+#: Webhook secrets - non-empty printable ASCII so the HMAC layer is
 #: not exercised against malformed UTF-8 inputs (which Atlassian
 #: would never produce anyway).
 _secrets_str = st.text(
@@ -297,7 +297,7 @@ _distinct_secret_pairs = st.tuples(_secrets_str, _secrets_str).filter(
     lambda pair: pair[0] != pair[1]
 )
 
-#: Webhook bodies — empty body is a valid edge case (Atlassian sends
+#: Webhook bodies - empty body is a valid edge case (Atlassian sends
 #: ``{}``-payloads on some lifecycle hooks).
 _bodies = st.binary(min_size=0, max_size=4096)
 
@@ -338,7 +338,7 @@ class TestPerDeptHmacIsolation:
 
  Provisions both departments under the same provider with
  different secrets; signs *body* with department A's secret;
- verifies against department B — must return ``False``.
+ verifies against department B - must return ``False``.
  """
         tmp_path = tmp_path_factory.mktemp("per_dept_hmac_isolation")
         backend = _make_backend(tmp_path)
@@ -406,7 +406,7 @@ class TestPerDeptHmacIsolation:
 
 
 class TestWebhookSecretRotationOverlap:
-    """Rotation overlap window — both secrets accepted for 1 hour, then only new.
+    """Rotation overlap window - both secrets accepted for 1 hour, then only new.
 
 
  """
@@ -659,7 +659,7 @@ class TestVerifyWebhookHmacMissingSecret:
  """
         tmp_path = tmp_path_factory.mktemp("missing_secret_rejects")
         backend = _make_backend(tmp_path)
-        # NOTE: backend is empty — no rotate_webhook_secret called.
+        # NOTE: backend is empty - no rotate_webhook_secret called.
 
         sig = _sign_with_secret(secret, body)
         assert verify_webhook_hmac(
@@ -675,7 +675,7 @@ class TestVerifyWebhookHmacMissingSecret:
         """Unknown providers MUST surface a ``ValueError`` to the handler.
 
 
- HTTP 400 rather than letting it become a 500 — see
+ HTTP 400 rather than letting it become a 500 - see
  ``automation_service.webhooks_handlers._process_jira_webhook``
  ``except ValueError`` branch).
  """

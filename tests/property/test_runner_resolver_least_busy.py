@@ -1,4 +1,4 @@
-"""Runner resolver least-busy selection tests.
+﻿"""Runner resolver least-busy selection tests.
 
 *For any* department with multiple active runners having different active
 workflow counts, ``runner_resolver`` SHALL select the runner with the
@@ -47,7 +47,7 @@ class RunnerCandidate:
 
 
 # ---------------------------------------------------------------------------
-# Pure selection function — mirrors the SQL ORDER BY logic
+# Pure selection function - mirrors the SQL ORDER BY logic
 # ---------------------------------------------------------------------------
 
 
@@ -75,7 +75,7 @@ def select_least_busy_runner(candidates: list[RunnerCandidate]) -> RunnerCandida
 
 
 # ---------------------------------------------------------------------------
-# Hypothesis strategies — lightweight, no regex
+# Hypothesis strategies - lightweight, no regex
 # ---------------------------------------------------------------------------
 
 
@@ -248,7 +248,7 @@ class TestLeastBusySelection:
         """Selection is invariant under input order.
 
         The selection result does not depend on the order of the input
-        list — the algorithm sorts by (active_count, priority) so any
+        list - the algorithm sorts by (active_count, priority) so any
         permutation of the input yields the same winner.
         """
         selected_original = select_least_busy_runner(runners)
@@ -667,7 +667,7 @@ class TestNoRunnerFailureInvariant:
         When all assigned runners have status 'disabled' or 'quarantine',
         the SQL query (which filters by status='active') returns empty
         results, and the resolver behaves identically to the case where
-        no runners are assigned at all — raising RunnerResolutionError
+        no runners are assigned at all - raising RunnerResolutionError
         with audit_event='no_runner_assigned_to_dept'.
 
         This test specifically verifies the invariant that disabled and

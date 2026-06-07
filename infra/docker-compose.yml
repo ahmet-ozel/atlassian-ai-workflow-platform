@@ -1,11 +1,11 @@
-# =============================================================================
-# infra/docker-compose.yml — base platform stack
+﻿# =============================================================================
+# infra/docker-compose.yml - base platform stack
 # =============================================================================
 # Compose v2 convention: no top-level `version:` key.
 #
 # Default Boot_Bundle:
 # bringing up the stack with no `--profile` flag starts ONLY the four
-# bootstrap services — admin-dashboard-ui, admin-dashboard-api,
+# bootstrap services - admin-dashboard-ui, admin-dashboard-api,
 # postgres, and vault. Every other service is profile-gated and is
 # activated on demand by the dashboard's Setup Wizard (Compose_Manager,
 # using the `compose_profile` value declared in
@@ -51,7 +51,7 @@ x-http-healthcheck: &http-healthcheck
 
 services:
   # ───────────────────────────────────────────────────────────────────────────
-  # Edge Layer — TLS Reverse Proxy
+  # Edge Layer - TLS Reverse Proxy
   # ───────────────────────────────────────────────────────────────────────────
 
   traefik:
@@ -105,7 +105,7 @@ services:
       - "${POSTGRES_HOST_PORT:-35432}:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
-      # Init scripts — read-only mount so
+      # Init scripts - read-only mount so
       # postgres only runs them on first boot of an empty data volume.
       - ./postgres:/docker-entrypoint-initdb.d:ro
     networks:
@@ -314,7 +314,7 @@ services:
       # endpoint instead of a bare TCP socket connect. The previous TCP
       # check flipped ``healthy`` as soon as the port was listening even
       # if the FastMCP server returned 500 from ``/healthz``. The image
-      # has no ``curl`` (slim Python base) so we use ``urllib`` —
+      # has no ``curl`` (slim Python base) so we use ``urllib`` -
       # exit code 0 only when /healthz returns 2xx.
       test: ["CMD", "python", "-c", "import urllib.request,sys; r=urllib.request.urlopen('http://localhost:8090/healthz', timeout=3); sys.exit(0 if 200<=r.status<300 else 1)"]
       interval: 10s
@@ -348,7 +348,7 @@ services:
       # ``internal`` keeps it reachable by the workers; ``default`` gives it
       # outbound internet so it can fetch allow-listed external hosts. The
       # FIRECRAWL_EGRESS_ALLOWLIST contract (enforced in-process before any
-      # fetch) is what bounds egress — not network isolation — so a denied
+      # fetch) is what bounds egress - not network isolation - so a denied
       # host still returns 403 regardless of connectivity.
       - internal
       - default
@@ -511,7 +511,7 @@ services:
       resources:
         limits:
           # Bumped from 512M after the automation-service-wiring spec
-          # activated the production lifespan handler — the new
+          # activated the production lifespan handler - the new
           # lifespan holds an asyncpg pool, a Temporal client, the
           # shared httpx client, Vault + OIDC + audit logger + 8
           # ``*EndpointDeps`` containers all at once, which pushes
@@ -643,7 +643,7 @@ services:
     # (postgres, vault); the Temporal/MCP/Automation tier is started
     # lazily via the Compose_Manager (Setup Wizard) once the operator
     # opts in. The api connects to Temporal at
-    # call time when workflow-control endpoints are invoked — a missing
+    # call time when workflow-control endpoints are invoked - a missing
     # Temporal cluster surfaces as an HTTP 5xx on those endpoints
     # rather than blocking platform boot.
     depends_on:
@@ -685,7 +685,7 @@ services:
       - "traefik.http.routers.admin-api.middlewares=security-headers@file"
       - "traefik.http.services.admin-api.loadbalancer.server.port=8082"
     # NO `profiles:`
-    # directive — Compose includes services without `profiles:` in the
+    # directive - Compose includes services without `profiles:` in the
     # default profile-less `docker compose up -d` invocation. This
     # supersedes the previous inclusion of
     # admin-dashboard-api in the profile-gated set.
@@ -728,14 +728,14 @@ services:
       - "traefik.http.routers.admin-ui.priority=1"
       - "traefik.http.services.admin-ui.loadbalancer.server.port=3000"
     # NO `profiles:`
-    # directive — admin-dashboard-ui is part of the default Boot_Bundle
+    # directive - admin-dashboard-ui is part of the default Boot_Bundle
     # together with admin-dashboard-api, postgres and vault. Operators
     # bring up the platform with a bare `docker compose up -d` and use
     # the dashboard's Setup Wizard (Compose_Manager) to activate the
     # remaining profile-gated services on demand.
     healthcheck:
       <<: *http-healthcheck
-      # Next.js admin-dashboard-ui ships no /api/health route — pages
+      # Next.js admin-dashboard-ui ships no /api/health route - pages
       # render via the App Router. Probing / returns 200 as soon as
       # the dev/preview server is listening, which is the right
       # liveness signal for this UI container.
@@ -844,7 +844,7 @@ services:
     build:
       # The worker's activity modules import http_shared / observability /
       # audit_logger / temporal_shared / mcp_client which are NOT
-      # declared in its pyproject.toml — platform-root context is
+      # declared in its pyproject.toml - platform-root context is
       # needed so the Dockerfile can COPY the libs into the image.
       context: ..
       dockerfile: workers/agent-runner-worker/Dockerfile
@@ -913,7 +913,7 @@ services:
   execution-runner-worker:
     build:
       # Worker imports temporal_shared without declaring it in
-      # pyproject.toml — platform-root context is needed so the
+      # pyproject.toml - platform-root context is needed so the
       # Dockerfile can COPY libs/temporal-shared into the image.
       context: ..
       dockerfile: workers/execution-runner-worker/Dockerfile
@@ -1048,7 +1048,7 @@ volumes:
   agent_workspace:
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Networks — Network Isolation
+# Networks - Network Isolation
 # ─────────────────────────────────────────────────────────────────────────────
 # `internal` network: backend services communicate here but have no direct
 # external access. Only Traefik bridges the public-facing `default` network
@@ -1057,9 +1057,9 @@ volumes:
 # ─────────────────────────────────────────────────────────────────────────────
 networks:
   default:
-    # The default bridge network — Traefik binds ports 80/443 here.
+    # The default bridge network - Traefik binds ports 80/443 here.
     driver: bridge
   internal:
-    # Internal-only network — no published ports, no external access.
+    # Internal-only network - no published ports, no external access.
     driver: bridge
     internal: true

@@ -1,7 +1,7 @@
-# assistant-service
+﻿# assistant-service
 
 FastAPI HTTP service that hosts chat orchestration and LLM access for the
-the platform. This is the initial service skeleton — `/healthz`
+the platform. This is the initial service skeleton - `/healthz`
 and `/readyz` are wired, business logic is intentionally absent.
 
 - Runtime: Python 3.12, FastAPI, Pydantic v2

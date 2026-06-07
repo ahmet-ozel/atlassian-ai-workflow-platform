@@ -1,4 +1,4 @@
-"""Unit tests for the Python ``Sensitive_Env_Key`` matcher.
+﻿"""Unit tests for the Python ``Sensitive_Env_Key`` matcher.
 
 Exercises ``services/admin-dashboard-api/src/lifecycle/sensitive.py``
 directly. The test set is intentionally example-based; the parity and
@@ -26,7 +26,7 @@ import pytest
 
 
 # ---------------------------------------------------------------------------
-# Module loader — admin-dashboard-api isn't on ``pythonpath`` (its ``src/``
+# Module loader - admin-dashboard-api isn't on ``pythonpath`` (its ``src/``
 # is not a shared library), so we import the lifecycle package by file path
 # under a unique alias just like ``tests/property/test_health_contract.py``
 # does for the FastAPI ``main`` modules. This keeps the test independent
@@ -76,7 +76,7 @@ is_sensitive_env_key = sensitive.is_sensitive_env_key
 
 
 # ---------------------------------------------------------------------------
-# Pattern list shape — order and source strings are part of the contract
+# Pattern list shape - order and source strings are part of the contract
 # ---------------------------------------------------------------------------
 
 
@@ -118,7 +118,7 @@ def test_sensitive_env_key_patterns_have_documented_sources_in_order() -> None:
 
 
 # ---------------------------------------------------------------------------
-# is_sensitive_env_key — positive cases (one per documented pattern)
+# is_sensitive_env_key - positive cases (one per documented pattern)
 # ---------------------------------------------------------------------------
 
 
@@ -143,7 +143,7 @@ def test_sensitive_env_key_patterns_have_documented_sources_in_order() -> None:
         # _CREDENTIAL$
         "AWS_CREDENTIAL",
         "GCP_CREDENTIAL",
-        # _PRIVATE_  (infix — anywhere in the key)
+        # _PRIVATE_  (infix - anywhere in the key)
         "DB_PRIVATE_HOST",
         "SERVER_PRIVATE_KEY_PATH",
     ],
@@ -155,7 +155,7 @@ def test_is_sensitive_env_key_matches_documented_examples(key: str) -> None:
 
 
 # ---------------------------------------------------------------------------
-# is_sensitive_env_key — negative cases
+# is_sensitive_env_key - negative cases
 # ---------------------------------------------------------------------------
 
 

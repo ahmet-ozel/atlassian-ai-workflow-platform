@@ -1,4 +1,4 @@
-"""Property-based preservation test for previously passing tests.
+﻿"""Property-based preservation test for previously passing tests.
 
 Background
 ----------
@@ -10,7 +10,7 @@ byte-comparable oracle for that invariant is the
 This test reads that snapshot, enumerates every test name whose pre-fix
 outcome is ``PASSED``, and on the current code re-runs each sampled test
 in a freshly-spawned ``pytest`` subprocess. The assertion is that the
-test still passes — i.e. preservation holds. The Hypothesis strategy
+test still passes - i.e. preservation holds. The Hypothesis strategy
 ``sampled_from`` provides the enumeration / property-test embodiment of:
 
     FOR ALL X in {pre-fix-PASSED test names} : test_passes_now(X)
@@ -82,7 +82,7 @@ _SURFACE_FILES: Final[frozenset[str]] = frozenset(
         "tests/unit/test_deployment_router.py",        # Surface 3
         "tests/unit/test_llm_orchestrator.py",         # Surface 4
         # Surface 5: 3 specific tests in workers/automation-worker/tests/property/
-        # — handled inline below since they are individual test names, not whole files.
+        # - handled inline below since they are individual test names, not whole files.
     }
 )
 
@@ -188,7 +188,7 @@ def test_snapshot_has_passed_tests() -> None:
     would silently fall back to filtering away every example.
     """
     assert _PASSED_NODE_IDS, (
-        "No PASSED node ids parsed from snapshot — preservation oracle is "
+        "No PASSED node ids parsed from snapshot - preservation oracle is "
         "empty. Re-capture platform_full.txt with `pytest -v --tb=no`."
     )
 

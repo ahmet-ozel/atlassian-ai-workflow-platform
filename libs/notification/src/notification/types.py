@@ -1,14 +1,14 @@
-"""Frozen dataclasses + enum-like literals for notification dispatch.
+﻿"""Frozen dataclasses + enum-like literals for notification dispatch.
 
 Two value objects are exported:
 
-* :class:`WorkflowResult` — the input shape every Temporal workflow hands the
+* :class:`WorkflowResult` - the input shape every Temporal workflow hands the
   notification service when it finishes. Lives in this lib (not a
   worker-private module) because both ``automation-worker`` and
   ``execution-runner-worker`` build the same shape, and downstream consumers
   (Streamlit "completed workflow" widget, audit dashboard) want to pin its
   schema in one place.
-* :class:`DeptConfigView` — the *minimum* projection of ``departments.json``
+* :class:`DeptConfigView` - the *minimum* projection of ``departments.json``
   the notification service needs. The full :mod:`config.departments` schema
   carries ~30 fields; pinning the eight we actually consume keeps the
   notification path orthogonal to dept-schema churn.
@@ -47,17 +47,17 @@ __all__ = [
 #: The three terminal workflow statuses the orchestrator surfaces:
 #: ``workflow_result.status ∈ {"completed","failed","partial"}``.
 #:
-#: * ``"completed"`` — every activity succeeded.
-#: * ``"failed"`` — at least one critical activity failed; failure
+#: * ``"completed"`` - every activity succeeded.
+#: * ``"failed"`` - at least one critical activity failed; failure
 #:   notification is **mandatory**.
-#: * ``"partial"`` — best-effort activities failed but critical path
+#: * ``"partial"`` - best-effort activities failed but critical path
 #:   succeeded; treated as a *success* for notification gating (i.e. only
 #:   notifies when ``dept.notify_on_success == True``). This matches the
 #:   critical/best-effort split used for ``output_actions``.
 WorkflowStatus = Literal["completed", "failed", "partial"]
 
 
-#: Runtime mirror of :data:`WorkflowStatus` — used by argument validators
+#: Runtime mirror of :data:`WorkflowStatus` - used by argument validators
 #: (``service.py``) and by Hypothesis strategies in property tests.
 WORKFLOW_STATUSES: Final[frozenset[str]] = frozenset(
     {"completed", "failed", "partial"}
@@ -67,7 +67,7 @@ WORKFLOW_STATUSES: Final[frozenset[str]] = frozenset(
 #: Channels the dispatcher knows about. Mirrors the
 #: ``shared.notification_log.channel`` ``CHECK`` constraint declared in
 #: ``infra/postgres/20_ops.sql`` (``CHECK (channel IN ('slack','email','teams'))``).
-#: ``"teams"`` is a forward-compat slot — the current adapter set only
+#: ``"teams"`` is a forward-compat slot - the current adapter set only
 #: implements Slack and email; passing ``"teams"`` is accepted by the
 #: schema but the dispatcher will skip it (no adapter wired) until the
 #: backlog item ships.
@@ -85,8 +85,8 @@ NOTIFICATION_CHANNELS: Final[frozenset[str]] = frozenset(
 #: prune failed" alarm without colliding on ``UNIQUE``.
 #:
 #: Currently:
-#: * ``"workflow_completion"`` — terminal workflow notification.
-#: * ``"audit_prune_failed"`` — admin alarm.
+#: * ``"workflow_completion"`` - terminal workflow notification.
+#: * ``"audit_prune_failed"`` - admin alarm.
 NotificationKind = Literal["workflow_completion", "audit_prune_failed"]
 
 
@@ -98,12 +98,12 @@ NOTIFICATION_KINDS: Final[frozenset[str]] = frozenset(
 #: Mirrors the ``shared.notification_log.status`` ``CHECK`` constraint:
 #: ``CHECK (status IN ('sent','failed','retrying'))``.
 #:
-#: * ``"sent"`` — adapter succeeded.
-#: * ``"failed"`` — adapter raised; the row carries ``error`` for forensic
+#: * ``"sent"`` - adapter succeeded.
+#: * ``"failed"`` - adapter raised; the row carries ``error`` for forensic
 #:   correlation. The dispatcher does **not** auto-retry; retry is the
 #:   caller's responsibility (typically a Temporal activity with a
 #:   ``RetryPolicy``).
-#: * ``"retrying"`` — reserved for token-bucket back-pressure paths.
+#: * ``"retrying"`` - reserved for token-bucket back-pressure paths.
 NotificationStatus = Literal["sent", "failed", "retrying"]
 
 
@@ -131,7 +131,7 @@ class WorkflowResult:
         error: When ``status == "failed"``, an error message suitable for
             inclusion in the Slack body. ``None`` for non-failure paths.
             Surfaced into the ``{error}`` placeholder. Long stack traces
-            should be **truncated** by the caller — the field is not
+            should be **truncated** by the caller - the field is not
             redacted by the dispatcher.
         jira_issue_url: Optional Jira issue URL. Surfaced into
             ``{jira_issue_url}``. ``None`` is rendered as the literal
@@ -164,7 +164,7 @@ class DeptConfigView:
     """Minimal projection of ``departments.json`` consumed by the dispatcher.
 
     The notification service does **not** depend on the full department
-    config schema — only on the eight fields that drive the success-gated
+    config schema - only on the eight fields that drive the success-gated
     + failure-mandatory dispatch policy. Defining a narrow view here keeps
     the notification path testable without spinning up the dept-config
     loader and lets ``departments.schema.json`` evolve without forcing a
@@ -185,7 +185,7 @@ class DeptConfigView:
             ``frozenset`` so the value is hashable and unordered.
         slack_webhook: Resolved Slack webhook URL (already de-referenced
             from the ``vault:`` ref the schema records). The dispatcher
-            never reads from Vault directly — the caller resolves the ref
+            never reads from Vault directly - the caller resolves the ref
             and passes the secret in. ``None`` is allowed and means the
             department has no Slack channel configured; failure
             notifications then fall back to the admin Slack channel via

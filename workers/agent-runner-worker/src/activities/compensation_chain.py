@@ -1,4 +1,4 @@
-"""Cancel + compensation chain activity for AgentRunnerWorkflow.
+﻿"""Cancel + compensation chain activity for AgentRunnerWorkflow.
 
 The workflow dispatches a single ``compensation_chain_run`` activity
 when a run is cancelled or a critical output action fails. This module
@@ -9,7 +9,7 @@ The chain walks the fixed-order step vocabulary published by
 ``CompensationReport``-shaped result. Every step is **best-effort**: a
 step that fails or has nothing to undo never aborts the chain, so the
 workflow can always terminate cleanly. The activity itself never raises
-— a failure to clean up is reported per-step, not propagated, so the
+- a failure to clean up is reported per-step, not propagated, so the
 cancel/compensation path cannot get stuck retrying.
 
 The cancel context the workflow passes carries the issue key and the
@@ -99,7 +99,7 @@ async def compensation_chain_run(payload: dict[str, Any]) -> dict[str, Any]:
     -------
     dict
         A ``CompensationReport``-shaped mapping with ``ok`` (always
-        ``True`` — the chain is best-effort and never fails the
+        ``True`` - the chain is best-effort and never fails the
         workflow), ``attempted_steps`` and ``step_results``.
     """
 

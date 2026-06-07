@@ -1,4 +1,4 @@
-"""Sensitive_Env_Key matcher — Python half of the TS↔Python ikiz modül.
+﻿"""Sensitive_Env_Key matcher - Python half of the TS↔Python ikiz modül.
 
 This module is the **single source of truth** for which environment
 variable keys count as a Sensitive_Env_Key on the Python side of the admin
@@ -16,7 +16,7 @@ Definition:
 Concretely, a key is *sensitive* iff it ends with one of the suffixes
 ``_TOKEN``, ``_KEY``, ``_SECRET``, ``_PASSWORD``, ``_DSN``,
 ``_CREDENTIAL``, **or** contains the infix ``_PRIVATE_``. Bare names
-like ``TOKEN`` (no leading underscore) do not match — this mirrors the
+like ``TOKEN`` (no leading underscore) do not match - this mirrors the
 glob notation ``*_TOKEN``.
 
 The module is intentionally **pure** (no I/O, no globals beyond the
@@ -54,8 +54,8 @@ def is_sensitive_env_key(key: str) -> bool:
     """Return ``True`` iff ``key`` matches a Sensitive_Env_Key pattern.
 
     A key is sensitive when **any** of :data:`SENSITIVE_ENV_KEY_PATTERNS`
-    finds a match within it. The check is case-sensitive — environment
-    variable conventions in this codebase are uppercase-only — and uses
+    finds a match within it. The check is case-sensitive - environment
+    variable conventions in this codebase are uppercase-only - and uses
     :meth:`re.Pattern.search`, so the suffix anchors (``$``) bind to the
     end of the string and the infix pattern (``_PRIVATE_``) matches
     anywhere inside.

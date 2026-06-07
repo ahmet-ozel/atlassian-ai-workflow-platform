@@ -1,4 +1,4 @@
-"""
+﻿"""
 Test 37: Automation-Service Lifespan Wiring.
 
 Validates that the FastAPI lifespan handler shipped by
@@ -50,11 +50,11 @@ SLOT_NAMES: tuple[str, ...] = (
     "webhook_pipeline",
 )
 
-#: One representative endpoint slot — chosen so the request
+#: One representative endpoint slot - chosen so the request
 #: reaches the router-level ``_deps`` resolver (which is where the
 #: ``"<name> router is not wired"`` error would surface if the
 #: lifespan failed to populate the slot). The handler may still
-#: return 4xx for auth/validation reasons — that is fine; the
+#: return 4xx for auth/validation reasons - that is fine; the
 #: property is purely about the response body shape.
 SLOT_PROBE_ENDPOINTS: tuple[tuple[str, str, str], ...] = (
     # (slot_name, HTTP method, path)
@@ -95,8 +95,8 @@ def _looks_like_wiring_error(
 
  A wiring error surfaces as a JSON object with a ``detail`` (or
  ``reason``) field starting with ``"<slot> router is not wired"``.
- Anything else — auth failures, validation failures, gateway
- errors — is fine and counts as the slot being correctly wired.
+ Anything else - auth failures, validation failures, gateway
+ errors - is fine and counts as the slot being correctly wired.
  """
 
     if not isinstance(body, dict):
@@ -127,12 +127,12 @@ def _probe(method: str, url: str, timeout: float = 10.0) -> dict:
             headers={
                 "Content-Type": "application/json",
                 # Most endpoints require an Authorization header; an
-                # invalid one is fine here — we only care that the
+                # invalid one is fine here - we only care that the
                 # ``router is not wired`` shape never surfaces. Auth
                 # failures (401/403) count as the slot being wired.
                 "Authorization": "Bearer e2e-wiring-probe",
                 # Webhook endpoints also expect an HMAC + delivery id
-                # header; the value can be arbitrary — the handler
+                # header; the value can be arbitrary - the handler
                 # rejects it long after the slot resolution check.
                 "X-Atlassian-Webhook-Signature": "sha256=deadbeef",
                 "X-Atlassian-Webhook-Identifier": str(uuid.uuid4()),
@@ -171,7 +171,7 @@ def _automation_service_reachable() -> bool:
 
 
 def _require_stack_or_skip() -> None:
-    """Skip when the Compose stack is not up — keeps the suite green offline."""
+    """Skip when the Compose stack is not up - keeps the suite green offline."""
 
     if not _automation_service_reachable():
         pytest.skip(
@@ -181,7 +181,7 @@ def _require_stack_or_skip() -> None:
 
 
 # ---------------------------------------------------------------------------
-# — /healthz returns 200 immediately after startup
+# - /healthz returns 200 immediately after startup
 # ---------------------------------------------------------------------------
 
 
@@ -204,7 +204,7 @@ class TestAutomationServiceHealthz:
 
 
 # ---------------------------------------------------------------------------
-# — /readyz returns 200 once Postgres + Temporal probes pass
+# - /readyz returns 200 once Postgres + Temporal probes pass
 # ---------------------------------------------------------------------------
 
 
@@ -217,7 +217,7 @@ class TestAutomationServiceReadyz:
         response = httpx.get(
             f"{AUTOMATION_SERVICE_URL}/readyz", timeout=10.0
         )
-        # The probe may take a few seconds on cold start — accept 200
+        # The probe may take a few seconds on cold start - accept 200
         # OR 503 with a documented ``failed_dependencies`` shape so
         # the test still asserts the contract rather than the timing.
         if response.status_code == 200:
@@ -233,7 +233,7 @@ class TestAutomationServiceReadyz:
 
 
 # ---------------------------------------------------------------------------
-# — No router replies with Router_Not_Wired_Error
+# - No router replies with Router_Not_Wired_Error
 # ---------------------------------------------------------------------------
 
 
@@ -255,7 +255,7 @@ class TestNoRouterNotWiredError:
     ) -> None:
         _require_stack_or_skip()
         result = _probe(method, f"{AUTOMATION_SERVICE_URL}{path}")
-        # A transport error (rare — only happens if the service died
+        # A transport error (rare - only happens if the service died
         # between healthz and the probe) is a hard fail; we cannot
         # tell whether the slot is wired or not from a dead service.
         assert result["error"] is None, (
@@ -272,7 +272,7 @@ class TestNoRouterNotWiredError:
 
 
 # ---------------------------------------------------------------------------
-# — Admin departments POST returns 201 (admin slot wired end-to-end)
+# - Admin departments POST returns 201 (admin slot wired end-to-end)
 # ---------------------------------------------------------------------------
 
 
@@ -290,7 +290,7 @@ class TestAdminDepartmentsRoundTrip:
         _require_stack_or_skip()
         # Send a deliberately malformed admin token + body so the
         # router rejects the request long before any orchestrator
-        # work runs. We only check the response shape — the wiring
+        # work runs. We only check the response shape - the wiring
         # contract is "the admin slot is reachable", not "a real
         # dept gets created from an unauthenticated probe".
         response = httpx.post(
@@ -312,7 +312,7 @@ class TestAdminDepartmentsRoundTrip:
 
 
 # ---------------------------------------------------------------------------
-# — Evidence emission
+# - Evidence emission
 # ---------------------------------------------------------------------------
 
 

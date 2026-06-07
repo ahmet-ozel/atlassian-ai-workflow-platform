@@ -1,4 +1,4 @@
-"""Streamlit credential session isolation.
+﻿"""Streamlit credential session isolation.
 
 
 
@@ -15,27 +15,27 @@ The tests drive the **pure**:class:`CredentialManager` slice with
 fresh ``state`` dicts and a deterministic monotonic clock, so every
 example is fully isolated from sibling examples and from Streamlit
 itself. The Streamlit ``render_*`` helpers and the default HTTP
-validator are out of scope here — the behavior is a state-machine
+validator are out of scope here - the behavior is a state-machine
 property on the storage seam, not on the UI surface.
 
 Properties enforced
 -------------------
 
-1. **Storage isolation ** — after:meth:`store`, the raw token
+1. **Storage isolation ** - after:meth:`store`, the raw token
  bytes are reachable from the state dict *only* via
  ``state["_credential_manager_state"]["credentials"][service]``.
  No sibling ``st.session_state`` key sees the token, no metadata
  field inside the namespaced bucket (``last_activity``,
  ``session_started_at``) carries it, and no recursive walk through
  the foreign state finds it.
-2. **Snapshot non-leak ** —:meth:`snapshot` is the public
+2. **Snapshot non-leak ** -:meth:`snapshot` is the public
  diagnostic dict that the credentials page renders into ``st.json``.
  It MUST omit the raw ``api_token`` value entirely, both by
  recursive object walk and by JSON serialisation.
-3. **Inactivity timeout ** — once the wall clock advances by
+3. **Inactivity timeout ** - once the wall clock advances by
  strictly more than 60 minutes since the last interaction, the next:meth:`get` MUST return ``None`` AND clear the namespaced bucket
  from the state dict, leaving no token byte reachable.
-4. **Explicit logout ** —:meth:`clear_all` (the path the
+4. **Explicit logout ** -:meth:`clear_all` (the path the
  "Oturumu Kapat" button drives) MUST remove the namespaced bucket
  entirely; no token byte SHALL remain reachable from the state
  dict, even if foreign components have written unrelated keys
@@ -65,7 +65,7 @@ from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 # ---------------------------------------------------------------------------
-# Path bootstrap — make ``components.credential_manager`` importable.
+# Path bootstrap - make ``components.credential_manager`` importable.
 # Mirrors the seam used by ``test_streamlit_dept_switcher_reset.py`` so
 # the CredentialManager class resolves without installing the streamlit
 # app as a package.
@@ -78,7 +78,7 @@ if str(_STREAMLIT_ROOT) not in sys.path:
     sys.path.insert(0, str(_STREAMLIT_ROOT))
 
 
-try:  # pragma: no cover — guarded import (Streamlit may be missing).
+try:  # pragma: no cover - guarded import (Streamlit may be missing).
     from components.credential_manager import (  # type: ignore[import-not-found]
         CredentialManager,
         StoredCredential,
@@ -109,7 +109,7 @@ pytestmark = pytest.mark.skipif(
 #: poking the underscore-prefixed symbol.
 _STATE_KEY: str = "_credential_manager_state"
 
-#: Inactivity threshold — 60 minutes).
+#: Inactivity threshold - 60 minutes).
 _SESSION_TIMEOUT_SECONDS: int = 60 * 60
 
 
@@ -139,7 +139,7 @@ class _Clock:
 def _stub_validator(
     service: str, email: str, token: str
 ) -> tuple[bool, str | None]:
-    """No-op validator — keeps tests free of network IO.
+    """No-op validator - keeps tests free of network IO.
 
  The default validator in ``credential_manager.py`` issues an HTTP
  request through ``httpx`` to the MCP ``/healthz`` endpoint; the
@@ -170,7 +170,7 @@ def _walk_strings(obj: Any, _seen: set[int] | None = None) -> Iterator[str]:
 
  The walker intentionally **descends into**:class:`StoredCredential`
  instances so the test can verify that the token byte
- stream lives ONLY inside the namespaced bucket — if the
+ stream lives ONLY inside the namespaced bucket - if the
  StoredCredential were skipped, a regression that copied
  ``api_token`` into a sibling key would slip past the assertion.
  """
@@ -187,7 +187,7 @@ def _walk_strings(obj: Any, _seen: set[int] | None = None) -> Iterator[str]:
     if isinstance(obj, (bytes, bytearray)):
         try:
             yield obj.decode("utf-8", errors="ignore")
-        except UnicodeDecodeError:  # pragma: no cover — defensive
+        except UnicodeDecodeError:  # pragma: no cover - defensive
             return
         return
     if isinstance(obj, dict):
@@ -230,8 +230,8 @@ def _store_kwargs(service: str) -> dict[str, str]:
 
 # Email addresses MUST contain ``@`` (``CredentialManager.store`` rejects
 # strings without it with ``ValueError``). The local-part alphabet is
-# ASCII alphanumerics plus ``.``, ``_``, ``-`` — i.e. the safe subset of
-# RFC 5322 — and the domain is fixed at ``@example.com`` so the masking
+# ASCII alphanumerics plus ``.``, ``_``, ``-`` - i.e. the safe subset of
+# RFC 5322 - and the domain is fixed at ``@example.com`` so the masking
 # helper consistently lands at ``ali***@example.com``.
 _EMAIL = st.text(
     alphabet=st.sampled_from(
@@ -242,7 +242,7 @@ _EMAIL = st.text(
 ).map(lambda local: f"{local}@example.com")
 
 # Tokens carry a verbatim ``pmtoken_`` prefix that uses no hyphen and
-# no ``@`` — disjoint from every character class the email and foreign
+# no ``@`` - disjoint from every character class the email and foreign
 # strategies emit, so a substring search for the token across the
 # foreign state cannot collide by accident. ``min_size=8`` of trailing
 # alphanumerics rules out shrunk inputs like a single ``"a"`` that
@@ -257,7 +257,7 @@ _TOKEN_TAIL = st.text(
 _TOKEN = _TOKEN_TAIL.map(lambda s: f"pmtoken_{s}")
 
 # Inactivity offsets large enough to cross the 60-minute threshold by
-# at least a millisecond — strict greater-than so the comparison in
+# at least a millisecond - strict greater-than so the comparison in
 # ``CredentialManager.is_expired`` (``>=``) trips on the first call.
 # Upper bound at 24h keeps shrinker output short and the clock
 # arithmetic well within float precision.
@@ -269,7 +269,7 @@ _INACTIVITY_SECONDS = st.floats(
 )
 
 # ``st.session_state`` is shared across every component of the
-# Streamlit app — the dept switcher, the chat page, the auth
+# Streamlit app - the dept switcher, the chat page, the auth
 # bootstrap can all park unrelated values alongside the credential
 # bucket. Token isolation must hold under that reality, so we
 # pre-populate the dict with random nonsense and assert the
@@ -334,7 +334,7 @@ def test_store_keeps_token_only_in_namespaced_bucket(
  bucket carries it either.
 
  Pre-populating the state dict with ``foreign`` keys models the
- real Streamlit reality — multiple components share
+ real Streamlit reality - multiple components share
  ``st.session_state`` and the property must hold regardless of
  what else the user / other components have written.
  """
@@ -343,7 +343,7 @@ def test_store_keeps_token_only_in_namespaced_bucket(
 
     cred = mgr.store(service, email=email, api_token=token, **_store_kwargs(service))
 
-    # Token landed where the contract says it lives — both on the
+    # Token landed where the contract says it lives - both on the
     # returned dataclass and inside the namespaced bucket.
     assert cred.api_token == token
     bucket = state[_STATE_KEY]
@@ -367,7 +367,7 @@ def test_store_keeps_token_only_in_namespaced_bucket(
     # via ``credentials[service].api_token``. Slicing ``credentials``
     # out leaves the lifecycle metadata (``last_activity``,
     # ``session_started_at``) which is float-typed and therefore
-    # carries no string at all — any substring match here is a
+    # carries no string at all - any substring match here is a
     # regression that started smuggling the token into a metadata
     # field.
     bucket_meta = {k: v for k, v in bucket.items() if k != "credentials"}
@@ -422,7 +422,7 @@ def test_snapshot_never_contains_raw_token(
     cred_entry = snap.get("credentials", {}).get(service)
     assert cred_entry is not None
     assert "api_token" not in cred_entry, (
-        "snapshot retained the api_token key — the operational rule forbids it"
+        "snapshot retained the api_token key - the operational rule forbids it"
     )
 
     assert not _contains_token(snap, token), (
@@ -455,8 +455,8 @@ def test_token_cleared_after_inactivity_timeout(
  After an idle window of strictly more than 60 minutes, the next
  interaction (here:meth:`get`) MUST:
 
- 1. return ``None`` — the credential is no longer observable;
- 2. drop the namespaced state bucket — ``_STATE_KEY`` removed
+ 1. return ``None`` - the credential is no longer observable;
+ 2. drop the namespaced state bucket - ``_STATE_KEY`` removed
  from the state dict outright;
  3. leave no token byte reachable from the state dict.
 
@@ -475,7 +475,7 @@ def test_token_cleared_after_inactivity_timeout(
     # before the threshold elapses. If this fails the test would
     # vacuously pass post-timeout, so we assert it explicitly.
     assert _contains_token(state, token), (
-        "token unexpectedly not reachable post-store — fixture is broken"
+        "token unexpectedly not reachable post-store - fixture is broken"
     )
 
     clk.advance(inactivity)
@@ -512,7 +512,7 @@ def test_clear_all_removes_every_token_byte(
  * no token byte SHALL remain reachable anywhere in the state
  dict (including under any foreign key written by sibling
  Streamlit components);
- * a follow-up:meth:`get` SHALL still return ``None`` — the
+ * a follow-up:meth:`get` SHALL still return ``None`` - the
  credential cannot silently re-materialise out of a stale
  reference.
 
@@ -536,7 +536,7 @@ def test_clear_all_removes_every_token_byte(
         f"token_prefix={token[:12]!r}"
     )
 
-    # A subsequent read must keep returning None — even though
+    # A subsequent read must keep returning None - even though
     # ``get`` re-creates an empty bucket via ``_ensure_state``,
     # the token MUST remain unreachable.
     assert mgr.get(service) is None

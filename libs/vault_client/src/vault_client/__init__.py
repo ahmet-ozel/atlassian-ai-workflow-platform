@@ -1,4 +1,4 @@
-"""vault_client — pluggable Vault KV / rotation client.
+﻿"""vault_client - pluggable Vault KV / rotation client.
 
 Re-exports the public API so callers can simply do::
 

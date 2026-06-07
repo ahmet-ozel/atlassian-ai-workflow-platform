@@ -1,4 +1,4 @@
-"""Pure structured-choice helpers — Y8 multi-repo + Z3 execution fallback.
+﻿"""Pure structured-choice helpers - Y8 multi-repo + Z3 execution fallback.
 
 This module is the **single source of truth** for the structured-choice
 helpers used when the LLM analysis is ambiguous (multi-repo), or when
@@ -10,14 +10,14 @@ user's reply.
 Public API
 ----------
 
-* :func:`format_choice_list` — render a list of candidates as
+* :func:`format_choice_list` - render a list of candidates as
   Turkish Jira-comment prose with ``[A]`` / ``[B]`` markers.
-* :func:`resolve_choice` — parse a user's reply for an ``[A]`` /
+* :func:`resolve_choice` - parse a user's reply for an ``[A]`` /
   ``[B]`` / ``[C]`` marker and return the matching candidate's
   ``workflow_type`` (preferred) or ``label``; on miss / out-of-range
   / no marker returns the literal string ``"unresolved"``.
 
-Both functions are **pure** — no I/O, no clock, no randomness — so
+Both functions are **pure** - no I/O, no clock, no randomness - so
 they are safe to call directly from a workflow body via
 ``workflow.unsafe.imports_passed_through()``.
 """
@@ -40,7 +40,7 @@ __all__ = [
 # ---------------------------------------------------------------------------
 
 #: Hard cap on the number of candidates surfaced in a single
-#: structured-choice menu.  Five letters (``A``–``E``) is the design
+#: structured-choice menu.  Five letters (``A``-``E``) is the design
 #: limit; any extra candidates are silently dropped by
 #: :func:`format_choice_list`.
 MAX_CANDIDATES: Final[int] = 5
@@ -49,7 +49,7 @@ MAX_CANDIDATES: Final[int] = 5
 #: does not carry a parseable marker.
 UNRESOLVED: Final[str] = "unresolved"
 
-#: Letter labels in order — ``A`` first, ``E`` last.  Tuple so the
+#: Letter labels in order - ``A`` first, ``E`` last.  Tuple so the
 #: constant cannot be mutated at runtime.
 _LETTERS: Final[tuple[str, ...]] = ("A", "B", "C", "D", "E")
 
@@ -72,7 +72,7 @@ _FOOTER_TEMPLATE_TR: Final[str] = "yorum olarak {markers} yazın."
 
 
 # ---------------------------------------------------------------------------
-# format_choice_list — Turkish prose with ``[A]`` / ``[B]`` markers.
+# format_choice_list - Turkish prose with ``[A]`` / ``[B]`` markers.
 # ---------------------------------------------------------------------------
 
 
@@ -85,7 +85,7 @@ def format_choice_list(
 
     * A header line (``Önerilen seçenekler:``).
     * One blank line.
-    * One ``[<letter>] {label} — {rationale}`` line per candidate
+    * One ``[<letter>] {label} - {rationale}`` line per candidate
       (capped at :data:`MAX_CANDIDATES`).
     * One blank line.
     * A footer instructing the user to reply with one of the
@@ -106,7 +106,7 @@ def format_choice_list(
     Returns
     -------
     str
-        Multi-line Turkish prose — never empty.  Returns a
+        Multi-line Turkish prose - never empty.  Returns a
         diagnostic placeholder if ``candidates`` is empty so callers
         never produce a malformed Jira comment.
     """
@@ -125,7 +125,7 @@ def format_choice_list(
         label = candidate.get("label") or candidate.get("workflow_type") or ""
         rationale = candidate.get("rationale") or ""
         if rationale:
-            lines.append(f"[{letter}] {label} — {rationale}")
+            lines.append(f"[{letter}] {label} - {rationale}")
         else:
             lines.append(f"[{letter}] {label}")
 
@@ -143,7 +143,7 @@ def format_choice_list(
 
 
 # ---------------------------------------------------------------------------
-# resolve_choice — parse ``[A]`` / ``[B]`` / ... reply markers.
+# resolve_choice - parse ``[A]`` / ``[B]`` / ... reply markers.
 # ---------------------------------------------------------------------------
 
 
@@ -162,7 +162,7 @@ def resolve_choice(
     * No marker is present.
     * The marker letter is past ``len(candidates)`` (e.g. ``[C]`` on
       a 2-candidate list).
-    * The marker letter is outside ``A``–``E`` (the regex already
+    * The marker letter is outside ``A``-``E`` (the regex already
       filters these, but the contract is explicit).
     * The candidate at the matched index has neither
       ``workflow_type`` nor ``label`` populated.

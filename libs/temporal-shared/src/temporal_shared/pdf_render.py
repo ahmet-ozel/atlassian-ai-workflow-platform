@@ -1,4 +1,4 @@
-"""Deterministic Jinja2 → WeasyPrint PDF renderer.
+﻿"""Deterministic Jinja2 → WeasyPrint PDF renderer.
 
 This module owns :func:`render_pdf`, the single rendering entry point
 used by the ``AgentRunnerWorkflow``'s ``jira_attachment`` output action
@@ -17,25 +17,25 @@ producer string) is pinned by the renderer.
 The companion ``jira_attachment`` output action accepts
 ``format ∈ {pdf, md}``:
 
-* ``format == "pdf"`` — the activity calls :func:`render_pdf` with
+* ``format == "pdf"`` - the activity calls :func:`render_pdf` with
   the resolved template (from ``platform/prompts/pdf_templates/*.html.j2``,
   default ``default.html.j2``) and the activity-supplied context;
   the resulting bytes are uploaded as a Jira issue attachment.
-* ``format == "md"`` — the activity attaches the plain Markdown text
+* ``format == "md"`` - the activity attaches the plain Markdown text
   directly; this module is **not** invoked.
 
 Replay determinism
 ------------------
 
 This module is imported at workflow-package load time, but
-:func:`render_pdf` is only ever called from inside an *activity* — never
+:func:`render_pdf` is only ever called from inside an *activity* - never
 from workflow code.  Workflow code is forbidden from doing I/O or
 embedding clocks,
 and PDF rendering is non-trivially side-effecting (it shells out to
 WeasyPrint's font cache).  We therefore expose a synchronous helper
 that activities wrap with ``activity.heartbeat`` + a generous
 ``start_to_close_timeout`` (the activity layer is the appropriate
-boundary for retry semantics — see design.md §"Activity timeout +
+boundary for retry semantics - see design.md §"Activity timeout +
 retry").
 
 Native dependencies
@@ -80,7 +80,7 @@ PDF_MAGIC: Final[bytes] = b"%PDF-"
 #: Fixed timestamp embedded into the rendered PDF's metadata
 #: (``CreationDate`` / ``ModDate``) so two ``render_pdf`` invocations
 #: with the same ``(html_template, context)`` pair yield byte-identical
-#: output.  The chosen epoch — 2000-01-01 00:00:00 UTC — is arbitrary
+#: output.  The chosen epoch - 2000-01-01 00:00:00 UTC - is arbitrary
 #: but deliberately *fixed*: a moving clock would defeat replay /
 #: cache semantics and would also leak workflow scheduling timing
 #: into Jira attachments, which is undesirable from an audit
@@ -180,7 +180,7 @@ def _import_weasyprint() -> Any:
     """
     try:
         import weasyprint  # type: ignore[import-not-found]
-    except (ImportError, OSError) as exc:  # pragma: no cover — env-specific
+    except (ImportError, OSError) as exc:  # pragma: no cover - env-specific
         raise PdfRenderUnavailableError(
             "WeasyPrint is not available on this host. Install the "
             "weasyprint Python package and its native runtime "
@@ -244,7 +244,7 @@ def render_pdf(html_template: str, context: Mapping[str, Any]) -> bytes:
     # encoding lookups cannot leak into the output.
     try:
         document = weasyprint.HTML(string=rendered_html, encoding="utf-8")
-    except Exception as exc:  # pragma: no cover — defensive
+    except Exception as exc:  # pragma: no cover - defensive
         raise PdfRenderError(
             f"WeasyPrint failed to parse rendered HTML: {exc}"
         ) from exc
@@ -269,12 +269,12 @@ def render_pdf(html_template: str, context: Mapping[str, Any]) -> bytes:
     except TypeError:
         # Older WeasyPrint releases do not expose ``timestamp`` /
         # ``uncompressed_pdf`` kwargs.  Fall back to the minimal call
-        # — the resulting bytes will still be valid PDFs, but byte
+        # - the resulting bytes will still be valid PDFs, but byte
         # determinism is not guaranteed on those legacy versions.
         # The pyproject pin (>=62) excludes those versions on the
         # production runtime; this branch is purely defensive.
         pdf_bytes = document.write_pdf(target=None)
-    except Exception as exc:  # pragma: no cover — defensive
+    except Exception as exc:  # pragma: no cover - defensive
         raise PdfRenderError(
             f"WeasyPrint failed to write PDF: {exc}"
         ) from exc
@@ -285,7 +285,7 @@ def render_pdf(html_template: str, context: Mapping[str, Any]) -> bytes:
         )
     pdf_bytes = bytes(pdf_bytes)
 
-    if not pdf_bytes.startswith(PDF_MAGIC):  # pragma: no cover — defensive
+    if not pdf_bytes.startswith(PDF_MAGIC):  # pragma: no cover - defensive
         raise PdfRenderError(
             "WeasyPrint output is missing the %PDF- magic prefix; "
             "the runtime may be misconfigured."

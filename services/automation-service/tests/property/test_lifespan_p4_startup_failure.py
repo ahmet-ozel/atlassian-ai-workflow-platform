@@ -1,4 +1,4 @@
-"""Startup failure aborts cleanly without partial wiring.
+﻿"""Startup failure aborts cleanly without partial wiring.
 
 For any startup phase that raises during construction of one of the
 shared infrastructure objects (pool, vault, audit, temporal, oidc),
@@ -43,15 +43,15 @@ async def _run_property(failing: str) -> None:
 
     ``failing`` selects which resource's constructor raises:
 
-    * ``"pool"`` — ``asyncpg.create_pool`` raises after the HTTP
+    * ``"pool"`` - ``asyncpg.create_pool`` raises after the HTTP
       client is built; the http client must be closed.
-    * ``"vault"`` — ``vault_factory.make_client`` raises after the
+    * ``"vault"`` - ``vault_factory.make_client`` raises after the
       pool is built; pool + http client must both be closed.
-    * ``"audit"`` — ``AsyncpgAuditEventsWriter`` raises (simulated
+    * ``"audit"`` - ``AsyncpgAuditEventsWriter`` raises (simulated
       via ``AuditLogger``); pool + http client closed.
-    * ``"temporal"`` — ``TemporalClient.connect()`` raises after the
+    * ``"temporal"`` - ``TemporalClient.connect()`` raises after the
       audit logger is built; pool + http client closed.
-    * ``"oidc"`` — ``OIDCValidator(OIDCConfig.from_env(...))`` raises
+    * ``"oidc"`` - ``OIDCValidator(OIDCConfig.from_env(...))`` raises
       after Temporal is connected; temporal + pool + http client closed.
     """
 

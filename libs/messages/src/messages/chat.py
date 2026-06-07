@@ -1,4 +1,4 @@
-"""Chat protocol dataclasses shared between assistant-service and clients.
+﻿"""Chat protocol dataclasses shared between assistant-service and clients.
 
 This module defines the deterministic on-the-wire shapes used by the
 ``assistant-service`` chat tool-call loop and any client (Streamlit
@@ -7,10 +7,10 @@ that consumes ``POST /api/chat/stream``.
 
 The three primary types are:
 
-* :class:`Message` — single chat history entry (role + text + optional
+* :class:`Message` - single chat history entry (role + text + optional
   tool call id).
-* :class:`ChatRequest` — request body sent to the SSE chat endpoint.
-* :class:`SseEvent` — a single event yielded over the SSE stream. The
+* :class:`ChatRequest` - request body sent to the SSE chat endpoint.
+* :class:`SseEvent` - a single event yielded over the SSE stream. The
   ``type`` field is constrained to the **10 fixed event types** defined
   by the chat event catalog:
 

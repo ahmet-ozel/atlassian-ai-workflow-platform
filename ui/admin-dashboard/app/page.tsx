@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 /**
- * Admin Dashboard Home — Setup Wizard.
+ * Admin Dashboard Home - Setup Wizard.
  *
  * Guides operators through platform bring-up step-by-step. When the
  * wizard reaches the final step ("add_first_department"), the page
@@ -125,7 +125,7 @@ function HomePageInner() {
           await fetchStatus();
         }
       } catch {
-        // Silently fail — user can retry
+        // Silently fail - user can retry
       }
     },
     [fetchStatus],

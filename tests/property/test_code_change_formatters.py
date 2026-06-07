@@ -1,4 +1,4 @@
-"""invariant 13 — Code-change formatters ve routing.
+﻿"""invariant 13 - Code-change formatters ve routing.
 
 
 
@@ -6,15 +6,15 @@ Hypothesis-driven verification of the four pure helpers used by the
 ``code_change_*`` workflow family in
 `/``:
 
-*:func:`temporal_shared.code_change.compute_branch_name` — collision-free
+*:func:`temporal_shared.code_change.compute_branch_name` - collision-free
  iteration branch picker (, design.md invariant(a)).
-*:func:`temporal_shared.code_change.format_commit_message` — ``[bot]``
+*:func:`temporal_shared.code_change.format_commit_message` - ``[bot]``
  prefix + ``Co-authored-by`` provenance footer (, design.md
  invariant(b)).
-*:func:`mcp_client.deployment_router.select_pr_create_tool` — Bitbucket
+*:func:`mcp_client.deployment_router.select_pr_create_tool` - Bitbucket
  Cloud vs Data Center MCP tool parity (, design.md invariant(c),
  §16.15 T9).
-*:func:`temporal_shared.branch_rules.route_by_branch_pattern` —
+*:func:`temporal_shared.branch_rules.route_by_branch_pattern` -
  hotfix/release deny / allowlist semantics (, design.md invariant(d), §16.15.6 U6).
 
 Invariant statements (mirror design.md §"invariant")
@@ -27,12 +27,12 @@ Invariant statements (mirror design.md §"invariant")
  the function returns the iter-suffixed form, which the workflow
  caller is expected to keep fresh by monotonically incrementing
  ``iter`` (we therefore do not assert disjointness from
- *existing* on the iter-suffixed branch — the function does not
+ *existing* on the iter-suffixed branch - the function does not
  consult the set in that case, and asserting otherwise would
  contradict the documented contract).
 
 (P2) ``compute_branch_name`` always returns one of two shapes:
- ``"ai/{issue_key}"`` or ``"ai/{issue_key}-iter{iter}"`` — and the
+ ``"ai/{issue_key}"`` or ``"ai/{issue_key}-iter{iter}"`` - and the
  bare form is selected **iff** ``iter == 1`` AND the bare slot is
  free in *existing*.
 
@@ -51,13 +51,13 @@ Invariant statements (mirror design.md §"invariant")
  convention so ``git log --pretty=%(trailers)`` parses it).
 
 (P6) ``format_commit_message`` echoes the ``message`` body unchanged
- (modulo trailing whitespace) — the function does not silently
+ (modulo trailing whitespace) - the function does not silently
  rewrite, truncate, or re-wrap LLM output.
 
 (P7) ``select_pr_create_tool("cloud")`` returns
  ``"bitbucket_create_pull_request_cloud"`` and
  ``select_pr_create_tool("server")`` returns
- ``"bitbucket_create_pull_request_dc"`` — the parity mapping is
+ ``"bitbucket_create_pull_request_dc"`` - the parity mapping is
  exhaustive and any other input raises:class:`KeyError` (no
  silent fallback to either side, by design).
 
@@ -65,13 +65,13 @@ Invariant statements (mirror design.md §"invariant")
  every branch matching ``hotfix/*`` (PR open mandatory).
 
 (P9) ``route_by_branch_pattern`` allows only ``pr_review`` and
- ``confluence_doc_update`` on branches matching ``release/*`` —
+ ``confluence_doc_update`` on branches matching ``release/*`` -
  every other workflow type is denied with the rule's audit
  reason.
 
 (P10) ``route_by_branch_pattern`` always allows on branches matching
  ``ai/*`` because no default rule matches the ``ai/`` prefix
- (open default — ``no_rule_matched``).
+ (open default - ``no_rule_matched``).
 
 (P11) ``route_by_branch_pattern`` is deterministic and pure: two
  consecutive calls with the same arguments return identical
@@ -116,7 +116,7 @@ from temporal_shared.identifiers import InvalidIssueKeyError
 
 
 # ---------------------------------------------------------------------------
-# Constants — pinned from the production modules
+# Constants - pinned from the production modules
 # ---------------------------------------------------------------------------
 
 #: Closed set of workflow types referenced by the design (, 
@@ -153,7 +153,7 @@ _ITER_BRANCH_RE: Final[re.Pattern[str]] = re.compile(
     r"^ai/[A-Z][A-Z0-9_]+-[1-9][0-9]*-iter[1-9][0-9]*$"
 )
 
-#: Trailer regex (RFC-5322-ish — same shape the production validator
+#: Trailer regex (RFC-5322-ish - same shape the production validator
 #: accepts in:mod:`temporal_shared.code_change`).
 _TRAILER_RE: Final[re.Pattern[str]] = re.compile(
     r"^Co-authored-by: ai-bot <[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}>$"
@@ -161,12 +161,12 @@ _TRAILER_RE: Final[re.Pattern[str]] = re.compile(
 
 
 # ---------------------------------------------------------------------------
-# Hypothesis strategies — issue keys, iterations, branches, etc.
+# Hypothesis strategies - issue keys, iterations, branches, etc.
 # ---------------------------------------------------------------------------
 
 # ``"PROJ-NNN"`` shape: uppercase project prefix (>=2 chars, first must
 # be a letter) + dash + positive integer with no leading zero. The
-# upstream regex is ``^[A-Z][A-Z0-9_]+-[1-9][0-9]*$`` — see
+# upstream regex is ``^[A-Z][A-Z0-9_]+-[1-9][0-9]*$`` - see
 # ``identifiers._ISSUE_KEY_RE``.
 _PROJECT_PREFIX_FIRST: Final[st.SearchStrategy[str]] = st.sampled_from(
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -191,7 +191,7 @@ def _issue_keys(draw: st.DrawFn) -> str:
 # Iteration counter ∈ [1, 10] per the brief.
 _ITERATIONS: Final[st.SearchStrategy[int]] = st.integers(min_value=1, max_value=10)
 
-# Bot email — short ASCII local part + a small fake-TLD domain. The
+# Bot email - short ASCII local part + a small fake-TLD domain. The
 # validator only checks RFC-5322-ish shape, so the strategy just needs
 # to keep the body parseable.
 _BOT_EMAIL_LOCAL: Final[st.SearchStrategy[str]] = st.text(
@@ -214,13 +214,13 @@ def _bot_emails(draw: st.DrawFn) -> str:
     return f"{local}@{domain}"
 
 
-# Commit message body — non-empty short ASCII, single-line and
+# Commit message body - non-empty short ASCII, single-line and
 # multi-line shapes both covered. ``rstrip``-equivalent characters in
 # the production helper are preserved when computing the expected
 # normalised body.
 _MESSAGES: Final[st.SearchStrategy[str]] = st.one_of(
     st.text(min_size=1, max_size=80),
-    # Multi-line body — exercises the rstrip semantic on the trailing
+    # Multi-line body - exercises the rstrip semantic on the trailing
     # newlines and the body→trailer separator.
     st.lists(
         st.text(min_size=0, max_size=40),
@@ -298,12 +298,12 @@ def _existing_branch_sets(
 
 
 # ---------------------------------------------------------------------------
-# invariant(a) — compute_branch_name 
+# invariant(a) - compute_branch_name 
 # ---------------------------------------------------------------------------
 
 
 class TestComputeBranchName:
-    """invariant(a) — collision-free + shape + determinism."""
+    """invariant(a) - collision-free + shape + determinism."""
 
     @settings(max_examples=100, deadline=None)
     @given(
@@ -339,7 +339,7 @@ class TestComputeBranchName:
         bare = f"ai/{issue_key}"
         if result == bare:
             # The bare branch can only be returned when the slot was
-            # free — anything else would be a collision.
+            # free - anything else would be a collision.
             assert bare not in existing
         else:
             # Otherwise we must be on the iter-suffixed branch.
@@ -437,14 +437,14 @@ class TestComputeBranchName:
         assert result_mutable == first
 
         # Mutating the source iterable AFTER the call cannot change the
-        # already-returned string — the snapshot is captured eagerly.
+        # already-returned string - the snapshot is captured eagerly.
         as_mutable_set.add(f"ai/{issue_key}")
         assert result_mutable == first
 
     def test_invalid_issue_key_raises(self) -> None:
         """Non-shape issue keys raise:class:`InvalidIssueKeyError`.
 
- Concrete regression — keeps the invariant anchored to the
+ Concrete regression - keeps the invariant anchored to the
  validator contract.
 
 
@@ -454,12 +454,12 @@ class TestComputeBranchName:
 
 
 # ---------------------------------------------------------------------------
-# invariant(b) — format_commit_message 
+# invariant(b) - format_commit_message 
 # ---------------------------------------------------------------------------
 
 
 class TestFormatCommitMessage:
-    """invariant(b) — ``[bot]`` prefix + ``Co-authored-by`` footer."""
+    """invariant(b) - ``[bot]`` prefix + ``Co-authored-by`` footer."""
 
     @settings(max_examples=100, deadline=None)
     @given(
@@ -519,7 +519,7 @@ class TestFormatCommitMessage:
         assert len(lines) >= 3
         assert lines[-2] == ""
 
-        # And the line before that — the last line of the body — must
+        # And the line before that - the last line of the body - must
         # itself be non-empty, otherwise the body→trailer separator
         # would be ambiguous (multiple blank lines).
         assert lines[-3] != ""
@@ -575,19 +575,19 @@ class TestFormatCommitMessage:
 
 
 # ---------------------------------------------------------------------------
-# invariant(c) — select_pr_create_tool 
+# invariant(c) - select_pr_create_tool 
 # ---------------------------------------------------------------------------
 
 
 class TestSelectPrCreateTool:
-    """invariant(c) — Bitbucket Cloud ↔ Data Center parity (T9)."""
+    """invariant(c) - Bitbucket Cloud ↔ Data Center parity (T9)."""
 
     @settings(max_examples=100, deadline=None)
     @given(deployment=st.sampled_from(("cloud", "server")))
     def test_p7_parity_mapping_is_exhaustive(
         self, deployment: str
     ) -> None:
-        """P7: ``cloud → cloud_tool``, ``server → dc_tool`` — exhaustive.
+        """P7: ``cloud → cloud_tool``, ``server → dc_tool`` - exhaustive.
 
 
  """
@@ -625,12 +625,12 @@ class TestSelectPrCreateTool:
 
 
 # ---------------------------------------------------------------------------
-# invariant(d) — route_by_branch_pattern 
+# invariant(d) - route_by_branch_pattern 
 # ---------------------------------------------------------------------------
 
 
 class TestRouteByBranchPattern:
-    """invariant(d) — hotfix deny + release allowlist + ai/ open default."""
+    """invariant(d) - hotfix deny + release allowlist + ai/ open default."""
 
     @settings(max_examples=100, deadline=None)
     @given(
@@ -642,7 +642,7 @@ class TestRouteByBranchPattern:
     ) -> None:
         """P8: ``hotfix/*`` denies ``code_change_commit_only``.
 
- For any other workflow type the rule is silent — the matching
+ For any other workflow type the rule is silent - the matching
  glob still wins (first-match-wins), but the decision is
  ``allowed=True`` with the passthrough audit reason. This pins
  the the operational rule that PR open is mandatory on hotfix branches
@@ -714,7 +714,7 @@ class TestRouteByBranchPattern:
 
  Neither ``hotfix/*`` nor ``release/*`` matches the ``ai/``
  prefix, so:func:`route_by_branch_pattern` falls through to
- the open default — ``allowed=True``, reason
+ the open default - ``allowed=True``, reason
  ``no_rule_matched``, ``matched_glob=None``. This holds for the
  bare ``ai/{issue_key}`` slot and the iter-suffixed form alike.
 
@@ -753,7 +753,7 @@ class TestRouteByBranchPattern:
         )
 
         assert first == second
-        # And the result is a frozen dataclass (immutable) — two
+        # And the result is a frozen dataclass (immutable) - two
         # decisions with the same fields are equal value-wise.
         assert isinstance(first, RouteDecision)
 
@@ -768,7 +768,7 @@ class TestRouteByBranchPattern:
         """An empty rule list always yields ``no_rule_matched`` (open default).
 
  Departments that omit ``branch_pattern_rules`` (the schema
- default per) keep working unchanged — every branch +
+ default per) keep working unchanged - every branch +
  workflow combination is permitted.
 
 
@@ -823,7 +823,7 @@ class TestRouteByBranchPattern:
         """A custom prefix rule wins over the default rules when listed first.
 
  invariant(d) only fixes the default-rule semantics, but the
- first-match-wins ordering documented in:func:`route_by_branch_pattern` is part of the same contract —
+ first-match-wins ordering documented in:func:`route_by_branch_pattern` is part of the same contract -
  keeping a small concrete regression here pins the iteration
  order so a future refactor cannot silently re-order the rule
  scan.

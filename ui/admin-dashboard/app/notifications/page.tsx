@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * Notifications panel.
@@ -104,7 +104,7 @@ export default function NotificationsPage(): JSX.Element {
                     </td>
                     <td className="text-sm">
                       {r.notify_channels.length === 0 ? (
-                        <span className="muted">—</span>
+                        <span className="muted">-</span>
                       ) : (
                         r.notify_channels.map((c) => (
                           <span key={c} className="badge badge--info" style={{ marginRight: 4 }}>{c}</span>
@@ -115,11 +115,11 @@ export default function NotificationsPage(): JSX.Element {
                       {r.slack_webhook_ref ? (
                         <code className="text-sm">{r.slack_webhook_ref}</code>
                       ) : (
-                        <span className="muted">—</span>
+                        <span className="muted">-</span>
                       )}
                     </td>
                     <td className="text-sm">
-                      {r.notify_email ?? <span className="muted">—</span>}
+                      {r.notify_email ?? <span className="muted">-</span>}
                     </td>
                   </tr>
                 ))}

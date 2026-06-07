@@ -1,4 +1,4 @@
-# automation-service
+﻿# automation-service
 
 FastAPI HTTP service skeleton for the platform. Listens on
 port `8080` and exposes the standard liveness/readiness contract from
@@ -62,10 +62,10 @@ services/automation-service/
 │   ├── __init__.py
 │   ├── main.py              # FastAPI app + /healthz + /readyz
 │   ├── config.py            # Pydantic v2 Settings
-│   ├── webhooks/            # placeholder — Atlassian webhook routes
-│   ├── decision/            # placeholder — event → workflow_type routing
-│   └── temporal_client.py   # placeholder — Temporal client factory
-├── migrations/              # placeholder — Alembic / SQL migrations
+│   ├── webhooks/            # placeholder - Atlassian webhook routes
+│   ├── decision/            # placeholder - event → workflow_type routing
+│   └── temporal_client.py   # placeholder - Temporal client factory
+├── migrations/              # placeholder - Alembic / SQL migrations
 ├── tests/{unit,integration,e2e}/
 ├── pyproject.toml
 └── .env.example             # local environment template

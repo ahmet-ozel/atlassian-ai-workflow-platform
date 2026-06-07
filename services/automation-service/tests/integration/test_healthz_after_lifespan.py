@@ -1,4 +1,4 @@
-"""Integration test — ``GET /healthz`` returns 200 after lifespan startup.
+﻿"""Integration test - ``GET /healthz`` returns 200 after lifespan startup.
 
 The test wires the production lifespan handler in-process via FastAPI's
 ``TestClient`` (which enters the lifespan on ``__enter__``) and asserts
@@ -46,7 +46,7 @@ for _path in (
 import automation_service  # noqa: E402,F401
 app_module = sys.modules["automation_service.app"]
 
-# Reach the property-suite's fakes module — it carries the
+# Reach the property-suite's fakes module - it carries the
 # ``install_lifespan_fakes`` helper that monkey-patches every shared
 # infrastructure constructor with in-memory stand-ins.
 _PROPERTY_DIR = _AUTOMATION_ROOT / "tests" / "property"
@@ -63,7 +63,7 @@ def test_healthz_returns_200_after_lifespan_startup(
 
     The test enters the FastAPI lifespan via ``TestClient`` (which runs
     the ``async with`` block on ``__enter__``) and then hits ``/healthz``
-    — the response must be a clean 200 with the literal
+    - the response must be a clean 200 with the literal
     ``{"status": "ok"}`` body. The lifespan's collaborator construction
     runs end-to-end so the assertion also catches accidental
     ``/healthz`` regressions (e.g. someone wiring a dependency into the

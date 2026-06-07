@@ -1,4 +1,4 @@
-"""``NotificationService`` — success-gated, failure-mandatory dispatcher.
+﻿"""``NotificationService`` - success-gated, failure-mandatory dispatcher.
 
 Implements the workflow notification dispatch policy.
 
@@ -20,15 +20,15 @@ Decision table:
 
 Two additional invariants the implementation enforces:
 
-* **Idempotency** — every dispatch attempt computes a deterministic
+* **Idempotency** - every dispatch attempt computes a deterministic
   ``dedup_key`` from ``sha256(workflow_id + ":" + channel + ":" + kind)``.
   The store's ``UNIQUE`` constraint rejects a second attempt with the
   same key; the dispatcher skips the adapter send when the store reports
   the row already existed.
-* **Body redaction** — the body is rendered by the injected
+* **Body redaction** - the body is rendered by the injected
   :class:`PromptRenderer` and only the ``sha256(body)`` hash lands in
   ``shared.notification_log.body_hash``. Plain Slack webhook URLs and
-  email addresses are never persisted verbatim — the ``target`` column
+  email addresses are never persisted verbatim - the ``target`` column
   stores a sha256 hash so dispatch history can be correlated with a
   webhook without leaking the secret.
 """
@@ -56,7 +56,7 @@ from .adapters import (
     SlackAdapter,
 )
 
-if TYPE_CHECKING:  # pragma: no cover — only for static type checkers
+if TYPE_CHECKING:  # pragma: no cover - only for static type checkers
     from collections.abc import Mapping
 
 
@@ -267,7 +267,7 @@ class NotificationService:
         template_name = _FAILURE_TEMPLATE if is_failure else _SUCCESS_TEMPLATE
         try:
             body = self._prompts.render(template_name, vars=prompt_vars)
-        except Exception as exc:  # noqa: BLE001 — wrap and re-raise
+        except Exception as exc:  # noqa: BLE001 - wrap and re-raise
             # Wrap the loader's PromptTemplateError / PromptNotFoundError /
             # KeyError into a single NotificationError subclass so callers
             # of this lib do not need a transitive import on :mod:`prompts`.
@@ -280,10 +280,10 @@ class NotificationService:
         # ------------------------------------------------------------------
         # 3. Decide which channels are eligible. Failure path forces Slack;
         #    success path consults ``dept.notify_channels``. Email is
-        #    *never* implicit for failures — it ships only when the dept
+        #    *never* implicit for failures - it ships only when the dept
         #    has either listed ``"email"`` in ``notify_channels`` OR set
         #    ``notify_email`` (the design phrases this as "email
-        #    config'liyse" — "iff email is configured").
+        #    config'liyse" - "iff email is configured").
         # ------------------------------------------------------------------
         slack_eligible = is_failure or "slack" in dept.notify_channels
         email_eligible = "email" in dept.notify_channels or (
@@ -351,7 +351,7 @@ class NotificationService:
 
         # ------------------------------------------------------------------
         # 6. Re-raise on failure-mandatory transport failures. We only
-        #    raise in the failure branch — success-gated dispatch is
+        #    raise in the failure branch - success-gated dispatch is
         #    "best effort" by design (a stuck Slack webhook should not
         #    bubble back into the workflow on a *successful* run).
         # ------------------------------------------------------------------
@@ -399,7 +399,7 @@ class NotificationService:
                 failed. Surfaced into the
                 ``notifications/audit_prune_failed`` template via the
                 ``{error}`` placeholder. Long stack traces should be
-                truncated by the caller — the field is not redacted by
+                truncated by the caller - the field is not redacted by
                 the dispatcher. Pass ``str(exc)`` from the workflow's
                 exception handler (matches design pseudocode).
             run_id: Optional stable identifier of the ``AuditPruneWorkflow``
@@ -419,10 +419,10 @@ class NotificationService:
             TemplateRenderError: The
                 ``notifications/audit_prune_failed`` prompt could not be
                 rendered (missing template, missing placeholder). Never
-                retryable — fail-fast so the operator sees the
+                retryable - fail-fast so the operator sees the
                 mis-configuration.
             NotificationError: The Slack adapter failed (transport / 5xx).
-                Mandatory admin alarms are never best-effort — re-raised
+                Mandatory admin alarms are never best-effort - re-raised
                 so the activity's :class:`temporalio.common.RetryPolicy`
                 can replay. The ``shared.notification_log`` row has
                 already been persisted optimistically, so the
@@ -431,7 +431,7 @@ class NotificationService:
         """
 
         # ------------------------------------------------------------------
-        # 1. Render body. The audit prune template gets only ``{error}`` —
+        # 1. Render body. The audit prune template gets only ``{error}`` -
         #    no department / workflow placeholders; this alarm is platform-
         #    wide. We pass the error string verbatim so the renderer's
         #    Mapping interface does not require a typed PromptVars.
@@ -441,7 +441,7 @@ class NotificationService:
                 _AUDIT_PRUNE_FAILED_TEMPLATE,
                 vars={"error": error},
             )
-        except Exception as exc:  # noqa: BLE001 — wrap and re-raise
+        except Exception as exc:  # noqa: BLE001 - wrap and re-raise
             raise TemplateRenderError(
                 "failed to render notification template "
                 f"{_AUDIT_PRUNE_FAILED_TEMPLATE!r}: {exc}"
@@ -466,7 +466,7 @@ class NotificationService:
 
         # ------------------------------------------------------------------
         # 3. Optimistic insert into ``shared.notification_log``. The store
-        #    returns ``False`` when an earlier identical attempt landed —
+        #    returns ``False`` when an earlier identical attempt landed -
         #    we then skip the adapter send (idempotent retry), matching
         #    the behavior of :meth:`notify_workflow_completion`.
         #
@@ -502,7 +502,7 @@ class NotificationService:
         # ------------------------------------------------------------------
         # 4. Fire the admin alarm. Adapter raises ⇒ re-raise as
         #    NotificationError so the Temporal activity's RetryPolicy
-        #    can replay. Failure here is **never** swallowed — this is
+        #    can replay. Failure here is **never** swallowed - this is
         #    the platform's mandatory ops alarm channel and a silent
         #    failure would violate the mandatory alarm contract.
         # ------------------------------------------------------------------
@@ -546,7 +546,7 @@ class NotificationService:
         1. Build the deterministic ``dedup_key``.
         2. Insert the ``notification_log`` row with ``status='sent'``
            (optimistic). The store's ``ON CONFLICT (dedup_key) DO NOTHING``
-           returns ``False`` when an earlier identical attempt landed —
+           returns ``False`` when an earlier identical attempt landed -
            we then skip the adapter send (idempotent retry).
         3. Invoke the adapter. If it raises, mark the outcome's
            ``*_failed`` flag and let step 6 of the caller decide whether
@@ -557,7 +557,7 @@ class NotificationService:
            and the log row remains as the optimistic ``sent``.
 
         NOTE on step 3: the contract does not pin the row-update timing on
-        adapter failure — it only asserts (d) "``notification_log``
+        adapter failure - it only asserts (d) "``notification_log``
         receives one row per attempt with ``UNIQUE(dedup_key)``". We
         meet the idempotency contract via the optimistic insert; refining
         ``status`` after a transport failure is handled by retry policy.
@@ -583,7 +583,7 @@ class NotificationService:
 
         inserted = await self._log_store.insert(entry_sent)
         if not inserted:
-            # Idempotent retry — an earlier call already wrote the row
+            # Idempotent retry - an earlier call already wrote the row
             # AND invoked the adapter (or recorded its failure). Skip
             # the adapter send so we don't double-deliver.
             _log.info(
@@ -601,9 +601,9 @@ class NotificationService:
                 await self._slack.send(body, webhook=target)
             elif channel == "email":
                 await self._email.send(body, to=target)
-            else:  # pragma: no cover — guarded by Literal type
+            else:  # pragma: no cover - guarded by Literal type
                 raise NotificationError(f"unsupported channel {channel!r}")
-        except Exception as exc:  # noqa: BLE001 — capture per channel
+        except Exception as exc:  # noqa: BLE001 - capture per channel
             _log.warning(
                 "notification adapter send failed",
                 extra={
@@ -647,10 +647,10 @@ def _dedup_key(
 
     All three components are required:
 
-    * ``workflow_id`` — distinguishes calls across workflows.
-    * ``channel`` — lets a single workflow drive Slack *and* email
+    * ``workflow_id`` - distinguishes calls across workflows.
+    * ``channel`` - lets a single workflow drive Slack *and* email
       without colliding (we want one row per channel).
-    * ``kind`` — currently always ``"workflow_completion"`` for normal
+    * ``kind`` - currently always ``"workflow_completion"`` for normal
       workflow notifications; ``notify_audit_prune_failed`` reuses the same
       ``notification_log`` table with ``kind="audit_prune_failed"``;
       including ``kind`` in the hash future-proofs the schema.
@@ -687,7 +687,7 @@ def _outcome_with_sent(
             slack_failed=outcome.slack_failed,
             email_failed=outcome.email_failed,
         )
-    return outcome  # pragma: no cover — guarded by Literal
+    return outcome  # pragma: no cover - guarded by Literal
 
 
 def _outcome_with_dedup(
@@ -719,7 +719,7 @@ def _outcome_with_dedup(
 def _outcome_with_failure(
     outcome: NotificationOutcome,
     channel: NotificationChannel,
-    error: str,  # noqa: ARG001 — kept for future structured failure reporting
+    error: str,  # noqa: ARG001 - kept for future structured failure reporting
 ) -> NotificationOutcome:
     """Return a copy of ``outcome`` with the channel's ``*_failed`` flag set."""
 
@@ -744,7 +744,7 @@ def _outcome_with_failure(
     return outcome  # pragma: no cover
 
 
-def _used_status(  # noqa: D401 — internal helper
+def _used_status(  # noqa: D401 - internal helper
     status: NotificationStatus,
 ) -> NotificationStatus:
     """Identity helper kept for forward compatibility.

@@ -1,7 +1,7 @@
-"""Integration test: ``PromptLoader._read`` runs ``validate_template_format``.
+﻿"""Integration test: ``PromptLoader._read`` runs ``validate_template_format``.
 
 The loader must reject malformed prompt
-bodies *at read time* — i.e. ``load`` (and the hot-reload
+bodies *at read time* - i.e. ``load`` (and the hot-reload
 ``poll_loop``) surfaces a :class:`PromptTemplateError` instead of
 caching the bad body and surfacing a confusing ``KeyError`` later
 during ``str.format`` rendering. This test pins that wiring.

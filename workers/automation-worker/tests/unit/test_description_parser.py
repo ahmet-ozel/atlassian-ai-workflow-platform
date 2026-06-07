@@ -1,9 +1,9 @@
-"""Unit tests for the ``description_parser`` activity.
+﻿"""Unit tests for the ``description_parser`` activity.
 
 Strategy
 --------
 
-The parser is a pure function — no external collaborators, no async.
+The parser is a pure function - no external collaborators, no async.
 We exercise it with hand-crafted descriptions covering:
 
 * No front-matter → ``None``.
@@ -221,7 +221,7 @@ class TestHappyPath:
 
 
 # ---------------------------------------------------------------------------
-# 3. Field-level validation — invalid values land in parse_errors
+# 3. Field-level validation - invalid values land in parse_errors
 # ---------------------------------------------------------------------------
 
 
@@ -297,7 +297,7 @@ class TestInvalidTimeoutSeconds:
         )
 
     def test_bool_rejected_as_int(self) -> None:
-        # Booleans subclass int in Python — explicitly rejected.
+        # Booleans subclass int in Python - explicitly rejected.
         desc = _make_description(
             "ai-bot:\n  timeout_seconds: true\n"
         )
@@ -431,7 +431,7 @@ class TestExecutionCommand:
 
 
 # ---------------------------------------------------------------------------
-# 4. Mixed valid/invalid — partial success preserved
+# 4. Mixed valid/invalid - partial success preserved
 # ---------------------------------------------------------------------------
 
 
@@ -455,7 +455,7 @@ class TestMixedValidity:
 
 
 # ---------------------------------------------------------------------------
-# 5. Workflow type vocabulary — sanity check on the closed set
+# 5. Workflow type vocabulary - sanity check on the closed set
 # ---------------------------------------------------------------------------
 
 

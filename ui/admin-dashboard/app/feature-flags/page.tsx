@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * Feature flags panel.
@@ -395,8 +395,8 @@ export default function FeatureFlagsPage(): JSX.Element {
                       </td>
                       <td className="muted text-xs">
                         {flag.updated_at
-                          ? `${flag.updated_at} · ${flag.updated_by ?? "—"}`
-                          : "—"}
+                          ? `${flag.updated_at} · ${flag.updated_by ?? "-"}`
+                          : "-"}
                       </td>
                     </tr>
                   );

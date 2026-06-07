@@ -1,4 +1,4 @@
-"""Smoke tests for the ``routers.dept_credentials`` FastAPI router.
+﻿"""Smoke tests for the ``routers.dept_credentials`` FastAPI router.
 
 These tests live alongside the other ``services/automation-service/
 tests/unit`` suites and reuse the same ``automation_service.app``
@@ -33,7 +33,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — mirrors test_app.py / test_repo_sync_api.py
+# sys.path bootstrap - mirrors test_app.py / test_repo_sync_api.py
 # ---------------------------------------------------------------------------
 
 _AUTOMATION_ROOT = Path(__file__).resolve().parents[2]
@@ -130,7 +130,7 @@ def _build_client(*, with_deps: bool = True) -> tuple[TestClient, _FakeService, 
             clock=lambda: datetime(2025, 1, 1, tzinfo=timezone.utc),
         )
     # ``create_app()`` already mounts ``dept_credentials_router``,
-    # so we do not call ``app.include_router`` again here — duplicate
+    # so we do not call ``app.include_router`` again here - duplicate
     # registration would shadow the canonical wiring contract this
     # suite exercises.
     return TestClient(app), service, audit

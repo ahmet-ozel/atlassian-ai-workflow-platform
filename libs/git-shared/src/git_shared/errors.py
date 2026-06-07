@@ -1,17 +1,17 @@
-"""Exception hierarchy for the ``git_shared`` package.
+﻿"""Exception hierarchy for the ``git_shared`` package.
 
-The hierarchy is shallow on purpose — callers (the
+The hierarchy is shallow on purpose - callers (the
 ``PromptsGitRouter`` in particular) only need to distinguish three
 failure modes:
 
-* :class:`BranchAlreadyExistsError` — the requested draft branch name
+* :class:`BranchAlreadyExistsError` - the requested draft branch name
   is already taken. Mapped to ``409 Conflict`` by the router.
-* :class:`BranchNotFoundError` — a branch the caller asked us to read
+* :class:`BranchNotFoundError` - a branch the caller asked us to read
   from / commit to does not exist. Mapped to ``404 Not Found``.
-* :class:`MergeConflictError` — opening a PR failed because the draft
+* :class:`MergeConflictError` - opening a PR failed because the draft
   branch cannot be merged cleanly into ``main``. Mapped to
   ``409 Conflict`` and triggers a ``prompt_pr_conflict`` audit event.
-* :class:`PullRequestError` — generic PR failure (Bitbucket API
+* :class:`PullRequestError` - generic PR failure (Bitbucket API
   unreachable, etc.). Mapped to ``502 Bad Gateway``.
 
 Every concrete subclass derives from :class:`GitRepoError` so callers

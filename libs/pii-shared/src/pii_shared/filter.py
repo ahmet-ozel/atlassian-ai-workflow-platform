@@ -1,4 +1,4 @@
-"""Deterministic PII regex masker.
+﻿"""Deterministic PII regex masker.
 
 Implements the `mask(text)` pure function consumed by
 `assistant-service` chat handler before any user-provided text is
@@ -7,7 +7,7 @@ forwarded to an LLM, audit log or tool dispatcher.
 Design contract:
 
 * No I/O, no logging, no global mutable state.
-* `mask(text)` is referentially transparent — same input always
+* `mask(text)` is referentially transparent - same input always
   yields the same `(masked, matches)` tuple.
 * `PII_PATTERNS` ordering is stable; iteration matches the canonical
   ordering documented in the README.
@@ -60,7 +60,7 @@ class PiiMatch:
 #   2. phone_tr is more specific than the bare digit run and uses the
 #      Turkish mobile prefix `5XX` to avoid masking arbitrary numbers.
 #   3. email is well-bounded by the `@` literal.
-#   4. credit_card is last and is Luhn-validated in `mask()` itself —
+#   4. credit_card is last and is Luhn-validated in `mask()` itself -
 #      invalid candidates are left untouched.
 PII_PATTERNS: Final[tuple[tuple[PiiKind, re.Pattern[str], str], ...]] = (
     (

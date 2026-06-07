@@ -1,4 +1,4 @@
-"""Unit tests for ``ApprovalGateWorkflow`` pure helpers and data classes.
+﻿"""Unit tests for ``ApprovalGateWorkflow`` pure helpers and data classes.
 
 Tests exercise the pure helper functions (``match_approval_paths``,
 ``is_authorized_approver``, ``parse_approval_decision``) without
@@ -63,7 +63,7 @@ class TestMatchApprovalPaths:
         ]
 
     def test_no_matches(self) -> None:
-        """No files match — returns empty list."""
+        """No files match - returns empty list."""
         files = ["docs/readme.md", "tests/test_foo.py"]
         patterns = [r"^src/core/.*"]
         result = match_approval_paths(files, patterns)
@@ -76,7 +76,7 @@ class TestMatchApprovalPaths:
         assert result == []
 
     def test_empty_files_returns_empty(self) -> None:
-        """Empty files list — returns empty."""
+        """Empty files list - returns empty."""
         patterns = [r"^src/core/.*"]
         result = match_approval_paths([], patterns)
         assert result == []
@@ -113,7 +113,7 @@ class TestIsAuthorizedApprover:
         assert not is_authorized_approver("user-789", ["user-123", "user-456"])
 
     def test_empty_approvers_list(self) -> None:
-        """Empty approvers list — no one is authorized."""
+        """Empty approvers list - no one is authorized."""
         assert not is_authorized_approver("user-123", [])
 
     def test_empty_user_id(self) -> None:

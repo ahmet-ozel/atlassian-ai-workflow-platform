@@ -1,4 +1,4 @@
-"""Audit-emitting credential resolver wrapper for assistant-service.
+﻿"""Audit-emitting credential resolver wrapper for assistant-service.
 
 Thin call-site wrapper around
 :class:`automation_service.credentials.CredentialResolver` that adds the
@@ -12,25 +12,25 @@ wrapper layers exactly one extra responsibility on top:
 1. **Audit emission at the call-site.** Every resolution attempt emits
    exactly one of three canonical audit events:
 
-   * ``credential_resolved_per_user_session`` (``result="ok"``) — the
+   * ``credential_resolved_per_user_session`` (``result="ok"``) - the
      per-user override at
      ``vault:atlassian/_user_session/<session_id>/<service>`` produced
      the credential.
-   * ``credential_resolved_org_default`` (``result="ok"``) — the
+   * ``credential_resolved_org_default`` (``result="ok"``) - the
      per-user path was missing and the org-default path
      ``vault:atlassian/<dept_id>/<service>`` produced the credential.
-   * ``credential_resolve_failed`` (``result="error"``) — neither path
+   * ``credential_resolve_failed`` (``result="error"``) - neither path
      existed; the wrapper re-raises :class:`CredentialNotFoundError`
      after writing the audit event.
 
 2. **Plain-credential redaction in the audit payload.** The audit
-   ``payload`` dict carries diagnostic identifiers only — ``service``,
+   ``payload`` dict carries diagnostic identifiers only - ``service``,
    ``vault_path`` (path string, never the secret), and the missing
    ``attempted_paths`` tuple on failure. The Vault ``data`` mapping
    (which contains the plain token) is **never** propagated into the
    payload. The audit log must not leak those values.
 
-The resolver itself stays a thin proxy — there is no caching, no
+The resolver itself stays a thin proxy - there is no caching, no
 retry, no rate-limiting layered here. Those concerns live one layer
 up (the chat handler / MCP credential injection helper) so this
 wrapper remains a pure function over its inputs (resolver call +
@@ -132,7 +132,7 @@ class CredentialNotFoundError(CredentialMissing):
     this wrapper independently importable.
 
     The ``error_code`` attribute is inherited from
-    :class:`CredentialMissing` and remains ``"credential_missing"`` —
+    :class:`CredentialMissing` and remains ``"credential_missing"`` -
     the canonical audit error code. The wrapper, however, writes the
     audit event under ``action=credential_resolve_failed`` because
     that is the action name used for this failure; the two strings refer
@@ -154,7 +154,7 @@ class AuditWriterProtocol(Protocol):
     the ``actor_role`` invariant before emitting INSERT). Tests
     inject a list-backed fake to assert the emitted events.
 
-    Synchronous or asynchronous — the wrapper itself is synchronous
+    Synchronous or asynchronous - the wrapper itself is synchronous
     so we accept a plain callable. Callers wanting async semantics
     can wrap with ``asyncio.run_coroutine_threadsafe`` on the
     boundary; that is out of scope for this property test.
@@ -176,19 +176,19 @@ class AuditingCredentialResolver:
     ----------
     resolver:
         The underlying :class:`automation_service.credentials.CredentialResolver`
-        instance — owns the Vault reads and the priority decision.
+        instance - owns the Vault reads and the priority decision.
     audit:
         Anything satisfying :class:`AuditWriterProtocol`. Each
         :meth:`resolve` call emits exactly one event through this
         sink.
     actor_id:
         The audit ``actor_id`` to record (typically the OIDC
-        ``sub`` of the chat user). Required — empty strings would
+        ``sub`` of the chat user). Required - empty strings would
         slip past the foundation ``actor_role`` CHECK and pollute
         the audit log with anonymous rows.
     actor_role:
         The audit ``actor_role`` (``"viewer" | "lead" | "admin" |
-        "dept_admin" | "system"``). Forwarded verbatim — the
+        "dept_admin" | "system"``). Forwarded verbatim - the
         wrapper does not second-guess the caller's RBAC mapping.
     clock:
         Optional callable returning a timezone-aware
@@ -201,7 +201,7 @@ class AuditingCredentialResolver:
     The wrapper is intentionally constructed once per request /
     chat-session: ``actor_id`` and ``actor_role`` are fixed for the
     lifetime of the instance, so callers who serve multiple users
-    on a shared resolver should rebuild it (cheap — no I/O at
+    on a shared resolver should rebuild it (cheap - no I/O at
     construction time).
     """
 
@@ -269,7 +269,7 @@ class AuditingCredentialResolver:
                     payload={
                         "service": service,
                         "session_id": session_id,
-                        # Path strings only — never the Vault `data`
+                        # Path strings only - never the Vault `data`
                         # mapping.
                         "attempted_paths": list(err.attempted_paths),
                     },
@@ -299,7 +299,7 @@ class AuditingCredentialResolver:
                 resource=_resource(dept_id, service),
                 result="ok",
                 timestamp=self._clock(),
-                # Path string only — no Vault `data` mapping. The
+                # Path string only - no Vault `data` mapping. The
                 # `source` discriminator lets dashboards filter
                 # per-user vs org-default events without parsing the
                 # path.

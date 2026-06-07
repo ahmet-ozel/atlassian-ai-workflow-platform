@@ -1,4 +1,4 @@
-"""Security headers middleware for FastAPI/Starlette applications.
+﻿"""Security headers middleware for FastAPI/Starlette applications.
 
 Adds standard security headers to every HTTP response to mitigate
 XSS, clickjacking, and MIME-sniffing attacks.
@@ -29,9 +29,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     Adds the following headers to every response regardless of status code,
     content type, or request method:
 
-    - ``X-Frame-Options: DENY`` — prevents clickjacking by disallowing framing
-    - ``X-Content-Type-Options: nosniff`` — prevents MIME-type sniffing
-    - ``X-XSS-Protection: 1; mode=block`` — enables browser XSS filter
+    - ``X-Frame-Options: DENY`` - prevents clickjacking by disallowing framing
+    - ``X-Content-Type-Options: nosniff`` - prevents MIME-type sniffing
+    - ``X-XSS-Protection: 1; mode=block`` - enables browser XSS filter
     """
 
     def __init__(self, app: ASGIApp) -> None:

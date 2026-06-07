@@ -1,4 +1,4 @@
-"""Hypothesis invariant for ``is_cancel_authorized``.
+﻿"""Hypothesis invariant for ``is_cancel_authorized``.
 
 
 
@@ -6,12 +6,12 @@ Drives the cancel RBAC predicate
 (``automation_service.api.cancel.is_cancel_authorized``) across the
 full input space. Three properties:
 
-1. **Specification equivalence** — for any ``(actor, reporter,
+1. **Specification equivalence** - for any ``(actor, reporter,
  past_assignees)``, the predicate returns ``True`` iff
  ``actor == reporter`` OR ``actor ∈ past_assignees``.
-2. **Determinism (purity)** — repeated calls with identical inputs
+2. **Determinism (purity)** - repeated calls with identical inputs
  yield identical outputs and never mutate the inputs.
-3. **Monotonicity** — adding members to ``past_assignees`` never
+3. **Monotonicity** - adding members to ``past_assignees`` never
  *reduces* authorization. Equivalently: if ``A ⊆ B``, then
  ``is_cancel_authorized(actor, reporter, A) == True`` implies
  ``is_cancel_authorized(actor, reporter, B) == True``.
@@ -28,7 +28,7 @@ from pathlib import Path
 from hypothesis import given, strategies as st
 
 # ---------------------------------------------------------------------------
-# Path setup — mirror sibling invariant that import from
+# Path setup - mirror sibling invariant that import from
 # ``automation_service``.
 # ---------------------------------------------------------------------------
 
@@ -70,7 +70,7 @@ _past_assignees_strategy = st.frozensets(_user_ids, min_size=0, max_size=8)
 
 
 # ---------------------------------------------------------------------------
-# invariant — specification equivalence
+# invariant - specification equivalence
 # ---------------------------------------------------------------------------
 
 
@@ -95,7 +95,7 @@ def test_predicate_matches_specification(
 
 
 # ---------------------------------------------------------------------------
-# invariant — determinism / purity
+# invariant - determinism / purity
 # ---------------------------------------------------------------------------
 
 
@@ -127,7 +127,7 @@ def test_predicate_is_deterministic_and_pure(
 
 
 # ---------------------------------------------------------------------------
-# invariant — monotonicity in ``past_assignees``
+# invariant - monotonicity in ``past_assignees``
 # ---------------------------------------------------------------------------
 
 

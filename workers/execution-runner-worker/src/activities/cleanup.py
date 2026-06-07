@@ -1,6 +1,6 @@
-"""Cleanup policy enforcement activity (Requirement — Task Cleanup Policy).
+﻿"""Cleanup policy enforcement activity (Requirement - Task Cleanup Policy).
 
-Provides :func:`apply_cleanup_policy` — a Temporal activity that enforces
+Provides :func:`apply_cleanup_policy` - a Temporal activity that enforces
 the user-specified cleanup policy (``delete_on_success`` | ``always`` |
 ``never``) after a test execution completes.
 
@@ -60,7 +60,7 @@ class CleanupPolicyInput:
         SSH host override. When ``None`` the activity reads from
         ``SSH_HOST`` (canonical) with ``SSH_HOST_1`` accepted as a
         deprecated alias for backwards compatibility. The platform
-        runs exactly one runner host — there is no per-department
+        runs exactly one runner host - there is no per-department
         override.
     workflow_id : str
         Parent workflow ID for audit correlation.
@@ -142,7 +142,7 @@ def _should_cleanup(policy: str, exit_code: int | None) -> tuple[bool, str | Non
         return False, f"policy=on_success,exit_code={exit_code}"
     if policy == "never":
         return False, "policy=never"
-    # Unknown policy — treat as never for safety.
+    # Unknown policy - treat as never for safety.
     return False, f"unknown_policy={policy}"
 
 
@@ -156,7 +156,7 @@ def _ssh_rm_workspace(
     """Remove workspace directory on the SSH runner (blocking).
 
     Returns ``None`` on success, error string on failure.
-    Best-effort — does not raise.
+    Best-effort - does not raise.
     """
     import paramiko  # noqa: PLC0415
 
@@ -351,7 +351,7 @@ async def apply_cleanup_policy(
 
     if not should_clean:
         activity.logger.info(
-            "apply_cleanup_policy: skipping cleanup — %s", skip_reason
+            "apply_cleanup_policy: skipping cleanup - %s", skip_reason
         )
         result = CleanupPolicyResult(
             cleanup_performed=False,
@@ -415,7 +415,7 @@ async def apply_cleanup_policy(
     cleanup_performed = len(actions) > 0
 
     activity.logger.info(
-        "apply_cleanup_policy: done — performed=%s actions=%s errors=%s",
+        "apply_cleanup_policy: done - performed=%s actions=%s errors=%s",
         cleanup_performed,
         actions,
         all_errors,

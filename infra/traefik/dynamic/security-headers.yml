@@ -1,5 +1,5 @@
-# =============================================================================
-# Traefik Dynamic Configuration — Security Headers Middleware
+﻿# =============================================================================
+# Traefik Dynamic Configuration - Security Headers Middleware
 # =============================================================================
 # Production security headers
 #
@@ -14,7 +14,7 @@
 http:
   middlewares:
     # ─────────────────────────────────────────────────────────────────────────
-    # HSTS — Strict-Transport-Security
+    # HSTS - Strict-Transport-Security
     # Forces browsers to only connect via HTTPS for 1 year, including
     # subdomains.
     # ─────────────────────────────────────────────────────────────────────────
@@ -25,7 +25,7 @@ http:
         forceSTSHeader: true
 
     # ─────────────────────────────────────────────────────────────────────────
-    # CSP — Content-Security-Policy
+    # CSP - Content-Security-Policy
     # Basic policy: default-src 'self' with unsafe-inline for styles
     # (required by Streamlit's inline style injection).
     # ─────────────────────────────────────────────────────────────────────────

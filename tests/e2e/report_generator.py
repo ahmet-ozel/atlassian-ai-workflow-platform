@@ -1,5 +1,5 @@
-"""
-E2E Report Generator — produces E2E_REPORT.md at workspace root.
+﻿"""
+E2E Report Generator - produces E2E_REPORT.md at workspace root.
 
 Generates a comprehensive markdown report summarizing all E2E test results,
 including executive summary, bug fixes, requirements verdict table,
@@ -104,16 +104,16 @@ REQUIREMENTS_CATALOG = {
         "healthz/readyz post-startup; admin/departments round-trip)"
     ),
     "": (
-        "LLM Provider Management — Backend "
+        "LLM Provider Management - Backend "
         "(CRUD + saved/unsaved test + dept override + audit + redaction)"
     ),
     "": (
-        "LLM Provider Management — Admin Dashboard UI "
+        "LLM Provider Management - Admin Dashboard UI "
         "(/admin/llm-providers page renders, table + modal + "
         "delete-conflict toast)"
     ),
     "": (
-        "Streamlit Task Creator — End-to-End "
+        "Streamlit Task Creator - End-to-End "
         "(streamlit /task_creator reachable; form + create_task chain "
         "intact; page hydrates; no credential leak)"
     ),

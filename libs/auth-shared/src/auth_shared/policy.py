@@ -1,33 +1,33 @@
-"""RBAC policy helpers for the admin control plane.
+﻿"""RBAC policy helpers for the admin control plane.
 
 This module implements the four-role RBAC matrix and the
 ``requires(role, dept_id=None)`` guard helper, together with the
 cross-cutting policy decisions baked into those rules:
 
-* **Four roles** — ``viewer``, ``lead``, ``admin``, ``dept_admin`` and
+* **Four roles** - ``viewer``, ``lead``, ``admin``, ``dept_admin`` and
   no others.
-* **Hierarchy among the global roles** — ``viewer < lead < admin``;
+* **Hierarchy among the global roles** - ``viewer < lead < admin``;
   any guarded operation that admits ``viewer`` must also admit
   ``lead`` and ``admin``.
-* **Dept-scoping** — ``dept_admin`` is an orthogonal dept-scoped role
+* **Dept-scoping** - ``dept_admin`` is an orthogonal dept-scoped role
   that can perform admin-like actions **only within its own
   department**; cross-dept access is denied.
-* **Global-only operations** — adding a new department, changing the
+* **Global-only operations** - adding a new department, changing the
   global prompt, configuring SSH runners are admin-only; ``dept_admin``
   is rejected with HTTP 403 + ``rbac_denied`` audit.
-* **Self-service rotation** — ``dept_admin`` may rotate its **own**
+* **Self-service rotation** - ``dept_admin`` may rotate its **own**
   department's credentials; the call site passes the
   target ``dept_id`` to :func:`requires` and the guard does the
   matching.
 
 The guard supports two surfaces:
 
-* **Decorator** — ``@requires("admin")`` wraps a sync or async callable
+* **Decorator** - ``@requires("admin")`` wraps a sync or async callable
   whose first ``AuthContext`` argument (positional or keyword
   ``actor``) is checked. Failures raise :class:`PermissionDenied`,
   which the FastAPI middleware in ``admin-dashboard-api`` translates
   into HTTP 403 plus an ``rbac_denied`` audit row.
-* **Imperative guard** — ``check(actor, role, dept_id)`` and the
+* **Imperative guard** - ``check(actor, role, dept_id)`` and the
   thin :func:`requires_role` wrapper let call sites that need
   contextual data (eg. the path-derived ``dept_id`` in a FastAPI
   router) make the same decision without a decorator.
@@ -60,7 +60,7 @@ from .oidc import AuthContext
 
 #: The four RBAC roles.
 #:
-#: ``Role`` deliberately mirrors :data:`auth_shared.oidc.AuthRole` —
+#: ``Role`` deliberately mirrors :data:`auth_shared.oidc.AuthRole` -
 #: callers may use either alias. The duplicated definition is the
 #: explicit spelling: ``Role = Literal["viewer", "lead", "admin",
 #: "dept_admin"]``. The ``test_role_aliases`` unit test asserts the two aliases
@@ -111,7 +111,7 @@ class PermissionDenied(Exception):
     rejected context.
 
     The default message is intentionally generic so we do not leak
-    the specific role required to an unauthenticated caller — leaving
+    the specific role required to an unauthenticated caller - leaving
     that detail to the audit log instead. Callers may pass a custom
     ``reason`` for diagnostic logs but it should not be propagated
     verbatim into HTTP responses.
@@ -141,7 +141,7 @@ class MissingActorError(PermissionDenied):
 
     A subclass of :class:`PermissionDenied` so ``except
     PermissionDenied`` catches both the "no actor" and "wrong role"
-    cases — the FastAPI handler in admin-dashboard-api converts both
+    cases - the FastAPI handler in admin-dashboard-api converts both
     into HTTP 403 with an ``rbac_denied`` audit event.
     """
 
@@ -167,20 +167,20 @@ def check(
     """Raise :class:`PermissionDenied` if ``actor`` cannot satisfy the guard.
 
     This is the single source of truth for RBAC decisions in the
-    platform. Every other helper in this module — including the
-    :func:`requires` decorator — eventually delegates here.
+    platform. Every other helper in this module - including the
+    :func:`requires` decorator - eventually delegates here.
 
     Decision matrix:
 
-    * ``required_role="admin"`` — only the ``admin`` role passes;
+    * ``required_role="admin"`` - only the ``admin`` role passes;
       ``dept_admin`` and below are denied. ``dept_id`` is ignored
       because admin actions are global by definition.
-    * ``required_role="dept_admin"`` — admits ``admin`` (always) and
+    * ``required_role="dept_admin"`` - admits ``admin`` (always) and
       ``dept_admin`` (only when ``dept_id`` is ``None`` or matches
       the actor's ``dept_ids``).
-    * ``required_role="lead"`` — admits ``lead`` and ``admin``
+    * ``required_role="lead"`` - admits ``lead`` and ``admin``
       globally, plus ``dept_admin`` for matching dept (or no dept).
-    * ``required_role="viewer"`` — admits everyone; ``dept_admin``
+    * ``required_role="viewer"`` - admits everyone; ``dept_admin``
       still must match ``dept_id`` if one is supplied.
 
     Args:
@@ -258,7 +258,7 @@ def is_allowed(
 
     Useful for UI affordances ("hide this button when the actor
     cannot click it") where raising an exception would be awkward.
-    Mirrors the exact decision matrix of :func:`check` — any
+    Mirrors the exact decision matrix of :func:`check` - any
     invariant that holds for one holds for the other.
     """
 
@@ -309,7 +309,7 @@ def requires(
         role: The minimum role required.
         dept_id: When set, the actor's ``dept_ids`` must contain this
             value (or the actor must be ``admin``). Mutually
-            exclusive with a non-``None`` ``dept_id_arg`` — a
+            exclusive with a non-``None`` ``dept_id_arg`` - a
             :class:`ValueError` is raised at decoration time if both
             are supplied.
         actor_arg: Keyword-argument name carrying the

@@ -4,9 +4,9 @@
  * Prompt editor page.
  *
  * Editor surface for the
- * Prompt_Versioning system — diff, sandbox LLM call, draft PR).
+ * Prompt_Versioning system - diff, sandbox LLM call, draft PR).
  *
- * Catch-all route — the prompt name is everything after `/prompts/`
+ * Catch-all route - the prompt name is everything after `/prompts/`
  * so that paths with slashes (eg. `notifications/build_failed.md`)
  * round-trip cleanly. Next.js delivers each segment as an array on
  * `params.name`; we re-join them with `/` and forward that to the
@@ -16,10 +16,10 @@
  *   1. Fetch current content via `GET /api/v1/prompts/{name}`.
  *   2. Operator edits the body in a textarea; a per-line diff view
  *      renders next to it (`./_lib/diff.mjs`).
- *   3. **Sandbox** button — `POST /api/v1/prompts/{name}/sandbox`
+ *   3. **Sandbox** button - `POST /api/v1/prompts/{name}/sandbox`
  *      with `{ body, sample_input }`. The response panel shows the
  *      LLM output plus model / provider / token counts.
- *   4. **Commit** button — opens a 5-second confirm dialog (mirrors
+ *   4. **Commit** button - opens a 5-second confirm dialog (mirrors
  *      `app/feature-flags/page.tsx`) before calling
  *      `POST /api/v1/prompts/{name}/commit`. On success the panel
  *      shows the resulting PR URL with a clickable link.
@@ -28,7 +28,7 @@
  * `{ status: "not_ready", reason }` JSON payloads when their backing
  * `app.state` slot (LLM client, git committer, Bitbucket client,
  * Postgres pool) is missing. The editor renders that as a clear
- * "service not ready" banner with the reason from the response —
+ * "service not ready" banner with the reason from the response -
  * admins should not interpret a 503 as a generic 5xx.
  */
 
@@ -41,7 +41,7 @@ import { diffLines, hasChanges } from "../_lib/diff.mjs";
 import type { DiffLine } from "../_lib/diff.d.mts";
 
 // ---------------------------------------------------------------------------
-// Wire types — kept in sync with `src/routers/prompts.py`.
+// Wire types - kept in sync with `src/routers/prompts.py`.
 // ---------------------------------------------------------------------------
 
 type PromptDetailResponse = {
@@ -142,7 +142,7 @@ async function classifyError(res: Response): Promise<ApiError> {
   try {
     body = await res.json();
   } catch {
-    /* fall through — try plain text */
+    /* fall through - try plain text */
     try {
       const text = await res.text();
       return {
@@ -210,7 +210,7 @@ function DiffView({ oldBody, newBody }: { oldBody: string; newBody: string }) {
           borderRadius: "0.25rem",
         }}
       >
-        (no changes yet — edit the body above to preview a diff)
+        (no changes yet - edit the body above to preview a diff)
       </div>
     );
   }
@@ -400,16 +400,16 @@ function SandboxResultPanel({ result }: { result: PromptSandboxResponse }) {
         }}
       >
         <span>
-          model: <code>{result.model ?? "—"}</code>
+          model: <code>{result.model ?? "-"}</code>
         </span>
         <span>
-          provider: <code>{result.provider ?? "—"}</code>
+          provider: <code>{result.provider ?? "-"}</code>
         </span>
         <span>
-          token_in: <code>{result.token_in ?? "—"}</code>
+          token_in: <code>{result.token_in ?? "-"}</code>
         </span>
         <span>
-          token_out: <code>{result.token_out ?? "—"}</code>
+          token_out: <code>{result.token_out ?? "-"}</code>
         </span>
       </div>
       <pre
@@ -605,7 +605,7 @@ export default function PromptEditorPage(): JSX.Element {
     }
   }, [cancelPendingCommit, load.kind, promptName, draftBody, refreshContent]);
 
-  // Auto-apply 5s after the dialog opens — same UX as feature-flags.
+  // Auto-apply 5s after the dialog opens - same UX as feature-flags.
   useEffect(() => {
     if (!pendingCommit) return;
     if (autoApplyRef.current !== null) {

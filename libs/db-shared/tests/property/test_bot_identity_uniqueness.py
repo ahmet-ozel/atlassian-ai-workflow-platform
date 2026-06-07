@@ -1,13 +1,13 @@
-"""Invariant tests for bot ``account_id`` uniqueness.
+﻿"""Invariant tests for bot ``account_id`` uniqueness.
 
 The uniqueness invariant has three enforcement layers:
 
-* DB layer — partial UNIQUE INDEX on
+* DB layer - partial UNIQUE INDEX on
   ``automation.department_bots(service, account_id) WHERE account_id <> ''``.
-* CRUD layer — :func:`_find_account_id_conflicts` in
+* CRUD layer - :func:`_find_account_id_conflicts` in
   ``admin-dashboard-api/src/routers/departments.py`` rejects POST / PATCH
   bodies that would introduce a clash with HTTP 409.
-* Boot-time — :func:`db_shared.bot_identity.validate_bot_account_id_uniqueness`
+* Boot-time - :func:`db_shared.bot_identity.validate_bot_account_id_uniqueness`
   scans the parsed ``departments.json`` document at service start-up.
 
 This module exercises the **boot-time** validator and the
@@ -18,7 +18,7 @@ layer the operator hits.
 
 Generation strategy
 -------------------
-A small alphabet keeps the search space dense in collisions — Hypothesis
+A small alphabet keeps the search space dense in collisions - Hypothesis
 shrinks pathological inputs down to a handful of dept_ids / account_ids
 which makes assertion failures readable. The empty / whitespace
 ``account_id`` placeholder shape lives in the strategy so coverage of
@@ -26,21 +26,21 @@ the skip rule is automatic, not parameterised by hand.
 
 Invariants under test
 ---------------------
-* **A — clean input passes silently.** When the generated input has no
+* **A - clean input passes silently.** When the generated input has no
   ``(service, account_id)`` collision (post-placeholder filtering and
   intra-dept dedup), the validator returns ``None`` and never raises.
-* **B — injected collision is reported with the exact tuple.** When the
+* **B - injected collision is reported with the exact tuple.** When the
   test inserts two distinct depts claiming the same non-empty
   ``(service, account_id)``, the validator raises
   ``BotAccountIdConflictError`` *and* ``.conflicts`` carries the exact
   ``(service, account_id)`` pair the test inserted.
-* **C — placeholders never trigger a conflict.** Two depts whose
+* **C - placeholders never trigger a conflict.** Two depts whose
   ``account_id`` is empty / whitespace-only on the same service must
-  pass the validator silently — those rows are not yet routing keys.
-* **D — duplicate dept rows do not self-conflict.** A single ``dept_id``
+  pass the validator silently - those rows are not yet routing keys.
+* **D - duplicate dept rows do not self-conflict.** A single ``dept_id``
   appearing twice in the input with the same non-empty ``account_id``
-  is dedup'd to a single claim — the validator must not flag it.
-* **E — CRUD detector mirrors the same set semantics.** For
+  is dedup'd to a single claim - the validator must not flag it.
+* **E - CRUD detector mirrors the same set semantics.** For
   ``_find_account_id_conflicts(candidate, existing, skip_dept_id=...)``
   the returned list of conflicts matches the oracle "every non-skipped
   ``other`` dept × every shared ``(service, account_id)`` pair in
@@ -98,7 +98,7 @@ from db_shared.bot_identity import (  # noqa: E402
 # The CRUD detector is imported lazily so a missing optional dep
 # (eg. ``filelock``) inside ``routers.departments`` only skips that
 # check rather than aborting the whole module collection.
-try:  # pragma: no cover — import-time guard, exercised in CI
+try:  # pragma: no cover - import-time guard, exercised in CI
     from src.routers.departments import (  # type: ignore[import-not-found]
         _extract_bot_identities,
         _find_account_id_conflicts,
@@ -113,7 +113,7 @@ except Exception as _exc:  # noqa: BLE001
 
 
 # ---------------------------------------------------------------------------
-# Test alphabet — small enough to make collisions frequent under random
+# Test alphabet - small enough to make collisions frequent under random
 # generation, large enough that Hypothesis can still shrink to readable
 # counterexamples.
 # ---------------------------------------------------------------------------
@@ -224,7 +224,7 @@ def test_no_collision_passes_silently(depts: list[dict[str, Any]]) -> None:
 
     assume(not _has_collision(depts))
 
-    # Validator returns None on success — capture the return value to
+    # Validator returns None on success - capture the return value to
     # make the contract explicit in the assertion.
     assert validate_bot_account_id_uniqueness(depts) is None
 
@@ -342,7 +342,7 @@ def test_intra_dept_duplicate_is_single_claim(
     service: str, account_id: str, dept_id: str
 ) -> None:
     """D: the same ``dept_id`` declaring the same ``account_id`` twice
-    counts as a single claim — the validator MUST NOT raise.
+    counts as a single claim - the validator MUST NOT raise.
     """
 
     depts: list[dict[str, Any]] = [
@@ -422,7 +422,7 @@ def test_crud_conflict_detector_matches_oracle(
     # The detector preserves ``existing`` iteration order and
     # iterates ``candidate_pairs`` from the candidate's bot dict in
     # service-declaration order, but ``_extract_bot_identities``
-    # returns pairs in ``BOT_IDENTITY_SERVICES`` order — same as our
+    # returns pairs in ``BOT_IDENTITY_SERVICES`` order - same as our
     # oracle. Compare as multisets so order across nested loops is
     # not over-specified.
     def _key(c: dict[str, str]) -> tuple[str, str, str]:

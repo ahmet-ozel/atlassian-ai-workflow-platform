@@ -1,15 +1,15 @@
-"""Unit tests for the trace_id propagator.
+﻿"""Unit tests for the trace_id propagator.
 
 Checks UUIDv7 trace_id generation and preservation of inbound
 ``X-Trace-Id`` headers across hops.
 
 The tests cover the three pieces of the public API:
 
-1. :func:`generate_trace_id` — RFC 9562 §5.7 layout, time-ordering,
+1. :func:`generate_trace_id` - RFC 9562 §5.7 layout, time-ordering,
    uniqueness across many draws.
-2. :func:`get_trace_id` / :func:`set_trace_id` — context isolation
+2. :func:`get_trace_id` / :func:`set_trace_id` - context isolation
    between concurrent async tasks.
-3. :class:`TraceMiddleware` — preserve-vs-generate decision, response
+3. :class:`TraceMiddleware` - preserve-vs-generate decision, response
    header injection, scope.state propagation, non-HTTP pass-through.
 
 The async-flavoured tests use :func:`asyncio.run` directly rather than
@@ -37,7 +37,7 @@ from observability import (
 )
 
 # ---------------------------------------------------------------------------
-# generate_trace_id — RFC 9562 §5.7 conformance
+# generate_trace_id - RFC 9562 §5.7 conformance
 # ---------------------------------------------------------------------------
 
 _UUID_RE = re.compile(
@@ -65,7 +65,7 @@ def test_generate_trace_id_has_version_7_nibble() -> None:
 
 
 def test_generate_trace_id_has_rfc4122_variant_bits() -> None:
-    """Bits 64..65 must be 0b10 — the 'N' nibble is one of {8, 9, a, b}."""
+    """Bits 64..65 must be 0b10 - the 'N' nibble is one of {8, 9, a, b}."""
 
     trace_id = generate_trace_id()
     # The 'N' nibble is at index 19.
@@ -207,7 +207,7 @@ def test_concurrent_tasks_have_isolated_trace_ids() -> None:
 
 
 # ---------------------------------------------------------------------------
-# TraceMiddleware — ASGI behaviour
+# TraceMiddleware - ASGI behaviour
 # ---------------------------------------------------------------------------
 
 
@@ -410,7 +410,7 @@ def test_middleware_emits_trace_header_in_canonical_case() -> None:
     recorder = _Recorder()
     _drive(middleware, scope, recorder)
 
-    # Walk raw headers — case is preserved on the wire.
+    # Walk raw headers - case is preserved on the wire.
     raw = next(
         msg["headers"]
         for msg in recorder.messages
@@ -443,7 +443,7 @@ def test_middleware_preserves_uuid_regardless_of_version(inbound: str) -> None:
 
 
 # ---------------------------------------------------------------------------
-# TraceLogFilter — log-record enrichment
+# TraceLogFilter - log-record enrichment
 # ---------------------------------------------------------------------------
 
 
@@ -472,7 +472,7 @@ def test_trace_log_filter_sets_trace_id_attribute_on_record() -> None:
 def test_trace_log_filter_emits_empty_string_when_no_trace_id_set() -> None:
     """Filter still populates the attribute with the empty default.
 
-    The downstream log formatter typically uses ``%(trace_id)s`` —
+    The downstream log formatter typically uses ``%(trace_id)s`` -
     if the attribute were missing the formatter would raise
     ``KeyError``.  Always setting the attribute (even to ``""``)
     keeps the format string resolvable in the no-context branch.
@@ -480,7 +480,7 @@ def test_trace_log_filter_emits_empty_string_when_no_trace_id_set() -> None:
 
     from observability import TraceLogFilter
 
-    # Reset the contextvars slot — empty default per
+    # Reset the contextvars slot - empty default per
     # ``observability.trace._trace_id_ctx``.
     set_trace_id("")
     filt = TraceLogFilter()
@@ -509,7 +509,7 @@ def test_trace_log_filter_is_idempotent() -> None:
 
     filt.filter(record)
 
-    # The pre-existing value wins — ``hasattr`` short-circuits the
+    # The pre-existing value wins - ``hasattr`` short-circuits the
     # assignment.
     assert record.trace_id == "pre-existing-value"
 

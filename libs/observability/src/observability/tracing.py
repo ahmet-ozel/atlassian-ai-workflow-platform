@@ -1,4 +1,4 @@
-"""OpenTelemetry tracing integration (Feature 7).
+﻿"""OpenTelemetry tracing integration (Feature 7).
 
 Provides a shared tracing setup that all platform services use to
 participate in distributed traces. Each service extracts the
@@ -85,7 +85,7 @@ def setup_tracing(
     - An OTLP gRPC exporter pointing at the configured endpoint.
     - A BatchSpanProcessor for efficient export.
 
-    Safe to call multiple times — subsequent calls are no-ops.
+    Safe to call multiple times - subsequent calls are no-ops.
 
     Parameters
     ----------
@@ -141,7 +141,7 @@ def setup_tracing(
         )
     except ImportError:
         logger.warning(
-            "OpenTelemetry SDK not installed — tracing disabled. "
+            "OpenTelemetry SDK not installed - tracing disabled. "
             "Install: pip install opentelemetry-sdk opentelemetry-exporter-otlp-proto-grpc"
         )
     except Exception as exc:  # noqa: BLE001

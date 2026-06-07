@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 /**
- * SSHRunnersCard — Displays SSH runners with key rotation controls.
+ * SSHRunnersCard - Displays SSH runners with key rotation controls.
  *
  * Fetches runner data from `GET /admin/ssh-runners` (list endpoint, EK4
  * fix; the rotation endpoints below live under `/admin/security/...`)
@@ -172,7 +172,7 @@ const fingerprintPreview = (runner: SSHRunner): string => {
     runner.known_hosts_fingerprint ??
     runner.vault_path ??
     "";
-  return value ? `${value.slice(0, 16)}…` : "—";
+  return value ? `${value.slice(0, 16)}…` : "-";
 };
 
 // ---------------------------------------------------------------------------
@@ -206,7 +206,7 @@ export default function SSHRunnersCard(): JSX.Element {
     setError(null);
     try {
       // EK4 fix: backend router is mounted at /admin/ssh-runners (see
-      // services/admin-dashboard-api/src/routers/ssh_runners.py — prefix
+      // services/admin-dashboard-api/src/routers/ssh_runners.py - prefix
       // "/admin/ssh-runners"). The /admin/security/ prefix returned 404.
       const res = await apiFetch("/admin/ssh-runners");
       if (!res.ok) {
@@ -278,7 +278,7 @@ export default function SSHRunnersCard(): JSX.Element {
   // --- Helpers -------------------------------------------------------------
 
   const formatDate = (dateStr?: string | null): string => {
-    if (!dateStr) return "—";
+    if (!dateStr) return "-";
     try {
       return new Date(dateStr).toLocaleString("tr-TR");
     } catch {
@@ -292,7 +292,7 @@ export default function SSHRunnersCard(): JSX.Element {
     "rotate-known-hosts":
       "Known hosts fingerprint'ini yenilemek istediğinizden emin misiniz? Hedef sunucuya bağlanılarak yeni fingerprint alınacak.",
     finalize:
-      "Rotation'ı sonlandırmak istediğinizden emin misiniz? Yedek (previous) slot silinecek — yeni anahtarı sunucuya eklediğinizden emin olun.",
+      "Rotation'ı sonlandırmak istediğinizden emin misiniz? Yedek (previous) slot silinecek - yeni anahtarı sunucuya eklediğinizden emin olun.",
   };
 
   // --- Render --------------------------------------------------------------
@@ -457,7 +457,7 @@ export default function SSHRunnersCard(): JSX.Element {
       )}
 
       {/* ================================================================= */}
-      {/* Rotate Result Modal — shows new public key + instructions          */}
+      {/* Rotate Result Modal - shows new public key + instructions          */}
       {/* ================================================================= */}
       {rotateResult && (
         <div

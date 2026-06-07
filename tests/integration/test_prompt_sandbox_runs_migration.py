@@ -1,4 +1,4 @@
-"""Integration coverage for the ``001_prompt_sandbox_runs.sql`` migration.
+﻿"""Integration coverage for the ``001_prompt_sandbox_runs.sql`` migration.
 
 
 Validates that the ``infra/postgres/migrations/001_prompt_sandbox_runs.sql``
@@ -340,7 +340,7 @@ class TestPromptSandboxRunsMigration:
                 f"(expected {expected_type!r}, got {actual[col]!r})"
             )
 
-        # No unexpected extras — keep the schema tight.
+        # No unexpected extras - keep the schema tight.
         unexpected = set(actual) - set(EXPECTED_COLUMNS)
         assert not unexpected, (
             f"Unexpected columns in automation.prompt_sandbox_runs: {sorted(unexpected)!r}"

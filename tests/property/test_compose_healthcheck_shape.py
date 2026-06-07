@@ -1,4 +1,4 @@
-"""invariant for Compose healthcheck shape invariants.
+﻿"""invariant for Compose healthcheck shape invariants.
 
 
 
@@ -21,7 +21,7 @@ Implementation notes
  to treat ``healthcheck`` uniformly across services.
 * Duration strings like ``10s``, ``1m30s``, ``500ms`` are parsed via
  a regex-based accumulator matching Compose's duration format.
-* Services without a ``healthcheck:`` block are skipped — only custom
+* Services without a ``healthcheck:`` block are skipped - only custom
  healthcheck configurations are validated.
 """
 
@@ -108,7 +108,7 @@ def _parse_duration_seconds(value: str | int | float) -> float:
 
 
 # ---------------------------------------------------------------------------
-# Service discovery — collect services with custom healthcheck blocks
+# Service discovery - collect services with custom healthcheck blocks
 # ---------------------------------------------------------------------------
 
 
@@ -139,7 +139,7 @@ _HEALTHCHECK_SERVICES: list[str] = _services_with_healthcheck()
 )
 @given(service_name=st.sampled_from(_HEALTHCHECK_SERVICES))
 def test_healthcheck_interval_in_bounds(service_name: str) -> None:
-    """invariant (a) — healthcheck interval ∈ [5s, 30s].
+    """invariant (a) - healthcheck interval ∈ [5s, 30s].
 
 
 
@@ -170,7 +170,7 @@ def test_healthcheck_interval_in_bounds(service_name: str) -> None:
 )
 @given(service_name=st.sampled_from(_HEALTHCHECK_SERVICES))
 def test_healthcheck_retries_bounded(service_name: str) -> None:
-    """invariant (b) — healthcheck retries ≤ 3.
+    """invariant (b) - healthcheck retries ≤ 3.
 
 
 
@@ -203,7 +203,7 @@ def test_healthcheck_retries_bounded(service_name: str) -> None:
 )
 @given(service_name=st.sampled_from(_HEALTHCHECK_SERVICES))
 def test_healthcheck_timeout_less_than_interval(service_name: str) -> None:
-    """invariant (c) — healthcheck timeout < interval.
+    """invariant (c) - healthcheck timeout < interval.
 
 
 
@@ -240,7 +240,7 @@ def test_healthcheck_timeout_less_than_interval(service_name: str) -> None:
 
 @pytest.mark.parametrize("service_name", _HEALTHCHECK_SERVICES)
 def test_healthcheck_shape_all_invariants(service_name: str) -> None:
-    """invariant (combined) — all healthcheck invariants in one pass.
+    """invariant (combined) - all healthcheck invariants in one pass.
 
 
 

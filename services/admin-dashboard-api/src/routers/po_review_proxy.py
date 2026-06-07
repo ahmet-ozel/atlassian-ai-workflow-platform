@@ -1,4 +1,4 @@
-"""``po_review_proxy`` — admin-dashboard-api → automation-service shim.
+﻿"""``po_review_proxy`` - admin-dashboard-api → automation-service shim.
 
 The PO Review Inbox and Orphan Branches surfaces moved from the
 Streamlit end-user app into the admin dashboard (admin-only). The
@@ -13,7 +13,7 @@ authoritative endpoints live on automation-service:
 This router exposes the same paths under the admin-dashboard-api so
 the dashboard front-end (which only talks to admin-dashboard-api on
 :8082) can reach them. Every call is gated by :func:`require_admin`
-— unlike the old Streamlit page, which any session could open. The
+- unlike the old Streamlit page, which any session could open. The
 forward uses the shared ``app.state.http_client`` and the
 ``automation_service_url`` setting.
 """

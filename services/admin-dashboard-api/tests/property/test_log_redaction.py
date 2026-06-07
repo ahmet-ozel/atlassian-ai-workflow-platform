@@ -1,4 +1,4 @@
-"""— log redaction matches every documented LLM key pattern.
+﻿"""- log redaction matches every documented LLM key pattern.
 the project spec: the six regex patterns added to
 :data:`http_shared.redaction.REDACTION_PATTERNS` cover every LLM
 credential shape this feature supports (Anthropic ``sk-ant-``,
@@ -22,14 +22,14 @@ for _path in (_API_ROOT, _PLATFORM_ROOT / "libs" / "http-shared" / "src"):
 from http_shared.redaction import REDACTION_PLACEHOLDER, redact_text  # noqa: E402
 
 
-#: Suffix charset for ``sk-`` / ``AIza`` keys — strict ASCII alphanumeric
+#: Suffix charset for ``sk-`` / ``AIza`` keys - strict ASCII alphanumeric
 #: plus ``_-``. The redaction regexes are ASCII-only (``[A-Za-z0-9_\-]``)
 #: so the strategy stays inside that alphabet; Unicode "Nd"/"Ll" code
 #: points produce characters the regex does not match, which is fine in
 # : production but useless for *this* property ( only pins the
 #: documented patterns, not Unicode-extension behaviour).
 #: 30+ chars covers every documented prefix's minimum length
-#: (sk- patterns need ≥ 20, AIza needs ≥ 30 — 30 satisfies both).
+#: (sk- patterns need ≥ 20, AIza needs ≥ 30 - 30 satisfies both).
 #: Restricted to alphanumeric so the bare ``sk-[A-Za-z0-9]{20,}``
 #: regex (which does NOT allow ``_-`` in the body) still matches.
 _KEY_CHARSET = st.text(

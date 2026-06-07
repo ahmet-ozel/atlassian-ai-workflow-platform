@@ -1,11 +1,11 @@
-"""``OperationsRouter`` — operations dashboard endpoints.
+﻿"""``OperationsRouter`` - operations dashboard endpoints.
 
 Exposes the ``GET /admin/operations/license`` endpoint that returns
 current license cap usage for every license tier visible to the
 authenticated actor. The data is read directly from the automation
 Postgres database (``automation.bot_license_caps``,
 ``automation.departments``, ``automation.work_items``,
-``shared.cost_tracking``) — no proxy hop to automation-service is
+``shared.cost_tracking``) - no proxy hop to automation-service is
 needed because admin-dashboard-api already holds a ``pg_pool`` slot
 wired during lifespan (the same pool used by the ``costs`` and
 ``feature_flags`` routers).
@@ -42,12 +42,12 @@ using the default cap values baked into
 RBAC
 ----
 
-* ``admin`` — sees all license tiers.
-* ``dept_admin`` — sees only the license tier(s) associated with their
+* ``admin`` - sees all license tiers.
+* ``dept_admin`` - sees only the license tier(s) associated with their
   own ``dept_ids``. The endpoint resolves the actor's ``dept_ids``
   from the OIDC ``dept_ids`` claim (via :class:`AuthContext`) and
   filters the result set accordingly.
-* ``lead`` / ``viewer`` — ``403`` (the ``require_admin_or_dept_admin``
+* ``lead`` / ``viewer`` - ``403`` (the ``require_admin_or_dept_admin``
   dependency rejects them before the handler runs).
 
 The RBAC check is implemented inline rather than via a shared
@@ -62,7 +62,7 @@ The endpoint reads ``app.state.pg_pool`` (the same asyncpg pool used
 by the ``costs`` and ``feature_flags`` routers). When the pool is
 ``None`` (Postgres still booting, or the pool creation failed during
 lifespan) the endpoint returns ``503`` with
-``reason="pg_pool_unavailable"`` — matching the pattern established
+``reason="pg_pool_unavailable"`` - matching the pattern established
 by the other ops routers.
 """
 
@@ -82,7 +82,7 @@ __all__ = ["router"]
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Default cap constants — kept in sync with
+# Default cap constants - kept in sync with
 # ``automation-service/src/middleware/license_cap.py`` defaults.
 # These are used when a dept has no license_id assigned (NULL).
 # ---------------------------------------------------------------------------
@@ -149,7 +149,7 @@ def _actor_dept_ids(actor: AuthClaims) -> list[str]:
     The ``dept_ids`` claim is surfaced as a space-separated string or
     a JSON array depending on the IdP configuration. We normalise both
     forms to a plain Python list. When the claim is absent or empty we
-    return an empty list — the caller treats that as "no depts visible"
+    return an empty list - the caller treats that as "no depts visible"
     and returns an empty result set rather than raising.
 
     The claim is stored on :class:`AuthClaims` as part of the
@@ -169,7 +169,7 @@ def _actor_dept_ids(actor: AuthClaims) -> list[str]:
     """
 
     # Future: return actor.dept_ids when auth-shared exposes the field.
-    # For now, return empty list — dept_admin sees no licenses until
+    # For now, return empty list - dept_admin sees no licenses until
     # the auth-shared library is updated.
     return []
 
@@ -446,12 +446,12 @@ async def get_license_usage(
 
     **RBAC:**
 
-    * ``admin`` — all license tiers are returned.
-    * ``dept_admin`` — only the license tier(s) associated with the
+    * ``admin`` - all license tiers are returned.
+    * ``dept_admin`` - only the license tier(s) associated with the
       actor's own ``dept_ids`` are returned. When the auth-shared
       library does not yet surface ``dept_ids`` as a first-class
       claim, the result set is empty (safe-fail: under-exposure).
-    * ``lead`` / ``viewer`` — ``403`` (rejected by
+    * ``lead`` / ``viewer`` - ``403`` (rejected by
       :func:`require_admin` before this handler runs).
 
     **Response shape** (array of objects):
@@ -490,7 +490,7 @@ async def get_license_usage(
         # dept_admin sees only their own license tiers.
         dept_ids = _actor_dept_ids(actor)
         if not dept_ids:
-            # No dept_ids claim available — safe-fail: return empty.
+            # No dept_ids claim available - safe-fail: return empty.
             logger.warning(
                 "dept_admin actor %r has no dept_ids claim; "
                 "returning empty license list",
@@ -515,7 +515,7 @@ async def get_license_usage(
         try:
             usage = await _build_license_usage(pool, license_id, now)
             results.append(usage)
-        except Exception as exc:  # noqa: BLE001 — soft-fail per license tier
+        except Exception as exc:  # noqa: BLE001 - soft-fail per license tier
             logger.warning(
                 "Failed to build license usage for license_id=%r: %s",
                 license_id,

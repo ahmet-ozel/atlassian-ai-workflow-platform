@@ -1,16 +1,16 @@
-"""Cookie manager for Streamlit department selection persistence.
+﻿"""Cookie manager for Streamlit department selection persistence.
 
 Provides HMAC-SHA256 signed cookies so that department selection
 survives browser sessions without risk of tampering.
 
 The module exposes four public functions:
 
-- ``sign_cookie(value, secret)`` — HMAC-SHA256 signs a value.
-- ``verify_cookie(signed_value, secret)`` — verifies and returns
+- ``sign_cookie(value, secret)`` - HMAC-SHA256 signs a value.
+- ``verify_cookie(signed_value, secret)`` - verifies and returns
   the original value, or ``None`` on failure.
-- ``read_department_cookie()`` — reads and verifies the department
+- ``read_department_cookie()`` - reads and verifies the department
   cookie from the Streamlit cookie store.
-- ``write_department_cookie(department)`` — writes a signed
+- ``write_department_cookie(department)`` - writes a signed
   department cookie with 30-day TTL.
 
 The cookie format is: ``<base64url(value)>.<base64url(signature)>``
@@ -45,7 +45,7 @@ COOKIE_TTL_DAYS: Final[int] = 30
 #: Environment variable for the cookie signing secret.
 _COOKIE_SECRET_ENV: Final[str] = "COOKIE_SECRET"
 
-#: Fallback secret for development only — production MUST set COOKIE_SECRET.
+#: Fallback secret for development only - production MUST set COOKIE_SECRET.
 _DEV_FALLBACK_SECRET: Final[str] = "streamlit-dev-cookie-secret-not-for-prod"
 
 
@@ -167,5 +167,5 @@ def write_department_cookie(department: str) -> None:
 
     try:
         writer(COOKIE_NAME, signed_value, ttl_days=COOKIE_TTL_DAYS)
-    except Exception:  # noqa: BLE001 — non-fatal; cookie write is best-effort
+    except Exception:  # noqa: BLE001 - non-fatal; cookie write is best-effort
         pass

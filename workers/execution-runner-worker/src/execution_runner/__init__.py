@@ -1,4 +1,4 @@
-"""``execution_runner`` package — canonical home for the execution-runner-worker.
+﻿"""``execution_runner`` package - canonical home for the execution-runner-worker.
 
 The boot script (:mod:`execution_runner.main`) registers the canonical
 :class:`src.workflows.execution_run_workflow.ExecutionRunWorkflow` and

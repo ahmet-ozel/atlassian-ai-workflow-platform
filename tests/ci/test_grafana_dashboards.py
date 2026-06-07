@@ -1,4 +1,4 @@
-"""CI gate — Grafana dashboard JSON catalog (ops work).
+﻿"""CI gate - Grafana dashboard JSON catalog (ops work).
 
 
 Every JSON file under
@@ -7,7 +7,7 @@ Every JSON file under
 * parse as valid JSON,
 * declare a non-empty ``title`` and ``uid``,
 * reference only metric names from the canonical
- :data:`observability.METRIC_NAMES` catalog (the implementation) — a panel
+ :data:`observability.METRIC_NAMES` catalog (the implementation) - a panel
  that queries ``foo_total`` while no such collector exists is a
  silent monitoring outage waiting to happen, so we fail the build
  here.
@@ -37,7 +37,7 @@ _DASHBOARDS_DIR = _PLATFORM_ROOT / "infra" / "observability" / "grafana-dashboar
 def _dashboard_files() -> list[Path]:
     """Return every ``*.json`` under the dashboards directory.
 
- The directory MUST exist and contain at least one file — the implementation ships three (``llm-cost``, ``platform-health``,
+ The directory MUST exist and contain at least one file - the implementation ships three (``llm-cost``, ``platform-health``,
  ``workflows-overview``); a future deletion that drops the
  catalog is caught here.
  """
@@ -53,7 +53,7 @@ def _extract_metric_references(text: str) -> set[str]:
  A metric reference is any identifier matching ``[a-z_]+_total`` /
  ``[a-z_]+_seconds`` / ``[a-z_]+_(bucket|count|sum|status|depth)``
  or a bare match of one of the canonical catalog names. The regex
- is deliberately permissive — we only need to find candidates and
+ is deliberately permissive - we only need to find candidates and
  cross-check them against the canonical list.
  """
 
@@ -72,7 +72,7 @@ def test_dashboards_directory_is_populated() -> None:
     files = _dashboard_files()
     names = {p.stem for p in files}
     assert "llm-cost" in names, (
-        "Missing dashboard llm-cost.json — the implementation ships this as part "
+        "Missing dashboard llm-cost.json - the implementation ships this as part "
         "of the canonical catalog."
     )
     assert "platform-health" in names
@@ -131,7 +131,7 @@ def test_dashboard_metrics_are_registered(dashboard_path: Path) -> None:
         or token in {f"{name}_sum" for name in canonical}
         or token in canonical
     }
-    # All recognised tokens collapsed to canonical names — we only
+    # All recognised tokens collapsed to canonical names - we only
     # need to verify that what we *recognised* maps cleanly. Any
     # genuine unknown metric (eg. ``custom_metric_total``) falls
     # through the recognition gate and is checked below.
@@ -151,5 +151,5 @@ def test_dashboard_metrics_are_registered(dashboard_path: Path) -> None:
     # so it does something useful.
     assert referenced_canonical, (
         f"Dashboard {dashboard_path.name} references no canonical "
-        "metric — likely an empty / TODO file."
+        "metric - likely an empty / TODO file."
     )

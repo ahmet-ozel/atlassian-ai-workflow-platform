@@ -1,4 +1,4 @@
-"""Unit tests for the SSH dual-slot key fallback logic.
+﻿"""Unit tests for the SSH dual-slot key fallback logic.
 
 Tests the :class:`SSHDualSlotConnector` in
 :mod:`src.runners.remote_ssh` which implements the active → previous
@@ -80,7 +80,7 @@ class TestSSHDualSlotConnector:
 
     @patch("src.runners.remote_ssh._try_connect_with_key")
     def test_active_slot_succeeds(self, mock_connect: MagicMock) -> None:
-        """Active slot connects successfully — no fallback needed."""
+        """Active slot connects successfully - no fallback needed."""
         mock_connect.return_value = None  # success
 
         reader = FakeSlotReader(active_key=FAKE_ACTIVE_KEY, previous_key=FAKE_PREVIOUS_KEY)
@@ -109,7 +109,7 @@ class TestSSHDualSlotConnector:
     def test_active_auth_fails_previous_succeeds(
         self, mock_connect: MagicMock
     ) -> None:
-        """Active slot auth fails, previous slot succeeds — fallback works."""
+        """Active slot auth fails, previous slot succeeds - fallback works."""
         import paramiko
 
         def side_effect(host, port, user, key, timeout):
@@ -272,7 +272,7 @@ class TestSSHDualSlotConnector:
                 user="ai-runner",
             )
 
-        # Only one attempt — no fallback for non-auth errors
+        # Only one attempt - no fallback for non-auth errors
         mock_connect.assert_called_once()
         # No audit events (not a both-slots-failed scenario)
         assert len(audit.events) == 0

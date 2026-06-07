@@ -1,7 +1,7 @@
-"""Unit tests for the egress allowlist matcher.
+﻿"""Unit tests for the egress allowlist matcher.
 
 These cover the canonical happy paths and the negative cases that the
-property test only samples — concrete regression anchors here pin the
+property test only samples - concrete regression anchors here pin the
 matching contract so a regression in either side fails this file
 deterministically.
 """
@@ -51,7 +51,7 @@ def test_parse_allowlist_normalises(raw: str | None, expected: tuple[str, ...]) 
 @pytest.mark.parametrize(
     "host, allowlist, expected",
     [
-        # Empty allowlist denies everything (closed by default — Y3).
+        # Empty allowlist denies everything (closed by default - Y3).
         ("example.com", (), False),
         ("", ("example.com",), False),
         # Exact match.
@@ -74,7 +74,7 @@ def test_is_host_allowed(host: str, allowlist: tuple[str, ...], expected: bool) 
 
 
 # ---------------------------------------------------------------------------
-# decide_egress — verdict, host, audit_action
+# decide_egress - verdict, host, audit_action
 # ---------------------------------------------------------------------------
 
 

@@ -1,4 +1,4 @@
-"""Invariant test: Needs-info signal delivery.
+﻿"""Invariant test: Needs-info signal delivery.
 
 **: Needs-info signal delivery guarantee
 ------------------------------------------------
@@ -10,12 +10,12 @@ The webhook → workflow latency itself is a Temporal infrastructure
 property (HTTP handler → ``Client.signal_workflow`` → Temporal
 front-end → workflow event history) and cannot be measured from a
 unit test without a live cluster. What we *can* validate as a
-property — and what explicitly asks for — is that the:class:`AutomationWorkflow.info_received` signal handler:
+property - and what explicitly asks for - is that the:class:`AutomationWorkflow.info_received` signal handler:
 
 1. Accepts every payload shape the dispatcher (or a misconfigured
  data converter) can plausibly emit: ``str``, ``dict``, ``None``,
  and other Python scalars.
-2. Never raises — a raising signal handler would block delivery and
+2. Never raises - a raising signal handler would block delivery and
  force Temporal to retry the signal indefinitely, blowing the 5s
  delivery budget.
 3. Always flips the ``_info_received`` edge flag to ``True`` so the
@@ -34,7 +34,7 @@ Hypothesis so a regression in payload coercion (e.g. a refactor that
 suddenly raises on a ``bytes`` body) surfaces immediately.
 
 The 5-second SLA is encoded as a per-call wall-clock budget on the
-signal handler itself — every example must complete in well under
+signal handler itself - every example must complete in well under
 that bound. The handler does no I/O so the actual numbers run in
 microseconds, but the assertion makes the SLA explicit in code.
 """
@@ -50,7 +50,7 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — match sibling Invariant tests so we import the
+# sys.path bootstrap - match sibling Invariant tests so we import the
 # real workflow class (not a stub).
 # ---------------------------------------------------------------------------
 
@@ -71,7 +71,7 @@ from automation_worker.workflows.automation_workflow import (  # noqa: E402
 # ---------------------------------------------------------------------------
 
 #: Signal delivery SLA from /. The handler itself
-#: does no I/O, so the realistic runtime is microseconds — we set the
+#: does no I/O, so the realistic runtime is microseconds - we set the
 #: budget to a generous fraction of the 5s bound to leave headroom
 #: for slow CI runners while still failing loudly on a regression
 #: that introduces synchronous network I/O.
@@ -79,17 +79,17 @@ _SIGNAL_HANDLER_BUDGET_SECONDS: float = 1.0
 
 
 # ---------------------------------------------------------------------------
-# Hypothesis strategies — payloads the dispatcher may plausibly emit
+# Hypothesis strategies - payloads the dispatcher may plausibly emit
 # ---------------------------------------------------------------------------
 
-# Plain strings — the normal shape coming out of
+# Plain strings - the normal shape coming out of
 # ``WebhookDispatcher._signal_workflow`` (see
 # ``platform/services/automation-service/src/webhooks/dispatcher.py``).
 # Empty strings are allowed because Jira can emit a comment with no
 # visible body (e.g. an attachment-only reply).
 _string_payloads: st.SearchStrategy[str] = st.text(max_size=500)
 
-# Dict payloads — some Temporal data converters wrap a single
+# Dict payloads - some Temporal data converters wrap a single
 # positional argument in ``{"comment_body": "..."}``. The handler
 # must extract the field if present and otherwise coerce to "".
 _dict_with_comment_body: st.SearchStrategy[dict[str, Any]] = st.fixed_dictionaries(
@@ -106,7 +106,7 @@ _dict_payloads: st.SearchStrategy[dict[str, Any]] = st.one_of(
     _dict_with_comment_body, _dict_without_comment_body
 )
 
-# Other Python scalars — defensive coverage for misconfigured
+# Other Python scalars - defensive coverage for misconfigured
 # converters or future refactors that change the wire shape. The
 # handler must coerce these via ``str(...)`` rather than raising.
 _misc_scalar_payloads: st.SearchStrategy[Any] = st.one_of(
@@ -128,7 +128,7 @@ _any_payload: st.SearchStrategy[Any] = st.one_of(
 
 
 # ---------------------------------------------------------------------------
-# Helpers — predict the post-state the handler should produce so we
+# Helpers - predict the post-state the handler should produce so we
 # can compare against actual. These mirror the documented contract
 # of ``info_received`` and are independent of the implementation
 # details so a refactor that keeps the contract still passes.
@@ -148,7 +148,7 @@ def _expected_pending_body(payload: Any) -> str:
 
 
 # ---------------------------------------------------------------------------
-# — signal handler accepts any payload and reaches the
+# - signal handler accepts any payload and reaches the
 # expected post-state without raising or blocking.
 # ---------------------------------------------------------------------------
 
@@ -171,7 +171,7 @@ class TestSignalHandlerAcceptsAnyPayload:
     def test_handler_reaches_expected_post_state(self, payload: Any) -> None:
         wf = AutomationWorkflow()
 
-        # Pre-condition — fresh workflow, signal flag unset.
+        # Pre-condition - fresh workflow, signal flag unset.
         assert wf._info_received is False  # noqa: SLF001
         assert wf._pending_comment_body is None  # noqa: SLF001
         assert wf._info_received_history == []  # noqa: SLF001
@@ -183,7 +183,7 @@ class TestSignalHandlerAcceptsAnyPayload:
         wf.info_received(payload)
         elapsed = time.perf_counter() - start
 
-        # SLA: synchronous, no I/O — handler should finish far inside
+        # SLA: synchronous, no I/O - handler should finish far inside
         # the 5s budget. Generous slack so slow CI runners don't
         # produce false negatives.
         assert elapsed < _SIGNAL_HANDLER_BUDGET_SECONDS, (
@@ -193,7 +193,7 @@ class TestSignalHandlerAcceptsAnyPayload:
         )
 
         # The wait_condition predicate the run body parks on
-        # observes this flag — it must always flip on signal arrival
+        # observes this flag - it must always flip on signal arrival
         # so the workflow can resume.
         assert wf._info_received is True, (  # noqa: SLF001
             f"Signal flag did not flip for payload={payload!r}"
@@ -205,7 +205,7 @@ class TestSignalHandlerAcceptsAnyPayload:
             f"expected={expected!r} for payload={payload!r}"
         )
 
-        # Non-empty bodies are auditable — they go into the history
+        # Non-empty bodies are auditable - they go into the history
         # so operators can replay the conversation that resolved
         # needs_info. Empty bodies (None, "", dict missing the key)
         # only flip the edge flag.
@@ -245,7 +245,7 @@ class TestSignalHandlerSequenceAccumulatesHistory:
         # any signal has arrived.
         assert wf._info_received is True  # noqa: SLF001
 
-        # The exposed body is the most recently coerced payload —
+        # The exposed body is the most recently coerced payload -
         # even if that coercion is the empty string. This matches
         # the run body's "reset before wait, capture after wait"
         # contract.
@@ -269,7 +269,7 @@ class TestSignalHandlerSequenceAccumulatesHistory:
 class TestSignalHandlerIsRegisteredWithTemporal:
     """Sanity: the handler is decorated with the Temporal signal
  decorator under the name the dispatcher emits. Without this
- registration Temporal silently drops the signal — which would
+ registration Temporal silently drops the signal - which would
  violate the 5s delivery SLA in the worst possible way (no
  delivery at all)."""
 
@@ -293,7 +293,7 @@ class TestSignalHandlerIsRegisteredWithTemporal:
                 None,
             )
         assert defn is not None, (
-            "info_received is not registered as a Temporal signal — "
+            "info_received is not registered as a Temporal signal - "
             "Temporal would drop signals silently, breaking."
         )
         assert getattr(defn, "name", None) == "info_received"

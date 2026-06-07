@@ -1,4 +1,4 @@
-"""``VaultPath`` value-object.
+﻿"""``VaultPath`` value-object.
 
 Validates the project-wide Vault path convention
 (``^vault:[a-zA-Z0-9/_-]+$``) at construction time so callers cannot
@@ -10,7 +10,7 @@ The grammar is intentionally permissive:
 * Lowercase / kebab-case is enforced by the **project style guide**,
   not by the regex, so existing ``departments.schema.json`` references
   (which already use this character class) stay valid.
-* Plain-text values are rejected at the ``parse(...)`` boundary —
+* Plain-text values are rejected at the ``parse(...)`` boundary -
   any string that does not start with the literal ``vault:`` prefix
   raises :class:`ValueError`.
 
@@ -61,7 +61,7 @@ _PREFIX: Final[str] = "vault:"
 # names match the field names used by callers.
 
 #: Per-user session credential written by ``assistant-service`` and read
-#: by ``automation-service``. Session lifetime —
+#: by ``automation-service``. Session lifetime -
 #: deleted on Streamlit logout, 24h cron sweep cleans orphans.
 USER_SESSION_PATH_TEMPLATE: Final[str] = (
     "atlassian/_user_session/{session_id}/{service}"
@@ -76,7 +76,7 @@ USER_PERSISTED_PATH_TEMPLATE: Final[str] = (
 )
 
 #: SMTP credential consumed by ``notification_service`` for outbound
-#: email. Single tenant — owner: notification_service.
+#: email. Single tenant - owner: notification_service.
 NOTIFICATION_SMTP_PATH: Final[str] = "notifications/smtp/credential"
 
 #: Per-department Slack webhook URL consumed by ``notification_service``
@@ -88,7 +88,7 @@ NOTIFICATION_SLACK_PATH_TEMPLATE: Final[str] = "notifications/{dept_id}/slack"
 class VaultPath:
     """Immutable, validated reference to a secret stored in Vault.
 
-    Construct via :meth:`parse` — the dataclass constructor itself does
+    Construct via :meth:`parse` - the dataclass constructor itself does
     *not* validate, mirroring the Python convention that ``__init__``
     stays cheap and total. ``parse`` is the single, explicit boundary
     where untrusted strings become ``VaultPath`` instances.
@@ -119,7 +119,7 @@ class VaultPath:
             ValueError: If *s* is not a ``str`` or does not match
                 ``^vault:[a-zA-Z0-9/_-]+$``. The error message includes
                 the offending value (truncated to 64 characters) so it
-                is safe to log without leaking secrets — the regex
+                is safe to log without leaking secrets - the regex
                 rejects strings that look like base64 tokens or basic
                 auth credentials before they reach this point.
         """

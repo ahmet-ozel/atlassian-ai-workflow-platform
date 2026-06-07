@@ -1,4 +1,4 @@
-"""Integration smoke — dept decommission (`ops work` the implementation).
+﻿"""Integration smoke - dept decommission (`ops work` the implementation).
 
 Calling
 ``/admin/departments/{id}/decommission`` triggers the drain mode +

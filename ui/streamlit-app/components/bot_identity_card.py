@@ -1,13 +1,13 @@
-"""Bot identity card component for the Task Creator page (R8.2–R8.9).
+﻿"""Bot identity card component for the Task Creator page (R8.2-R8.9).
 
 Validates Requirements:
-    * R8.2 — Info card: dept display_name, bot username, account_id
+    * R8.2 - Info card: dept display_name, bot username, account_id
       (kopyalanabilir kod bloğu), probe status badge.
-    * R8.3 — Jira bot yoksa uyarı banner.
-    * R8.4 — probe_status not_probed/failed → badge + "Probe çalıştır" butonu.
-    * R8.5 — "Probe çalıştır" butonu POST /admin/departments/{id}/probe.
-    * R8.8 — Graceful degradation: 503/timeout/network → warning + retry.
-    * R8.9 — Diğer bot'lar (Bitbucket, Confluence) küçük tabloda listelenir.
+    * R8.3 - Jira bot yoksa uyarı banner.
+    * R8.4 - probe_status not_probed/failed → badge + "Probe çalıştır" butonu.
+    * R8.5 - "Probe çalıştır" butonu POST /admin/departments/{id}/probe.
+    * R8.8 - Graceful degradation: 503/timeout/network → warning + retry.
+    * R8.9 - Diğer bot'lar (Bitbucket, Confluence) küçük tabloda listelenir.
 
 This component makes a direct HTTP GET request to
 ``{api_base}/api/dept/{dept_id}/bot-info`` with a 5-second timeout.
@@ -144,7 +144,7 @@ def render_bot_identity_card(dept_id: str, api_base: str) -> str | None:
     # Render the identity card
     # ------------------------------------------------------------------
     account_id: str = jira_bot.get("account_id", "")
-    username: str = jira_bot.get("username", "—")
+    username: str = jira_bot.get("username", "-")
     probe_status: str = jira_bot.get("probe_status", "not_probed")
     badge: str = _get_probe_badge(probe_status)
 
@@ -160,13 +160,13 @@ def render_bot_identity_card(dept_id: str, api_base: str) -> str | None:
             if st.button("Probe çalıştır", key=f"probe_{dept_id}"):
                 result = _run_probe(dept_id, api_base)
                 if result:
-                    st.success("Probe tamamlandı — sayfa yenileniyor...")
+                    st.success("Probe tamamlandı - sayfa yenileniyor...")
                     st.rerun()
                 else:
                     st.error("Probe başarısız oldu.")
 
     # ------------------------------------------------------------------
-    # Other bots table (Bitbucket, Confluence) — reference only
+    # Other bots table (Bitbucket, Confluence) - reference only
     # ------------------------------------------------------------------
     other_bots = [b for b in bots if b.get("service") != "jira"]
     _render_other_bots_table(other_bots)
@@ -181,8 +181,8 @@ def _render_other_bots_table(bots: list[dict[str, Any]]) -> None:
     st.markdown("**Diğer Bot'lar:**")
     table_data = [
         {
-            "Servis": b.get("service", "—"),
-            "Username": b.get("username", "—"),
+            "Servis": b.get("service", "-"),
+            "Username": b.get("username", "-"),
             "Durum": _get_probe_badge(b.get("probe_status", "not_probed")),
         }
         for b in bots

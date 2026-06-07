@@ -1,4 +1,4 @@
-"""Unit tests for the ``iteration_manager`` activity.
+﻿"""Unit tests for the ``iteration_manager`` activity.
 
 Strategy
 --------
@@ -342,7 +342,7 @@ class TestBuildIterationWorkspacePath:
 
 
 # ===========================================================================
-# 2. prepare_iteration activity — happy path
+# 2. prepare_iteration activity - happy path
 # ===========================================================================
 
 
@@ -474,7 +474,7 @@ class TestPrepareIterationHappyPath:
 
 
 # ===========================================================================
-# 3. prepare_iteration — denial paths
+# 3. prepare_iteration - denial paths
 # ===========================================================================
 
 
@@ -585,7 +585,7 @@ class TestPrepareIterationDenialPaths:
 
 
 # ===========================================================================
-# 4. PostgresIterationStore — SQL surface
+# 4. PostgresIterationStore - SQL surface
 # ===========================================================================
 
 

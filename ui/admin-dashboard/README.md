@@ -1,4 +1,4 @@
-# `admin-dashboard`
+﻿# `admin-dashboard`
 
 Next.js 14 (App Router) admin UI for the platform. It is the operator
 control plane: bring services up/down, manage departments and credentials,
@@ -89,5 +89,5 @@ ui/admin-dashboard/
 > The dev fallbacks above only apply to `npm run dev` without a backing
 > `.env`. In the Compose stack these `NEXT_PUBLIC_*` values come from
 > `infra/.env` / the service `environment:` block. To change a port, edit the
-> `*_HOST_PORT` variables in `infra/.env` — never the TypeScript source.
+> `*_HOST_PORT` variables in `infra/.env` - never the TypeScript source.
 > This project uses `.env` files only; there is no `.env.example`.

@@ -1,4 +1,4 @@
-"""Turkish natural language PR comment intent classifier (Feature 15).
+﻿"""Turkish natural language PR comment intent classifier (Feature 15).
 
 Pure regex-based function that classifies PR comment text into one of
 three intents: ``"fix"``, ``"explain"``, or ``"review"``. Supports both
@@ -29,21 +29,21 @@ PRCommentIntent = Literal["fix", "explain", "review"]
 # Intent patterns (Turkish + English)
 # ---------------------------------------------------------------------------
 
-#: Pattern for "fix" intent — matches Turkish "düzelt", "tamir et" and
+#: Pattern for "fix" intent - matches Turkish "düzelt", "tamir et" and
 #: English "fix". Case-insensitive, word-boundary aware.
 _FIX_PATTERN = re.compile(
     r"\b(düzelt|fix|tamir\s*et)\b",
     re.IGNORECASE | re.UNICODE,
 )
 
-#: Pattern for "explain" intent — matches Turkish "açıkla", "anlat" and
+#: Pattern for "explain" intent - matches Turkish "açıkla", "anlat" and
 #: English "explain". Case-insensitive, word-boundary aware.
 _EXPLAIN_PATTERN = re.compile(
     r"\b(açıkla|explain|anlat)\b",
     re.IGNORECASE | re.UNICODE,
 )
 
-#: Pattern for "review" intent — matches Turkish "incele", "gözden geçir"
+#: Pattern for "review" intent - matches Turkish "incele", "gözden geçir"
 #: and English "review". Case-insensitive, word-boundary aware.
 _REVIEW_PATTERN = re.compile(
     r"\b(incele|review|gözden\s*geçir)\b",

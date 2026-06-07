@@ -1,4 +1,4 @@
-"""Integration test: AutomationWorkflow native Temporal idempotency.
+﻿"""Integration test: AutomationWorkflow native Temporal idempotency.
 
 
 Scenario
@@ -33,14 +33,14 @@ This file also covers three helper-level integration cases for the
 idempotency contract on top of the foundation-level invariant:
 
 * ``test_start_workflow_idempotent_returns_was_existing_true_on_duplicate``
- — the public :func:`temporal_shared.start_helper.start_workflow_idempotent`
+ - the public :func:`temporal_shared.start_helper.start_workflow_idempotent`
  helper returns ``was_existing=True`` on a duplicate ``workflow_id``
  rather than re-raising.
-* ``test_signal_after_start_delivered_to_existing_workflow`` — when a
+* ``test_signal_after_start_delivered_to_existing_workflow`` - when a
  duplicate ``signalWithStart``-style call lands on a running workflow
  the signal payload reaches the **existing** workflow's signal handler
  (no new execution is spawned).
-* ``test_n_repeated_starts_yield_single_execution`` — N concurrent
+* ``test_n_repeated_starts_yield_single_execution`` - N concurrent
  start calls with the same ``workflow_id`` collapse to exactly one
  Temporal execution and ``N-1`` duplicate-detected results.
 
@@ -78,7 +78,7 @@ ensure_worker_on_sys_path()
 def _temporal_test_env_available() -> bool:
     """Return ``True`` when the time-skipping ``WorkflowEnvironment`` imports.
 
- We only import the symbol here — actually starting the env requires
+ We only import the symbol here - actually starting the env requires
  spinning up the embedded ``temporal-test-server`` binary, which can
  fail at runtime even when the import succeeds. Each test wraps its
  ``WorkflowEnvironment.start_time_skipping`` call in a
@@ -86,9 +86,9 @@ def _temporal_test_env_available() -> bool:
  binary surfaces the same way an entirely missing module would.
  """
 
-    try:  # noqa: SIM105 — explicit branch keeps the intent legible.
+    try:  # noqa: SIM105 - explicit branch keeps the intent legible.
         from temporalio.testing import WorkflowEnvironment  # noqa: F401
-    except Exception:  # noqa: BLE001 — any import failure → skip.
+    except Exception:  # noqa: BLE001 - any import failure → skip.
         return False
     return True
 
@@ -114,7 +114,7 @@ async def _start_time_skipping_or_skip() -> Any:
 
     try:
         env_cm = await WorkflowEnvironment.start_time_skipping()
-    except Exception as exc:  # noqa: BLE001 — surface as skip.
+    except Exception as exc:  # noqa: BLE001 - surface as skip.
         pytest.skip(f"temporalio test environment not available: {exc}")
     async with env_cm as env:
         yield env
@@ -191,7 +191,7 @@ async def test_second_start_with_same_id_raises_workflow_already_started_error()
 
             # First start: succeeds and parks the workflow in the
             # needs_info wait. We deliberately do NOT await the
-            # workflow's terminal result here — leaving it running is
+            # workflow's terminal result here - leaving it running is
             # exactly the precondition the webhook handler's duplicate
             # branch covers.
             handle = await env.client.start_workflow(
@@ -253,7 +253,7 @@ async def test_start_workflow_idempotent_returns_was_existing_true_on_duplicate(
  The first call must return ``was_existing=False`` (fresh start);
  the second call against the **same** ``workflow_id`` while the
  first execution is still running must return ``was_existing=True``
- with the caller-supplied id surfaced in ``execution_id`` —
+ with the caller-supplied id surfaced in ``execution_id`` -
  matching the contract documented at
  ``platform/libs/temporal-shared/src/temporal_shared/start_helper.py``.
  """
@@ -270,7 +270,7 @@ async def test_start_workflow_idempotent_returns_was_existing_true_on_duplicate(
     log = CallLog()
 
     # Low-confidence LLM result so the first workflow parks on the
-    # needs_info wait — the same long-running shape used by the
+    # needs_info wait - the same long-running shape used by the
     # SDK-level test above. Two consecutive calls to the idempotent
     # helper land while the workflow is still running.
     @activity.defn(name="llm_analyze_task")
@@ -387,7 +387,7 @@ async def test_signal_after_start_delivered_to_existing_workflow() -> None:
 
  1. Starting :class:`AutomationWorkflow` with low-confidence LLM
  analysis so it parks on the ``needs_info`` wait condition.
- 2. Sending a ``new_comment`` signal with a recognisable payload —
+ 2. Sending a ``new_comment`` signal with a recognisable payload -
  the same payload the webhook handler synthesises after running
  :func:`start_workflow_idempotent` and finding
  ``was_existing=True``.
@@ -509,7 +509,7 @@ async def test_signal_after_start_delivered_to_existing_workflow() -> None:
         f"signal-driven completion expected status=completed, got {status!r}"
     )
 
-    # The signal must have driven exactly one additional LLM call —
+    # The signal must have driven exactly one additional LLM call -
     # i.e. one execution served both the start and the signal-with-start.
     assert state["calls"] == 2, (
         f"expected 2 LLM calls (initial + post-signal), "
@@ -548,7 +548,7 @@ async def test_n_repeated_starts_yield_single_execution() -> None:
 
  * Exactly **one** call returns ``was_existing=False`` (the fresh
  start).
- * The remaining ``N-1`` calls return ``was_existing=True`` —
+ * The remaining ``N-1`` calls return ``was_existing=True`` -
  Temporal collapsed them onto the running execution rather than
  spawning duplicates.
  * The activity call log shows the LLM was invoked exactly once,
@@ -664,7 +664,7 @@ async def test_n_repeated_starts_yield_single_execution() -> None:
         f"got {[r.execution_id for r in results]!r}"
     )
 
-    # Exactly one execution actually ran — the LLM activity is the
+    # Exactly one execution actually ran - the LLM activity is the
     # first side effect inside the workflow body.
     assert log.count("llm_analyze_task") == 1, (
         f"expected exactly 1 LLM call (single execution), got "

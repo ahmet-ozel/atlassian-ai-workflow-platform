@@ -1,4 +1,4 @@
-"""Docker cleanup policy correctness.
+﻿"""Docker cleanup policy correctness.
 
 For any combination of cleanup policy ("on_success", "always", "never") and
 task result (success/failure), the Docker_Activity executes cleanup
@@ -12,7 +12,7 @@ Otherwise cleanup is skipped (policy is "never", or policy is
 
 The function under test, :func:`_should_perform_cleanup`, is a pure
 helper extracted from the ``docker_cleanup_container`` Temporal activity.
-It requires no SSH connection, Temporal runtime, or external services —
+It requires no SSH connection, Temporal runtime, or external services -
 making it ideal for property-based testing.
 
 Additionally, :func:`build_docker_run_command` is tested to verify that
@@ -153,7 +153,7 @@ def test_docker_run_command_disables_auto_remove(
     must not be auto-removed by Docker. This ensures the cleanup activity
     can inspect and remove containers according to the configured policy.
     """
-    # Create a minimal DockerRunInput — the policy/task_succeeded don't
+    # Create a minimal DockerRunInput - the policy/task_succeeded don't
     # affect the run command itself, but we vary them to confirm --rm=false
     # is unconditional.
     run_input = DockerRunInput(

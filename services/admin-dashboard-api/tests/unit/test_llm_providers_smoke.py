@@ -1,4 +1,4 @@
-"""Smoke tests for ``llm-provider-management`` spec wiring.
+﻿"""Smoke tests for ``llm-provider-management`` spec wiring.
 
 Exercises the public surface end-to-end with in-memory fakes so the
 service / router / schema integration is verified without a live
@@ -17,7 +17,7 @@ from uuid import UUID, uuid4
 import pytest
 
 
-# Path bootstrap — mirrors the existing audit-related unit tests.
+# Path bootstrap - mirrors the existing audit-related unit tests.
 _API_ROOT = Path(__file__).resolve().parents[2]
 _PLATFORM_ROOT = _API_ROOT.parents[1]
 
@@ -102,7 +102,7 @@ class _FakeTransaction:
     """Tracks commit/rollback and exposes the call counters to tests.
 
     The fake threads itself through ``_FakeConn.transaction()`` so each
-    ``_FakeConn`` instance shares the same tx object — that lets
+    ``_FakeConn`` instance shares the same tx object - that lets
     :meth:`_FakeConn.fetchrow` see whether the surrounding transaction
     rolled back and undo any speculative INSERT into the pool's
     in-memory dict.
@@ -133,7 +133,7 @@ class _FakeTransaction:
 
 
 class _FakePool:
-    """In-memory pool — stores rows in dicts indexed by provider_id."""
+    """In-memory pool - stores rows in dicts indexed by provider_id."""
 
     def __init__(self) -> None:
         self.providers: dict[UUID, dict[str, Any]] = {}
@@ -415,7 +415,7 @@ async def test_update_without_api_key_preserves_credentials() -> None:
     dto = await service.create(payload, actor_id="admin-1")
     original_writes = list(vault.writes)
 
-    # Update WITHOUT api_key — Vault must not be touched.
+    # Update WITHOUT api_key - Vault must not be touched.
     patch = ProviderUpdate(name="Renamed")
     updated = await service.update(dto.id, patch, actor_id="admin-1")
     assert updated is not None
@@ -470,7 +470,7 @@ async def test_delete_blocks_when_dept_pins_provider() -> None:
     with pytest.raises(ProviderInUse) as exc_info:
         await service.delete(dto.id, actor_id="admin-1")
     assert exc_info.value.dept_ids == ["payment-ops"]
-    # Row must remain — referential safety.
+    # Row must remain - referential safety.
     assert dto.id in pool.providers
     assert vault.deletes == []
 

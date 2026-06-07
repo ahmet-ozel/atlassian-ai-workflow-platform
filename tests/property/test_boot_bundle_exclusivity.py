@@ -1,4 +1,4 @@
-"""invariant for Boot_Bundle exclusivity.
+﻿"""invariant for Boot_Bundle exclusivity.
 
 
 
@@ -17,7 +17,7 @@ forbidden substrings::
 This property is the runtime-side complement of
 ``test_compose_bootstrap_minimal.py`` (invariant) which checks the
 structural YAML. invariant here validates the *observed* running set
-from a ``docker compose ps`` snapshot — either live or from the
+from a ``docker compose ps`` snapshot - either live or from the
 evidence file ``vps-test-evidence/07-boot.txt``.
 
 Strategy
@@ -50,7 +50,7 @@ if str(_TESTS_DIR) not in sys.path:
 
 
 # ---------------------------------------------------------------------------
-# Boot_Bundle definition — vps-e2e-deployment-test
+# Boot_Bundle definition - vps-e2e-deployment-test
 # ---------------------------------------------------------------------------
 
 #: Exact set of services that ``make boot`` MUST start per.
@@ -71,7 +71,7 @@ BOOT_BUNDLE: frozenset[str] = frozenset(
     }
 )
 
-#: Forbidden substrings — per, NO running container name after boot
+#: Forbidden substrings - per, NO running container name after boot
 #: may contain any of these substrings.
 FORBIDDEN_SUBSTRINGS: tuple[str, ...] = (
     "automation",
@@ -85,7 +85,7 @@ FORBIDDEN_SUBSTRINGS: tuple[str, ...] = (
 
 
 # ---------------------------------------------------------------------------
-# Compose document fixture — single read per session
+# Compose document fixture - single read per session
 # ---------------------------------------------------------------------------
 
 _WORKSPACE_ROOT: Path = Path(__file__).resolve().parents[2]
@@ -147,7 +147,7 @@ _ACTUAL_DEFAULT_SET: frozenset[str] = _default_profile_set()
 
 
 def test_boot_bundle_running_set_equals_expected() -> None:
-    """invariant — running set after boot == {postgres, vault, admin-dashboard-api, admin-dashboard-ui}.
+    """invariant - running set after boot == {postgres, vault, admin-dashboard-api, admin-dashboard-ui}.
 
 
 
@@ -183,7 +183,7 @@ def test_boot_bundle_running_set_equals_expected() -> None:
 
 
 def test_boot_bundle_no_forbidden_substrings() -> None:
-    """invariant — no Boot_Bundle service name contains a forbidden substring.
+    """invariant - no Boot_Bundle service name contains a forbidden substring.
 
 
 
@@ -202,7 +202,7 @@ def test_boot_bundle_no_forbidden_substrings() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Concrete regression anchors — each Boot_Bundle member
+# Concrete regression anchors - each Boot_Bundle member
 # ---------------------------------------------------------------------------
 
 
@@ -212,7 +212,7 @@ def test_boot_bundle_no_forbidden_substrings() -> None:
     ids=sorted(BOOT_BUNDLE),
 )
 def test_boot_bundle_member_in_default_set(boot_service: str) -> None:
-    """Concrete anchor — each Boot_Bundle service is in the default-profile set.
+    """Concrete anchor - each Boot_Bundle service is in the default-profile set.
 
 
  """
@@ -224,7 +224,7 @@ def test_boot_bundle_member_in_default_set(boot_service: str) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Concrete regression anchors — each forbidden substring
+# Concrete regression anchors - each forbidden substring
 # ---------------------------------------------------------------------------
 
 
@@ -234,7 +234,7 @@ def test_boot_bundle_member_in_default_set(boot_service: str) -> None:
     ids=FORBIDDEN_SUBSTRINGS,
 )
 def test_no_default_service_contains_forbidden_substring(forbidden: str) -> None:
-    """Concrete anchor — no default-profile service contains a forbidden substring.
+    """Concrete anchor - no default-profile service contains a forbidden substring.
 
 
  """
@@ -250,7 +250,7 @@ def test_no_default_service_contains_forbidden_substring(forbidden: str) -> None
 
 
 # ---------------------------------------------------------------------------
-# Hypothesis — random subsets of forbidden substrings must not appear
+# Hypothesis - random subsets of forbidden substrings must not appear
 # ---------------------------------------------------------------------------
 
 
@@ -270,7 +270,7 @@ def test_no_default_service_contains_forbidden_substring(forbidden: str) -> None
 def test_property3_random_forbidden_subset_exclusion(
     forbidden_subset: list[str],
 ) -> None:
-    """invariant (Hypothesis) — random subset of forbidden substrings excluded.
+    """invariant (Hypothesis) - random subset of forbidden substrings excluded.
 
 
 
@@ -288,7 +288,7 @@ def test_property3_random_forbidden_subset_exclusion(
 
 
 # ---------------------------------------------------------------------------
-# Hypothesis — synthetic container names with forbidden substrings
+# Hypothesis - synthetic container names with forbidden substrings
 # must NOT be in Boot_Bundle
 # ---------------------------------------------------------------------------
 
@@ -314,7 +314,7 @@ def test_property3_random_forbidden_subset_exclusion(
 def test_property3_synthetic_forbidden_name_not_in_boot_bundle(
     prefix: str, forbidden: str, suffix: str
 ) -> None:
-    """invariant (Hypothesis) — any name containing a forbidden substring is NOT in Boot_Bundle.
+    """invariant (Hypothesis) - any name containing a forbidden substring is NOT in Boot_Bundle.
 
 
 
@@ -335,7 +335,7 @@ def test_property3_synthetic_forbidden_name_not_in_boot_bundle(
 
 
 # ---------------------------------------------------------------------------
-# Hypothesis — non-Boot_Bundle Compose services must be profile-gated
+# Hypothesis - non-Boot_Bundle Compose services must be profile-gated
 # ---------------------------------------------------------------------------
 
 
@@ -353,7 +353,7 @@ _NON_BOOT_BUNDLE_SERVICES: tuple[str, ...] = tuple(
     suppress_health_check=[HealthCheck.function_scoped_fixture],
 )
 def test_property3_non_boot_bundle_is_profile_gated(target_index: int) -> None:
-    """invariant — non-Boot_Bundle services are profile-gated (not running after boot).
+    """invariant - non-Boot_Bundle services are profile-gated (not running after boot).
 
 
 

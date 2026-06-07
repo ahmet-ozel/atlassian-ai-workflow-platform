@@ -1,4 +1,4 @@
-"""PR supersede ledger — multi-iter PR transition log.
+﻿"""PR supersede ledger - multi-iter PR transition log.
 
 When ``AgentRunnerWorkflow`` advances to a new iteration and opens a
 fresh draft PR, the ``iter_advance`` activity must record the
@@ -22,7 +22,7 @@ Schema reference: ``platform/infra/postgres/11_workflows.sql`` block
 * ``superseded_at`` timestamptz NOT NULL DEFAULT now()
 * PRIMARY KEY (workflow_id, old_pr_id)
 
-The repo is intentionally minimal — it owns exactly the one INSERT
+The repo is intentionally minimal - it owns exactly the one INSERT
 the ``iter_advance`` activity needs. Read-side queries (PO Review
 Inbox lookups) are owned by the API endpoint module.
 
@@ -40,7 +40,7 @@ __all__ = ["PrSupersedeLogRepo"]
 
 _LOG = logging.getLogger(__name__)
 
-# Single-source SQL — kept at module scope so tests can assert on the
+# Single-source SQL - kept at module scope so tests can assert on the
 # exact statement shape (``ON CONFLICT DO NOTHING`` is the idempotency
 # contract; mutating it without updating the contract test would be a
 # silent regression in idempotent supersede logging.
@@ -121,7 +121,7 @@ class PrSupersedeLogRepo:
         Returns:
             ``True`` when a new ledger row was inserted (first
             supersede for this ``(workflow_id, old_pr_id)`` pair).
-            ``False`` when the same pair was already recorded — the
+            ``False`` when the same pair was already recorded - the
             activity is a no-op on the second call. Callers that
             need to distinguish "first transition" from "retry" can
             branch on this value; ``iter_advance`` ignores it

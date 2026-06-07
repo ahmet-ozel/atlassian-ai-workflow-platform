@@ -1,4 +1,4 @@
-"""Integration test 2.4 — profile-less Compose stack opens only the boot bundle.
+﻿"""Integration test 2.4 - profile-less Compose stack opens only the boot bundle.
 
 **the invariant: Compose Boot-Only Set**
 
@@ -21,7 +21,7 @@ point regardless of which alias the operator types.
 
  codifies the invariant as a CI test: ``docker compose -f
 infra/docker-compose.yml config --services`` (run profilesiz, i.e.
-without any ``--profile`` flag) MUST return exactly the boot bundle —
+without any ``--profile`` flag) MUST return exactly the boot bundle -
 ``atlassian-mcp``, ``automation-service``, ``agent-runner-worker``,
 ``execution-runner-worker``, ``assistant-service``, ``firecrawl``,
 ``opencode-sidecar``, ``streamlit-ui`` and the rest MUST stay
@@ -34,18 +34,18 @@ The same invariant is checked via two independent paths so the
 property holds in every CI lane:
 
 1. ``test_profile_less_compose_yaml_only_lists_the_boot_bundle``
- — runs unconditionally. It parses ``infra/docker-compose.yml``
+ - runs unconditionally. It parses ``infra/docker-compose.yml``
  (and the dev override ``infra/docker-compose.dev.yml``) directly
  with PyYAML and computes the boot bundle as the set of services
  whose merged definition has no ``profiles:`` key (or whose
  ``profiles:`` list is empty). This path does NOT need a Docker
- daemon, runs in milliseconds, and stays parallel-safe — exactly
+ daemon, runs in milliseconds, and stays parallel-safe - exactly
  what the task notes call for ("Prefer parsing the docker-compose
  YAML directly with PyYAML over shelling out to docker compose so
  the test does not require docker installed in CI").
 
 2. ``test_profile_less_compose_config_services_matches_boot_bundle``
- — gated on ``--run-docker`` and on ``docker info``. It shells
+ - gated on ``--run-docker`` and on ``docker info``. It shells
  out to ``docker compose -f infra/docker-compose.yml config
  --services`` (no ``--profile`` flag) and asserts the parsed
  service set equals the boot bundle. This path proves that
@@ -57,7 +57,7 @@ property holds in every CI lane:
 What it explicitly does NOT do
 ------------------------------
 
-* It does not bring containers up — that is the implementation / the existing
+* It does not bring containers up - that is the implementation / the existing
  ``test_compose_default_profile_boots_and_services_are_healthy`` and
  ``test_boot_bundle_only_brings_up_four_services_and_they_are_healthy``
  smoke tests. The assertion is purely about which services
@@ -92,7 +92,7 @@ COMPOSE_FILE_REL: str = "infra/docker-compose.yml"
 #:
 #: Including the dev override here keeps the YAML walk faithful to
 #: what ``make boot`` actually invokes; the override never *adds* new
-#: services (Compose merge semantics extend, not introduce — see the
+#: services (Compose merge semantics extend, not introduce - see the
 #: comment block at the top of ``infra/docker-compose.dev.yml``) but
 #: it can in principle remove a ``profiles:`` key on an existing
 #: service. We respect that merge in case a future override does so.
@@ -136,7 +136,7 @@ EXPLICITLY_PROFILE_GATED: frozenset[str] = frozenset(
 def _load_compose_services(compose_path: Path) -> dict[str, dict]:
     """Parse a single Compose file and return its ``services:`` mapping.
 
- Returns an empty dict when the file is missing — callers (the
+ Returns an empty dict when the file is missing - callers (the
  layering helper below) treat absent overrides as "contributes
  nothing", matching Compose's own behaviour for omitted ``-f``
  files.
@@ -260,7 +260,7 @@ def _docker_available() -> bool:
 
 
 # ---------------------------------------------------------------------------
-# Test 1 — YAML-only path (always runs, no Docker required)
+# Test 1 - YAML-only path (always runs, no Docker required)
 # ---------------------------------------------------------------------------
 
 
@@ -352,7 +352,7 @@ def test_profile_less_compose_yaml_only_lists_the_boot_bundle(
 
 
 # ---------------------------------------------------------------------------
-# Test 2 — Docker-gated path (proves Compose itself agrees)
+# Test 2 - Docker-gated path (proves Compose itself agrees)
 # ---------------------------------------------------------------------------
 
 
@@ -392,7 +392,7 @@ def test_profile_less_compose_config_services_matches_boot_bundle(
 
     # NOTE: we deliberately invoke `docker compose -f
     # infra/docker-compose.yml config --services` WITHOUT the dev
-    # override and WITHOUT any `--profile` flag — that is precisely
+    # override and WITHOUT any `--profile` flag - that is precisely
     # what specifies. Layering the dev override here would also
     # be valid (the override does not change which services exist),
     # but matching the requirement text exactly keeps the failure

@@ -1,4 +1,4 @@
-"""— Each mutation/test emits exactly one audit event.
+﻿"""- Each mutation/test emits exactly one audit event.
 ``ProviderService``:
 * exactly one :class:`AuditEvent` is emitted, with
   ``actor_role="admin"`` and ``actor_id=claims.sub``;

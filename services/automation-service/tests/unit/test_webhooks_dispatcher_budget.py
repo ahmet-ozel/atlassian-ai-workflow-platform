@@ -1,4 +1,4 @@
-"""Unit tests for the dispatcher's Budget Enforcement runtime guard.
+﻿"""Unit tests for the dispatcher's Budget Enforcement runtime guard.
 
 Ensures :class:`webhooks.dispatcher.WebhookDispatcher` invokes
 :func:`automation_service.budget.policy.check_budget` **before** any
@@ -32,7 +32,7 @@ from typing import Any
 import pytest
 
 # ---------------------------------------------------------------------------
-# Path setup — mirrors test_webhooks_dispatcher.py + test_budget_policy.py
+# Path setup - mirrors test_webhooks_dispatcher.py + test_budget_policy.py
 # ---------------------------------------------------------------------------
 
 _TESTS_DIR = Path(__file__).resolve().parent

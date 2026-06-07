@@ -1,18 +1,18 @@
-"""
-Test 38: LLM Provider Management — Backend End-to-End .
+﻿"""
+Test 38: LLM Provider Management - Backend End-to-End .
 
 Validates the LLM provider FastAPI surface against the live
 ``admin-dashboard-api`` container:
 
-* Auth gate — every endpoint requires an admin bearer.
-* CRUD round-trip (, , , ) — POST → GET → PUT → DELETE
+* Auth gate - every endpoint requires an admin bearer.
+* CRUD round-trip (, , , ) - POST → GET → PUT → DELETE
  with credential masking on every response.
-* Test-endpoint validation — prompt-shaping fields are
+* Test-endpoint validation - prompt-shaping fields are
  rejected with the documented ``extra_fields_not_allowed`` shape.
-* Department override — PUT / GET / null-PUT.
-* Unsupported provider type — surfaces the
+* Department override - PUT / GET / null-PUT.
+* Unsupported provider type - surfaces the
  ``unsupported_provider_type`` body.
-* Log redaction — error messages echoed by the test endpoint
+* Log redaction - error messages echoed by the test endpoint
   never carry an unredacted credential marker.
 """
 
@@ -94,7 +94,7 @@ def _assert_no_unredacted_credentials(
 
  ``allow_marker`` is the prefix we deliberately sent (so the
  "post-create echo" mask check can use the same key shape without
- tripping its own check on the masked field — the masked variant
+ tripping its own check on the masked field - the masked variant
  has only the last 4 chars surviving, never the prefix).
  """
 
@@ -112,7 +112,7 @@ def _llm_providers_endpoint_reachable() -> bool:
  The endpoint may not be mounted on every deployment yet (the
  main.py wiring soft-fails on import errors the existing
  pattern). When the router is absent we SKIP every test rather
- than FAIL — the missing-route case is covered by 's wiring
+ than FAIL - the missing-route case is covered by 's wiring
  contract.
  """
 
@@ -138,13 +138,13 @@ def _require_llm_providers_mounted_or_skip() -> None:
 
 
 # ---------------------------------------------------------------------------
-# — Auth gate (the invariant of llm-provider-management)
+# - Auth gate (the invariant of llm-provider-management)
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.llm_providers
 class TestAuthGate:
-    """ — Every endpoint requires an admin bearer.
+    """ - Every endpoint requires an admin bearer.
 
  The full endpoint set requires admin authentication; we hit a
  representative subset here and assert each one returns 401 when
@@ -178,13 +178,13 @@ class TestAuthGate:
 
 
 # ---------------------------------------------------------------------------
-# — CRUD round-trip with credential masking
+# - CRUD round-trip with credential masking
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.llm_providers
 class TestProviderCrudRoundTrip:
-    """ — POST → GET → PUT → DELETE with masked credentials.
+    """ - POST → GET → PUT → DELETE with masked credentials.
 
  Validates the provider lifecycle and credential masking behavior.
  """
@@ -249,13 +249,13 @@ class TestProviderCrudRoundTrip:
 
 
 # ---------------------------------------------------------------------------
-# — Test endpoint rejects prompt-shaping fields (the invariant)
+# - Test endpoint rejects prompt-shaping fields (the invariant)
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.llm_providers
 class TestEndpointRejectsExtraFields:
-    """ — ``POST /admin/llm-providers/test`` with prompt-shaping
+    """ - ``POST /admin/llm-providers/test`` with prompt-shaping
  field surfaces the documented ``extra_fields_not_allowed`` body.
  """
 
@@ -293,13 +293,13 @@ class TestEndpointRejectsExtraFields:
 
 
 # ---------------------------------------------------------------------------
-# — Unsupported provider type surfaces the documented body shape
+# - Unsupported provider type surfaces the documented body shape
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.llm_providers
 class TestUnsupportedProviderType:
-    """ — Unknown ``provider_type`` → 422 with the documented body."""
+    """ - Unknown ``provider_type`` → 422 with the documented body."""
 
     def test_unsupported_provider_type_response_shape(self) -> None:
         _require_llm_providers_mounted_or_skip()
@@ -324,13 +324,13 @@ class TestUnsupportedProviderType:
 
 
 # ---------------------------------------------------------------------------
-# — Department override CRUD (null shape + 422 on missing provider)
+# - Department override CRUD (null shape + 422 on missing provider)
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.llm_providers
 class TestDepartmentOverride:
-    """ — Per-department override get / put.
+    """ - Per-department override get / put.
 
  Validates missing-provider and null-provider response behavior.
  """
@@ -369,13 +369,13 @@ class TestDepartmentOverride:
 
 
 # ---------------------------------------------------------------------------
-# — Redaction integration (error message echo)
+# - Redaction integration (error message echo)
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.llm_providers
 class TestRedactionIntegration:
-    """ — Live redaction filter scrubs credential markers.
+    """ - Live redaction filter scrubs credential markers.
 
  The unsaved-test endpoint dispatches to an upstream that does NOT
  exist on the e2e network (api.openai.com is unreachable from the
@@ -410,7 +410,7 @@ class TestRedactionIntegration:
 
 
 # ---------------------------------------------------------------------------
-# — POST / GET round-trip evidence
+# - POST / GET round-trip evidence
 # ---------------------------------------------------------------------------
 
 

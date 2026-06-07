@@ -1,4 +1,4 @@
-"""Unit tests for ``components.credential_manager``.
+﻿"""Unit tests for ``components.credential_manager``.
 
 Drives the pure :class:`CredentialManager` slice with synthetic
 ``state`` dicts and a deterministic monotonic clock so the
@@ -22,7 +22,7 @@ if str(_STREAMLIT_ROOT) not in sys.path:
     sys.path.insert(0, str(_STREAMLIT_ROOT))
 
 
-try:  # pragma: no cover — guarded import (Streamlit may be missing).
+try:  # pragma: no cover - guarded import (Streamlit may be missing).
     import components.credential_manager as credential_manager  # type: ignore[import-not-found]
     from components.cookie_manager import sign_cookie  # type: ignore[import-not-found]
     from components.credential_manager import (  # type: ignore[import-not-found]
@@ -74,7 +74,7 @@ def _make_manager(
     clk = clock or _Clock()
     if validator is None:
 
-        def validator(service, email, token):  # noqa: ARG001 — fixture seam
+        def validator(service, email, token):  # noqa: ARG001 - fixture seam
             return True, None
 
     return (
@@ -132,7 +132,7 @@ def test_session_expires_after_sixty_minutes_of_inactivity() -> None:
     mgr, state, clk = _make_manager()
     mgr.store("jira", email="a@b.com", api_token="t1")
 
-    # 59m59s — still alive.
+    # 59m59s - still alive.
     clk.advance(60 * 60 - 1)
     assert mgr.is_expired() is False
     assert mgr.get("jira") is not None
@@ -150,7 +150,7 @@ def test_session_expires_after_sixty_minutes_of_inactivity() -> None:
     cleared = mgr.enforce_timeout()
     assert cleared is True
     assert "_credential_manager_state" not in state
-    # Subsequent reads still return None — the credential is gone.
+    # Subsequent reads still return None - the credential is gone.
     assert mgr.get("jira") is None
     # The bucket may have been re-created by ``get()`` but it must be
     # empty of credentials.
@@ -442,7 +442,7 @@ def test_bitbucket_server_allows_optional_project_key() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Snapshot / observability — never echo raw tokens
+# Snapshot / observability - never echo raw tokens
 # ---------------------------------------------------------------------------
 
 

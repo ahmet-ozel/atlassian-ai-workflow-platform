@@ -1,6 +1,6 @@
-"""Property tests for cleanup decision truth table and replay TTL post-state.
+﻿"""Property tests for cleanup decision truth table and replay TTL post-state.
 
-Pure infrastructural invariants — cleanup decision and replay TTL
+Pure infrastructural invariants - cleanup decision and replay TTL
 post-state.
 
 This module covers two independent pure-function invariants from
@@ -84,12 +84,12 @@ _PROFILE = settings(
 #: The three valid cleanup policies recognised by ``should_cleanup``.
 _CLEANUP_POLICY = st.sampled_from(["always", "on_success", "never"])
 
-#: POSIX-style exit codes — including negative (e.g. signal-terminated
+#: POSIX-style exit codes - including negative (e.g. signal-terminated
 #: on POSIX, where ``exit_code = -signal``). The truth table is defined
 #: for *any* integer, so we sample widely.
 _EXIT_CODE = st.integers(min_value=-128, max_value=255)
 
-#: Non-zero exit codes — used by the on_success/non-zero leg.
+#: Non-zero exit codes - used by the on_success/non-zero leg.
 _NONZERO_EXIT_CODE = _EXIT_CODE.filter(lambda x: x != 0)
 
 #: Strings that are *not* one of the three valid policies. Hypothesis
@@ -205,7 +205,7 @@ class _FakePool:
     """
 
     def __init__(self, rows: list[tuple[str, datetime]]) -> None:
-        # ``dict`` enforces hash uniqueness — the same constraint as the
+        # ``dict`` enforces hash uniqueness - the same constraint as the
         # PK on ``automation.processed_events.event_hash``.
         self._store: dict[str, datetime] = dict(rows)
 
@@ -283,7 +283,7 @@ class TestCleanupDecisionTruthTable:
             assert result is (exit_code == 0)
         elif policy == "never":
             assert result is False
-        else:  # pragma: no cover — _CLEANUP_POLICY only emits the three
+        else:  # pragma: no cover - _CLEANUP_POLICY only emits the three
             pytest.fail(f"Unexpected policy: {policy!r}")
 
     @_PROFILE
@@ -371,7 +371,7 @@ class TestReplayTTLPostState:
         now: datetime,
     ) -> None:
         """Running ``cleanup_expired`` twice with the same ``now`` yields
-        the same final state — and the second call deletes zero rows.
+        the same final state - and the second call deletes zero rows.
         """
         pool = _FakePool(rows)
         await cleanup_expired(pool, now)  # type: ignore[arg-type]

@@ -1,4 +1,4 @@
-"""``AuditLogger`` — application-layer write surface for audit events.
+﻿"""``AuditLogger`` - application-layer write surface for audit events.
 
 The writer enforces the **mandatory ``actor_role``** invariant
 at the application layer: if a caller hands us an :class:`AuditEvent` whose
@@ -43,7 +43,7 @@ class AuditWriter(Protocol):
     the database layer. Tests can inject a list-backed fake whose
     ``insert_audit`` simply appends the event for later assertion.
 
-    The protocol is intentionally tiny — only the single ``insert_audit``
+    The protocol is intentionally tiny - only the single ``insert_audit``
     call is part of the contract. Any retry / deferred-queue policy
     lives in the underlying implementation, not here.
     """
@@ -94,7 +94,7 @@ class AuditLogger:
 
         role = event.actor_role
         # The dataclass annotation is a ``Literal``, but ``Literal`` is
-        # a static-type hint only — at runtime callers can still pass
+        # a static-type hint only - at runtime callers can still pass
         # ``None``, an empty string, or a typo. We surface those cases
         # explicitly so the failure mode is clear.
         if role is None:

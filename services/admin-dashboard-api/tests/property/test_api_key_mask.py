@@ -1,10 +1,10 @@
-"""— API key masking is "…" + last-4.
+﻿"""- API key masking is "…" + last-4.
 * :func:`llm_providers.masking.mask` returns a string starting with
   ``"…"`` for every non-empty input.
 * The result length is at most ``len(input) + 1`` so the mask never
   expands the input by more than the leading placeholder character.
 * When the input is ≥ 4 chars the last four characters survive
-  verbatim — operators can recognise the credential they configured
+  verbatim - operators can recognise the credential they configured
   without learning the full secret."""
 
 from __future__ import annotations

@@ -1,4 +1,4 @@
-"""Streamlit dept switcher.
+﻿"""Streamlit dept switcher.
 
 Dept seçimi zorunlu; dept seçilmeden hiçbir sayfa açılmaz. Dropdown
 changes trigger an automatic probe and tooltip update. Multi-dept users
@@ -49,7 +49,7 @@ _KEEP_KEYS: Final[frozenset[str]] = frozenset({"user", "auth_token"})
 #: signature only protects the *default selection*).
 _DEPT_COOKIE_NAME: Final[str] = "active_dept_id"
 
-#: Cookie TTL — long enough that a returning user lands on the same
+#: Cookie TTL - long enough that a returning user lands on the same
 #: dept they last used, short enough that a stale cookie does not
 #: outlive a typical role rotation.
 _DEPT_COOKIE_TTL_DAYS: Final[int] = 30
@@ -66,7 +66,7 @@ def _read_cookie(name: str) -> str | None:
     Production wiring populates ``st.session_state["_cookie_reader"]``
     at app boot with a callable that consumes ``streamlit-cookies-controller``
     or an equivalent signed-cookie store. Tests inject a dict-backed
-    fake. Returning ``None`` is the safe default — the caller falls
+    fake. Returning ``None`` is the safe default - the caller falls
     back to OIDC default_dept_id, then to the first allowed dept.
 
     For the department cookie (COOKIE_NAME), this reads and verifies
@@ -93,7 +93,7 @@ def _read_cookie(name: str) -> str | None:
     for cookie_name in names_to_try:
         try:
             raw_value = reader(cookie_name)
-        except Exception:  # noqa: BLE001 — best-effort; missing cookie is fine
+        except Exception:  # noqa: BLE001 - best-effort; missing cookie is fine
             continue
 
         if not raw_value:
@@ -104,7 +104,7 @@ def _read_cookie(name: str) -> str | None:
             secret = _get_secret()
             verified = verify_cookie(raw_value, secret)
             if verified is None:
-                # Invalid signature — delete the tampered cookie (Req 10.5)
+                # Invalid signature - delete the tampered cookie (Req 10.5)
                 try:
                     reader.delete(cookie_name)
                 except Exception:  # noqa: BLE001
@@ -145,7 +145,7 @@ def _write_cookie(name: str, value: str, *, ttl_days: int) -> None:
 
     try:
         writer(name, signed_value, ttl_days=ttl_days)
-    except Exception:  # noqa: BLE001 — non-fatal
+    except Exception:  # noqa: BLE001 - non-fatal
         pass
 
     # Also write to the dept_selection cookie so app.py's initial
@@ -153,7 +153,7 @@ def _write_cookie(name: str, value: str, *, ttl_days: int) -> None:
     if name == _DEPT_COOKIE_NAME:
         try:
             write_department_cookie(value)
-        except Exception:  # noqa: BLE001 — non-fatal
+        except Exception:  # noqa: BLE001 - non-fatal
             pass
 
 
@@ -207,7 +207,7 @@ def render_dept_switcher() -> str:
     """Render the mandatory dept dropdown and return the selected dept_id.
 
     The function blocks the page (``st.stop()``) when the user has
-    been granted no departments — page bodies SHOULD call this
+    been granted no departments - page bodies SHOULD call this
     function as their first sidebar widget so a misconfigured user
     never reaches dept-scoped data.
 
@@ -263,7 +263,7 @@ def render_dept_switcher() -> str:
         st.session_state["dept_probe"] = _run_probe(selected)
         st.rerun()
 
-    # First render — populate state if missing (covers the "no
+    # First render - populate state if missing (covers the "no
     # previous selection" path; no rerun needed because the value
     # is already in the dropdown).
     if previous is None:

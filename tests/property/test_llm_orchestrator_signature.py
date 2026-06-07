@@ -1,4 +1,4 @@
-"""LlmOrchestrator constructor signature compatibility checks.
+﻿"""LlmOrchestrator constructor signature compatibility checks.
 
 =============================================================================
 LEGACY → CURRENT KWARG MAPPING (recorded from LlmOrchestrator.__init__)
@@ -163,11 +163,11 @@ def test_surface4_llm_orchestrator_current_signature(include_fallback: bool) -> 
     # Legacy-kwarg construction raises TypeError.
     # -----------------------------------------------------------------------
 
-    # Legacy kwarg: `fallbacks=` (plural) — was the old name before rename to `fallback`
+    # Legacy kwarg: `fallbacks=` (plural) - was the old name before rename to `fallback`
     with pytest.raises(TypeError, match="unexpected keyword argument"):
         LlmOrchestrator(primary=primary_mock, fallbacks=[_make_mock_provider()])
 
-    # Legacy kwarg: `provider=` — alternative legacy name for `primary`
+    # Legacy kwarg: `provider=` - alternative legacy name for `primary`
     with pytest.raises(TypeError, match="unexpected keyword argument"):
         LlmOrchestrator(provider=primary_mock)
 

@@ -1,4 +1,4 @@
-"""End-to-end integration test for the ``confluence_doc_create`` workflow.
+﻿"""End-to-end integration test for the ``confluence_doc_create`` workflow.
 
 
 Scenario
@@ -10,31 +10,31 @@ This file exercises the
 Temporal cluster. The body is the one defined in
 :meth:`AgentRunnerWorkflow._handle_confluence_doc_create`:
 
-1. ``set_assignee_to_bot`` — claim the Jira issue.
-2. ``jira_build_issue_link`` — resolve the canonical Jira URL so the
+1. ``set_assignee_to_bot`` - claim the Jira issue.
+2. ``jira_build_issue_link`` - resolve the canonical Jira URL so the
  provenance footer can deep-link back to the originating task
  .
-3. ``llm_generate_doc`` — token-capped LLM call that returns the page
+3. ``llm_generate_doc`` - token-capped LLM call that returns the page
  body.
-4. ``confluence_create_page`` — the body + provenance footer are
+4. ``confluence_create_page`` - the body + provenance footer are
  appended together and written through the activity layer .
-5. ``jira_add_comment`` — best-effort completion comment ( audit
+5. ``jira_add_comment`` - best-effort completion comment ( audit
  trail).
 
 The integration tests drive the workflow with stub
 ``@activity.defn``-registered activities, capture every call in an
 :class:`ActivityCallLog`, and assert:
 
-* **Happy path** — exactly one
+* **Happy path** - exactly one
  ``confluence_create_page`` call whose body contains the verbatim
  Jira issue link returned by ``jira_build_issue_link`` (the
  provenance footer marker), terminal status ``"completed"``, and
  ``get_latest_confluence_page_id``-equivalent surface (the
- workflow's ``_latest_confluence_page_id`` field — round-tripped
+ workflow's ``_latest_confluence_page_id`` field - round-tripped
  through :class:`AgentRunnerWorkflowOutput.confluence_page_id`)
  matches the stub page id.
 
-* **Invalid topic ** — the workflow rejects topics with
+* **Invalid topic ** - the workflow rejects topics with
  control / XML-reserved characters with
  ``failure_reason="confluence_title_invalid"`` (the
  :func:`format_page_title` validation contract).
@@ -71,7 +71,7 @@ import pytest
 
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — agent-runner-worker tree + temporal-shared.
+# sys.path bootstrap - agent-runner-worker tree + temporal-shared.
 # Mirrors ``test_temporal_signal.py`` / ``test_temporal_loop_cap.py``.
 # ---------------------------------------------------------------------------
 
@@ -95,7 +95,7 @@ for _candidate in (
 
 
 # ---------------------------------------------------------------------------
-# Skip gate — mirrors the predicate in ``test_temporal_loop_cap.py``.
+# Skip gate - mirrors the predicate in ``test_temporal_loop_cap.py``.
 # ---------------------------------------------------------------------------
 
 
@@ -113,7 +113,7 @@ def _temporal_env_available() -> bool:
 
     try:
         from temporalio.testing import WorkflowEnvironment  # noqa: F401
-    except Exception:  # noqa: BLE001 — any import failure → skip.
+    except Exception:  # noqa: BLE001 - any import failure → skip.
         return False
     return True
 
@@ -138,7 +138,7 @@ async def _start_time_skipping_or_skip() -> Any:
 
     try:
         env_cm = await WorkflowEnvironment.start_time_skipping()
-    except Exception as exc:  # noqa: BLE001 — surface as skip.
+    except Exception as exc:  # noqa: BLE001 - surface as skip.
         pytest.skip(f"temporalio test environment not available: {exc}")
     async with env_cm as env:
         yield env
@@ -182,21 +182,21 @@ class ActivityCallLog:
 # Stub activity factory
 # ---------------------------------------------------------------------------
 
-#: Stub Jira issue link returned by ``jira_build_issue_link`` —
+#: Stub Jira issue link returned by ``jira_build_issue_link`` -
 #: matches the format the workflow's
 #: :func:`compute_provenance_footer` validator accepts (HTTPS URL with
 #: ``/browse/{ISSUE_KEY}`` path) so the footer is rendered verbatim
 #: into the page body.
 _STUB_JIRA_LINK: str = "https://jira.example.com/browse/PAY-1"
 
-#: Stub page id surfaced by ``confluence_create_page`` — the
+#: Stub page id surfaced by ``confluence_create_page`` - the
 #: workflow stashes this in ``_latest_confluence_page_id`` and the
 #: terminal :class:`AgentRunnerWorkflowOutput` round-trips it on
 #: ``confluence_page_id``.
 _STUB_PAGE_ID: str = "12345"
 _STUB_PAGE_URL: str = "https://confluence.example.com/x/abc"
 
-#: Stub LLM body — the test asserts the workflow appends the
+#: Stub LLM body - the test asserts the workflow appends the
 #: provenance footer to this verbatim.
 _STUB_LLM_BODY: str = (
     "## Section A\n\nFirst paragraph.\n\n## Section B\n\nSecond paragraph."
@@ -208,18 +208,18 @@ def _make_activities(log: ActivityCallLog) -> list[Any]:
 
  Activities registered:
 
- * ``set_assignee_to_bot`` — claim step (no return value).
- * ``jira_build_issue_link`` — returns :data:`_STUB_JIRA_LINK`
+ * ``set_assignee_to_bot`` - claim step (no return value).
+ * ``jira_build_issue_link`` - returns :data:`_STUB_JIRA_LINK`
  (HTTPS URL pointing at a synthetic Jira issue) so the
  provenance footer renders against a known link string.
- * ``llm_generate_doc`` — returns ``{"body": _STUB_LLM_BODY}``
+ * ``llm_generate_doc`` - returns ``{"body": _STUB_LLM_BODY}``
  so the workflow's body extractor lifts the body verbatim.
- * ``confluence_create_page`` — returns the
+ * ``confluence_create_page`` - returns the
  ``{"page_id", "url"}`` shape the workflow's extractor
  consumes.
- * ``jira_add_comment`` — best-effort completion comment
+ * ``jira_add_comment`` - best-effort completion comment
  (recorded but otherwise a no-op).
- * ``audit_emit`` — best-effort audit row sink. The
+ * ``audit_emit`` - best-effort audit row sink. The
  ``confluence_doc_create`` body itself does not emit audits
  directly, but the iter==3 banner / token-cap branches do, so
  registering the activity keeps the worker bootstrap forgiving.
@@ -352,7 +352,7 @@ def _output_to_dict(result: Any) -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
-# 1. Happy path — provenance footer attached, status="completed"
+# 1. Happy path - provenance footer attached, status="completed"
 # ---------------------------------------------------------------------------
 
 
@@ -369,11 +369,11 @@ async def test_confluence_doc_create_happy_path_includes_provenance_footer() -> 
  ``{"body": _STUB_LLM_BODY}``.
  4. ``confluence_create_page`` is called exactly once. Its body
  argument is the LLM body **plus** a provenance footer that
- embeds :data:`_STUB_JIRA_LINK` verbatim — the marker the 
+ embeds :data:`_STUB_JIRA_LINK` verbatim - the marker the 
  audit grep relies on.
  5. The terminal :class:`AgentRunnerWorkflowOutput` reports
  ``status="completed"``, ``failure_reason is None``, and
- ``confluence_page_id == _STUB_PAGE_ID`` — confirming the
+ ``confluence_page_id == _STUB_PAGE_ID`` - confirming the
  workflow's ``_latest_confluence_page_id`` field round-tripped
  through the output dataclass (the test's stand-in for the
  ``get_latest_confluence_page_id`` query mentioned in the
@@ -433,7 +433,7 @@ async def test_confluence_doc_create_happy_path_includes_provenance_footer() -> 
         f"(call log: {log.names()!r})"
     )
 
-    # 2. Provenance footer — the body arg of
+    # 2. Provenance footer - the body arg of
     # confluence_create_page must contain the Jira link verbatim.
     create_args = log.args_for("confluence_create_page")[0]
     # Activity signature: (target_space, page_title, page_body, dept_id)
@@ -462,20 +462,20 @@ async def test_confluence_doc_create_happy_path_includes_provenance_footer() -> 
     # link still fails the test.
     assert "<details>" in page_body_arg
     assert "</details>" in page_body_arg
-    # The original LLM body must be present unchanged — the footer
+    # The original LLM body must be present unchanged - the footer
     # is appended, not substituted.
     assert _STUB_LLM_BODY in page_body_arg, (
         f"LLM body must be preserved verbatim; got {page_body_arg!r}"
     )
 
-    # 3. Page title format — ``{topic} - {YYYY-MM-DD}`` .
+    # 3. Page title format - ``{topic} - {YYYY-MM-DD}`` .
     assert isinstance(page_title_arg, str)
     assert page_title_arg.startswith("KVKK Yönetmelik Analizi - "), (
         f"page title must follow the '{{topic}} - {{date}}' format "
         f"; got {page_title_arg!r}"
     )
 
-    # 4. Terminal output — completed + page id surfaces correctly.
+    # 4. Terminal output - completed + page id surfaces correctly.
     assert result["status"] == "completed", (
         f"expected status=completed for happy path, got {result!r}"
     )
@@ -489,7 +489,7 @@ async def test_confluence_doc_create_happy_path_includes_provenance_footer() -> 
 
 
 # ---------------------------------------------------------------------------
-# 2. Invalid topic — failure_reason="confluence_title_invalid" 
+# 2. Invalid topic - failure_reason="confluence_title_invalid" 
 # ---------------------------------------------------------------------------
 
 
@@ -502,7 +502,7 @@ async def test_confluence_doc_create_with_invalid_topic_fails() -> None:
  characters (``<``, ``>``, ``&``, ``"``). When the LLM emits a
  structurally invalid title the workflow body must surface this
  cleanly with ``failure_reason="confluence_title_invalid"`` rather
- than leaking a raw ``InvalidTopicError`` to the terminal output —
+ than leaking a raw ``InvalidTopicError`` to the terminal output -
  the failure category is the audit-stable name the rest of the
  platform (audit table, ops dashboards) keys off of.
 
@@ -566,11 +566,11 @@ async def test_confluence_doc_create_with_invalid_topic_fails() -> None:
     # (step 5). Pin those expectations so a regression in the
     # ordering is caught here.
     assert log.count("set_assignee_to_bot") == 1
-    # ``jira_build_issue_link`` runs in step 2 and is best-effort —
+    # ``jira_build_issue_link`` runs in step 2 and is best-effort -
     # exact count >=1 is accepted in case future refactors add a
     # retry, but the workflow body today fires it exactly once.
     assert log.count("jira_build_issue_link") == 1
-    # The LLM and create-page calls MUST NOT have been made — the
+    # The LLM and create-page calls MUST NOT have been made - the
     # title validation aborts the body before reaching them.
     assert log.count("llm_generate_doc") == 0, (
         f"llm_generate_doc must not fire when the title is invalid; "
@@ -581,7 +581,7 @@ async def test_confluence_doc_create_with_invalid_topic_fails() -> None:
         f"invalid; call log: {log.names()!r}"
     )
 
-    # Terminal output — failed + stable failure category.
+    # Terminal output - failed + stable failure category.
     assert result["status"] == "failed", (
         f"expected status=failed for invalid title, got {result!r}"
     )
@@ -589,7 +589,7 @@ async def test_confluence_doc_create_with_invalid_topic_fails() -> None:
         f"expected failure_reason=confluence_title_invalid; "
         f"got {result!r}"
     )
-    # No page id was created — the field round-trips ``None``.
+    # No page id was created - the field round-trips ``None``.
     assert result["confluence_page_id"] is None, (
         f"confluence_page_id must be None for failed runs; "
         f"got {result!r}"
@@ -597,7 +597,7 @@ async def test_confluence_doc_create_with_invalid_topic_fails() -> None:
 
 
 # ---------------------------------------------------------------------------
-# 3. confluence_doc_update — section hash dedup skips repeated content
+# 3. confluence_doc_update - section hash dedup skips repeated content
 # ---------------------------------------------------------------------------
 #
 # The full property-based coverage for lives at
@@ -605,13 +605,13 @@ async def test_confluence_doc_create_with_invalid_topic_fails() -> None:
 # The integration check here is intentionally narrow: it confirms the
 # end-to-end wiring of the dedup logic when two sections in a single
 # ``confluence_doc_update`` run carry identical ``content_hash``
-# values — the second section MUST be skipped without invoking
+# values - the second section MUST be skipped without invoking
 # ``confluence_update_page`` a second time.
 #
 # Constraint: the workflow's ``_confluence_section_hashes`` set is
 # in-memory state that resets per workflow run. A "second iteration"
 # (signal-driven re-entry or a fresh workflow) cannot trivially be
-# tested without rebuilding the gateway dispatch — that scenario is
+# tested without rebuilding the gateway dispatch - that scenario is
 # the property test's domain. The integration layer here pins the
 # single-run dedup path: same content_hash for two sections → exactly
 # one update activity call.
@@ -668,7 +668,7 @@ def _make_update_activities(
  Activities registered (in addition to the ones already covered
  by :func:`_make_activities`):
 
- * ``confluence_get_page`` — returns the page metadata + the
+ * ``confluence_get_page`` - returns the page metadata + the
  caller-supplied list of sections (each with a precomputed
  ``content_hash`` so the workflow does not have to recompute,
  and the test can stage two sections with identical hashes).
@@ -676,7 +676,7 @@ def _make_update_activities(
  account but ``last_edit_at`` is left ``None`` so the
  overwrite-protection branch falls through to the proceed
  decision (no recent edit).
- * ``confluence_update_page`` — recorded so the test can count
+ * ``confluence_update_page`` - recorded so the test can count
  invocations.
  """
 
@@ -742,7 +742,7 @@ async def test_confluence_doc_update_dedup_skips_seen_section() -> None:
  body iterates to the second section the
  :func:`temporal_shared.confluence_dedup.should_skip_section_update`
  predicate sees the four-tuple
- ``(workflow_id, page_id, section_path_2, shared_hash)`` —
+ ``(workflow_id, page_id, section_path_2, shared_hash)`` -
  Wait: the section_path is part of the dedup key, so two
  sections with different paths but identical hashes are
  technically not collisions per the four-tuple contract.
@@ -750,7 +750,7 @@ async def test_confluence_doc_update_dedup_skips_seen_section() -> None:
  To exercise the dedup path end-to-end with a single workflow
  run we therefore stage **two sections that share both
  ``section_path`` AND ``content_hash``** (the same
- section listed twice — a degenerate but valid input the
+ section listed twice - a degenerate but valid input the
  activity layer can produce when the page tree contains a
  repeated section). The first occurrence updates the page; the
  second occurrence hits the workflow's in-memory hash set and
@@ -799,12 +799,12 @@ async def test_confluence_doc_update_dedup_skips_seen_section() -> None:
     sections = [
         {
             "section_path": "§1/Overview",
-            "content": "Overview body — first occurrence.",
+            "content": "Overview body - first occurrence.",
             "content_hash": shared_hash,
         },
         {
             "section_path": "§1/Overview",
-            "content": "Overview body — second occurrence (dedup).",
+            "content": "Overview body - second occurrence (dedup).",
             "content_hash": shared_hash,
         },
     ]
@@ -836,7 +836,7 @@ async def test_confluence_doc_update_dedup_skips_seen_section() -> None:
 
     # ----- Assertions -------------------------------------------------
 
-    # 1. Update activity fires exactly once — the second section
+    # 1. Update activity fires exactly once - the second section
     # was deduplicated.
     assert log.count("confluence_update_page") == 1, (
         f"confluence_update_page must fire exactly once when two "
@@ -875,7 +875,7 @@ async def test_confluence_doc_update_dedup_skips_seen_section() -> None:
         f"{log.args_for('audit_emit')!r}"
     )
 
-    # 4. Terminal status — the dedup branch is a happy-path skip;
+    # 4. Terminal status - the dedup branch is a happy-path skip;
     # the workflow completes cleanly.
     assert result["status"] == "completed", (
         f"expected status=completed for a successful update with "

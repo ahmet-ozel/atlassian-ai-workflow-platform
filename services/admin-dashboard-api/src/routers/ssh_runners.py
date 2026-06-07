@@ -1,13 +1,13 @@
-"""``SshRunnersRouter`` — SSH runner pool CRUD + department assignment.
+﻿"""``SshRunnersRouter`` - SSH runner pool CRUD + department assignment.
 
 Provides the admin API surface for managing the multi-SSH runner pool:
 
-* ``GET  /admin/ssh-runners``                    — list all runners with
+* ``GET  /admin/ssh-runners``                    - list all runners with
   active count and healthcheck cron status.
-* ``POST /admin/ssh-runners``                    — create a new runner.
-* ``PATCH /admin/ssh-runners/{runner_id}``       — update runner fields.
-* ``GET  /admin/departments/{dept_id}/ssh-runners``  — runners assigned to dept.
-* ``POST /admin/departments/{dept_id}/ssh-runners``  — update runner assignments.
+* ``POST /admin/ssh-runners``                    - create a new runner.
+* ``PATCH /admin/ssh-runners/{runner_id}``       - update runner fields.
+* ``GET  /admin/departments/{dept_id}/ssh-runners``  - runners assigned to dept.
+* ``POST /admin/departments/{dept_id}/ssh-runners``  - update runner assignments.
 
 The runner pool lives in ``infrastructure.ssh_runners`` and assignments
 in ``infrastructure.dept_ssh_assignments`` (created by migration
@@ -18,8 +18,8 @@ Private keys are written to Vault at
 stores the reference. The key material is never returned by the API.
 
 Runner assignment changes emit audit events:
-- ``dept_ssh_runner_assigned`` — when a runner is newly assigned.
-- ``dept_ssh_runner_unassigned`` — when a runner is removed from a dept.
+- ``dept_ssh_runner_assigned`` - when a runner is newly assigned.
+- ``dept_ssh_runner_unassigned`` - when a runner is removed from a dept.
 
 The ``GET /admin/ssh-runners`` endpoint also verifies that the
 ``ssh_healthcheck_cron`` Temporal workflow is scheduled and enables it
@@ -309,7 +309,7 @@ async def _write_audit(
     )
     try:
         await sink.write(event)
-    except Exception as exc:  # noqa: BLE001 — audit must never block
+    except Exception as exc:  # noqa: BLE001 - audit must never block
         logger.warning(
             "ssh_runners audit write failed (action=%s): %s",
             action,
@@ -483,7 +483,7 @@ printf 'workspace=%s\nimage=%s\nimage_id=%s\noutput=%s\ncleanup=done\n' \
 
 
 # ---------------------------------------------------------------------------
-# SSH Healthcheck Cron — Temporal schedule verification
+# SSH Healthcheck Cron - Temporal schedule verification
 # ---------------------------------------------------------------------------
 
 #: Workflow ID used for the SSH healthcheck cron schedule.
@@ -517,7 +517,7 @@ async def _check_and_enable_healthcheck_cron(
         from temporalio.service import RPCError  # type: ignore[import-not-found]
     except ImportError:
         logger.info(
-            "temporalio SDK not available — cannot verify "
+            "temporalio SDK not available - cannot verify "
             "ssh_healthcheck_cron schedule"
         )
         return False
@@ -558,11 +558,11 @@ async def _check_and_enable_healthcheck_cron(
         )
         return True
     except RPCError:
-        # Schedule not found — fall through to create
+        # Schedule not found - fall through to create
         pass
     except Exception as exc:  # noqa: BLE001
         logger.warning(
-            "ssh_healthcheck_cron schedule probe failed: %s — "
+            "ssh_healthcheck_cron schedule probe failed: %s - "
             "attempting create",
             exc,
         )
@@ -596,7 +596,7 @@ async def _check_and_enable_healthcheck_cron(
 
 
 # ---------------------------------------------------------------------------
-# GET /admin/ssh-runners — list all runners
+# GET /admin/ssh-runners - list all runners
 # ---------------------------------------------------------------------------
 
 
@@ -633,7 +633,7 @@ async def list_ssh_runners(
     active_runners = sum(1 for r in runners if r.status == "active")
 
     # Verify ssh_healthcheck_cron Temporal workflow is scheduled;
-    # enable if not. Best-effort — if Temporal is
+    # enable if not. Best-effort - if Temporal is
     # unreachable we report False and the FE can surface a warning.
     healthcheck_cron_scheduled = await _check_and_enable_healthcheck_cron(
         request
@@ -647,7 +647,7 @@ async def list_ssh_runners(
 
 
 # ---------------------------------------------------------------------------
-# POST /admin/ssh-runners — create a new runner
+# POST /admin/ssh-runners - create a new runner
 # ---------------------------------------------------------------------------
 
 
@@ -685,8 +685,8 @@ async def create_ssh_runner(
             detail=f"runner '{body.runner_id}' already exists",
         )
 
-    # Write the FULL SSH credential shape — ``{host, port, user,
-    # private_key}`` — to Vault at
+    # Write the FULL SSH credential shape - ``{host, port, user,
+    # private_key}`` - to Vault at
     # ``ssh/runners/{runner_id}/active``. Previously this stored only
     # the private key under a single ``value`` field, but the worker's
     # ``vault_fetch_ssh_credentials`` expects all four keys at the
@@ -764,7 +764,7 @@ async def create_ssh_runner(
 
 
 # ---------------------------------------------------------------------------
-# PATCH /admin/ssh-runners/{runner_id} — update a runner
+# PATCH /admin/ssh-runners/{runner_id} - update a runner
 # ---------------------------------------------------------------------------
 
 
@@ -814,7 +814,7 @@ async def update_ssh_runner(
         updates["base_path"] = body.base_path
 
     if not updates:
-        # Nothing to update — return current state
+        # Nothing to update - return current state
         return _row_to_response(existing)
 
     # Build dynamic UPDATE query
@@ -924,7 +924,7 @@ async def run_ssh_runner_docker_smoke(
 
 
 # ---------------------------------------------------------------------------
-# GET /admin/departments/{dept_id}/ssh-runners — dept's assigned runners
+# GET /admin/departments/{dept_id}/ssh-runners - dept's assigned runners
 # ---------------------------------------------------------------------------
 
 
@@ -960,7 +960,7 @@ async def list_dept_ssh_runners(
 
 
 # ---------------------------------------------------------------------------
-# POST /admin/departments/{dept_id}/ssh-runners — update assignments
+# POST /admin/departments/{dept_id}/ssh-runners - update assignments
 # ---------------------------------------------------------------------------
 
 

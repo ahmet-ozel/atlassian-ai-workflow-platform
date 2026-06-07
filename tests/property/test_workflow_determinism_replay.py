@@ -1,4 +1,4 @@
-"""Property-based tests for workflow determinism via Temporal replay.
+﻿"""Property-based tests for workflow determinism via Temporal replay.
 
 For every sample workflow history under
 ``platform/tests/fixtures/histories/*.json``, ``temporalio.worker.
@@ -21,7 +21,7 @@ generator (``_generate_history_fixtures``) runs the AutomationWorkflow
 against the temporalio time-skipping test server with mocked activities
 to produce deterministic histories, then dumps each via
 ``WorkflowHistory.to_json()`` so the replay test runs without
-contacting any Temporal cluster — a critical invariant for offline /
+contacting any Temporal cluster - a critical invariant for offline /
 hermetic CI lanes.
 
 The fixtures are auto-generated on first run if missing (one-time cost,
@@ -217,7 +217,7 @@ def test_history_directory_exists() -> None:
 
     assert HISTORY_DIR.is_dir(), (
         f"history fixtures directory missing: "
-        f"{HISTORY_DIR.relative_to(_PLATFORM_ROOT)} — the autouse "
+        f"{HISTORY_DIR.relative_to(_PLATFORM_ROOT)} - the autouse "
         "session fixture should have created it; check generator errors."
     )
 
@@ -240,7 +240,7 @@ async def test_automation_workflow_replays_deterministically(
     path = _fixture_path(fixture.stem)
     if not path.is_file():
         pytest.fail(
-            f"history fixture missing: {path.relative_to(_PLATFORM_ROOT)} — "
+            f"history fixture missing: {path.relative_to(_PLATFORM_ROOT)} - "
             "the autouse session fixture failed to generate it. Delete "
             "any partial JSON files under tests/fixtures/histories/ and "
             "rerun the suite, or invoke "
@@ -277,7 +277,7 @@ async def test_agent_runner_workflow_replays_deterministically(
     path = _fixture_path(fixture.stem)
     if not path.is_file():
         pytest.skip(
-            f"history fixture missing: {path.relative_to(_PLATFORM_ROOT)} — "
+            f"history fixture missing: {path.relative_to(_PLATFORM_ROOT)} - "
             "AgentRunnerWorkflow body is currently a stub (see "
             "src/workflows/agent_runner_workflow.py). Generate the "
             "fixture and remove this skip once the workflow body is "
@@ -292,7 +292,7 @@ async def test_agent_runner_workflow_replays_deterministically(
 
     if not _has_workflow_defn(AgentRunnerWorkflow):
         pytest.skip(
-            "AgentRunnerWorkflow has no @workflow.defn decorator yet — "
+            "AgentRunnerWorkflow has no @workflow.defn decorator yet - "
             "implement the workflow body, then regenerate the fixture."
         )
 
@@ -511,7 +511,7 @@ async def _run_and_dump(
         # AutomationResult dict.
         try:
             await handle.result()
-        except Exception:  # noqa: BLE001 — terminal workflow failure is OK here
+        except Exception:  # noqa: BLE001 - terminal workflow failure is OK here
             pass
 
         history = await handle.fetch_history()

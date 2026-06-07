@@ -1,18 +1,18 @@
-"""Streamlit boot script wiring session-state collaborators.
+﻿"""Streamlit boot script wiring session-state collaborators.
 
 Streamlit runs each page module independently, but every page in
 ``pages/`` reads its collaborators from ``st.session_state``:
 
-* ``_assistant_client`` — POSTs to ``assistant-service /api/chat/stream``.
-* ``_admin_api_client`` — generic GET/POST against admin-dashboard-api.
-* ``_mcp_read_client`` — read-only MCP client for the Explorer page.
-* ``_costs_api`` — wraps the ``GET /api/costs/me`` widget endpoint.
-* ``_credential_api`` — POSTs per-user session credentials to
+* ``_assistant_client`` - POSTs to ``assistant-service /api/chat/stream``.
+* ``_admin_api_client`` - generic GET/POST against admin-dashboard-api.
+* ``_mcp_read_client`` - read-only MCP client for the Explorer page.
+* ``_costs_api`` - wraps the ``GET /api/costs/me`` widget endpoint.
+* ``_credential_api`` - POSTs per-user session credentials to
   ``assistant-service /api/session-credentials/...``.
-* ``_quick_actions`` — per-page shortcut buttons (Task Creator / chat).
-* ``_cookie_reader`` / ``_cookie_writer`` — signed multi-dept cookie
+* ``_quick_actions`` - per-page shortcut buttons (Task Creator / chat).
+* ``_cookie_reader`` / ``_cookie_writer`` - signed multi-dept cookie
   helpers (R3.11).
-* ``_probe_runner`` — invokes the dept connectivity probe through
+* ``_probe_runner`` - invokes the dept connectivity probe through
   admin-dashboard-api.
 
 This module is the single entry point Streamlit invokes via
@@ -23,7 +23,7 @@ base URLs through the ``.env`` file (see ``.env.example``).
 
 Each collaborator is wired behind a soft import so the dev-mode
 streamlit-app stays usable when one of the upstream services is
-down — the page simply renders the failure as a banner instead of
+down - the page simply renders the failure as a banner instead of
 crashing the whole UI.
 """
 
@@ -660,7 +660,7 @@ def _items_from_mcp_result(result: Any, key: str) -> list[dict[str, Any]]:
 def _ensure_user_context(state: Any) -> None:
     """Install a minimal session user when OIDC has not populated one.
 
-    This branch only runs in the dev fallback — production OIDC
+    This branch only runs in the dev fallback - production OIDC
     middleware populates ``state["user"]`` (with real ``dept_ids``
     claims) before this is reached, so the early return keeps the
     production path untouched. In dev mode we seed ``dept_ids`` from
@@ -878,7 +878,7 @@ def _read_verified_department_cookie(state: dict) -> str | None:
         department = verify_cookie(raw_value, secret)
 
         if department is None:
-# Invalid signature — delete the tampered cookie.
+# Invalid signature - delete the tampered cookie.
             try:
                 reader.delete(cookie_name)
             except Exception:  # noqa: BLE001
@@ -895,8 +895,8 @@ def _has_bound_credentials() -> bool:
 
     Successful submits inside :func:`components.credential_form.render_credential_form`
     are recorded into ``st.session_state["bound_credentials"]`` (set of
-    service names) by the credentials page. While that set is empty —
-    or absent entirely on a freshly opened session — the landing page
+    service names) by the credentials page. While that set is empty -
+    or absent entirely on a freshly opened session - the landing page
     surfaces a "go to Credentials first" call-to-action.
     """
 
@@ -904,7 +904,7 @@ def _has_bound_credentials() -> bool:
     if not bound:
         return False
     # Defensive: accept both ``set[str]`` (canonical) and any iterable
-    # producing truthy entries — a downstream page persisting via cookie
+    # producing truthy entries - a downstream page persisting via cookie
     # restore could conceivably hand us a list/tuple.
     return any(bool(s) for s in bound)
 
@@ -931,14 +931,14 @@ def _render_empty_credentials_banner() -> None:
             label="Credentials sayfasına git →",
             icon="🔑",
         )
-    else:  # pragma: no cover — legacy Streamlit fallback
+    else:  # pragma: no cover - legacy Streamlit fallback
         st.markdown(
             "➡️ Sol menüden **0_credentials** sayfasını açın."
         )
 
 
 def main() -> None:
-    """Streamlit entrypoint — render the landing page."""
+    """Streamlit entrypoint - render the landing page."""
 
     st.set_page_config(
         page_title="AI Bot Platform",

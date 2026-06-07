@@ -1,4 +1,4 @@
-"""LLM activity module for AgentRunnerWorkflow.
+﻿"""LLM activity module for AgentRunnerWorkflow.
 
 This module provides Temporal activities that interact with the LLM provider
 for task analysis, code generation, PR description, documentation, code review,
@@ -375,7 +375,7 @@ async def firecrawl_scrape(url: str, department_id: str) -> dict[str, Any]:
     * ``{"kind": "success", "body": {"markdown": ..., "title": ...}}``
       when the page was fetched.
     * ``{"kind": "egress_blocked"}`` when Firecrawl refuses the URL
-      (HTTP 403 — out of the configured allowlist).
+      (HTTP 403 - out of the configured allowlist).
     * ``{"kind": "error"}`` for any other transport failure, so the
       per-URL loop skips it without crashing the run.
     """
@@ -578,7 +578,7 @@ async def llm_generate_code(plan: CodePlan, context: CodeContext) -> CodeOutput:
     provider = _get_llm_provider()
     raw_response = provider.complete(prompt)
 
-    # Parse response — attempt JSON, fall back to raw text
+    # Parse response - attempt JSON, fall back to raw text
     try:
         data = _parse_json_from_llm(raw_response)
         return CodeOutput(
@@ -713,7 +713,7 @@ async def llm_generate_doc(
     provider = _get_llm_provider()
     raw_response = provider.complete(prompt)
 
-    # Parse response — attempt JSON, fall back to raw text as body
+    # Parse response - attempt JSON, fall back to raw text as body
     try:
         data = _parse_json_from_llm(raw_response)
         return DocOutput(
@@ -783,7 +783,7 @@ async def llm_review_code(
     provider = _get_llm_provider()
     raw_response = provider.complete(prompt)
 
-    # Parse response — attempt JSON, fall back to summary-only
+    # Parse response - attempt JSON, fall back to summary-only
     try:
         data = _parse_json_from_llm(raw_response)
         return ReviewOutput(

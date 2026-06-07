@@ -1,8 +1,8 @@
-"""ExecutionRunWorkflow — Temporal workflow for remote test execution.
+﻿"""ExecutionRunWorkflow - Temporal workflow for remote test execution.
 
 This module hosts **two** Temporal workflow definitions:
 
-* :class:`ExecutionRunWorkflow` — the canonical workflow. Accepts the
+* :class:`ExecutionRunWorkflow` - the canonical workflow. Accepts the
   single-payload :class:`ExecutionRunWorkflowInput` from
   :mod:`temporal_shared.messages` and returns the matching
   :class:`ExecutionRunWorkflowOutput`.  Internally orchestrates a single
@@ -14,7 +14,7 @@ This module hosts **two** Temporal workflow definitions:
 
   **Enhancements (post-foundation):**
 
-  * **SSH healthcheck** — Before invoking ``ssh_run_test``, the workflow
+  * **SSH healthcheck** - Before invoking ``ssh_run_test``, the workflow
     runs a lightweight ``ssh_healthcheck`` activity (TCP connect probe).
     If the runner is unreachable the workflow enters a "queued" retry
     loop with exponential backoff (60s → 120s → 240s, max 30 min total).
@@ -23,14 +23,14 @@ This module hosts **two** Temporal workflow definitions:
     the workflow proceeds normally; otherwise it fails with
     ``failure_reason="runner_unreachable"``.
 
-  * **Cleanup policy enforcement** — After ``ssh_run_test`` completes,
+  * **Cleanup policy enforcement** - After ``ssh_run_test`` completes,
     the workflow invokes ``apply_cleanup_policy`` to honour the user's
     cleanup preference (``delete_on_success`` | ``always`` | ``never``).
     This ensures Docker containers, images, and workspace directories
     are cleaned up (or preserved) according to the task's Forge custom
     field setting.
 
-* :class:`LegacyExecutionRunWorkflow` — the legacy workflow that the
+* :class:`LegacyExecutionRunWorkflow` - the legacy workflow that the
   integration tests under ``tests/integration/test_execution_runner.py``
   exercise.  Preserved here unchanged in behaviour so the existing
   tested orchestration of ``vault_fetch_ssh_credentials`` →
@@ -76,7 +76,7 @@ with workflow.unsafe.imports_passed_through():
         RunnerResolutionError,
     )
     from runners.workspace_path import build_workspace_path
-    # EK2 — dataclass shapes for the docker chain. The activities
+    # EK2 - dataclass shapes for the docker chain. The activities
     # themselves are referenced by string name through
     # ``workflow.execute_activity`` so the workflow module never
     # imports the activity callables (those carry paramiko/io).
@@ -95,7 +95,7 @@ with workflow.unsafe.imports_passed_through():
 
 #: Default ``start_to_close_timeout`` applied to ``ssh_run_test`` when the
 #: workflow input leaves it unset.  Mirrors ``SSH_COMMAND_TIMEOUT_S=1800``
-#: in ``execution-runner-worker/.env.example`` — 30 minutes.  The gateway
+#: in ``execution-runner-worker/.env.example`` - 30 minutes.  The gateway
 #: populates :attr:`ExecutionRunWorkflowInput.start_to_close_timeout` from
 #: configuration; this constant is the fallback so the workflow body never
 #: forces an open-ended activity attempt.
@@ -119,7 +119,7 @@ _NOOP_TEST_WORKFLOW_TYPE: Final[str] = "noop_test"
 
 #: Default command synthesised for a ``noop_test`` execution when the
 #: caller leaves :attr:`ExecutionRunWorkflowInput.command` empty.
-#: ``echo "ok"`` is intentionally trivial — the smoke-test path
+#: ``echo "ok"`` is intentionally trivial - the smoke-test path
 #: validates the full pipeline (webhook → AutomationWorkflow →
 #: ExecutionRunWorkflow → SSH runner → activity → Jira comment)
 #: without exercising any business logic on the runner.
@@ -147,7 +147,7 @@ _RUN_TEST_RETRY_POLICY: RetryPolicy = RetryPolicy(
 # ---------------------------------------------------------------------------
 
 #: Timeout for the ``ssh_healthcheck`` activity.  The probe is a simple
-#: TCP connect — 30 seconds is generous.
+#: TCP connect - 30 seconds is generous.
 _HEALTHCHECK_TIMEOUT: timedelta = timedelta(seconds=30)
 
 #: Initial backoff between healthcheck retries when the runner is down.
@@ -171,10 +171,10 @@ _HEALTHCHECK_BACKOFF_COEFFICIENT: float = 2.0
 # ---------------------------------------------------------------------------
 
 #: Timeout for the ``apply_cleanup_policy`` activity.  Cleanup involves
-#: SSH + docker commands — 2 minutes is generous for best-effort work.
+#: SSH + docker commands - 2 minutes is generous for best-effort work.
 _CLEANUP_TIMEOUT: timedelta = timedelta(minutes=2)
 
-#: Retry policy for cleanup — single attempt since it's best-effort.
+#: Retry policy for cleanup - single attempt since it's best-effort.
 _CLEANUP_RETRY_POLICY: RetryPolicy = RetryPolicy(maximum_attempts=1)
 
 
@@ -184,13 +184,13 @@ _CLEANUP_RETRY_POLICY: RetryPolicy = RetryPolicy(maximum_attempts=1)
 
 #: Timeout for the ``resolve_runner`` activity.  The activity performs a
 #: DB query against ``infrastructure.ssh_runners`` + a best-effort audit
-#: write — 30 seconds is generous for a single SQL round-trip.
+#: write - 30 seconds is generous for a single SQL round-trip.
 _RUNNER_RESOLVER_TIMEOUT: timedelta = timedelta(seconds=30)
 
 #: Retry policy for ``resolve_runner``.  Two attempts cover transient
 #: DB connection flakes without amplifying load when the database is
 #: genuinely down.  A ``RunnerResolutionError`` (no active runner) is
-#: non-retryable by nature — the retry only helps with infrastructure
+#: non-retryable by nature - the retry only helps with infrastructure
 #: glitches.
 _RUNNER_RESOLVER_RETRY_POLICY: RetryPolicy = RetryPolicy(
     initial_interval=timedelta(seconds=2),
@@ -210,7 +210,7 @@ _DISK_QUOTA_TIMEOUT: timedelta = timedelta(seconds=60)
 
 #: Retry policy for the disk-quota gate.  A second attempt covers
 #: transient SSH flakes (lost packets, brief auth glitches) without
-#: amplifying load when the runner is genuinely down — the activity
+#: amplifying load when the runner is genuinely down - the activity
 #: itself returns ``allowed=True`` on SSH failure (best-effort allow,
 #: see ``check_disk_quota`` docstring) so two attempts is plenty.
 _DISK_QUOTA_RETRY_POLICY: RetryPolicy = RetryPolicy(
@@ -232,7 +232,7 @@ def _resolve_quota_base(workdir: str | None) -> str:
     per-iteration workdir, so this helper strips the trailing
     ``/iter-N`` (when present) and the ``ISSUE_KEY`` segment to land on
     the runner base path.  Any string that does not match that layout
-    falls through verbatim — the activity will measure whatever it
+    falls through verbatim - the activity will measure whatever it
     receives.
 
     The helper is deterministic and pure (no I/O, no environment
@@ -268,7 +268,7 @@ def _resolve_quota_base(workdir: str | None) -> str:
     if parts and parts[-1].startswith("iter-"):
         parts.pop()
     if len(parts) >= 2:
-        # The remaining tail segment is the issue key — strip it so the
+        # The remaining tail segment is the issue key - strip it so the
         # measurement covers the whole department workspace base.
         parts.pop()
     base = "/".join(parts)
@@ -373,7 +373,7 @@ class ExecutionRunWorkflow:
       with ``echo "ok"``.
     * An unset
       :attr:`~ExecutionRunWorkflowInput.start_to_close_timeout` is
-      tightened to 30 seconds — a smoke run that takes longer is
+      tightened to 30 seconds - a smoke run that takes longer is
       almost certainly a runner / network problem rather than a slow
       command.
 
@@ -382,7 +382,7 @@ class ExecutionRunWorkflow:
     common production path).  They exist so an ad-hoc dispatch (CLI,
     integration test) cannot accidentally launch an open-ended
     smoke run on the SSH runner.  Every other workflow type sees the
-    legacy contract — :attr:`command` is consumed verbatim and an
+    legacy contract - :attr:`command` is consumed verbatim and an
     empty command surfaces as a runner-side error.
     """
 
@@ -468,7 +468,7 @@ class ExecutionRunWorkflow:
         if not runner_healthy:
             workflow.logger.error(
                 "ExecutionRunWorkflow.run: runner unreachable after "
-                "max retries — failing workflow"
+                "max retries - failing workflow"
             )
             return ExecutionRunWorkflowOutput(
                 status="failed",
@@ -487,14 +487,14 @@ class ExecutionRunWorkflow:
             if not command:
                 command = _NOOP_TEST_DEFAULT_COMMAND
                 workflow.logger.info(
-                    "ExecutionRunWorkflow.run: noop_test smoke flow — "
+                    "ExecutionRunWorkflow.run: noop_test smoke flow - "
                     "command was empty, defaulting to %r",
                     command,
                 )
             if start_to_close_override is None:
                 start_to_close_override = _NOOP_TEST_START_TO_CLOSE
                 workflow.logger.info(
-                    "ExecutionRunWorkflow.run: noop_test smoke flow — "
+                    "ExecutionRunWorkflow.run: noop_test smoke flow - "
                     "start_to_close_timeout was unset, tightening to %s",
                     start_to_close_override,
                 )
@@ -512,7 +512,7 @@ class ExecutionRunWorkflow:
         # Before committing to the (non-idempotent) ``ssh_run_test``
         # activity, ask the runner whether the department's workspace
         # base path is already at or above its quota.  This prevents a
-        # storm of failing runs against a full disk — the activity
+        # storm of failing runs against a full disk - the activity
         # itself returns ``allowed=True`` on SSH failure (best-effort
         # allow) so a transient network blip cannot wedge the workflow.
         #
@@ -531,7 +531,7 @@ class ExecutionRunWorkflow:
         # (build → run → collect_logs → cleanup) instead of the single
         # ``ssh_run_test`` invocation. Previously the ``docker_*``
         # activities were registered with the worker but no workflow
-        # called them — Docker only ran if the user happened to embed
+        # called them - Docker only ran if the user happened to embed
         # ``docker ...`` in the raw SSH command. With ``needs_docker``
         # now propagated from the analyser through ``_child_args``, the
         # gateway's classification finally drives a real build/run/cleanup.
@@ -547,7 +547,7 @@ class ExecutionRunWorkflow:
             # ``ssh_run_test`` reads the admin-panel-configured runner's
             # secret instead of the global ``ssh/runner/current`` Vault
             # path. Previously this value was computed by
-            # ``_resolve_runner`` and silently discarded — the whole
+            # ``_resolve_runner`` and silently discarded - the whole
             # multi-runner pool was decorative until now.
             result = await workflow.execute_activity(
                 "ssh_run_test",
@@ -589,7 +589,7 @@ class ExecutionRunWorkflow:
         # Step final: Apply cleanup policy (post-foundation enhancement)
         # -----------------------------------------------------------------
         # Enforce the user-specified cleanup policy. The activity is
-        # best-effort — cleanup failures do not alter the workflow result.
+        # best-effort - cleanup failures do not alter the workflow result.
         await self._apply_cleanup_policy(
             run_input,
             exit_code,
@@ -607,7 +607,7 @@ class ExecutionRunWorkflow:
         )
 
     # -----------------------------------------------------------------
-    # Private helpers (replay-safe — only call activities)
+    # Private helpers (replay-safe - only call activities)
     # -----------------------------------------------------------------
 
     async def _run_docker_chain(
@@ -630,7 +630,7 @@ class ExecutionRunWorkflow:
         application, output_actions hook) stays unchanged.
         """
         # Dataclass shapes already imported at module level inside
-        # ``workflow.unsafe.imports_passed_through()`` — no per-call
+        # ``workflow.unsafe.imports_passed_through()`` - no per-call
         # import needed.
         workflow.logger.info(
             "ExecutionRunWorkflow._run_docker_chain: needs_docker=True "
@@ -647,7 +647,7 @@ class ExecutionRunWorkflow:
         dockerfile_path = inp.docker_dockerfile_path or "Dockerfile"
         workspace_path = inp.workdir or ""
 
-        # Step 1 — docker daemon healthcheck. If the runner has no docker
+        # Step 1 - docker daemon healthcheck. If the runner has no docker
         # available we short-circuit with a structured failure so the
         # caller surfaces a clear error instead of a build crash.
         try:
@@ -676,7 +676,7 @@ class ExecutionRunWorkflow:
                 "failure_reason": "docker_daemon_unavailable",
             }
 
-        # Step 2 — build the image.
+        # Step 2 - build the image.
         build_result = await workflow.execute_activity(
             "docker_build_image",
             args=[
@@ -710,7 +710,7 @@ class ExecutionRunWorkflow:
         image_id = _activity_result_field(build_result, "image_id")
         container_id: str | None = None
         try:
-            # Step 3 — run the container with the supplied command. The
+            # Step 3 - run the container with the supplied command. The
             # ``environment`` tuple is normalised to a dict for the
             # docker activity input shape (which uses dict[str, str]).
             env_dict: dict[str, str] = (
@@ -757,8 +757,8 @@ class ExecutionRunWorkflow:
                 "failure_reason": failure_reason,
             }
         finally:
-            # Step 4 — cleanup runs unconditionally (always reach here
-            # because ``finally``) — honours the cleanup policy carried
+            # Step 4 - cleanup runs unconditionally (always reach here
+            # because ``finally``) - honours the cleanup policy carried
             # in the environment tuple (defaults to ``on_success``).
             cleanup_policy_value: str = "on_success"
             if inp.environment:
@@ -783,7 +783,7 @@ class ExecutionRunWorkflow:
                     start_to_close_timeout=timedelta(minutes=2),
                     retry_policy=RetryPolicy(maximum_attempts=1),
                 )
-            except Exception:  # noqa: BLE001 — best-effort cleanup
+            except Exception:  # noqa: BLE001 - best-effort cleanup
                 workflow.logger.warning(
                     "docker_cleanup_container failed (best-effort)",
                     exc_info=True,
@@ -820,7 +820,7 @@ class ExecutionRunWorkflow:
                     retry_policy=RetryPolicy(maximum_attempts=1),
                 )
             except Exception:  # noqa: BLE001
-                # Activity itself failed (e.g. worker crashed) — treat
+                # Activity itself failed (e.g. worker crashed) - treat
                 # as unhealthy and retry.
                 hc_result = {"healthy": False, "error": "activity_failed"}
 
@@ -838,7 +838,7 @@ class ExecutionRunWorkflow:
             error = hc_result.get("error", "unknown")
             workflow.logger.warning(
                 "ExecutionRunWorkflow: ssh_healthcheck FAILED "
-                "(attempt %d/%d) host=%s error=%s — "
+                "(attempt %d/%d) host=%s error=%s - "
                 "retrying in %s",
                 attempt + 1,
                 _HEALTHCHECK_MAX_RETRIES + 1,
@@ -876,7 +876,7 @@ class ExecutionRunWorkflow:
         When a cap is supplied:
 
         * The base path passed to the activity is derived from
-          :attr:`~ExecutionRunWorkflowInput.workdir` — its parent
+          :attr:`~ExecutionRunWorkflowInput.workdir` - its parent
           directory is used as the quota measurement root because the
           ``workdir`` already includes the per-task subdirectory and we
           want to measure the department-level usage.  When ``workdir``
@@ -894,7 +894,7 @@ class ExecutionRunWorkflow:
           :class:`AutomationWorkflow` can surface a Jira comment without
           retrying the workflow against an already-full disk.
         * The activity is best-effort on SSH failure (returns
-          ``allowed=True`` with an ``error`` field) — we log the
+          ``allowed=True`` with an ``error`` field) - we log the
           diagnostic but do **not** block the run, matching the
           contract pinned in ``activities/disk_quota.py``.
         """
@@ -904,7 +904,7 @@ class ExecutionRunWorkflow:
         if not inp.department_id:
             workflow.logger.warning(
                 "ExecutionRunWorkflow: workspace_quota_mb=%s set but "
-                "department_id is empty — skipping disk-quota gate "
+                "department_id is empty - skipping disk-quota gate "
                 "(activity needs dept_id for warning dedup)",
                 inp.workspace_quota_mb,
             )
@@ -931,9 +931,9 @@ class ExecutionRunWorkflow:
                 start_to_close_timeout=_DISK_QUOTA_TIMEOUT,
                 retry_policy=_DISK_QUOTA_RETRY_POLICY,
             )
-        except Exception:  # noqa: BLE001 — best-effort gate
+        except Exception:  # noqa: BLE001 - best-effort gate
             # Activity infrastructure failure (e.g. worker crash before
-            # the activity body runs).  Log and allow — we'd rather
+            # the activity body runs).  Log and allow - we'd rather
             # surface a real downstream SSH failure than wedge every
             # run on a flaky check.
             workflow.logger.warning(
@@ -946,7 +946,7 @@ class ExecutionRunWorkflow:
         if not quota_result.allowed:
             workflow.logger.error(
                 "ExecutionRunWorkflow: disk quota exceeded for dept=%s "
-                "usage=%.1fMB cap=%.1fMB — failing run before SSH",
+                "usage=%.1fMB cap=%.1fMB - failing run before SSH",
                 inp.department_id,
                 quota_result.usage_mb,
                 quota_result.quota_mb or 0.0,
@@ -964,7 +964,7 @@ class ExecutionRunWorkflow:
 
         if quota_result.error:
             # Activity reported an error but allowed the run (best-effort
-            # path — SSH probe failed).  Log so an operator can correlate
+            # path - SSH probe failed).  Log so an operator can correlate
             # later disk-full incidents with the gate's blind spot.
             workflow.logger.warning(
                 "ExecutionRunWorkflow: check_disk_quota allowed run "
@@ -1018,7 +1018,7 @@ class ExecutionRunWorkflow:
                 retry_policy=_CLEANUP_RETRY_POLICY,
             )
         except Exception:  # noqa: BLE001
-            # Cleanup is best-effort — log and continue.
+            # Cleanup is best-effort - log and continue.
             workflow.logger.warning(
                 "ExecutionRunWorkflow: apply_cleanup_policy activity "
                 "failed (best-effort, continuing)",
@@ -1038,11 +1038,11 @@ class ExecutionRunWorkflow:
 
         When the activity raises :class:`RunnerResolutionError` (no
         active runner assigned), the workflow fails with
-        ``failure_reason="no_runner_assigned"`` — the activity itself
+        ``failure_reason="no_runner_assigned"`` - the activity itself
         writes the ``no_runner_assigned_to_dept`` audit event.
 
         Returns ``None`` only on unexpected infrastructure failures
-        (e.g. worker crash before the activity body runs) — in that
+        (e.g. worker crash before the activity body runs) - in that
         case the workflow falls back to the input ``runner_id`` so
         existing deployments with a single runner keep working.
 
@@ -1072,16 +1072,16 @@ class ExecutionRunWorkflow:
         except ActivityError as exc:
             # Temporal wraps activity exceptions in ActivityError.
             # If the cause is an ApplicationError with a known type
-            # (e.g. "RunnerResolutionError" — no active runner assigned),
+            # (e.g. "RunnerResolutionError" - no active runner assigned),
             # re-raise so the workflow fails with a clear reason.
             # Other causes (generic RuntimeError wrapped by Temporal,
             # timeout, cancellation) are treated as infrastructure
-            # failures — fall back to input runner_id.
+            # failures - fall back to input runner_id.
             if exc.cause and isinstance(exc.cause, ApplicationError):
                 cause_type = getattr(exc.cause, "type", None)
                 if cause_type == "RunnerResolutionError":
                     raise exc.cause from exc
-            # Infrastructure failure — fall back gracefully.
+            # Infrastructure failure - fall back gracefully.
             workflow.logger.warning(
                 "ExecutionRunWorkflow: resolve_runner activity failed "
                 "with ActivityError (falling back to input runner_id)",
@@ -1102,7 +1102,7 @@ class ExecutionRunWorkflow:
 
 
 # ---------------------------------------------------------------------------
-# Legacy I/O dataclasses (unchanged — kept for backwards compatibility)
+# Legacy I/O dataclasses (unchanged - kept for backwards compatibility)
 # ---------------------------------------------------------------------------
 
 
@@ -1227,7 +1227,7 @@ _INJECT_CREDENTIAL_RETRY_POLICY: RetryPolicy = RetryPolicy(
     maximum_attempts=2,
 )
 
-#: Retry policy for ``cleanup_git_credentials``.  Single attempt —
+#: Retry policy for ``cleanup_git_credentials``.  Single attempt -
 #: cleanup is best-effort. The credential cache has a TTL that will
 #: eventually purge anything left behind, so a flaky retry on shutdown does
 #: not justify the extra latency.
@@ -1241,21 +1241,21 @@ _CLEANUP_CREDENTIAL_RETRY_POLICY: RetryPolicy = RetryPolicy(
 _INJECT_CREDENTIAL_TIMEOUT: timedelta = timedelta(minutes=2)
 
 #: ``start_to_close_timeout`` for ``cleanup_git_credentials``.  The
-#: cleanup activity itself enforces a 5s SSH window — 10s here gives
+#: cleanup activity itself enforces a 5s SSH window - 10s here gives
 #: headroom for transient connection setup without leaving the runner
 #: blocked on a stuck cleanup.
 _CLEANUP_CREDENTIAL_TIMEOUT: timedelta = timedelta(seconds=10)
 
 #: ``start_to_close_timeout`` for the ``git push`` SSH activity.  The
 #: push itself is bounded by the ssh_connect_and_run activity timeout
-#: (5 min) — most pushes complete in seconds, but a slow LAN or large
+#: (5 min) - most pushes complete in seconds, but a slow LAN or large
 #: pack file can stretch into the minute range.  We allow up to 5
 #: minutes before declaring the push stalled.
 _GIT_PUSH_TIMEOUT: timedelta = timedelta(minutes=5)
 
 #: Per-attempt timeout (in *minutes*, the unit accepted by
 #: ``ssh_connect_and_run``) for the ``git push`` command.  Mirrors
-#: :data:`_GIT_PUSH_TIMEOUT` — 5 minutes.
+#: :data:`_GIT_PUSH_TIMEOUT` - 5 minutes.
 _GIT_PUSH_TIMEOUT_MINUTES: int = 5
 
 
@@ -1349,7 +1349,7 @@ class LegacyExecutionRunWorkflow:
                         retry_policy=_DISK_QUOTA_RETRY_POLICY,
                     )
                 )
-            except Exception:  # noqa: BLE001 — best-effort gate
+            except Exception:  # noqa: BLE001 - best-effort gate
                 workflow.logger.warning(
                     "LegacyExecutionRunWorkflow: check_disk_quota "
                     "activity raised (best-effort, allowing run)",
@@ -1360,7 +1360,7 @@ class LegacyExecutionRunWorkflow:
             if quota_result is not None and not quota_result.allowed:
                 workflow.logger.error(
                     "LegacyExecutionRunWorkflow: disk quota exceeded "
-                    "for dept=%s usage=%.1fMB cap=%.1fMB — failing "
+                    "for dept=%s usage=%.1fMB cap=%.1fMB - failing "
                     "before SSH",
                     inp.dept_id,
                     quota_result.usage_mb,
@@ -1411,7 +1411,7 @@ class LegacyExecutionRunWorkflow:
         # ``git_push_branch`` must be set; otherwise the block is a
         # no-op and the legacy artifact-upload flow continues
         # untouched.  Determinism: we use ``workflow.info().workflow_id``
-        # (replay-safe) — never ``os.environ`` or ``time.time()``.
+        # (replay-safe) - never ``os.environ`` or ``time.time()``.
         if (
             inp.git_push_required
             and inp.dept_id
@@ -1469,7 +1469,7 @@ class LegacyExecutionRunWorkflow:
                 inp.cleanup_policy,
                 exit_code,
             )
-            # ssh_cleanup is best-effort — the activity itself swallows
+            # ssh_cleanup is best-effort - the activity itself swallows
             # exceptions internally. We also catch here to prevent workflow
             # failure from a cleanup issue.
             try:
@@ -1522,12 +1522,12 @@ class LegacyExecutionRunWorkflow:
 
         Implements the credential-injection sub-flow:
 
-        1. ``inject_git_credentials`` — fetch from Vault and configure
+        1. ``inject_git_credentials`` - fetch from Vault and configure
            ``git credential.helper cache --timeout=900`` on the SSH
            runner (15 minute TTL).
-        2. ``ssh_connect_and_run`` — execute
+        2. ``ssh_connect_and_run`` - execute
            ``git push origin <branch>`` from the workspace directory.
-        3. ``cleanup_git_credentials`` — **always** runs from the
+        3. ``cleanup_git_credentials`` - **always** runs from the
            ``finally`` block. Cleanup failures are swallowed because the
            credential cache has a
            TTL that will purge anything left behind.
@@ -1535,7 +1535,7 @@ class LegacyExecutionRunWorkflow:
         Determinism contract:
 
         * Uses :func:`workflow.info().workflow_id` (replay-safe).
-        * No direct ``os.environ`` / ``time.time()`` access — all I/O
+        * No direct ``os.environ`` / ``time.time()`` access - all I/O
           happens inside the registered activities.
         * The cleanup activity is invoked unconditionally, even when
           inject raises.
@@ -1543,7 +1543,7 @@ class LegacyExecutionRunWorkflow:
         Parameters
         ----------
         ssh_cred:
-            Output of :func:`vault_fetch_ssh_credentials` — passed to
+            Output of :func:`vault_fetch_ssh_credentials` - passed to
             ``ssh_connect_and_run`` so the push runs on the same host
             that ran the original test command.
         dept_id:
@@ -1551,7 +1551,7 @@ class LegacyExecutionRunWorkflow:
             (``atlassian/{dept_id}/bitbucket``).
         branch:
             Branch name passed verbatim to ``git push origin``.  The
-            workflow does **not** quote this value — the integration
+            workflow does **not** quote this value - the integration
             layer that builds :class:`ExecutionRunInput` is
             responsible for ensuring it matches the
             ``[A-Za-z0-9._/-]+`` pattern accepted by git.
@@ -1572,7 +1572,7 @@ class LegacyExecutionRunWorkflow:
         )
 
         try:
-            # Step 1 — inject credential.  Failures here surface as
+            # Step 1 - inject credential.  Failures here surface as
             # ApplicationError so the workflow fails before the push
             # is attempted. The ``finally`` block still runs the cleanup
             # activity.
@@ -1608,11 +1608,11 @@ class LegacyExecutionRunWorkflow:
                 )
 
             workflow.logger.info(
-                "git credential injected (user=%s) — running push",
+                "git credential injected (user=%s) - running push",
                 inject_result.masked_username,
             )
 
-            # Step 2 — run the push over SSH.  We reuse
+            # Step 2 - run the push over SSH.  We reuse
             # ``ssh_connect_and_run`` so the existing retry/heartbeat
             # plumbing applies; a single attempt is enough because
             # ``git push`` is not idempotent and re-running it after
@@ -1649,7 +1649,7 @@ class LegacyExecutionRunWorkflow:
                 "git push succeeded: branch=%s exit_code=0", branch
             )
         finally:
-            # Step 3 — cleanup runs unconditionally. We swallow every
+            # Step 3 - cleanup runs unconditionally. We swallow every
             # exception class because the credential
             # cache has a TTL and best-effort cleanup is preferable
             # to surfacing a cleanup error that masks the real
@@ -1665,7 +1665,7 @@ class LegacyExecutionRunWorkflow:
                     "git credentials cleaned up (workflow_id=%s)",
                     push_workflow_id,
                 )
-            except Exception:  # noqa: BLE001 — best-effort cleanup
+            except Exception:  # noqa: BLE001 - best-effort cleanup
                 workflow.logger.warning(
                     "cleanup_git_credentials failed for workflow_id=%s "
                     "(best-effort, credentials will expire via TTL)",

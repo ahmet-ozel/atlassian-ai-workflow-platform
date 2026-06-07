@@ -1,4 +1,4 @@
-"""Integration test 9.4 — Audit insertion + correlation ID round-trip.
+﻿"""Integration test 9.4 - Audit insertion + correlation ID round-trip.
 
 
 Three scenarios are covered:
@@ -14,7 +14,7 @@ Three scenarios are covered:
 2. **Audit-or-rollback **:
  The Postgres container is paused (``docker pause``) before the
  start request. The handler's audit precheck (``SELECT 1``) fails
- and the request returns ``502 Bad Gateway`` — Compose is never
+ and the request returns ``502 Bad Gateway`` - Compose is never
  invoked. We confirm this by checking the redis container is still
  absent after the failed call.
 
@@ -34,7 +34,7 @@ exposed Postgres port (5432) and run direct SQL.
 Pause-based fault injection (``docker pause`` / ``docker unpause``)
 is used instead of ``docker stop`` so the pool retains its socket
 state and the next operation surfaces a connection-level error
-rather than a clean shutdown — this is exactly the failure mode the
+rather than a clean shutdown - this is exactly the failure mode the
 audit-or-rollback contract is designed to handle.
 
 Gating
@@ -427,7 +427,7 @@ def test_audit_round_trip_and_audit_or_rollback_and_deferred_write(
         if status_code == 401:
             pytest.skip(
                 "admin-dashboard-api rejected the dev bearer token (401); "
-                "AUTH_MODE is 'production' — this smoke test only runs "
+                "AUTH_MODE is 'production' - this smoke test only runs "
                 "against the dev-mode default.",
             )
         assert status_code == 202, (
@@ -496,7 +496,7 @@ def test_audit_round_trip_and_audit_or_rollback_and_deferred_write(
         try:
             # Confirm the pause actually took effect.
             assert not asyncio.run(_ping_postgres()), (
-                "Postgres pause failed to disconnect — cannot validate "
+                "Postgres pause failed to disconnect - cannot validate "
                 "audit-or-rollback without a real outage."
             )
 
@@ -528,7 +528,7 @@ def test_audit_round_trip_and_audit_or_rollback_and_deferred_write(
         # short moment after the start request fires; this races the
         # post-Compose audit row insertion. The test tolerates either
         # outcome (deferred=true or deferred=false) ONLY when the call
-        # itself succeeds — a deferred=true response is the explicit
+        # itself succeeds - a deferred=true response is the explicit
         # surface we want to observe.
         import threading
 
@@ -552,7 +552,7 @@ def test_audit_round_trip_and_audit_or_rollback_and_deferred_write(
         # Outcome may legitimately be either:
         # * 502 (the pause hit before the precheck/pending-row insert)
         # * 202 with audit_write_deferred=true (the pause hit between
-        # Compose success and the final audit row — 
+        # Compose success and the final audit row - 
         # * 202 with audit_write_deferred=false (timing missed; rare on
         # the warm host but possible).
         # The test PASSES on any of those because all three are valid
@@ -577,7 +577,7 @@ def test_audit_round_trip_and_audit_or_rollback_and_deferred_write(
                 f"{status_code} body={body!r}"
             )
     finally:
-        # Best-effort teardown — ignore individual stop failures.
+        # Best-effort teardown - ignore individual stop failures.
         try:
             client.post_stop(TARGET_SERVICE)
         except Exception:  # noqa: BLE001

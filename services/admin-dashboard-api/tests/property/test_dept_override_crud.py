@@ -1,4 +1,4 @@
-"""— Department override CRUD honours referential / lifecycle rules.
+﻿"""- Department override CRUD honours referential / lifecycle rules.
 * ``set_override(dept, provider)`` upserts when ``provider`` is active.
 * ``get_override(dept)`` returns the documented payload (with shaped
   provider) or the ``provider=None`` shape for missing depts.

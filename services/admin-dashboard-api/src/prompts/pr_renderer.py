@@ -1,29 +1,29 @@
-"""Canonical PR-description renderer for prompt change PRs.
+﻿"""Canonical PR-description renderer for prompt change PRs.
 
 This module replaces the placeholder ``_render_pr_description``
 helper that the task-6.1 :mod:`src.routers.prompts_git` router carried
 inline. The renderer is a **pure function** with no I/O, no app
-state, and no global mutation — every piece of context is passed in:
+state, and no global mutation - every piece of context is passed in:
 
-* ``path``                — repository-relative POSIX path of the
+* ``path``                - repository-relative POSIX path of the
   prompt that changed (eg. ``platform/prompts/assistant_chat.md``).
-* ``diff``                — unified-format diff produced by
+* ``diff``                - unified-format diff produced by
   :meth:`git_shared.GitRepo.diff` against ``main``.
-* ``sandbox_history``     — zero or more :class:`SandboxRunSummary`
+* ``sandbox_history``     - zero or more :class:`SandboxRunSummary`
   rows produced by service lifecycle wiring's ``PromptSandbox.run`` calls. Empty
   when the operator has not exercised the sandbox yet (acceptable
-  per design notes §`PromptSandbox` — the sandbox is opt-in).
-* ``v15_status``          — :class:`V15SyncStatus` record describing
+  per design notes §`PromptSandbox` - the sandbox is opt-in).
+* ``v15_status``          - :class:`V15SyncStatus` record describing
   whether every backlog ID mentioned by the prompt body also
   appears in ``architecture notes`` (behavior 2.8 / V15 CI gate). The
-  renderer surfaces *informational* status only — the hard CI gate
+  renderer surfaces *informational* status only - the hard CI gate
   is owned by ``tests/test_taskprompt_mimari_sync.py`` (prompt sync wiring).
 
 Design references
 -----------------
-* design notes §`PromptsGitRouter.post_pr` — ``description = diff
+* design notes §`PromptsGitRouter.post_pr` - ``description = diff
   summary + sandbox results + V15 sync info``.
-* implementation notes §6.3 — "deterministic Markdown including diff vs main,
+* implementation notes §6.3 - "deterministic Markdown including diff vs main,
   sandbox results from service lifecycle wiring if available, V15 sync info".
 * behaviors 2.2, 2.4, 2.8.
 
@@ -37,14 +37,14 @@ order:
        so PR providers can render it).
     3. Sandbox results table (one row per
        :class:`SandboxRunSummary`, in input order). Skipped when the
-       history is empty — replaced by a short "no sandbox runs
+       history is empty - replaced by a short "no sandbox runs
        recorded" notice.
     4. V15 sync section: known backlog IDs in the prompt body, plus
        any IDs that the caller flagged as missing from architecture notes.
 
 Identical inputs therefore always produce a byte-identical output,
 which makes the renderer trivially testable and lets the property
-test suite (invariant 5 — audit log integrity) compare the rendered
+test suite (invariant 5 - audit log integrity) compare the rendered
 description to a golden snapshot when needed.
 """
 
@@ -73,7 +73,7 @@ class SandboxRunSummary:
 
     Attributes:
         invoked_at: ISO-8601 timestamp of the sandbox run. Treated as
-            opaque text — the renderer never parses or sorts on it.
+            opaque text - the renderer never parses or sorts on it.
         sample_input_excerpt: First ~120 chars of the sample input
             the operator submitted to the sandbox. Longer inputs are
             already truncated by the caller.
@@ -110,7 +110,7 @@ class V15SyncStatus:
         mimari_available: ``True`` when the caller successfully read
             ``architecture notes``; ``False`` when the file was missing /
             unreadable (the renderer then prints "architecture notes not
-            available — V15 sync could not be verified" instead of
+            available - V15 sync could not be verified" instead of
             making confident claims).
     """
 
@@ -133,12 +133,12 @@ class V15SyncStatus:
 #: filter their PR list by a stable prefix.
 PR_DESCRIPTION_HEADER: str = "# Prompt change"
 
-#: Keep PR descriptions readable for huge diffs — the PR provider's
+#: Keep PR descriptions readable for huge diffs - the PR provider's
 #: own diff view is the source of truth so we only need a preview
 #: here. Mirrors the original placeholder helper's 8000-char limit.
 _MAX_DIFF_CHARS: int = 8000
 
-#: The V15 backlog series — every letter that may carry a 1-2 digit
+#: The V15 backlog series - every letter that may carry a 1-2 digit
 #: numeric suffix in the architecture cross-reference table. Mirror of the
 #: regex used by ``tests/test_taskprompt_mimari_sync.py``
 #: 2.8 / V15 CI gate).
@@ -157,7 +157,7 @@ def extract_v15_status(
 ) -> V15SyncStatus:
     """Compute the V15 sync status for a prompt body.
 
-    Pure function — no I/O. Callers that want to read ``architecture notes``
+    Pure function - no I/O. Callers that want to read ``architecture notes``
     from disk should do so themselves (e.g. ``Path("architecture notes")
     .read_text()``) and pass the contents in; ``None`` means the file
     was unavailable and the renderer should soften its claims.
@@ -170,7 +170,7 @@ def extract_v15_status(
     Returns:
         :class:`V15SyncStatus` with ``all_ids`` sorted unique, and
         ``missing_in_mimari`` empty when ``mimari_text`` is ``None``
-        (since we cannot make a reliable claim either way — the
+        (since we cannot make a reliable claim either way - the
         ``mimari_available`` flag tells the renderer to print a soft
         warning instead).
     """
@@ -205,13 +205,13 @@ def render_pr_description(
             changed. Used in the title line and the file mention so
             reviewers can grep by path.
         diff: Unified-format diff vs ``main``. Truncated past 8 KiB.
-            ``""`` (empty) renders as ``(no textual diff — empty
+            ``""`` (empty) renders as ``(no textual diff - empty
             change)`` so the section never disappears entirely; an
             empty diff is still informative ("the file's bytes did
             not change but a new commit was recorded").
         sandbox_history: Zero or more :class:`SandboxRunSummary`
             rows. The renderer iterates the sequence exactly once
-            and does not sort — the caller controls the order.
+            and does not sort - the caller controls the order.
         v15_status: Optional V15 sync snapshot. When ``None`` the
             renderer prints a "(V15 sync info not available)" notice
             so the section keeps its slot in the output.
@@ -272,7 +272,7 @@ def _render_diff_section(diff: str) -> str:
     if len(truncated) > _MAX_DIFF_CHARS:
         truncated = truncated[:_MAX_DIFF_CHARS] + "\n\n…(truncated)…"
     if not truncated:
-        truncated = "(no textual diff — empty change)"
+        truncated = "(no textual diff - empty change)"
 
     return (
         "## Diff vs `main`\n"
@@ -287,7 +287,7 @@ def _render_sandbox_section(history: Sequence[SandboxRunSummary]) -> str:
     """Render the "Sandbox results" Markdown table.
 
     When ``history`` is empty the section becomes a short notice so
-    the reviewer is aware no sandbox run was recorded — that is a
+    the reviewer is aware no sandbox run was recorded - that is a
     *flag for review*, not an error (sandbox is opt-in per design).
     """
 
@@ -355,7 +355,7 @@ def _render_v15_section(v15: V15SyncStatus | None) -> str:
     if not v15.mimari_available:
         lines.append(
             "⚠️ `architecture notes` was not available when this PR description "
-            "was rendered — V15 sync could not be verified. The CI "
+            "was rendered - V15 sync could not be verified. The CI "
             "gate `tests/test_taskprompt_mimari_sync.py` (prompt sync wiring) "
             "remains the source of truth and will fail the build if "
             "any of the IDs above are missing from `architecture notes`."
@@ -394,7 +394,7 @@ def _md_escape(text: str) -> str:
 
     Pipes terminate cells, so we replace them with the HTML entity
     so the table layout survives. Newlines collapse to a literal
-    space — table cells must stay on a single visual row.
+    space - table cells must stay on a single visual row.
     """
 
     return text.replace("|", "&#124;").replace("\n", " ").replace("\r", " ")

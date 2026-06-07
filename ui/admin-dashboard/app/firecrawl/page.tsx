@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 /**
- * Firecrawl egress allowlist page — `gereksinim.txt` G9 (E2 iyileştirme).
+ * Firecrawl egress allowlist page - `gereksinim.txt` G9 (E2 iyileştirme).
  *
  * CRUD surface over `GET/POST/DELETE /api/v1/firecrawl/allowlist`. The
  * firecrawl service only fetches external URLs whose domain is on this
@@ -163,7 +163,7 @@ export default function FirecrawlAllowlistPage(): JSX.Element {
       <div className="banner banner--info" role="note">
         <span className="banner__icon">ℹ️</span>
         <div className="banner__body">
-          Allowlist şu an in-memory tutuluyor — firecrawl servisi yeniden
+          Allowlist şu an in-memory tutuluyor - firecrawl servisi yeniden
           başlarsa liste sıfırlanır. Kalıcı saklama için bir sonraki sürümde
           PostgreSQL <code>firecrawl_allowlist</code> tablosu devreye girecek.
         </div>
@@ -258,7 +258,7 @@ export default function FirecrawlAllowlistPage(): JSX.Element {
                     <td className="muted text-xs">
                       {entry.added_at
                         ? new Date(entry.added_at).toLocaleString("tr-TR")
-                        : "—"}
+                        : "-"}
                     </td>
                     <td style={{ textAlign: "right" }}>
                       <button

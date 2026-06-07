@@ -1,4 +1,4 @@
-"""invariant 19 — Bot license hard-cap concurrency queue.
+﻿"""invariant 19 - Bot license hard-cap concurrency queue.
 
 
 
@@ -6,7 +6,7 @@ For every Hypothesis-generated ``(capacity, sequence_of_acquire_release)``
 trace,:class:`BotLicenseHardCap` satisfies:
 
 (a) ``in_use`` never exceeds ``capacity``.
-(b) FIFO fairness — pending waiters are released in arrival order.
+(b) FIFO fairness - pending waiters are released in arrival order.
 (c) ``acquire`` followed by an exception inside the with-body still
  releases the slot.
 (d) Deterministic stats: ``stats`` reflects the running

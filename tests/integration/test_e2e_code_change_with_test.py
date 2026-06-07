@@ -1,4 +1,4 @@
-"""End-to-end integration test for the ``code_change_with_test`` flow.
+﻿"""End-to-end integration test for the ``code_change_with_test`` flow.
 
 Scenario
 --------
@@ -8,20 +8,20 @@ The :class:`agent_runner.workflows.agent_runner_workflow.AgentRunnerWorkflow`
 LLM-driven code changes. The handler walks through six side-effecting
 steps before exiting:
 
- 1. ``set_assignee_to_bot`` — claim the Jira issue for the bot.
- 2. ``precommit_scanner`` — gitleaks/bandit gate on the proposed
+ 1. ``set_assignee_to_bot`` - claim the Jira issue for the bot.
+ 2. ``precommit_scanner`` - gitleaks/bandit gate on the proposed
  diff. A "block" decision aborts the run.
- 3. ``bitbucket_create_commit`` — push the change to the
+ 3. ``bitbucket_create_commit`` - push the change to the
  ``ai/{issue_key}`` branch.
- 4. Child :class:`ExecutionRunWorkflow` — run the dept-configured
+ 4. Child :class:`ExecutionRunWorkflow` - run the dept-configured
  smoke test against the commit hash. A non-``"passed"``
  result short-circuits the run with
  ``failure_reason="execution_run_failed"``; no PR is opened.
  5. PR-create tool (cloud or DC, picked by
- :func:`mcp_client.deployment_router.select_pr_create_tool`) —
+ :func:`mcp_client.deployment_router.select_pr_create_tool`) -
  open the draft PR with PR-draft enforcement carried by the
  foundation MCP filter.
- 6. ``jira_add_comment`` — post the "✅ Draft PR açıldı: …"
+ 6. ``jira_add_comment`` - post the "✅ Draft PR açıldı: …"
  completion line on the original Jira issue.
 
 This file pins the activity-call sequence end-to-end against the
@@ -29,11 +29,11 @@ real Temporal time-skipping ``WorkflowEnvironment`` so signal
 dispatch, sandbox enforcement, and replay determinism all
 participate. Two scenarios are covered:
 
-* ``test_code_change_with_test_happy_path`` — every step succeeds;
+* ``test_code_change_with_test_happy_path`` - every step succeeds;
  the workflow exits ``status="completed"`` with ``iter_count==1``
  and the activity sequence matches the expected flow above.
 
-* ``test_code_change_with_test_test_failure_no_pr`` — the child
+* ``test_code_change_with_test_test_failure_no_pr`` - the child
  :class:`ExecutionRunWorkflow` returns ``status="failed"``; the PR
  step MUST NOT fire and the failure summary MUST land in Jira. The
  workflow exits with ``failure_reason="execution_run_failed"``.
@@ -47,7 +47,7 @@ would in production.
 Hosts without the embedded ``temporal-test-server`` skip cleanly
 via the same module-level gate the existing Temporal tests
 in ``test_temporal_signal.py`` / ``test_temporal_loop_cap.py``
-use — see :func:`_temporal_test_env_available` and
+use - see :func:`_temporal_test_env_available` and
 :func:`_start_time_skipping_or_skip`.
 """
 
@@ -63,7 +63,7 @@ import pytest
 
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — agent-runner-worker tree, temporal-shared, mcp_client.
+# sys.path bootstrap - agent-runner-worker tree, temporal-shared, mcp_client.
 #
 # Mirrors the bootstrap used by ``test_temporal_signal.py`` and
 # ``test_temporal_loop_cap.py``. The agent-runner-worker ships its
@@ -127,7 +127,7 @@ async def _start_time_skipping_or_skip() -> Any:
 
  The embedded ``temporal-test-server`` may fail to start on hosts
  where the binary is not bundled. Surface that cleanly as a
- skip — the integration suite stays green on machines that
+ skip - the integration suite stays green on machines that
  cannot host Temporal locally.
  """
 
@@ -231,7 +231,7 @@ class _ExecutionRunWorkflowFailedStub:
  ``status="failed"`` field flips the parent workflow's
  ``test_passed`` flag to False, so the body posts the failure
  summary comment, sets ``failure_reason="execution_run_failed"``,
- and returns early — no PR-create activity, no
+ and returns early - no PR-create activity, no
  ``iter_advance_pr_supersede``.
  """
 
@@ -249,7 +249,7 @@ class _ExecutionRunWorkflowFailedStub:
 
 
 # ---------------------------------------------------------------------------
-# Activity stub factory — every activity the ``code_change_with_test``
+# Activity stub factory - every activity the ``code_change_with_test``
 # handler invokes is registered with a thin recording stub. The
 # implementation uses the full activity set:
 #
@@ -258,7 +258,7 @@ class _ExecutionRunWorkflowFailedStub:
 # * ``bitbucket_create_commit`` (returns ``{"commit_hash": "abc123"}``)
 # * ``bitbucket_create_pull_request_cloud`` (returns
 # ``{"pr_id": 42, "url": "..."}``)
-# * ``iter_advance_pr_supersede`` — only fires when the previous
+# * ``iter_advance_pr_supersede`` - only fires when the previous
 # iteration's PR id is set; for ``iteration=1`` the workflow
 # skips this branch entirely. The stub is registered defensively
 # so a regression that fires it on the first iteration shows up
@@ -323,7 +323,7 @@ def _build_code_change_activities(
     async def _bitbucket_create_pull_request_dc(
         *args: Any, **kwargs: Any
     ) -> dict[str, Any]:
-        # Defensive — the production deployment_router picks the
+        # Defensive - the production deployment_router picks the
         # cloud variant when ``deployment="cloud"``. Registering the
         # DC variant too keeps the worker robust against a future
         # config flip without re-touching the test.
@@ -466,7 +466,7 @@ def _output_to_dict(result: Any) -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
-# Test 1 — happy path
+# Test 1 - happy path
 # ---------------------------------------------------------------------------
 
 
@@ -501,7 +501,7 @@ async def test_code_change_with_test_happy_path() -> None:
  iteration (no previous PR to supersede).
  * The Jira comment carries the PR URL stub injected by the
  activity.
- * Final status is ``"completed"``; ``iter_count`` is ``1`` —
+ * Final status is ``"completed"``; ``iter_count`` is ``1`` -
  the run-body's initial advance lifts the counter from 0 to 1
  and no further signals are dispatched in this scenario.
  * ``failure_reason`` is ``None``.
@@ -527,7 +527,7 @@ async def test_code_change_with_test_happy_path() -> None:
     execution_task_queue = "execution-runner-tq"
 
     async with _start_time_skipping_or_skip() as env:
-        # Two workers — one for the parent ``AgentRunnerWorkflow`` on
+        # Two workers - one for the parent ``AgentRunnerWorkflow`` on
         # ``agent-runner-tq``, one for the child ``ExecutionRunWorkflow``
         # on ``execution-runner-tq``. The child task queue is
         # hardcoded by :meth:`AgentRunnerWorkflow._run_execution_child`
@@ -605,7 +605,7 @@ async def test_code_change_with_test_happy_path() -> None:
         f"PR-create tool must fire exactly once on the happy path; "
         f"got {pr_calls} (call log: {log.names()!r})"
     )
-    # The DC variant must NOT fire — deployment_router selected the
+    # The DC variant must NOT fire - deployment_router selected the
     # cloud variant.
     assert log.count("bitbucket_create_pull_request_dc") == 0, (
         f"DC PR-create tool must not fire when deployment=cloud; "
@@ -637,7 +637,7 @@ async def test_code_change_with_test_happy_path() -> None:
         f"completion comment must mention the draft PR; got {body!r}"
     )
     # The PR url stub injected by the activity surfaces verbatim in
-    # the comment body — confirms the workflow extracted the URL
+    # the comment body - confirms the workflow extracted the URL
     # from the activity result and forwarded it into Jira.
     assert "pull-requests/42" in body, (
         f"completion comment must carry the PR URL; got {body!r}"
@@ -662,7 +662,7 @@ async def test_code_change_with_test_happy_path() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Test 2 — test failure: no PR opened
+# Test 2 - test failure: no PR opened
 # ---------------------------------------------------------------------------
 
 
@@ -693,7 +693,7 @@ async def test_code_change_with_test_test_failure_no_pr() -> None:
  * The body's ``if not test_passed`` branch posts the
  "❌ Testler başarısız" comment via ``jira_add_comment``,
  sets ``self._failure_reason = "execution_run_failed"`` and
- returns early — no PR-create activity, no
+ returns early - no PR-create activity, no
  ``iter_advance_pr_supersede``.
  * The outer ``run`` body computes the final summary; with
  ``output_actions=()`` and no partial failures the formatter
@@ -797,7 +797,7 @@ async def test_code_change_with_test_test_failure_no_pr() -> None:
         f"smoke test fails; got {result!r}"
     )
     # ``iter_count`` still reflects the run-body's initial advance
-    # — the test failure aborts the body but does not roll back
+    # - the test failure aborts the body but does not roll back
     # the counter.
     assert result["iter_count"] == 1, (
         f"expected iter_count=1 (run-body initial advance only); "

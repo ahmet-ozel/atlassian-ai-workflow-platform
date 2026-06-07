@@ -1,5 +1,5 @@
-"""
-Test 15: Webhook delivery — Jira and Bitbucket real event delivery.
+﻿"""
+Test 15: Webhook delivery - Jira and Bitbucket real event delivery.
 
 Validates that Jira and Bitbucket webhooks can deliver real events to the
 automation-service via a tunnel (ngrok or cloudflared) exposing localhost.
@@ -268,7 +268,7 @@ def _get_platform_dir():
 # ---------------------------------------------------------------------------
 
 class TestWebhookDelivery:
-    """Webhook delivery tests — Jira and Bitbucket real event delivery.
+    """Webhook delivery tests - Jira and Bitbucket real event delivery.
 
     Tests provision a tunnel, subscribe webhooks, trigger events, and verify
     delivery. Skipped if no tunnel tool is available.
@@ -360,7 +360,7 @@ class TestWebhookDelivery:
         """
         tunnel_url = TestWebhookDelivery._tunnel_url
         if tunnel_url is None:
-            pytest.skip("Tunnel not provisioned — cannot test Jira webhook delivery")
+            pytest.skip("Tunnel not provisioned - cannot test Jira webhook delivery")
 
         webhook_target_url = f"{tunnel_url}{JIRA_WEBHOOK_PATH}"
         start = time.perf_counter()
@@ -458,7 +458,7 @@ class TestWebhookDelivery:
 
         TestWebhookDelivery._scenario_results.append(result)
 
-        # Assert — allow soft failure with evidence
+        # Assert - allow soft failure with evidence
         if not delivery_received:
             pytest.fail(
                 f"Jira webhook delivery not confirmed within {WEBHOOK_DELIVERY_TIMEOUT}s. "
@@ -475,7 +475,7 @@ class TestWebhookDelivery:
         """
         tunnel_url = TestWebhookDelivery._tunnel_url
         if tunnel_url is None:
-            pytest.skip("Tunnel not provisioned — cannot test Bitbucket webhook delivery")
+            pytest.skip("Tunnel not provisioned - cannot test Bitbucket webhook delivery")
 
         webhook_target_url = f"{tunnel_url}{BITBUCKET_WEBHOOK_PATH}"
         workspace = credentials.bitbucket_workspace
@@ -591,7 +591,7 @@ class TestWebhookDelivery:
 
         TestWebhookDelivery._scenario_results.append(result)
 
-        # Assert — allow soft failure with evidence
+        # Assert - allow soft failure with evidence
         if not delivery_received:
             pytest.fail(
                 f"Bitbucket webhook delivery not confirmed within {WEBHOOK_DELIVERY_TIMEOUT}s. "
@@ -607,7 +607,7 @@ class TestWebhookDelivery:
         """
         tunnel_url = TestWebhookDelivery._tunnel_url
         if tunnel_url is None:
-            pytest.skip("Tunnel not provisioned — cannot verify audit events")
+            pytest.skip("Tunnel not provisioned - cannot verify audit events")
 
         jira_rows = _query_audit_events("webhook.jira.received")
         bitbucket_rows = _query_audit_events("webhook.bitbucket.received")
@@ -641,7 +641,7 @@ class TestWebhookDelivery:
 
         TestWebhookDelivery._scenario_results.append(result)
 
-        # Soft assertion — don't fail if webhooks weren't delivered
+        # Soft assertion - don't fail if webhooks weren't delivered
         if TestWebhookDelivery._jira_delivery_received:
             assert jira_found, (
                 "Expected 'webhook.jira.received' in audit_events but none found"

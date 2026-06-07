@@ -1,5 +1,5 @@
-"""
-Test 12: OpenAI LLM call — real API integration test.
+﻿"""
+Test 12: OpenAI LLM call - real API integration test.
 
 Validates that the platform can successfully call the OpenAI API using
 the gpt-4o-mini model with a minimal prompt. Verifies response structure,
@@ -363,6 +363,6 @@ class TestOpenAIEvidence:
             data=evidence_data,
         )
 
-        # This test always passes — evidence collection is the goal.
+        # This test always passes - evidence collection is the goal.
         # Actual assertions are in the other test classes above.
         assert True

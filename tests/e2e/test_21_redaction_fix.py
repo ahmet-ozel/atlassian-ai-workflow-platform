@@ -1,4 +1,4 @@
-"""
+﻿"""
 Test 21: Verify log redaction isolation fix (R21).
 
 Validates that the log redaction property test can run in isolation
@@ -78,7 +78,7 @@ class TestRedactionIsolation:
         """R21.4: Test validates same redaction invariants (no Bearer ATCTT3x, no sk-proj-).
 
         The test output should indicate that redaction patterns are being
-        validated — specifically that sensitive values do not leak through.
+        validated - specifically that sensitive values do not leak through.
         """
         result = _run_cmd(
             ["pytest", TEST_TARGET, "-v", "--tb=short"],

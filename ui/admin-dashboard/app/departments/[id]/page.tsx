@@ -73,7 +73,7 @@ type SshRunner = {
 };
 
 // ---------------------------------------------------------------------------
-// Inline styles — SSH Runners section
+// Inline styles - SSH Runners section
 // ---------------------------------------------------------------------------
 
 const sectionStyle: React.CSSProperties = {
@@ -338,7 +338,7 @@ export default function DepartmentDetailPage({
           setAssignedRunnerIds(assignedRunnerIds);
           const body = await res.text();
           setRunnersError(
-            `Assignment failed: HTTP ${res.status} — ${body.slice(0, 200)}`,
+            `Assignment failed: HTTP ${res.status} - ${body.slice(0, 200)}`,
           );
         }
       } catch (err) {
@@ -353,7 +353,7 @@ export default function DepartmentDetailPage({
   );
 
   const formatDate = (dateStr: string | null | undefined): string => {
-    if (!dateStr) return "—";
+    if (!dateStr) return "-";
     try {
       return new Date(dateStr).toLocaleString("tr-TR");
     } catch {
@@ -520,7 +520,7 @@ export default function DepartmentDetailPage({
         </div>
       )}
 
-      {/* Credential modal — shown on demand or auto-opened when credentials exist */}
+      {/* Credential modal - shown on demand or auto-opened when credentials exist */}
       {showCredentialModal && (
         <CredentialModal deptId={id} onClose={handleClose} />
       )}
@@ -546,7 +546,7 @@ export default function DepartmentDetailPage({
             >
               <span aria-hidden="true">⚠️</span>
               <span>
-                SSH runner havuzu boş — henüz hiçbir runner tanımlanmamış.
+                SSH runner havuzu boş - henüz hiçbir runner tanımlanmamış.
                 Lütfen önce{" "}
                 <a
                   href="/security"
@@ -691,7 +691,7 @@ export default function DepartmentDetailPage({
             </div>
           )}
 
-          {/* Runner Table — assigned runners with metrics */}
+          {/* Runner Table - assigned runners with metrics */}
           {!runnersLoading && assignedRunners.length > 0 && (
             <div style={{ overflowX: "auto" }}>
               <table style={runnerTableStyle}>

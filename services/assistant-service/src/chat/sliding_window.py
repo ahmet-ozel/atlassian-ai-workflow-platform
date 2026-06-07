@@ -1,4 +1,4 @@
-"""Pure sliding-window compressor used by ``ChatHandler.stream``.
+﻿"""Pure sliding-window compressor used by ``ChatHandler.stream``.
 
 Implements this deterministic compression contract:
 
@@ -21,7 +21,7 @@ pin the following invariants:
 (b) ``len(messages) > n`` ⇒ ``len(output) == n + 1`` (exactly one
     summary message followed by the ``n`` most recent entries).
 (c) The trailing ``n`` elements of the output equal ``messages[-n:]``
-    verbatim — original ordering preserved.
+    verbatim - original ordering preserved.
 (d) The leading element has ``role == "system"`` and its ``text``
     contains the substring ``"[Önceki konuşma özeti]"``.
 (e) Determinism: identical inputs (with a deterministic summariser)
@@ -90,7 +90,7 @@ def compress(
     """
 
     if len(messages) <= n:
-        # No-op branch — no summariser call, no allocation surprises.
+        # No-op branch - no summariser call, no allocation surprises.
         # Returning a fresh list keeps the contract stable: callers
         # observe a ``list[Message]`` regardless of the input
         # container (tuple, list, custom Sequence). The element

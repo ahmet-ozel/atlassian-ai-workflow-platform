@@ -1,4 +1,4 @@
-"""MinIO → Jira binary attachment upload pipeline activity.
+﻿"""MinIO → Jira binary attachment upload pipeline activity.
 
 This module provides the :func:`upload_artifact_to_jira` Temporal
 activity which bridges the agent-runner-worker's MinIO artifact storage
@@ -7,20 +7,20 @@ to the Jira ``jira_add_attachment`` MCP tool. End-to-end flow:
 1. Download an artifact from MinIO (``artifact_download(bucket, key)``).
 2. Validate file extension and size **before** any tempfile is touched.
 3. Stage the bytes to a :mod:`tempfile.NamedTemporaryFile` whose suffix
-   mirrors ``Path(file_name).suffix`` — Jira's content-type sniffing
+   mirrors ``Path(file_name).suffix`` - Jira's content-type sniffing
    relies on the extension and the existing
    :class:`JiraAttachmentTool` validates it again on the server side.
 4. Invoke the ``jira_add_attachment`` MCP tool over JSON-RPC with
    ``{issue_key, file_path: <temp>, file_name}``. The MCP server reads
    the local file and POSTs it to Jira's
    ``/rest/api/3/issue/{key}/attachments`` multipart endpoint.
-5. **Always** unlink the tempfile in the ``finally`` block — this is the
+5. **Always** unlink the tempfile in the ``finally`` block - this is the
    sole cleanup point for the staged binary regardless of whether the
    download succeeded, the MCP call raised, or Jira returned a 4xx.
 
 The activity returns a plain ``dict`` (rather than a frozen dataclass)
-so the success payload from the MCP tool — which already carries
-``id``, ``filename``, ``size``, ``mimeType``, ``self`` — can be
+so the success payload from the MCP tool - which already carries
+``id``, ``filename``, ``size``, ``mimeType``, ``self`` - can be
 forwarded verbatim to the caller for audit logging.
 
 MCP routing
@@ -28,7 +28,7 @@ MCP routing
 
 Every outbound Atlassian HTTP call goes through the
 ``atlassian_mcp_bitbucket`` MCP service. The activity does not
-issue a raw ``httpx`` request to Jira itself — it invokes the
+issue a raw ``httpx`` request to Jira itself - it invokes the
 ``jira_add_attachment`` MCP tool which in turn calls Jira. The MCP
 plumbing helpers (``make_mcp_client``, ``with_atlassian_creds``) are
 shared with the rest of ``activities/jira.py``.
@@ -75,7 +75,7 @@ ALLOWED_EXTENSIONS: frozenset[str] = frozenset(
     {".pdf", ".md", ".csv", ".txt", ".json", ".html"}
 )
 
-#: 100 MB hard cap on the in-memory payload — matches the MCP-side
+#: 100 MB hard cap on the in-memory payload - matches the MCP-side
 #: tool limit. Validated **before** the tempfile is opened so an
 #: oversized artifact never pollutes /tmp.
 MAX_FILE_SIZE_BYTES: int = 100 * 1024 * 1024
@@ -107,7 +107,7 @@ class UploadArtifactToJiraInput:
     bucket:
         MinIO bucket holding the artifact (typically ``ai-runs``).
     key:
-        Object key within the bucket — produced by
+        Object key within the bucket - produced by
         :func:`temporal_shared.identifiers.agent_artifact_key` or
         :func:`temporal_shared.identifiers.execution_artifact_key`.
     file_name:
@@ -238,14 +238,14 @@ def _parse_mcp_attachment_payload(payload: dict[str, Any]) -> dict[str, Any]:
                     if isinstance(parsed, dict):
                         return parsed
                 except json.JSONDecodeError:
-                    # Fall through to raw text surface — the tool may
+                    # Fall through to raw text surface - the tool may
                     # have returned an unstructured success message.
                     return {
                         "success": True,
                         "raw": text,
                     }
 
-    # Defensive fallback — unwrap whatever shape we got.
+    # Defensive fallback - unwrap whatever shape we got.
     return result
 
 
@@ -266,7 +266,7 @@ async def upload_artifact_to_jira(
 
     Pipeline (cross-references in section docstring):
 
-    1. Validate the file extension up-front — short-circuits the
+    1. Validate the file extension up-front - short-circuits the
        MinIO download for obviously rejected formats.
     2. Download the artifact bytes via the shared
        :func:`activities.artifact.artifact_download` activity.
@@ -338,7 +338,7 @@ async def upload_artifact_to_jira(
             "error": f"Could not download artifact {bucket}/{key}: {exc}",
         }
 
-    # 3. Size cap — performed in-memory before tempfile is created so
+    # 3. Size cap - performed in-memory before tempfile is created so
     # an oversized payload never touches disk.
     size_error = _validate_size(content)
     if size_error:
@@ -467,7 +467,7 @@ async def _invoke_mcp_attachment_tool(
             "error": parsed.get("error") or "unknown MCP failure",
         }
 
-    # Successful upload — preserve the upstream fields the Jira tool
+    # Successful upload - preserve the upstream fields the Jira tool
     # already populates so audit logs can link to the attachment.
     result: dict[str, Any] = {
         "success": True,

@@ -1,4 +1,4 @@
-"""
+﻿"""
 Test 32: Verify Docker build context fix (R32).
 
 Validates that all 6 services with build context issues can now build
@@ -219,10 +219,10 @@ def _check_compose_build_context(platform_root: Path) -> dict[str, Any]:
             if context_match:
                 context_value = context_match.group(1)
                 # Valid contexts:
-                #   * ``..`` / ``../..`` → platform-root context (R32 fix —
+                #   * ``..`` / ``../..`` → platform-root context (R32 fix -
                 #     used by services that pull in libs/* deps)
                 #   * ``../<subdir>`` → Standalone Mode (services with no
-                #     cross-lib deps — agent-runner-worker, streamlit-ui,
+                #     cross-lib deps - agent-runner-worker, streamlit-ui,
                 #     firecrawl). The fix landed here because these three
                 #     Dockerfiles really *are* standalone-pure and trying
                 #     to push them to platform-root context only inflates
@@ -240,7 +240,7 @@ def _check_compose_build_context(platform_root: Path) -> dict[str, Any]:
                 # Build might be a simple string (e.g., build: ../services/foo)
                 build_match = re.search(r"build:\s*(\S+)", service_block)
                 if build_match:
-                    # Simple build path — may or may not be correct
+                    # Simple build path - may or may not be correct
                     result["services_with_wrong_context"].append(
                         {"service": service, "build": build_match.group(1)}
                     )
@@ -309,7 +309,7 @@ class TestDockerBuildContextFix:
         # docker compose up -d may return non-zero if some deps aren't running
         # but we still check if our target services become healthy
         if up_result.returncode != 0:
-            # Not a hard failure — services might still come up
+            # Not a hard failure - services might still come up
             # (e.g., dependency services may need to be started separately)
             pass
 

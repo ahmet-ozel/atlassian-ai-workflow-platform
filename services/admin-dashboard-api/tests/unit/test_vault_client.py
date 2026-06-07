@@ -1,7 +1,7 @@
-"""Unit tests for ``src.lifecycle.vault_client.VaultClient``.
+﻿"""Unit tests for ``src.lifecycle.vault_client.VaultClient``.
 
 These tests exercise the Vault KV-v2 wrapper against an in-process
-``httpx.MockTransport`` — no real Vault, no network, no disk I/O. They
+``httpx.MockTransport`` - no real Vault, no network, no disk I/O. They
 validate the Vault client contract.
 
 Test layout:
@@ -450,7 +450,7 @@ async def test_delete_env_override_treats_404_as_idempotent() -> None:
 
     client = _make_client(handler)
     try:
-        # Should NOT raise — deleting a missing key is a no-op so callers
+        # Should NOT raise - deleting a missing key is a no-op so callers
         # can use this method for cleanup paths without pre-checking.
         await client.delete_env_override(service_name="svc", key="missing")
     finally:
@@ -505,7 +505,7 @@ async def test_list_env_override_keys_returns_keys_from_metadata_list() -> None:
 
 @pytest.mark.asyncio
 async def test_list_env_override_keys_returns_empty_on_404() -> None:
-    """A 404 on LIST means the prefix has never been written — the
+    """A 404 on LIST means the prefix has never been written - the
     lifecycle service treats this as "nothing to purge"."""
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -579,7 +579,7 @@ async def test_vault_client_does_not_open_disk_files_during_writes(
     real_open = builtins.open
 
     def explode(*args: Any, **kwargs: Any):
-        # Only fail on *real* file paths — pytest internals occasionally
+        # Only fail on *real* file paths - pytest internals occasionally
         # touch ``/dev/null`` style helpers; restrict to non-special.
         path = args[0] if args else kwargs.get("file")
         raise AssertionError(

@@ -1,4 +1,4 @@
-"""``PromptSandbox`` — isolated LLM invocation for prompt drafts.
+﻿"""``PromptSandbox`` - isolated LLM invocation for prompt drafts.
 
 The sandbox performs one isolated LLM call for a prompt draft: sample
 input plus draft prompt produces an LLM response, does not affect
@@ -9,7 +9,7 @@ editor (admin-dashboard ``/prompts``) and the live LLM. Three
 invariants matter:
 
 1. **No production tools.** The sandbox does *not* hand the LLM a
-   tool catalogue — it issues a flat ``system`` + ``user`` prompt and
+   tool catalogue - it issues a flat ``system`` + ``user`` prompt and
    returns the raw text response. Production assistant-service writes
    to Atlassian via banned-tool-filtered MCP calls; the sandbox runs
    without any tool surface so a draft prompt cannot accidentally
@@ -61,7 +61,7 @@ _LOG = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# Sandbox cost tag — module-level constant
+# Sandbox cost tag - module-level constant
 # ---------------------------------------------------------------------------
 
 
@@ -127,7 +127,7 @@ class SandboxResult:
     invoked_at: datetime
     model: str = "unknown"
     provider: str = "unknown"
-    # ``cost_tag`` is fixed at construction time — exposing it on the
+    # ``cost_tag`` is fixed at construction time - exposing it on the
     # response makes the isolation contract auditable from a single
     # JSON envelope without re-reading the source.
     cost_tag: str = COST_TAG_SANDBOX
@@ -142,11 +142,11 @@ class SandboxResult:
 class LlmInvokerLike(Protocol):
     """Provider-agnostic single-shot invoker.
 
-    The sandbox does **not** stream — it issues one request, waits
+    The sandbox does **not** stream - it issues one request, waits
     for the full response, records its cost and returns. This keeps
     the collaborator surface tiny: ``LlmOrchestrator.stream_with_tool_loop``
     and this sandbox are deliberately separate code paths because their
-    failure modes differ — the streaming chat loop has retry +
+    failure modes differ - the streaming chat loop has retry +
     fallback + token cap, while the sandbox never retries (a sandbox
     test that fails should surface the error to the developer
     immediately).
@@ -185,7 +185,7 @@ class CostEntryLike:
     Mirrors the columns of ``shared.cost_tracking``
     (``platform/infra/postgres/20_ops.sql``). Held here as a
     package-local dataclass so the sandbox does not have to import
-    from a cost-tracking package — the
+    from a cost-tracking package - the
     real ``cost_tracking.CostEntry`` will share the same field names
     so the swap is mechanical.
 
@@ -201,7 +201,7 @@ class CostEntryLike:
         user_id: Optional caller id. The sandbox-test endpoint
             populates this from the OIDC ``sub`` claim so
             per-developer sandbox usage can be reported.
-        workflow_id: Always ``None`` for sandbox runs — the sandbox
+        workflow_id: Always ``None`` for sandbox runs - the sandbox
             does not start a Temporal workflow.
         model: LLM model identifier (eg. ``"qwen2.5-coder"``).
         provider: One of ``"vllm"`` / ``"openai"`` / ``"anthropic"``.
@@ -241,7 +241,7 @@ class CostTrackerLike(Protocol):
 
 
 # ---------------------------------------------------------------------------
-# Defaults — used by tests and standalone mode
+# Defaults - used by tests and standalone mode
 # ---------------------------------------------------------------------------
 
 
@@ -301,7 +301,7 @@ class SyntheticLlmInvoker:
         user: str,
         cost_tag: str,
     ) -> LlmInvocationResult:
-        # We do not actually use ``cost_tag`` to alter the response —
+        # We do not actually use ``cost_tag`` to alter the response -
         # the tag is the sandbox's signal to the cost layer, not the
         # provider. Production providers also accept it as a passive
         # passthrough.
@@ -389,7 +389,7 @@ class PromptSandbox:
             :class:`SandboxResult.invoked_at`. Defaults to
             ``datetime.now(timezone.utc)``.
 
-    The class is intentionally small — it owns the ``cost_tag``
+    The class is intentionally small - it owns the ``cost_tag``
     contract and the activity id assignment; everything else is
     delegated to the collaborator protocols.
     """
@@ -421,7 +421,7 @@ class PromptSandbox:
             prompt_body: The draft prompt body (system message). The
                 caller (``PromptsGitRouter.post_sandbox_test``) reads
                 this from the draft branch and forwards it verbatim
-                — the sandbox does **not** validate or render
+                - the sandbox does **not** validate or render
                 template variables, because the editor wants to test
                 the raw body.
             sample_input: Sample user message the developer typed
@@ -442,7 +442,7 @@ class PromptSandbox:
 
         Notes:
             The method is **not** retried on LLM failure. Sandbox
-            tests are interactive — a transient 429 should surface
+            tests are interactive - a transient 429 should surface
             to the developer rather than being silently retried,
             because the developer is iterating on the prompt body
             and a stale-but-successful retry would confuse the
@@ -469,7 +469,7 @@ class PromptSandbox:
         # row in ``shared.cost_tracking`` is filtered out by
         # ``BudgetCapPolicy`` (which selects on
         # ``cost_tag = 'production'``). Failing to record cost must
-        # NOT mask the sandbox response — the developer still wants
+        # NOT mask the sandbox response - the developer still wants
         # to see the LLM output even if the cost write transiently
         # fails, so we log + continue.
         cost_entry = CostEntryLike(
@@ -486,7 +486,7 @@ class PromptSandbox:
         )
         try:
             await self._cost.record(cost_entry)
-        except Exception as exc:  # noqa: BLE001 — fail-soft per ops policy
+        except Exception as exc:  # noqa: BLE001 - fail-soft per ops policy
             _LOG.warning(
                 "sandbox cost write failed; response still returned to caller",
                 extra={
@@ -518,7 +518,7 @@ def _default_activity_id() -> str:
     """Generate a process-unique activity id for a sandbox run.
 
     The id format is ``"sandbox-<ns>-<counter>"`` where ``<ns>`` is
-    ``time.time_ns()`` (nanosecond clock — already unique across
+    ``time.time_ns()`` (nanosecond clock - already unique across
     processes started within the same nanosecond would still be
     differentiated by the counter), and ``<counter>`` is a
     monotonically incrementing int local to this process. The

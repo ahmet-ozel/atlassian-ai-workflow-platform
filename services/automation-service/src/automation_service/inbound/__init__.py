@@ -1,4 +1,4 @@
-"""Inbound channel adapters for the automation-service.
+﻿"""Inbound channel adapters for the automation-service.
 
 Provides Slack and email task intake adapters.
 
@@ -13,12 +13,12 @@ bot-loop guard, capability gate and audit chain stay deterministic.
 
 Two surface types are provided:
 
-* :mod:`slack_to_task` — synchronous FastAPI router exposing
+* :mod:`slack_to_task` - synchronous FastAPI router exposing
   ``POST /webhooks/inbound/slack``. Slack's incoming-webhook contract
   (signed with ``X-Slack-Signature`` over ``v0:<ts>:<body>``) is
   verified up-front; the parsed mention is forwarded to the workflow
   client.
-* :mod:`email_to_task` — asynchronous IMAP poller. Configured by the
+* :mod:`email_to_task` - asynchronous IMAP poller. Configured by the
   ``EMAIL_INBOUND_ADDRESS`` env var, it polls the mailbox at a fixed
   cadence, classifies messages whose ``To:`` matches the configured
   address, and starts a workflow per accepted message.

@@ -1,16 +1,16 @@
-"""``POST /admin/departments/{id}/repo-mappings/sync`` endpoint.
+﻿"""``POST /admin/departments/{id}/repo-mappings/sync`` endpoint.
 
-* Dry-run mode (no ``?apply=true``) — scan the dept's Bitbucket
+* Dry-run mode (no ``?apply=true``) - scan the dept's Bitbucket
   workspace through ``mcp_client``, fold the result against the
   dept's current ``repo_mappings`` array via the pure set-algebra
   helper :func:`temporal_shared.repo_sync.compute_repo_mapping_diff`,
   and return the three-way diff as JSON. **No mutations**.
-* Apply mode (``?apply=true``) — same scan + diff, then atomically
+* Apply mode (``?apply=true``) - same scan + diff, then atomically
   persist the new mapping list via the injected
   :class:`SupportsDepartmentsRepo` (``departments_repo
   .update_repo_mappings``) and emit one
   ``repo_mapping_synced`` audit row carrying the diff in the payload.
-* Authorization — every request is gated by
+* Authorization - every request is gated by
   :func:`auth_shared.requires("admin")`. A non-admin actor (or one
   whose token is missing / malformed) receives HTTP 403 with an
   ``rbac_denied`` audit row.
@@ -85,7 +85,7 @@ _LOG = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# Audit action / resource constants — single source of truth
+# Audit action / resource constants - single source of truth
 # ---------------------------------------------------------------------------
 
 #: Audit ``action`` token written on every successful sync invocation
@@ -105,7 +105,7 @@ _AUDIT_ACTION_SCAN_FAILED: str = "repo_mapping_scan_failed"
 
 
 # ---------------------------------------------------------------------------
-# Collaborator protocols — keep the router trivially mockable
+# Collaborator protocols - keep the router trivially mockable
 # ---------------------------------------------------------------------------
 
 
@@ -154,7 +154,7 @@ class SupportsDepartmentsRepo(Protocol):
 
     The endpoint never calls :meth:`update_repo_mappings` outside of
     apply mode, so dry-run requests always leave the registry
-    untouched (R10.7 — "dry-run does not mutate").
+    untouched (R10.7 - "dry-run does not mutate").
     """
 
     async def list_repo_mappings(
@@ -167,7 +167,7 @@ class SupportsDepartmentsRepo(Protocol):
 
 
 # ---------------------------------------------------------------------------
-# Dependency container — injected via ``request.app.state.repo_sync``
+# Dependency container - injected via ``request.app.state.repo_sync``
 # ---------------------------------------------------------------------------
 
 
@@ -240,7 +240,7 @@ def _now(deps: RepoSyncEndpointDeps) -> datetime:
 
 
 # ---------------------------------------------------------------------------
-# AuthN helpers — bearer token extraction + OIDC validation
+# AuthN helpers - bearer token extraction + OIDC validation
 # ---------------------------------------------------------------------------
 
 
@@ -293,7 +293,7 @@ def _build_auth_context(claims: Mapping[str, Any]) -> AuthContext | None:
 
     The role is read from the canonical ``role`` claim; missing or
     non-string roles fall through to ``"viewer"`` (the lowest
-    privilege) so the foundation guard rejects the request — this
+    privilege) so the foundation guard rejects the request - this
     matches the wider service convention of preferring "deny on
     ambiguous" for admin endpoints.
     """
@@ -374,7 +374,7 @@ def _make_audit_event(
 
 
 async def _emit_audit(audit_logger: AuditLogger, event: AuditEvent) -> None:
-    """Best-effort audit write — never let an audit error 500 the call.
+    """Best-effort audit write - never let an audit error 500 the call.
 
     Mirrors the pattern used by :mod:`automation_service.api.cancel`:
     failures are warning-logged locally so the operator can
@@ -393,7 +393,7 @@ async def _emit_audit(audit_logger: AuditLogger, event: AuditEvent) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Scan helpers — fold the MCP response into a frozenset of slugs
+# Scan helpers - fold the MCP response into a frozenset of slugs
 # ---------------------------------------------------------------------------
 
 
@@ -403,7 +403,7 @@ def _scanned_slugs(repos: Sequence[Mapping[str, Any]]) -> frozenset[str]:
     The MCP returns a sequence of repo descriptors (``{"name",
     "slug", ...}``). The diff helper only needs slugs, so we extract
     them here and silently skip entries that are missing a
-    non-empty ``slug`` field — those would be malformed in the MCP
+    non-empty ``slug`` field - those would be malformed in the MCP
     response and are not actionable for the operator.
 
     Any extra fields on the MCP response are ignored so the helper
@@ -435,16 +435,16 @@ def _build_new_mapping_list(
       MCP-supplied ``name`` when available; otherwise echoing the
       slug as a placeholder).
 
-    The order is deterministic — preserved current entries first
+    The order is deterministic - preserved current entries first
     (in their original order), added entries next (sorted by slug)
-    — so two consecutive apply runs over the same input produce
+    - so two consecutive apply runs over the same input produce
     identical mapping lists, matching the idempotence invariant
     the diff helper itself guarantees.
     """
 
     # Start with the surviving entries from the current list (those
     # whose slug is *not* being removed). Preserving the operator's
-    # ``name`` field for these is important — they may have edited
+    # ``name`` field for these is important - they may have edited
     # the human-readable name in ``departments.json`` and we should
     # not silently overwrite it with the MCP's value.
     surviving: list[RepoMapping] = [
@@ -519,7 +519,7 @@ async def sync_repo_mappings(
     The endpoint runs in two modes selected by the ``apply`` query
     parameter:
 
-    * ``apply=False`` (default — dry-run):
+    * ``apply=False`` (default - dry-run):
         1. Validates the OIDC bearer token via the injected
            :class:`OIDCValidator`. Missing / malformed / invalid
            tokens receive HTTP 401.
@@ -536,7 +536,7 @@ async def sync_repo_mappings(
         6. Returns the diff as JSON. **No mutations**.
 
     * ``apply=True``:
-        Steps 1–5 are identical, then:
+        Steps 1-5 are identical, then:
         6. Composes the new ``repo_mappings`` array (preserved
            survivors + sorted-slug additions).
         7. Calls
@@ -583,7 +583,7 @@ async def sync_repo_mappings(
     actor_id = actor_ctx.actor_id
     actor_role = actor_ctx.actor_role
 
-    # ---------- 2. AuthZ — admin role required -------------------------------
+    # ---------- 2. AuthZ - admin role required -------------------------------
     try:
         auth_check(actor_ctx, "admin")
     except PermissionDenied:
@@ -614,7 +614,7 @@ async def sync_repo_mappings(
         scanned_response: Sequence[Mapping[str, Any]] = (
             await deps.bitbucket_scanner(dept_id)
         )
-    except Exception as exc:  # noqa: BLE001 — translate to 502
+    except Exception as exc:  # noqa: BLE001 - translate to 502
         await _emit_audit(
             deps.audit_logger,
             _make_audit_event(
@@ -643,7 +643,7 @@ async def sync_repo_mappings(
         current_mappings: tuple[RepoMapping, ...] = (
             await deps.departments_repo.list_repo_mappings(dept_id)
         )
-    except Exception as exc:  # noqa: BLE001 — translate to 502
+    except Exception as exc:  # noqa: BLE001 - translate to 502
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"departments registry read failed: {type(exc).__name__}",
@@ -666,7 +666,7 @@ async def sync_repo_mappings(
             await deps.departments_repo.update_repo_mappings(
                 dept_id, new_mappings
             )
-        except Exception as exc:  # noqa: BLE001 — translate to 502
+        except Exception as exc:  # noqa: BLE001 - translate to 502
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
                 detail=f"departments registry write failed: {type(exc).__name__}",

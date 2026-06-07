@@ -1,4 +1,4 @@
-"""Account ID Auto-Probe behavior for startup and post-create flows.
+﻿"""Account ID Auto-Probe behavior for startup and post-create flows.
 
 Background
 ----------
@@ -18,7 +18,7 @@ On failure the response is still 200 but with
 ``account_id_probe_status: "failed"``.
 
 The wizard endpoint (``POST /admin/departments/wizard``) runs the
-identity probe atomically — if any probe fails, the department's mode
+identity probe atomically - if any probe fails, the department's mode
 is downgraded to ``"disabled"``.
 
 Strategy
@@ -53,7 +53,7 @@ from hypothesis import strategies as st
 import pytest
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — expose the automation-service source root
+# sys.path bootstrap - expose the automation-service source root
 # ---------------------------------------------------------------------------
 #
 # The ``automation-service`` source tree co-exists with the
@@ -200,14 +200,14 @@ class FakeAuditSink:
 #: Valid Atlassian service names.
 _service_strategy = st.sampled_from(["jira", "bitbucket", "confluence"])
 
-#: Department ID strategy — alphanumeric + hyphens, realistic length.
+#: Department ID strategy - alphanumeric + hyphens, realistic length.
 _dept_id_strategy = st.text(
     alphabet=st.characters(whitelist_categories=("Ll", "Nd"), whitelist_characters="-"),
     min_size=3,
     max_size=20,
 ).filter(lambda s: s[0].isalpha())
 
-#: Account ID strategy — hex-like strings mimicking Atlassian account IDs.
+#: Account ID strategy - hex-like strings mimicking Atlassian account IDs.
 _account_id_strategy = st.text(
     alphabet="0123456789abcdef",
     min_size=24,
@@ -257,7 +257,7 @@ def _dept_bot_missing_rows(draw: st.DrawFn) -> list[DeptBotMissingRow]:
 
 
 # ---------------------------------------------------------------------------
-# Account ID Auto-Probe — Startup
+# Account ID Auto-Probe - Startup
 # ---------------------------------------------------------------------------
 
 
@@ -345,7 +345,7 @@ class TestAutoProbeStartupFillsMissingIds:
         writer = FakeAccountIdWriter()
         audit = FakeAuditSink()
 
-        # First run — probes all rows
+        # First run - probes all rows
         asyncio.get_event_loop().run_until_complete(
             auto_probe_missing_account_ids(
                 reader=reader,
@@ -357,7 +357,7 @@ class TestAutoProbeStartupFillsMissingIds:
 
         first_call_count = len(prober.calls)
 
-        # Second run — should skip all due to cache
+        # Second run - should skip all due to cache
         results_2 = asyncio.get_event_loop().run_until_complete(
             auto_probe_missing_account_ids(
                 reader=reader,
@@ -389,7 +389,7 @@ class TestAutoProbeStartupNeverBlocks:
         self, rows: list[DeptBotMissingRow]
     ) -> None:
         """When probes fail (return None), the function does not
- raise — it returns failure results and audits them."""
+ raise - it returns failure results and audits them."""
 
         _probe_cache.clear()
 
@@ -530,7 +530,7 @@ class TestAutoProbeStartupNeverBlocks:
 
 class TestAutoProbeStartupMixedResults:
     """When some probes succeed and some fail, the successful ones are
- committed and the failures are audited — partial success is the
+ committed and the failures are audited - partial success is the
  expected behavior.
  """
 
@@ -600,7 +600,7 @@ class TestAutoProbeStartupMixedResults:
 
 
 # ---------------------------------------------------------------------------
-# Account ID Auto-Probe — Post-Create Endpoint
+# Account ID Auto-Probe - Post-Create Endpoint
 # ---------------------------------------------------------------------------
 
 
@@ -663,7 +663,7 @@ class TestPostCreateInlineProbe:
 
         from datetime import datetime, timezone
 
-        # Failed probe result — credential was still written successfully
+        # Failed probe result - credential was still written successfully
         result = AddCredentialResult(
             dept_id="test-dept",
             service="bitbucket",
@@ -676,7 +676,7 @@ class TestPostCreateInlineProbe:
         )
         assert result.account_id_probe_status == "failed"
         assert result.account_id_probe_error is not None
-        # The credential was still written — outcome is "created"
+        # The credential was still written - outcome is "created"
         assert result.outcome == "created"
 
     @settings(
@@ -725,7 +725,7 @@ class TestPostCreateInlineProbe:
 
 
 # ---------------------------------------------------------------------------
-# Account ID Auto-Probe — Probe Failures Don't Break Dept Commit
+# Account ID Auto-Probe - Probe Failures Don't Break Dept Commit
 # ---------------------------------------------------------------------------
 
 
@@ -770,7 +770,7 @@ class TestProbeFailureDoesNotBreakDeptCommit:
         writer = FakeAccountIdWriter()
         audit = FakeAuditSink()
 
-        # This MUST NOT raise — the function is best-effort
+        # This MUST NOT raise - the function is best-effort
         results = asyncio.get_event_loop().run_until_complete(
             auto_probe_missing_account_ids(
                 reader=reader,
@@ -830,7 +830,7 @@ class TestAutoProbeIdempotency:
         self, rows: list[DeptBotMissingRow]
     ) -> None:
         """Running the probe twice (with cache cleared between
- runs) produces the same upserts — the writer receives the same
+ runs) produces the same upserts - the writer receives the same
  account_ids both times."""
 
         _probe_cache.clear()
@@ -881,7 +881,7 @@ class TestConfigDepartmentsJsonNotModified:
     """The auto-probe function writes ONLY to the
  ``automation.department_bot_identity`` Postgres table via the
  AccountIdWriter protocol. ``config/departments.json`` is NEVER
- modified — this is verified by the fact that the function's only
+ modified - this is verified by the fact that the function's only
  write path is through the AccountIdWriter protocol, which targets
  the DB exclusively.
  """
@@ -889,7 +889,7 @@ class TestConfigDepartmentsJsonNotModified:
     def test_auto_probe_only_writes_via_writer_protocol(self) -> None:
         """The auto_probe_missing_account_ids function's only
  write dependency is the AccountIdWriter protocol. It has no
- file I/O capability — config/departments.json cannot be
+ file I/O capability - config/departments.json cannot be
  modified by this code path."""
 
         import ast
@@ -929,7 +929,7 @@ class TestConfigDepartmentsJsonNotModified:
         self, rows: list[DeptBotMissingRow]
     ) -> None:
         """All successful probe results go through the writer
- protocol — no other persistence mechanism is used."""
+ protocol - no other persistence mechanism is used."""
 
         _probe_cache.clear()
 

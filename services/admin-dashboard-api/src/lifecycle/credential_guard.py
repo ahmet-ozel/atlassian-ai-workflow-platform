@@ -1,4 +1,4 @@
-"""Credential Guard — blocks production boot when dev-default credentials are detected.
+﻿"""Credential Guard - blocks production boot when dev-default credentials are detected.
 
 This module implements the fail-fast guard for production startup. It checks
 environment variables against a configurable list of known insecure dev-default
@@ -123,7 +123,7 @@ def check_credentials(
     if violations and is_production:
         for violation in violations:
             logger.critical(
-                "CRITICAL: %s detected in production — refusing to start",
+                "CRITICAL: %s detected in production - refusing to start",
                 violation,
             )
         return CredentialGuardResult(blocked=True, violations=violations)

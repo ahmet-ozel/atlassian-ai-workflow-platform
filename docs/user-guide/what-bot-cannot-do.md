@@ -1,11 +1,11 @@
-# Bot Ne Yapamaz?
+﻿# Bot Ne Yapamaz?
 
 > Sınırlar, yasaklar, bot'un *"yapamam"* dediği durumlar. Hayal kırıklığı yaşamadan önce
 > oku.
 
 ## Hardcoded Yasaklar (Bot Asla Yapmaz)
 
-Bu işlemler **kod seviyesinde yasaklı** — LLM "yap" dese bile sistem engeller.
+Bu işlemler **kod seviyesinde yasaklı** - LLM "yap" dese bile sistem engeller.
 
 ### 1. Merge Etmek
 
@@ -53,9 +53,9 @@ Bot bu durumlarda kendisi *"out_of_scope"* der ve task'ı geri çevirir:
 >
 > **Alternatif:**
 > 1. Veritabanı erişim yetkim yok. DBA ekibine ticket açabilirim, ister misiniz?
-> 2. Sadece local test environment'ında script çalıştırabilirim — bu kapsamda mı?
+> 2. Sadece local test environment'ında script çalıştırabilirim - bu kapsamda mı?
 
-Task'ı **To Do** durumuna çeker, assignee bot olarak kalır — başka biri devralabilir.
+Task'ı **To Do** durumuna çeker, assignee bot olarak kalır - başka biri devralabilir.
 Description'ı düzeltip yeniden bot'a atayabilirsin.
 
 ## Capability Sınırları
@@ -66,8 +66,8 @@ Departmanına atanmış olan **capability**'ler bot'un ne yapabileceğini belirl
 |---|---|
 | Bitbucket | Kod yazma, PR açma, repo'da değişiklik |
 | Confluence | Doküman oluşturma / güncelleme, araştırma yayınlama |
-| Jira (zorunlu) | (Bot'un temeli — tüm departmanlarda var) |
-| Web search (Firecrawl) | İnternette araştırma yapma — gerektiğinde |
+| Jira (zorunlu) | (Bot'un temeli - tüm departmanlarda var) |
+| Web search (Firecrawl) | İnternette araştırma yapma - gerektiğinde |
 | Code execution (SSH) | Test çalıştırma, script execution |
 | Vision (LLM) | Image / PDF attachment'ları okuma |
 
@@ -82,8 +82,8 @@ isterse:
 > 🤖 Bot tek repo ile çalışır. Birden fazla repo değişmesi gerekiyorsa **iki seçeneğin
 > var**:
 >
-> 1. **Ayrı task'lar aç** — her repo için bir task, sırayla bot'a ata.
-> 2. **Epic + subtask kullan** — bir Epic aç, repo başına bir subtask ekle, Epic'i bot'a
+> 1. **Ayrı task'lar aç** - her repo için bir task, sırayla bot'a ata.
+> 2. **Epic + subtask kullan** - bir Epic aç, repo başına bir subtask ekle, Epic'i bot'a
 >    ata. Bot subtask'ları sırayla işler.
 
 ## Çok Büyük Task'lar (`needs_breakdown`)
@@ -92,7 +92,7 @@ Bot bir task'ı tek seferde yapamayacak kadar büyük görürse alt-task öneris
 
 > 🤖 Bu task'ı tek seferde yapamam. Aşağıdaki alt-task'lara bölersem yapabilirim:
 >
-> **Sebep:** Task hem backend API hem frontend UI değişikliği içeriyor — tek workflow'da
+> **Sebep:** Task hem backend API hem frontend UI değişikliği içeriyor - tek workflow'da
 > yapamam.
 >
 > **Önerilen alt-task'lar:**
@@ -100,7 +100,7 @@ Bot bir task'ı tek seferde yapamayacak kadar büyük görürse alt-task öneris
 > - Frontend: ödeme formu yeni alanlar (~15 dk)
 > - Integration: e2e test (~10 dk)
 >
-> Onaylıyorsanız `evet` yazın — Epic + 3 subtask oluşturayım.
+> Onaylıyorsanız `evet` yazın - Epic + 3 subtask oluşturayım.
 
 ## Süre / Maliyet Limitleri
 
@@ -118,7 +118,7 @@ Limit aşıldığında bot kullanıcıya açıkça bildirir.
 
 ## Branch Adı Override
 
-Bot her zaman `ai/{issue_key}` branch'i açar — bu adı override edemezsin. Mevcut bir
+Bot her zaman `ai/{issue_key}` branch'i açar - bu adı override edemezsin. Mevcut bir
 feature branch'e commit yapılmasını istiyorsan task'ı bot'a atayarak değil, manuel commit
 atarak yap; sonra bot'u PR reviewer olarak ekle.
 
@@ -128,16 +128,16 @@ atarak yap; sonra bot'u PR reviewer olarak ekle.
 kontrolündedir.
 
 İstisna: `pr_draft_strategy=open_after_test_pass` config'i açıksa bot CI testi geçtikten
-sonra PR'ı **draft'tan açığa** çekebilir — bu da deploy değil, sadece "review için
+sonra PR'ı **draft'tan açığa** çekebilir - bu da deploy değil, sadece "review için
 hazır" sinyali.
 
 ## "Bot Bunu Hızlandırsın"
 
 Bot LLM hızıyla sınırlıdır. Hızlandırmak için:
 
-- Description'ı net yaz — gereksiz `needs_info` döngüsü olmasın
+- Description'ı net yaz - gereksiz `needs_info` döngüsü olmasın
 - Issue type'ı doğru seç (Story → AC, Bug → reproduce; Task → serbest)
-- Attachment ekle — bot okumakla zaman kaybetmesin
+- Attachment ekle - bot okumakla zaman kaybetmesin
 
 ## "Bot Bunu Bedava Yapsın"
 

@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 /**
- * CredentialServiceTab — single-service tab body inside the dept
+ * CredentialServiceTab - single-service tab body inside the dept
  * credential modal.
  *
  * Rendered three times by :file:`CredentialModal.tsx` (one per
@@ -14,26 +14,26 @@
  * (services/automation-service/src/routers/dept_credentials.py
  * → :func:`add_or_update_credential`):
  *
- * * ``url`` — required, plain text.
- * * ``username`` — required, plain text.
- * * ``personal_token`` — required for save, ``<input type=password>``,
+ * * ``url`` - required, plain text.
+ * * ``username`` - required, plain text.
+ * * ``personal_token`` - required for save, ``<input type=password>``,
  *   never echoed back from the server (write-only).
- * * ``account_id`` — read-only; populated by a successful probe.
- * * ``deployment`` — optional dropdown rendered only for bitbucket.
+ * * ``account_id`` - read-only; populated by a successful probe.
+ * * ``deployment`` - optional dropdown rendered only for bitbucket.
  *
  * Buttons:
  *
- * * ``Test (Probe)`` — calls
+ * * ``Test (Probe)`` - calls
  *   ``POST /admin/departments/{id}/probe?service={service}`` and
  *   updates the green ✅ / red ❌ badge from the response.
- * * ``Kaydet``      — calls
+ * * ``Kaydet``      - calls
  *   ``POST /admin/departments/{id}/credentials/{service}`` and, on
  *   success, asks the modal to close + refetch.
- * * ``Sil``         — calls
+ * * ``Sil``         - calls
  *   ``DELETE /admin/departments/{id}/credentials/{service}`` after
  *   a confirm prompt; refetches on success.
  *
- * The component is intentionally pure — it never owns the modal
+ * The component is intentionally pure - it never owns the modal
  * lifecycle or the dept fetch; the parent ``CredentialModal``
  * passes ``onSaved`` / ``onRemoved`` callbacks so the catalog can
  * refetch the dept detail after each mutation lands.
@@ -44,7 +44,7 @@ import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api-client";
 
 // ---------------------------------------------------------------------------
-// Wire types — kept in sync with services/automation-service/src/routers/
+// Wire types - kept in sync with services/automation-service/src/routers/
 // dept_credentials.py + services/dept_credential_service.py.
 // ---------------------------------------------------------------------------
 
@@ -140,7 +140,7 @@ function seedFromExisting(
   return {
     url: "", // backend only stores credential_ref, not raw URL
     username: existing.username ?? "",
-    personalToken: "", // write-only field — operator must re-enter on update
+    personalToken: "", // write-only field - operator must re-enter on update
     accountId: existing.account_id ?? "",
     deployment:
       service === "bitbucket"
@@ -189,14 +189,14 @@ async function safeReadDetail(res: Response): Promise<string> {
 }
 
 function formatTimestamp(value: string | null | undefined): string {
-  if (!value) return "—";
+  if (!value) return "-";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleString();
 }
 
 // ---------------------------------------------------------------------------
-// Inline styles — match StartFormModal / services pages conventions
+// Inline styles - match StartFormModal / services pages conventions
 // ---------------------------------------------------------------------------
 
 const fieldRowStyle: React.CSSProperties = {
@@ -299,7 +299,7 @@ export default function CredentialServiceTab({
     setSuccessMsg(null);
 
     // Client-side required-field guard. Sensitive token has no
-    // default fallback — operator must type it explicitly even on
+    // default fallback - operator must type it explicitly even on
     // update (mirrors StartFormModal sensitivity rule).
     if (form.url.trim().length === 0) {
       setError("URL is required.");
@@ -416,7 +416,7 @@ export default function CredentialServiceTab({
         // the operator knows to save first.
         setProbeBadge({ kind: "none" });
         setError(
-          `No ${service} bot is registered for this department yet — save credentials first, then re-probe.`,
+          `No ${service} bot is registered for this department yet - save credentials first, then re-probe.`,
         );
         return;
       }
@@ -491,7 +491,7 @@ export default function CredentialServiceTab({
   // --- Render ---------------------------------------------------------------
 
   const tokenPlaceholder = isExisting
-    ? "(re-enter to update — never echoed back)"
+    ? "(re-enter to update - never echoed back)"
     : "(required)";
 
   const probeBadgeNode = useMemo(() => {
@@ -643,7 +643,7 @@ export default function CredentialServiceTab({
               personal_token{" "}
               <span
                 aria-label="sensitive"
-                title="Sensitive — never echoed back from the server"
+                title="Sensitive - never echoed back from the server"
                 style={{ marginLeft: "0.4rem", color: "#b00" }}
               >
                 *
@@ -662,7 +662,7 @@ export default function CredentialServiceTab({
         </div>
         <div style={fieldRowStyle}>
           <label style={labelStyle}>
-            <span>account_id (read-only — populated by probe)</span>
+            <span>account_id (read-only - populated by probe)</span>
             <input
               type="text"
               value={form.accountId}

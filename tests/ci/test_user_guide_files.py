@@ -1,4 +1,4 @@
-"""CI gate — end-user docs catalog (ops work / W2).
+﻿"""CI gate - end-user docs catalog (ops work / W2).
 
 
 Every page documented in design.md §"User Guide" MUST exist under
@@ -29,7 +29,7 @@ _REQUIRED_PAGES: tuple[str, ...] = (
 
 def test_user_guide_directory_exists() -> None:
     assert _USER_GUIDE_DIR.is_dir(), (
-        f"Missing platform/docs/user-guide/ — the user guide catalog needs the "
+        f"Missing platform/docs/user-guide/ - the user guide catalog needs the "
         f"end-user documentation tree at {_USER_GUIDE_DIR}."
     )
 

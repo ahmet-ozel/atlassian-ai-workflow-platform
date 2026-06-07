@@ -1,4 +1,4 @@
-"""CI gate for the assistant_chat.md system prompt.
+﻿"""CI gate for the assistant_chat.md system prompt.
 
 The chat assistant system prompt at
 ``platform/prompts/assistant_chat.md`` MUST:
@@ -7,7 +7,7 @@ The chat assistant system prompt at
 * parse cleanly via :func:`prompts.validate.validate_template_format`
  so the boot-time PromptLoader does not fail at runtime;
 * contain the mandatory behaviour sentence pinned by design.md
- §"Y5" — chat MUST NOT perform write actions, those go through
+ §"Y5" - chat MUST NOT perform write actions, those go through
  Task Creator.
 """
 
@@ -55,7 +55,7 @@ def test_prompt_carries_y5_behaviour_sentence() -> None:
         "Jira task",
     )
     assert any(n in body for n in needles), (
-        "assistant_chat.md must state the write-action handoff rule — "
+        "assistant_chat.md must state the write-action handoff rule - "
         "chat-side write actions are deferred to Jira task creation. "
         "Drop the sentence and the chat assistant will start "
         "executing PR / commit calls directly."

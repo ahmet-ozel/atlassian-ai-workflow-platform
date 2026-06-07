@@ -1,4 +1,4 @@
-"""Unit tests for the production HTTP-backed :class:`HttpMCPCaller`.
+﻿"""Unit tests for the production HTTP-backed :class:`HttpMCPCaller`.
 
 Properties verified:
 
@@ -25,7 +25,7 @@ import httpx
 import pytest
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — mirror ``test_output_actions.py``.
+# sys.path bootstrap - mirror ``test_output_actions.py``.
 # ---------------------------------------------------------------------------
 
 _WORKER_ROOT: Path = Path(__file__).resolve().parents[2]
@@ -60,7 +60,7 @@ class _FakeCredential:
 
 
 class _FakeCredentialResolver:
-    """Returns a constant credential — sufficient for asserting that
+    """Returns a constant credential - sufficient for asserting that
     :func:`with_atlassian_creds` runs successfully and the JSON-RPC
     request reaches the transport."""
 
@@ -372,7 +372,7 @@ class TestCredentialRouting:
 
 
 # ---------------------------------------------------------------------------
-# anyio backend selector — keep test runtime constrained to asyncio.
+# anyio backend selector - keep test runtime constrained to asyncio.
 # ---------------------------------------------------------------------------
 
 

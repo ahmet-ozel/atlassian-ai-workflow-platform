@@ -1,6 +1,6 @@
-"""AST test for MCP auth usage in agent-runner-worker activity modules.
+﻿"""AST test for MCP auth usage in agent-runner-worker activity modules.
 
-Pure infrastructural invariants — MCP auth usage (AST scan).
+Pure infrastructural invariants - MCP auth usage (AST scan).
 
 This test parses the AST of:
 
@@ -30,7 +30,7 @@ and asserts the following pure infrastructural invariants:
    activity reaches the MCP server without department-scoped Atlassian
    credentials injected first.
 
-The check is performed entirely with the standard library ``ast`` module —
+The check is performed entirely with the standard library ``ast`` module -
 no Hypothesis is needed because the invariant is a pure structural check
 of a finite, fully enumerable set of source files. Per-file invariants are
 parametrised over the three activity modules so failures pinpoint the exact
@@ -63,7 +63,7 @@ _ACTIVITY_FILES: tuple[Path, ...] = (
     _ACTIVITIES_DIR / "confluence.py",
 )
 
-#: Pytest parametrisation IDs — short, stable filenames.
+#: Pytest parametrisation IDs - short, stable filenames.
 _ACTIVITY_FILE_IDS: tuple[str, ...] = tuple(p.name for p in _ACTIVITY_FILES)
 
 
@@ -127,7 +127,7 @@ def _is_with_atlassian_creds_item(item: ast.withitem) -> bool:
     # Match bare name: with_atlassian_creds(...)
     if isinstance(func, ast.Name) and func.id == "with_atlassian_creds":
         return True
-    # Match attribute: module.with_atlassian_creds(...) — defensive even
+    # Match attribute: module.with_atlassian_creds(...) - defensive even
     # though the activity modules import the name directly.
     if isinstance(func, ast.Attribute) and func.attr == "with_atlassian_creds":
         return True
@@ -150,7 +150,7 @@ def _is_raw_httpx_async_client_construction(node: ast.Call) -> bool:
 
     Matches both ``httpx.AsyncClient(...)`` (attribute access) and a bare
     ``AsyncClient(...)`` call (which would only appear if someone wrote
-    ``from httpx import AsyncClient`` — also forbidden).
+    ``from httpx import AsyncClient`` - also forbidden).
     """
 
     func = node.func
@@ -169,7 +169,7 @@ def _http_method_attr(node: ast.Call) -> str | None:
 
     Returns ``None`` if the call isn't an attribute call or the attribute
     name is not in :data:`_HTTP_METHOD_NAMES`. The receiver expression is
-    *not* inspected here — the caller filters by receiver name.
+    *not* inspected here - the caller filters by receiver name.
     """
 
     func = node.func
@@ -211,7 +211,7 @@ def _has_client_source_argument(call: ast.Call) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# Walker — collects network-call sites and remembers their context
+# Walker - collects network-call sites and remembers their context
 # ---------------------------------------------------------------------------
 
 
@@ -282,7 +282,7 @@ def _scan_tree(tree: ast.Module, module_name: str) -> ModuleScanResult:
                     result.network_calls_outside_creds_block.append(call_site)
 
     # ------------------------------------------------------------------
-    # Assignment tracking — record names bound to ``make_mcp_client(...)``
+    # Assignment tracking - record names bound to ``make_mcp_client(...)``
     # so subsequent ``<name>.post(...)`` etc. calls can be attributed.
     # ------------------------------------------------------------------
 
@@ -335,7 +335,7 @@ def _scan_tree(tree: ast.Module, module_name: str) -> ModuleScanResult:
                 else:
                     # ``async with client:`` is a no-op for our purposes
                     # but the value being entered is still a client
-                    # binding — record any ``as <name>`` alias defensively.
+                    # binding - record any ``as <name>`` alias defensively.
                     expr = item.context_expr
                     if isinstance(expr, ast.Name) and expr.id in client_names:
                         if isinstance(item.optional_vars, ast.Name):
@@ -391,7 +391,7 @@ def _scan_source(source: str, module_name: str = "<synthetic>") -> ModuleScanRes
 
 
 # ---------------------------------------------------------------------------
-# Aggregate scan — run once at module import so per-test functions are cheap.
+# Aggregate scan - run once at module import so per-test functions are cheap.
 # ---------------------------------------------------------------------------
 
 
@@ -410,7 +410,7 @@ _SCAN_RESULTS: dict[str, ModuleScanResult] = _scan_all_activity_modules()
 
 
 def test_activity_files_exist() -> None:
-    """Sanity check — the three activity modules exist on disk.
+    """Sanity check - the three activity modules exist on disk.
 
     If any of these is missing, the rest of the test would silently pass
     (vacuous truth on an empty AST). This guard ensures the auth invariant is
@@ -425,7 +425,7 @@ def test_activity_files_exist() -> None:
 
 
 def test_at_least_one_network_call_was_discovered() -> None:
-    """Sanity check — the AST walker can actually detect network calls.
+    """Sanity check - the AST walker can actually detect network calls.
 
     The production activity modules now route every Atlassian request
     through the ``call_mcp_tool`` helper (which owns the
@@ -434,7 +434,7 @@ def test_at_least_one_network_call_was_discovered() -> None:
     raw call in production would therefore be architecturally wrong.
 
     To keep the walker from passing vacuously we instead assert it
-    detects a network call in a known-good in-test source snippet — this
+    detects a network call in a known-good in-test source snippet - this
     proves the walker is wired correctly without forcing production code
     to embed a raw client call.
     """
@@ -551,7 +551,7 @@ _GOOD_POSITIONAL_CLIENT_SOURCE_SRC = (
     + """
 @activity.defn
 async def good_positional(dept_id: str) -> str:
-    # client_source supplied positionally — also acceptable.
+    # client_source supplied positionally - also acceptable.
     client = make_mcp_client("agent-runner-worker")
     async with client:
         async with with_atlassian_creds(
@@ -633,7 +633,7 @@ _BAD_NETWORK_CALL_BEFORE_CREDS_SRC = (
 async def bad_before_creds(dept_id: str) -> str:
     client = make_mcp_client(client_source="agent-runner-worker")
     async with client:
-        # Network call BEFORE entering with_atlassian_creds — still bad.
+        # Network call BEFORE entering with_atlassian_creds - still bad.
         await client.get("/mcp/health")
         async with with_atlassian_creds(
             client, dept_id=dept_id, service="jira", credential_resolver=None,
@@ -649,7 +649,7 @@ _FALSE_POSITIVE_DICT_GET_SRC = (
     + """
 @activity.defn
 async def looks_like_get(payload: dict) -> str:
-    # ``payload.get`` must NOT count as a network call — the receiver is
+    # ``payload.get`` must NOT count as a network call - the receiver is
     # not a tracked httpx client binding.
     return payload.get("key", "")
 """
@@ -679,7 +679,7 @@ async def nested_alias(dept_id: str) -> str:
         async with with_atlassian_creds(
             client, dept_id=dept_id, service="jira", credential_resolver=None,
         ) as authed_client:
-            # Network call on the ``as`` alias — must be recognised too.
+            # Network call on the ``as`` alias - must be recognised too.
             r = await authed_client.request("POST", "/mcp", json={})
             return r.text
 """
@@ -689,7 +689,7 @@ async def nested_alias(dept_id: str) -> str:
 class TestScannerSelfChecks:
     """Synthetic-source self-tests that lock in scanner behaviour.
 
-    These guard against regressions in the scanner itself — the
+    These guard against regressions in the scanner itself - the
     parametrised production-file tests are only as strong as the scanner
     that powers them.
     """
@@ -737,7 +737,7 @@ class TestScannerSelfChecks:
 
     def test_bare_async_client_import_is_detected(self) -> None:
         """``from httpx import AsyncClient; AsyncClient(...)`` is also
-        forbidden — the scanner must catch the bare-name form.
+        forbidden - the scanner must catch the bare-name form.
         """
         result = _scan_source(_BAD_BARE_ASYNC_CLIENT_SRC)
         assert len(result.raw_async_client_calls) == 1, (
@@ -780,7 +780,7 @@ class TestScannerSelfChecks:
     # -- False-positive guards ------------------------------------------
 
     def test_dict_get_is_not_a_network_call(self) -> None:
-        """``payload.get("key")`` must not be classified as a network call —
+        """``payload.get("key")`` must not be classified as a network call -
         the receiver is not a tracked httpx-client binding.
         """
         result = _scan_source(_FALSE_POSITIVE_DICT_GET_SRC)

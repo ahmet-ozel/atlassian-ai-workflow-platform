@@ -1,4 +1,4 @@
-"""Pure Jira-comment formatter for the ``noop_test`` smoke flow.
+﻿"""Pure Jira-comment formatter for the ``noop_test`` smoke flow.
 
 This module hosts a single **pure** helper function used by the
 ``noop_test_post_result`` activity wired into
@@ -6,7 +6,7 @@ This module hosts a single **pure** helper function used by the
 when it awaits a ``noop_test`` :class:`ExecutionRunWorkflow` child
 execution:
 
-* :func:`format_noop_result_comment` — composes the Jira-comment body
+* :func:`format_noop_result_comment` - composes the Jira-comment body
   reporting the runner's exit code and stdout snippet for a
   ``noop_test`` execution.
 
@@ -24,9 +24,9 @@ Purity contract
 ---------------
 :func:`format_noop_result_comment` is **pure**:
 
-* No I/O — the runner exit code and stdout snapshot are passed in by
+* No I/O - the runner exit code and stdout snapshot are passed in by
   the caller.
-* No clocks — the comment text does not embed a timestamp; correlation
+* No clocks - the comment text does not embed a timestamp; correlation
   with the runner execution happens through the workflow id (which the
   activity attaches separately if needed).
 * No randomness, no UUIDs, no globals.
@@ -41,8 +41,8 @@ Why a dedicated module?
 The Jira-comment shape for ``noop_test`` is the only piece of
 ``noop_test``-specific copy in the platform: every other workflow type
 uses LLM-generated wording.  Keeping the helper in its own short
-module — rather than tucked inside
-``temporal_shared.confluence`` or another adjacent file — means the
+module - rather than tucked inside
+``temporal_shared.confluence`` or another adjacent file - means the
 pinned wording, the truncation cap, and the requirement reference
 sit together where the unit tests can find them, and a future
 internationalisation effort can swap the literal strings here without
@@ -66,7 +66,7 @@ __all__ = [
 
 
 # ---------------------------------------------------------------------------
-# Public constants — pinned by the requirement and unit tests
+# Public constants - pinned by the requirement and unit tests
 # ---------------------------------------------------------------------------
 
 #: Maximum number of characters of captured stdout reproduced verbatim
@@ -117,7 +117,7 @@ def format_noop_result_comment(
 ) -> str:
     """Compose the Jira-comment body reporting a ``noop_test`` outcome.
 
-    Pure string composition — the function performs no I/O and never
+    Pure string composition - the function performs no I/O and never
     reads a clock.  The activity that writes the comment passes in the
     runner-supplied ``exit_code`` and captured ``stdout``; this helper
     decides whether the prefix is success / failure and applies the
@@ -241,7 +241,7 @@ def _truncate_stdout(stdout: str) -> str:
     characters with :data:`NOOP_TRUNCATION_MARKER` appended on a new
     line so the marker remains visible inside the fenced code block.
 
-    The function operates on **characters**, not bytes — Turkish
+    The function operates on **characters**, not bytes - Turkish
     characters in the captured output count as one each, which is the
     correct unit for Jira's rendered preview width.
     """

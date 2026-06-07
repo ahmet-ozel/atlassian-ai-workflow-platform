@@ -1,4 +1,4 @@
-"""Unit tests for src.seed_default_runner — boot-time SSH_HOST seed logic."""
+﻿"""Unit tests for src.seed_default_runner - boot-time SSH_HOST seed logic."""
 
 from __future__ import annotations
 
@@ -134,7 +134,7 @@ class TestSeedDefaultRunner:
             with caplog.at_level(logging.DEBUG):
                 await seed_default_runner(pool)
 
-        # Should not crash — graceful handling
+        # Should not crash - graceful handling
         pool.execute.assert_not_called()
 
     @pytest.mark.asyncio

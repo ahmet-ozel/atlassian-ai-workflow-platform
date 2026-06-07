@@ -1,4 +1,4 @@
-"""Firecrawl MCP client — egress allowlist + dept overrides + graceful 403.
+﻿"""Firecrawl MCP client - egress allowlist + dept overrides + graceful 403.
 
 This module is the caller-side wrapper around the ``firecrawl`` service
 (``platform/services/firecrawl``) that the ``automation-service`` and
@@ -20,7 +20,7 @@ The wrapper enforces three platform invariants:
    403, the call **returns** an :class:`EgressBlocked` outcome instead
    of raising. The caller (``AgentRunnerWorkflow``) translates that
    outcome into a Jira-comment ("``🤖 {url} domain'i araştırma için
-   izinli değil; admin'den eklenmesini isteyin.``") and continues —
+   izinli değil; admin'den eklenmesini isteyin.``") and continues -
    the workflow does **not** fail.
 3. **Output size cap with MinIO offload**. When a
    response payload exceeds ``max_bytes`` the wrapper writes the full
@@ -49,7 +49,7 @@ async callables. Keeping I/O at the seams means:
 - the property test
   (``platform/tests/property/test_firecrawl_research.py``) drives
   the client without booting either service, and
-- the workflow code stays replay-deterministic — the client itself
+- the workflow code stays replay-deterministic - the client itself
   is a pure decision layer that delegates I/O to the activity host.
 
 Implementation notes
@@ -87,7 +87,7 @@ __all__ = [
 
 
 # ---------------------------------------------------------------------------
-# effective_allowlist — pure set algebra
+# effective_allowlist - pure set algebra
 # ---------------------------------------------------------------------------
 
 
@@ -165,7 +165,7 @@ class FirecrawlSuccess:
     """Successful call whose payload fit within ``max_bytes``.
 
     Attributes:
-        kind: Always ``"success"`` — discriminator for pattern matching
+        kind: Always ``"success"`` - discriminator for pattern matching
             on the :data:`FirecrawlResult` union.
         url: The URL or query origin that produced this payload. For
             :meth:`FirecrawlClient.search` this is a synthetic
@@ -174,7 +174,7 @@ class FirecrawlSuccess:
         body: The decoded response body. Shape matches the firecrawl
             service contract (search → ``list[dict]``, scrape →
             ``dict``); the wrapper does not reshape it.
-        bytes_len: Byte length of the encoded response — recorded so
+        bytes_len: Byte length of the encoded response - recorded so
             audit logs can reason about output size budgets without
             re-encoding the payload.
     """
@@ -197,7 +197,7 @@ class EgressBlocked:
        denial, e.g. the upstream egress proxy refused).
 
     Attributes:
-        kind: Always ``"egress_blocked"`` — discriminator for the
+        kind: Always ``"egress_blocked"`` - discriminator for the
             :data:`FirecrawlResult` union.
         url: The URL the caller asked for. For ``search`` calls the
             host is the resolved hostname of the *search service* if
@@ -232,14 +232,14 @@ class PayloadOverflow:
     and the full body is at :attr:`storage_uri`.
 
     Attributes:
-        kind: Always ``"payload_overflow"`` — discriminator for the
+        kind: Always ``"payload_overflow"`` - discriminator for the
             :data:`FirecrawlResult` union.
         url: The originating URL or search-token.
         bytes_len: Byte length of the original payload.
         max_bytes: The cap that was breached.
         storage_uri: ``s3://{bucket}/{key}`` URI of the offloaded
             object. Empty string when no MinIO writer was injected
-            (the caller chose to skip offload — see
+            (the caller chose to skip offload - see
             :class:`FirecrawlClient` constructor docs).
         summary: Short human-readable summary suitable for Jira /
             LLM context. Truncated to 500 characters.
@@ -341,13 +341,13 @@ class FirecrawlClient:
 
     The wrapper owns three concerns:
 
-    1. **Allowlist enforcement** — the effective allowlist for each
+    1. **Allowlist enforcement** - the effective allowlist for each
        call is computed from the global allowlist (constructor) and
        the per-department override (``dept_id`` argument).
-    2. **Graceful denial** — out-of-allowlist hosts and upstream HTTP
+    2. **Graceful denial** - out-of-allowlist hosts and upstream HTTP
        403 produce an :class:`EgressBlocked` *outcome*; the wrapper
        does **not** raise.
-    3. **Payload offload** — bodies above ``max_bytes`` are written
+    3. **Payload offload** - bodies above ``max_bytes`` are written
        to MinIO via the injected writer and the call returns a
        :class:`PayloadOverflow` outcome carrying a short summary plus
        the ``s3://`` URI.
@@ -360,7 +360,7 @@ class FirecrawlClient:
             ``departments.json``.
         _transport: Async transport invoked for HTTP calls.
         _minio_writer: Optional async writer used by the overflow
-            branch. ``None`` disables MinIO offload — the wrapper
+            branch. ``None`` disables MinIO offload - the wrapper
             still returns :class:`PayloadOverflow` with an empty
             ``storage_uri`` so the caller can decide what to do.
     """
@@ -453,7 +453,7 @@ class FirecrawlClient:
             ``search`` does not have a target URL the caller controls,
             so the allowlist check happens **post-flight** on any URL
             present in the response. The pre-flight check applies to
-            an upstream 403 only — when the *firecrawl service itself*
+            an upstream 403 only - when the *firecrawl service itself*
             refuses (e.g. the dept has been disabled at the proxy
             level) we surface that as :class:`EgressBlocked` with
             reason ``"upstream_403"``.
@@ -461,7 +461,7 @@ class FirecrawlClient:
 
         if self._transport is None:
             raise RuntimeError(
-                "FirecrawlClient.search requires a transport — pass one "
+                "FirecrawlClient.search requires a transport - pass one "
                 "via the constructor or use the offline "
                 "effective_allowlist_for helper instead."
             )
@@ -520,7 +520,7 @@ class FirecrawlClient:
             :class:`EgressBlocked`, or :class:`PayloadOverflow`.
 
         Notes:
-            The allowlist matching honours DNS label boundaries — an
+            The allowlist matching honours DNS label boundaries - an
             entry of ``example.com`` matches ``example.com`` and
             ``api.example.com`` but **not** ``barexample.com``. This
             mirrors the rule in
@@ -534,7 +534,7 @@ class FirecrawlClient:
 
         if self._transport is None:
             raise RuntimeError(
-                "FirecrawlClient.scrape requires a transport — pass one "
+                "FirecrawlClient.scrape requires a transport - pass one "
                 "via the constructor."
             )
 
@@ -634,7 +634,7 @@ class FirecrawlClient:
                 bytes_len=bytes_len,
             )
 
-        # Overflow — compute storage key and offload via injected writer.
+        # Overflow - compute storage key and offload via injected writer.
         storage_uri = ""
         if self._minio_writer is not None:
             key = _build_overflow_key(url=url, bytes_len=bytes_len)
@@ -654,7 +654,7 @@ class FirecrawlClient:
 
 
 # ---------------------------------------------------------------------------
-# FirecrawlTransportError — non-routine transport faults
+# FirecrawlTransportError - non-routine transport faults
 # ---------------------------------------------------------------------------
 
 
@@ -662,7 +662,7 @@ class FirecrawlTransportError(RuntimeError):
     """Raised for non-2xx, non-403 upstream responses.
 
     Routine denials (out-of-allowlist, upstream 403) and routine
-    overflow are surfaced as outcome values, not exceptions —
+    overflow are surfaced as outcome values, not exceptions -
     see :class:`EgressBlocked` and :class:`PayloadOverflow`. Anything
     that falls outside both categories (5xx, malformed transport,
     unexpected 4xx) propagates through this exception so the caller's
@@ -702,7 +702,7 @@ def _normalise_hosts(value: Any) -> set[str]:
 
     Accepts ``None`` (returns the empty set), strings (single-entry
     set), and arbitrary iterables of strings. Non-string entries are
-    silently skipped — the helper is robust against half-typed input
+    silently skipped - the helper is robust against half-typed input
     so the property tests can throw arbitrary fixture shapes at it.
     """
 
@@ -750,14 +750,14 @@ def _extract_host(url: str) -> str:
 
     try:
         return (urlparse(url.strip()).hostname or "").lower()
-    except Exception:  # pragma: no cover — defensive
+    except Exception:  # pragma: no cover - defensive
         return ""
 
 
 def _encode_body(body: Any) -> bytes:
     """Encode ``body`` to bytes for size accounting and MinIO offload.
 
-    The wrapper does not interpret the body shape — it serialises
+    The wrapper does not interpret the body shape - it serialises
     via JSON when the body is a JSON-compatible type and falls back
     to ``repr`` for anything else. The returned bytes are what gets
     written to MinIO so the caller can fetch the exact payload the

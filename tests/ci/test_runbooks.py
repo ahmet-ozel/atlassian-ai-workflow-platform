@@ -1,4 +1,4 @@
-"""CI gate — operator runbooks (ops work).
+﻿"""CI gate - operator runbooks (ops work).
 
 
 Operator-facing runbooks under ``platform/docs/runbooks/`` MUST be
@@ -26,7 +26,7 @@ _REQUIRED_RUNBOOKS: tuple[str, ...] = (
 
 def test_runbooks_directory_exists() -> None:
     assert _RUNBOOKS_DIR.is_dir(), (
-        f"Missing platform/docs/runbooks/ — the runbook catalog needs the "
+        f"Missing platform/docs/runbooks/ - the runbook catalog needs the "
         f"operator runbook tree at {_RUNBOOKS_DIR}."
     )
 

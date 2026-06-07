@@ -1,4 +1,4 @@
-"""
+﻿"""
 Test 22: Verify Confluence space fix (R22).
 
 Validates that the Confluence space discovery fix works correctly:
@@ -43,7 +43,7 @@ def _confluence_api_url(base_url: str, path: str) -> str:
 
     Handles both ``https://x.atlassian.net`` (root) and
     ``https://x.atlassian.net/wiki`` (already includes the /wiki
-    prefix) — appending an extra /wiki produces a 404 HTML page.
+    prefix) - appending an extra /wiki produces a 404 HTML page.
     """
     base = base_url.rstrip("/")
     if not path.startswith("/"):
@@ -108,7 +108,7 @@ def _discover_space_dynamic(base_url: str, auth: tuple[str, str]) -> dict[str, A
         result["error"] = f"HTTP error listing spaces: {exc}"
         return result
 
-    # Step 2: Fallback — try to create a test space
+    # Step 2: Fallback - try to create a test space
     try:
         create_url = _confluence_api_url(base_url, "/space")
         payload = {
@@ -135,7 +135,7 @@ def _discover_space_dynamic(base_url: str, auth: tuple[str, str]) -> dict[str, A
             result["method"] = "created_test_space"
             return result
         elif resp.status_code == 409:
-            # Space already exists — use it
+            # Space already exists - use it
             result["success"] = True
             result["space_key"] = "E2ETEST"
             result["method"] = "existing_test_space"
@@ -203,7 +203,7 @@ class TestConfluenceSpaceFix:
             pytest.skip("Previous discovery test did not run")
 
         # The method should be 'dynamic_discovery' (listing existing spaces)
-        # or 'created_test_space' / 'existing_test_space' — all are valid
+        # or 'created_test_space' / 'existing_test_space' - all are valid
         valid_methods = {"dynamic_discovery", "created_test_space", "existing_test_space"}
         assert discovery_result["method"] in valid_methods, (
             f"Unexpected discovery method: {discovery_result['method']}. "
@@ -224,7 +224,7 @@ class TestConfluenceSpaceFix:
         """
         discovery_result = getattr(self.__class__, "_discovery_result", None)
         if discovery_result is None or not discovery_result.get("success"):
-            pytest.skip("Space discovery did not succeed — cannot verify access")
+            pytest.skip("Space discovery did not succeed - cannot verify access")
 
         space_key = discovery_result["space_key"]
         auth = _make_auth(

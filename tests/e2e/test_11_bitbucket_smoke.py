@@ -1,5 +1,5 @@
-"""
-Test 11: Bitbucket real API smoke test — repo, branch, PR lifecycle.
+﻿"""
+Test 11: Bitbucket real API smoke test - repo, branch, PR lifecycle.
 
 Validates the full Bitbucket Cloud lifecycle via REST API 2.0:
 - BB-REPO: get repository example_workspace/smoke-test
@@ -82,7 +82,7 @@ class TestBitbucketSmoke:
     _evidence: dict[str, Any] = {}
 
     def test_bb_repo_get_repository(self, credentials, evidence_collector):
-        """R11.1: BB-REPO — get repository example_workspace/smoke-test, assert HTTP 2xx.
+        """R11.1: BB-REPO - get repository example_workspace/smoke-test, assert HTTP 2xx.
 
         WHEN scenario BB-REPO is executed, THE Test_Framework SHALL invoke
         bitbucket_get_repository for example_workspace/smoke-test and SHALL assert HTTP 2xx.
@@ -118,7 +118,7 @@ class TestBitbucketSmoke:
         TestBitbucketSmoke._evidence["bb_repo"]["repo_full_name"] = data.get("full_name")
 
     def test_bb_branch_create(self, credentials, evidence_collector):
-        """R11.2: BB-BRANCH — create branch ai/local-e2e-{epoch} from main.
+        """R11.2: BB-BRANCH - create branch ai/local-e2e-{epoch} from main.
 
         WHEN scenario BB-BRANCH is executed, THE Test_Framework SHALL create
         branch ai/local-e2e-{epoch} from main and SHALL record the branch name.
@@ -158,7 +158,7 @@ class TestBitbucketSmoke:
         TestBitbucketSmoke._evidence["bb_branch"]["target_hash"] = data.get("target", {}).get("hash")
 
     def test_bb_commit_file(self, credentials, evidence_collector):
-        """R11.3: BB-COMMIT — commit test file on branch, record commit SHA.
+        """R11.3: BB-COMMIT - commit test file on branch, record commit SHA.
 
         WHEN scenario BB-COMMIT is executed, THE Test_Framework SHALL commit
         a test file on the created branch and SHALL record the commit SHA.
@@ -222,7 +222,7 @@ class TestBitbucketSmoke:
             TestBitbucketSmoke._evidence["bb_commit"]["commit_sha"] = commit_sha
 
     def test_bb_pr_open(self, credentials, evidence_collector):
-        """R11.4: BB-PR — open PR from branch to main, record PR ID.
+        """R11.4: BB-PR - open PR from branch to main, record PR ID.
 
         WHEN scenario BB-PR is executed, THE Test_Framework SHALL open a PR
         from the created branch to main and SHALL record the PR ID.
@@ -277,7 +277,7 @@ class TestBitbucketSmoke:
         TestBitbucketSmoke._evidence["bb_pr"]["pr_state"] = data.get("state")
 
     def test_bb_decline_pr(self, credentials, evidence_collector):
-        """R11.5: BB-DECLINE — decline PR, verify state is DECLINED.
+        """R11.5: BB-DECLINE - decline PR, verify state is DECLINED.
 
         WHEN scenario BB-DECLINE is executed, THE Test_Framework SHALL decline
         the PR and SHALL verify state is DECLINED.
@@ -336,7 +336,7 @@ class TestBitbucketSmoke:
         )
 
     def test_bb_cleanup_delete_branch(self, credentials, evidence_collector):
-        """R11.6: BB-CLEANUP — delete the created branch.
+        """R11.6: BB-CLEANUP - delete the created branch.
 
         WHEN scenario BB-CLEANUP is executed, THE Test_Framework SHALL delete
         the created branch.

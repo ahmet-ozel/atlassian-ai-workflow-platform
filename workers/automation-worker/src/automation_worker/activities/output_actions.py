@@ -1,4 +1,4 @@
-"""Output Action Executor activity for the automation-worker.
+﻿"""Output Action Executor activity for the automation-worker.
 
 Implements the ``execute_output_actions`` Temporal activity that
 sequentially executes LLM-generated output actions (Jira comment,
@@ -74,7 +74,7 @@ class ActionResult:
  Attributes:
  action_type: The type of action that was executed.
  index: The action's position in the execution batch.
- status: Outcome — success, failed, skipped, or timeout.
+ status: Outcome - success, failed, skipped, or timeout.
  error: Error message if the action failed (None on success).
  timestamp: When the action completed execution.
  """
@@ -212,7 +212,7 @@ async def _handle_jira_attachment(
 
  Two upload modes are supported:
 
- * **MinIO pipeline** — when ``params`` carries both ``bucket`` and
+ * **MinIO pipeline** - when ``params`` carries both ``bucket`` and
  ``key`` the action is dispatched to the
  ``upload_artifact_to_jira`` activity (registered on the
  ``agent-runner-tq`` queue). That activity downloads the artifact
@@ -220,7 +220,7 @@ async def _handle_jira_attachment(
  through the ``jira_add_attachment`` MCP tool. This is the
  preferred path for agent-runner-produced artifacts (markdown
  reports, generated PDFs, …).
- * **Local file fallback** — when ``bucket``/``key`` are absent the
+ * **Local file fallback** - when ``bucket``/``key`` are absent the
  action keeps the legacy contract and is forwarded directly to the
  ``jira_add_attachment`` MCP tool with whatever ``file_path`` the
  caller provided. This preserves backward compatibility with
@@ -231,7 +231,7 @@ async def _handle_jira_attachment(
 
     normalized = _drop_control_params(params, keep_issue_key=True)
     if "bucket" in normalized and "key" in normalized:
-        # MinIO pipeline — delegate to the agent-runner activity. The
+        # MinIO pipeline - delegate to the agent-runner activity. The
         # activity handles the download → tempfile → MCP call → cleanup
         # sequence end-to-end so this dispatcher is intentionally thin.
         return await caller.call_tool(
@@ -474,12 +474,12 @@ async def _execute_single_action(
 ) -> ActionResult:
     """Execute a single output action with timeout handling.
 
- Returns an ActionResult regardless of outcome — never raises.
+ Returns an ActionResult regardless of outcome - never raises.
  """
     handler = _ACTION_HANDLERS.get(action.type)
     if handler is None:
         activity.logger.warning(
-            "output_actions: unknown action type %s at index %d — skipping",
+            "output_actions: unknown action type %s at index %d - skipping",
             action.type,
             action.index,
         )
@@ -539,7 +539,7 @@ def _build_failure_comment(failed_actions: list[ActionResult]) -> str:
     for result in failed_actions:
         status_label = "timeout" if result.status == "timeout" else "hata"
         lines.append(
-            f"• [{result.index}] {result.action_type.value} — "
+            f"• [{result.index}] {result.action_type.value} - "
             f"{status_label}: {result.error or 'bilinmeyen hata'}"
         )
     return "\n".join(lines)
@@ -558,11 +558,11 @@ async def execute_output_actions(input: ExecutionBatchInput) -> ExecutionBatchRe
  successful result.
 
  """
-    # Handle empty/null actions list — 
+    # Handle empty/null actions list - 
     if not input.actions:
         activity.logger.info(
             "output_actions: empty action list for workflow %s, "
-            "issue %s — completing successfully",
+            "issue %s - completing successfully",
             input.workflow_id,
             input.issue_key,
         )
@@ -572,7 +572,7 @@ async def execute_output_actions(input: ExecutionBatchInput) -> ExecutionBatchRe
             failed_actions=[],
         )
 
-    # Enforce max batch size — 
+    # Enforce max batch size - 
     normalised_actions: list[OutputAction] = []
     for fallback_index, raw_action in enumerate(input.actions):
         action = _normalise_action(raw_action, fallback_index)
@@ -597,12 +597,12 @@ async def execute_output_actions(input: ExecutionBatchInput) -> ExecutionBatchRe
 
     caller = get_mcp_caller()
 
-    # Sort by index to ensure strict sequential order — 
+    # Sort by index to ensure strict sequential order - 
     sorted_actions = sorted(actions_to_execute, key=lambda a: a.index)
 
     results: list[ActionResult] = []
 
-    # Execute actions sequentially — 
+    # Execute actions sequentially - 
     for action in sorted_actions:
         activity.logger.info(
             "output_actions: executing action %s at index %d "
@@ -619,7 +619,7 @@ async def execute_output_actions(input: ExecutionBatchInput) -> ExecutionBatchRe
     failed_actions = [r for r in results if r.status != "success"]
     all_succeeded = len(failed_actions) == 0
 
-    # Post failure summary to Jira if any actions failed — 
+    # Post failure summary to Jira if any actions failed - 
     if failed_actions:
         failure_comment = _build_failure_comment(failed_actions)
         try:
@@ -644,7 +644,7 @@ async def execute_output_actions(input: ExecutionBatchInput) -> ExecutionBatchRe
             )
 
     activity.logger.info(
-        "output_actions: batch complete for workflow %s, issue %s — "
+        "output_actions: batch complete for workflow %s, issue %s - "
         "%d/%d succeeded",
         input.workflow_id,
         input.issue_key,

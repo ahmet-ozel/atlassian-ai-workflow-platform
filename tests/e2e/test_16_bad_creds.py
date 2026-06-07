@@ -1,4 +1,4 @@
-"""
+﻿"""
 Test 16: Invalid credential error paths (R16).
 
 Validates that the system handles invalid credentials gracefully:
@@ -110,10 +110,10 @@ def _test_bitbucket_connection_with_token(token: str, workspace: str) -> dict:
 
         if resp.status_code == 401:
             result["error_type"] = "unauthorized"
-            result["error_message"] = "401 Unauthorized — bad or expired token"
+            result["error_message"] = "401 Unauthorized - bad or expired token"
         elif resp.status_code == 403:
             result["error_type"] = "forbidden"
-            result["error_message"] = "403 Forbidden — insufficient scope/permissions"
+            result["error_message"] = "403 Forbidden - insufficient scope/permissions"
         elif resp.status_code != 200:
             result["error_type"] = "other"
             result["error_message"] = resp.text[:300]
@@ -217,7 +217,7 @@ class TestBadCredentialsBitbucket:
             workspace=credentials.bitbucket_workspace,
         )
 
-        # Should get either 401 or 403 — both are valid error responses
+        # Should get either 401 or 403 - both are valid error responses
         assert result["status_code"] in (401, 403), (
             f"Expected HTTP 401 or 403 for invalid Bitbucket token, "
             f"got {result['status_code']}.\n"

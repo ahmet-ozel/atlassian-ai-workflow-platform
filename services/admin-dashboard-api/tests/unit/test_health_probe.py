@@ -1,4 +1,4 @@
-"""Unit tests for ``src.lifecycle.health_probe``.
+﻿"""Unit tests for ``src.lifecycle.health_probe``.
 
 Strategy
 --------
@@ -89,9 +89,9 @@ def _install_temporal_stub(
 
     ``behaviour`` is one of:
 
-    * ``"ok"`` — ``Client.connect(host)`` returns immediately.
-    * ``"raise"`` — ``Client.connect`` raises ``ConnectionError``.
-    * ``"sleep"`` — ``Client.connect`` sleeps for ``sleep_seconds``
+    * ``"ok"`` - ``Client.connect(host)`` returns immediately.
+    * ``"raise"`` - ``Client.connect`` raises ``ConnectionError``.
+    * ``"sleep"`` - ``Client.connect`` sleeps for ``sleep_seconds``
       seconds before returning, used to exercise the 5 s timeout cap.
     """
 
@@ -547,7 +547,7 @@ async def test_assume_running_probe_running_unmonitored_when_docker_missing(
     """No ``docker`` binary on PATH → ``state == "running_unmonitored"``.
     subprocess failures (FileNotFoundError on
     spawn) must be classified as ``running_unmonitored`` rather than
-    raising — the lifecycle state cache needs a deterministic reading
+    raising - the lifecycle state cache needs a deterministic reading
     per cycle."""
 
     async def _raise_file_not_found(*args, **kwargs):  # noqa: ANN001, ANN002, ANN003

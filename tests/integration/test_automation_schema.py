@@ -1,4 +1,4 @@
-"""Integration test: automation schema migration idempotence.
+﻿"""Integration test: automation schema migration idempotence.
 
 Validates the automation schema migrations on a fresh Postgres instance.
 
@@ -7,7 +7,7 @@ Validates two invariants:
 1. **Migration idempotence **: Running
  ``00_schemas.sql`` followed by ``10_automation.sql`` twice in
  succession on a fresh Postgres instance produces exactly the same
- set of tables, constraints, and indexes — no duplicates, no errors.
+ set of tables, constraints, and indexes - no duplicates, no errors.
 
 2. **Referential integrity and CHECK constraints**: Foreign key CASCADE
  deletes propagate correctly, and CHECK constraints reject invalid

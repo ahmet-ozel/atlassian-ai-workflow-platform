@@ -1,4 +1,4 @@
-"""Per-department workflow concurrency enforcement.
+﻿"""Per-department workflow concurrency enforcement.
 
 Implements the *Worker Concurrency Limit* gate. The gate is invoked **before** the
 webhook dispatcher hands a fresh workflow start request to Temporal,
@@ -32,7 +32,7 @@ with the JSON-style query
 ``WorkflowType='AutomationWorkflow' AND ExecutionStatus='Running'
 AND DeptId='X'``). This is the design-mandated path because it
 counts what Temporal *actually* has scheduled, not what Postgres
-*believes* is running — the two can drift if a worker crashed
+*believes* is running - the two can drift if a worker crashed
 mid-activity and Temporal retried the workflow under a new run id
 without the DB row being closed.
 
@@ -57,11 +57,11 @@ The fallback path uses an ``asyncpg`` query against
    ``concurrency_visibility_unavailable`` warning per process and
    relies on the Postgres counter, which agrees with Temporal as long
    as the workflow happy-path keeps ``automation.work_items.status``
-   in sync (it does — see ``automation_workflow.py`` activity
+   in sync (it does - see ``automation_workflow.py`` activity
    ``mark_work_item_status``).
 
 The function intentionally never raises on a Temporal hiccup: a
-broken visibility surface should degrade to "use the DB count" —
+broken visibility surface should degrade to "use the DB count" -
 better an over-count (some closed workflows still tagged ``running``
 in Postgres) than an under-count (silently letting a dept exceed
 its limit because Temporal failed to answer).
@@ -96,7 +96,7 @@ logger = logging.getLogger(__name__)
 
 #: Workflow type discriminator used in the Temporal Visibility query.
 #: Mirrors ``_WORKFLOW_NAME`` in :mod:`webhooks.dispatcher` and
-#: :mod:`webhooks.jira` — kept here as a separate constant so the
+#: :mod:`webhooks.jira` - kept here as a separate constant so the
 #: helper does not import the dispatcher module (that would cause a
 #: circular import; the dispatcher imports this module).
 AUTOMATION_WORKFLOW_TYPE: str = "AutomationWorkflow"
@@ -153,7 +153,7 @@ class ConcurrencyLimitExceeded(RuntimeError):
         The cap value the dept was configured with.
     source:
         Whether the count came from Temporal or the Postgres fallback
-        — useful for audit payloads when triaging a "false rejection"
+        - useful for audit payloads when triaging a "false rejection"
         report.
     """
 
@@ -176,7 +176,7 @@ class ConcurrencyLimitExceeded(RuntimeError):
 
 
 # ---------------------------------------------------------------------------
-# Protocol — narrow Temporal Visibility surface
+# Protocol - narrow Temporal Visibility surface
 # ---------------------------------------------------------------------------
 
 
@@ -227,7 +227,7 @@ async def _count_via_temporal(
     should engage the Postgres fallback.
 
     Raises any RPC-layer exception so the caller can decide whether
-    to fall back. We deliberately do not swallow errors here — the
+    to fall back. We deliberately do not swallow errors here - the
     fallback decision belongs to :func:`count_active_workflows`,
     which has access to the Postgres pool.
     """
@@ -253,7 +253,7 @@ async def _count_via_postgres(
     db: asyncpg.Pool,
     dept_id: str,
 ) -> int:
-    """Fallback counter — counts ``automation.work_items`` rows.
+    """Fallback counter - counts ``automation.work_items`` rows.
 
     Mirrors the SQL used by :mod:`middleware.license_cap` so the two
     gates agree on what "running" means. ``status='running'`` is
@@ -294,7 +294,7 @@ async def count_active_workflows(
         :class:`asyncpg.Pool` for the fallback path.
     temporal:
         Optional Visibility client. ``None`` skips the Temporal
-        attempt and goes straight to the DB counter — used by unit
+        attempt and goes straight to the DB counter - used by unit
         tests and by lifespan stages that have not yet wired the
         Temporal client.
     """
@@ -352,7 +352,7 @@ async def check_dept_concurrency(
     Returns
     -------
     ConcurrencyCheckResult
-        On success — caller should proceed with the workflow start.
+        On success - caller should proceed with the workflow start.
 
     Raises
     ------
@@ -363,7 +363,7 @@ async def check_dept_concurrency(
 
     Notes
     -----
-    Comparison uses ``>=`` (not ``>``) — the workflow being guarded
+    Comparison uses ``>=`` (not ``>``) - the workflow being guarded
     *would* push the count to ``max_concurrent + 1``, so a count
     already equal to the cap is also a rejection.
     """
@@ -416,7 +416,7 @@ def extract_max_concurrent(config_json: Any) -> int | None:
     * ``config_json`` is ``None``
     * the key is missing
     * the value is JSON ``null``
-    * the value is not a positive integer (defensive — schema
+    * the value is not a positive integer (defensive - schema
       validation should have caught this upstream, but a corrupted
       row should not silently disable the cap by raising)
     """
@@ -426,7 +426,7 @@ def extract_max_concurrent(config_json: Any) -> int | None:
     if not isinstance(config_json, dict):
         # asyncpg returns jsonb as decoded Python dicts; a string
         # leaks through only when a fake / fixture passed raw JSON.
-        # We don't decode here — the caller has the context to
+        # We don't decode here - the caller has the context to
         # ``json.loads`` if needed. Treat anything non-dict as "no
         # config" so the cap defaults to "absent" (silent allow).
         return None

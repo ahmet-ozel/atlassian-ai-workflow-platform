@@ -1,13 +1,13 @@
-"""Seed the default SSH runner from the legacy SSH_HOST environment variable.
+﻿"""Seed the default SSH runner from the legacy SSH_HOST environment variable.
 
 This module provides backward-compatibility migration logic for deployments
 that still use the single ``SSH_HOST`` environment variable. When ``SSH_HOST``
 is set at boot time, the seed function:
 
 1. Inserts a ``runner_id='default'`` row into ``infrastructure.ssh_runners``
-   (idempotent — ``ON CONFLICT DO NOTHING``).
+   (idempotent - ``ON CONFLICT DO NOTHING``).
 2. Assigns **all** existing departments to the default runner
-   (idempotent — ``ON CONFLICT DO NOTHING``).
+   (idempotent - ``ON CONFLICT DO NOTHING``).
 
 When ``SSH_HOST`` is **not** set and the ``infrastructure.ssh_runners`` table
 is empty, the function logs a ``runner_pool_empty`` warning so operators are
@@ -37,7 +37,7 @@ def _resolve_ssh_host() -> str | None:
     legacy = os.environ.get("SSH_HOST_1", "").strip()
     if legacy:
         logger.warning(
-            "SSH_HOST_1 is deprecated — use SSH_HOST instead. "
+            "SSH_HOST_1 is deprecated - use SSH_HOST instead. "
             "See infrastructure.ssh_runners table for the new multi-runner model."
         )
         return legacy
@@ -91,7 +91,7 @@ async def seed_default_runner(pool) -> None:
 
     # SSH_HOST is set; seed the default runner.
     logger.info(
-        "SSH_HOST is set (%s) — seeding default runner for backward compatibility. "
+        "SSH_HOST is set (%s) - seeding default runner for backward compatibility. "
         "DEPRECATED: migrate to infrastructure.ssh_runners table via admin panel.",
         ssh_host,
     )

@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 /**
- * StopConfirmationModal — Service Stop confirmation with optional advanced
+ * StopConfirmationModal - Service Stop confirmation with optional advanced
  * tear-down toggles.
  *
  * Rendered when the operator clicks "Stop" in the Servis Kataloğu. The
@@ -9,13 +9,13 @@
  * before any side-effect lands on the orchestrator:
  *
  *   1. The default body is always ``{remove_volumes: false, purge_vault:
- *      false}`` — equivalent to the legacy click-to-stop behaviour the
+ *      false}`` - equivalent to the legacy click-to-stop behaviour the
  *      Servis Kataloğu had before this task.
  *   2. The ``Advanced ▼`` toggle (collapsed by default) reveals two
  *      independent checkboxes:
- *        - ``Volume'ları sil`` (``remove_volumes``) — removes Compose
+ *        - ``Volume'ları sil`` (``remove_volumes``) - removes Compose
  *          named volumes alongside the container.
- *        - ``Vault override'ları sil`` (``purge_vault``) — deletes
+ *        - ``Vault override'ları sil`` (``purge_vault``) - deletes
  *          ``secret/services/{name}/*`` after Compose down. Disabled in
  *          production with an explanatory tooltip so the lifecycle
  *          guard's 403 cannot accidentally fire.
@@ -43,7 +43,7 @@ import { apiFetch } from "@/lib/api-client";
 // same value to the browser via ``NEXT_PUBLIC_DEPLOYMENT_PROFILE`` lets
 // the UI disable the Vault checkbox proactively so the 403 is never
 // triggered on the happy path. When the env is unset (most local-dev
-// deployments) we fall back to ``"dev"`` — matching the backend default
+// deployments) we fall back to ``"dev"`` - matching the backend default
 // in :class:`src.config.Settings`.
 
 function resolveDeploymentProfile(): string {
@@ -60,7 +60,7 @@ function isProductionProfile(profile: string): boolean {
 
 /**
  * 403 ``purge_vault_forbidden_in_production`` envelope shape emitted by
- * :func:`stop_service`. Mirrors the FastAPI ``HTTPException`` body —
+ * :func:`stop_service`. Mirrors the FastAPI ``HTTPException`` body -
  * the FastAPI default wraps the ``detail`` dict, so the on-the-wire
  * payload is ``{detail: {error, detail}}``.
  */
@@ -109,7 +109,7 @@ export default function StopConfirmationModal({
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   // Surfaced separately so we can render a coloured callout for the
-  // production guard rejection — operators routinely tick the wrong
+  // production guard rejection - operators routinely tick the wrong
   // box and expect actionable feedback rather than a generic toast.
   const [productionGuardError, setProductionGuardError] = useState<
     string | null
@@ -146,7 +146,7 @@ export default function StopConfirmationModal({
         return;
       }
 
-      // 403 + purge_vault_forbidden_in_production — render an inline,
+      // 403 + purge_vault_forbidden_in_production - render an inline,
       // operator-friendly explanation so the modal can be reused with
       // the Vault checkbox unticked.
       if (res.status === 403) {

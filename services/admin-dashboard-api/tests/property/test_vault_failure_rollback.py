@@ -1,8 +1,8 @@
-"""— Vault write failure leaves no row; rollback failure surfaces 502.
+﻿"""- Vault write failure leaves no row; rollback failure surfaces 502.
 spec. Two scenarios are parametrised:
-* ``rollback_raises=False`` — the Vault write raises; the service
+* ``rollback_raises=False`` - the Vault write raises; the service
   rolls back cleanly and no row survives.
-* ``rollback_raises=True`` — the Vault write raises AND the asyncpg
+* ``rollback_raises=True`` - the Vault write raises AND the asyncpg
   ROLLBACK itself raises; the service still surfaces
   :class:`VaultWriteFailed` (→ 502) and logs
   ``llm_provider_rollback_failed`` at ERROR with the provider_id +

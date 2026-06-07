@@ -1,4 +1,4 @@
-"""End-to-end trace ID propagation primitives.
+﻿"""End-to-end trace ID propagation primitives.
 
 This module implements the :class:`Trace_Propagator` component:
 :requirement:`8.1` and :requirement:`8.7`:
@@ -17,7 +17,7 @@ This module implements the :class:`Trace_Propagator` component:
 
   1. Extracts an inbound ``X-Trace-Id`` header. When the header is
      present and well-formed, it is **preserved** (so Atlassian retry
-     loops keep the same trace_id — :requirement:`8.7`).
+     loops keep the same trace_id - :requirement:`8.7`).
   2. Otherwise, generates a fresh UUID v7 trace_id.
   3. Sets the trace_id into the request-scoped context variable so
      downstream code can call :func:`get_trace_id` without having to
@@ -29,7 +29,7 @@ This module implements the :class:`Trace_Propagator` component:
 The module is intentionally dependency-light: it uses only the Python
 standard library. The :class:`TraceMiddleware` class is implemented
 against the bare ASGI 3.0 contract (``scope``, ``receive``, ``send``)
-so the package does not need to depend on Starlette or FastAPI — the
+so the package does not need to depend on Starlette or FastAPI - the
 sibling module :mod:`observability.tracing` follows the same
 discipline.
 
@@ -87,7 +87,7 @@ _TRACE_HEADER_BYTES: Final[bytes] = TRACE_HEADER.lower().encode("latin-1")
 
 #: Per-async-task trace_id slot. The default empty string mirrors the
 #: convention used by ``observability.tracing`` for the OTel
-#: trace_id — callers should treat ``""`` as "no trace_id set".
+#: trace_id - callers should treat ``""`` as "no trace_id set".
 _trace_id_ctx: ContextVar[str] = ContextVar("trace_id", default="")
 
 
@@ -109,7 +109,7 @@ def set_trace_id(trace_id: str) -> None:
     Args:
         trace_id: The trace_id string. Callers SHOULD use a value
             produced by :func:`generate_trace_id` (UUID v7) but the
-            function does *not* validate the format — services may
+            function does *not* validate the format - services may
             choose to round-trip vendor-specific identifiers through
             the same context slot.
     """
@@ -127,16 +127,16 @@ def generate_trace_id() -> str:
 
     The implementation follows :rfc:`9562` §5.7 (UUIDv7 layout):
 
-    * Bits  0..47   — ``unix_ts_ms``: Unix timestamp in milliseconds,
+    * Bits  0..47   - ``unix_ts_ms``: Unix timestamp in milliseconds,
       big-endian. 48 bits cover dates up to year 10889 so overflow is
       not a practical concern.
-    * Bits 48..51   — ``ver``: the 4-bit version field, set to ``0b0111``
+    * Bits 48..51   - ``ver``: the 4-bit version field, set to ``0b0111``
       (= ``7``) to identify a UUIDv7.
-    * Bits 52..63   — ``rand_a``: 12 bits of cryptographically secure
+    * Bits 52..63   - ``rand_a``: 12 bits of cryptographically secure
       randomness.
-    * Bits 64..65   — ``var``: the 2-bit RFC 4122 variant, set to
+    * Bits 64..65   - ``var``: the 2-bit RFC 4122 variant, set to
       ``0b10``.
-    * Bits 66..127  — ``rand_b``: 62 bits of cryptographically secure
+    * Bits 66..127  - ``rand_b``: 62 bits of cryptographically secure
       randomness.
 
     The function uses :func:`secrets.token_bytes` for the random
@@ -184,8 +184,8 @@ def is_valid_trace_id(trace_id: str | None) -> bool:
 
     Used by :class:`TraceMiddleware` to decide whether to *preserve* an
     inbound ``X-Trace-Id`` header (:requirement:`8.7`) or to discard it
-    and generate a fresh value. The check is lenient on UUID version —
-    any ``8-4-4-4-12`` lowercase or uppercase hex string is accepted —
+    and generate a fresh value. The check is lenient on UUID version -
+    any ``8-4-4-4-12`` lowercase or uppercase hex string is accepted -
     so services can interoperate with upstream emitters that haven't
     yet migrated to UUIDv7.
 
@@ -223,7 +223,7 @@ def is_valid_trace_id(trace_id: str | None) -> bool:
 # ASGI middleware
 # ---------------------------------------------------------------------------
 
-# ASGI typing (PEP-style aliases — kept loose to avoid a hard
+# ASGI typing (PEP-style aliases - kept loose to avoid a hard
 # starlette / asgiref dependency).
 _Scope = MutableMapping[str, Any]
 _Message = MutableMapping[str, Any]
@@ -239,7 +239,7 @@ class TraceMiddleware:
     1. Reads the ``X-Trace-Id`` request header.
     2. If the header is present and is a syntactically valid UUID,
        reuses it (Atlassian webhook retries and cross-service relays
-       MUST keep the same trace — :requirement:`8.7`).
+       MUST keep the same trace - :requirement:`8.7`).
     3. Otherwise, generates a fresh UUIDv7 via :func:`generate_trace_id`.
     4. Stores the resolved trace_id on the per-request context variable
        so handlers, dependencies and downstream activity log lines can
@@ -251,7 +251,7 @@ class TraceMiddleware:
        parallel the shape used by :class:`observability.tracing.TracingMiddleware`.
 
     The middleware is intentionally synchronous in its trace_id
-    handling — UUID generation is a few microseconds and has no I/O —
+    handling - UUID generation is a few microseconds and has no I/O -
     so it does not add measurable latency to the request hot path.
 
     Non-HTTP scopes (``lifespan``, ``websocket``) are passed through
@@ -339,8 +339,8 @@ class TraceMiddleware:
 
         if inbound:
             # An inbound value was supplied but is malformed. Log at
-            # debug level — this is not a security event, just a
-            # misbehaving upstream — and overwrite with a fresh value
+            # debug level - this is not a security event, just a
+            # misbehaving upstream - and overwrite with a fresh value
             # so downstream logs still have a coherent ID.
             _LOG.debug(
                 "trace_middleware_invalid_inbound: header=%s value=%r",
@@ -363,7 +363,7 @@ class TraceMiddleware:
 
 
 # ---------------------------------------------------------------------------
-# Logging filter — surface trace_id on every log record
+# Logging filter - surface trace_id on every log record
 # ---------------------------------------------------------------------------
 
 
@@ -375,20 +375,20 @@ class TraceLogFilter(logging.Filter):
     :func:`set_trace_id(input.trace_id)` at entry.  Every log record
     emitted between the ``set_trace_id`` call and the activity return
     inherits the trace_id via the per-task :class:`contextvars.ContextVar`
-    — without the activity body having to plumb the value through every
+    - without the activity body having to plumb the value through every
     log call manually.
 
     The filter writes to two record attributes so structured-log
     formatters (JSON, Loki, OTel) can pick whichever convention the
     pipeline expects:
 
-    * ``record.trace_id`` — the canonical attribute name used across
+    * ``record.trace_id`` - the canonical attribute name used across
       the platform (mirrors the ``trace_id`` field consumed by the
       Admin Dashboard log filter).
-    * ``record.traceId`` — camelCase alias for OpenTelemetry-style
+    * ``record.traceId`` - camelCase alias for OpenTelemetry-style
       log emitters that prefer JSON-friendly keys.
 
-    The filter never *drops* records (always returns ``True``) — its
+    The filter never *drops* records (always returns ``True``) - its
     sole purpose is enrichment.
 
     Usage::

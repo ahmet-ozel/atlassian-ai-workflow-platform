@@ -1,4 +1,4 @@
-"""``AuditPruneWorkflow`` — daily Temporal cron for audit retention.
+﻿"""``AuditPruneWorkflow`` - daily Temporal cron for audit retention.
 
 The daily cron archives ``audit_events`` older than
 ``RETENTION_DAYS`` to MinIO, then deletes them. Any failure invokes
@@ -29,7 +29,7 @@ This workflow body uses **only** Temporal-deterministic primitives:
 * ``workflow.execute_activity(...)`` for every side-effecting step
  (no direct httpx / asyncpg / aioboto3 calls).
 * No ``random.*``, no ``uuid.uuid4``, no ``os.environ`` reads.
-* No imports of activity modules at workflow-module import time —
+* No imports of activity modules at workflow-module import time -
  activities are referenced **by string name** so the workflow module
  loads cleanly inside the Temporal sandbox even before the activity
  modules exist on disk.
@@ -50,7 +50,7 @@ activities are wired:
  returns ``deleted=0``.
 
 Therefore the workflow body itself does **not** need a "did we run
-today already?" guard — idempotence is delegated to the activities,
+today already?" guard - idempotence is delegated to the activities,
 which keeps the workflow logic minimal and replay-clean.
 
 Cron schedule registration
@@ -96,7 +96,7 @@ AUTOMATION_TASK_QUEUE: str = "automation-tq"
 #: than one process restart.
 AUDIT_PRUNE_WORKFLOW_ID: str = "audit-prune-cron"
 
-#: Cron schedule expression — daily at 03:00 UTC.
+#: Cron schedule expression - daily at 03:00 UTC.
 #:
 #: 5-field POSIX cron syntax (minute, hour, day-of-month, month,
 #: day-of-week). Temporal interprets the schedule in UTC.
@@ -112,7 +112,7 @@ DEFAULT_RETENTION_DAYS: int = 90
 # Activity name constants (referenced by string only)
 # ---------------------------------------------------------------------------
 
-#: Activity name strings — the workflow calls
+#: Activity name strings - the workflow calls
 #: ``workflow.execute_activity(<name>,...)`` rather than importing the
 #: activity callable, so the workflow module stays decoupled from the
 #: ``automation_worker.activities.audit_prune`` module.
@@ -136,11 +136,11 @@ _GET_RETENTION_TIMEOUT: timedelta = timedelta(seconds=10)
 _ARCHIVE_TIMEOUT: timedelta = timedelta(minutes=30)
 
 #: ``delete_audit_older_than`` is a single ``DELETE`` ranged over
-#: ``created_at`` with a covering index — fast in steady state but the
+#: ``created_at`` with a covering index - fast in steady state but the
 #: first run after a long retention extension can hit lock contention.
 _DELETE_TIMEOUT: timedelta = timedelta(minutes=10)
 
-#: The mandatory admin alarm activity has its own retry budget — the
+#: The mandatory admin alarm activity has its own retry budget - the
 #: failure path must reach Slack even if the cluster is unhealthy.
 _NOTIFY_TIMEOUT: timedelta = timedelta(seconds=30)
 
@@ -156,7 +156,7 @@ _DEFAULT_RETRY: RetryPolicy = RetryPolicy(
 )
 
 #: Retry policy for the ``get_retention_setting`` activity. A single
-#: SELECT — three quick attempts is plenty.
+#: SELECT - three quick attempts is plenty.
 _LOOKUP_RETRY: RetryPolicy = RetryPolicy(
     initial_interval=timedelta(seconds=1),
     backoff_coefficient=2.0,
@@ -237,7 +237,7 @@ class AuditPruneReport:
  retention_days:
  The retention window in days (as resolved by
  ``get_retention_setting``); echoed into the report for audit
- clarity — the operator can read the report and immediately see
+ clarity - the operator can read the report and immediately see
  the policy under which the cron ran.
  archive_uri:
  URI of the MinIO object written by the archive activity, or an
@@ -277,7 +277,7 @@ class AuditPruneWorkflow:
     """Daily Temporal cron that archives + prunes ``audit_events``.
 
  See module docstring for the full lifecycle and determinism /
- idempotence contracts. The workflow takes no input — every per-run
+ idempotence contracts. The workflow takes no input - every per-run
  parameter (retention days, cutoff timestamp) is derived inside:meth:`run` so the cron schedule needs no per-tick payload.
  """
 
@@ -301,7 +301,7 @@ class AuditPruneWorkflow:
 
         # 2. Compute the cutoff using the deterministic Temporal clock.
         # ``workflow.now`` is the only legal time source in a
-        # workflow body — replay must produce the identical value.
+        # workflow body - replay must produce the identical value.
         cutoff: datetime = workflow.now() - timedelta(days=retention_days)
 
         # 3-4. Archive then delete. Wrapped in a try/except so any
@@ -323,7 +323,7 @@ class AuditPruneWorkflow:
                 start_to_close_timeout=_DELETE_TIMEOUT,
                 retry_policy=_DEFAULT_RETRY,
             )
-        except Exception as exc:  # noqa: BLE001 — see notify path below
+        except Exception as exc:  # noqa: BLE001 - see notify path below
             # MANDATORY admin Slack alarm. We do not swallow the
             # original exception: re-raising it lets Temporal record
             # the workflow as failed (so Grafana ``audit_prune_failed_total``
@@ -332,13 +332,13 @@ class AuditPruneWorkflow:
             #
             # The alarm activity itself uses a separate retry policy
             # (``_NOTIFY_RETRY``); if Slack is unreachable for all
-            # three attempts we still re-raise — operators have at
+            # three attempts we still re-raise - operators have at
             # least the Temporal failure event and can recover from
             # there.
             await self._notify_failure(exc)
             raise
 
-        # 5. Success path — produce a typed report. Field types are
+        # 5. Success path - produce a typed report. Field types are
         # coerced defensively (Temporal converts dataclasses by
         # field name; if the activity ever returns an int directly
         # instead of an ``AuditArchiveResult``, the workflow body
@@ -367,7 +367,7 @@ class AuditPruneWorkflow:
  cannot drift between the two failure call-sites if a future
  refactor adds another guarded section.
  2. Any exception raised by the alarm activity itself is
- swallowed — the workflow's job at this point is to surface
+ swallowed - the workflow's job at this point is to surface
  the *original* prune failure, and an alarm-side failure
  must not mask the underlying root cause when the operator
  reads the Temporal failure event.

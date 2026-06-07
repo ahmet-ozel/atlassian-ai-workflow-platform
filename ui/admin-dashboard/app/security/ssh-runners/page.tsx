@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * SSH Runners Admin Page.
@@ -404,7 +404,7 @@ export default function SshRunnersPage(): JSX.Element {
   // --- Helpers -------------------------------------------------------------
 
   const formatDate = (dateStr: string | null | undefined): string => {
-    if (!dateStr) return "—";
+    if (!dateStr) return "-";
     try {
       return new Date(dateStr).toLocaleString("tr-TR");
     } catch {
@@ -414,7 +414,7 @@ export default function SshRunnersPage(): JSX.Element {
 
   const getHealthcheckBadge = (runner: SshRunner): JSX.Element => {
     const status = runner.last_healthcheck_status;
-    if (!status) return <span style={{ color: "#6b7280" }}>—</span>;
+    if (!status) return <span style={{ color: "#6b7280" }}>-</span>;
     const icon = status === "healthy" ? "🟢" : status === "unhealthy" ? "🔴" : "🟡";
     return (
       <span>
@@ -493,7 +493,7 @@ export default function SshRunnersPage(): JSX.Element {
                   <td style={tdStyle}>
                     {runner.active_workflow_count != null
                       ? runner.active_workflow_count
-                      : "—"}
+                      : "-"}
                   </td>
                   <td style={tdStyle}>
                     {runner.last_healthcheck_at ? (
@@ -504,7 +504,7 @@ export default function SshRunnersPage(): JSX.Element {
                         </span>
                       </span>
                     ) : (
-                      <span style={{ color: "#6b7280" }}>—</span>
+                      <span style={{ color: "#6b7280" }}>-</span>
                     )}
                   </td>
                   <td style={tdStyle}>

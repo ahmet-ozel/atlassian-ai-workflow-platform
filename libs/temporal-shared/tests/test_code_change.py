@@ -1,4 +1,4 @@
-"""Unit tests for ``temporal_shared.code_change``.
+﻿"""Unit tests for ``temporal_shared.code_change``.
 
 Validates the pure formatters :func:`compute_branch_name` and
 :func:`format_commit_message` against
@@ -27,7 +27,7 @@ from temporal_shared.identifiers import InvalidIssueKeyError
 
 
 # ---------------------------------------------------------------------------
-# compute_branch_name — happy paths
+# compute_branch_name - happy paths
 # ---------------------------------------------------------------------------
 
 
@@ -41,7 +41,7 @@ class TestComputeBranchNameHappyPath:
         """
 
         Branches that are not the bare ``ai/{issue_key}`` candidate must
-        not influence the decision — only the exact name matters.
+        not influence the decision - only the exact name matters.
         """
         assert (
             compute_branch_name(
@@ -111,7 +111,7 @@ class TestComputeBranchNameHappyPath:
     def test_accepts_arbitrary_iterable(self, existing) -> None:
         """
 
-        ``existing_branches`` is typed ``Iterable[str]`` — any iterable
+        ``existing_branches`` is typed ``Iterable[str]`` - any iterable
         must work.
         """
         assert (
@@ -129,7 +129,7 @@ class TestComputeBranchNameHappyPath:
 
 
 # ---------------------------------------------------------------------------
-# compute_branch_name — validation errors
+# compute_branch_name - validation errors
 # ---------------------------------------------------------------------------
 
 
@@ -165,7 +165,7 @@ class TestComputeBranchNameValidation:
     def test_bool_iteration_rejected(self) -> None:
         """
 
-        ``bool`` is a subclass of ``int`` — the validator must reject it
+        ``bool`` is a subclass of ``int`` - the validator must reject it
         explicitly so ``True`` is not silently treated as iter==1 and
         ``False`` as iter==0.
         """
@@ -184,7 +184,7 @@ class TestComputeBranchNameValidation:
 
 
 # ---------------------------------------------------------------------------
-# format_commit_message — happy paths
+# format_commit_message - happy paths
 # ---------------------------------------------------------------------------
 
 
@@ -233,7 +233,7 @@ class TestFormatCommitMessageHappyPath:
         """
 
         Internal newlines and structure inside the LLM-produced body are
-        preserved verbatim — only trailing whitespace is normalised so
+        preserved verbatim - only trailing whitespace is normalised so
         the trailer block separator remains unambiguous.
         """
         body = "subject line\n\nlonger explanation\nwith two lines"
@@ -276,7 +276,7 @@ class TestFormatCommitMessageHappyPath:
 
 
 # ---------------------------------------------------------------------------
-# format_commit_message — validation errors
+# format_commit_message - validation errors
 # ---------------------------------------------------------------------------
 
 
@@ -326,7 +326,7 @@ class TestFormatCommitMessageValidation:
 
 
 # ---------------------------------------------------------------------------
-# Module hygiene — no I/O imports inside this replay-safe module
+# Module hygiene - no I/O imports inside this replay-safe module
 # ---------------------------------------------------------------------------
 
 
@@ -367,7 +367,7 @@ class TestModuleIsReplaySafe:
         )
         for token in forbidden:
             assert token not in source, (
-                f"code_change.py must not contain {token!r} — "
+                f"code_change.py must not contain {token!r} - "
                 "the module is invoked from within a workflow and "
                 "must remain replay-deterministic."
             )

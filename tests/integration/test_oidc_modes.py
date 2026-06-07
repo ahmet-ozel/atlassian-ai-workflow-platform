@@ -1,4 +1,4 @@
-"""Integration test for the OIDC login flow under both AUTH_PROVIDER modes.
+﻿"""Integration test for the OIDC login flow under both AUTH_PROVIDER modes.
 What this test exercises
 ------------------------
 
@@ -23,7 +23,7 @@ Two complementary surfaces share this file because they ride the same
  ``services_lifecycle`` router with a stubbed
  :class:`LifecycleService` and drives it with an in-memory validator
  so we can assert the auth dependency translates the
- :class:`AuthContext` into the right HTTP status codes — 401 for
+ :class:`AuthContext` into the right HTTP status codes - 401 for
  missing/garbage tokens (including ``alg=none`` confusion attempts),
  403 for valid signature but non-admin role, 200 for admin.
 
@@ -117,7 +117,7 @@ policy_check = auth_shared.check
 
 
 # ---------------------------------------------------------------------------
-# Test parameters — issuer / audience / JWKS URL shared across cases.
+# Test parameters - issuer / audience / JWKS URL shared across cases.
 # ---------------------------------------------------------------------------
 
 _ISSUER = "https://idp.example.test/"
@@ -252,7 +252,7 @@ def _sign_token(
 
 @pytest.mark.integration
 class TestAuthProviderOidcLoginFlow:
-    """``AUTH_PROVIDER=oidc`` — full JWT login flow.
+    """``AUTH_PROVIDER=oidc`` - full JWT login flow.
 
  """
 
@@ -474,7 +474,7 @@ class TestAuthProviderOidcLoginFlow:
 
 @pytest.mark.integration
 class TestAuthProviderLocalLoginFlow:
-    """``AUTH_PROVIDER=local`` — dev bypass login flow.
+    """``AUTH_PROVIDER=local`` - dev bypass login flow.
 
  AUTH_PROVIDER=local ile basit kullanıcı adı/şifre alternatifine
  düşülebilir") and 7.9.
@@ -484,7 +484,7 @@ class TestAuthProviderLocalLoginFlow:
         """Build a local-mode OIDCConfig from the env contract.
 
  ``AUTH_PROVIDER=local`` must NOT require any of the OIDC_*
- variables — it is the explicit dev opt-in.
+ variables - it is the explicit dev opt-in.
  """
 
         return OIDCConfig.from_env({"AUTH_PROVIDER": "local"})
@@ -500,15 +500,15 @@ class TestAuthProviderLocalLoginFlow:
         cfg = self._config_from_env()
 
         assert cfg.auth_mode == "dev"
-        # Local mode does not need OIDC_* — they resolve to ``None``.
+        # Local mode does not need OIDC_* - they resolve to ``None``.
         assert cfg.client_id is None
         assert cfg.client_secret is None
-        # Issuer / audience / jwks_url are placeholder strings — the
+        # Issuer / audience / jwks_url are placeholder strings - the
         # dev validator never consults them.
         assert cfg.issuer == "local-dev"
 
     def test_local_validator_accepts_any_non_empty_token(self) -> None:
-        """Dev bypass — every non-empty bearer is admitted.
+        """Dev bypass - every non-empty bearer is admitted.
 
  The ``validate`` method returns the canned admin claims so
  downstream callers receive a fully-formed claim dict without
@@ -663,7 +663,7 @@ class TestAuthProviderModesAreDistinct:
 
 
 # ===========================================================================
-# Surface 2: HTTP boundary against admin-dashboard-api (–10.6)
+# Surface 2: HTTP boundary against admin-dashboard-api (-10.6)
 # ===========================================================================
 #
 # These tests share JWKS fixtures with the provider-mode tests above and
@@ -685,7 +685,7 @@ try:
     )
 
     _ADMIN_DASHBOARD_API_AVAILABLE = True
-except Exception:  # pragma: no cover — slim checkout fallback
+except Exception:  # pragma: no cover - slim checkout fallback
     _ADMIN_DASHBOARD_API_AVAILABLE = False
 
 
@@ -787,7 +787,7 @@ class TestAuthModeDevHttpBoundary:
             f"dev-mode non-empty token must yield 200; got {response.status_code} "
             f"body={response.text!r}"
         )
-        # The stub returns an empty list — confirms the dependency
+        # The stub returns an empty list - confirms the dependency
         # actually resolved without the auth gate short-circuiting.
         assert response.json() == []
 
@@ -848,7 +848,7 @@ class TestAuthModeProductionHttpBoundary:
         """Valid signature + non-admin claim → 403 .
 
  Read-only access is NOT granted to authenticated non-admin
- users — the second sentence of makes this
+ users - the second sentence of makes this
  an explicit invariant against scope creep. Sending
  ``groups=["user"]`` (a value outside the four-role matrix)
  deliberately fails the role check before any role-class

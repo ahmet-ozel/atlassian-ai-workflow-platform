@@ -1,4 +1,4 @@
-"""Invariant test: Surface 5 bug-condition exploration — fixture path resolution.
+﻿"""Invariant test: Surface 5 bug-condition exploration - fixture path resolution.
 
 **Bug Condition (Surface 5)**: The ``DEFAULT_PROMPT_PATH`` in
 ``automation_worker.activities.task_analyzer`` is resolved via
@@ -38,7 +38,7 @@ Canonical prompt (always exists):
  ``Path(resolved).is_file == False AND canonical_path.is_file == True``
 
 **Expected outcome on UNFIXED code**: This test FAILS with AssertionError
-because ``DEFAULT_PROMPT_PATH.is_file`` is False for every simulated CWD —
+because ``DEFAULT_PROMPT_PATH.is_file`` is False for every simulated CWD -
 the path is ``__file__``-anchored but points to the wrong location
 (``platform/prompts/`` instead of
 ``platform/workers/agent-runner-worker/prompts/``).
@@ -76,7 +76,7 @@ if str(_SRC_DIR) not in sys.path:
 from automation_worker.activities.task_analyzer import DEFAULT_PROMPT_PATH  # noqa: E402
 
 # ---------------------------------------------------------------------------
-# Canonical prompt — MUST NOT be modified (preservation clause 3.7)
+# Canonical prompt - MUST NOT be modified (preservation clause 3.7)
 # ---------------------------------------------------------------------------
 
 # The canonical prompt lives at:
@@ -153,7 +153,7 @@ def _chdir(path: Path) -> Generator[None, None, None]:
 class TestSurface5PromptFixtureResolution:
     """Surface 5 bug-condition exploration test.
 
- **: Bug Condition** — invariant Fixtures Resolve Canonical Prompt
+ **: Bug Condition** - invariant Fixtures Resolve Canonical Prompt
 
  For each plausible CWD, assert that ``DEFAULT_PROMPT_PATH`` resolves to
  an existing file whose content matches the canonical prompt.
@@ -212,7 +212,7 @@ class TestSurface5PromptFixtureResolution:
             # --- Content-hash check (only reached on fixed code) ---
             # Verify the resolved path contains the same content as the canonical.
             assert _CANONICAL_CONTENT_HASH is not None, (
-                "Could not compute canonical content hash — "
+                "Could not compute canonical content hash - "
                 f"canonical prompt not found at {_CANONICAL_PROMPT!r}"
             )
             resolved_hash = hashlib.sha256(resolved.read_bytes()).hexdigest()

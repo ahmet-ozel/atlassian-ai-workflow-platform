@@ -1,4 +1,4 @@
-"""invariant — Form schema = Component_Env_Example LHS key set.
+﻿"""invariant - Form schema = Component_Env_Example LHS key set.
 
 
 
@@ -13,7 +13,7 @@ MUST equal the LHS key set returned by
 
  LifecycleService.get_form_schema(S.name)
 
-as **two equal sets** — no missing keys, no extra keys, ordering
+as **two equal sets** - no missing keys, no extra keys, ordering
 preserved: "form, dosyada görünen sırada üretilir";: "yorum metni input alanının yardım metnine bağlanır";: form_schema LHS =.env.example LHS as exact set
 equality).
 
@@ -24,7 +24,7 @@ cannot drift: every operator-facing form field
 corresponds to exactly one ``.env.example`` LHS key, and every
 ``.env.example`` LHS key surfaces as exactly one form field.
 
-Edge case — parser determinism
+Edge case - parser determinism
 ------------------------------
 The parser must stay deterministic across "comment + blank line +
 assignment" combinations.
@@ -36,7 +36,7 @@ sampled service and asserting that
 
 returns the *same* LHS key set as the unperturbed file. Comment lines
 and blank lines must not change the set of fields the parser
-recognises — they only change the comment-buffer state, which the
+recognises - they only change the comment-buffer state, which the
 LHS-set equality check is insensitive to.
 
 Strategy
@@ -55,7 +55,7 @@ Stub fakes
 ----------
 The orchestrator only exercises ``get_form_schema`` here, which is a
 *synchronous* read-side method. It does not touch Vault, Compose,
-Audit or HealthProbe — but:class:`LifecycleService.__init__`
+Audit or HealthProbe - but:class:`LifecycleService.__init__`
 requires those clients regardless. We therefore wire the same
 ``_FakeAuditWriter`` / ``_FakeVaultClient`` / ``_FakeComposeRunner``
 / ``_FakeHealthProbe`` shells used by invariant
@@ -112,7 +112,7 @@ from src.manifest import (  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
-# Manifest discovery — drives the ``service`` axis of the property.
+# Manifest discovery - drives the ``service`` axis of the property.
 # ---------------------------------------------------------------------------
 
 # Loaded once at import time so Hypothesis can build the
@@ -126,7 +126,7 @@ assert _MANAGED_SERVICES, (
 
 
 # ---------------------------------------------------------------------------
-# Fakes (deliberately green — get_form_schema does not touch them)
+# Fakes (deliberately green - get_form_schema does not touch them)
 # ---------------------------------------------------------------------------
 
 
@@ -235,7 +235,7 @@ class _FakeHealthProbe:
 
 
 # ---------------------------------------------------------------------------
-# LifecycleService factory — bound to the real manifest + workspace_root
+# LifecycleService factory - bound to the real manifest + workspace_root
 # ---------------------------------------------------------------------------
 
 
@@ -269,7 +269,7 @@ def _make_real_service() -> LifecycleService:
     )
 
 
-#: Build the orchestrator once per session — it is a pure object whose
+#: Build the orchestrator once per session - it is a pure object whose
 #: ``get_form_schema`` is referentially transparent (modulo a per-path
 #: cache built on first call). Reusing it across Hypothesis examples
 #: avoids re-validating the manifest 20× per test run.
@@ -298,10 +298,10 @@ def _read_env_example(entry: ManagedServiceEntry) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Edge-case strategies — comment / blank line perturbations
+# Edge-case strategies - comment / blank line perturbations
 # ---------------------------------------------------------------------------
 
-# Comment-line text alphabet — ASCII letters, digits, spaces, underscores
+# Comment-line text alphabet - ASCII letters, digits, spaces, underscores
 # and a handful of punctuation characters that real ``.env.example``
 # comments contain. We deliberately exclude ``\n`` (the splitlines
 # boundary) and ``=`` (which would risk producing a fake assignment line
@@ -324,7 +324,7 @@ _perturbation_strategy: st.SearchStrategy[str] = st.one_of(
     st.just(""),
 )
 
-# A "perturbation block" — a run of consecutive perturbation lines
+# A "perturbation block" - a run of consecutive perturbation lines
 # inserted at a single splice point. ``min_size=0`` lets Hypothesis
 # shrink towards the no-perturbation case; ``max_size=4`` keeps the
 # overall input bounded.
@@ -344,7 +344,7 @@ def _splice_perturbations(text: str, blocks: list[list[str]]) -> str:
 
     original_lines = text.splitlines()
     out: list[str] = []
-    # Leading block — before the first original line.
+    # Leading block - before the first original line.
     if blocks:
         out.extend(blocks[0])
     for index, line in enumerate(original_lines):
@@ -356,7 +356,7 @@ def _splice_perturbations(text: str, blocks: list[list[str]]) -> str:
 
 
 # ---------------------------------------------------------------------------
-# invariant — form schema LHS set ==.env.example LHS set
+# invariant - form schema LHS set ==.env.example LHS set
 # ---------------------------------------------------------------------------
 
 
@@ -369,14 +369,14 @@ def _splice_perturbations(text: str, blocks: list[list[str]]) -> str:
 def test_form_schema_keys_equal_env_example_lhs_keys(
     entry: ManagedServiceEntry,
 ) -> None:
-    """invariant (core invariant) — form schema LHS set ==.env.example LHS set.
+    """invariant (core invariant) - form schema LHS set ==.env.example LHS set.
 
 
 
  For every Managed_Service in the real manifest, the set of LHS
  keys produced by:func:`parse_env_example` on the file pointed to
- by ``entry.env_example_path`` MUST equal — as a set, with no
- missing or extra keys — the set of ``key`` values returned by:meth:`LifecycleService.get_form_schema(entry.name)`. Per, the ordering returned by ``get_form_schema``
+ by ``entry.env_example_path`` MUST equal - as a set, with no
+ missing or extra keys - the set of ``key`` values returned by:meth:`LifecycleService.get_form_schema(entry.name)`. Per, the ordering returned by ``get_form_schema``
  MUST match the parser's file-order output too.
  """
 
@@ -391,7 +391,7 @@ def test_form_schema_keys_equal_env_example_lhs_keys(
     schema_keys: list[str] = [f.key for f in schema_fields]
     schema_key_set: set[str] = set(schema_keys)
 
-    # Invariant 1 — exact set equality.
+    # Invariant 1 - exact set equality.
     missing = parser_key_set - schema_key_set
     extra = schema_key_set - parser_key_set
     assert parser_key_set == schema_key_set, (
@@ -401,7 +401,7 @@ def test_form_schema_keys_equal_env_example_lhs_keys(
         f"extra in schema: {sorted(extra)!r}."
     )
 
-    # Invariant 2 — file-order preservation.
+    # Invariant 2 - file-order preservation.
     # The parser returns fields in file order; ``get_form_schema``
     # must surface them in the same order so the rendered form
     # matches the operator's mental model of the.env.example file.
@@ -412,7 +412,7 @@ def test_form_schema_keys_equal_env_example_lhs_keys(
         f"{entry.env_example_path!r})."
     )
 
-    # Invariant 3 — every schema field carries the same metadata as
+    # Invariant 3 - every schema field carries the same metadata as
     # its parser counterpart (default_value, comment, is_sensitive).
     # The operator help text depends on ``comment`` round-tripping
     # through the schema without modification, and sensitive-field
@@ -438,7 +438,7 @@ def test_form_schema_keys_equal_env_example_lhs_keys(
 
 
 # ---------------------------------------------------------------------------
-# invariant — parser determinism under comment + blank-line perturbation
+# invariant - parser determinism under comment + blank-line perturbation
 # ---------------------------------------------------------------------------
 
 
@@ -455,15 +455,15 @@ def test_parser_is_deterministic_under_comment_and_blank_line_perturbations(
     entry: ManagedServiceEntry,
     perturbations: list[list[str]],
 ) -> None:
-    """invariant (parser determinism) — comments / blanks don't change LHS set.
+    """invariant (parser determinism) - comments / blanks don't change LHS set.
 
 
 
  Inserting any sequence of comment lines (``#``-prefixed bodies)
  and blank lines around the assignment lines of a real
  ``.env.example`` file MUST NOT change the set of LHS keys the
- parser produces. The parser is also deterministic — running it
- twice on the same input yields the same field list — and is
+ parser produces. The parser is also deterministic - running it
+ twice on the same input yields the same field list - and is
  insensitive to leading / trailing whitespace lines.
 
  Comment lines feed the comment buffer and blank lines reset it,
@@ -477,14 +477,14 @@ def test_parser_is_deterministic_under_comment_and_blank_line_perturbations(
     perturbed_text = _splice_perturbations(raw_text, perturbations)
     perturbed_keys: list[str] = [f.key for f in parse_env_example(perturbed_text)]
 
-    # Invariant 1 — LHS set equality across perturbation.
+    # Invariant 1 - LHS set equality across perturbation.
     assert set(perturbed_keys) == set(baseline_keys), (
         f"perturbed parse changed the LHS key set for service "
         f"{entry.name!r}. baseline={baseline_keys!r}, "
         f"perturbed={perturbed_keys!r}, perturbations={perturbations!r}"
     )
 
-    # Invariant 2 — file-order preservation. Inserting non-assignment
+    # Invariant 2 - file-order preservation. Inserting non-assignment
     # lines must not reorder the assignments themselves.
     assert perturbed_keys == baseline_keys, (
         f"perturbed parse reordered assignments for service "
@@ -492,7 +492,7 @@ def test_parser_is_deterministic_under_comment_and_blank_line_perturbations(
         f"perturbed={perturbed_keys!r}, perturbations={perturbations!r}"
     )
 
-    # Invariant 3 — idempotence: parsing the same input twice yields
+    # Invariant 3 - idempotence: parsing the same input twice yields
     # the exact same field list (object equality on the frozen
     # dataclass list, which compares ``key``, ``default_value``,
     # ``comment``, and ``is_sensitive`` field-by-field).
@@ -505,7 +505,7 @@ def test_parser_is_deterministic_under_comment_and_blank_line_perturbations(
 
 
 # ---------------------------------------------------------------------------
-# Concrete regression anchor — every manifest service surfaces ≥1 field
+# Concrete regression anchor - every manifest service surfaces ≥1 field
 # ---------------------------------------------------------------------------
 
 

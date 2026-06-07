@@ -1,4 +1,4 @@
-"""Unit tests for ``concurrency``.
+﻿"""Unit tests for ``concurrency``.
 
 Covers:
 * :func:`check_dept_concurrency` allow / reject behaviour for each
@@ -18,7 +18,7 @@ from typing import Any
 
 import pytest
 
-# Path setup — ensure src/ is importable
+# Path setup - ensure src/ is importable
 _TESTS_DIR = Path(__file__).resolve().parent
 _SRC_DIR = _TESTS_DIR.parent.parent / "src"
 if str(_SRC_DIR) not in sys.path:
@@ -34,7 +34,7 @@ from concurrency import (  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
-# Fakes (scoped down — full asyncpg fakes live in test_webhooks_dispatcher.py)
+# Fakes (scoped down - full asyncpg fakes live in test_webhooks_dispatcher.py)
 # ---------------------------------------------------------------------------
 
 
@@ -95,7 +95,7 @@ class _FakeTemporalVisibility:
 
 
 class TestExtractMaxConcurrent:
-    """``extract_max_concurrent`` — parsing edge cases."""
+    """``extract_max_concurrent`` - parsing edge cases."""
 
     @pytest.mark.parametrize(
         "value, expected",
@@ -119,7 +119,7 @@ class TestExtractMaxConcurrent:
 
 
 # ---------------------------------------------------------------------------
-# count_active_workflows — Temporal primary + Postgres fallback
+# count_active_workflows - Temporal primary + Postgres fallback
 # ---------------------------------------------------------------------------
 
 
@@ -165,7 +165,7 @@ class TestCountActiveWorkflows:
 
 
 # ---------------------------------------------------------------------------
-# check_dept_concurrency — allow / reject behaviour
+# check_dept_concurrency - allow / reject behaviour
 # ---------------------------------------------------------------------------
 
 

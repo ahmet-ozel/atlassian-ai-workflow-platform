@@ -1,4 +1,4 @@
-"""Smoke test: ``analyze_task`` integrates with the *real* description_parser.
+﻿"""Smoke test: ``analyze_task`` integrates with the *real* description_parser.
 
 Most of the unit-test suite stubs ``description_parser`` so the analyzer
 can be exercised in isolation.  This file replays the YAML happy-path
@@ -42,7 +42,7 @@ from automation_worker.activities.task_analyzer import (  # noqa: E402
 
 @dataclass
 class _RecordingLLM:
-    """LLM that fails the test if it gets called — proves YAML wins."""
+    """LLM that fails the test if it gets called - proves YAML wins."""
 
     calls: list[Any] = field(default_factory=list)
 

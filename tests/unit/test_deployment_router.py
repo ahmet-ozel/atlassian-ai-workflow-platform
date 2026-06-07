@@ -1,12 +1,12 @@
-"""Unit tests for :mod:`mcp_client.deployment_router`.
+﻿"""Unit tests for :mod:`mcp_client.deployment_router`.
 
 The tests cover three concerns:
 
 1. The two supported ``deployment`` literals (``"cloud"`` and
    ``"server"``) map to the exact MCP tool names mandated by
    ``design.md`` §``mcp_client.deployment_router``.
-2. Any other value — empty string, misspelled variant, ``None``,
-   non-string types — raises :class:`KeyError` so a misconfigured
+2. Any other value - empty string, misspelled variant, ``None``,
+   non-string types - raises :class:`KeyError` so a misconfigured
    ``departments.json`` fails fast at signal-dispatch time.
 3. The exported tool-name constants match the strings the formatter
    tests use as their parity oracle.
@@ -24,7 +24,7 @@ from mcp_client import (
 
 
 # ---------------------------------------------------------------------------
-# Constants — single-source-of-truth tool names
+# Constants - single-source-of-truth tool names
 # ---------------------------------------------------------------------------
 
 
@@ -44,7 +44,7 @@ class TestToolNameConstants:
 
 
 # ---------------------------------------------------------------------------
-# select_pr_create_tool — happy-path mapping
+# select_pr_create_tool - happy-path mapping
 # ---------------------------------------------------------------------------
 
 
@@ -79,7 +79,7 @@ class TestSelectPrCreateToolMapping:
 
 
 # ---------------------------------------------------------------------------
-# select_pr_create_tool — fail-fast on unsupported values
+# select_pr_create_tool - fail-fast on unsupported values
 # ---------------------------------------------------------------------------
 
 
@@ -105,7 +105,7 @@ class TestSelectPrCreateToolKeyErrors:
 
     def test_none_raises_key_error(self) -> None:
         """A missing ``departments.json`` field must not silently
-        default — callers normalise *before* calling the router.
+        default - callers normalise *before* calling the router.
         """
 
         with pytest.raises(KeyError):
@@ -127,7 +127,7 @@ class TestSelectPrCreateToolKeyErrors:
         ``KeyError`` is the canonical "lookup miss" signal for the
         ``Mapping`` lookup used inside the router; callers that want a
         domain-specific exception can wrap the call. Unhashable inputs
-        (eg. ``list``, ``dict``) raise the underlying ``TypeError`` —
+        (eg. ``list``, ``dict``) raise the underlying ``TypeError`` -
         tested separately below since the spec calls out ``KeyError``
         for "any other value" implying the realistic misconfiguration
         path (string typos, ``None``).
@@ -141,6 +141,6 @@ class TestSelectPrCreateToolKeyErrors:
 
         with pytest.raises(KeyError) as excinfo:
             select_pr_create_tool("datacenter")  # type: ignore[arg-type]
-        # ``KeyError.args[0]`` is the missing key — re-using it in the
+        # ``KeyError.args[0]`` is the missing key - re-using it in the
         # audit payload pinpoints the offending department.
         assert excinfo.value.args[0] == "datacenter"

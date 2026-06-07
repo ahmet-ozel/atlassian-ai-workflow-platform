@@ -1,15 +1,15 @@
-"""Property-based test for workspace per-task isolation.
+﻿"""Property-based test for workspace per-task isolation.
 
 The core invariant is that each task workspace is namespaced and
 purgeable. This file exercises the purge profiles introduced by
 ``ServicesLifecycleRouter``:
 
-* ``profile == "workspace"`` — workspace dir purged, vault path
+* ``profile == "workspace"`` - workspace dir purged, vault path
   retained.
-* ``profile == "cache"`` — cache dirs purged, workspace + vault
+* ``profile == "cache"`` - cache dirs purged, workspace + vault
   retained.
-* ``profile == "none"`` — no destructive action.
-* ``purge_vault=True`` (dev-only) — vault path purged in addition.
+* ``profile == "none"`` - no destructive action.
+* ``purge_vault=True`` (dev-only) - vault path purged in addition.
 
 The test models the purge as a deterministic state transition on
 an in-memory directory dict; the production ``ServicesLifecycleRouter``

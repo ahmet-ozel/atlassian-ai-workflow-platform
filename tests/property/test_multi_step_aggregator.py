@@ -1,4 +1,4 @@
-"""``multi_step`` graceful skip aggregator.
+﻿"""``multi_step`` graceful skip aggregator.
 
 
 
@@ -18,11 +18,11 @@ behalf of a single Jira issue. The pure helpers under test
  audit reason and (for the missing-capability case) the exact
  missing-capability set.
 * No child is ever silently dropped: ``len(plans) == len(children)``
- for every input — the *total-length* invariant.
+ for every input - the *total-length* invariant.
 * The aggregator over runtime outcomes carries the parallel invariant
  ``started + skipped == total == len(child_outcomes)``.
 * Both helpers are pure (no I/O, no ``datetime`` / ``random`` /
- ``uuid``) and therefore deterministic — repeating a call with the
+ ``uuid``) and therefore deterministic - repeating a call with the
  same inputs returns equal output.
 
 For any hypothesis-generated tuple
@@ -31,7 +31,7 @@ For any hypothesis-generated tuple
 **Total length / no child dropped (graceful skip).**
  ``len(multi_step_dispatch(children, caps)) == len(children)``.
  Every input child appears in the plan list exactly once and in
- the original position — graceful skip means a missing capability
+ the original position - graceful skip means a missing capability
  turns a child into a skip plan but never removes it from the
  summary.
 
@@ -67,7 +67,7 @@ For any hypothesis-generated tuple
 
 **Determinism / idempotence of dispatch.**
  ``multi_step_dispatch(children, caps) ==
- multi_step_dispatch(children, caps)`` for every legal input —
+ multi_step_dispatch(children, caps)`` for every legal input -
  the helper is pure. Equivalently: applying ``dispatch`` twice to
  the same arguments yields equal plan lists; the *aggregator step*
  is therefore also idempotent in the engineering sense (running
@@ -86,14 +86,14 @@ SHALL satisfy:
  legal input (no outcome is dropped, none is double-counted).
 
 **Order preserved.**
- ``agg.child_outcomes == tuple(outcomes)`` — the aggregator never
+ ``agg.child_outcomes == tuple(outcomes)`` - the aggregator never
  reorders outcomes.
 
 **Aggregator idempotence.**
  ``aggregated_output(outcomes) ==
  aggregated_output(outcomes)`` for every legal input. Re-running
  the aggregator over the same outcome list produces an equal
- aggregate — the helper is pure and the result depends only on
+ aggregate - the helper is pure and the result depends only on
  its argument.
 
 These properties together pin the contract that
@@ -134,12 +134,12 @@ SIMPLE_CAPABILITIES: frozenset[str] = frozenset(
     {"jira", "bitbucket", "confluence", "execution", "web_search"}
 )
 
-#: Every legal workflow-type key — including ``multi_step`` itself, so
+#: Every legal workflow-type key - including ``multi_step`` itself, so
 #: the nested-multi_step skip branch is exercised by the dispatcher.
 KNOWN_WORKFLOW_TYPES: tuple[str, ...] = tuple(WORKFLOW_TYPE_CAPABILITIES.keys())
 
 
-# Strategy for ``ChildWorkflowSpec`` — keep the surface tiny because the
+# Strategy for ``ChildWorkflowSpec`` - keep the surface tiny because the
 # spec itself is opaque to the dispatcher (it is echoed unchanged).
 spec_strategy = st.builds(
     ChildWorkflowSpec,
@@ -173,7 +173,7 @@ workflow_type_strategy = st.one_of(
             "pr_close",
             "definitely_not_a_workflow",
             "",
-            "MULTI_STEP",  # case-sensitive — must miss the table
+            "MULTI_STEP",  # case-sensitive - must miss the table
         )
     ),
 )
@@ -200,7 +200,7 @@ dept_caps_strategy = st.sets(
 
 
 # ---------------------------------------------------------------------------
-# Outcome strategy — drives the aggregator properties
+# Outcome strategy - drives the aggregator properties
 # ---------------------------------------------------------------------------
 
 
@@ -209,7 +209,7 @@ def _child_outcome(draw: st.DrawFn) -> ChildOutcome:
     """Generate a syntactically-legal:class:`ChildOutcome`.
 
  ``action`` is constrained to ``{"started", "skipped"}`` (the
- aggregator raises:class:`InvariantViolation` outside that set —
+ aggregator raises:class:`InvariantViolation` outside that set -
  the unit test layer covers that path). Reasons and capability
  sets are sampled from the four-element audit vocabulary so the
  invariants under test reflect the production callers' behaviour.
@@ -263,7 +263,7 @@ outcomes_strategy = st.lists(_child_outcome(), min_size=0, max_size=8)
 
 
 # ---------------------------------------------------------------------------
-# invariant — multi_step_dispatch
+# invariant - multi_step_dispatch
 # ---------------------------------------------------------------------------
 
 
@@ -369,7 +369,7 @@ def test_dispatch_skip_reason_classification(
             assert required_capabilities(wf_type) <= caps
             continue
 
-        # action == "skip" — discriminate the reason.
+        # action == "skip" - discriminate the reason.
         if wf_type == "multi_step":
             assert plan.reason == REASON_NESTED_MULTI_STEP
             assert plan.missing_capabilities == frozenset()
@@ -410,7 +410,7 @@ def test_dispatch_is_deterministic_and_idempotent(
     plans_b = multi_step_dispatch(children, caps)
     assert plans_a == plans_b
 
-    # ``dept_capabilities`` accepts both frozenset and mutable set —
+    # ``dept_capabilities`` accepts both frozenset and mutable set -
     # the dispatcher must normalise so the choice does not bleed into
     # the result.
     plans_set = multi_step_dispatch(children, set(caps))
@@ -418,7 +418,7 @@ def test_dispatch_is_deterministic_and_idempotent(
 
 
 # ---------------------------------------------------------------------------
-# invariant — aggregated_output
+# invariant - aggregated_output
 # ---------------------------------------------------------------------------
 
 
@@ -478,7 +478,7 @@ def test_aggregated_output_preserves_order(
     """Aggregator preserves outcome order.
 
  ``agg.child_outcomes == tuple(outcomes)``. The aggregator
- is a counter, not a sorter — every outcome's relative position
+ is a counter, not a sorter - every outcome's relative position
  in the input list is preserved in the output tuple.
  """
 
@@ -503,7 +503,7 @@ def test_aggregated_output_is_idempotent(
  the result depends only on its argument.
 
  Also exercises the ``Iterable`` overload by passing a generator
- on the second call — both shapes must produce the same aggregate.
+ on the second call - both shapes must produce the same aggregate.
  """
 
     agg_a = aggregated_output(outcomes)

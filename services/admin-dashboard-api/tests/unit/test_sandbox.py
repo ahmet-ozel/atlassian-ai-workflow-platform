@@ -1,4 +1,4 @@
-"""Unit tests for :mod:`src.sandbox`.
+﻿"""Unit tests for :mod:`src.sandbox`.
 
 The tests focus on the deterministic invariants of the
 :class:`PromptSandbox`:
@@ -10,7 +10,7 @@ The tests focus on the deterministic invariants of the
   clock.
 * The cost write happens **after** the LLM call (so a cost-write
   failure never masks a successful response).
-* The class never retries on LLM failure — sandbox tests should
+* The class never retries on LLM failure - sandbox tests should
   surface errors immediately to the developer.
 * :class:`SyntheticLlmInvoker` and :class:`NullCostTracker` satisfy the
   declared protocols and integrate cleanly with the sandbox.
@@ -122,7 +122,7 @@ class TestModuleConstants:
 
 
 # ---------------------------------------------------------------------------
-# PromptSandbox.run — happy path
+# PromptSandbox.run - happy path
 # ---------------------------------------------------------------------------
 
 
@@ -224,7 +224,7 @@ class TestRunHappyPath:
 
 
 # ---------------------------------------------------------------------------
-# PromptSandbox.run — error / fail-soft behaviour
+# PromptSandbox.run - error / fail-soft behaviour
 # ---------------------------------------------------------------------------
 
 
@@ -239,7 +239,7 @@ class TestRunErrorHandling:
         with pytest.raises(RuntimeError, match="LLM down"):
             await sandbox.run("body", "user")
 
-        # Cost is NOT recorded when the LLM fails — there is no
+        # Cost is NOT recorded when the LLM fails - there is no
         # actual spend to track.
         assert tracker.records == []
 
@@ -251,7 +251,7 @@ class TestRunErrorHandling:
         sandbox = PromptSandbox(llm=llm, cost_tracker=tracker)
 
         # Even when cost recording fails the developer still sees the
-        # LLM response — the sandbox is interactive, the cost write
+        # LLM response - the sandbox is interactive, the cost write
         # is best-effort fail-soft.
         result = await sandbox.run("body", "user")
 
@@ -262,7 +262,7 @@ class TestRunErrorHandling:
 
 
 # ---------------------------------------------------------------------------
-# PromptSandbox — call ordering invariants
+# PromptSandbox - call ordering invariants
 # ---------------------------------------------------------------------------
 
 
@@ -342,7 +342,7 @@ class TestSyntheticLlmInvoker:
 
 
 # ---------------------------------------------------------------------------
-# NullCostTracker — default implementation
+# NullCostTracker - default implementation
 # ---------------------------------------------------------------------------
 
 
@@ -369,7 +369,7 @@ class TestNullCostTracker:
 
 
 # ---------------------------------------------------------------------------
-# SandboxResult — frozen dataclass invariants
+# SandboxResult - frozen dataclass invariants
 # ---------------------------------------------------------------------------
 
 
@@ -394,6 +394,6 @@ class TestSandboxResult:
             invoked_at=datetime.now(tz=timezone.utc),
         )
         # Default protects against accidental construction without
-        # the tag — every SandboxResult on the wire must carry the
+        # the tag - every SandboxResult on the wire must carry the
         # isolation contract.
         assert result.cost_tag == "sandbox"

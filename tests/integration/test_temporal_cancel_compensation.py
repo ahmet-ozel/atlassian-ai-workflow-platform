@@ -1,4 +1,4 @@
-"""Integration test: AgentRunnerWorkflow cancel → compensation chain.
+﻿"""Integration test: AgentRunnerWorkflow cancel → compensation chain.
 
 
 Scenario
@@ -11,12 +11,12 @@ defined in :class:`AgentRunnerWorkflow`:
  ``compensation_chain_run`` activity exactly once and emits the
  ``workflow_cancelled_by_end_user`` audit row.
 2. A second ``cancel_requested`` signal that arrives after the chain
- has been latched is a no-op — no extra ``compensation_chain_run``
+ has been latched is a no-op - no extra ``compensation_chain_run``
  activity invocation, no extra audit row.
 3. An admin-role cancel (``actor_role="dept_admin"``) emits
  ``workflow_cancelled_by_admin`` instead of the end-user variant.
 4. A ``MAX_ITER`` natural termination must NOT call the compensation
- chain — the workflow returns ``status="out_of_scope"`` cleanly.
+ chain - the workflow returns ``status="out_of_scope"`` cleanly.
 
 The test runs the *real* :class:`AgentRunnerWorkflow` against the
 Temporal time-skipping ``WorkflowEnvironment``. Activities the
@@ -46,7 +46,7 @@ from typing import Any
 import pytest
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — pull the agent-runner-worker tree, temporal-shared,
+# sys.path bootstrap - pull the agent-runner-worker tree, temporal-shared,
 # and mcp_client onto the path so ``import agent_runner.*`` resolves.
 # Mirrors the bootstrap used by the unit tests under
 # ``workers/agent-runner-worker/tests/unit/test_agent_runner_cancel.py``.
@@ -83,7 +83,7 @@ def _temporal_test_env_available() -> bool:
 
     try:
         from temporalio.testing import WorkflowEnvironment  # noqa: F401
-    except Exception:  # noqa: BLE001 — any import failure → skip.
+    except Exception:  # noqa: BLE001 - any import failure → skip.
         return False
     return True
 
@@ -108,7 +108,7 @@ async def _start_time_skipping_or_skip() -> Any:
 
     try:
         env_cm = await WorkflowEnvironment.start_time_skipping()
-    except Exception as exc:  # noqa: BLE001 — surface as skip.
+    except Exception as exc:  # noqa: BLE001 - surface as skip.
         pytest.skip(f"temporalio test environment not available: {exc}")
     async with env_cm as env:
         yield env
@@ -204,7 +204,7 @@ def _make_input(
  ``noop_test`` is used as the workflow type because it falls
  through to the legacy signal-wait loop in
  :meth:`AgentRunnerWorkflow._dispatch_workflow_type`. That loop is
- the natural surface for cancel-signal handling — the body parks
+ the natural surface for cancel-signal handling - the body parks
  in ``workflow.wait_condition(...)`` until either the cap flips or
  a signal lands, and the cancel branch then routes into
  ``_handle_cancel`` which dispatches the compensation chain.
@@ -249,13 +249,13 @@ def _make_input(
 # :meth:`AgentRunnerWorkflow._dispatch_workflow_type`, which parks on
 # ``workflow.wait_condition(..., timeout=SIGNAL_WAIT_TIMEOUT=7d)``.
 # Sending a signal *after* the body has parked therefore races the
-# 7-day timeout — the server will sometimes fast-forward to the
+# 7-day timeout - the server will sometimes fast-forward to the
 # timeout before the signal lands, completing the workflow with
 # ``status="out_of_scope"`` instead of ``"cancelled"``.
 #
 # To eliminate that race we use the ``start_signal`` parameter of
 # :meth:`temporalio.client.Client.start_workflow` (signal-with-start).
-# The signal is delivered *before* the workflow body's first task —
+# The signal is delivered *before* the workflow body's first task -
 # the cancel handler runs as part of the initial workflow tick and
 # the body observes ``_cancel_requested=True`` on its very first
 # ``wait_condition`` evaluation, raising ``_CancelledViaSignal`` and
@@ -321,7 +321,7 @@ async def test_cancel_signal_runs_compensation_chain_once_with_end_user_audit() 
     # Compensation chain dispatched exactly once.
     assert log.count("compensation_chain_run") == 1, (
         f"expected exactly one compensation_chain_run call, got "
-        f"{log.count('compensation_chain_run')} — call log: {log.names()!r}"
+        f"{log.count('compensation_chain_run')} - call log: {log.names()!r}"
     )
 
     # End-user audit emitted exactly once.
@@ -333,7 +333,7 @@ async def test_cancel_signal_runs_compensation_chain_once_with_end_user_audit() 
     ]
     assert len(cancel_audits) == 1, (
         f"expected exactly one workflow_cancelled_by_end_user audit, got "
-        f"{len(cancel_audits)} — audit calls: "
+        f"{len(cancel_audits)} - audit calls: "
         f"{[a[0] for a in log.args_for('audit_emit')]!r}"
     )
     audit_payload = cancel_audits[0]
@@ -372,7 +372,7 @@ async def test_second_cancel_signal_after_chain_is_idempotent_no_op() -> None:
  short-circuits in the signal handler.
 
  Implementation: the first cancel is delivered via signal-with-start
- (so it is processed during the workflow's first tick — eliminating
+ (so it is processed during the workflow's first tick - eliminating
  the race against the legacy signal-wait fallback's 7-day timeout).
  The compensation activity is wired with a small delay so we can
  send the second cancel while the chain is in flight, exercising
@@ -469,7 +469,7 @@ async def test_second_cancel_signal_after_chain_is_idempotent_no_op() -> None:
             # accept (and discard, via the latch) a second cancel.
             await asyncio.wait_for(chain_started.wait(), timeout=10.0)
 
-            # Second cancel — must be observed as no-op by the
+            # Second cancel - must be observed as no-op by the
             # signal handler's idempotency guard
             # (``_cancel_requested`` already True,
             # ``_compensation_running`` already True).
@@ -493,7 +493,7 @@ async def test_second_cancel_signal_after_chain_is_idempotent_no_op() -> None:
     # Compensation chain dispatched exactly once despite two cancels.
     assert log.count("compensation_chain_run") == 1, (
         f"expected exactly one compensation_chain_run call after a "
-        f"double cancel, got {log.count('compensation_chain_run')} — "
+        f"double cancel, got {log.count('compensation_chain_run')} - "
         f"call log: {log.names()!r}"
     )
 
@@ -509,13 +509,13 @@ async def test_second_cancel_signal_after_chain_is_idempotent_no_op() -> None:
         }
     ]
     assert len(cancel_audits) == 1, (
-        f"expected exactly one cancel audit, got {len(cancel_audits)} — "
+        f"expected exactly one cancel audit, got {len(cancel_audits)} - "
         f"audit calls: {[a[0] for a in log.args_for('audit_emit')]!r}"
     )
-    # The first cancel was end-user — its role wins the latch.
+    # The first cancel was end-user - its role wins the latch.
     assert cancel_audits[0]["action"] == CANCEL_BY_END_USER_AUDIT_ACTION
 
-    # First-cancel actor wins the latch — the chain payload reflects
+    # First-cancel actor wins the latch - the chain payload reflects
     # ``alice / end_user / first``, not ``bob / admin / duplicate``.
     chain_payload = log.args_for("compensation_chain_run")[0][0]
     assert chain_payload["actor_id"] == "alice"
@@ -600,7 +600,7 @@ async def test_admin_cancel_emits_admin_audit_action(admin_role: str) -> None:
     ]
     assert len(admin_audits) == 1, (
         f"expected exactly one admin audit for role={admin_role!r}, got "
-        f"{len(admin_audits)} — audit calls: "
+        f"{len(admin_audits)} - audit calls: "
         f"{[a[0] for a in log.args_for('audit_emit')]!r}"
     )
     assert end_user_audits == [], (
@@ -630,7 +630,7 @@ async def test_max_iter_natural_termination_does_not_run_compensation() -> None:
  and the body returns ``status="out_of_scope"`` without ever
  invoking ``compensation_chain_run``. This pins the workflow contract
  that natural termination (iter cap, ``out_of_scope``) is
- distinct from cancel — only cancel runs the compensation chain.
+ distinct from cancel - only cancel runs the compensation chain.
  """
 
     from temporalio.worker import Worker

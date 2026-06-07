@@ -1,6 +1,6 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
-E2E Suite Orchestrator — runs the full test suite and generates reports.
+E2E Suite Orchestrator - runs the full test suite and generates reports.
 
 Executes all E2E tests (test_01 through test_36) in order via pytest,
 collects results, invokes ReportGenerator to produce E2E_REPORT.md,

@@ -1,4 +1,4 @@
-"""``needs_info`` timeout parity across workers.
+﻿"""``needs_info`` timeout parity across workers.
 
 
 
@@ -9,8 +9,8 @@ Two Temporal workers park on a ``wait_condition`` for the
 ``info_received`` (or sibling ``CommentAddedSignal``) signal when the
 gateway / agent-runner detects ambiguous task metadata:
 
-* ``automation-worker`` —:data:`automation_worker.workflows.automation_workflow._NEEDS_INFO_TIMEOUT`.
-* ``agent-runner-worker`` —:data:`agent_runner.workflows.agent_runner_workflow.SIGNAL_WAIT_TIMEOUT`.
+* ``automation-worker`` -:data:`automation_worker.workflows.automation_workflow._NEEDS_INFO_TIMEOUT`.
+* ``agent-runner-worker`` -:data:`agent_runner.workflows.agent_runner_workflow.SIGNAL_WAIT_TIMEOUT`.
 
 The two constants previously disagreed: the gateway parked for 24
 hours while the agent-runner parked for 7 days, and the Jira
@@ -23,7 +23,7 @@ future drift.
 Strategy
 --------
 
-The property is fully deterministic — the two constants are imported
+The property is fully deterministic - the two constants are imported
 at module scope and asserted equal in a parametrised matrix that
 also pins the canonical value (``timedelta(days=7)``) and confirms
 the Jira comment string carries the same wording.
@@ -50,7 +50,7 @@ from typing import Final
 import pytest
 
 # ---------------------------------------------------------------------------
-# ``sys.path`` bootstrap — expose both worker source roots so the
+# ``sys.path`` bootstrap - expose both worker source roots so the
 # constants and helpers can be imported without pip-installing each
 # worker package. Mirrors the pattern in
 # ``test_multi_iter_po_review.py`` and ``test_temporal_loop_cap.py``.
@@ -69,7 +69,7 @@ for _src in _REQUIRED_SRC_DIRS:
         sys.path.insert(0, _src_str)
 
 
-# noqa: E402 — imports must follow the ``sys.path`` bootstrap above.
+# noqa: E402 - imports must follow the ``sys.path`` bootstrap above.
 
 from automation_worker.workflows.automation_workflow import (  # noqa: E402
     _NEEDS_INFO_TIMEOUT,
@@ -81,7 +81,7 @@ from agent_runner.workflows.agent_runner_workflow import (  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
-# Canonical value — single source of truth.
+# Canonical value - single source of truth.
 # ---------------------------------------------------------------------------
 
 #: The canonical needs_info timeout value used across workers.
@@ -104,7 +104,7 @@ class TestNeedsInfoTimeoutParity:
  """
 
     def test_automation_worker_timeout_is_seven_days(self) -> None:
-        # — ``automation_worker._NEEDS_INFO_TIMEOUT`` MUST be
+        # - ``automation_worker._NEEDS_INFO_TIMEOUT`` MUST be
         # ``timedelta(days=7)``; the legacy ``timedelta(hours=24)``
         # value is removed.
         assert _NEEDS_INFO_TIMEOUT == _CANONICAL_TIMEOUT
@@ -112,14 +112,14 @@ class TestNeedsInfoTimeoutParity:
         assert _NEEDS_INFO_TIMEOUT.total_seconds() == 7 * 24 * 60 * 60
 
     def test_agent_runner_signal_wait_timeout_is_seven_days(self) -> None:
-        # — ``agent_runner.SIGNAL_WAIT_TIMEOUT`` MUST be the same
+        # - ``agent_runner.SIGNAL_WAIT_TIMEOUT`` MUST be the same
         # value so the two workers do not disagree on how long they
         # wait for the user.
         assert SIGNAL_WAIT_TIMEOUT == _CANONICAL_TIMEOUT
         assert SIGNAL_WAIT_TIMEOUT == timedelta(days=7)
 
     def test_two_constants_are_equal(self) -> None:
-        # The headline parity property — if either constant drifts in
+        # The headline parity property - if either constant drifts in
         # isolation this assertion catches it before any other test.
         assert _NEEDS_INFO_TIMEOUT == SIGNAL_WAIT_TIMEOUT, (
             "needs_info timeout parity broken: "

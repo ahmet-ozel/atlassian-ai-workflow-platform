@@ -1,4 +1,4 @@
-"""invariant 11 — Healthcheck cascade aggregator deterministik.
+﻿"""invariant 11 - Healthcheck cascade aggregator deterministik.
 
 
 
@@ -9,7 +9,7 @@ satisfies:
 (a) Output is the strict superset of the input keys (no service
  silently disappears).
 (b) A service whose ``depends_on_services`` includes any unhealthy
- or unknown service is **never** reported as ``healthy`` —
+ or unknown service is **never** reported as ``healthy`` -
  minimum it can be is ``degraded``.
 (c) A service that is itself ``unhealthy`` keeps the ``unhealthy``
  label even when its deps are healthy (deeper failure wins).

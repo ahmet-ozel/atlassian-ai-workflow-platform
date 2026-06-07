@@ -1,10 +1,10 @@
-"""Integration smoke tests: default-profile Compose stack.
+﻿"""Integration smoke tests: default-profile Compose stack.
 
 This module hosts two complementary smoke tests with different
 runtime envelopes:
 
 1. ``test_compose_default_profile_config_parses_with_ten_services``
- — runs ``docker compose -f
+ - runs ``docker compose -f
  infra/docker-compose.yml config`` and asserts the parsed YAML
  exposes every one of the 10 manifest entries from
  ``platform/config/services.manifest.json``. When the ``docker``
@@ -12,10 +12,10 @@ runtime envelopes:
  falls back to parsing ``infra/docker-compose.yml`` directly with
  PyYAML so the foundation invariant ("manifest ↔ Compose parity")
  stays enforced even without a Docker daemon. This test does **not**
- require ``--run-docker`` — parsing is cheap, deterministic, and
+ require ``--run-docker`` - parsing is cheap, deterministic, and
  carries no side effects.
 
-2. ``test_compose_default_profile_boots_and_services_are_healthy`` —
+2. ``test_compose_default_profile_boots_and_services_are_healthy`` -
  brings the stack up via ``docker compose up -d`` and probes each
  service's ``/healthz`` endpoint. This is gated
  behind the ``--run-docker`` pytest flag because it spins up real
@@ -74,7 +74,7 @@ class HealthEndpoint:
 
 
 #: Endpoints probed under the default profile. ``task-intake-service``
-#: (port 8083) is intentionally absent — it is profile-gated and MUST
+#: (port 8083) is intentionally absent - it is profile-gated and MUST
 #: NOT come up without ``--profile task-intake``.
 DEFAULT_PROFILE_ENDPOINTS: tuple[HealthEndpoint, ...] = (
     # Application HTTP services : every HTTP service
@@ -340,7 +340,7 @@ def test_compose_default_profile_boots_and_services_are_healthy(
 
 
 # ---------------------------------------------------------------------------
-# the implementation — `docker compose ... config` parses with all 10 manifest entries
+# the implementation - `docker compose ... config` parses with all 10 manifest entries
 # ---------------------------------------------------------------------------
 
 
@@ -379,7 +379,7 @@ def _load_manifest_compose_service_names(repo_root: Path) -> frozenset[str]:
 
  The foundation service set contains 10 entries; the manifest may
  carry additional carry-over entries (e.g. ``task-intake-service``). This
- loader does NOT enforce cardinality itself — that invariant is
+ loader does NOT enforce cardinality itself - that invariant is
  owned by ``test_compose_structure.py``. We just return whatever
  the manifest declares so the smoke test reports meaningful diffs
  even if the manifest drifts.
@@ -450,7 +450,7 @@ def _parse_compose_via_yaml(repo_root: Path, compose_file_rel: str) -> dict:
  importable, the caller skips the test rather than failing it.
  """
 
-    import yaml  # local import — only needed in the fallback path
+    import yaml  # local import - only needed in the fallback path
 
     compose_path = repo_root / compose_file_rel
     with compose_path.open("r", encoding="utf-8") as fh:
@@ -519,7 +519,7 @@ def test_compose_default_profile_config_parses_with_ten_services(
                 parse_source = "docker compose config"
             except RuntimeError as exc:
                 # `docker compose config` failure means the file itself
-                # is malformed violation) — fail hard.
+                # is malformed violation) - fail hard.
                 pytest.fail(str(exc))
         finally:
             _remove_staged_env_files(staged_envs)

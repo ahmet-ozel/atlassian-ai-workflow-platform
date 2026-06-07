@@ -1,11 +1,11 @@
-"""Pure iteration-state helpers for ``AgentRunnerWorkflow``.
+﻿"""Pure iteration-state helpers for ``AgentRunnerWorkflow``.
 
 This module is the **single source of truth** for the iteration
 decision functions and ``IterationState`` evolution helpers.
 
 Every helper here is a **pure function**:
 
-* No ``datetime.now()`` / ``time.time()`` / ``random.*`` / I/O — the
+* No ``datetime.now()`` / ``time.time()`` / ``random.*`` / I/O - the
   caller passes ``now: datetime`` whenever a timestamp is needed.
 * No module-level mutable state.
 * Inputs are never mutated; callers receive a freshly-constructed
@@ -20,18 +20,18 @@ replay determinism.
 Public API
 ----------
 
-* :class:`IterDecision` — frozen dataclass returned by
+* :class:`IterDecision` - frozen dataclass returned by
   :func:`should_advance_iter`.
-* :func:`should_advance_iter` — pure pre-condition for advancing
+* :func:`should_advance_iter` - pure pre-condition for advancing
   ``state.iter_count``.
-* :func:`is_fix_debounced` — 60-second ``[fix]`` debounce window.
-* :func:`fix_should_skip_retest` — diff-hash re-test cache lookup.
-* :func:`explain_should_skip_llm` — 5-minute ``[explain]`` cache TTL.
-* :func:`needs_info_should_terminate` — consecutive ``needs_info``
+* :func:`is_fix_debounced` - 60-second ``[fix]`` debounce window.
+* :func:`fix_should_skip_retest` - diff-hash re-test cache lookup.
+* :func:`explain_should_skip_llm` - 5-minute ``[explain]`` cache TTL.
+* :func:`needs_info_should_terminate` - consecutive ``needs_info``
   cap.
-* :func:`record_explain_answer` — write a new entry into the
+* :func:`record_explain_answer` - write a new entry into the
   bounded LRU ``explain_cache`` (``EXPLAIN_CACHE_MAXSIZE=32``).
-* :data:`EXPLAIN_CACHE_MAXSIZE` — module-level cap.
+* :data:`EXPLAIN_CACHE_MAXSIZE` - module-level cap.
 
 Re-exports :class:`IterDecision` and :class:`IterationState` so
 callers can ``from temporal_shared.iteration import IterDecision``
@@ -69,7 +69,7 @@ __all__ = [
 
 
 # ---------------------------------------------------------------------------
-# Constants — defaults consumed by the helpers below.
+# Constants - defaults consumed by the helpers below.
 # ---------------------------------------------------------------------------
 
 #: Hard cap on the bounded ``[explain]`` LRU cache.
@@ -105,9 +105,9 @@ class IterDecision:
     reason:
         Short human-readable discriminator.  Stable values:
 
-        * ``"ok"`` — the cap has not been reached.
-        * ``"max_iter_reached"`` — ``state.iter_count >= max_iter``.
-        * ``"non_positive_max_iter"`` — caller passed ``max_iter <= 0``.
+        * ``"ok"`` - the cap has not been reached.
+        * ``"max_iter_reached"`` - ``state.iter_count >= max_iter``.
+        * ``"non_positive_max_iter"`` - caller passed ``max_iter <= 0``.
 
         The string is intentionally short so audit emitters can use
         it verbatim as an audit-action suffix without a translation
@@ -119,7 +119,7 @@ class IterDecision:
 
 
 # ---------------------------------------------------------------------------
-# Decision helpers — pure pre-conditions consulted by the workflow body.
+# Decision helpers - pure pre-conditions consulted by the workflow body.
 # ---------------------------------------------------------------------------
 
 
@@ -128,7 +128,7 @@ def should_advance_iter(
 ) -> IterDecision:
     """Pure pre-condition: may we advance to ``state.iter_count + 1``?
 
-    The check is purely arithmetic — no clock, no randomness — so
+    The check is purely arithmetic - no clock, no randomness - so
     callers can invoke it from inside a Temporal signal handler
     without breaking replay determinism.
 
@@ -172,11 +172,11 @@ def is_fix_debounced(
     state:
         Current :class:`IterationState`.
     now:
-        Caller-supplied timestamp — must come from
+        Caller-supplied timestamp - must come from
         ``workflow.now()`` inside a workflow body so replay stays
         deterministic.
     window:
-        Debounce window — defaults to :data:`FIX_DEBOUNCE_WINDOW`
+        Debounce window - defaults to :data:`FIX_DEBOUNCE_WINDOW`
         (60 seconds).
     """
 
@@ -195,7 +195,7 @@ def fix_should_skip_retest(
     must reuse the cached test outcome instead of dispatching a
     second :class:`ExecutionRunWorkflow`.
 
-    Empty / falsy ``current_diff_hash`` returns ``False`` — without
+    Empty / falsy ``current_diff_hash`` returns ``False`` - without
     a stable identity the cache cannot answer the question, so the
     safest default is to run the test.
     """
@@ -218,7 +218,7 @@ def explain_should_skip_llm(
     identical across replays even when the workflow's clock advances
     by a single tick on the boundary.
 
-    Empty / falsy ``pr_diff_hash`` returns ``False`` — same rationale
+    Empty / falsy ``pr_diff_hash`` returns ``False`` - same rationale
     as :func:`fix_should_skip_retest`.
 
     Parameters
@@ -231,7 +231,7 @@ def explain_should_skip_llm(
     now:
         Caller-supplied timestamp (``workflow.now()``).
     ttl:
-        Freshness window — defaults to :data:`EXPLAIN_CACHE_TTL`
+        Freshness window - defaults to :data:`EXPLAIN_CACHE_TTL`
         (5 minutes).
     """
 
@@ -258,7 +258,7 @@ def needs_info_should_terminate(
 
 
 # ---------------------------------------------------------------------------
-# State-evolution helpers — bounded LRU write for ``explain_cache``.
+# State-evolution helpers - bounded LRU write for ``explain_cache``.
 # ---------------------------------------------------------------------------
 
 
@@ -274,7 +274,7 @@ def record_explain_answer(
 
     * The cache is capped at :data:`EXPLAIN_CACHE_MAXSIZE` (32)
       entries.
-    * Insertion order is the eviction order — the oldest entry is
+    * Insertion order is the eviction order - the oldest entry is
       dropped when a fresh write would exceed the cap.
     * Writing the same key twice **refreshes** the entry (key moves
       to the most-recent slot) so a follow-up ``[explain]`` against
@@ -284,7 +284,7 @@ def record_explain_answer(
 
     The bounded LRU is implemented via :class:`collections.OrderedDict`
     so the eviction policy is the ordinary "first inserted is first
-    evicted" semantics of an ordered mapping — no custom data
+    evicted" semantics of an ordered mapping - no custom data
     structure is required.
 
     Parameters

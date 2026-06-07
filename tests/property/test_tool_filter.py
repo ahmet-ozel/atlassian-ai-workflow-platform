@@ -1,16 +1,16 @@
-"""Property-based tests for the banned MCP tool list.
+﻿"""Property-based tests for the banned MCP tool list.
 
 This file owns the **banned tool list** behavior. Related policy tests are:
 
-- ``test_pr_draft_enforcement.py`` — PR draft enforcement
-- ``test_webhook_predicates.py`` (extended) — webhook loop guard behavior
+- ``test_pr_draft_enforcement.py`` - PR draft enforcement
+- ``test_webhook_predicates.py`` (extended) - webhook loop guard behavior
 
 Universal property
 ------------------
 
-For all tool catalogs ``T`` — regardless of how individual entries are
+For all tool catalogs ``T`` - regardless of how individual entries are
 shaped (plain string, ``dict`` with a ``name`` field, or attribute
-object) — :func:`mcp_client.filter_tools` returns a list whose
+object) - :func:`mcp_client.filter_tools` returns a list whose
 *name set* is disjoint from :data:`mcp_client.BANNED_TOOLS`:
 
 .. code-block:: text
@@ -40,7 +40,7 @@ from mcp_client import BANNED_TOOLS, filter_tools
 # ---------------------------------------------------------------------------
 
 #: Allowed (non-banned) tool names. Constrained to the shape the MCP
-#: catalog actually emits — lower-case ASCII identifiers with optional
+#: catalog actually emits - lower-case ASCII identifiers with optional
 #: underscores. Hypothesis filter excludes any draw that would collide
 #: with :data:`BANNED_TOOLS` so the property is meaningful for the
 #: "allowed" branch of the catalog.
@@ -57,19 +57,19 @@ _banned_names = st.sampled_from(sorted(BANNED_TOOLS))
 
 
 def _as_string(name: str) -> str:
-    """Tool-shape #1 — plain string."""
+    """Tool-shape #1 - plain string."""
 
     return name
 
 
 def _as_dict(name: str) -> dict[str, Any]:
-    """Tool-shape #2 — JSON dict the way most MCP servers emit."""
+    """Tool-shape #2 - JSON dict the way most MCP servers emit."""
 
     return {"name": name, "description": "..."}
 
 
 class _AttrTool:
-    """Tool-shape #3 — object with a ``.name`` attribute (mcp.types.Tool-style)."""
+    """Tool-shape #3 - object with a ``.name`` attribute (mcp.types.Tool-style)."""
 
     __slots__ = ("name",)
 
@@ -100,7 +100,7 @@ def _wrap_in_random_shape(name: str, shape_index: int) -> Any:
 def _tool_catalogs(draw: st.DrawFn) -> list[Any]:
     """Build a mixed catalog of allowed + banned tools across all 3 shapes.
 
-    The catalog is a list of arbitrary length (0–30) where each entry
+    The catalog is a list of arbitrary length (0-30) where each entry
     is independently chosen as allowed-or-banned and wrapped in one
     of the three supported shapes. This is the most general input
     space :func:`filter_tools` is expected to handle.
@@ -109,7 +109,7 @@ def _tool_catalogs(draw: st.DrawFn) -> list[Any]:
     n = draw(st.integers(min_value=0, max_value=30))
     catalog: list[Any] = []
     for _ in range(n):
-        # 30% banned, 70% allowed — keeps banned entries densely
+        # 30% banned, 70% allowed - keeps banned entries densely
         # represented without crowding out the allowed branch.
         is_banned = draw(st.booleans()) and draw(st.booleans())
         name = draw(_banned_names) if is_banned else draw(_allowed_names)
@@ -177,7 +177,7 @@ class TestFilterToolsBannedTools:
         self, catalog: list[Any]
     ) -> None:
         """Allowed tools appear in the output in the same order they
-        appeared in the input. Order matters for UI rendering — the
+        appeared in the input. Order matters for UI rendering - the
         LLM tool catalog is often shown to operators in the original
         listing order.
         """
@@ -190,7 +190,7 @@ class TestFilterToolsBannedTools:
     def test_filter_tools_output_is_subset_of_input(
         self, catalog: list[Any]
     ) -> None:
-        """Every entry in the filtered output came from the input —
+        """Every entry in the filtered output came from the input -
         :func:`filter_tools` never *adds* a tool. The check uses
         ``id``-based identity for shape #3 (objects) and value
         equality for shapes #1 / #2.
@@ -224,7 +224,7 @@ class TestFilterToolsBannedTools:
         self, catalog: list[Any], banned: str, shape: int
     ) -> None:
         """Inserting a banned tool anywhere into the catalog cannot
-        increase the size of the filtered output — the inserted
+        increase the size of the filtered output - the inserted
         entry is, by definition, dropped. This is a stronger version
         of the "banned ∩ output == ∅" property: it ties the act of
         adding a banned tool to a measurable invariant.
@@ -261,7 +261,7 @@ class TestFilterToolsBannedTools:
         self, name: str, shape: int
     ) -> None:
         """A singleton catalog containing only a banned tool is filtered
-        to an empty list — the "no false negatives" pin for the
+        to an empty list - the "no false negatives" pin for the
         property. Combined with the previous test it covers both
         sides of the predicate completely.
         """
@@ -300,7 +300,7 @@ class TestBannedToolsConstant:
         assert "confluence_delete_page" in BANNED_TOOLS
 
     def test_banned_tools_is_frozenset(self) -> None:
-        """``frozenset`` keeps the constant immutable and hashable —
+        """``frozenset`` keeps the constant immutable and hashable -
         prerequisites for using it as the single source of truth
         across multiple LLM call sites.
         """

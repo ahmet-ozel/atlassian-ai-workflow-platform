@@ -1,6 +1,6 @@
-"""Workflow ID, branch-name, and artifact-key formatters.
+﻿"""Workflow ID, branch-name, and artifact-key formatters.
 
-All functions in this module are **pure** — they perform only string
+All functions in this module are **pure** - they perform only string
 concatenation and regex validation.  None of them call ``datetime``,
 ``random``, ``uuid``, or any I/O.  This guarantees Temporal workflow
 determinism when these helpers are invoked inside workflow code.
@@ -22,9 +22,9 @@ In addition to the foundation helpers above, this module defines a
 **round-trippable** ``WorkflowIdRef`` dataclass and three companion
 helpers:
 
-* :func:`jira_workflow_id` — ``automation-jira-{PROJECT_KEY}-{ISSUE_NUM}``
-* :func:`bitbucket_pr_workflow_id` — ``automation-bb-{REPO_SLUG}-pr-{PR_ID}``
-* :func:`parse_workflow_id` — inverse of the two formatters above.
+* :func:`jira_workflow_id` - ``automation-jira-{PROJECT_KEY}-{ISSUE_NUM}``
+* :func:`bitbucket_pr_workflow_id` - ``automation-bb-{REPO_SLUG}-pr-{PR_ID}``
+* :func:`parse_workflow_id` - inverse of the two formatters above.
 
 The format regexes are pinned by design:
 
@@ -156,7 +156,7 @@ def execution_workflow_id(parent_id: str, ts: int) -> str:
     Format: ``exec-{parent_id}-{ts}``
 
     The *ts* parameter is an integer timestamp (e.g. Unix epoch seconds)
-    produced by an activity or ``workflow.now()`` — never by the caller
+    produced by an activity or ``workflow.now()`` - never by the caller
     importing ``datetime`` directly.
 
     Example::
@@ -229,7 +229,7 @@ def execution_artifact_key(workflow_id: str, name: str) -> str:
 #
 # The Jira project key body is bounded ([1, 10] alphanumeric/underscore
 # characters following the leading uppercase letter), giving a 2..10 char
-# project key — matching standard Jira conventions.
+# project key - matching standard Jira conventions.
 #
 # The Bitbucket variant takes a single repo_slug (no workspace component)
 # and uses the literal ``-pr-`` infix to disambiguate the pr_id from any
@@ -327,7 +327,7 @@ def bitbucket_pr_workflow_id(repo_slug: str, pr_id: int) -> str:
     Constraints:
 
     * ``repo_slug`` must be a non-empty lowercase alphanumeric string,
-      possibly containing dashes — but no leading/trailing dash and no
+      possibly containing dashes - but no leading/trailing dash and no
       consecutive dashes (so the parser remains unambiguous).
     * ``pr_id`` must be a positive integer.
 
@@ -365,7 +365,7 @@ def parse_workflow_id(s: str) -> WorkflowIdRef:
         InvalidWorkflowIdError: when ``s`` matches neither pattern, or
             when the recovered components fail their structural checks
             (e.g. a Bitbucket slug with leading/trailing or doubled
-            dashes — see :func:`bitbucket_pr_workflow_id`).
+            dashes - see :func:`bitbucket_pr_workflow_id`).
     """
     if not isinstance(s, str):
         raise InvalidWorkflowIdError(

@@ -1,18 +1,18 @@
-"""``PromptsRouter``.
+﻿"""``PromptsRouter``.
 
 Admin-only prompt CRUD + sandbox-test + PR commit surface for the
 files that live under ``platform/prompts/``. The router exposes four
 endpoints under ``/api/v1/prompts``:
 
-* ``GET    /api/v1/prompts``                  — list every ``.md``
+* ``GET    /api/v1/prompts``                  - list every ``.md``
   file under the configured prompts directory with its filesystem
   ``last_modified`` timestamp and a SHA-256 ``content_hash``.
-* ``GET    /api/v1/prompts/{name}``           — return the current
+* ``GET    /api/v1/prompts/{name}``           - return the current
   content of one prompt.
-* ``POST   /api/v1/prompts/{name}/sandbox``   — run a single,
+* ``POST   /api/v1/prompts/{name}/sandbox``   - run a single,
   isolated LLM round-trip against a candidate body without
   persisting the change.
-* ``POST   /api/v1/prompts/{name}/commit``    — create a draft
+* ``POST   /api/v1/prompts/{name}/commit``    - create a draft
   branch, write the new body, push it, open a Bitbucket draft PR,
   and record the change in ``shared.prompt_versions`` plus
   ``shared.audit_events``.
@@ -27,16 +27,16 @@ The router resolves three side-effect surfaces through ``app.state``
 slots so production can wire real backends and tests can inject
 fakes without monkey-patching:
 
-* ``app.state.prompts_committer`` — :class:`SupportsPromptCommitter`
+* ``app.state.prompts_committer`` - :class:`SupportsPromptCommitter`
   adapter that creates the draft branch, writes the file, and pushes
   it to ``origin``. Production wires this against
   :class:`git_shared.GitRepo`.
-* ``app.state.prompts_bitbucket`` — :class:`SupportsBitbucketClient`
+* ``app.state.prompts_bitbucket`` - :class:`SupportsBitbucketClient`
   adapter that opens a draft pull request once the commit lands. The
   existing :class:`git_shared.PullRequestOpener` already implements
   this shape; the router accepts either one to avoid duplicating
   wiring.
-* ``app.state.prompts_llm`` — :class:`SupportsLLMClient` adapter that
+* ``app.state.prompts_llm`` - :class:`SupportsLLMClient` adapter that
   performs the single LLM call backing the sandbox endpoint.
 
 Each missing slot yields ``HTTP 503`` with a stable ``reason`` field
@@ -48,7 +48,7 @@ Audit + version trail
 
 A successful commit writes:
 
-1. One row into ``shared.prompt_versions`` —
+1. One row into ``shared.prompt_versions`` -
    ``(prompt_name, content_hash, changed_by, pr_url, created_at)``.
    The ``(prompt_name, content_hash)`` pair is UNIQUE so re-committing
    identical content surfaces ``409 prompt_unchanged`` without
@@ -57,7 +57,7 @@ A successful commit writes:
    carrying ``{action: "prompt_updated", prompt_name, content_hash,
    admin, pr_url, timestamp}``.
 
-Audit-write failures never block the request — the version row is
+Audit-write failures never block the request - the version row is
 the canonical record; the audit event is best-effort.
 """
 
@@ -106,7 +106,7 @@ logger = logging.getLogger(__name__)
 #: Audit action emitted on every successful commit.
 _AUDIT_ACTION_PROMPT_UPDATED: str = "prompt_updated"
 
-#: Hard cap on prompt body size — markdown system prompts comfortably
+#: Hard cap on prompt body size - markdown system prompts comfortably
 #: fit under 64 KiB; rejecting larger payloads protects against
 #: accidental binary uploads.
 _MAX_PROMPT_BODY_BYTES: int = 64 * 1024
@@ -187,7 +187,7 @@ class SupportsBitbucketClient(Protocol):
     """PR-opening surface used by the commit endpoint.
 
     Mirrors the existing :class:`git_shared.PullRequestOpener` shape
-    so the production wiring can pass that opener straight through —
+    so the production wiring can pass that opener straight through -
     we re-declare the protocol here to keep this module
     self-contained and to surface the contract explicitly in the
     router's docstring.
@@ -374,7 +374,7 @@ router = APIRouter(
 
 
 # ---------------------------------------------------------------------------
-# Helpers — path / hash / file IO
+# Helpers - path / hash / file IO
 # ---------------------------------------------------------------------------
 
 
@@ -449,7 +449,7 @@ def _resolve_prompts_dir(request: Request) -> Path:
 
     Combines ``app.state.workspace_root`` with the configured
     ``prompts_dir_prefix`` from :class:`Settings`. When neither slot
-    is wired (extremely unusual — would imply lifespan never ran)
+    is wired (extremely unusual - would imply lifespan never ran)
     the helper raises ``HTTP 503`` so the endpoint surface degrades
     cleanly rather than dereferencing a ``None``.
     """
@@ -487,7 +487,7 @@ def _resolve_prompt_path(prompts_dir: Path, name: str) -> Path:
     try:
         target.relative_to(prompts_dir.resolve())
     except ValueError as exc:
-        # Defence in depth — _safe_prompt_name already rejects
+        # Defence in depth - _safe_prompt_name already rejects
         # traversal, but realpath resolution can still surface a
         # symlink that escapes the prompts dir. Treat as 400 so the
         # FE distinguishes it from a "file not on disk" 404.
@@ -499,7 +499,7 @@ def _resolve_prompt_path(prompts_dir: Path, name: str) -> Path:
 
 
 # ---------------------------------------------------------------------------
-# Helpers — dependency lookup
+# Helpers - dependency lookup
 # ---------------------------------------------------------------------------
 
 
@@ -553,7 +553,7 @@ def _get_pg_pool(request: Request) -> Any:
 
     Raises:
         HTTPException(503): When ``app.state.pg_pool`` is missing.
-            The commit endpoint cannot run without a database — the
+            The commit endpoint cannot run without a database - the
             audit chain (``shared.prompt_versions`` row +
             ``shared.audit_events`` row) requires a live pool.
     """
@@ -577,7 +577,7 @@ def _get_audit_sink(request: Request) -> Any | None:
     explicit ``app.state.prompts_audit_sink`` slot, falls back to
     the AdminProxy's audit sink so the events land in the same
     stream as other admin actions. Returns ``None`` when neither
-    is wired — :func:`_emit_prompt_updated_audit` becomes a no-op
+    is wired - :func:`_emit_prompt_updated_audit` becomes a no-op
     in that case.
     """
 
@@ -608,16 +608,16 @@ async def list_prompts(request: Request) -> PromptListResponse:
     git so the response reflects on-disk reality (uncommitted edits
     by the operator are visible). Each item carries:
 
-    * ``name`` — repo-relative POSIX path (eg. ``planner.md`` or
+    * ``name`` - repo-relative POSIX path (eg. ``planner.md`` or
       ``notifications/build_failed.md``).
-    * ``last_modified`` — ISO-8601 UTC ``mtime`` of the file.
-    * ``content_hash`` — SHA-256 of the file body so the FE can
+    * ``last_modified`` - ISO-8601 UTC ``mtime`` of the file.
+    * ``content_hash`` - SHA-256 of the file body so the FE can
       detect drift between two reads.
     """
 
     prompts_dir = _resolve_prompts_dir(request)
     if not prompts_dir.is_dir():
-        # Empty list rather than 503 — the directory may simply not
+        # Empty list rather than 503 - the directory may simply not
         # exist yet in a fresh checkout, and the FE renders that as
         # "no prompts" without surfacing a hard error.
         return PromptListResponse(items=[])
@@ -720,7 +720,7 @@ async def sandbox_prompt(
     The endpoint pairs a candidate prompt body with a sample user
     input, asks the wired :class:`SupportsLLMClient` to perform a
     single round-trip, and returns the model output. Nothing is
-    written to disk, git, or the database — the caller's edits
+    written to disk, git, or the database - the caller's edits
     remain in their local editor session.
 
     The LLM client implementation is responsible for tagging the
@@ -746,7 +746,7 @@ async def sandbox_prompt(
             prompt_body=body.body,
             sample_input=body.sample_input,
         )
-    except Exception as exc:  # noqa: BLE001 — surface upstream failure
+    except Exception as exc:  # noqa: BLE001 - surface upstream failure
         logger.exception(
             "prompt sandbox LLM call failed (name=%s actor=%s): %s",
             safe_name,
@@ -792,7 +792,7 @@ async def commit_prompt(
     2. Resolve the existing on-disk content; reject ``409
        prompt_unchanged`` when the new body matches it byte-for-byte
        (idempotent re-commit guard).
-    3. Delegate to :class:`SupportsPromptCommitter` — it creates a
+    3. Delegate to :class:`SupportsPromptCommitter` - it creates a
        fresh draft branch off main, writes the new file, commits,
        and pushes to ``origin``.
     4. Open the PR via :class:`SupportsBitbucketClient`. On failure
@@ -857,7 +857,7 @@ async def commit_prompt(
             actor_id=actor.sub,
             message=commit_message,
         )
-    except Exception as exc:  # noqa: BLE001 — surface git failure
+    except Exception as exc:  # noqa: BLE001 - surface git failure
         logger.exception(
             "prompt commit (git phase) failed (name=%s actor=%s): %s",
             safe_name,
@@ -887,7 +887,7 @@ async def commit_prompt(
             title=pr_title,
             description=pr_description,
         )
-    except Exception as exc:  # noqa: BLE001 — surface upstream failure
+    except Exception as exc:  # noqa: BLE001 - surface upstream failure
         logger.exception(
             "prompt commit (PR phase) failed (name=%s branch=%s actor=%s): %s",
             safe_name,
@@ -951,7 +951,7 @@ async def commit_prompt(
             },
         ) from exc
 
-    if row is None:  # pragma: no cover — RETURNING always yields a row
+    if row is None:  # pragma: no cover - RETURNING always yields a row
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="prompt_versions insert returned no row",
@@ -997,7 +997,7 @@ async def _emit_prompt_updated_audit(
 ) -> None:
     """Write a single ``prompt_updated`` audit event.
 
-    Failures are swallowed — the canonical record is the
+    Failures are swallowed - the canonical record is the
     ``shared.prompt_versions`` row inserted in step 5 of
     :func:`commit_prompt`. The audit event is observability-only and
     must not fail the request.
@@ -1034,7 +1034,7 @@ async def _emit_prompt_updated_audit(
 
     try:
         await sink.write(event)
-    except Exception as exc:  # noqa: BLE001 — never raise from audit
+    except Exception as exc:  # noqa: BLE001 - never raise from audit
         logger.warning(
             "prompt_updated audit write failed (name=%s actor=%s): %s",
             prompt_name,

@@ -1,4 +1,4 @@
-"""Chat intent wiring between Streamlit and Task Creator.
+﻿"""Chat intent wiring between Streamlit and Task Creator.
 
 
 
@@ -14,7 +14,7 @@ fields on mount.
 
 Conversely, when the stream contains only read-intent events (tokens,
 tool_calls with read-only tools, or a ``done`` terminal) the session
-state key MUST NOT be set — otherwise the Task Creator would open with
+state key MUST NOT be set - otherwise the Task Creator would open with
 stale / irrelevant prefill data.
 
 Strategy
@@ -23,10 +23,10 @@ Strategy
 We use Hypothesis to generate random SSE event sequences that fall
 into two categories:
 
-* **Write-intent streams** — contain at least one ``intent`` event
+* **Write-intent streams** - contain at least one ``intent`` event
  with ``payload.intent == "write_action_requested"`` and a valid
  ``prefill`` dict.
-* **Read-intent streams** — contain only ``token`` and ``done``
+* **Read-intent streams** - contain only ``token`` and ``done``
  events; no ``intent`` event with ``write_action_requested``.
 
 For each generated stream we simulate the chat page's event-processing
@@ -54,7 +54,7 @@ from hypothesis import strategies as st
 import pytest
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — expose the messages library so we can import
+# sys.path bootstrap - expose the messages library so we can import
 # SseEvent without pip-installing the package.
 # ---------------------------------------------------------------------------
 
@@ -128,10 +128,10 @@ def process_chat_events(
         payload = event.get("payload") or {}
 
         if ev_type == "token":
-            # Accumulate rendered text — no state mutation.
+            # Accumulate rendered text - no state mutation.
             pass
         elif ev_type == "tool_call":
-            # Tool call rendering — no redirect logic here for intent
+            # Tool call rendering - no redirect logic here for intent
             # wiring (the write_action_intercept is a separate property).
             pass
         elif (
@@ -482,7 +482,7 @@ class TestChatIntentWiringEdgeCases:
         stream = [
             {"type": "token", "payload": {"text": "processing..."}},
             {"type": "error", "payload": {"message": "LLM timeout"}},
-            # Intent event after error — should not be reached.
+            # Intent event after error - should not be reached.
             {
                 "type": "intent",
                 "payload": {

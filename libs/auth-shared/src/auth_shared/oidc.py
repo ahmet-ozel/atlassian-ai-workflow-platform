@@ -1,19 +1,19 @@
-"""OIDC/JWT validation for the admin control plane.
+﻿"""OIDC/JWT validation for the admin control plane.
 
 This module replaces the original placeholder with a working validator while keeping
 the public surface backward compatible. The class name and the
 ``validate(token: str) -> dict`` method signature are preserved
 verbatim so existing callers and the
-``tests/property/test_path_coverage.py`` invariant — continue to hold.
+``tests/property/test_path_coverage.py`` invariant - continue to hold.
 
 The validator supports two modes selected via :class:`OIDCConfig`:
 
-* ``auth_mode="dev"`` — accepts any non-empty bearer token and returns
+* ``auth_mode="dev"`` - accepts any non-empty bearer token and returns
   the canned admin claims dict ``{"sub": "dev-admin", "groups":
   ["admin"]}``. Empty tokens raise :class:`InvalidTokenError`. This mode
   is intended exclusively for local development; production traffic must
   never be routed here.
-* ``auth_mode="production"`` — performs the full JWKS-backed signature
+* ``auth_mode="production"`` - performs the full JWKS-backed signature
   check via ``python-jose``. The JWKS document is fetched once and
   cached in-memory for at least five minutes so subsequent validations
   do not pay the network cost. Issuer (``iss``), audience (``aud``) and
@@ -23,11 +23,11 @@ The validator supports two modes selected via :class:`OIDCConfig`:
 
 This module also provides:
 
-* :func:`OIDCConfig.from_env` — env-driven factory honouring
+* :func:`OIDCConfig.from_env` - env-driven factory honouring
   ``AUTH_PROVIDER`` (``"oidc"`` => production JWKS verification,
   ``"local"`` => dev bypass) and the ``OIDC_ISSUER_URL`` /
   ``OIDC_CLIENT_ID`` / ``OIDC_CLIENT_SECRET`` triplet.
-* :class:`AuthContext` and :func:`extract_auth_context` — a frozen
+* :class:`AuthContext` and :func:`extract_auth_context` - a frozen
   dataclass and pure helper that extracts ``actor_id`` (OIDC ``sub``),
   ``actor_role`` (one of the four RBAC roles) and ``dept_ids`` from
   the decoded JWT claim dict.
@@ -52,7 +52,7 @@ from jose import jwt as jose_jwt
 from jose.exceptions import JWTError
 
 
-# Minimum JWKS cache TTL — five minutes, per the spec's lower bound.
+# Minimum JWKS cache TTL - five minutes, per the spec's lower bound.
 _MIN_JWKS_CACHE_TTL_SECONDS: int = 300
 
 # HTTP timeout when fetching JWKS; deliberately short so a misbehaving
@@ -78,7 +78,7 @@ class InvalidTokenError(Exception):
 
     Callers (e.g. the FastAPI ``require_admin`` dependency) translate
     this into ``401 Unauthorized``. The exception message is safe to
-    surface as the ``detail`` field — it never embeds the raw token or
+    surface as the ``detail`` field - it never embeds the raw token or
     private key material.
     """
 
@@ -88,7 +88,7 @@ class MissingClaimError(InvalidTokenError):
     absent or malformed.
 
     Sub-classing :class:`InvalidTokenError` keeps the FastAPI
-    ``require_admin`` dependency simple — a single ``except
+    ``require_admin`` dependency simple - a single ``except
     InvalidTokenError`` clause covers both signature failures and
     missing-claim cases.
     """
@@ -112,7 +112,7 @@ class OIDCConfig:
             that need to mint authorisation URLs (the dashboard
             redirect flow); the validator itself does not consume it.
         client_secret: Optional OIDC client secret. Same intent as
-            ``client_id`` — kept here so a single ``OIDCConfig`` is
+            ``client_id`` - kept here so a single ``OIDCConfig`` is
             the entire auth-layer wiring.
     """
 
@@ -138,20 +138,20 @@ class OIDCConfig:
 
         Honours the configured OIDC environment contract:
 
-        * ``AUTH_PROVIDER`` — ``"oidc"`` (default, production JWKS
+        * ``AUTH_PROVIDER`` - ``"oidc"`` (default, production JWKS
           verification) or ``"local"`` (dev bypass).
-        * ``OIDC_ISSUER_URL`` — issuer URL; the JWKS endpoint is
+        * ``OIDC_ISSUER_URL`` - issuer URL; the JWKS endpoint is
           derived as ``{issuer}/.well-known/jwks.json`` when
           ``OIDC_JWKS_URL`` is not provided. Required when
           ``AUTH_PROVIDER=oidc``.
-        * ``OIDC_CLIENT_ID`` / ``OIDC_CLIENT_SECRET`` — recorded on
+        * ``OIDC_CLIENT_ID`` / ``OIDC_CLIENT_SECRET`` - recorded on
           the returned config so a single object carries the full
           auth-layer wiring; required when ``AUTH_PROVIDER=oidc``.
-        * ``OIDC_AUDIENCE`` — the expected ``aud`` claim. Falls back
+        * ``OIDC_AUDIENCE`` - the expected ``aud`` claim. Falls back
           to ``OIDC_CLIENT_ID`` when omitted (the canonical OIDC
           contract: a token's audience is the relying-party client
           id).
-        * ``OIDC_JWKS_URL`` — optional explicit override.
+        * ``OIDC_JWKS_URL`` - optional explicit override.
 
         Args:
             env: Mapping to read from. Defaults to ``os.environ`` so
@@ -232,7 +232,7 @@ class OIDCConfig:
 
 
 # ---------------------------------------------------------------------------
-# AuthContext — claim extraction
+# AuthContext - claim extraction
 # ---------------------------------------------------------------------------
 
 
@@ -251,7 +251,7 @@ class AuthContext:
         actor: AuthContext   # actor_id, role, dept_ids
 
     Attributes:
-        actor_id: The OIDC ``sub`` claim — a stable, opaque user id
+        actor_id: The OIDC ``sub`` claim - a stable, opaque user id
             minted by the IdP. Used as the ``actor_id`` column of
             ``audit_events``.
         actor_role: One of the four RBAC roles. Anything else is rejected by
@@ -286,7 +286,7 @@ class AuthContext:
 
         ``admin`` actors may always access; every other role is
         restricted to ``dept_id in self.dept_ids``. ``viewer`` /
-        ``lead`` / ``dept_admin`` are all dept-scoped — global
+        ``lead`` / ``dept_admin`` are all dept-scoped - global
         actions are an admin-only concern enforced
         separately by :func:`auth_shared.policy.requires`.
         """
@@ -310,7 +310,7 @@ def extract_auth_context(claims: Mapping[str, Any]) -> AuthContext:
       ``groups`` -> ``actor_role``. Only the four roles defined in
       :data:`AUTH_ROLES` are accepted; anything else raises
       :class:`MissingClaimError`. ``roles`` / ``groups`` may be a
-      space-separated string or a list of strings — both forms occur
+      space-separated string or a list of strings - both forms occur
       in the wild (Auth0 vs Keycloak).
     * ``dept_ids`` (preferred) or ``departments`` -> ``dept_ids``
       frozen-set. Same string-or-list flexibility. Missing or empty
@@ -348,9 +348,9 @@ def _extract_role(claims: Mapping[str, Any]) -> AuthRole:
     """Return the first valid RBAC role found on ``claims``.
 
     Lookup order:
-      1. ``role`` — the canonical single-valued claim shape.
-      2. ``roles`` — list or space-separated string.
-      3. ``groups`` — list or space-separated string (Keycloak's
+      1. ``role`` - the canonical single-valued claim shape.
+      2. ``roles`` - list or space-separated string.
+      3. ``groups`` - list or space-separated string (Keycloak's
          default group claim).
 
     Strings are stripped and lower-cased before comparison so
@@ -387,8 +387,8 @@ def _extract_dept_ids(claims: Mapping[str, Any]) -> frozenset[str]:
     """Return the frozen set of department ids on ``claims``.
 
     Lookup order:
-      1. ``dept_ids`` — canonical claim name.
-      2. ``departments`` — alternative used by Streamlit.
+      1. ``dept_ids`` - canonical claim name.
+      2. ``departments`` - alternative used by Streamlit.
 
     Empty / missing claims yield an empty set; this is a legal state
     for ``admin`` users who do not need explicit dept membership.
@@ -481,7 +481,7 @@ class OIDCValidator:
         self._cache_lock = threading.Lock()
 
     # ------------------------------------------------------------------
-    # Public API — preserves the placeholder signature.
+    # Public API - preserves the placeholder signature.
     # ------------------------------------------------------------------
 
     @property
@@ -504,7 +504,7 @@ class OIDCValidator:
         Raises:
             InvalidTokenError: If the token is empty, fails signature
                 verification, has an invalid ``iss`` / ``aud`` /
-                ``exp`` claim, or — in dev mode — is empty.
+                ``exp`` claim, or - in dev mode - is empty.
         """
 
         if self._config.auth_mode == "dev":

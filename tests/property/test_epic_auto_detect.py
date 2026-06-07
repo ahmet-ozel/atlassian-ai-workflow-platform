@@ -1,4 +1,4 @@
-"""Epic Auto-Detect behavior.
+﻿"""Epic Auto-Detect behavior.
 
 
 
@@ -164,7 +164,7 @@ def _setup_fakes(tmp_path: Path) -> None:
 # Hypothesis strategies
 # ---------------------------------------------------------------------------
 
-#: Issue key strategy — matches Jira key format
+#: Issue key strategy - matches Jira key format
 _issue_key_strategy = st.from_regex(r"^[A-Z]{2,5}-\d{1,5}$", fullmatch=True)
 
 #: Department ID strategy
@@ -173,7 +173,7 @@ _dept_id_strategy = st.from_regex(r"^[a-z][a-z0-9\-]{1,10}$", fullmatch=True)
 #: Non-Epic issue type names
 _non_epic_types = st.sampled_from(["Story", "Task", "Bug", "Sub-task", "Improvement"])
 
-#: Subtask dict strategy — minimal subtask shape
+#: Subtask dict strategy - minimal subtask shape
 _subtask_strategy = st.fixed_dictionaries({
     "key": _issue_key_strategy,
     "fields": st.fixed_dictionaries({
@@ -504,7 +504,7 @@ class TestNonEpicUsesLLMPath:
     """Non-Epic issue types use the LLM analysis path.
 
  Non-Epic issue types (Story, Task, Bug, Sub-task, Improvement)
- follow the existing LLM analysis path — ``source="llm_analysis"``.
+ follow the existing LLM analysis path - ``source="llm_analysis"``.
  """
 
     @settings(
@@ -614,7 +614,7 @@ class TestFrontMatterBypassesAutoDetect:
     """Front-matter workflow overrides bypass Epic auto-detection.
 
  When the YAML front-matter in the description sets a
- ``workflow_type``, the Epic auto-detect is bypassed — even if the
+ ``workflow_type``, the Epic auto-detect is bypassed - even if the
  issue is an Epic with subtasks. The front-matter > Epic auto-detect
  > LLM priority is maintained.
  """

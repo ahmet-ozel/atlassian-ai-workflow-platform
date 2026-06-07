@@ -1,4 +1,4 @@
-"""Unit tests for ``src.auth.dependencies.require_admin``.
+﻿"""Unit tests for ``src.auth.dependencies.require_admin``.
 
 Covers the auth dependency behaviour matrix:
 
@@ -104,7 +104,7 @@ def _build_app(validator: _StubValidator) -> FastAPI:
 
 
 # ---------------------------------------------------------------------------
-# 401 — missing / malformed Authorization header
+# 401 - missing / malformed Authorization header
 # ---------------------------------------------------------------------------
 
 
@@ -174,7 +174,7 @@ def test_whitespace_only_token_returns_401() -> None:
 
 
 # ---------------------------------------------------------------------------
-# 401 — validator rejects the token
+# 401 - validator rejects the token
 # ---------------------------------------------------------------------------
 
 
@@ -195,7 +195,7 @@ def test_invalid_token_raises_401() -> None:
 
 
 # ---------------------------------------------------------------------------
-# 403 — valid token without admin claim
+# 403 - valid token without admin claim
 # ---------------------------------------------------------------------------
 
 
@@ -247,12 +247,12 @@ def test_non_iterable_groups_value_returns_403() -> None:
     )
 
     # ``"admin"`` as a *string* (not a list containing ``"admin"``) is
-    # rejected — group claims must be iterables of strings.
+    # rejected - group claims must be iterables of strings.
     assert response.status_code == 403
 
 
 # ---------------------------------------------------------------------------
-# Happy paths — admin in groups, admin in roles
+# Happy paths - admin in groups, admin in roles
 # ---------------------------------------------------------------------------
 
 
@@ -359,7 +359,7 @@ def test_token_missing_sub_returns_401() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Direct unit calls (no FastAPI app) — exercise the dependency in isolation
+# Direct unit calls (no FastAPI app) - exercise the dependency in isolation
 # ---------------------------------------------------------------------------
 
 
@@ -373,7 +373,7 @@ def test_direct_call_returns_auth_claims_dataclass() -> None:
     import asyncio
 
     class _Req:
-        # Minimal :class:`fastapi.Request` stub — the dependency only
+        # Minimal :class:`fastapi.Request` stub - the dependency only
         # touches ``request.headers`` so a duck-typed ``headers`` mapping
         # is sufficient.
         def __init__(self, headers: dict[str, str]) -> None:

@@ -1,4 +1,4 @@
-"""``VaultClient`` :class:`typing.Protocol` and supporting types.
+﻿"""``VaultClient`` :class:`typing.Protocol` and supporting types.
 
 The protocol is the single contract every backend
 (``HashicorpBackend``, ``LocalDevBackend``) satisfies. Backend parity
@@ -37,7 +37,7 @@ Backend = Literal["hashicorp", "local-dev"]
 class SshKey:
     """An SSH key pair payload stored at a runner slot.
 
-    The ``private_pem`` value is the raw key material — it MUST NOT be
+    The ``private_pem`` value is the raw key material - it MUST NOT be
     logged or echoed back to clients. The ``fingerprint`` and
     ``public_pem`` fields are safe-to-display.
     """
@@ -83,9 +83,9 @@ class VaultClient(Protocol):
 
     Two implementations live in this package:
 
-    * :class:`vault_client.hashicorp_backend.HashicorpBackend` —
+    * :class:`vault_client.hashicorp_backend.HashicorpBackend` -
       production Hashicorp Vault HTTP (KV v2).
-    * :class:`vault_client.local_dev_backend.LocalDevBackend` —
+    * :class:`vault_client.local_dev_backend.LocalDevBackend` -
       development-only encrypted file backend (libsodium / NaCl
       ``SecretBox``); rejects plain-text writes.
 

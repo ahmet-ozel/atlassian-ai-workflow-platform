@@ -1,4 +1,4 @@
-"""Atomic per-service department credential orchestrator.
+﻿"""Atomic per-service department credential orchestrator.
 
 This module owns the orchestration helper used by the
 ``/admin/departments/{id}/credentials/{service}`` and
@@ -7,7 +7,7 @@ This module owns the orchestration helper used by the
 with all of its bots in a single shot), this service mutates a
 **single** ``(dept_id, service)`` pair on an *existing* department.
 
-Atomic flow (mirrors ``design.md`` §"Komponent Etkileşim Sırası —
+Atomic flow (mirrors ``design.md`` §"Komponent Etkileşim Sırası -
 Atomic Dept Credential Add"):
 
     1. Write the new credential to the staging Vault path
@@ -103,7 +103,7 @@ __all__ = [
 
 _LOG = logging.getLogger(__name__)
 
-# A connection factory — the orchestrator never owns pool lifecycle; the
+# A connection factory - the orchestrator never owns pool lifecycle; the
 # caller (FastAPI router or test harness) hands it a callable that
 # returns a fresh asyncpg-shaped :class:`AsyncConnection` per call.
 ConnectionFactory = Callable[[], Awaitable[AsyncConnection]]
@@ -172,7 +172,7 @@ class AddCredentialRequest:
         dept_id: Existing department id; must already exist in
             ``automation.departments``.
         service: Atlassian surface the credential authenticates
-            against — one of :data:`VALID_SERVICES`.
+            against - one of :data:`VALID_SERVICES`.
         url: Atlassian site / Bitbucket workspace URL.
         username: Email or login the bot authenticates as.
         personal_token: Plain-text API token; **must** be supplied as
@@ -214,7 +214,7 @@ class AddCredentialResult:
         last_probe_at: UTC timestamp the read+write probe completed.
         vault_path: The *final* (post-promotion) Vault path stored on
             the ``credential_ref`` column.  Returned as a plain string
-            (mask edilmiş — never the secret value).
+            (mask edilmiş - never the secret value).
         outcome: ``"created"`` for first-time inserts,
             ``"updated"`` when the ``(dept_id, service)`` row already
             existed and we replaced its ``credential_ref``.
@@ -246,7 +246,7 @@ class RemoveCredentialResult:
         dept_id: The department whose row was deleted.
         service: The Atlassian service the credential covered.
         existed: ``True`` when a row was actually deleted, ``False``
-            when no matching row was present (idempotent semantics —
+            when no matching row was present (idempotent semantics -
             the router still returns 200).
     """
 
@@ -270,7 +270,7 @@ class ProbeRunOutcome:
     """Result of :meth:`DeptCredentialService.probe`.
 
     Mirrors the response shape documented in
-    ``design.md`` §"Endpoint sözleşmesi" — a list of per-service
+    ``design.md`` §"Endpoint sözleşmesi" - a list of per-service
     results so the same payload covers both single-service and
     "all-services" probe calls.
     """
@@ -350,7 +350,7 @@ class DeptCredentialService:
     """Atomic credential CRUD for an *existing* department.
 
     Args:
-        vault: :class:`VaultClient` — same backend the foundation
+        vault: :class:`VaultClient` - same backend the foundation
             ``DepartmentCreateOrchestrator`` uses, so dev-mode
             encrypted-at-rest semantics carry through unchanged.
         connection_factory: Async factory returning a fresh
@@ -370,7 +370,7 @@ class DeptCredentialService:
             bypass; the router can pass ``"admin"`` instead so the RLS
             audit trail records the human admin's role.
 
-    The instance is stateless across calls — every public method
+    The instance is stateless across calls - every public method
     builds its own staging path / probe runner / audit row.
     """
 
@@ -416,7 +416,7 @@ class DeptCredentialService:
             request: Validated :class:`AddCredentialRequest`.
             actor_id: OIDC ``sub`` of the human admin (or the bot
                 ``account_id`` for ``actor_role == "system"``).
-            actor_role: RBAC role of the caller — recorded on every
+            actor_role: RBAC role of the caller - recorded on every
                 audit row so the actor role is traceable end-to-end.
 
         Returns:
@@ -447,7 +447,7 @@ class DeptCredentialService:
             request_id,
         )
 
-        # --- Step 1 — staging write -----------------------------------
+        # --- Step 1 - staging write -----------------------------------
         try:
             self._write_staging_credential(request, staging)
         except Exception as exc:  # noqa: BLE001
@@ -465,7 +465,7 @@ class DeptCredentialService:
                 detail=type(exc).__name__,
             ) from exc
 
-        # --- Step 2 — probe -------------------------------------------
+        # --- Step 2 - probe -------------------------------------------
         try:
             probe_result = await self._run_probe(
                 dept_id=dept_id,
@@ -508,7 +508,7 @@ class DeptCredentialService:
             )
 
         # The probe phase is the last consumer of the plain-text
-        # token — wipe the bytearray before the DB transaction begins.
+        # token - wipe the bytearray before the DB transaction begins.
         # Vault retains the encrypted-at-rest staging copy.
         self._zero_request_token(request)
 
@@ -516,7 +516,7 @@ class DeptCredentialService:
             request.account_id or probe_result.auto_fetched_account_id
         )
 
-        # --- Step 3 — DB upsert + Vault staging→final move ------------
+        # --- Step 3 - DB upsert + Vault staging→final move ------------
         try:
             outcome = await self._commit(
                 dept_id=dept_id,
@@ -559,7 +559,7 @@ class DeptCredentialService:
                 detail=str(exc) or None,
             ) from exc
 
-        # --- Step 4 — success audit -----------------------------------
+        # --- Step 4 - success audit -----------------------------------
         action: Literal["dept_credential_added", "dept_credential_updated"] = (
             "dept_credential_added" if outcome == "created" else "dept_credential_updated"
         )
@@ -582,11 +582,11 @@ class DeptCredentialService:
             )
         )
 
-        # --- Step 5 — inline bot identity probe -----------------------
+        # --- Step 5 - inline bot identity probe -----------------------
         # After Vault write + DB upsert succeed, probe the bot's
         # account_id via Atlassian /myself (Jira/Confluence) or /user
         # (Bitbucket).  This is best-effort: failure does not roll
-        # back the credential write — the response carries
+        # back the credential write - the response carries
         # account_id_probe_status so the caller knows the outcome.
         identity_probe = await self._run_bot_identity_probe(
             dept_id=dept_id,
@@ -662,7 +662,7 @@ class DeptCredentialService:
 
         Raises:
             DepartmentNotFoundError: dept_id does not exist.  We do
-                **not** silently no-op here — a router-level RBAC
+                **not** silently no-op here - a router-level RBAC
                 check needs the department to exist before it can
                 authorise the call, so reaching this code path with
                 an unknown dept_id is a contract violation worth
@@ -700,7 +700,7 @@ class DeptCredentialService:
                 detail=str(exc) or None,
             ) from exc
 
-        # Vault delete is best-effort idempotent — see the
+        # Vault delete is best-effort idempotent - see the
         # :class:`VaultClient` protocol contract.  Failure here is
         # logged + audited but does not block the SQL delete which
         # already committed.
@@ -769,7 +769,7 @@ class DeptCredentialService:
 
         ``service=None`` probes every registered service for the
         department; otherwise only the specified service is probed
-        (404 surface lives in the router — this method silently
+        (404 surface lives in the router - this method silently
         returns an empty result list when *service* is set but no row
         exists).
 
@@ -963,7 +963,7 @@ class DeptCredentialService:
             )
         )
         # ``build_credential_payload`` does not carry the URL or
-        # deployment kind — the probe runner / DB resolver need them
+        # deployment kind - the probe runner / DB resolver need them
         # so we add them here.
         payload["url"] = request.url
         if request.deployment is not None:
@@ -982,7 +982,7 @@ class DeptCredentialService:
                 payload["confluence_space_key"] = targets.confluence_space_key
 
         self._vault.write(staging, payload)
-        # Drop the intermediate immutable str — the canonical copy is
+        # Drop the intermediate immutable str - the canonical copy is
         # now in Vault (encrypted at rest by the local-dev backend).
         del token_str
 
@@ -1000,7 +1000,7 @@ class DeptCredentialService:
         """Run a single read+write probe against the staged credential.
 
         Constructs a :class:`ResolvedCredential` from the request
-        fields rather than reading back from Vault — the canonical
+        fields rather than reading back from Vault - the canonical
         copy is already in the staging path, and this avoids an
         extra round trip per call.
         """
@@ -1053,7 +1053,7 @@ class DeptCredentialService:
         ``bot_account_id_probed`` is written.
 
         On failure, an audit event ``bot_account_id_probe_failed``
-        is written.  The credential write is **not** rolled back —
+        is written.  The credential write is **not** rolled back -
         the probe is best-effort.
 
         .. important:: **Invariant: idempotent config**
@@ -1061,7 +1061,7 @@ class DeptCredentialService:
            The resolved ``account_id`` is persisted **only** to the
            ``automation.department_bot_identity`` Postgres table.
            ``config/departments.json`` is **never** written to by this
-           method — empty ``account_id`` entries in the JSON file
+           method - empty ``account_id`` entries in the JSON file
            remain as-is.  Runtime-resolved identities live in the DB;
            the JSON file is the operator's static declaration.
 
@@ -1140,7 +1140,7 @@ class DeptCredentialService:
                     type(exc).__name__,
                 )
                 # DB upsert failure does not invalidate the probe
-                # result — the account_id was resolved, we just
+                # result - the account_id was resolved, we just
                 # couldn't persist it.  Still report success to the
                 # caller.
 
@@ -1217,9 +1217,9 @@ class DeptCredentialService:
     ) -> Literal["created", "updated"]:
         """Run the SQL UPSERT and Vault staging→final move atomically.
 
-        Atomicity contract: any failure — staging→final promotion
+        Atomicity contract: any failure - staging→final promotion
         error, INSERT failure, **or SQL ``COMMIT`` failure raised at the
-        context-manager exit** — must roll the system back to the
+        context-manager exit** - must roll the system back to the
         pre-call state.  In particular the Vault tree must be
         restored to its prior shape:
 
@@ -1230,10 +1230,10 @@ class DeptCredentialService:
         SQL flow inside the single ``with_dept_session`` block:
 
             1. ``SELECT 1 FROM automation.departments WHERE id=$1``
-               — surface 404 *before* mutating Vault on the success
+               - surface 404 *before* mutating Vault on the success
                path.
             2. ``INSERT ... ON CONFLICT (department_id, service) DO
-               UPDATE`` — UPSERT the bot row.
+               UPDATE`` - UPSERT the bot row.
             3. Promote staging → final via
                :meth:`_promote_staging`.
 
@@ -1241,7 +1241,7 @@ class DeptCredentialService:
         the body returns; a COMMIT failure surfaces *outside* the
         ``async with`` body, so the rollback wrapper around the
         whole block (``try`` / ``except BaseException``) is what
-        guarantees the Vault tree gets restored on that path —
+        guarantees the Vault tree gets restored on that path -
         the inner block alone cannot react to a failure that does
         not raise until the context manager exits.
         """
@@ -1286,7 +1286,7 @@ class DeptCredentialService:
                 # 2. UPSERT the bot row.  ``credential_ref`` points at
                 #    the *final* path even though the value still
                 #    lives at the staging path until we promote
-                #    below — by the time SQL COMMIT runs the value
+                #    below - by the time SQL COMMIT runs the value
                 #    will be at the final path.
                 existed = await self._row_exists(conn, dept_id, service)
                 await self._upsert_bot_row(
@@ -1332,7 +1332,7 @@ class DeptCredentialService:
           value at *final* so a previously-registered credential
           is observably unchanged after the failed call.
 
-        Failures here are logged but never raised — the caller is
+        Failures here are logged but never raised - the caller is
         already propagating the original exception and must not
         have it shadowed by a rollback hiccup.  An admin can
         re-run the original operation; the staging key (if any)
@@ -1493,7 +1493,7 @@ class DeptCredentialService:
         """Move *staging* → *final* (read → write → delete staging).
 
         Mirrors :meth:`DepartmentCreateOrchestrator._promote_staging`
-        — Vault has no native ``mv`` primitive, so we read-then-write-
+        - Vault has no native ``mv`` primitive, so we read-then-write-
         then-delete.  A failure inside ``write`` leaves the staging
         key around for the outer rollback to delete; a failure inside
         ``delete`` is logged but not raised (the staging key is safe
@@ -1517,7 +1517,7 @@ class DeptCredentialService:
 
         Called on every failure path.  Identical contract to
         :meth:`DepartmentCreateOrchestrator._best_effort_delete_staging`
-        — individual delete failures are logged and swallowed so the
+        - individual delete failures are logged and swallowed so the
         outer caller can re-raise the original error.
         """
 
@@ -1569,7 +1569,7 @@ class DeptCredentialService:
         )
 
     # ------------------------------------------------------------------
-    # Async DB helpers — protocol-agnostic shims
+    # Async DB helpers - protocol-agnostic shims
     # ------------------------------------------------------------------
 
     @staticmethod

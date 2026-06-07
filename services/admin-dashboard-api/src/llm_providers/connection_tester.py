@@ -1,14 +1,14 @@
-"""``Connection_Tester`` — per-provider upstream connectivity probe.
+﻿"""``Connection_Tester`` - per-provider upstream connectivity probe.
 
 Implements the design's "Components › connection_tester.py" section:
 a pure dispatcher keyed on ``provider_type`` that issues a single,
 timeout-bounded round-trip per provider, extracts the upstream model
 echo, and returns a structured :class:`ConnectionTestResult`.
 
-The probe is intentionally cheap — vLLM gets a ``GET /models``; OpenAI,
+The probe is intentionally cheap - vLLM gets a ``GET /models``; OpenAI,
 Anthropic and Gemini get a single ``hi`` chat completion capped at 5
-tokens — so operators can validate credentials without burning budget
-(Requirements 7.* / 8.* / 5.4 — 5.6).
+tokens - so operators can validate credentials without burning budget
+(Requirements 7.* / 8.* / 5.4 - 5.6).
 
 The tester **never** raises out to the caller; every exceptional path
 (transport error, JSON decode failure, timeout) is converted into a
@@ -46,7 +46,7 @@ _LOG = logging.getLogger(__name__)
 
 
 #: Fixed test prompt (R8.1). The tester never accepts a caller-supplied
-#: prompt — the operator's input is restricted to credentials and
+#: prompt - the operator's input is restricted to credentials and
 #: configuration so a probe cannot drive a large bill or smuggle a
 #: different prompt past the budget.
 TEST_PROMPT: str = "hi"
@@ -72,7 +72,7 @@ _ANTHROPIC_BASE: str = "https://api.anthropic.com"
 _GEMINI_BASE: str = "https://generativelanguage.googleapis.com/v1beta"
 
 #: Max length of the error message surfaced via ``ConnectionTestError.message``
-#: (R5.6 — keep payloads short so a misbehaving upstream cannot blow
+#: (R5.6 - keep payloads short so a misbehaving upstream cannot blow
 #: up audit rows or UI toasts).
 _MAX_ERROR_BODY: int = 200
 
@@ -138,7 +138,7 @@ class ConnectionTester:
                     status_code=None, message="timeout"
                 ),
             )
-        except Exception as exc:  # noqa: BLE001 — tester never raises out
+        except Exception as exc:  # noqa: BLE001 - tester never raises out
             _LOG.warning(
                 "llm_provider_test_unexpected_error provider=%s err=%s",
                 req.provider_type,

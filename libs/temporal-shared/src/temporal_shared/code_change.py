@@ -1,11 +1,11 @@
-"""Pure formatters for the ``code_change_*`` workflow family.
+﻿"""Pure formatters for the ``code_change_*`` workflow family.
 
 This module hosts two **pure** helpers used by ``AgentRunnerWorkflow``
 when it produces commits and pushes branches on behalf of the bot:
 
-* :func:`compute_branch_name` — picks the Git branch name for an
+* :func:`compute_branch_name` - picks the Git branch name for an
   iteration of an AI-driven code change.
-* :func:`format_commit_message` — wraps an LLM-generated commit message
+* :func:`format_commit_message` - wraps an LLM-generated commit message
   with the ``[bot]`` provenance prefix and a ``Co-authored-by`` footer.
 
 Both functions are deterministic, perform only string/regex manipulation,
@@ -66,7 +66,7 @@ __all__ = [
 ]
 
 # ---------------------------------------------------------------------------
-# Constants — keep magic strings in one place
+# Constants - keep magic strings in one place
 # ---------------------------------------------------------------------------
 
 #: Prefix prepended to every bot-authored commit subject. Documented in
@@ -74,7 +74,7 @@ __all__ = [
 BOT_COMMIT_PREFIX: str = "[bot]"
 
 # Issue keys must match the same shape used by
-# :mod:`temporal_shared.identifiers` — uppercase project, dash, positive
+# :mod:`temporal_shared.identifiers` - uppercase project, dash, positive
 # decimal issue number with no leading zero.
 _ISSUE_KEY_RE = re.compile(r"^[A-Z][A-Z0-9_]+-[1-9][0-9]*$")
 
@@ -133,7 +133,7 @@ def _validate_issue_key(issue_key: object) -> str:
 
 
 def _validate_iteration(iteration: object) -> int:
-    # ``bool`` is a subclass of ``int`` in Python — exclude it explicitly
+    # ``bool`` is a subclass of ``int`` in Python - exclude it explicitly
     # so ``compute_branch_name(..., True, ...)`` does not silently behave
     # like ``iter == 1``.
     if (
@@ -174,7 +174,7 @@ def compute_branch_name(
     name is already taken. For ``iteration >= 2`` the iter-suffixed form
     is always returned; the caller is responsible for monotonically
     incrementing ``iteration`` so the result is fresh (the workflow's
-    iter counter does this naturally — see
+    iter counter does this naturally - see
     :func:`temporal_shared.iteration.should_advance_iter`).
 
     Parameters
@@ -222,7 +222,7 @@ def compute_branch_name(
     # ``existing_branches`` may be any iterable (list, tuple, set,
     # generator).  Materialise it to a frozenset *only* when iter == 1,
     # because that is the only case where membership is actually
-    # consulted — for iter >= 2 we skip the work entirely.
+    # consulted - for iter >= 2 we skip the work entirely.
     if iteration == 1:
         existing_set = frozenset(existing_branches)
         if bare not in existing_set:

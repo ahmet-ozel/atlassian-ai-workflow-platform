@@ -1,13 +1,13 @@
-/**
+﻿/**
  * Per-model tuning-capability lookup (client mirror of the backend
  * `llm_providers/model_capabilities.py`).
  *
  * Decides which tuning inputs the provider form should reveal for the
  * model the operator typed:
  *
- *   reasoning_effort — OpenAI o-series + gpt-5 family, Claude 4 /
+ *   reasoning_effort - OpenAI o-series + gpt-5 family, Claude 4 /
  *                      `-thinking` snapshots.
- *   verbosity        — OpenAI gpt-5 family only.
+ *   verbosity        - OpenAI gpt-5 family only.
  *
  * The matching is prefix / substring based so dated snapshots
  * (`gpt-5.1-2025-11-01`, `o3-mini-2025-01-31`) resolve to the same

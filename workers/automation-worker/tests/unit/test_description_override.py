@@ -1,4 +1,4 @@
-"""Unit tests for ``description_override`` helper module.
+﻿"""Unit tests for ``description_override`` helper module.
 
 The helper bridges the analyser's :class:`TaskAnalysisResult` (rich,
 numeric confidence, dict-shaped output actions) and the legacy
@@ -8,12 +8,12 @@ numeric confidence, dict-shaped output actions) and the legacy
 
 These tests cover:
 
-* :func:`build_description_override` — projection of analyser fields
+* :func:`build_description_override` - projection of analyser fields
   into the immutable :class:`DescriptionOverride` envelope.
-* :func:`to_llm_analysis_result` — confidence-mapping rules and
+* :func:`to_llm_analysis_result` - confidence-mapping rules and
   output-action coercion.
 
-Validates Requirements: R5.1–R5.10 (analyser → workflow_type), R11.1–
+Validates Requirements: R5.1-R5.10 (analyser → workflow_type), R11.1-
 R11.7 (description override merge).
 """
 
@@ -109,7 +109,7 @@ class TestBuildDescriptionOverride:
         assert override.target_branch == "release/1.2"
 
     def test_empty_workflow_type_becomes_empty_string(self) -> None:
-        # Defensive — the workflow rejects empty workflow_type before
+        # Defensive - the workflow rejects empty workflow_type before
         # calling the builder, but the helper must not crash on None.
         result = _make_result(workflow_type="")
         override = build_description_override(result)

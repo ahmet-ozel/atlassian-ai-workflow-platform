@@ -1,10 +1,10 @@
-"""``PromptVersionRecorder``.
+﻿"""``PromptVersionRecorder``.
 
 Records the ``(path, commit_hash, body_hash, seen_at)`` triple
 into ``prompt_versions`` whenever the :class:`PromptLoader`
 hot-reload poll detects a change. The table is the single source
 of truth for "which prompt body version did the bot use at time
-T" — required by audit trails that link a workflow run to the
+T" - required by audit trails that link a workflow run to the
 exact prompt revision that produced the LLM output.
 
 Storage: ``prompt_versions`` (created by ``20_ops.sql``).
@@ -43,7 +43,7 @@ class PromptVersionStore(Protocol):
 class PromptVersionRecorder:
     """Best-effort recorder invoked from :meth:`PromptLoader.poll_loop`.
 
-    Failure modes are non-fatal — a missing ``prompt_versions``
+    Failure modes are non-fatal - a missing ``prompt_versions``
     table or a connection blip MUST NOT break the prompt cache
     refresh. The recorder logs at WARNING and lets the loader
     continue serving the in-memory body.
@@ -60,7 +60,7 @@ class PromptVersionRecorder:
                 body_hash=body_hash,
                 seen_at=datetime.now(tz=timezone.utc),
             )
-        except Exception:  # noqa: BLE001 — never block the poll loop
+        except Exception:  # noqa: BLE001 - never block the poll loop
             # The PromptLoader.poll_loop catches and logs; re-raising
             # would only crash the polling task. Swallow here.
             return

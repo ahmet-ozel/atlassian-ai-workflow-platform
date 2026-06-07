@@ -1,4 +1,4 @@
-"""Temporal client wrapper for the automation-service.
+﻿"""Temporal client wrapper for the automation-service.
 
 Provides a thin async wrapper around ``temporalio.client.Client`` that
 lazily connects to the Temporal cluster on first use. The webhook handlers
@@ -6,8 +6,8 @@ and decision engine use this to start workflows, send signals, and query
 workflow state.
 
 Connection parameters are read from environment variables:
-- ``TEMPORAL_HOST`` — Temporal frontend address (default ``temporal:7233``)
-- ``TEMPORAL_NAMESPACE`` — Temporal namespace (default ``default``)
+- ``TEMPORAL_HOST`` - Temporal frontend address (default ``temporal:7233``)
+- ``TEMPORAL_NAMESPACE`` - Temporal namespace (default ``default``)
 
 The class re-exports ``WorkflowAlreadyStartedError`` so that callers can
 catch duplicate workflow starts without importing from the SDK directly.
@@ -60,7 +60,7 @@ class WorkflowNotFoundError(Exception):
     """Raised when a Temporal operation targets a workflow that doesn't exist.
 
     Wraps the underlying Temporal ``RPCError`` with status ``NOT_FOUND``
-    (no execution found for the given workflow ID — neither running nor
+    (no execution found for the given workflow ID - neither running nor
     closed). The Jira ``comment_created`` handler distinguishes this
     from generic transport errors so it can decide whether to restart a
     new workflow on the issue.

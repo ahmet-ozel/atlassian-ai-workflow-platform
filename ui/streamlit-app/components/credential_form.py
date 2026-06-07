@@ -1,4 +1,4 @@
-"""Per-user Atlassian credential form.
+﻿"""Per-user Atlassian credential form.
 
 The credential is collected through the UI and POSTed to
 assistant-service, which writes to
@@ -38,7 +38,7 @@ class CredentialFormResult:
     Attributes:
         vault_path: Stable reference to where the secret was stored
             (``vault:atlassian/_user_session/<session_id>/<service>``).
-            The plain credential is **never** returned — only this
+            The plain credential is **never** returned - only this
             reference, which downstream MCP calls dereference at
             request time.
         service: Which Atlassian surface this credential targets.
@@ -80,7 +80,7 @@ def render_credential_form(
             times on the same page (one per service tab) without
             triggering Streamlit's ``DuplicateWidgetID`` guard. When
             ``None`` the legacy single-form behaviour is preserved
-            (selectbox shown, single set of widget keys) — keeps
+            (selectbox shown, single set of widget keys) - keeps
             existing call sites such as ``pages/1_chat.py`` working
             unchanged.
 
@@ -174,7 +174,7 @@ def render_credential_form(
         st.error("GeÃ§erli bir Atlassian URL giriniz.")
         return None
 
-    # Defensive validation — empty fields raise inline.
+    # Defensive validation - empty fields raise inline.
     if not email or "@" not in email:
         st.error("Geçerli bir e-posta giriniz.")
         return None
@@ -197,7 +197,7 @@ def render_credential_form(
             api_token=token,
             persist_with_pin=pin if persist else None,
         )
-    except Exception as exc:  # noqa: BLE001 — surface API errors inline
+    except Exception as exc:  # noqa: BLE001 - surface API errors inline
         st.error(f"Credential kaydedilemedi: {exc}")
         return None
 

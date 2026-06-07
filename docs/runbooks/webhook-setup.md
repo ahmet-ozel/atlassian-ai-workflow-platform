@@ -1,4 +1,4 @@
-# Runbook: Webhook Setup (Jira + Bitbucket)
+﻿# Runbook: Webhook Setup (Jira + Bitbucket)
 
 > **Audience:** Platform `admin` rolü; Atlassian organizasyon admin'i (Jira Cloud/DC) ve Bitbucket workspace admin'i ile birlikte.
 > **Scope:** Bir departmanın (`dept_id`) Jira ve Bitbucket webhook abonelikleriyle `automation-service` gateway'ine bağlanması; HMAC secret'inin Vault'a yazılması; 1 saatlik overlap rotation prosedürü.
@@ -12,7 +12,7 @@ Kurulum kuralları:
 
 - Her departman **tek bir** Jira webhook subscription kullanır; URL `{public_url}/webhooks/jira`'dır ve abonelik filtresi o dept'in `jira_project_keys[]` listesindeki tüm projeleri kapsar.
 - Her departman **tek bir** Bitbucket webhook subscription kullanır; URL `{public_url}/webhooks/bitbucket`'dir ve abonelik scope'u dept'in `bitbucket_workspace`'i ile uyumludur.
-- HMAC secret'ı `vault:webhooks/<provider>/<dept_id>` path'inde tutulur; **global tek bir secret kullanılmaz** — her dept ayrı secret'a sahiptir.
+- HMAC secret'ı `vault:webhooks/<provider>/<dept_id>` path'inde tutulur; **global tek bir secret kullanılmaz** - her dept ayrı secret'a sahiptir.
 - Secret rotation 1 saatlik overlap penceresiyle yapılır; bu pencerede hem eski hem yeni secret kabul edilir, böylece in-flight event'ler kaybolmaz.
 
 İlgili schema referansı: bu runbook'taki `dept_id`, `jira_project_keys[]` ve `bitbucket_workspace` alanları [`platform/config/departments.schema.json`](../../config/departments.schema.json) tarafından tanımlanır; örnek değerler [`platform/config/departments.json`](../../config/departments.json) içinde.
@@ -21,7 +21,7 @@ Kurulum kuralları:
 
 | Öğe | Değer | Kaynak |
 |---|---|---|
-| Operatör rolü | `admin` (global) — platform tarafında; Atlassian/Bitbucket tarafında organizasyon admin'i | OIDC IdP + Atlassian admin paneli |
+| Operatör rolü | `admin` (global) - platform tarafında; Atlassian/Bitbucket tarafında organizasyon admin'i | OIDC IdP + Atlassian admin paneli |
 | `public_url` | `automation-service` Internet'e açık tabanı (örn. `https://automation.example.com`); reverse proxy / ingress üzerinden TLS sonlandırılır | `.env` `AUTOMATION_PUBLIC_URL` |
 | Hedef departman | `dept_id`, `jira_project_keys[]`, `bitbucket_workspace`, `bot.bitbucket.deployment ∈ {cloud, server}` | `platform/config/departments.json` |
 | Vault erişimi | KV v2 mount altında `webhooks/jira/<dept_id>` ve `webhooks/bitbucket/<dept_id>` path'lerine yazma yetkisi | Vault root/admin token |
@@ -33,8 +33,8 @@ Kurulum kuralları:
 
 > **Vault path naming convention**:
 >
-> - Jira: `vault:webhooks/jira/{dept_id}` — KV v2 secret; alanlar: `secret_current`, `secret_previous` (rotation overlap için), `rotated_at` (ISO-8601).
-> - Bitbucket: `vault:webhooks/bitbucket/{dept_id}` — aynı şema.
+> - Jira: `vault:webhooks/jira/{dept_id}` - KV v2 secret; alanlar: `secret_current`, `secret_previous` (rotation overlap için), `rotated_at` (ISO-8601).
+> - Bitbucket: `vault:webhooks/bitbucket/{dept_id}` - aynı şema.
 
 ## 3. Jira webhook setup
 
@@ -72,7 +72,7 @@ Atlassian admin panelinden:
 | **URL** | `{public_url}/webhooks/jira` (örn. `https://automation.example.com/webhooks/jira`) |
 | **Secret** | Adım 3.1.1'de üretilen `${SECRET}` değeri |
 | **Events** | `jira:issue_created`, `jira:issue_assigned`, `jira:issue_updated`, `jira:issue_commented` (Comment created event'i `issue_commented` olarak gelir) |
-| **JQL filter** | `project IN ({jira_project_keys})` — dept'in `jira_project_keys[]` listesindeki anahtarları virgülle ayrılmış olarak yaz (örn. `project IN (PAY)`) |
+| **JQL filter** | `project IN ({jira_project_keys})` - dept'in `jira_project_keys[]` listesindeki anahtarları virgülle ayrılmış olarak yaz (örn. `project IN (PAY)`) |
 | **Exclude body** | **uncheck** (gateway, payload'ı dept çözümleme + mention filter için ister) |
 
 4. **Save** ile aboneliği oluştur.
@@ -154,7 +154,7 @@ Bitbucket DC'de webhook tanımı **proje** veya **repository** düzeyinde yapıl
 |---|---|
 | **Name** | `automation-service / {dept_id}` |
 | **URL** | `{public_url}/webhooks/bitbucket` |
-| **Secret** | `${SECRET}` (Adım 4.1.1 — DC için aynı path: `vault:webhooks/bitbucket/{dept_id}`) |
+| **Secret** | `${SECRET}` (Adım 4.1.1 - DC için aynı path: `vault:webhooks/bitbucket/{dept_id}`) |
 | **Events** | `Pull request → Opened` (`pr:opened`, gateway tarafında `pullrequest:created`'a normalize edilir), `Pull request → Comment added` (`pr:comment:added` → `pullrequest:commented`), `Pull request → Modified` / `Source branch updated` (`pr:modified`, `pr:from_ref_updated` → `pullrequest:updated`) |
 
 3. Kaydet.
@@ -224,11 +224,11 @@ vault kv put "secret/webhooks/${PROVIDER}/${DEPT_ID}" \
   rotated_at="$(date -u +%FT%TZ)"
 
 # 3) Atlassian/Bitbucket UI'sında webhook'un Secret alanını ${NEW_SECRET} ile güncelle
-#    (manuel adım — provider UI'sından)
+#    (manuel adım - provider UI'sından)
 
 # 4) 1 saat bekle (overlap penceresi)
 
-# 5) Pencereyi kapat — previous'ı temizle
+# 5) Pencereyi kapat - previous'ı temizle
 vault kv put "secret/webhooks/${PROVIDER}/${DEPT_ID}" \
   secret_current="${NEW_SECRET}" \
   secret_previous="" \
@@ -372,7 +372,7 @@ Yani yorum baştan boşluklarla başlayıp ardından `[bot:` ön ekiyle devam ed
 > **Operatör için anlamı:**
 >
 > - Manuel olarak yazılan yorumlar **asla** `[bot:` ile başlamamalıdır; aksi halde yorum drop edilir ve workflow tetiklenmez.
-> - Streamlit inline reply `[bot:hear]` etiketini kullanır, bu mention filter bypass içindir; loop guard regex'i `[bot:hear]` ile başlayan yorumları da drop eder — bunlar Streamlit tarafında **bot olmayan** kullanıcılar adına yazıldığı için account_id ile loop guard'a takılmazlar; yine de Streamlit'in bot account ID'sini kullanmaması ve etiketin `[bot:hear]` yerine alternatif bir prefix'e taşınması ileride değerlendirilebilir.
+> - Streamlit inline reply `[bot:hear]` etiketini kullanır, bu mention filter bypass içindir; loop guard regex'i `[bot:hear]` ile başlayan yorumları da drop eder - bunlar Streamlit tarafında **bot olmayan** kullanıcılar adına yazıldığı için account_id ile loop guard'a takılmazlar; yine de Streamlit'in bot account ID'sini kullanmaması ve etiketin `[bot:hear]` yerine alternatif bir prefix'e taşınması ileride değerlendirilebilir.
 > - Modern Jira Cloud / Bitbucket Cloud kurulumları her zaman `account_id` gönderir; bu fallback yalnızca legacy DC kurulumları için geçerlidir.
 
 ### 8.3 Loop guard'ın atlanmaması gereken event tipleri
@@ -383,5 +383,5 @@ Yani yorum baştan boşluklarla başlayıp ardından `[bot:` ön ekiyle devam ed
 
 ## İlgili Referanslar
 
-- [`platform/config/departments.json`](../../config/departments.json) — `dept_id`, `jira_project_keys[]`, `bitbucket_workspace` alanları.
-- [`platform/config/departments.schema.json`](../../config/departments.schema.json) — alanların tip ve constraint tanımları.
+- [`platform/config/departments.json`](../../config/departments.json) - `dept_id`, `jira_project_keys[]`, `bitbucket_workspace` alanları.
+- [`platform/config/departments.schema.json`](../../config/departments.schema.json) - alanların tip ve constraint tanımları.

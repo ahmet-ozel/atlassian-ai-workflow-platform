@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 /**
- * RunnerWarningBanner — SSH Runner Single Point of Failure warning.
+ * RunnerWarningBanner - SSH Runner Single Point of Failure warning.
  *
  * Queries `GET /admin/ssh-runners` on page
  * load and displays a yellow warning banner when the number of active runners

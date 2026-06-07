@@ -1,4 +1,4 @@
-"""Runtime I/O activities used by ``AutomationWorkflow``.
+﻿"""Runtime I/O activities used by ``AutomationWorkflow``.
 
 These activities keep the workflow body deterministic while still
 letting it fetch Jira issue details, post comments, load department
@@ -110,7 +110,7 @@ def _match_transition_id(
 ) -> str | None:
     """Resolve *target_status* to a transition id from *transitions*.
 
-    ``transitions`` is the ``jira_get_transitions`` payload — a list of
+    ``transitions`` is the ``jira_get_transitions`` payload - a list of
     ``{"id": ..., "name": <target status name>}`` entries. Matching is
     case-insensitive against the transition ``name`` and walks the
     candidate names (raw value first, then logical-status aliases).

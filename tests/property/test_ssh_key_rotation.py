@@ -1,4 +1,4 @@
-"""SSH Key Dual-Slot Rotation Safety.
+﻿"""SSH Key Dual-Slot Rotation Safety.
 
 Background
 ----------
@@ -25,7 +25,7 @@ a configurable ``authorized_keys`` set. The tests verify:
 (a) **Overlap window**: After rotation but before finalize, both the
     active and previous keys are accepted by the connector (zero-downtime).
 (b) **Finalize clears previous**: After ``finalize``, the previous slot
-    is ``None`` — only the active key remains.
+    is ``None`` - only the active key remains.
 (c) **Faulty new key rescue**: When the new active key is not yet in
     ``authorized_keys`` (operator hasn't added it), the previous key
     acts as rescue and the connector succeeds via fallback.
@@ -44,7 +44,7 @@ from hypothesis import strategies as st
 import pytest
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — expose vault_client and execution-runner-worker
+# sys.path bootstrap - expose vault_client and execution-runner-worker
 # ---------------------------------------------------------------------------
 
 _PLATFORM_ROOT: Final[Path] = Path(__file__).resolve().parents[2]
@@ -76,7 +76,7 @@ from vault_client.ssh_keys import (  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
-# Fake Vault Backend — in-memory dual-slot store
+# Fake Vault Backend - in-memory dual-slot store
 # ---------------------------------------------------------------------------
 
 
@@ -158,7 +158,7 @@ class FakeVaultBackend:
 
 
 # ---------------------------------------------------------------------------
-# Fake SSH Client — simulates authorized_keys acceptance
+# Fake SSH Client - simulates authorized_keys acceptance
 # ---------------------------------------------------------------------------
 
 
@@ -190,7 +190,7 @@ class FakeSSHClient:
 
 
 # ---------------------------------------------------------------------------
-# Fake SSHKeySlotReader — bridges FakeVaultBackend to the connector protocol
+# Fake SSHKeySlotReader - bridges FakeVaultBackend to the connector protocol
 # ---------------------------------------------------------------------------
 
 
@@ -291,7 +291,7 @@ class DualSlotConnector:
         if active_pem and self._ssh.try_connect(active_pem, active_fp, "active"):
             return active_pem, "active"
 
-        # Active failed or empty — try previous slot
+        # Active failed or empty - try previous slot
         previous_path = VaultPath.parse(
             f"vault:ssh/runners/{runner_id}/previous"
         )
@@ -333,7 +333,7 @@ class BothSlotsFailedError(Exception):
 # Hypothesis strategies
 # ---------------------------------------------------------------------------
 
-#: Runner ID strategy — ASCII alphanumeric + hyphens/underscores.
+#: Runner ID strategy - ASCII alphanumeric + hyphens/underscores.
 #: Must match VaultPath regex ``[a-zA-Z0-9/_-]+``.
 _RUNNER_ID_ALPHABET = "abcdefghijklmnopqrstuvwxyz0123456789-_"
 _runner_id_strategy = st.text(
@@ -344,7 +344,7 @@ _runner_id_strategy = st.text(
 
 
 # ---------------------------------------------------------------------------
-# Overlap Window — Both Slots Accepted During Rotation
+# Overlap Window - Both Slots Accepted During Rotation
 # ---------------------------------------------------------------------------
 
 
@@ -395,7 +395,7 @@ class TestOverlapWindowBothSlotsAccepted:
         # - active slot = new key (NOT yet in authorized_keys)
         # - previous slot = initial key (still in authorized_keys)
 
-        # The host still only has the OLD key — connector should
+        # The host still only has the OLD key - connector should
         # fall back to previous slot
         pem, slot = connector.connect(runner_id)
         assert slot == "previous", (
@@ -407,7 +407,7 @@ class TestOverlapWindowBothSlotsAccepted:
         # Now operator adds the new key to authorized_keys
         ssh_client.add_authorized_key(new_fp)
 
-        # Both keys are now authorized — connector should prefer active
+        # Both keys are now authorized - connector should prefer active
         pem, slot = connector.connect(runner_id)
         assert slot == "active", (
             "When both keys are authorized, connector should prefer active"
@@ -416,7 +416,7 @@ class TestOverlapWindowBothSlotsAccepted:
         # Remove old key from authorized_keys (operator cleanup)
         ssh_client.remove_authorized_key(initial_key.fingerprint)
 
-        # Only new key authorized — connector uses active
+        # Only new key authorized - connector uses active
         pem, slot = connector.connect(runner_id)
         assert slot == "active"
 
@@ -433,7 +433,7 @@ class TestOverlapWindowBothSlotsAccepted:
         self, runner_id: str, num_rotations: int
     ) -> None:
         """Multiple successive rotations always maintain
-        the overlap invariant — previous slot holds the immediately
+        the overlap invariant - previous slot holds the immediately
         prior key."""
 
         vault = FakeVaultBackend()
@@ -516,7 +516,7 @@ class TestFinalizeClearsPreviousSlot:
         initial_key = _make_ssh_key(priv, pub)
         vault.rotate_ssh_key(runner_id, initial_key)
 
-        # Rotate — now previous slot has the initial key
+        # Rotate - now previous slot has the initial key
         new_pub = rotate(vault, runner_id)
 
         # Verify previous is populated
@@ -560,7 +560,7 @@ class TestFinalizeClearsPreviousSlot:
         finalize(vault, runner_id)
         assert read_previous(vault, runner_id) is None
 
-        # Second finalize — should not raise
+        # Second finalize - should not raise
         finalize(vault, runner_id)
         assert read_previous(vault, runner_id) is None
 
@@ -596,14 +596,14 @@ class TestFinalizeClearsPreviousSlot:
         ssh_client = FakeSSHClient({new_fp})
         connector = DualSlotConnector(vault, ssh_client, audit)
 
-        # Finalize — clears previous
+        # Finalize - clears previous
         finalize(vault, runner_id)
 
         # Active key works
         pem, slot = connector.connect(runner_id)
         assert slot == "active"
 
-        # Remove active key from authorized — should fail completely
+        # Remove active key from authorized - should fail completely
         ssh_client.remove_authorized_key(new_fp)
 
         with pytest.raises(BothSlotsFailedError):
@@ -615,7 +615,7 @@ class TestFinalizeClearsPreviousSlot:
 
 
 # ---------------------------------------------------------------------------
-# Faulty New Key — Previous Slot as Rescue
+# Faulty New Key - Previous Slot as Rescue
 # ---------------------------------------------------------------------------
 
 
@@ -643,7 +643,7 @@ class TestFaultyNewKeyPreviousRescue:
         vault = FakeVaultBackend()
         audit = FakeAuditWriter()
 
-        # Initial key — this will become the "previous" after rotation
+        # Initial key - this will become the "previous" after rotation
         priv, pub = generate_keypair()
         initial_key = _make_ssh_key(priv, pub)
         vault.rotate_ssh_key(runner_id, initial_key)
@@ -652,7 +652,7 @@ class TestFaultyNewKeyPreviousRescue:
         ssh_client = FakeSSHClient({initial_key.fingerprint})
         connector = DualSlotConnector(vault, ssh_client, audit)
 
-        # Rotate — new key is NOT in authorized_keys
+        # Rotate - new key is NOT in authorized_keys
         new_pub = rotate(vault, runner_id)
         new_fp = _fingerprint(new_pub)
 
@@ -663,7 +663,7 @@ class TestFaultyNewKeyPreviousRescue:
         )
         assert pem == initial_key.private_pem
 
-        # No audit event — connection succeeded via fallback
+        # No audit event - connection succeeded via fallback
         assert len(audit.events) == 0
 
     @settings(
@@ -715,7 +715,7 @@ class TestFaultyNewKeyPreviousRescue:
     def test_previous_slot_rescue_is_repeatable(
         self, runner_id: str, num_failed_attempts: int
     ) -> None:
-        """The previous slot rescue works repeatedly — multiple
+        """The previous slot rescue works repeatedly - multiple
         connection attempts during the overlap window all succeed via
         the previous slot when active is faulty."""
 
@@ -727,7 +727,7 @@ class TestFaultyNewKeyPreviousRescue:
         initial_key = _make_ssh_key(priv, pub)
         vault.rotate_ssh_key(runner_id, initial_key)
 
-        # Rotate — new key NOT authorized
+        # Rotate - new key NOT authorized
         rotate(vault, runner_id)
 
         # Host only has old key
@@ -740,7 +740,7 @@ class TestFaultyNewKeyPreviousRescue:
             assert slot == "previous", f"Attempt #{i+1} should use previous"
             assert pem == initial_key.private_pem
 
-        # No audit events — all connections succeeded
+        # No audit events - all connections succeeded
         assert len(audit.events) == 0
 
     @settings(
@@ -752,7 +752,7 @@ class TestFaultyNewKeyPreviousRescue:
     def test_rescue_then_operator_fixes_then_active_works(
         self, runner_id: str
     ) -> None:
-        """Full lifecycle — previous rescues during the
+        """Full lifecycle - previous rescues during the
         gap, then operator adds new key, then active works, then
         finalize clears previous."""
 
@@ -768,19 +768,19 @@ class TestFaultyNewKeyPreviousRescue:
         new_pub = rotate(vault, runner_id)
         new_fp = _fingerprint(new_pub)
 
-        # Phase 1: Only old key authorized — previous rescues
+        # Phase 1: Only old key authorized - previous rescues
         ssh_client = FakeSSHClient({initial_key.fingerprint})
         connector = DualSlotConnector(vault, ssh_client, audit)
 
         pem, slot = connector.connect(runner_id)
         assert slot == "previous"
 
-        # Phase 2: Operator adds new key — active now works
+        # Phase 2: Operator adds new key - active now works
         ssh_client.add_authorized_key(new_fp)
         pem, slot = connector.connect(runner_id)
         assert slot == "active"
 
-        # Phase 3: Finalize — previous cleared
+        # Phase 3: Finalize - previous cleared
         finalize(vault, runner_id)
         assert read_previous(vault, runner_id) is None
 
@@ -788,7 +788,7 @@ class TestFaultyNewKeyPreviousRescue:
         pem, slot = connector.connect(runner_id)
         assert slot == "active"
 
-        # Phase 5: Remove old key — still works (only active needed)
+        # Phase 5: Remove old key - still works (only active needed)
         ssh_client.remove_authorized_key(initial_key.fingerprint)
         pem, slot = connector.connect(runner_id)
         assert slot == "active"

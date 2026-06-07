@@ -1,22 +1,22 @@
-"""Unit tests for the PO Review API endpoints.
+﻿"""Unit tests for the PO Review API endpoints.
 
 Exercises the FastAPI router end-to-end via :class:`TestClient` plus
 hand-rolled fakes for every collaborator (OIDC validator, Bitbucket
 branch / PR scanners, bot-id resolver, diff-summary cache, Bitbucket
 action adapter, audit logger). Four endpoint behaviors are covered:
 
-* **403 when ``dept_admin`` requests another dept** — a dept_admin
+* **403 when ``dept_admin`` requests another dept** - a dept_admin
   token whose ``dept_ids`` does not include the requested ``dept_id``
   receives HTTP 403 with an ``rbac_denied`` audit row; the scanners
   and the Bitbucket adapter are never called.
-* **200 when ``admin`` requests any dept** — a global admin token
+* **200 when ``admin`` requests any dept** - a global admin token
   bypasses the dept-scope check and the orphan / inbox lists are
   returned for any ``dept_id``.
-* **Orphan list shape matches ``compute_orphan_branches`` output** —
+* **Orphan list shape matches ``compute_orphan_branches`` output** -
   the response carries exactly the orphans the pure helper would
   return, sorted oldest-first, with cached LLM diff summaries
   attached via the injected :class:`DiffSummaryProvider`.
-* **Action endpoints call the right MCP methods** — each of the three
+* **Action endpoints call the right MCP methods** - each of the three
   POST endpoints (``open-draft``, ``request-changes``,
   ``approve-note``) invokes exactly one method on the injected
   :class:`PoReviewActions` adapter and emits exactly one matching
@@ -40,7 +40,7 @@ from fastapi.testclient import TestClient
 
 
 # ---------------------------------------------------------------------------
-# Path setup — mirrors the sibling repo-sync test so the unit suite can
+# Path setup - mirrors the sibling repo-sync test so the unit suite can
 # run without an editable install of every libs/* package.
 # ---------------------------------------------------------------------------
 
@@ -232,10 +232,10 @@ def oidc_validator() -> _FakeOIDCValidator:
 def branch_scanner() -> _FakeBranchScanner:
     """Three branches:
 
-    * ``ai/PAY-1`` — bot, has matching PR (NOT orphan).
-    * ``ai/PAY-2`` — bot, no PR (orphan, last commit 5 days ago).
-    * ``ai/PAY-3`` — bot, no PR (orphan, last commit 20 days ago — older).
-    * ``feature/manual`` — non-bot branch, ignored by helper.
+    * ``ai/PAY-1`` - bot, has matching PR (NOT orphan).
+    * ``ai/PAY-2`` - bot, no PR (orphan, last commit 5 days ago).
+    * ``ai/PAY-3`` - bot, no PR (orphan, last commit 20 days ago - older).
+    * ``feature/manual`` - non-bot branch, ignored by helper.
     """
 
     return _FakeBranchScanner(
@@ -268,9 +268,9 @@ def branch_scanner() -> _FakeBranchScanner:
 def pr_scanner() -> _FakePullRequestScanner:
     """Three PRs:
 
-    * id=1 — draft bot PR for ai/PAY-1 (claims branch, in inbox).
-    * id=2 — open bot PR for ai/PAY-99 (NOT in inbox: not a draft).
-    * id=3 — draft human PR for feature/manual (NOT in inbox: not bot).
+    * id=1 - draft bot PR for ai/PAY-1 (claims branch, in inbox).
+    * id=2 - open bot PR for ai/PAY-99 (NOT in inbox: not a draft).
+    * id=3 - draft human PR for feature/manual (NOT in inbox: not bot).
     """
 
     return _FakePullRequestScanner(
@@ -393,7 +393,7 @@ def _post_action(
 
 
 # ---------------------------------------------------------------------------
-# Tests — orphan branches list shape
+# Tests - orphan branches list shape
 # ---------------------------------------------------------------------------
 
 
@@ -461,7 +461,7 @@ class TestOrphanBranchesShape:
 
 
 # ---------------------------------------------------------------------------
-# Tests — PO Review Inbox list shape
+# Tests - PO Review Inbox list shape
 # ---------------------------------------------------------------------------
 
 
@@ -496,7 +496,7 @@ class TestPoReviewInboxShape:
 
 
 # ---------------------------------------------------------------------------
-# Tests — RBAC: dept_admin requesting another dept => 403
+# Tests - RBAC: dept_admin requesting another dept => 403
 # ---------------------------------------------------------------------------
 
 
@@ -572,7 +572,7 @@ class TestDeptAdminCrossDeptForbidden:
 
 
 # ---------------------------------------------------------------------------
-# Tests — RBAC: admin bypasses dept-scope
+# Tests - RBAC: admin bypasses dept-scope
 # ---------------------------------------------------------------------------
 
 
@@ -584,7 +584,7 @@ class TestAdminBypassesDeptScope:
         app_with_po_review,
     ) -> None:
         with TestClient(app_with_po_review) as client:
-            # carol is global admin (no ``dept_ids``) — must pass for
+            # carol is global admin (no ``dept_ids``) - must pass for
             # any ``dept_id``.
             resp_pay = _get_orphans(
                 client, dept_id=_DEPT_ID, token="token-admin"
@@ -613,7 +613,7 @@ class TestAdminBypassesDeptScope:
 
 
 # ---------------------------------------------------------------------------
-# Tests — Action endpoints call the right MCP methods
+# Tests - Action endpoints call the right MCP methods
 # ---------------------------------------------------------------------------
 
 
@@ -699,7 +699,7 @@ class TestActionEndpointsCallActions:
         assert called_pr_id == 42
         assert called_comment == "İyi gidiyor."
         # The approve-note action must NOT call ``open_draft`` or
-        # ``request_changes`` — Bitbucket-side approval is *not*
+        # ``request_changes`` - Bitbucket-side approval is *not*
         # what this endpoint does.
         assert po_review_actions.open_draft_calls == []
         assert po_review_actions.request_changes_calls == []
@@ -765,7 +765,7 @@ class TestActionEndpointsCallActions:
 
 
 # ---------------------------------------------------------------------------
-# Tests — token-level authentication failures (401)
+# Tests - token-level authentication failures (401)
 # ---------------------------------------------------------------------------
 
 

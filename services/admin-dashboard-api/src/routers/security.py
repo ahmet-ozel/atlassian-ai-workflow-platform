@@ -1,17 +1,17 @@
-"""``SecurityRouter`` — probe artifacts + rotate banner + secret rotation + SSH runners + webhook secrets.
+﻿"""``SecurityRouter`` - probe artifacts + rotate banner + secret rotation + SSH runners + webhook secrets.
 
 Five logical surfaces share this module:
 
-* ``GET /admin/security/probe-artifacts`` — proxies to ``automation-service``
+* ``GET /admin/security/probe-artifacts`` - proxies to ``automation-service``
   so the admin can audit dept connectivity probe history without a
   separate Vault read.
-* ``GET /admin/security/credential-rotate-banner`` — local lookup of
+* ``GET /admin/security/credential-rotate-banner`` - local lookup of
   the per-dept TTL banner state. Returns ``{"depts": [...]}`` with
   one entry per dept whose bot credential is within the rotation
   window threshold.
 * ``POST /api/v1/security/rotate/webhook_secret`` /
   ``POST /api/v1/security/rotate/bot_credential`` /
-  ``POST /api/v1/security/rotate/llm_api_key`` — admin-only secret
+  ``POST /api/v1/security/rotate/llm_api_key`` - admin-only secret
   rotation surface. Each endpoint
   writes the new secret material into Vault (KV-v2 retains version
   history), emits a hot-reload signal so dependents invalidate their
@@ -21,14 +21,14 @@ Five logical surfaces share this module:
 * ``GET /admin/security/ssh-runners`` /
   ``POST /admin/security/ssh-runners/{runner_id}/rotate-key`` /
   ``POST /admin/security/ssh-runners/{runner_id}/rotate-known-hosts`` /
-  ``POST /admin/security/ssh-runners/{runner_id}/finalize-rotation`` —
+  ``POST /admin/security/ssh-runners/{runner_id}/finalize-rotation`` -
   SSH key dual-slot rotation endpoints.
   Admin-only. Generates Ed25519 keypairs, manages active/previous
   Vault slots, runs ``ssh-keyscan`` for known_hosts refresh, and
   emits audit events for each operation.
 * ``GET /admin/security/webhooks`` /
   ``POST /admin/security/webhooks/{dept_id}/{provider}/rotate`` /
-  ``POST /admin/security/webhooks/{dept_id}/{provider}/finalize`` —
+  ``POST /admin/security/webhooks/{dept_id}/{provider}/finalize`` -
   Webhook secret dual-slot rotation endpoints.
   Admin-only. Manages ``secret_current`` / ``secret_previous`` slots
   with a 1-hour overlap window for zero-downtime rotation.
@@ -134,7 +134,7 @@ async def credential_rotate_banner(request: Request) -> dict:
     """Return depts whose bot credential needs rotation soon.
 
     The rotation TTL state lives on
-    ``app.state.credential_rotation_state`` — a callable that
+    ``app.state.credential_rotation_state`` - a callable that
     returns ``[{"dept_id": str, "service": str, "rotates_in_days":
     int}, ...]``. Production wires this to the foundation Vault
     metadata reader; tests inject a list-backed callable.
@@ -246,7 +246,7 @@ class SupportsHotReloadPublisher(Protocol):
     each dependent service's cache-invalidation endpoint. The router
     only needs the single ``publish`` method.
 
-    Failures are swallowed at the call site — a missed reload signal
+    Failures are swallowed at the call site - a missed reload signal
     does not invalidate the rotation itself; consumers will pick up
     the new credential on their next cache miss.
     """
@@ -262,15 +262,15 @@ class SupportsHotReloadPublisher(Protocol):
 
 
 # ---------------------------------------------------------------------------
-# Pydantic request models — one per rotation endpoint
+# Pydantic request models - one per rotation endpoint
 # ---------------------------------------------------------------------------
 
 
 class WebhookSecretRotationRequest(BaseModel):
     """Request body for ``POST /api/v1/security/rotate/webhook_secret``.
 
-    ``dept_id`` is optional — omit for the global webhook secret.
-    ``new_secret`` is optional — when omitted the server generates a
+    ``dept_id`` is optional - omit for the global webhook secret.
+    ``new_secret`` is optional - when omitted the server generates a
     fresh URL-safe token via :func:`secrets.token_urlsafe(32)` so the
     operator can rotate without typing material into the FE.
     """
@@ -306,7 +306,7 @@ class BotCredentialRotationRequest(BaseModel):
 
     All three fields are required by the task spec
     (``service``, ``dept_id``, ``new_secret``). ``service`` must be
-    one of ``jira``, ``bitbucket``, ``confluence`` — anything else
+    one of ``jira``, ``bitbucket``, ``confluence`` - anything else
     is rejected at parse time with HTTP 422 (FastAPI's standard
     validation error path).
     """
@@ -340,7 +340,7 @@ class LlmApiKeyRotationRequest(BaseModel):
     """Request body for ``POST /api/v1/security/rotate/llm_api_key``.
 
     Both fields are required. ``provider`` is opaque from the
-    router's perspective — the wired :class:`SupportsSecretRotator`
+    router's perspective - the wired :class:`SupportsSecretRotator`
     decides which Vault path corresponds to the provider name. We
     enforce a non-empty string and a length cap so a malformed
     request can't reach the rotator.
@@ -410,7 +410,7 @@ def _get_reload_publisher(request: Request) -> SupportsHotReloadPublisher | None
     Consumers receive a hot-reload signal after a successful rotation.
     When no publisher is configured we log a
     structured ``secret_reload_pending`` warning so operators can
-    page consumers manually — the rotation itself still succeeds.
+    page consumers manually - the rotation itself still succeeds.
     """
 
     return getattr(request.app.state, "secret_reload_publisher", None)
@@ -462,7 +462,7 @@ def _emit_secret_rotated_audit(
     """Write a single ``secret_rotated`` audit event.
 
     The payload carries ``{kind, target_id_if_any, rotated_by,
-    vault_version, timestamp}`` — metadata only, never the secret value.
+    vault_version, timestamp}`` - metadata only, never the secret value.
     The function returns the awaitable produced
     by ``sink.write(...)`` so the caller can await it directly; this
     lets the endpoint propagate audit-write failures (the rotation
@@ -504,7 +504,7 @@ def _audit_dept_id(kind: SecretKind, target_id: str | None) -> str | None:
     if kind == "webhook_secret":
         return target_id
     if kind == "bot_credential":
-        # ``target_id`` is ``"<dept>/<service>"`` — dept is the prefix.
+        # ``target_id`` is ``"<dept>/<service>"`` - dept is the prefix.
         head = target_id.split("/", 1)[0]
         return head or None
     return None
@@ -539,7 +539,7 @@ async def _safe_audit(
             vault_version=vault_version,
             rotated_at=rotated_at,
         )
-    except Exception as exc:  # noqa: BLE001 — audit must never block
+    except Exception as exc:  # noqa: BLE001 - audit must never block
         logger.warning(
             "secret_rotated audit write failed (kind=%s, target=%s): %s",
             kind,
@@ -557,7 +557,7 @@ async def _publish_reload(
     """Send the hot-reload signal; never raises.
 
     When no publisher is wired we emit a structured operator log so
-    the rotation is still observable as "reload pending — page
+    the rotation is still observable as "reload pending - page
     consumers manually". The log line uses the canonical
     ``secrets:reload`` channel name so operators can grep for it.
     """
@@ -582,7 +582,7 @@ async def _publish_reload(
 
     try:
         await publisher.publish(kind=kind, target=target)
-    except Exception as exc:  # noqa: BLE001 — reload is best-effort
+    except Exception as exc:  # noqa: BLE001 - reload is best-effort
         logger.warning(
             "secret_reload_publish_failed kind=%s target=%s: %s",
             kind,
@@ -643,13 +643,13 @@ async def rotate_webhook_secret(
     2. Write to Vault via the wired :class:`SupportsSecretRotator`;
        Vault KV-v2 retains the previous version automatically.
     3. Publish a hot-reload signal so consumers invalidate their
-       credential caches — best-effort, a missing publisher only emits
+       credential caches - best-effort, a missing publisher only emits
        a log warning.
     4. Write one ``secret_rotated`` audit row carrying
        ``{kind, target_id_if_any, rotated_by, vault_version,
        timestamp}``.
     5. Return ``{kind, target, vault_version, generated, rotated_at}``.
-       The new secret material is **not** returned — operators that
+       The new secret material is **not** returned - operators that
        need the value read it back from Vault via the RBAC-gated
        read path.
 
@@ -835,12 +835,12 @@ async def rotate_llm_api_key(
 # These endpoints manage SSH key dual-slot rotation for execution
 # runners. The rotation lifecycle is:
 #
-# 1. ``GET /admin/security/ssh-runners`` — list runners with status.
-# 2. ``POST .../rotate-key`` — generate new Ed25519 keypair, demote
+# 1. ``GET /admin/security/ssh-runners`` - list runners with status.
+# 2. ``POST .../rotate-key`` - generate new Ed25519 keypair, demote
 #    active→previous, write new key to active, return public key once.
-# 3. ``POST .../rotate-known-hosts`` — ssh-keyscan the host, update
+# 3. ``POST .../rotate-known-hosts`` - ssh-keyscan the host, update
 #    fingerprint if changed.
-# 4. ``POST .../finalize-rotation`` — clear previous slot after
+# 4. ``POST .../finalize-rotation`` - clear previous slot after
 #    operator confirms new key works on target host.
 #
 # RBAC: all endpoints require ``admin`` role.
@@ -863,7 +863,7 @@ _AUDIT_SSH_KEY_ROTATION_FINALIZED: str = "ssh_key_rotation_finalized"
 #: one SSH runner host. ``SSH_RUNNERS`` exists for legacy multi-runner
 #: deployments; new deployments leave it empty and configure ``SSH_HOST``
 #: only. Only the **first** runner in ``SSH_RUNNERS`` is treated as the
-#: active runner by the rest of the stack — additional entries are
+#: active runner by the rest of the stack - additional entries are
 #: visible only on the rotation UI.
 _SSH_RUNNERS_ENV: str = "SSH_RUNNERS"
 
@@ -1067,7 +1067,7 @@ async def _write_ssh_audit(
     )
     try:
         await sink.write(event)
-    except Exception as exc:  # noqa: BLE001 — audit must never block
+    except Exception as exc:  # noqa: BLE001 - audit must never block
         logger.warning(
             "ssh_runner audit write failed (action=%s, runner=%s): %s",
             action,
@@ -1094,14 +1094,14 @@ async def list_ssh_runners(
     """Return the list of configured SSH runners with their current state.
 
     Each runner entry includes:
-    - ``runner_id``, ``host``, ``port`` — identity.
-    - ``last_rotated_at`` — UTC ISO timestamp of last key rotation.
-    - ``active_key_fingerprint`` — SHA256 fingerprint of the active key.
-    - ``previous_key_fingerprint`` — fingerprint of the previous key
+    - ``runner_id``, ``host``, ``port`` - identity.
+    - ``last_rotated_at`` - UTC ISO timestamp of last key rotation.
+    - ``active_key_fingerprint`` - SHA256 fingerprint of the active key.
+    - ``previous_key_fingerprint`` - fingerprint of the previous key
       (present only during the overlap window before finalization).
-    - ``known_hosts_fingerprint`` — fingerprint from the last
+    - ``known_hosts_fingerprint`` - fingerprint from the last
       ``ssh-keyscan`` run.
-    - ``status`` — ``"ok"`` | ``"key_expired"`` | ``"unreachable"``.
+    - ``status`` - ``"ok"`` | ``"key_expired"`` | ``"unreachable"``.
     """
     runners_config = _resolve_ssh_runners()
     vault = _get_vault_client(request)
@@ -1319,7 +1319,7 @@ async def rotate_known_hosts(
                 "runner_id": runner_id,
                 "host": host,
                 "message": (
-                    "ssh-keyscan returned no output — host may be "
+                    "ssh-keyscan returned no output - host may be "
                     "unreachable or SSH is not running."
                 ),
             },
@@ -1451,7 +1451,7 @@ async def finalize_ssh_rotation(
                 "error": "no_previous_slot",
                 "runner_id": runner_id,
                 "message": (
-                    "No previous key slot to finalize — either rotation "
+                    "No previous key slot to finalize - either rotation "
                     "was already finalized or no rotation has occurred."
                 ),
             },
@@ -1499,13 +1499,13 @@ async def finalize_ssh_rotation(
 # These endpoints manage webhook HMAC secret dual-slot rotation for
 # the dept × provider matrix. The rotation lifecycle is:
 #
-# 1. ``GET /admin/security/webhooks`` — list all dept × provider
+# 1. ``GET /admin/security/webhooks`` - list all dept × provider
 #    entries with rotation status and overlap window remaining.
-# 2. ``POST .../webhooks/{dept_id}/{provider}/rotate`` — generate a
+# 2. ``POST .../webhooks/{dept_id}/{provider}/rotate`` - generate a
 #    new 32-byte secret, demote current→previous with overlap window,
 #    return the new secret once so the operator can paste it into the
 #    Atlassian/Bitbucket webhook configuration UI.
-# 3. ``POST .../webhooks/{dept_id}/{provider}/finalize`` — clear the
+# 3. ``POST .../webhooks/{dept_id}/{provider}/finalize`` - clear the
 #    previous slot after the operator has updated the provider-side
 #    webhook secret.
 #
@@ -1517,7 +1517,7 @@ async def finalize_ssh_rotation(
 _AUDIT_WEBHOOK_SECRET_ROTATED: str = "webhook_secret_rotated"
 _AUDIT_WEBHOOK_SECRET_ROTATION_FINALIZED: str = "webhook_secret_rotation_finalized"
 
-#: Allowed webhook providers — kept in sync with
+#: Allowed webhook providers - kept in sync with
 #: :data:`vault_client.webhook_secrets._ALLOWED_PROVIDERS`.
 _ALLOWED_WEBHOOK_PROVIDERS: frozenset[str] = frozenset(
     {"jira", "bitbucket", "confluence"}
@@ -1629,7 +1629,7 @@ async def _write_webhook_audit(
     )
     try:
         await sink.write(event)
-    except Exception as exc:  # noqa: BLE001 — audit must never block
+    except Exception as exc:  # noqa: BLE001 - audit must never block
         logger.warning(
             "webhook_secret audit write failed (action=%s, dept=%s, provider=%s): %s",
             action,
@@ -1749,12 +1749,12 @@ async def list_webhooks(
     """Return the dept × provider webhook secret matrix with rotation status.
 
     Each entry includes:
-    - ``dept_id`` — department identifier.
-    - ``provider`` — one of ``jira``, ``bitbucket``, ``confluence``.
-    - ``last_rotated_at`` — UTC ISO timestamp of last rotation.
-    - ``overlap_window_remaining_s`` — seconds remaining in the
+    - ``dept_id`` - department identifier.
+    - ``provider`` - one of ``jira``, ``bitbucket``, ``confluence``.
+    - ``last_rotated_at`` - UTC ISO timestamp of last rotation.
+    - ``overlap_window_remaining_s`` - seconds remaining in the
       overlap window (present only when ``status == "overlap_active"``).
-    - ``status`` — ``"ok"`` | ``"overlap_active"`` | ``"never_rotated"``.
+    - ``status`` - ``"ok"`` | ``"overlap_active"`` | ``"never_rotated"``.
     """
     dept_ids = _load_department_ids()
     vault = _get_vault_client(request)
@@ -1958,7 +1958,7 @@ async def finalize_webhook(
                 "dept_id": dept_id,
                 "provider": provider,
                 "message": (
-                    "No active overlap window to finalize — either "
+                    "No active overlap window to finalize - either "
                     "rotation was already finalized or no rotation "
                     "has occurred."
                 ),

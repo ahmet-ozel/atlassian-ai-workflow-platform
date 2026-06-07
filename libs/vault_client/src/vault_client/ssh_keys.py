@@ -1,4 +1,4 @@
-"""SSH key rotation helper — Ed25519 keygen + dual-slot management.
+﻿"""SSH key rotation helper - Ed25519 keygen + dual-slot management.
 
 Implements the R8.2 / R8.4 acceptance criteria: generate Ed25519 key
 pairs and orchestrate the ``active`` / ``previous`` dual-slot rotation
@@ -6,11 +6,11 @@ pattern through the :class:`~vault_client.client.VaultClient` protocol.
 
 The rotation lifecycle is:
 
-1. **rotate(runner_id)** — generate a fresh Ed25519 keypair, demote the
+1. **rotate(runner_id)** - generate a fresh Ed25519 keypair, demote the
    current ``active`` slot to ``previous``, write the new key to
    ``active``, and return the new public key (so the operator can add
    it to the target host's ``~/.ssh/authorized_keys``).
-2. **finalize(runner_id)** — once the operator confirms the new key
+2. **finalize(runner_id)** - once the operator confirms the new key
    works, clear the ``previous`` slot so only the new key is accepted.
 
 Between steps 1 and 2, the execution-runner-worker tries both slots
@@ -20,7 +20,7 @@ Key generation
 --------------
 
 Uses the ``cryptography`` library's Ed25519 implementation. The private
-key is serialized as PEM (PKCS8, no encryption — Vault provides
+key is serialized as PEM (PKCS8, no encryption - Vault provides
 at-rest encryption). The public key is serialized in OpenSSH format
 (``ssh-ed25519 AAAA...``) for direct use in ``authorized_keys``.
 
@@ -54,7 +54,7 @@ def generate_keypair() -> tuple[str, str]:
         A ``(private_pem, public_openssh)`` tuple where:
 
         * ``private_pem`` is the PKCS8-encoded PEM private key (no
-          passphrase — Vault provides at-rest encryption).
+          passphrase - Vault provides at-rest encryption).
         * ``public_openssh`` is the public key in OpenSSH wire format
           (``ssh-ed25519 AAAA...``), suitable for appending to
           ``~/.ssh/authorized_keys`` on the target host.
@@ -96,7 +96,7 @@ def _fingerprint(public_openssh: str) -> str:
     parts = public_openssh.strip().split()
     if len(parts) < 2:
         raise ValueError(
-            "malformed OpenSSH public key — expected "
+            "malformed OpenSSH public key - expected "
             "'<algorithm> <base64-blob> [comment]'"
         )
     raw_bytes = base64.b64decode(parts[1])

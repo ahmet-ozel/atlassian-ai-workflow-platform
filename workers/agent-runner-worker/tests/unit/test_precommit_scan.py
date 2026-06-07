@@ -1,4 +1,4 @@
-"""Unit tests for the ``precommit_scanner`` activity.
+﻿"""Unit tests for the ``precommit_scanner`` activity.
 
 Covers the pure :func:`scan_diff` core and the audit-emission layer
 of :func:`precommit_scanner` against the four documented secret
@@ -53,7 +53,7 @@ from src.activities.precommit_scan import (  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
-# scan_diff — pure core
+# scan_diff - pure core
 # ---------------------------------------------------------------------------
 
 
@@ -203,7 +203,7 @@ class TestSecretPatternsTable:
 
 
 # ---------------------------------------------------------------------------
-# precommit_scanner — audit emission layer
+# precommit_scanner - audit emission layer
 # ---------------------------------------------------------------------------
 
 
@@ -267,7 +267,7 @@ def test_precommit_scanner_block_emits_single_audit_event() -> None:
     assert event.action == PRECOMMIT_AUDIT_ACTION
     assert event.actor_role == "system"
     assert event.result == "denied"
-    # Payload carries the matched pattern names — never the secret values.
+    # Payload carries the matched pattern names - never the secret values.
     assert event.payload is not None
     assert "matched_patterns" in event.payload
     assert event.payload["matched_patterns"] == ["generic_password"]

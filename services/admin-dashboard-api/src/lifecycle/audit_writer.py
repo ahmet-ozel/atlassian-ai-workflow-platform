@@ -1,4 +1,4 @@
-"""``shared.audit_log`` writer with deferred-queue retry semantics.
+﻿"""``shared.audit_log`` writer with deferred-queue retry semantics.
 
 This module implements audit writer wiring: the :class:`AuditWriter`
 is the single component that writes
@@ -11,7 +11,7 @@ The writer enforces **audit-or-rollback** semantics:
   connection. The lifecycle handler calls it **before** invoking
   Compose; if the database is unreachable an
   :class:`AuditUnreachableError` propagates out and the request is
-  rejected with ``502`` — no Compose command runs.
+  rejected with ``502`` - no Compose command runs.
 
 * :meth:`AuditWriter.write` performs a single ``INSERT`` and surfaces
   connection errors as :class:`AuditUnreachableError`. It is used for
@@ -46,7 +46,7 @@ patch ``asyncpg.create_pool``. The factory's signature is
 :func:`asyncpg.create_pool` matches this exactly.
 
 The writer never imports :mod:`asyncpg` at module-import time when the
-caller supplies its own ``pool_factory`` — this keeps the unit test
+caller supplies its own ``pool_factory`` - this keeps the unit test
 suite functional even if asyncpg is not installed in the test
 environment.
 """
@@ -67,7 +67,7 @@ from uuid import UUID
 # ---------------------------------------------------------------------------
 
 
-#: Allowed values for ``AuditEntry.action`` — must stay in lock-step with the
+#: Allowed values for ``AuditEntry.action`` - must stay in lock-step with the
 #: ``CHECK (action IN (...))`` constraint defined by ``50_shared.sql``.
 AuditAction = Literal[
     "start",
@@ -96,7 +96,7 @@ AuditAction = Literal[
     # delete sequence completes successfully; the payload carries
     # ``deleted_paths_count``. ``vault_purge_partial_failure`` is the
     # best-effort companion: a Vault list/delete failure during the
-    # purge does NOT roll back the (already-successful) Compose stop —
+    # purge does NOT roll back the (already-successful) Compose stop -
     # the lifecycle service records the partial failure and returns
     # the canonical ``StopResponse`` so the operator's UI flow stays
     # responsive. Migration
@@ -115,7 +115,7 @@ AuditAction = Literal[
     "external_provider_streak_alert",
 ]
 
-#: Allowed values for ``AuditEntry.outcome`` — must stay in lock-step with the
+#: Allowed values for ``AuditEntry.outcome`` - must stay in lock-step with the
 #: ``CHECK (outcome IN (...))`` constraint defined by ``50_shared.sql``.
 AuditOutcome = Literal["success", "failed", "pending"]
 
@@ -221,7 +221,7 @@ def _is_connection_error(exc: BaseException) -> bool:
     The list intentionally errs on the side of declaring an exception as
     "connection-level". The lifecycle contract is
     that *anything* preventing the audit row from being durably stored
-    must abort the request — the alternative is silently dropping audit
+    must abort the request - the alternative is silently dropping audit
     data, which violates audit-or-rollback.
 
     We avoid importing :mod:`asyncpg` here so callers that supply a
@@ -268,7 +268,7 @@ def details_with_env_keys(
     "compose_failed", "exit_code": 1}``).
 
     The helper makes a shallow copy of ``extra`` and refuses to allow a
-    caller to clobber the ``env_keys`` slot — that field is reserved.
+    caller to clobber the ``env_keys`` slot - that field is reserved.
 
     Parameters
     ----------
@@ -294,7 +294,7 @@ def details_with_env_keys(
 
     if extra is not None and "env_keys" in extra:
         raise ValueError(
-            "extra dict must not contain 'env_keys' — that slot is reserved",
+            "extra dict must not contain 'env_keys' - that slot is reserved",
         )
 
     payload: dict[str, Any] = {"env_keys": list(env_keys)}
@@ -329,7 +329,7 @@ class AuditWriter:
     * Call :meth:`close` at shutdown to stop the drainer and close the
       pool.
 
-    The writer is safe to share across coroutines — the underlying
+    The writer is safe to share across coroutines - the underlying
     asyncpg pool handles concurrency and the deferred queue is an
     :class:`asyncio.Queue`.
     """
@@ -460,7 +460,7 @@ class AuditWriter:
         # object itself outlives uvicorn code-reloads (it is created once
         # in the lifespan), so recycling tuning alone cannot rescue an
         # already-stale pool. Recreate the pool once and retry before
-        # declaring the audit DB unreachable — this lets the first
+        # declaring the audit DB unreachable - this lets the first
         # Stop/Start after an idle window self-heal instead of returning
         # a spurious 502.
         try:
@@ -496,7 +496,7 @@ class AuditWriter:
 
         Used by :meth:`precheck` to recover from a stale/half-open pool.
         Closing a wedged pool can itself hang, so the close is bounded
-        and any failure is swallowed — the important half is opening a
+        and any failure is swallowed - the important half is opening a
         fresh pool from the factory.
         """
 
@@ -518,7 +518,7 @@ class AuditWriter:
         request before any Compose command runs.
 
         Other database errors (e.g. CHECK constraint violations) are
-        re-raised verbatim — they indicate a programming error, not a
+        re-raised verbatim - they indicate a programming error, not a
         transient outage, and the deferred queue would not help.
         """
 
@@ -625,7 +625,7 @@ class AuditWriter:
                 # Non-connection error (e.g. CHECK constraint violation).
                 # The entry is unrecoverable; mark it done so the
                 # drainer can move on. The exception is intentionally
-                # swallowed to keep the drainer alive — the lifecycle
+                # swallowed to keep the drainer alive - the lifecycle
                 # handler is responsible for emitting structured logs
                 # for the original write failure.
                 self._deferred_queue.task_done()

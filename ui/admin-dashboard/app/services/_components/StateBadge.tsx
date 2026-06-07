@@ -1,5 +1,5 @@
-/**
- * StateBadge — Lifecycle state pill rendered next to a service row /
+﻿/**
+ * StateBadge - Lifecycle state pill rendered next to a service row /
  * the service detail header.
  *
  * Renders the
@@ -43,11 +43,11 @@ const STATE_BADGE_STYLE: Record<ServiceState, CSSProperties> = {
  * Tooltip surfaced via the native ``title`` attribute. Only the
  * ``running_unmonitored`` state currently sets a non-empty tooltip
  * ("Compose healthcheck tanımlı değil
- * — monitorlanmıyor").
+ * - monitorlanmıyor").
  */
 const STATE_TOOLTIP: Partial<Record<ServiceState, string>> = {
   running_unmonitored:
-    "Compose healthcheck tanımlı değil — monitorlanmıyor",
+    "Compose healthcheck tanımlı değil - monitorlanmıyor",
 };
 
 /**
@@ -85,7 +85,7 @@ export default function StateBadge({ state }: StateBadgeProps) {
     <span
       style={style}
       title={tooltip}
-      aria-label={tooltip ? `${STATE_LABEL[state]} — ${tooltip}` : STATE_LABEL[state]}
+      aria-label={tooltip ? `${STATE_LABEL[state]} - ${tooltip}` : STATE_LABEL[state]}
       data-state={state}
     >
       {STATE_LABEL[state]}

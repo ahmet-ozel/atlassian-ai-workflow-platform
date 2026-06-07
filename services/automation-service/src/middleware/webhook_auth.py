@@ -1,4 +1,4 @@
-"""Per-department webhook HMAC-SHA256 authentication middleware.
+﻿"""Per-department webhook HMAC-SHA256 authentication middleware.
 
 The middleware intercepts every inbound webhook request and:
 
@@ -148,7 +148,7 @@ class WebhookAuthMiddleware(BaseHTTPMiddleware):
 
     def __init__(
         self,
-        app,  # noqa: ANN001 — Starlette typing
+        app,  # noqa: ANN001 - Starlette typing
         *,
         vault_reader: VaultSecretReader,
         global_fallback_secret: str | None = None,
@@ -210,14 +210,14 @@ class WebhookAuthMiddleware(BaseHTTPMiddleware):
             if result is not None:
                 return result
 
-            # Verification passed — attach context and proceed.
+            # Verification passed - attach context and proceed.
             source = self._determine_source(request)
             request.state.dept_context = DepartmentContext(
                 dept_id=dept_id, source=source
             )
             return await call_next(request)
 
-        # Department unknown — use global fallback.
+        # Department unknown - use global fallback.
         result = await self._verify_with_global_fallback(
             body=body,
             signature=signature,
@@ -317,7 +317,7 @@ class WebhookAuthMiddleware(BaseHTTPMiddleware):
                 media_type="application/json",
             )
         except KeyError:
-            # Secret not found for this dept — fall back to global.
+            # Secret not found for this dept - fall back to global.
             _LOG.warning(
                 "webhook_auth_dept_secret_not_found: dept=%s path=%s",
                 dept_id,
@@ -331,7 +331,7 @@ class WebhookAuthMiddleware(BaseHTTPMiddleware):
             )
             if result is not None:
                 return result
-            # Global fallback passed — update context source.
+            # Global fallback passed - update context source.
             request.state.dept_context = DepartmentContext(
                 dept_id=dept_id, source="global_fallback"
             )

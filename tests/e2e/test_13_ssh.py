@@ -1,5 +1,5 @@
-"""
-Test 13: SSH Connection Test — dashboard UI üzerinden VPS erişimi.
+﻿"""
+Test 13: SSH Connection Test - dashboard UI üzerinden VPS erişimi.
 
 Validates that the admin-dashboard SSH test feature can successfully connect
 from the agent-runner-worker container to the VPS (root@91.99.149.163) and
@@ -219,7 +219,7 @@ def _create_screenshot_placeholder(path: Path, description: str) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Tests — SSH Test Section Navigation
+# Tests - SSH Test Section Navigation
 # ---------------------------------------------------------------------------
 
 class TestSSHSectionNavigation:
@@ -277,7 +277,7 @@ class TestSSHSectionNavigation:
 
 
 # ---------------------------------------------------------------------------
-# Tests — SSH Connection Test Execution
+# Tests - SSH Connection Test Execution
 # ---------------------------------------------------------------------------
 
 class TestSSHConnectionTest:
@@ -306,7 +306,7 @@ class TestSSHConnectionTest:
         )
 
         if not ssh_result["success"] and ssh_result["status_code"] is None:
-            # API endpoint not found — requires Playwright MCP interaction
+            # API endpoint not found - requires Playwright MCP interaction
             pytest.skip(
                 f"SSH connection test API endpoint not found at {DASHBOARD_API_URL}. "
                 f"This step requires Playwright MCP browser interaction to click "
@@ -366,7 +366,7 @@ class TestSSHConnectionTest:
 
 
 # ---------------------------------------------------------------------------
-# Tests — Error Handling
+# Tests - Error Handling
 # ---------------------------------------------------------------------------
 
 class TestSSHConnectionFailureHandling:
@@ -396,7 +396,7 @@ class TestSSHConnectionFailureHandling:
         )
 
         if ssh_result["success"]:
-            # SSH succeeded — no failure to validate, test passes
+            # SSH succeeded - no failure to validate, test passes
             return
 
         if ssh_result["status_code"] is None:
@@ -418,7 +418,7 @@ class TestSSHConnectionFailureHandling:
 
 
 # ---------------------------------------------------------------------------
-# Tests — Screenshot Evidence
+# Tests - Screenshot Evidence
 # ---------------------------------------------------------------------------
 
 class TestSSHScreenshotEvidence:
@@ -442,7 +442,7 @@ class TestSSHScreenshotEvidence:
         screenshot_path = evidence_dir / SCREENSHOT_FILENAME
         _create_screenshot_placeholder(
             screenshot_path,
-            "SSH connection test result — green badge with remote hostname"
+            "SSH connection test result - green badge with remote hostname"
         )
 
         playwright_state.record_screenshot(str(screenshot_path))
@@ -463,7 +463,7 @@ class TestSSHScreenshotEvidence:
         """R13.5: Emit e2e-evidence/13-ssh-result.json with SSH test results.
 
         Produces structured JSON evidence containing:
-        - SSH target (host, user — key path redacted)
+        - SSH target (host, user - key path redacted)
         - Test result (success/failure, elapsed time)
         - Remote hostname (if successful)
         - Error details (if failed, with remediation)

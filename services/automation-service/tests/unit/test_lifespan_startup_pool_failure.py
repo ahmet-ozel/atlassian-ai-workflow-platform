@@ -1,4 +1,4 @@
-"""Startup propagates pool failure with cleanup.
+﻿"""Startup propagates pool failure with cleanup.
 
 When the lifespan handler's pool construction raises, the original exception
 MUST propagate out of the context manager's ``__aenter__`` and every resource
@@ -7,11 +7,11 @@ exception escapes. No production-wired ``app.state.<slot>`` should be populated.
 
 The handler builds resources in this order:
 
-1. ``httpx.AsyncClient`` — succeeds, must be ``aclose()``-d on failure
-2. ``asyncpg.create_pool`` — RAISES the test's ``OSError``
-3. ``vault_factory.make_client`` — never reached
-4. ``AuditLogger`` — never reached
-5. ``TemporalClient`` + ``connect()`` — never reached
+1. ``httpx.AsyncClient`` - succeeds, must be ``aclose()``-d on failure
+2. ``asyncpg.create_pool`` - RAISES the test's ``OSError``
+3. ``vault_factory.make_client`` - never reached
+4. ``AuditLogger`` - never reached
+5. ``TemporalClient`` + ``connect()`` - never reached
 6. … etc.
 
 So the assertion is: ``http_client.aclose()`` was awaited exactly once
@@ -95,7 +95,7 @@ async def test_startup_propagates_pool_failure(
 
     with pytest.raises(OSError, match="postgres unreachable"):
         async with app_module.lifespan(app):
-            # Never reached — the lifespan's ``__aenter__`` raises before
+            # Never reached - the lifespan's ``__aenter__`` raises before
             # ``yield`` runs.
             pytest.fail(
                 "lifespan unexpectedly yielded after pool construction "
@@ -111,7 +111,7 @@ async def test_startup_propagates_pool_failure(
         "failing pool)"
     )
 
-    # No production-wired slot was populated — the handler aborted before
+    # No production-wired slot was populated - the handler aborted before
     # Phase B and never touched ``app.state.<slot>``.
     for slot in _SLOTS:
         assert getattr(app.state, slot, None) is None, (

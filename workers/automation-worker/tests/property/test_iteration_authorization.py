@@ -1,6 +1,6 @@
-"""Invariant test: Iteration authorization.
+﻿"""Invariant test: Iteration authorization.
 
-** — Iteration authorization
+** - Iteration authorization
 -------------------------------------
 *For any* ``[iterate]`` command, the helper:func:`automation_worker.activities.iteration_manager.is_authorized_for_iterate`
 SHALL return ``True`` if and only if the comment author is in the
@@ -17,11 +17,11 @@ This module pins three derived sub-properties:
  *neither* in ``approvers`` *nor* equal to a non-empty
  ``issue_reporter_account_id``, the helper returns ``False``.
 3. **Empty author guard.** A misconfigured webhook that drops the
- actor account id (``""``) MUST never authorize anyone — even when
+ actor account id (``""``) MUST never authorize anyone - even when
  the empty string happens to land in ``approvers`` or matches an
  empty ``issue_reporter_account_id``.
 
-Bonus — dispatcher lock-step
+Bonus - dispatcher lock-step
 ----------------------------
 The mirror static method:py:meth:`webhooks.dispatcher.WebhookDispatcher._is_iterate_authorized`
 implements the same predicate against a:class:`WebhookPayload` /:class:`DepartmentConfig` pair. below asserts both helpers
@@ -39,7 +39,7 @@ from hypothesis import strategies as st
 
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — mirror sibling Invariant tests
+# sys.path bootstrap - mirror sibling Invariant tests
 # ---------------------------------------------------------------------------
 
 _WORKER_ROOT: Path = Path(__file__).resolve().parents[2]
@@ -89,7 +89,7 @@ _ACCOUNT_ID = st.text(
     max_size=24,
 )
 
-#: Approver list — may contain the empty string. The helper must NOT
+#: Approver list - may contain the empty string. The helper must NOT
 #: treat ``"" in approvers`` as authorization for an empty author
 #:.
 _APPROVERS_LIST = st.lists(_ACCOUNT_ID, min_size=0, max_size=8)
@@ -113,7 +113,7 @@ def _expected(
     """Independent re-statement of the contract.
 
  Hypothesis tests should compare the helper's output against an
- *independent* derivation of the spec — not against the helper
+ *independent* derivation of the spec - not against the helper
  itself. This routine re-encodes the three rules from the
  requirement:
 
@@ -147,7 +147,7 @@ def _dispatcher_decision(
     payload = WebhookPayload(
         actor_account_id=author or None,
         # The remaining payload fields are irrelevant to the
-        # authorization predicate — the static method only reads
+        # authorization predicate - the static method only reads
         # ``actor_account_id`` and ``reporter_account_id``.
         issue_key="PAY-1",
         event_type="jira:comment_created",
@@ -166,7 +166,7 @@ def _dispatcher_decision(
 
 
 # ---------------------------------------------------------------------------
-# — positive path
+# - positive path
 # ---------------------------------------------------------------------------
 
 
@@ -205,7 +205,7 @@ def test_authorized_when_in_approvers_or_is_reporter(
 
     effective_reporter = author if use_reporter_match else reporter
 
-    # Skip examples that don't actually exercise the positive path —
+    # Skip examples that don't actually exercise the positive path -
     # they belong to.
     if not include_in_approvers and not (
         effective_reporter and author == effective_reporter
@@ -238,7 +238,7 @@ def test_authorized_when_in_approvers_or_is_reporter(
 
 
 # ---------------------------------------------------------------------------
-# — negative path
+# - negative path
 # ---------------------------------------------------------------------------
 
 
@@ -290,7 +290,7 @@ def test_unauthorized_when_neither_approver_nor_reporter(
 
 
 # ---------------------------------------------------------------------------
-# — empty author always denied
+# - empty author always denied
 # ---------------------------------------------------------------------------
 
 
@@ -310,7 +310,7 @@ def test_empty_author_is_never_authorized(
     """Empty author id → ``False`` regardless of approvers / reporter.
 
  A webhook that drops the actor accountId must not silently grant
- access — even when the approvers list happens to contain the
+ access - even when the approvers list happens to contain the
  empty string, or when ``reporter_account_id`` is itself empty.
  """
 
@@ -331,7 +331,7 @@ def test_empty_author_is_never_authorized(
 
 
 # ---------------------------------------------------------------------------
-# — dispatcher mirror lock-step
+# - dispatcher mirror lock-step
 # ---------------------------------------------------------------------------
 
 
@@ -357,7 +357,7 @@ def test_dispatcher_mirror_matches_helper(
  same predicate. Drift between the two would let a
  ``[iterate]`` command pass the dispatcher's gate only to be
  rejected by the activity (or vice versa). This property pins
- them to byte-for-byte agreement on every input — including the
+ them to byte-for-byte agreement on every input - including the
  ``author == ""`` corner the dispatcher reads as ``actor_account_id
  is None`` via:class:`WebhookPayload`.
  """
@@ -430,7 +430,7 @@ def test_pinned_empty_author_with_empty_in_approvers() -> None:
 
 
 def test_pinned_empty_reporter_does_not_authorize_empty_author() -> None:
-    # Both author and reporter are empty — the truthiness gate on
+    # Both author and reporter are empty - the truthiness gate on
     # ``issue_reporter_account_id`` blocks the reporter branch.
     assert not is_authorized_for_iterate(
         author_account_id="",

@@ -1,8 +1,8 @@
-"""REST router for external provider status probes.
+﻿"""REST router for external provider status probes.
 
 Exposes a single endpoint:
 
-* ``GET /api/v1/services/external`` — reads ``kind="external"`` entries
+* ``GET /api/v1/services/external`` - reads ``kind="external"`` entries
   from ``config/services.manifest.json``, probes each via
   :func:`~src.lifecycle.external_probe.probe_external`, and returns the
   aggregated results.

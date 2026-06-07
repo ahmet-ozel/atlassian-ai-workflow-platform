@@ -1,13 +1,13 @@
-"""Unit tests for ``src.routers.workflows_drilldown``.
+﻿"""Unit tests for ``src.routers.workflows_drilldown``.
 
 The drill-down endpoint folds three local-DB enrichments into the
 upstream Temporal payload:
 
-* ``llm_usage[]`` — read from ``shared.cost_tracking`` joined with
+* ``llm_usage[]`` - read from ``shared.cost_tracking`` joined with
   ``automation.audit_events`` for ``prompt_path`` / ``prompt_version``.
-* ``audit_chain[]`` — read from ``automation.audit_events`` filtered
+* ``audit_chain[]`` - read from ``automation.audit_events`` filtered
   by ``resource = 'workflow:{wf_id}'`` *or* ``payload->>'workflow_id'``.
-* ``external_links{}`` — extracted from the audit payloads via the
+* ``external_links{}`` - extracted from the audit payloads via the
   W3 deeplink helper :func:`_external_links.build_external_links`.
 
 The tests inject:
@@ -19,9 +19,9 @@ The tests inject:
   :class:`ProxyResponse`-like object with a JSON body, exercising
   the best-effort upstream fold-in.
 
-The tests intentionally do NOT assert exact SQL strings — only that
+The tests intentionally do NOT assert exact SQL strings - only that
 the right tables are read and the right scalar parameters are
-bound — so a future query refactor that preserves semantics does
+bound - so a future query refactor that preserves semantics does
 not need to update the test suite.
 """
 
@@ -152,7 +152,7 @@ def _build_app(
     """Wire the router with overridden dependencies.
 
     The ``require_admin`` dependency is bypassed via
-    :attr:`FastAPI.dependency_overrides` — the focus of these tests
+    :attr:`FastAPI.dependency_overrides` - the focus of these tests
     is the response shape, not the auth boundary.
     """
 
@@ -208,7 +208,7 @@ def _audit_row(
 
 
 # ===========================================================================
-# Tests — happy path
+# Tests - happy path
 # ===========================================================================
 
 
@@ -371,7 +371,7 @@ class TestGetWorkflowHappyPath:
 
 
 # ===========================================================================
-# Tests — degraded paths
+# Tests - degraded paths
 # ===========================================================================
 
 
@@ -455,7 +455,7 @@ class TestGetWorkflowDegradesGracefully:
 
 
 # ===========================================================================
-# Tests — payload summary truncation
+# Tests - payload summary truncation
 # ===========================================================================
 
 
@@ -482,7 +482,7 @@ class TestPayloadSummary:
 
 
 # ===========================================================================
-# Tests — build_external_links (W3 deeplink helper)
+# Tests - build_external_links (W3 deeplink helper)
 # ===========================================================================
 
 
@@ -564,7 +564,7 @@ class TestBuildExternalLinks:
 
 
 @pytest.fixture(autouse=True)
-def _reset_dependency_overrides() -> None:  # noqa: PT004 — fixture for cleanup
+def _reset_dependency_overrides() -> None:  # noqa: PT004 - fixture for cleanup
     """Ensure no test leaks dependency overrides into another."""
 
     yield

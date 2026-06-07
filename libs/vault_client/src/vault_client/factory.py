@@ -1,4 +1,4 @@
-"""``make_client(env)`` — environment-driven backend factory.
+﻿"""``make_client(env)`` - environment-driven backend factory.
 
 Picks the concrete :class:`vault_client.client.VaultClient`
 implementation based on the ``VAULT_BACKEND`` environment variable
@@ -11,12 +11,12 @@ Mapping
   ``VAULT_ADDR`` and ``VAULT_TOKEN``.
 * ``VAULT_BACKEND=local-dev`` → :class:`LocalDevBackend`. Requires
   ``VAULT_LOCAL_KEY`` (32 bytes after hex/base64 decoding); rejects
-  weak placeholder keys (R6.6 — plain-text rejected).
+  weak placeholder keys (R6.6 - plain-text rejected).
 * Anything else (including missing) raises :class:`ValueError` so a
   misconfigured deployment fails fast at startup rather than silently
   picking a default.
 
-The factory never *reads* secret material from the environment — it
+The factory never *reads* secret material from the environment - it
 only forwards the env mapping to the chosen backend's own constructor.
 This keeps the factory itself trivially safe to log around.
 """

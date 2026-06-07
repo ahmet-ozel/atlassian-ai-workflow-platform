@@ -1,4 +1,4 @@
-"""Unit tests for the ``mcp_client`` package.
+﻿"""Unit tests for the ``mcp_client`` package.
 
 The tests cover three concerns:
 
@@ -59,7 +59,7 @@ def _make_logger() -> tuple[Any, _CapturingAuditWriter]:
 
 
 # ---------------------------------------------------------------------------
-# tool_filter — BANNED_TOOLS membership and filter_tools behaviour
+# tool_filter - BANNED_TOOLS membership and filter_tools behaviour
 # ---------------------------------------------------------------------------
 
 
@@ -179,7 +179,7 @@ class TestFilterTools:
 
 
 # ---------------------------------------------------------------------------
-# pr_draft — enforce_pr_draft coerces draft=True and audits flips
+# pr_draft - enforce_pr_draft coerces draft=True and audits flips
 # ---------------------------------------------------------------------------
 
 
@@ -309,7 +309,7 @@ class TestEnforcePrDraftAuditing:
 
 
 # ---------------------------------------------------------------------------
-# atlassian_client — single chokepoint for tool policy and PR draft enforcement
+# atlassian_client - single chokepoint for tool policy and PR draft enforcement
 # ---------------------------------------------------------------------------
 
 
@@ -382,7 +382,7 @@ class TestAtlassianClientSkeleton:
 
     def test_constructor_requires_client_source(self) -> None:
         """Missing ``client_source`` keyword fails at import time, not at
-        first network call (G6 — see
+        first network call (G6 - see
         ``platform/docs/api-contracts/mcp-credential-headers.md`` §1)."""
 
         with pytest.raises(TypeError):
@@ -396,7 +396,7 @@ class TestAtlassianClientSkeleton:
             "",
             "   ",
             "Component",  # uppercase rejected
-            "agent_runner",  # underscore rejected — kebab-case only
+            "agent_runner",  # underscore rejected - kebab-case only
             "agent-runner:",  # trailing colon with empty sub-context
             ":sub-context",  # empty component
             "agent runner",  # whitespace

@@ -1,4 +1,4 @@
-"""Integration smoke test 9.2 — Profile-gated start senaryosu.
+﻿"""Integration smoke test 9.2 - Profile-gated start senaryosu.
 
 
 Scenario
@@ -10,7 +10,7 @@ Scenario
  ``state="starting"`` .
 3. Polling ``GET /admin/services/redis`` flips to ``state="running"``
  within 30 seconds manifest profile gates a
- started container — and health-driven state
+ started container - and health-driven state
  transition).
 4. ``docker compose ps redis`` confirms a Redis container is actually
  running (cross-checks the orchestrator's view against Compose).
@@ -24,7 +24,7 @@ Authentication
 The admin-dashboard-api ships with ``AUTH_MODE=dev`` by default in
 the project ``.env.example`` (see ``services/admin-dashboard-api/
 .env.example``); the test sends ``Authorization: Bearer dev-test``
-which is accepted by the dev-mode validator (canned admin claims —
+which is accepted by the dev-mode validator (canned admin claims -
 . When the deployed image runs in production mode
 the test SKIPs cleanly with a clear reason rather than failing.
 
@@ -64,7 +64,7 @@ START_TO_RUNNING_TIMEOUT_SECONDS: float = 60.0
 STATE_POLL_INTERVAL_SECONDS: float = 1.0
 
 #: Admin API base URL (admin-dashboard-api publishes 8082 in the base
-#: Compose file — see .
+#: Compose file - see .
 ADMIN_API_BASE: str = "http://localhost:8082"
 
 #: Bearer token sent on every admin request. The dev-mode OIDCValidator
@@ -78,7 +78,7 @@ DEV_BEARER_TOKEN: str = "smoke-test-bearer"
 TARGET_SERVICE: str = "redis"
 
 #: Managed_Services we attempt to stop during teardown so the next
-#: test run starts from a clean slate. Best-effort — ignored failures.
+#: test run starts from a clean slate. Best-effort - ignored failures.
 MANAGED_SERVICES_TO_TEARDOWN: tuple[str, ...] = (
     "redis",
 )
@@ -173,7 +173,7 @@ def _compose_service_running(repo_root: Path, service: str) -> bool:
 class _ServiceClient:
     """Tiny wrapper around the admin-dashboard-api ``/admin/services`` API.
 
- Kept inline so the test file is self-contained — no fixtures or
+ Kept inline so the test file is self-contained - no fixtures or
  extra imports leak into the rest of the suite.
  """
 
@@ -381,7 +381,7 @@ def test_profile_gated_start_drives_redis_through_start_stop_cycle(
         assert body.get("state") == "stopped", (
             f"expected state='stopped' after /stop; got {body!r}"
         )
-        # First call MUST NOT be a no-op — the service was running.
+        # First call MUST NOT be a no-op - the service was running.
         assert body.get("noop") is False, (
             f"first /stop call should not be a no-op; got body={body!r}"
         )

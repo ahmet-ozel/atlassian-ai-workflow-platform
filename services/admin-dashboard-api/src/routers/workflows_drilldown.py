@@ -1,25 +1,25 @@
-"""``WorkflowsDrillDownRouter``.
+﻿"""``WorkflowsDrillDownRouter``.
 
 Three endpoints:
 
-* ``GET /admin/workflows`` — list dept-scoped workflows (forwarded
+* ``GET /admin/workflows`` - list dept-scoped workflows (forwarded
   to automation-service via :class:`AdminProxy`).
-* ``GET /admin/workflows/{workflow_id}`` — drill-down: history,
+* ``GET /admin/workflows/{workflow_id}`` - drill-down: history,
   signals, activities, failures, plus these additive fields:
 
-    - ``llm_usage[]`` — one entry per ``shared.cost_tracking`` row
+    - ``llm_usage[]`` - one entry per ``shared.cost_tracking`` row
       keyed on the workflow_id, carrying
       ``{activity_id, prompt_path, prompt_version, model,
       token_in, token_out, cost_usd}``.
-    - ``audit_chain[]`` — every ``automation.audit_events`` row
+    - ``audit_chain[]`` - every ``automation.audit_events`` row
       whose ``resource = 'workflow:{workflow_id}'`` or whose
       ``payload->>'workflow_id'`` equals the workflow id, carrying
       ``{action, actor, timestamp, payload_summary}``.
-    - ``external_links{}`` — ``{jira_issue_url?, bitbucket_pr_url?,
+    - ``external_links{}`` - ``{jira_issue_url?, bitbucket_pr_url?,
       confluence_page_url?}`` extracted from the audit chain via
       the W3 deeplink helper :func:`_external_links.build_external_links`.
 
-* ``POST /admin/workflows/{workflow_id}/cancel`` — send a cancel
+* ``POST /admin/workflows/{workflow_id}/cancel`` - send a cancel
   signal (forwarded to automation-service).
 
 The drill-down endpoint folds the upstream Temporal payload (events
@@ -77,7 +77,7 @@ def _proxy(request: Request) -> Any:
 def _optional_proxy(request: Request) -> Any | None:
     """Return the optional :class:`AdminProxy` instance, or ``None``.
 
-    Unlike :func:`_proxy` this never raises — used by the drill-down
+    Unlike :func:`_proxy` this never raises - used by the drill-down
     endpoint, which can still serve a useful response (the local
     enrichment fields) when the upstream proxy is missing.
     """
@@ -149,7 +149,7 @@ async def _fetch_llm_usage(
     surface bookkeeping entries unrelated to the actual workflow run.
 
     The ``prompt_path`` and ``prompt_version`` fields are not native
-    columns on ``shared.cost_tracking`` — they are recorded
+    columns on ``shared.cost_tracking`` - they are recorded
     side-by-side in the corresponding ``automation.audit_events``
     row (action ``llm_activity_recorded`` / ``chat_message`` /
     ``prompt_sandbox_run_recorded``). To keep the response
@@ -280,7 +280,7 @@ async def _enrich_workflow_detail(
         workflow_id: Workflow id we are drilling into. Used as the
             primary key for both the cost-tracking and audit
             queries.
-        upstream_payload: Whatever the upstream proxy returned —
+        upstream_payload: Whatever the upstream proxy returned -
             either a dict (the canonical drill-down shape from
             automation-service), a non-dict JSON value (in which
             case we wrap it under ``"upstream"``), or ``None``
@@ -315,7 +315,7 @@ async def _enrich_workflow_detail(
 
     try:
         llm_usage = await _fetch_llm_usage(pool, workflow_id)
-    except Exception as exc:  # noqa: BLE001 — degrade gracefully
+    except Exception as exc:  # noqa: BLE001 - degrade gracefully
         logger.warning(
             "workflows_drilldown: llm_usage fetch failed for %s: %s",
             workflow_id,
@@ -325,7 +325,7 @@ async def _enrich_workflow_detail(
 
     try:
         audit_chain = await _fetch_audit_chain(pool, workflow_id)
-    except Exception as exc:  # noqa: BLE001 — degrade gracefully
+    except Exception as exc:  # noqa: BLE001 - degrade gracefully
         logger.warning(
             "workflows_drilldown: audit_chain fetch failed for %s: %s",
             workflow_id,
@@ -360,7 +360,7 @@ async def _fetch_upstream_detail(
         # a stub proxy whose ``forward`` accepts these kwargs; the
         # production AdminProxy expects an :class:`AuthContext` actor,
         # which the upstream router (admin_proxy.py) builds from the
-        # validated JWT — but the drill-down route is wired with the
+        # validated JWT - but the drill-down route is wired with the
         # simpler :class:`AuthClaims` dependency and intentionally
         # treats the upstream as best-effort. Production deployments
         # bridge the two via ``app.state.workflows_upstream_actor`` if
@@ -373,7 +373,7 @@ async def _fetch_upstream_detail(
             actor=None,
             query_string="",
         )
-    except Exception as exc:  # noqa: BLE001 — best-effort upstream
+    except Exception as exc:  # noqa: BLE001 - best-effort upstream
         logger.warning(
             "workflows_drilldown: upstream fetch raised for %s: %s",
             workflow_id,
@@ -433,7 +433,7 @@ async def get_workflow(
     Always carries ``llm_usage``, ``audit_chain`` and
     ``external_links`` keys so the FE never has to handle a missing
     field. The upstream Temporal payload (events / activities /
-    failures) is folded in best-effort when the proxy is wired —
+    failures) is folded in best-effort when the proxy is wired -
     transient upstream failures degrade to local-only enrichment so
     the operator still sees what the platform recorded about the
     workflow.

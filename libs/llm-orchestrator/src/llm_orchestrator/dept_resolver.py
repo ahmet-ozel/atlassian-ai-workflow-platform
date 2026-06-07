@@ -1,4 +1,4 @@
-"""Department-level LLM provider resolution (Feature 6).
+﻿"""Department-level LLM provider resolution (Feature 6).
 
 Implements the resolution chain:
     dept-override → global fallback
@@ -37,7 +37,7 @@ __all__ = [
 
 logger = logging.getLogger(__name__)
 
-#: Path to departments.json — resolved relative to the platform config dir.
+#: Path to departments.json - resolved relative to the platform config dir.
 _DEPARTMENTS_CONFIG_PATH = (
     Path(__file__).resolve().parents[4] / "config" / "departments.json"
 )
@@ -100,7 +100,7 @@ def _try_dept_override(
     # Build an env dict that the factory can consume.
     env_override: dict[str, str] = {"LLM_PROVIDER": provider_name}
 
-    # Resolve base_url_ref / api_key_ref — in production these would
+    # Resolve base_url_ref / api_key_ref - in production these would
     # be fetched from Vault. For now we check if the ref points to an
     # env var or use it as a direct value hint.
     base_url_ref = override.get("base_url_ref", "")

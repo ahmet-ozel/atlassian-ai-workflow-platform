@@ -1,11 +1,11 @@
-"""Webhook event deduplication — ``Event_Dedup`` pipeline stage.
+﻿"""Webhook event deduplication - ``Event_Dedup`` pipeline stage.
 
 Prevents duplicate processing of the same webhook delivery by deriving a
 unique ``event_id`` from either the ``X-Atlassian-Webhook-Identifier``
 header or a hash of ``webhookEvent + timestamp + issue.id``, then checking
 against the ``shared.webhook_dedup`` table (24h TTL).
 
-Pipeline position: **first** stage — runs before Loop_Guard and Dispatcher.
+Pipeline position: **first** stage - runs before Loop_Guard and Dispatcher.
 
 Design decisions:
   - At-least-once semantics: if the DB write fails, the event passes
@@ -177,7 +177,7 @@ class EventDedup:
                 )
                 return StageResult(action="drop", reason="duplicate")
         except Exception as exc:  # noqa: BLE001
-            # DB read failure — pass through (at-least-once)
+            # DB read failure - pass through (at-least-once)
             _logger.error(
                 "dedup_read_failed",
                 event_id=event_id,
@@ -189,7 +189,7 @@ class EventDedup:
         try:
             await self._insert(event_id, payload)
         except Exception as exc:  # noqa: BLE001
-            # DB write failure — log dedup_write_failed and continue
+            # DB write failure - log dedup_write_failed and continue
             # with at-least-once semantics.
             _logger.error(
                 "dedup_write_failed",
@@ -239,7 +239,7 @@ class EventDedup:
 
         Strategy:
           1. If ``X-Atlassian-Webhook-Identifier`` header is present,
-             use it directly — this is Atlassian's canonical delivery ID.
+             use it directly - this is Atlassian's canonical delivery ID.
           2. Otherwise, compute SHA-256 of
              ``webhookEvent + timestamp + issue.id``.
         """

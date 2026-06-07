@@ -1,4 +1,4 @@
-"""Webhook secret rotation helper — dual-slot management with overlap window.
+﻿"""Webhook secret rotation helper - dual-slot management with overlap window.
 
 Implements the R9.2 / R9.3 acceptance criteria: generate a
 cryptographically random 32-byte HMAC secret and orchestrate the
@@ -7,13 +7,13 @@ through the :class:`~vault_client.client.VaultClient` protocol.
 
 The rotation lifecycle is:
 
-1. **rotate(vault, dept_id, provider)** — generate a fresh 32-byte
+1. **rotate(vault, dept_id, provider)** - generate a fresh 32-byte
    secret, demote the current ``secret_current`` to
    ``secret_previous`` (with an ``overlap_until`` timestamp), write
    the new secret to ``secret_current``, update ``rotated_at``, and
    return the new secret (so the operator can paste it into the
    Atlassian/Bitbucket webhook configuration UI).
-2. **finalize(vault, dept_id, provider)** — once the operator has
+2. **finalize(vault, dept_id, provider)** - once the operator has
    updated the provider-side webhook secret, clear the
    ``secret_previous`` slot so only the new secret is accepted.
 
@@ -35,11 +35,11 @@ Vault path layout
 -----------------
 
 * Active secret: ``vault:webhooks/<provider>/<dept_id>``
-  — payload: ``{"secret": "<hex>"}``
+  - payload: ``{"secret": "<hex>"}``
 * Previous secret: ``vault:webhooks/<provider>/<dept_id>/previous``
-  — payload: ``{"secret": "<hex>", "overlap_until": "<ISO-8601>"}``
+  - payload: ``{"secret": "<hex>", "overlap_until": "<ISO-8601>"}``
 * Rotation metadata: ``vault:webhooks/<provider>/<dept_id>/meta``
-  — payload: ``{"rotated_at": "<ISO-8601>"}``
+  - payload: ``{"rotated_at": "<ISO-8601>"}``
 """
 
 from __future__ import annotations
@@ -55,7 +55,7 @@ from .path import VaultPath
 #: the ``WEBHOOK_ROTATION_OVERLAP_S`` environment variable.
 _DEFAULT_OVERLAP_S: int = 3600
 
-#: Allowed provider values — kept in sync with
+#: Allowed provider values - kept in sync with
 #: :data:`webhook_hmac._ALLOWED_PROVIDERS`.
 _ALLOWED_PROVIDERS: frozenset[str] = frozenset({"jira", "bitbucket", "confluence"})
 

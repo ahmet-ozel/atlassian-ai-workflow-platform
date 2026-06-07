@@ -1,13 +1,13 @@
-"""Unit tests for :mod:`vault_client`.
+﻿"""Unit tests for :mod:`vault_client`.
 
 Scope
 -----
 
-* :class:`VaultPath` — accepts the canonical pattern, rejects
+* :class:`VaultPath` - accepts the canonical pattern, rejects
   malformed strings (plain-text tokens, URLs, empty / non-str input).
-* :func:`make_client` — selects the right backend from
+* :func:`make_client` - selects the right backend from
   ``VAULT_BACKEND`` and rejects unknown / missing values.
-* :class:`LocalDevBackend` — round-trip ``read(write(p, v)) == v``
+* :class:`LocalDevBackend` - round-trip ``read(write(p, v)) == v``
   through the libsodium-encrypted file backend, plus delete idempotency
   and SSH dual-slot rotation invariants.
 
@@ -163,7 +163,7 @@ def test_make_client_local_dev_rejects_weak_key() -> None:
 
 
 def test_make_client_local_dev_rejects_short_key() -> None:
-    # Hex-decodes to 16 bytes — half the required key size.
+    # Hex-decodes to 16 bytes - half the required key size.
     with pytest.raises(ValueError, match="32 bytes"):
         make_client(
             {
@@ -237,7 +237,7 @@ def test_local_dev_disk_does_not_contain_plaintext(tmp_path: Path) -> None:
     raw = store.read_bytes()
     assert secret_marker.encode("utf-8") not in raw
     # The on-disk file is a JSON envelope wrapping a base64-encoded
-    # ciphertext blob — sanity-check the structure.
+    # ciphertext blob - sanity-check the structure.
     envelope = json.loads(raw.decode("utf-8"))
     assert envelope["version"] == 1
     base64.b64decode(envelope["ciphertext"])  # raises if not valid base64
@@ -250,7 +250,7 @@ def test_local_dev_corrupted_file_surfaces_runtime_error(
     backend = LocalDevBackend(store_path=store, key=nacl.utils.random(KEY_SIZE))
     backend.write(VaultPath.parse("vault:a/b"), {"k": "v"})
 
-    # Re-open with a different key — decryption MUST fail loudly.
+    # Re-open with a different key - decryption MUST fail loudly.
     other = LocalDevBackend(store_path=store, key=nacl.utils.random(KEY_SIZE))
     with pytest.raises(RuntimeError, match="unreadable"):
         other.read(VaultPath.parse("vault:a/b"))
@@ -367,7 +367,7 @@ def test_hashicorp_delete_is_idempotent_on_404() -> None:
 
 
 # ---------------------------------------------------------------------------
-# clear_previous_ssh_slot — post-validation cleanup
+# clear_previous_ssh_slot - post-validation cleanup
 # ---------------------------------------------------------------------------
 
 
@@ -396,7 +396,7 @@ def test_clear_previous_ssh_slot_removes_previous(tmp_path: Path) -> None:
 
 def test_clear_previous_ssh_slot_is_idempotent(tmp_path: Path) -> None:
     backend = _local_backend(tmp_path)
-    # No rotation has happened yet — clearing must not raise.
+    # No rotation has happened yet - clearing must not raise.
     backend.clear_previous_ssh_slot("never-rotated")
     backend.clear_previous_ssh_slot("never-rotated")  # second call also fine
 
@@ -417,7 +417,7 @@ def test_hashicorp_clear_previous_ssh_slot_calls_delete() -> None:
 
 
 # ---------------------------------------------------------------------------
-# verify_webhook_hmac — 1h overlap window
+# verify_webhook_hmac - 1h overlap window
 # ---------------------------------------------------------------------------
 
 

@@ -1,4 +1,4 @@
-"""invariant 17 — Credential resolve priority + audit emission.
+﻿"""invariant 17 - Credential resolve priority + audit emission.
 
 
 
@@ -10,7 +10,7 @@ Scope and surface under test
 
 The base resolver
 (:class:`automation_service.credentials.CredentialResolver`) already
-owns the per-user → org-default *priority decision* — invariant
+owns the per-user → org-default *priority decision* - invariant
 (``test_credential_inject.py`` §invariant) pins that contract
 across the full 2x2 matrix of
 ``(per_user_present, org_default_present)``.
@@ -44,8 +44,8 @@ against the same Vault state produces the same output (same
 same audit ``action`` / ``payload``).
 
 Strategies stay tight: the test only varies the boolean inputs that
-drive the audit decision — ``(has_user_session_cred,
-has_org_default_cred)`` — plus path-safe identifier strings.
+drive the audit decision - ``(has_user_session_cred,
+has_org_default_cred)`` - plus path-safe identifier strings.
 The Vault payload values are kept fixed because invariant already
 covers payload pass-through; varying them here would burn Hypothesis
 budget without improving coverage of the audit contract.
@@ -63,7 +63,7 @@ from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — the assistant-service is *not* a shared library so
+# sys.path bootstrap - the assistant-service is *not* a shared library so
 # it is not on ``pytest.ini``'s ``pythonpath``. We insert its source root
 # manually so ``from src.credentials import...`` resolves. We also need
 # ``automation_service.credentials`` (the base resolver) so the
@@ -135,7 +135,7 @@ _SESSION_ID = st.text(
     max_size=32,
 )
 
-# Department ids — same character class, non-empty (base
+# Department ids - same character class, non-empty (base
 # resolver rejects empty strings with ValueError; we don't want to
 # accidentally exercise that pre-condition path here).
 _DEPT_ID = st.text(
@@ -162,7 +162,7 @@ _SERVICE: st.SearchStrategy[AtlassianService] = st.sampled_from(
 # Distinct sentinel payloads so "which path wonsection" is unambiguous in
 # assertions. Both contain plain-credential keys
 # (``personal_token`` / ``api_token``) so the no-leak invariant
-# is genuinely exercised — if the wrapper ever copied
+# is genuinely exercised - if the wrapper ever copied
 # ``data`` into the audit payload, the property would catch it.
 _USER_SECRET: Mapping[str, str] = {
     "url": "https://acme.atlassian.net",
@@ -276,7 +276,7 @@ def _assert_no_plain_credential(payload: Mapping[str, object] | None) -> None:
 
 
 # ---------------------------------------------------------------------------
-# invariant — per-user override hit emits the per-user audit action
+# invariant - per-user override hit emits the per-user audit action
 # ---------------------------------------------------------------------------
 
 
@@ -289,7 +289,7 @@ def _assert_no_plain_credential(payload: Mapping[str, object] | None) -> None:
 def test_p17a_per_user_hit_emits_per_user_session_audit(
     session_id: str, dept_id: str, service: AtlassianService
 ) -> None:
-    """invariant — per-user hit emits ``credential_resolved_per_user_session``.
+    """invariant - per-user hit emits ``credential_resolved_per_user_session``.
 
 
 
@@ -299,7 +299,7 @@ def test_p17a_per_user_hit_emits_per_user_session_audit(
  wrapper MUST emit exactly one audit event whose ``action`` is
  the per-user session action and whose ``result`` is ``"ok"``.
 
- The org-default path may or may not exist — the audit decision
+ The org-default path may or may not exist - the audit decision
  is owned solely by which path *produced* the credential
  (invariant short-circuits on the per-user hit, so the
  org-default state is irrelevant here).
@@ -308,7 +308,7 @@ def test_p17a_per_user_hit_emits_per_user_session_audit(
     user_path = build_user_session_path(session_id, service)
     org_path = build_org_default_path(dept_id, service)
 
-    # Both paths populated — proves the wrapper does not mis-tag
+    # Both paths populated - proves the wrapper does not mis-tag
     # the event by inspecting org-default state.
     resolver, _vault, audit = _build_resolver(
         {user_path: _USER_SECRET, org_path: _ORG_SECRET}
@@ -331,7 +331,7 @@ def test_p17a_per_user_hit_emits_per_user_session_audit(
     )
     assert event.result == "ok"
     assert event.dept_id == dept_id
-    # Payload identifiers — diagnostic only, no secret material.
+    # Payload identifiers - diagnostic only, no secret material.
     assert event.payload is not None
     assert event.payload.get("vault_path") == user_path
     assert event.payload.get("source") == "user_session"
@@ -340,7 +340,7 @@ def test_p17a_per_user_hit_emits_per_user_session_audit(
 
 
 # ---------------------------------------------------------------------------
-# invariant — org-default hit emits the org-default audit action
+# invariant - org-default hit emits the org-default audit action
 # ---------------------------------------------------------------------------
 
 
@@ -353,7 +353,7 @@ def test_p17a_per_user_hit_emits_per_user_session_audit(
 def test_p17b_org_default_fallback_emits_org_default_audit(
     session_id: str, dept_id: str, service: AtlassianService
 ) -> None:
-    """invariant — org-default fallback emits ``credential_resolved_org_default``.
+    """invariant - org-default fallback emits ``credential_resolved_org_default``.
 
 
 
@@ -391,7 +391,7 @@ def test_p17b_org_default_fallback_emits_org_default_audit(
 
 
 # ---------------------------------------------------------------------------
-# invariant — both missing → CredentialNotFoundError + failure audit
+# invariant - both missing → CredentialNotFoundError + failure audit
 # ---------------------------------------------------------------------------
 
 
@@ -404,7 +404,7 @@ def test_p17b_org_default_fallback_emits_org_default_audit(
 def test_p17c_both_missing_raises_and_emits_failure_audit(
     session_id: str, dept_id: str, service: AtlassianService
 ) -> None:
-    """invariant — both missing → ``credential_resolve_failed`` + raise.
+    """invariant - both missing → ``credential_resolve_failed`` + raise.
 
 
 
@@ -419,7 +419,7 @@ def test_p17c_both_missing_raises_and_emits_failure_audit(
     user_path = build_user_session_path(session_id, service)
     org_path = build_org_default_path(dept_id, service)
 
-    # Empty Vault — both paths miss.
+    # Empty Vault - both paths miss.
     resolver, _vault, audit = _build_resolver({})
 
     with pytest.raises(CredentialNotFoundError) as exc_info:
@@ -440,7 +440,7 @@ def test_p17c_both_missing_raises_and_emits_failure_audit(
     assert event.result == "error"
     assert event.dept_id == dept_id
     assert event.payload is not None
-    # Both paths recorded (path strings only — no secret material).
+    # Both paths recorded (path strings only - no secret material).
     attempted = event.payload.get("attempted_paths")
     assert attempted == [user_path, org_path], (
         f"invariant violated: failure payload attempted_paths "
@@ -451,7 +451,7 @@ def test_p17c_both_missing_raises_and_emits_failure_audit(
 
 
 # ---------------------------------------------------------------------------
-# invariant — full 2x2 matrix: payload never carries plain credential
+# invariant - full 2x2 matrix: payload never carries plain credential
 # ---------------------------------------------------------------------------
 
 
@@ -474,12 +474,12 @@ def test_p17d_audit_payload_never_contains_plain_credential(
     has_user: bool,
     has_org: bool,
 ) -> None:
-    """invariant — audit payload never leaks plain-credential material.
+    """invariant - audit payload never leaks plain-credential material.
 
 
 
- For *every* combination of ``(has_user, has_org)`` — including
- the failure case — the resulting audit ``payload`` MUST NOT
+ For *every* combination of ``(has_user, has_org)`` - including
+ the failure case - the resulting audit ``payload`` MUST NOT
  contain any forbidden token / password / secret key, and MUST
  NOT contain any of the plain-credential *values* the resolver
  fetched from Vault. This is the application-layer counterpart to
@@ -509,7 +509,7 @@ def test_p17d_audit_payload_never_contains_plain_credential(
 
 
 # ---------------------------------------------------------------------------
-# invariant — determinism: same inputs ⇒ same path read + same audit
+# invariant - determinism: same inputs ⇒ same path read + same audit
 # ---------------------------------------------------------------------------
 
 
@@ -532,7 +532,7 @@ def test_p17e_resolution_is_deterministic(
     has_user: bool,
     has_org: bool,
 ) -> None:
-    """invariant — two calls produce the same path + audit action.
+    """invariant - two calls produce the same path + audit action.
 
 
 
@@ -574,7 +574,7 @@ def test_p17e_resolution_is_deterministic(
             resolver.resolve(session_id, dept_id, service)
 
     # Vault was queried via the same ordered path sequence on each
-    # call — the second call's reads mirror the first call's.
+    # call - the second call's reads mirror the first call's.
     n = len(vault.calls)
     assert n % 2 == 0, (
         f"invariant violated: vault.calls length is odd ({n}); "

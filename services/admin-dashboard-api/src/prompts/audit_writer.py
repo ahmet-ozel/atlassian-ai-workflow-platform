@@ -1,4 +1,4 @@
-"""Asyncpg-backed audit writer for prompt mutation events.
+﻿"""Asyncpg-backed audit writer for prompt mutation events.
 
 Provides an asyncpg-backed audit sink that persists
 ``prompt_draft_created``, ``prompt_pr_opened``, ``prompt_render_failed``
@@ -8,9 +8,9 @@ This module provides that adapter.
 
 Storage references
 ------------------
-* infra/postgres/init/10_automation.sql — column list, CHECK
+* infra/postgres/init/10_automation.sql - column list, CHECK
   constraints, RLS policy ``audit_dept_isolation``.
-* libs/audit_logger — :class:`audit_logger.AuditEvent` and
+* libs/audit_logger - :class:`audit_logger.AuditEvent` and
   :class:`audit_logger.AuditLogger` (writer protocol).
 
 The writer is intentionally narrow:
@@ -31,7 +31,7 @@ The writer is intentionally narrow:
   the shared list from :mod:`src.lifecycle.audit_writer` so both
   writers agree on what counts as a "DB unreachable" condition.
 
-* The pool is **owned externally** — the writer accepts a
+* The pool is **owned externally** - the writer accepts a
   :class:`asyncpg.Pool`-shaped object via ``acquire``, never opens
   one of its own. That keeps lifecycle (start / close) in
   :func:`src.main.lifespan` where the rest of the asyncpg wiring
@@ -93,7 +93,7 @@ class _PoolLike(Protocol):
 #: silently corrupting the JSONB payload.
 #:
 #: ``payload`` is cast to ``jsonb`` so asyncpg sees a string parameter
-#: and Postgres parses it on insertion — that lets us call
+#: and Postgres parses it on insertion - that lets us call
 #: ``json.dumps`` here without bringing the asyncpg ``json`` codec
 #: registration into scope.
 _INSERT_AUDIT_EVENT_SQL = (
@@ -149,7 +149,7 @@ class AsyncpgAuditEventsWriter:
 
     The class is the canonical asyncpg wiring for prompt mutation
     events (audit sink wiring). It can be reused for any other ``audit_events``
-    writer call site without modification — the SQL is parameterised
+    writer call site without modification - the SQL is parameterised
     on the entire event shape.
     """
 
@@ -163,7 +163,7 @@ class AsyncpgAuditEventsWriter:
 
         Args:
             pool: An asyncpg-pool-shaped object. The writer never calls
-                ``close`` on the pool — lifecycle is the caller's
+                ``close`` on the pool - lifecycle is the caller's
                 responsibility (typically :func:`src.main.lifespan`).
             logger_name: Name of the logger used for diagnostics. The
                 default keeps prompt audit logs adjacent to the
@@ -185,11 +185,11 @@ class AsyncpgAuditEventsWriter:
         Failures are classified into two buckets:
 
         * Connection-level (``OSError``, ``asyncpg.InterfaceError``,
-          etc.) — logged at WARNING. The writer swallows the
+          etc.) - logged at WARNING. The writer swallows the
           exception so the originating request returns its real
           outcome instead of a 5xx triggered by audit plumbing.
         * Programming errors (e.g. CHECK constraint violation from
-          a malformed ``actor_role``) — logged at ERROR with the
+          a malformed ``actor_role``) - logged at ERROR with the
           full exception type. Still swallowed so the request
           completes; the application-layer guard in
           :class:`audit_logger.AuditLogger` prevents most of these
@@ -213,7 +213,7 @@ class AsyncpgAuditEventsWriter:
                 )
         except BaseException as exc:  # noqa: BLE001
             if _is_connection_error(exc):
-                # Transient — log at WARNING. A retry queue lives on
+                # Transient - log at WARNING. A retry queue lives on
                 # the lifecycle writer but is intentionally NOT shared
                 # here: prompt mutation events are low-volume and the
                 # router emits a structured log line so a follow-up
@@ -227,7 +227,7 @@ class AsyncpgAuditEventsWriter:
                     exc,
                 )
                 return
-            # Programming error — log at ERROR but still swallow.
+            # Programming error - log at ERROR but still swallow.
             self._logger.error(
                 "audit_events insert failed (non-connection): "
                 "action=%s actor=%s err_type=%s err=%s",
@@ -256,7 +256,7 @@ class AsyncpgAuditEventsWriter:
 
 
 # ---------------------------------------------------------------------------
-# AsyncpgAuditSink — convenience wrapper matching the router's protocol
+# AsyncpgAuditSink - convenience wrapper matching the router's protocol
 # ---------------------------------------------------------------------------
 
 
@@ -287,7 +287,7 @@ class AsyncpgAuditSink:
         :class:`audit_logger.AuditLogger.write` enforces the
         ``actor_role IS NOT NULL`` invariant (behavior 7.7) before
         delegating to ``insert_audit``. Validation failures
-        (``ValueError``) are NOT swallowed — the router's
+        (``ValueError``) are NOT swallowed - the router's
         ``_safe_audit`` already wraps every call and logs them, so
         we let the application guard reach the call site as a
         proper exception. Connection-level failures are swallowed

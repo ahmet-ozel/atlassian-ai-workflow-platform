@@ -1,4 +1,4 @@
-"""CI gate — Forge add-on project structure (compliance work).
+﻿"""CI gate - Forge add-on project structure (compliance work).
 
 
 The Forge add-on project structure ships under ``platform/forge-app/`` so that
@@ -6,18 +6,18 @@ the ``FEATURE_FLAG_FORGE_ADDON_ENABLED`` opt-in path has something to
 deploy. This test asserts the **structural** acceptance criteria from
 the spec:
 
-* / — ``forge-app/manifest.yml`` exists and is parseable YAML.
-* — the manifest has a non-empty top-level ``name`` (the
+* / - ``forge-app/manifest.yml`` exists and is parseable YAML.
+* - the manifest has a non-empty top-level ``name`` (the
  Forge runtime requires a human-readable display name).
  The project structure stores that name on the
  ``modules.jira:issueType[0].name`` entry; a top-level
  ``name`` field is also accepted for forward
  compatibility with future Forge manifest revisions.
-* / — the manifest declares a ``modules.jira:issueType``
+* / - the manifest declares a ``modules.jira:issueType``
  key (this is the Forge module that materialises the
  "AI Bot Task" custom issue type with mandatory fields).
 
-The test only inspects file shape — it never executes ``forge`` CLI or
+The test only inspects file shape - it never executes ``forge`` CLI or
 talks to Atlassian. Schema validation beyond "key present, name
 non-empty" is intentionally out of scope; deeper checks belong to the
 Forge CLI itself during ``forge deploy``.
@@ -45,7 +45,7 @@ def _load_manifest() -> dict:
  """
 
     assert _MANIFEST_PATH.is_file(), (
-        f"Missing {_MANIFEST_PATH} — the Forge project structure must "
+        f"Missing {_MANIFEST_PATH} - the Forge project structure must "
         "Forge project structure ship a manifest.yml at platform/forge-app/."
     )
     raw = _MANIFEST_PATH.read_text(encoding="utf-8")
@@ -68,7 +68,7 @@ def test_forge_manifest_file_exists() -> None:
 
 
 def test_forge_manifest_parses_as_yaml() -> None:
-    """ — manifest.yml must be valid YAML so ``forge deploy`` can read it."""
+    """ - manifest.yml must be valid YAML so ``forge deploy`` can read it."""
 
     try:
         _load_manifest()
@@ -77,7 +77,7 @@ def test_forge_manifest_parses_as_yaml() -> None:
 
 
 def test_forge_manifest_has_non_empty_name() -> None:
-    """ — Forge requires a human-readable display name.
+    """ - Forge requires a human-readable display name.
 
  The project structure stores the display name on the
  ``modules.jira:issueType[0].name`` entry (the issue type is the
@@ -112,7 +112,7 @@ def test_forge_manifest_has_non_empty_name() -> None:
 
 
 def test_forge_manifest_declares_jira_issue_type_module() -> None:
-    """ / — manifest must declare ``modules.jira:issueType``."""
+    """ / - manifest must declare ``modules.jira:issueType``."""
 
     manifest = _load_manifest()
 
@@ -130,8 +130,8 @@ def test_forge_manifest_declares_jira_issue_type_module() -> None:
 
     issue_types = modules["jira:issueType"]
     # Forge expects this module key to map to a list of issue type
-    # definitions. We do not validate field-level structure here — that
-    # belongs to ``forge deploy`` — but a non-list value is a clear
+    # definitions. We do not validate field-level structure here - that
+    # belongs to ``forge deploy`` - but a non-list value is a clear
     # indication the project structure has drifted from the Forge schema.
     assert isinstance(issue_types, list) and issue_types, (
         "`modules.jira:issueType` must be a non-empty list of issue "

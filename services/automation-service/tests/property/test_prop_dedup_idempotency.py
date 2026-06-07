@@ -1,4 +1,4 @@
-"""Property tests for Event Dedup idempotency.
+﻿"""Property tests for Event Dedup idempotency.
 
 Event dedup idempotency: for any webhook with the same
 event_id received N times (N ≥ 1), exactly ONE workflow start SHALL be
@@ -19,10 +19,10 @@ Invariants tested
     "drop" results is exactly N-1.
 
 2d. **Different event_ids are independent.** Two distinct event_ids each
-    get their own "first pass" — dedup state for one does not affect the other.
+    get their own "first pass" - dedup state for one does not affect the other.
 
 2e. **Determinism.** The dedup decision for a given event_id is deterministic
-    given the same DB state — repeated checks with the same state produce
+    given the same DB state - repeated checks with the same state produce
     identical results.
 
 This file uses a fake in-memory DB that simulates the dedup table behavior
@@ -44,7 +44,7 @@ from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — mirrors sibling property tests
+# sys.path bootstrap - mirrors sibling property tests
 # ---------------------------------------------------------------------------
 
 _AUTOMATION_SRC = Path(__file__).resolve().parents[2] / "src"

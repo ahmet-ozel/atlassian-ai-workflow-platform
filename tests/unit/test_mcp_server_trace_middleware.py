@@ -1,4 +1,4 @@
-"""Unit test — atlassian_mcp_bitbucket MCP server's inline ``TraceMiddleware``.
+﻿"""Unit test - atlassian_mcp_bitbucket MCP server's inline ``TraceMiddleware``.
 
 The MCP server is the central hub for every Atlassian call from every
 worker and service; it must propagate the ``X-Trace-Id`` header
@@ -6,7 +6,7 @@ end-to-end so the Admin Dashboard log filter can correlate workflow logs
 with the Atlassian-side request log.
 
 The MCP server ships a vendored virtualenv and does not import the
-workspace ``observability`` library — instead it carries an inline
+workspace ``observability`` library - instead it carries an inline
 :class:`TraceMiddleware` implementation that mirrors the contract.
 This test exercises that inline class directly against an ASGI
 recorder so the wire shape is verifiable without a live FastMCP /

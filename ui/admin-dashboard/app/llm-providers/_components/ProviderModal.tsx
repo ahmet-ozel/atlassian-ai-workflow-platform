@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 /**
- * Add/Edit provider modal (Requirements 4.5, 4.6, 14.2 — 14.6).
+ * Add/Edit provider modal (Requirements 4.5, 4.6, 14.2 - 14.6).
  *
  * Visible fields depend on `provider_type`:
  *
@@ -21,7 +21,7 @@
  *
  * Edit mode keeps the `api_key` input empty and shows a helper line
  * with the masked existing value; on submit, an empty input means
- * "preserve" (R4.6) — we omit the `api_key` key from the PUT body so
+ * "preserve" (R4.6) - we omit the `api_key` key from the PUT body so
  * the backend service merges only the fields the operator actually
  * changed.
  *
@@ -190,7 +190,7 @@ export default function ProviderModal({
     ) {
       patch.base_url = form.base_url.trim();
     }
-    // R4.6 — only include api_key when the operator typed a fresh value.
+    // R4.6 - only include api_key when the operator typed a fresh value.
     if (form.api_key.trim()) {
       patch.api_key = form.api_key.trim();
     }
@@ -274,7 +274,7 @@ export default function ProviderModal({
       <div className="w-full max-w-lg rounded bg-white p-6 shadow-lg">
         <header className="mb-4 flex items-start justify-between">
           <h2 className="text-lg font-semibold">
-            {isEdit ? `Edit provider — ${initial?.name}` : "Add provider"}
+            {isEdit ? `Edit provider - ${initial?.name}` : "Add provider"}
           </h2>
           <button
             type="button"
@@ -372,7 +372,7 @@ export default function ProviderModal({
                     className="mt-1 text-xs text-gray-500"
                     data-testid="llm-provider-api-key-helper"
                   >
-                    Mevcut anahtar: {initial?.api_key_masked} — değiştirmek
+                    Mevcut anahtar: {initial?.api_key_masked} - değiştirmek
                     için yeni değer girin
                   </p>
                 ) : null}

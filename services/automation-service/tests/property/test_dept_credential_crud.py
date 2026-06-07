@@ -1,4 +1,4 @@
-"""Property test: Dept credential CRUD atomicity.
+﻿"""Property test: Dept credential CRUD atomicity.
 
 For *any* random sequence of ``add → probe → update → remove`` calls
 issued against :class:`services.dept_credential_service.DeptCredentialService`
@@ -27,7 +27,7 @@ I3.  **Update leaves no stale Vault paths.**  Re-running
      Vault path is written or left behind.  Across an entire
      run, the set of Vault paths that *ever* held a final value
      equals the set of ``(dept_id, service)`` pairs that have been
-     touched — and at any point in time, the set of currently
+     touched - and at any point in time, the set of currently
      populated final paths equals the set of ``(dept_id, service)``
      rows that currently exist in the DB.
 
@@ -71,7 +71,7 @@ from hypothesis.stateful import (
 )
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — mirrors the sibling property tests
+# sys.path bootstrap - mirrors the sibling property tests
 # ---------------------------------------------------------------------------
 
 _AUTOMATION_ROOT = Path(__file__).resolve().parents[2]
@@ -127,7 +127,7 @@ from services.dept_credential_service import (  # noqa: E402
 )
 
 # ---------------------------------------------------------------------------
-# Hypothesis profile — bounded for CI, deterministic
+# Hypothesis profile - bounded for CI, deterministic
 # ---------------------------------------------------------------------------
 
 _PROFILE = settings(
@@ -143,7 +143,7 @@ _PROFILE = settings(
 )
 
 # ---------------------------------------------------------------------------
-# Domain constants — closed sets the strategies sample from
+# Domain constants - closed sets the strategies sample from
 # ---------------------------------------------------------------------------
 
 _DEPT_IDS: tuple[str, ...] = ("payments", "platform", "ops")
@@ -189,7 +189,7 @@ class _FakeVault:
     fail_delete_paths: set[str] = field(default_factory=set)
 
     # ------------------------------------------------------------------
-    # VaultClient protocol — synchronous
+    # VaultClient protocol - synchronous
     # ------------------------------------------------------------------
 
     def read(self, path: VaultPath) -> Mapping[str, str]:
@@ -211,7 +211,7 @@ class _FakeVault:
         if path.raw in self.fail_delete_paths:
             self.fail_delete_paths.discard(path.raw)
             raise RuntimeError(f"forced delete failure at {path.raw}")
-        # Idempotent — missing path is a no-op (mirrors production).
+        # Idempotent - missing path is a no-op (mirrors production).
         self.store.pop(path.raw, None)
 
     # ------------------------------------------------------------------
@@ -252,23 +252,23 @@ class _FakePostgres:
 
     The fake handles the four SQL shapes the orchestrator emits:
 
-    1. ``BEGIN`` / ``COMMIT`` / ``ROLLBACK`` — toggle a transaction
+    1. ``BEGIN`` / ``COMMIT`` / ``ROLLBACK`` - toggle a transaction
        mode so writes outside a transaction take effect immediately.
        Inside a transaction, writes are buffered and only applied on
        ``COMMIT``.
-    2. ``SELECT set_config(...)`` — record the GUC for diagnostic
+    2. ``SELECT set_config(...)`` - record the GUC for diagnostic
        purposes; the fake never enforces RLS.
-    3. ``SELECT 1 FROM automation.departments WHERE id = $1`` —
+    3. ``SELECT 1 FROM automation.departments WHERE id = $1`` -
        returns ``{"1": 1}`` when the dept exists, else ``None``.
     4. ``SELECT 1 FROM automation.department_bots WHERE
-       department_id = $1 AND service = $2`` — returns ``{"1": 1}``
+       department_id = $1 AND service = $2`` - returns ``{"1": 1}``
        if a row is currently registered.
     5. ``SELECT department_id, service, credential_ref, account_id,
        username, deployment FROM automation.department_bots WHERE
-       department_id = $1 ORDER BY service`` — returns the matching
+       department_id = $1 ORDER BY service`` - returns the matching
        rows.
     6. ``INSERT INTO automation.department_bots ... ON CONFLICT
-       (department_id, service) DO UPDATE`` — UPSERT.
+       (department_id, service) DO UPDATE`` - UPSERT.
     7. ``DELETE FROM automation.department_bots WHERE department_id
        = $1 AND service = $2``.
 
@@ -341,7 +341,7 @@ class _FakePostgres:
             return "INSERT 0 1"
         if "insert into automation.department_bot_identity" in normalised:
             # The inline probe upserts the resolved account_id here.
-            # The fake accepts and discards — the CRUD test does not
+            # The fake accepts and discards - the CRUD test does not
             # assert on the identity table contents.
             return "INSERT 0 1"
         if "delete from automation.department_bots" in normalised:
@@ -430,7 +430,7 @@ class _FakePostgres:
         """Return the bots map *as the orchestrator's session sees it*.
 
         While a transaction is open, buffered mutations are visible to
-        the same session — so SELECTs inside the same transaction must
+        the same session - so SELECTs inside the same transaction must
         observe them.  This mirrors Postgres' read-your-own-writes
         semantics inside a single transaction.
         """
@@ -560,7 +560,7 @@ class _FakeProbeClient:
 
 @dataclass
 class _FakeAuditLogger:
-    """List-backed audit sink — every ``write`` is recorded."""
+    """List-backed audit sink - every ``write`` is recorded."""
 
     events: list[AuditEvent] = field(default_factory=list)
 
@@ -670,10 +670,10 @@ class DeptCredentialCRUDStateMachine(RuleBasedStateMachine):
             self._probe,
             self._audit,
         ) = _build_service()
-        # Ghost model — the test's belief about which (dept, service)
+        # Ghost model - the test's belief about which (dept, service)
         # pairs currently have a credential registered.
         self._expected_pairs: set[tuple[str, str]] = set()
-        # Action counters — invariants compare these against the
+        # Action counters - invariants compare these against the
         # audit log to catch double-emissions or missing emissions.
         self._expected_audit_actions: list[str] = []
 
@@ -683,7 +683,7 @@ class DeptCredentialCRUDStateMachine(RuleBasedStateMachine):
 
     @initialize()
     def _bootstrap(self) -> None:
-        # No-op — the constructor already wired everything up.  The
+        # No-op - the constructor already wired everything up.  The
         # ``@initialize`` decorator just ensures Hypothesis runs the
         # invariants once before the first rule.
         return None
@@ -889,7 +889,7 @@ class DeptCredentialCRUDStateMachine(RuleBasedStateMachine):
             (dept_id, service) in self._expected_pairs
         ) is was_present
 
-        # The DB row count is unchanged — buffered upsert discarded.
+        # The DB row count is unchanged - buffered upsert discarded.
         assert self._pg.bots == prior_pairs_snapshot, (
             "DB rolled back; bots map should match pre-call snapshot"
         )
@@ -1047,7 +1047,7 @@ class DeptCredentialCRUDStateMachine(RuleBasedStateMachine):
 
 
 # ---------------------------------------------------------------------------
-# Hypothesis test driver — wraps the state machine into a pytest test.
+# Hypothesis test driver - wraps the state machine into a pytest test.
 # ---------------------------------------------------------------------------
 
 DeptCredentialCRUDStateMachine.TestCase.settings = _PROFILE
@@ -1062,7 +1062,7 @@ TestDeptCredentialCRUDAtomicity = DeptCredentialCRUDStateMachine.TestCase
 
 
 class TestRemoveIdempotency:
-    """**I2 — Remove is idempotent across repeated calls.**
+    """**I2 - Remove is idempotent across repeated calls.**
 
     Removing a credential is idempotent.  This test pins the contract
     on a focused, single-pair scenario: three back-to-back removes
@@ -1086,7 +1086,7 @@ class TestRemoveIdempotency:
         assert ("payments", "jira") in pg.bots
         assert _final_path("payments", "jira") in vault.store
 
-        # First remove — actually deletes.
+        # First remove - actually deletes.
         first = await service.remove(
             dept_id="payments",
             service="jira",
@@ -1095,7 +1095,7 @@ class TestRemoveIdempotency:
         )
         assert first.existed is True
 
-        # Second + third — no-ops, still 200.
+        # Second + third - no-ops, still 200.
         second = await service.remove(
             dept_id="payments",
             service="jira",
@@ -1126,7 +1126,7 @@ class TestRemoveIdempotency:
 
 
 class TestUpdateLeavesNoStaleVaultPaths:
-    """**I3 — Update overwrites the same final path; no stale keys
+    """**I3 - Update overwrites the same final path; no stale keys
     are ever created.**
 
     The orchestrator's ``add_or_update`` re-uses the same
@@ -1164,7 +1164,7 @@ class TestUpdateLeavesNoStaleVaultPaths:
 
 
 class TestAddFailureLeavesNoSideEffects:
-    """**I1 + I4 — A failed staging write produces zero side
+    """**I1 + I4 - A failed staging write produces zero side
     effects beyond the audit row.**
 
     Targeted complement to the state machine's

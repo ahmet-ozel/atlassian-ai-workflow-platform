@@ -1,4 +1,4 @@
-"""Integration smoke — personal PAT fetch (`ops work` the implementation).
+﻿"""Integration smoke - personal PAT fetch (`ops work` the implementation).
 
 U14 opt-in: when a user has consented to the persistent personal-PAT
 flow, calling ``/api/credentials/fetch`` returns a Vault path that

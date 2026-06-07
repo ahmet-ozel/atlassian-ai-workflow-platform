@@ -1,25 +1,25 @@
-"""Unit tests for ``AgentRunnerWorkflow`` ``research_*`` flows.
+﻿"""Unit tests for ``AgentRunnerWorkflow`` ``research_*`` flows.
 
 Covers the main research behaviors:
 
-    1. ``research_publish_confluence`` happy path — verifies the
+    1. ``research_publish_confluence`` happy path - verifies the
        activity sequence (``set_assignee_to_bot`` → ``firecrawl_search``
        → ``firecrawl_scrape`` → ``confluence_create_page`` →
        ``jira_add_comment`` carrying the page link) and that the
        rendered body picks up the
        :func:`format_research_publish_confluence_body` Kaynaklar
        block.
-    2. ``research_publish_confluence`` 403 graceful path — a blocked
+    2. ``research_publish_confluence`` 403 graceful path - a blocked
        URL produces the canonical
        ``🤖 {url} domain'i araştırma için izinli değil`` Jira comment,
        a ``research_minio_offload`` / ``firecrawl_blocked:{url}``
        partial-failure marker, and the workflow continues with the
        remaining URLs without raising.
-    3. ``research_summary_jira`` short-content path — when the
+    3. ``research_summary_jira`` short-content path - when the
        summary fits within ``max_words`` *and* the source list fits
        within ``max_sources`` the comment carries no MinIO link and
        the offload activity is NOT invoked.
-    4. ``research_summary_jira`` long-content path — when the
+    4. ``research_summary_jira`` long-content path - when the
        summary overflows the comment carries the MinIO URI returned
        by ``minio_put_research_summary`` and the comment text embeds
        it via the ``🔗 Tam içerik:`` line.
@@ -27,7 +27,7 @@ Covers the main research behaviors:
 The tests drive the body methods directly (i.e.
 ``_handle_research_publish_confluence`` /
 ``_handle_research_summary_jira``) without spinning up a Temporal
-worker — mirroring the approach already used by
+worker - mirroring the approach already used by
 ``test_agent_runner_confluence.py``.
 
 """
@@ -46,7 +46,7 @@ from temporalio import workflow as _temporal_workflow
 
 
 # ---------------------------------------------------------------------------
-# sys.path bootstrap — mirrors ``test_agent_runner_confluence.py``.
+# sys.path bootstrap - mirrors ``test_agent_runner_confluence.py``.
 # ---------------------------------------------------------------------------
 
 _WORKER_ROOT: Path = Path(__file__).resolve().parents[2]
@@ -62,7 +62,7 @@ for _candidate in (_SRC_DIR, _TEMPORAL_SHARED_SRC, _MCP_CLIENT_SRC):
     if _candidate.is_dir() and _str not in sys.path:
         sys.path.insert(0, _str)
 
-# noqa: E402 below — imports after sys.path bootstrap.
+# noqa: E402 below - imports after sys.path bootstrap.
 
 from agent_runner.workflows.agent_runner_workflow import (  # noqa: E402
     AgentRunnerWorkflow,
@@ -216,7 +216,7 @@ def _patch_runtime(
 
 
 # ---------------------------------------------------------------------------
-# 1. ``research_publish_confluence`` — happy path
+# 1. ``research_publish_confluence`` - happy path
 # ---------------------------------------------------------------------------
 
 
@@ -229,7 +229,7 @@ class TestResearchPublishConfluenceHappyPath:
         wf = make_wf()
         inp = _make_input(workflow_type="research_publish_confluence")
 
-        # Stateful scrape route — yields a different payload per URL
+        # Stateful scrape route - yields a different payload per URL
         # so the formatter has two distinct sources to render.
         scrape_payloads = {
             _ALLOWED_URL_A: {
@@ -303,7 +303,7 @@ class TestResearchPublishConfluenceHappyPath:
                 f"{called_names!r}"
             )
 
-        # Sequence invariants — assignee first, search before scrape,
+        # Sequence invariants - assignee first, search before scrape,
         # scrape before create, create before completion comment.
         idx_assignee = called_names.index("set_assignee_to_bot")
         idx_search = called_names.index("firecrawl_search")
@@ -348,7 +348,7 @@ class TestResearchPublishConfluenceHappyPath:
 
 
 # ---------------------------------------------------------------------------
-# 2. ``research_publish_confluence`` — 403 graceful degradation
+# 2. ``research_publish_confluence`` - 403 graceful degradation
 # ---------------------------------------------------------------------------
 
 
@@ -421,7 +421,7 @@ class TestResearchPublishConfluenceBlockedDomain:
         _drive(_run)
 
         # The blocked-URL Jira comment is present alongside the
-        # standard completion comment — at least one comment quotes
+        # standard completion comment - at least one comment quotes
         # the blocked URL with the canonical Turkish refusal text.
         comment_calls = _activity_calls_for(activity_mock, "jira_add_comment")
         comment_bodies = [_activity_args(c)[1] for c in comment_calls]
@@ -436,7 +436,7 @@ class TestResearchPublishConfluenceBlockedDomain:
         )
 
         # The workflow still ran ``confluence_create_page`` for the
-        # allowed URL — partial degradation, not full failure.
+        # allowed URL - partial degradation, not full failure.
         create_calls = _activity_calls_for(
             activity_mock, "confluence_create_page"
         )
@@ -456,7 +456,7 @@ class TestResearchPublishConfluenceBlockedDomain:
 
 
 # ---------------------------------------------------------------------------
-# 3. ``research_summary_jira`` — short content (no MinIO link)
+# 3. ``research_summary_jira`` - short content (no MinIO link)
 # ---------------------------------------------------------------------------
 
 
@@ -516,14 +516,14 @@ class TestResearchSummaryJiraShortContent:
         body = _activity_args(comment_calls[0])[1]
         assert "Araştırma özeti" in body
         assert _ALLOWED_URL_A in body
-        # No MinIO URI appended — the formatter returned ``None`` so
+        # No MinIO URI appended - the formatter returned ``None`` so
         # the workflow kept the comment short-form.
         assert "minio://" not in body
         assert "Tam içerik:" not in body
 
 
 # ---------------------------------------------------------------------------
-# 4. ``research_summary_jira`` — long content (MinIO link path)
+# 4. ``research_summary_jira`` - long content (MinIO link path)
 # ---------------------------------------------------------------------------
 
 
@@ -597,6 +597,6 @@ class TestResearchSummaryJiraLongContent:
             f"expected MinIO URI {offload_uri!r} embedded in comment; "
             f"got: {body!r}"
         )
-        # The placeholder sentinel from the formatter is replaced — it
+        # The placeholder sentinel from the formatter is replaced - it
         # must NOT leak into the final comment body.
         assert "minio://research-summary-pending" not in body

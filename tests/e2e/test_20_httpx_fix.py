@@ -1,4 +1,4 @@
-"""
+﻿"""
 Test 20: Verify httpx import fix (R20).
 
 Validates that the httpx dependency has been correctly added to the test
@@ -88,7 +88,7 @@ class TestHttpxImportFix:
         )
 
         # The test should at least collect successfully (exit 0 or test failures
-        # are acceptable — import errors are not)
+        # are acceptable - import errors are not)
         # Exit code 5 means "no tests collected" which is also acceptable
         assert result.returncode in (0, 1, 5), (
             f"pytest exited with unexpected code {result.returncode}.\n"

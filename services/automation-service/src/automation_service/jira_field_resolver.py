@@ -1,4 +1,4 @@
-"""Jira custom field name → id resolver with TTL'li cache.
+﻿"""Jira custom field name → id resolver with TTL'li cache.
 
 The platform MUST NOT hard-code Jira custom field ids
 (``customfield_10001``, ``customfield_10049``, ...) anywhere in the
@@ -33,7 +33,7 @@ Resolver contract::
   certain the missing entry is genuinely absent on the upstream
   side rather than a stale lookup.
 
-The resolver is **purely a translation layer** — no audit emission,
+The resolver is **purely a translation layer** - no audit emission,
 no metric recording, no retry policy. Those concerns belong to the
 HTTP client (``jira_client``) which the design earmarks for a thin
 ``http-shared``-backed wrapper around the MCP. Keeping this module
@@ -99,7 +99,7 @@ _DEFAULT_TTL: Final[timedelta] = timedelta(hours=1)
 
 
 def _utcnow() -> datetime:
-    """Default clock — UTC ``now()``.
+    """Default clock - UTC ``now()``.
 
     Factored out so :class:`JiraFieldResolver` can take it as an
     injectable callable. Tests pass a fake clock to exercise the TTL
@@ -108,7 +108,7 @@ def _utcnow() -> datetime:
 
     Note: this helper is the *only* module-level reference to
     ``datetime.now`` in this file. The resolver itself never imports
-    or calls ``datetime.now`` directly — it always goes through the
+    or calls ``datetime.now`` directly - it always goes through the
     injected ``now`` callable so the test suite can keep the
     behaviour deterministic.
     """
@@ -117,7 +117,7 @@ def _utcnow() -> datetime:
 
 
 # ---------------------------------------------------------------------------
-# Protocol — Jira field listing client
+# Protocol - Jira field listing client
 # ---------------------------------------------------------------------------
 
 
@@ -129,7 +129,7 @@ class JiraFieldClient(Protocol):
     returning an iterable of field descriptors shaped like the Jira
     REST response (``[{"id": "customfield_10001", "name": "Sprint",
     ...}, ...]``). Declaring this as a ``Protocol`` keeps the
-    resolver decoupled from the concrete HTTP transport — production
+    resolver decoupled from the concrete HTTP transport - production
     wiring binds it to an ``httpx``-based client routed through the
     ``atlassian_mcp_bitbucket`` MCP, while tests pass a plain in-memory
     fake.
@@ -189,7 +189,7 @@ class _CacheSnapshot:
 
     Holding the ``name → id`` mapping and the ``fetched_at`` timestamp
     in a single frozen dataclass lets the resolver swap them as one
-    atomic reference assignment after a refresh — readers that
+    atomic reference assignment after a refresh - readers that
     grabbed the previous snapshot keep observing a consistent view
     until they next ask for a fresh one. This is also why the
     resolver does NOT mutate ``self._cache`` in place: an in-place
@@ -215,7 +215,7 @@ class JiraFieldResolver:
 
     Intended lifetime: one instance per service process, held on
     ``app.state.jira_field_resolver``. The class is safe for
-    concurrent use across asyncio tasks — the :class:`asyncio.Lock`
+    concurrent use across asyncio tasks - the :class:`asyncio.Lock`
     serialises refresh attempts so a burst of N concurrent
     :meth:`resolve_field_id` calls performs at most one upstream
     fetch.
@@ -251,7 +251,7 @@ class JiraFieldResolver:
         ttl:
             How long a cached snapshot is considered fresh. Must be
             non-negative; ``timedelta(0)`` is accepted and disables
-            the cache entirely (every call refreshes — useful in
+            the cache entirely (every call refreshes - useful in
             tests, never in production). Defaults to one hour per
             the design document.
         now:
@@ -320,7 +320,7 @@ class JiraFieldResolver:
             The user-visible Jira field name as it appears in the
             ``"name"`` column of ``GET /rest/api/3/field``
             (e.g. ``"Sprint"``, ``"Epic Link"``).
-            Lookup is case-sensitive — Jira treats field names as
+            Lookup is case-sensitive - Jira treats field names as
             case-sensitive on the wire and we mirror that contract.
 
         Returns
@@ -346,7 +346,7 @@ class JiraFieldResolver:
 
         # Slow path: refresh under the lock.
         async with self._lock:
-            # Double-checked locking — another coroutine may have
+            # Double-checked locking - another coroutine may have
             # raced ahead and refreshed the snapshot while we were
             # waiting on the lock. Re-read after acquiring.
             snapshot = self._cache
@@ -363,7 +363,7 @@ class JiraFieldResolver:
         """Return ``True`` iff *snapshot* is older than the TTL.
 
         Equality is treated as stale (``>=``) so a TTL of exactly
-        zero behaves intuitively as "never cache" — one boundary case
+        zero behaves intuitively as "never cache" - one boundary case
         that surfaces in property tests.
         """
 
@@ -373,7 +373,7 @@ class JiraFieldResolver:
         """Fetch the current field list and replace the snapshot.
 
         Caller MUST hold ``self._lock``. The HTTP call happens
-        without the lock held only conceptually — :class:`asyncio.Lock`
+        without the lock held only conceptually - :class:`asyncio.Lock`
         is held across the ``await`` so concurrent callers see at
         most one in-flight fetch.
 
@@ -381,7 +381,7 @@ class JiraFieldResolver:
         ``self._cache`` and returned. On exception ``self._cache`` is
         left untouched (the previous stale snapshot, if any, remains
         readable) and the exception propagates so the caller can
-        fail fast — preferable to silently serving an empty cache.
+        fail fast - preferable to silently serving an empty cache.
         """
 
         _LOG.debug(
@@ -390,7 +390,7 @@ class JiraFieldResolver:
         fields = await self._jira_client.get_fields()
         # Build the mapping defensively: skip entries missing the
         # required keys so a malformed payload from upstream cannot
-        # poison the cache. Duplicate names (rare but possible —
+        # poison the cache. Duplicate names (rare but possible -
         # Jira allows multiple custom fields with the same display
         # name) collapse to the *last* descriptor seen, mirroring the
         # behaviour of `dict()` on a list of pairs. Callers that need

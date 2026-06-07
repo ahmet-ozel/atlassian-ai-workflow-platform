@@ -1,4 +1,4 @@
-"""Unit tests for the ``tests/property/_path_whitelist`` helper module.
+﻿"""Unit tests for the ``tests/property/_path_whitelist`` helper module.
 
 The helper is a *reusable* AST scanner consumed by the property tests
 in :mod:`tests.property.test_path_coverage`,
@@ -9,7 +9,7 @@ trees so future contributors can refactor the scanner with
 confidence.
 
 The tests are example-based (no Hypothesis) because the helper is a
-piece of static infrastructure — its surface is small and the
+piece of static infrastructure - its surface is small and the
 interesting cases are concrete code shapes (``import paramiko``,
 ``httpx.AsyncClient(base_url="https://acme.atlassian.net")``,
 ``client.start_workflow(...)`` inside an activity, etc.).
@@ -602,7 +602,7 @@ def test_full_scan_against_workspace_runs_without_error() -> None:
     """Smoke test: invoking :func:`run_full_scan` against the live
     platform tree must complete without raising. The test does not
     assert specific finding counts (those belong to property tests
-    dedicated property tests) — it only guards against scanner crashes triggered
+    dedicated property tests) - it only guards against scanner crashes triggered
     by real-world source shapes (multi-line strings, walrus operators,
     pattern matching, async comprehensions, etc.).
     """

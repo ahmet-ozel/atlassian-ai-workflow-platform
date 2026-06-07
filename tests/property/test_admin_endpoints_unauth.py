@@ -1,4 +1,4 @@
-"""Admin endpoints reject unauthenticated and non-admin calls.
+﻿"""Admin endpoints reject unauthenticated and non-admin calls.
 
 
 
@@ -75,7 +75,7 @@ if str(_AUTH_SHARED_SRC) not in sys.path:
 
 
 # ---------------------------------------------------------------------------
-# Module loader — admin-dashboard-api isn't a shared library and cannot
+# Module loader - admin-dashboard-api isn't a shared library and cannot
 # share the literal ``src`` package name with sibling services. Load it
 # under a unique alias so the relative imports inside the package
 # (``from..config import Settings``, ``from.dependencies import...``)
@@ -119,7 +119,7 @@ _auth_mod = _load_admin_api_submodule("auth.dependencies")
 
 
 # ---------------------------------------------------------------------------
-# Manifest discovery — drives the ``service_name`` axis of the test.
+# Manifest discovery - drives the ``service_name`` axis of the test.
 # ---------------------------------------------------------------------------
 
 _MANIFEST_PATH: Path = _WORKSPACE_ROOT / "config" / "services.manifest.json"
@@ -143,7 +143,7 @@ class _Endpoint:
  ``template`` is appended to the ``/admin/services`` prefix and may
  contain a ``{name}`` placeholder. ``body`` is the JSON payload
  (or ``None`` to skip). Bodies are picked so the request would
- otherwise validate cleanly — auth is the only failure path being
+ otherwise validate cleanly - auth is the only failure path being
  exercised.
  """
 
@@ -156,15 +156,15 @@ class _Endpoint:
 #:
 #: * ``GET /`` → list summaries.
 #: * ``GET /{name}`` → service detail.
-#: * ``POST /{name}/start`` → start — body has the
+#: * ``POST /{name}/start`` → start - body has the
 #: ``env_overrides`` key set to ``{}`` so the Pydantic model
 #: validates regardless of when body parsing runs relative to
 #::func:`require_admin`.
-#: * ``POST /{name}/stop`` → stop — body optional;
+#: * ``POST /{name}/stop`` → stop - body optional;
 #: we still send ``{}`` so the StopRequest path matches its
 #: ``remove_volumes`` default.
-#: * ``POST /{name}/restart`` → restart — no body.
-#: * ``POST /{name}/test`` → run tests — no body
+#: * ``POST /{name}/restart`` → restart - no body.
+#: * ``POST /{name}/test`` → run tests - no body
 #: (only the ``sectionstream=`` query parameter, defaulted).
 #: * ``GET /{name}/logs`` → tail logs.
 #: * ``GET /{name}/health`` → health snapshot.
@@ -206,8 +206,8 @@ class _NonAdminValidator:
  401-then-200 path through:func:`require_admin`. To prove the
  403 branch we override ``get_validator``
  with this class, which validates the token (anything non-empty
- succeeds) but returns ``groups=["user"]`` — explicitly *not* an
- admin claim — so:func:`require_admin` rejects with 403.
+ succeeds) but returns ``groups=["user"]`` - explicitly *not* an
+ admin claim - so:func:`require_admin` rejects with 403.
  """
 
     def validate(self, token: str) -> dict[str, Any]:
@@ -234,12 +234,12 @@ def _build_app(*, with_user_validator: bool) -> FastAPI:
  Postgres / Vault / Temporal), and the only dependencies it needs
  to override are:
 
- * ``get_lifecycle_service`` — return ``None``. Auth always runs
+ * ``get_lifecycle_service`` - return ``None``. Auth always runs
  first and short-circuits with 401 / 403, so this dependency
  should never produce a value the path operation actually
  consumes. Returning ``None`` makes any accidental fall-through
  crash loudly via ``AttributeError`` rather than silently 200.
- * ``get_validator`` (optional) — replace with:class:`_NonAdminValidator` so the 403 branch can be reached.
+ * ``get_validator`` (optional) - replace with:class:`_NonAdminValidator` so the 403 branch can be reached.
  """
 
     app = FastAPI()
@@ -250,7 +250,7 @@ def _build_app(*, with_user_validator: bool) -> FastAPI:
     return app
 
 
-# Build the two app instances exactly once per test session — Hypothesis
+# Build the two app instances exactly once per test session - Hypothesis
 # samples thousands of times across the eight parametrised cases and
 # spinning up a new FastAPI app per sample would dominate the runtime.
 _APP_NO_AUTH: FastAPI = _build_app(with_user_validator=False)
@@ -275,7 +275,7 @@ async def _async_request(
  Uses:class:`httpx.ASGITransport` because modern ``httpx`` (≥0.28)
  removed the deprecated ``AsyncClient(app=...)`` constructor. The
  base URL is a synthetic ``http://testserver`` which the transport
- short-circuits — no real socket is opened.
+ short-circuits - no real socket is opened.
  """
 
     transport = httpx.ASGITransport(app=app)
@@ -413,7 +413,7 @@ def test_admin_endpoints_reject_non_admin_token(
 # viewer/lead checks (the standard role precedence).
 #
 # These properties are validated against ``auth_shared.policy.check``
-# — the single source of truth for RBAC decisions in the platform.
+# - the single source of truth for RBAC decisions in the platform.
 # The HTTP layer ``require_admin`` in
 # ``services/admin-dashboard-api/src/auth/dependencies.py`` is the
 # admin-only specialisation of the same matrix; the existing test
@@ -423,7 +423,7 @@ def test_admin_endpoints_reject_non_admin_token(
 # and that future ``automation-service`` /admin/* endpoints will
 # delegate to.
 
-from auth_shared import (  # noqa: E402 — module-level imports above are heavy
+from auth_shared import (  # noqa: E402 - module-level imports above are heavy
     AuthContext,
     MissingActorError,
     PermissionDenied,
@@ -435,7 +435,7 @@ from auth_shared import (  # noqa: E402 — module-level imports above are heavy
 
 
 # ---------------------------------------------------------------------------
-# Strategy helpers — sample valid/invalid roles, dept ids, endpoints
+# Strategy helpers - sample valid/invalid roles, dept ids, endpoints
 # ---------------------------------------------------------------------------
 
 
@@ -448,7 +448,7 @@ assert _ROLE_LIST == ("admin", "dept_admin", "lead", "viewer"), (
     "of sync. Update both before relaxing this check."
 )
 
-# Synthetic dept-id alphabet — kept short so Hypothesis explores the
+# Synthetic dept-id alphabet - kept short so Hypothesis explores the
 # membership matrix densely. Values are lowercase + hyphen to match
 # the Department.id shape used by the API (^[a-z][a-z0-9-]{1,30}$).
 _DEPT_IDS: tuple[str, ...] = (
@@ -586,8 +586,8 @@ def test_global_admin_endpoint_admits_only_admin_role(
 ) -> None:
     """For every global admin endpoint and every (role, dept_ids)
  combination, ``check(actor, "admin")`` admits the call IFF the
- actor's role is exactly ``"admin"``. Any other role — including
- ``dept_admin`` even when its ``dept_ids`` is non-empty — is
+ actor's role is exactly ``"admin"``. Any other role - including
+ ``dept_admin`` even when its ``dept_ids`` is non-empty - is
  rejected with:class:`PermissionDenied` (HTTP 403 surface).
 
  The:func:`auth_shared.policy.check` decision matrix encodes this
@@ -598,7 +598,7 @@ def test_global_admin_endpoint_admits_only_admin_role(
     actor = _ctx(actor_role, *actor_dept_ids)
 
     if actor_role == "admin":
-        # ``admin`` MUST pass — no exception raised.
+        # ``admin`` MUST pass - no exception raised.
         check(actor, "admin")
         assert is_allowed(actor, "admin"), (
             f"endpoint {endpoint.label!r}: admin role MUST be allowed, "
@@ -702,7 +702,7 @@ def test_dept_admin_isolated_from_other_depts(
 )
 @given(
     target_dept_id=st.sampled_from(_DEPT_IDS),
-    # Even with an empty dept_ids set, admin must pass — the role is
+    # Even with an empty dept_ids set, admin must pass - the role is
     # global. The dept_ids argument is irrelevant for admin so we let
     # Hypothesis pick a random size.
     actor_dept_ids=st.frozensets(st.sampled_from(_DEPT_IDS), min_size=0, max_size=3),
@@ -719,7 +719,7 @@ def test_admin_passes_every_dept_scoped_endpoint(
  """
 
     actor = _ctx("admin", *actor_dept_ids)
-    # No exception expected — admin passes unconditionally.
+    # No exception expected - admin passes unconditionally.
     check(actor, endpoint.required_role, dept_id=target_dept_id)
     assert is_allowed(actor, endpoint.required_role, dept_id=target_dept_id)
 
@@ -776,7 +776,7 @@ def test_missing_actor_is_denied_for_every_endpoint(
 
 
 # A claim dict that omits ``sub`` or carries no recognised role MUST
-# raise:class:`MissingClaimError` — a subclass of
+# raise:class:`MissingClaimError` - a subclass of
 #:class:`InvalidTokenError` so the FastAPI dependency translates it
 # into HTTP 401 "eksik bilgi → HTTP 401").
 @hyp_settings(
@@ -828,7 +828,7 @@ def test_extract_auth_context_rejects_malformed_claims(
     # raises because it doesn't match AUTH_ROLES.
     with pytest.raises(MissingClaimError) as exc_info:
         extract_auth_context(claims)
-    # Subclass relationship is part of the contract — admin-dashboard-
+    # Subclass relationship is part of the contract - admin-dashboard-
     # api's ``require_admin`` catches InvalidTokenError to surface a
     # 401, and MissingClaimError MUST be caught by the same handler.
     assert isinstance(exc_info.value, InvalidTokenError)

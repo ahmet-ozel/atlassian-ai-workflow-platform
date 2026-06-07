@@ -1,4 +1,4 @@
-"""OpenCode sidecar activity for code generation.
+﻿"""OpenCode sidecar activity for code generation.
 
 This module provides the ``opencode_generate_code`` Temporal activity that
 communicates with the OpenCode sidecar (``opencode-sidecar:4096``) to
@@ -270,7 +270,7 @@ def _model_payload(model: str | None) -> dict[str, str] | None:
 _JSON_CONTRACT = (
     "You are a non-interactive code generator. Produce the complete file "
     "contents for the requested change and reply with a SINGLE JSON object "
-    "ONLY — no prose, no explanation, no Markdown fences, no plan. The object "
+    "ONLY - no prose, no explanation, no Markdown fences, no plan. The object "
     'must have the exact shape: {"files": [{"path": "<repo-relative path>", '
     '"content": "<full file content>", "action": "create|update|delete"}]}. '
     "Include the entire file content for every create/update entry (never a "
@@ -368,7 +368,7 @@ async def opencode_generate_code(plan: CodePlan, workspace_path: str) -> CodeRes
             # set through the Bitbucket API rather than from a working
             # tree), so the model must answer with the complete file
             # contents as JSON instead of trying to edit files on disk.
-            # The ``general`` agent is a plain assistant — it does not
+            # The ``general`` agent is a plain assistant - it does not
             # enter the ``build`` agent's tool/permission loop, which
             # would otherwise stall on the empty directory.
             message_payload: dict = {
@@ -505,5 +505,5 @@ async def opencode_generate_code(plan: CodePlan, workspace_path: str) -> CodeRes
                 )
                 async with cleanup_client:
                     await cleanup_client.delete(f"/session/{session_id}")
-            except Exception:  # noqa: BLE001 — best-effort cleanup
+            except Exception:  # noqa: BLE001 - best-effort cleanup
                 pass

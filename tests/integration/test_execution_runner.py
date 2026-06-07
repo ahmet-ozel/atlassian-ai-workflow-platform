@@ -1,4 +1,4 @@
-"""End-to-end integration test for ``ExecutionRunWorkflow``.
+﻿"""End-to-end integration test for ``ExecutionRunWorkflow``.
 
 
 This test exercises the full ``ExecutionRunWorkflow`` lifecycle against
@@ -29,7 +29,7 @@ invariant of the workflow:
  table predicts cleanup, and ``ssh_cleanup`` is invoked iff cleanup
  is performed.
 - ``ssh_connect_and_run`` retry policy (3x exponential) is asserted by
- triggering a transient failure that succeeds on retry — If the project later wants a real-MinIO smoke variant, the same fake
+ triggering a transient failure that succeeds on retry - If the project later wants a real-MinIO smoke variant, the same fake
 keys / contents can be replayed against an ``--run-docker``-gated
 fixture; that variant is out of scope for the deterministic suite.
 
@@ -66,7 +66,7 @@ class _FakeMinIO:
 
  Records every uploaded artifact as ``{(bucket, key): bytes}`` and
  counts the number of upload calls. Each upload returns an
- :class:`ArtifactRef`-shaped dict — the workflow does not consume
+ :class:`ArtifactRef`-shaped dict - the workflow does not consume
  the return value beyond the activity-completion signal, so a
  structural shape is sufficient.
  """
@@ -332,7 +332,7 @@ async def test_execution_run_cleanup_matrix(
 async def test_ssh_connect_retries_on_transient_failure() -> None:
     """The workflow's ssh_connect_and_run activity options carry a
  ``RetryPolicy(maximum_attempts=3)``. A transient connection failure
- on the first attempt is followed by success on the second — the
+ on the first attempt is followed by success on the second - the
  workflow must complete cleanly without surfacing the failure.
 
  This exercises the retry path without requiring a real SSH server:
@@ -373,7 +373,7 @@ async def test_ssh_connect_retries_on_transient_failure() -> None:
             ssh_attempts += 1
             log.calls.append(("ssh_connect_and_run", (ssh_attempts,)))
             if ssh_attempts == 1:
-                # Transient failure on first attempt — Temporal retries.
+                # Transient failure on first attempt - Temporal retries.
                 raise ConnectionError(
                     "transient SSH failure (test injection)"
                 )

@@ -1,4 +1,4 @@
-# Repo Resolution Order — Canonical Contract
+﻿# Repo Resolution Order - Canonical Contract
 
 > **Audience:** End users writing tasks (so they know where to put the repo
 > name), the LLM that runs `task_analysis.md` (so its prompt instructions
@@ -31,7 +31,7 @@ stopping at the first match:
 
 **Rule of thumb for users:** Put the repo name in **one** of the first
 three places. Don't scatter it across multiple fields with different values
-— the highest-priority source wins and others are ignored.
+- the highest-priority source wins and others are ignored.
 
 ---
 
@@ -56,7 +56,7 @@ need ("the Jira ticket type forces this field to be filled in").
 ### 2. Jira label `repo:<name>`
 
 **Format:** `repo:<repo-slug>` (case-insensitive). Multi-word repos use
-hyphens — Jira labels strip whitespace.
+hyphens - Jira labels strip whitespace.
 
 **Examples:** `repo:payment-callbacks`, `repo:hr-portal`.
 
@@ -85,7 +85,7 @@ ai-bot:
 
 **Pros:** Structured, machine-parseable, lives next to the rest of the
 bot directives (workflow_type, output_actions, cleanup).
-**Cons:** Users must know YAML syntax — the Task Creation Assistant
+**Cons:** Users must know YAML syntax - the Task Creation Assistant
 helps generate it, but a manually-typed task may have a malformed front
 matter that the bot rejects with a `needs_info` comment.
 
@@ -103,7 +103,7 @@ markdown body for a literal "Repo:" or "Repository:" line:
 
 **Pros:** Natural for users following the markdown templates in
 `task_creation_assistant.md` §"Markdown Açıklama Şablonları".
-**Cons:** LLM-driven heuristic — robust for the documented templates but
+**Cons:** LLM-driven heuristic - robust for the documented templates but
 brittle if the user writes "I want to work on the payment-callbacks
 repo" (the LLM may resolve it correctly, but at lower confidence,
 risking source #6).
@@ -126,7 +126,7 @@ When the resolved department has exactly one entry in
 ]
 ```
 
-**Pros:** Zero-friction for small departments — the user does not type
+**Pros:** Zero-friction for small departments - the user does not type
 the repo name at all.
 **Cons:** Silently broken when a second repo is added later; the bot
 suddenly starts asking via source #6 even though existing tasks worked
@@ -154,9 +154,9 @@ infer the repo from free-form description text:
   🤖 "callback retry" ifadesi birden fazla repo'ya uyabilir.
      Hangisinde çalışayım?
 
-     A) `payment-callbacks` — callback gönderme servisi
-     B) `callback-gateway`  — callback router/proxy
-     C) `callback-router`   — eski legacy callback dispatcher
+     A) `payment-callbacks` - callback gönderme servisi
+     B) `callback-gateway`  - callback router/proxy
+     C) `callback-router`   - eski legacy callback dispatcher
 
      Yanıt olarak `[A]`, `[B]` veya `[C]` yazın
      (veya repo adını tam olarak tekrar yazın).
@@ -170,7 +170,7 @@ infer the repo from free-form description text:
 When sources #1-6 all fail (no field, no label, no front-matter, no body
 mention, multi-repo dept, LLM cannot infer), the bot posts a
 `needs_info` comment to the Jira issue and waits up to 7 days for a
-reply (the same waiting protocol as any other missing-info loop —
+reply (the same waiting protocol as any other missing-info loop -
 3-iteration cap, then `out_of_scope`).
 
 ---
@@ -206,16 +206,16 @@ can spot accidental conflicts after the fact in the costs / audit panel.
 ## Cross-references
 
 - **User-facing prompt:** `platform/prompts/task_creation_assistant.md`
-  v2.0 — §"WORKFLOW TYPE SEÇİM REHBERİ" / "Repo / Workspace / Branch
+  v2.0 - §"WORKFLOW TYPE SEÇİM REHBERİ" / "Repo / Workspace / Branch
   otomatik türetme" mirrors the precedence list above.
 - **LLM decision prompt:** `platform/workers/agent-runner-worker/prompts/task_analysis.md`
-  — §"Target Repository Selection" enforces sources #5 (single-repo
+  - §"Target Repository Selection" enforces sources #5 (single-repo
   fallback) and #6 (LLM inference + structured choice).
 - **Field resolver:** `platform/services/automation-service/src/automation_service/jira_field_resolver.py`
-  — translates the dept's "Bot Repo" custom field display name to a
+  - translates the dept's "Bot Repo" custom field display name to a
   tenant-local field id at startup.
 - **Department config schema:** `platform/config/departments.schema.json`
-  — `repo_mappings` definition (source #5).
+  - `repo_mappings` definition (source #5).
 
 ---
 
@@ -223,7 +223,7 @@ can spot accidental conflicts after the fact in the costs / audit panel.
 
 ### Adding a new precedence source
 
-1. Edit this doc first — bump the table to N+1 rows, document the new
+1. Edit this doc first - bump the table to N+1 rows, document the new
    source's contract, conflict rules, audit shape.
 2. Update `prompts/task_creation_assistant.md` and
    `agent-runner-worker/prompts/task_analysis.md` so the user-facing

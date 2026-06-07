@@ -1,4 +1,4 @@
-"""Unit tests for Approval Gate signal forwarding in the dispatcher.
+﻿"""Unit tests for Approval Gate signal forwarding in the dispatcher.
 
 When a Jira comment carries ``[approve]`` or ``[reject]`` the
 dispatcher forwards an ``approval_received`` signal to the running
@@ -13,7 +13,7 @@ instead of timing out at 24h. Coverage:
   ``approval_signal_forwarding_failed`` audit row but does not break
   dispatch.
 * The forward branch sits between needs_info and normal workflow
-  start — needs_info still wins when both fire.
+  start - needs_info still wins when both fire.
 """
 
 from __future__ import annotations
@@ -25,7 +25,7 @@ from typing import Any
 import pytest
 
 # ---------------------------------------------------------------------------
-# Path setup — mirror test_webhooks_dispatcher.py so imports resolve
+# Path setup - mirror test_webhooks_dispatcher.py so imports resolve
 # regardless of pytest's cwd.
 # ---------------------------------------------------------------------------
 
@@ -335,7 +335,7 @@ class TestApprovalSignalForwarding:
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
         "body",
-        ["[APPROVE]", "[Reject]", "Looks good — [Approve] please"],
+        ["[APPROVE]", "[Reject]", "Looks good - [Approve] please"],
     )
     async def test_case_insensitive_match(
         self,
@@ -372,7 +372,7 @@ class TestApprovalSignalForwarding:
 
         result = await dispatcher.dispatch(_comment_payload("[approve]"))
 
-        # Dispatch flow stays whole — the action still resolves to
+        # Dispatch flow stays whole - the action still resolves to
         # ``approval_forwarded`` so the webhook layer returns 200.
         assert result.action == "approval_forwarded"
         # Failure audit row written.

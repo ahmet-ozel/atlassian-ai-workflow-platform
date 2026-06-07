@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 /**
- * WorkspacesTab — Services panel'inin alt sekmesi.
+ * WorkspacesTab - Services panel'inin alt sekmesi.
  *
  * SSH üzerindeki ``$RUNNER_BASE_PATH`` altındaki task workspace'lerini
  * tablo halinde listeler ve admin'in tek tıkla silmesini sağlar. UI
@@ -12,9 +12,9 @@
  * Akış:
  * 1. Mount edildiğinde liste fetch edilir; "Refresh" butonu manuel
  *    yeniden yüklemeye izin verir.
- * 2. Her satırın ``[Sil]`` butonu confirm modal açar — onay üzerine
+ * 2. Her satırın ``[Sil]`` butonu confirm modal açar - onay üzerine
  *    DELETE çağrılır, başarılıysa satır listeden çıkar.
- * 3. 400 ``invalid_issue_key_format`` (path-traversal red) UI'a düşmez —
+ * 3. 400 ``invalid_issue_key_format`` (path-traversal red) UI'a düşmez -
  *    backend regex'ine zaten yalnızca regex uyan key'ler liste hâlinde
  *    geliyor; yine de defansif olarak hata banner'ı gösterilir.
  *
@@ -29,7 +29,7 @@ import { useCallback, useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api-client";
 
 // --------------------------------------------------------------------------
-// Types — backend response shape (src/routers/runner_workspaces.py)
+// Types - backend response shape (src/routers/runner_workspaces.py)
 // --------------------------------------------------------------------------
 
 type Workspace = {
@@ -53,14 +53,14 @@ type ListState =
 // --------------------------------------------------------------------------
 
 function formatTimestamp(value: string | null | undefined): string {
-  if (!value) return "—";
+  if (!value) return "-";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleString();
 }
 
 function formatSize(sizeMb: number): string {
-  if (!Number.isFinite(sizeMb) || sizeMb < 0) return "—";
+  if (!Number.isFinite(sizeMb) || sizeMb < 0) return "-";
   if (sizeMb < 1) return "<1 MB";
   if (sizeMb < 1024) return `${sizeMb} MB`;
   return `${(sizeMb / 1024).toFixed(2)} GB`;
@@ -85,7 +85,7 @@ const headerCellStyle: React.CSSProperties = {
 };
 
 // --------------------------------------------------------------------------
-// Confirm dialog (inline — no shadcn/portal dependency yet)
+// Confirm dialog (inline - no shadcn/portal dependency yet)
 // --------------------------------------------------------------------------
 
 type ConfirmState =
@@ -262,7 +262,7 @@ export default function WorkspacesTab() {
         setConfirm({ kind: "idle" });
         return;
       }
-      // Success — drop the row locally so the table updates without
+      // Success - drop the row locally so the table updates without
       // a full refetch round-trip; keep the data fresh by triggering
       // a refresh in the background.
       setState((prev) => {
@@ -284,7 +284,7 @@ export default function WorkspacesTab() {
   const lastRefreshedLabel =
     state.kind === "ok"
       ? formatTimestamp(state.lastRefreshed.toISOString())
-      : "—";
+      : "-";
 
   return (
     <section style={{ marginTop: "1rem" }}>

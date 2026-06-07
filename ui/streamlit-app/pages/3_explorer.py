@@ -1,16 +1,16 @@
-"""Streamlit Explorer page.
+﻿"""Streamlit Explorer page.
 
 Explorer lets the user browse Jira issues, Bitbucket pull requests
 and Confluence pages from the active department's catalogue. Unlike
 the chat page, Explorer is **read-only** so it talks to MCP
-directly through the foundation client — but only after the banned
+directly through the foundation client - but only after the banned
 tool list is applied (foundation `mcp_client.filter_tools`). Any
 write-action tool (e.g. `bitbucket_merge_pr`,
 `confluence_delete_page`) is filtered out before the catalogue
 reaches this page. Static checks assert the same invariant from an
 AST angle.
 
-The page itself does not import write tools by name — only
+The page itself does not import write tools by name - only
 ``filter_tools`` and the read-only invocation helpers are called.
 """
 
@@ -54,7 +54,7 @@ tab_jira, tab_bitbucket, tab_confluence = st.tabs(
 
 
 # ---------------------------------------------------------------------------
-# Jira — read-only issue browser
+# Jira - read-only issue browser
 # ---------------------------------------------------------------------------
 
 with tab_jira:
@@ -75,7 +75,7 @@ with tab_jira:
     if issues:
         for issue in issues[:50]:
             with st.expander(
-                f"{issue.get('key', '?')} — {issue.get('summary', '')}"
+                f"{issue.get('key', '?')} - {issue.get('summary', '')}"
             ):
                 st.write(issue.get("description") or "(açıklama yok)")
                 if issue.get("url"):
@@ -83,7 +83,7 @@ with tab_jira:
 
 
 # ---------------------------------------------------------------------------
-# Bitbucket — read-only PR list (write tools filtered out upstream)
+# Bitbucket - read-only PR list (write tools filtered out upstream)
 # ---------------------------------------------------------------------------
 
 with tab_bitbucket:
@@ -104,7 +104,7 @@ with tab_bitbucket:
     if prs:
         for pr in prs[:50]:
             with st.expander(
-                f"#{pr.get('id', '?')} — {pr.get('title', '')}"
+                f"#{pr.get('id', '?')} - {pr.get('title', '')}"
             ):
                 st.write(
                     f"State: `{pr.get('state', '?')}`  •  "
@@ -115,7 +115,7 @@ with tab_bitbucket:
 
 
 # ---------------------------------------------------------------------------
-# Confluence — read-only page search
+# Confluence - read-only page search
 # ---------------------------------------------------------------------------
 
 with tab_confluence:

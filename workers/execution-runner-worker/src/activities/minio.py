@@ -1,4 +1,4 @@
-"""MinIO activity module for the execution-runner-worker.
+﻿"""MinIO activity module for the execution-runner-worker.
 
 Provides :func:`minio_upload_artifact` and :func:`minio_download_artifact`,
 Temporal activities that store and retrieve execution artifacts (stdout,
@@ -13,7 +13,7 @@ Key format: ``executions/{workflow_id}/{name}`` (via
 ``temporal_shared.identifiers.execution_artifact_key``)
 
 Retry policy (3x with exponential backoff) is configured by the caller
-workflow via Temporal activity options — the activity itself does not
+workflow via Temporal activity options - the activity itself does not
 implement internal retries.
 
 Requirements: 8.3, 8.7
@@ -367,7 +367,7 @@ async def _ensure_bucket_exists(
     }
 
     resp = await client.put(url, headers=put_headers, content=b"")
-    # 200 = created, 409 = already exists — both are fine
+    # 200 = created, 409 = already exists - both are fine
     if resp.status_code not in (200, 409):
         activity.logger.warning(
             "Failed to create bucket %s: HTTP %d", bucket, resp.status_code

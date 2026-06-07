@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * Departments panel.
@@ -92,7 +92,7 @@ function DepartmentsPageInner(): JSX.Element {
   const handleCreateModalClose = useCallback(() => {
     if (isWizardMode) {
       const confirmed = window.confirm(
-        "Sihirbaz akışına devam etmek için en az bir departman gerekli — kapatmak istediğinizden emin misiniz?",
+        "Sihirbaz akışına devam etmek için en az bir departman gerekli - kapatmak istediğinizden emin misiniz?",
       );
       if (!confirmed) {
         return; // Keep modal open
@@ -112,7 +112,7 @@ function DepartmentsPageInner(): JSX.Element {
           method: "POST",
         });
       } catch {
-        // Best-effort — wizard page will re-check on mount
+        // Best-effort - wizard page will re-check on mount
       }
       router.push("/?wizard=done");
     }
@@ -309,7 +309,7 @@ function DepartmentsPageInner(): JSX.Element {
                         )}
                       </td>
                       <td className="muted text-sm">
-                        {(d.notify_channels ?? []).join(", ") || "—"}
+                        {(d.notify_channels ?? []).join(", ") || "-"}
                       </td>
                       <td className="right num">
                         {(d.active_workflows ?? 0) > 0 ? (

@@ -1,4 +1,4 @@
-[build-system]
+﻿[build-system]
 requires = ["hatchling>=1.21"]
 build-backend = "hatchling.build"
 
@@ -45,7 +45,7 @@ allow-direct-references = true
 # (``src.main``/``src.webhooks``/``src.decision``) are served at
 # runtime from the source tree copied to ``/app/src`` (uvicorn runs
 # from WORKDIR ``/app`` so ``src`` resolves on the CWD path) and by
-# the test tree — NOT from the wheel. Listing ``src`` as a second
+# the test tree - NOT from the wheel. Listing ``src`` as a second
 # package here makes hatchling map ``src/automation_service/__init__.py``
 # to ``automation_service/__init__.py`` twice and abort with a
 # duplicate-archive-path error.

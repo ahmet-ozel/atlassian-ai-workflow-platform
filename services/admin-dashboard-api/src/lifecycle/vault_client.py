@@ -1,4 +1,4 @@
-"""Vault KV-v2 wrapper for Env_Override storage.
+﻿"""Vault KV-v2 wrapper for Env_Override storage.
 
 This module implements :class:`VaultClient`, the **only** persistence
 path the admin-dashboard control plane uses for operator-supplied
@@ -7,7 +7,7 @@ path the admin-dashboard control plane uses for operator-supplied
 KV-v2 mount; nothing is staged on the host filesystem, in temp files, or in log
 lines.
 
-Endpoints (Vault KV-v2 — see Vault docs ``secret/kv-v2``):
+Endpoints (Vault KV-v2 - see Vault docs ``secret/kv-v2``):
 
 * ``PUT  {addr}/v1/{kv_mount}/data/services/{service_name}/{key}``
   body ``{"data": {"value": value}}`` → atomic per-key write.
@@ -34,7 +34,7 @@ Design constraints honoured:
 * **Pure async.** All public methods are coroutines suitable for use
   from FastAPI request handlers.
 * **No secret leakage in exceptions.** :class:`VaultWriteError`
-  carries the service name, key, status code, and operation name —
+  carries the service name, key, status code, and operation name -
   but never the value being written.
 """
 
@@ -87,7 +87,7 @@ class VaultWriteError(Exception):
         self.key = key
         self.status_code = status_code
         # The exception ``str()`` intentionally never contains the
-        # secret value — only metadata. This lets handlers log the
+        # secret value - only metadata. This lets handlers log the
         # error freely without leaking material.
         super().__init__(
             f"Vault {operation} failed for service={service_name!r} "
@@ -113,7 +113,7 @@ class VaultClient:
     ----------
     addr:
         Base URL of the Vault server, e.g. ``"http://vault:8200"``.
-        Must not end in ``/v1`` — the wrapper appends the API prefix.
+        Must not end in ``/v1`` - the wrapper appends the API prefix.
     token:
         Vault token. Sent on every request as the ``X-Vault-Token``
         header. The token is held only in memory; the wrapper never
@@ -194,7 +194,7 @@ class VaultClient:
 
         :func:`write_env_override` is scoped to
         ``data/services/{service_name}/{key}`` with a single
-        ``{"data": {"value": ...}}`` shape — perfect for env overrides but
+        ``{"data": {"value": ...}}`` shape - perfect for env overrides but
         wrong for multi-field secrets like SSH credentials which the worker
         fetches as ``{host, port, user, private_key}``.
 
@@ -353,8 +353,8 @@ class VaultClient:
             ) from exc
 
         # Vault returns 200 for KV-v2 ``data`` writes (and historically
-        # 204 for KV-v1). Anything else — 4xx misconfiguration, 404 on
-        # an unmounted engine, 5xx server failure — is fatal.
+        # 204 for KV-v1). Anything else - 4xx misconfiguration, 404 on
+        # an unmounted engine, 5xx server failure - is fatal.
         if not _is_success(response.status_code):
             raise VaultWriteError(
                 operation="write",
@@ -398,19 +398,19 @@ class VaultClient:
 
         ``LIST {addr}/v1/{kv_mount}/metadata/services/{service_name}/?list=true``.
         Returns the bare key names (no ``services/{name}/`` prefix and
-        no trailing slash on directory entries — those are filtered
+        no trailing slash on directory entries - those are filtered
         out so callers receive a flat list of leaf keys).
 
         Used by the lifecycle stop endpoint's ``purge_vault=true``
         path to enumerate every path that needs to be soft-deleted after
         Compose down. A
         ``404`` on the LIST means the prefix has never been written
-        to (the operator never started the service with overrides) —
+        to (the operator never started the service with overrides) -
         in that case we return ``[]`` rather than raising, so the
         caller can short-circuit cleanly.
 
-        Any non-404 / non-2xx response — DNS failures, 5xx, 4xx
-        misconfigurations — surfaces as :class:`VaultWriteError` so
+        Any non-404 / non-2xx response - DNS failures, 5xx, 4xx
+        misconfigurations - surfaces as :class:`VaultWriteError` so
         the caller can decide whether to treat the failure as fatal
         or best-effort. The lifecycle stop endpoint specifically
         catches that exception and emits a
@@ -651,7 +651,7 @@ class VaultClient:
         # Trailing slash is required so Vault treats the path as a
         # directory; the ``?list=true`` query parameter selects LIST
         # semantics on the GET verb (Vault accepts both LIST verb and
-        # ``?list=true`` query — we use the query form for httpx
+        # ``?list=true`` query - we use the query form for httpx
         # compatibility).
         return (
             f"{self._addr}/v1/{self._kv_mount}/metadata/services/"
@@ -703,7 +703,7 @@ class VaultClient:
 
         payload = _safe_json(response)
         keys = _extract_list_keys(payload)
-        # Filter out directory-style entries (``foo/``) — Vault returns
+        # Filter out directory-style entries (``foo/``) - Vault returns
         # them when the listing has nested folders, but env overrides
         # are flat by design.
         return [k for k in keys if isinstance(k, str) and not k.endswith("/")]
@@ -755,7 +755,7 @@ def _short_body(response: httpx.Response) -> str:
 
     try:
         text = response.text
-    except Exception:  # pragma: no cover — httpx body decoding edge case
+    except Exception:  # pragma: no cover - httpx body decoding edge case
         return "<unreadable body>"
     if len(text) > 200:
         return text[:200] + "…"

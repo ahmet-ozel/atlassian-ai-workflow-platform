@@ -1,4 +1,4 @@
-"""Custom :class:`fastapi.exceptions.RequestValidationError` handler.
+﻿"""Custom :class:`fastapi.exceptions.RequestValidationError` handler.
 
 Pydantic v2's default 422 body shape is ``{"detail": [{"type": ..., "loc": [...], ...}, ...]}``;
 the spec mandates four narrower shapes
@@ -69,18 +69,18 @@ async def _llm_provider_validation_handler(
 def _classify(errors: Sequence[dict[str, Any]]) -> dict[str, Any]:
     """Walk *errors* and pick the highest-priority spec body shape.
 
-    Priority order — first match wins so the UI sees the most actionable
+    Priority order - first match wins so the UI sees the most actionable
     diagnostic for a single mistake rather than the longest list of
     secondary complaints:
 
-    1. ``unsupported_provider_type`` (discriminator literal_error) —
+    1. ``unsupported_provider_type`` (discriminator literal_error) -
        the operator picked a provider we do not support; the rest of
        the body is irrelevant.
-    2. ``extra_fields_not_allowed`` — the operator sent prompt-shaping
+    2. ``extra_fields_not_allowed`` - the operator sent prompt-shaping
        fields on a test endpoint (R8.4) or unknown fields on update.
-    3. ``validation_failed`` with ``missing_fields`` — required-field
+    3. ``validation_failed`` with ``missing_fields`` - required-field
        omissions across the discriminated union (R2.5).
-    4. ``validation_failed`` with ``{field, reason}`` — single
+    4. ``validation_failed`` with ``{field, reason}`` - single
        constraint failure (numeric bounds, URL scheme, etc.).
     """
 
@@ -99,7 +99,7 @@ def _classify(errors: Sequence[dict[str, Any]]) -> dict[str, Any]:
     if missing:
         return {"error": "validation_failed", "missing_fields": missing}
 
-    # Fall through — surface the first remaining error as a single
+    # Fall through - surface the first remaining error as a single
     # ``{field, reason}`` pair so the UI can highlight one input at a
     # time. Pydantic guarantees ``errors`` is non-empty when this
     # function runs (the handler is only invoked on a real failure).

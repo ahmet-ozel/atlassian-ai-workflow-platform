@@ -1,4 +1,4 @@
-"""After startup, no router replies with ``Router_Not_Wired_Error``.
+﻿"""After startup, no router replies with ``Router_Not_Wired_Error``.
 
 For any :class:`FastAPI` app produced by :func:`create_app` and any
 successful run of the lifespan startup phase, hitting any path the
@@ -80,7 +80,7 @@ def wired_app():
     that issues SQL during the request will surface an
     ``AttributeError`` on ``conn.execute``) from propagating through the
     test runner. The property only inspects the response body's
-    ``detail`` field — the 500 itself is acceptable so long as the
+    ``detail`` field - the 500 itself is acceptable so long as the
     response does not carry a ``"<name> router is not wired"`` shape.
     """
 
@@ -88,7 +88,7 @@ def wired_app():
     install_lifespan_fakes(mp)
     app = app_module.create_app()
     # ``TestClient`` enters the lifespan on ``__enter__`` and exits it
-    # on ``__exit__`` — use the context-manager form so the property
+    # on ``__exit__`` - use the context-manager form so the property
     # observes a fully-wired app on every iteration.
     with TestClient(app, raise_server_exceptions=False) as client:
         yield client
@@ -110,7 +110,7 @@ def test_no_router_not_wired_response(
     method, path = ROUTER_PATHS[route_index]
     response = wired_app.request(method, path, content=body)
 
-    # Parse JSON when available — non-JSON responses (e.g. raw 405) cannot
+    # Parse JSON when available - non-JSON responses (e.g. raw 405) cannot
     # carry a wiring-error detail.
     try:
         body_dict = response.json()

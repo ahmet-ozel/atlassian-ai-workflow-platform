@@ -1,4 +1,4 @@
-"""Pending credentials badge behavior.
+﻿"""Pending credentials badge behavior.
 
 
 
@@ -65,9 +65,9 @@ def determine_badge_state(detail: dict[str, Any] | None) -> str:
     """Determine which badge the department detail page should render.
 
  Returns one of:
- - "loading" — detail is None (still fetching)
- - "pending_credentials" — no bot has a bound credential_ref
- - "active" — at least one bot has a non-null credential_ref
+ - "loading" - detail is None (still fetching)
+ - "pending_credentials" - no bot has a bound credential_ref
+ - "active" - at least one bot has a non-null credential_ref
 
  This mirrors the branching logic in the DepartmentDetailPage component.
  """
@@ -107,7 +107,7 @@ _dept_id_strategy = st.text(
 #: Strategy for a display name.
 _display_name_strategy = st.text(min_size=2, max_size=40)
 
-#: Strategy for a credential_ref value (non-null — represents a bound credential).
+#: Strategy for a credential_ref value (non-null - represents a bound credential).
 _credential_ref_strategy = st.text(
     alphabet="abcdefghijklmnopqrstuvwxyz0123456789-_/",
     min_size=5,
@@ -176,7 +176,7 @@ _has_credentials_detail = st.builds(
 
 
 # ---------------------------------------------------------------------------
-# Pending Credentials Badge — Zero Credentials Case
+# Pending Credentials Badge - Zero Credentials Case
 # ---------------------------------------------------------------------------
 
 
@@ -237,7 +237,7 @@ class TestPendingCredentialsBadge:
 
 
 # ---------------------------------------------------------------------------
-# Active Badge — At Least One Credential Case
+# Active Badge - At Least One Credential Case
 # ---------------------------------------------------------------------------
 
 

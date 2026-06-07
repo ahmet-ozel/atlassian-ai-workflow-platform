@@ -1,4 +1,4 @@
-# observability
+﻿# observability
 
 Shared Prometheus metric registry used by platform services and workers
 (`assistant-service`, `automation-service`,
@@ -93,7 +93,7 @@ traffic, audit pruning, budget enforcement, and notification dispatch.
 | `workflow_execution_duration_seconds` | Histogram | `workflow_type`, `dept_id`, `result` | Buckets exposed as `_bucket`/`_sum`/`_count` by `prometheus_client`. |
 | `mcp_latency_seconds` | Histogram | `tool`, `result` | One observation per MCP tool invocation. |
 | `llm_token_cost_usd_total` | Counter | `dept_id`, `model`, `provider`, `cost_tag` | Increment with `cost_usd` per LLM activity. `cost_tag ∈ {production, sandbox, probe}`. |
-| `cost_usd_total` | Counter | `dept_id`, `model` | Convenience aggregate — same activity may also bump `llm_token_cost_usd_total`; this metric drops the provider/tag dimensions for the dept-by-model dashboard. |
+| `cost_usd_total` | Counter | `dept_id`, `model` | Convenience aggregate - same activity may also bump `llm_token_cost_usd_total`; this metric drops the provider/tag dimensions for the dept-by-model dashboard. |
 | `capability_denied_total` | Counter | `dept_id`, `workflow_type` | Tracks capability gate denials across operational workflows. |
 | `healthcheck_status` | Gauge | `service` | `1` healthy, `0` unhealthy, `0.5` degraded. |
 | `queue_depth` | Gauge | `dept_id`, `workflow_type` | Pending work in the per-dept Temporal task queue. |
@@ -101,7 +101,7 @@ traffic, audit pruning, budget enforcement, and notification dispatch.
 | `chat_messages_total` | Counter | `dept_id`, `result` | One per `POST /api/chat/stream` request. `result ∈ {ok, redirect_to_task_creator, rate_limit_exhausted, token_cap_exceeded, error}`. |
 | `llm_provider_fallback_total` | Counter | `primary`, `fallback`, `reason` | Bumped when `LlmOrchestrator` switches to the fallback provider. |
 | `audit_prune_archived_rows_total` | Counter | *(none)* | Cumulative rows moved to MinIO by `AuditPruneWorkflow`. |
-| `audit_prune_failed_total` | Counter | *(none)* | Cumulative `AuditPruneWorkflow` failures — drives admin Slack alarm. |
+| `audit_prune_failed_total` | Counter | *(none)* | Cumulative `AuditPruneWorkflow` failures - drives admin Slack alarm. |
 | `budget_exceeded_total` | Counter | `dept_id`, `scope` | Bumped by `BudgetCapPolicy.enforce` on deny. `scope ∈ {dept_weekly, user_weekly, dept_monthly, user_monthly}`. |
 | `notification_dispatch_total` | Counter | `channel`, `kind`, `result` | One per `NotificationService.send(...)` outcome. `result ∈ {sent, failed, deduped}`. |
 
@@ -109,7 +109,7 @@ traffic, audit pruning, budget enforcement, and notification dispatch.
 
 `metrics` is a process-local singleton; importing the package always
 returns the same `Metrics` instance. The catalogue is *frozen* at
-import time — `metrics.<attr>` lookup never registers a new collector
+import time - `metrics.<attr>` lookup never registers a new collector
 behind the caller's back. This keeps the ``/metrics`` exposition
 deterministic and auditable across services.
 

@@ -1,11 +1,11 @@
-"""``FeatureFlagsRouter``.
+﻿"""``FeatureFlagsRouter``.
 
 Two surfaces are exposed:
 
-1. ``/admin/feature-flags`` (legacy) — list + per-flag
+1. ``/admin/feature-flags`` (legacy) - list + per-flag
    ``PUT`` for the global value. Kept intact so the existing UI and
    audit pipeline continue to work.
-2. ``/api/v1/feature-flags`` — listing returns
+2. ``/api/v1/feature-flags`` - listing returns
    global value alongside the per-department override map merged
    from ``departments.json`` ``feature_flag_overrides``. Mutation
    uses ``PATCH /api/v1/feature-flags/{key}`` with body
@@ -19,7 +19,7 @@ Storage
 
 * Global state: ``shared.feature_flags`` (Postgres, declared in
   ``infra/postgres/init/20_ops.sql``). The schema migration is
-  already shipped — this task does **not** add a new migration.
+  already shipped - this task does **not** add a new migration.
 * Per-department overrides: ``platform/config/departments.json`` →
   each department's ``feature_flag_overrides`` ``{flag_name: bool}``
   map (declared in ``departments.schema.json``). Same JSON file the
@@ -45,12 +45,12 @@ override removal (the row resolves to the global default again).
 Hot-reload
 ----------
 
-* Global flags — services already poll ``shared.feature_flags`` (see
+* Global flags - services already poll ``shared.feature_flags`` (see
   :class:`AsyncpgFeatureFlagReader` consumed by
   ``LifecycleService``). The router additionally invokes
   ``app.state.feature_flag_reload_publisher`` when wired so an
   optional pub/sub channel can push the change immediately.
-* Dept overrides — reuses the same
+* Dept overrides - reuses the same
   ``app.state.departments_reload_publisher`` /
   ``automation-service /admin/departments/_reload`` fan-out the
   department CRUD endpoints already drive with a 10s budget. When
@@ -90,7 +90,7 @@ logger = logging.getLogger(__name__)
 #: surface.
 _AUDIT_ACTION: str = "feature_flag_toggled"
 
-#: Path to the canonical departments document — same file the runtime
+#: Path to the canonical departments document - same file the runtime
 #: CRUD router mutates. Resolving relative to this module keeps the
 #: routers honest when the project is checked out at a non-default
 #: location.
@@ -117,7 +117,7 @@ v1_router = APIRouter(prefix="/api/v1/feature-flags", tags=["feature-flags"])
 
 
 # ---------------------------------------------------------------------------
-# Helpers — pool / audit sink resolution
+# Helpers - pool / audit sink resolution
 # ---------------------------------------------------------------------------
 
 
@@ -151,7 +151,7 @@ async def _emit_audit(
 ) -> None:
     """Write a single ``feature_flag_toggled`` audit event.
 
-    Failures are swallowed — observability must never block a
+    Failures are swallowed - observability must never block a
     legitimate flag mutation.
     """
 
@@ -181,7 +181,7 @@ async def _emit_audit(
             },
         )
         await sink.write(event)
-    except Exception as exc:  # noqa: BLE001 — audit must never block
+    except Exception as exc:  # noqa: BLE001 - audit must never block
         logger.warning(
             "feature_flag_toggled audit write failed (key=%s scope=%s): %s",
             key,
@@ -209,14 +209,14 @@ async def _signal_global_reload(request: Request, *, key: str) -> None:
     )
     if publisher is None:
         logger.info(
-            "feature_flag_reload_publisher not wired — flag %r will "
+            "feature_flag_reload_publisher not wired - flag %r will "
             "propagate via the next polling cycle (≤10s SLA)",
             key,
         )
         return
     try:
         await publisher(key)
-    except Exception as exc:  # noqa: BLE001 — soft-fail
+    except Exception as exc:  # noqa: BLE001 - soft-fail
         logger.warning(
             "feature_flag_reload_publisher failed for %r: %s", key, exc
         )
@@ -243,7 +243,7 @@ async def _signal_dept_reload(
         except Exception as exc:  # noqa: BLE001
             logger.warning(
                 "departments_reload_publisher failed for dept=%s "
-                "(flag=%s): %s — falling back to HTTP fan-out",
+                "(flag=%s): %s - falling back to HTTP fan-out",
                 dept_id,
                 key,
                 exc,
@@ -292,7 +292,7 @@ class _FileLockContext:
     Mirrors the helper in :mod:`.routers.departments` so the two
     routers cannot interleave a half-written document. Implemented
     inline (rather than imported) to keep the dependency graph one-way
-    — this router consumes the same JSON file but does not need to
+    - this router consumes the same JSON file but does not need to
     pull every CRUD helper into its surface.
     """
 
@@ -433,7 +433,7 @@ def _atomic_write_json(path: Path, doc: dict[str, Any]) -> None:
 
 @router.get("", dependencies=[Depends(require_admin)])
 async def list_flags(request: Request) -> dict:
-    """Legacy listing — global flag rows only."""
+    """Legacy listing - global flag rows only."""
 
     pool = _get_pool(request)
     async with pool.acquire() as conn:
@@ -468,7 +468,7 @@ async def toggle_flag(
     actor: AuthClaims = Depends(require_admin),
     body: dict = Body(...),
 ) -> dict:
-    """Legacy toggle — flips the global ``enabled`` value only."""
+    """Legacy toggle - flips the global ``enabled`` value only."""
 
     if "enabled" not in body or not isinstance(body["enabled"], bool):
         raise HTTPException(
@@ -522,8 +522,8 @@ async def toggle_flag(
 class FlagPatch(BaseModel):
     """Body for ``PATCH /api/v1/feature-flags/{key}``.
 
-    * ``value`` — required; new boolean state (global or per-dept).
-    * ``dept_id`` — optional; when present the override map for that
+    * ``value`` - required; new boolean state (global or per-dept).
+    * ``dept_id`` - optional; when present the override map for that
       dept is patched, otherwise the global row is updated.
     """
 
@@ -544,7 +544,7 @@ def _collect_dept_overrides(
 ) -> dict[str, dict[str, bool]]:
     """Pivot ``feature_flag_overrides`` from per-dept to per-flag.
 
-    Returns ``{flag_name: {dept_id: bool}}`` — the shape the FE
+    Returns ``{flag_name: {dept_id: bool}}`` - the shape the FE
     consumes when rendering the dept-override column.
     """
 

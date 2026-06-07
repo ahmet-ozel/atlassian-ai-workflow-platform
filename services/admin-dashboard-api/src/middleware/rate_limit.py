@@ -1,10 +1,10 @@
-"""Rate limiting middleware for admin-dashboard-api.
+﻿"""Rate limiting middleware for admin-dashboard-api.
 
 Implements per-endpoint rate limiting using slowapi (a Starlette/FastAPI
 wrapper around ``limits``). Two tiers are defined:
 
-* **Webhook endpoints** — 100 requests/minute keyed by client IP address.
-* **Admin API endpoints** — 60 requests/minute keyed by authenticated user
+* **Webhook endpoints** - 100 requests/minute keyed by client IP address.
+* **Admin API endpoints** - 60 requests/minute keyed by authenticated user
   identity (falls back to IP when no user context is available).
 
 Health-check paths (``/healthz``, ``/readyz``) are unconditionally exempt
@@ -142,7 +142,7 @@ def _extract_retry_after(exc: RateLimitExceeded) -> int:
     # Try to parse from detail string (format: "Rate limit exceeded: N per M minute")
     if hasattr(exc, "detail") and exc.detail:
         detail = str(exc.detail)
-        # Extract window info — default to 60s (1 minute window)
+        # Extract window info - default to 60s (1 minute window)
         return 60
 
     # Default fallback
@@ -239,14 +239,14 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         state = self._windows.get(key)
 
         if state is None or state.window_start != window_start:
-            # New window — create fresh state
+            # New window - create fresh state
             self._windows[key] = _WindowState(
                 window_start=window_start,
                 request_count=1,
             )
             return True, 0
 
-        # Same window — increment and check
+        # Same window - increment and check
         state.request_count += 1
 
         if state.request_count > limit:

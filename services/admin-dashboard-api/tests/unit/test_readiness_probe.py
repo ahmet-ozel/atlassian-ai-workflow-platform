@@ -1,4 +1,4 @@
-"""Unit tests for the readiness probe module.
+﻿"""Unit tests for the readiness probe module.
 
 These tests cover the readiness probe outcomes:
 
@@ -383,7 +383,7 @@ class TestConstants:
 
 
 # ---------------------------------------------------------------------------
-# Credential guard integration (Req 1.3 / 11.5 — 503 when blocked)
+# Credential guard integration (Req 1.3 / 11.5 - 503 when blocked)
 # ---------------------------------------------------------------------------
 
 

@@ -1,4 +1,4 @@
-"""Integration smoke — Streamlit dept switcher reset (`ops work` the implementation).
+﻿"""Integration smoke - Streamlit dept switcher reset (`ops work` the implementation).
 
 Drives the Streamlit page through ``streamlit.testing.v1.AppTest``
 to confirm a dept change clears every session_state key except
@@ -51,7 +51,7 @@ def test_dept_change_clears_session_state(request: pytest.FixtureRequest) -> Non
     at.run()
 
     assert at.session_state.get("active_dept_id") == "alpha"
-    # Switch to beta — chat_history MUST drop.
+    # Switch to beta - chat_history MUST drop.
     at.session_state["dept_select"] = "beta"
     at.run()
 

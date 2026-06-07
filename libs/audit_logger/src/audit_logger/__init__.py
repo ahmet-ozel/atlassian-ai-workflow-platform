@@ -1,4 +1,4 @@
-"""audit_logger — frozen ``AuditEvent`` dataclass and write surface.
+﻿"""audit_logger - frozen ``AuditEvent`` dataclass and write surface.
 
 Re-exports the public API so callers can simply do::
 

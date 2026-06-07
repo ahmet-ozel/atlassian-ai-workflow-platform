@@ -1,4 +1,4 @@
-"""``McpTrafficRouter``.
+﻿"""``McpTrafficRouter``.
 
 Surfaces MCP request traffic statistics for the admin dashboard. The
 router proxies the MCP server's Prometheus exposition endpoint
@@ -10,13 +10,13 @@ counter, and returns a filterable JSON envelope grouped by
 Endpoints
 ---------
 
-* ``GET /api/v1/mcp/traffic`` — counters since the MCP server started.
+* ``GET /api/v1/mcp/traffic`` - counters since the MCP server started.
   Optional query parameters:
 
-  * ``client_source`` — narrow to a single caller (``automation-worker``,
+  * ``client_source`` - narrow to a single caller (``automation-worker``,
     ``execution-runner-worker``, ``streamlit-ui``, ``unknown``, …).
-  * ``tool`` — narrow to a single MCP tool / JSON-RPC method.
-  * ``status`` — narrow to ``success`` / ``error``.
+  * ``tool`` - narrow to a single MCP tool / JSON-RPC method.
+  * ``status`` - narrow to ``success`` / ``error``.
 
   Response body shape:
 
@@ -44,7 +44,7 @@ Endpoints
 
 The router is admin-only (``Depends(require_admin)``). The MCP server
 itself does not enforce auth on ``/metrics`` (Prometheus scrape jobs
-expect open access) — gating happens here so unauthenticated users
+expect open access) - gating happens here so unauthenticated users
 cannot poll the admin dashboard for traffic stats.
 
 A "last 24h" window is the documented UX framing.
@@ -52,7 +52,7 @@ The MCP server exposes cumulative counter samples since process
 start, not a windowed query. To honour the window framing without a
 PromQL aggregator, a future iteration can layer
 ``increase(mcp_requests_total[24h])`` on top by pointing the client
-at a Prometheus aggregator URL — until that lands, the snapshot view
+at a Prometheus aggregator URL - until that lands, the snapshot view
 documented above is the surfaced behaviour.
 
 503 / 502 semantics

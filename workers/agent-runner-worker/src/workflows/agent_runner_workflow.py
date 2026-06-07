@@ -1,4 +1,4 @@
-"""Compatibility shim — re-exports the canonical AgentRunnerWorkflow.
+﻿"""Compatibility shim - re-exports the canonical AgentRunnerWorkflow.
 
 The canonical implementation moved to
 :mod:`agent_runner.workflows.agent_runner_workflow` to mirror the

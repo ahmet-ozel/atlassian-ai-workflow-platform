@@ -1,4 +1,4 @@
-"""Unit tests for ``prompts.loader.PromptLoader``.
+﻿"""Unit tests for ``prompts.loader.PromptLoader``.
 
 These tests pin the contract for the file-backed prompt loader:
 
@@ -12,7 +12,7 @@ These tests pin the contract for the file-backed prompt loader:
    into the template; collection fields render as deterministic
    comma-joined strings; unknown placeholders raise
    :class:`PromptTemplateError`.
-4. ``poll_loop()`` is fail-soft — a broken read keeps the existing
+4. ``poll_loop()`` is fail-soft - a broken read keeps the existing
    cache row.
 5. Resolution walks ``self._roots`` in order; missing prompts raise
    :class:`PromptNotFoundError`.
@@ -72,7 +72,7 @@ def git_prompt_root(tmp_path: Path) -> Path:
     prompt = repo / "tracked.md"
     prompt.write_text("body v1", encoding="utf-8")
 
-    # Minimal git config — no global settings leak in CI.
+    # Minimal git config - no global settings leak in CI.
     env_init = {
         "GIT_AUTHOR_NAME": "test",
         "GIT_AUTHOR_EMAIL": "test@example.com",
@@ -138,7 +138,7 @@ def test_load_returns_body_and_caches(prompt_root: Path) -> None:
 
     assert first == second
     # The cache row exists after the first call.
-    assert "assistant_chat" in loader._cache  # noqa: SLF001 — internal contract test
+    assert "assistant_chat" in loader._cache  # noqa: SLF001 - internal contract test
 
 
 def test_load_walks_roots_in_order(tmp_path: Path) -> None:
@@ -301,7 +301,7 @@ def test_poll_loop_refreshes_cache_when_mtime_advances(prompt_root: Path) -> Non
 
     loader = PromptLoader(roots=(prompt_root,), poll_interval_s=0)
     loader.load("untracked")
-    initial = loader._cache["untracked"]  # noqa: SLF001 — internal contract
+    initial = loader._cache["untracked"]  # noqa: SLF001 - internal contract
 
     # Mutate the file and bump mtime explicitly so the test does not
     # depend on filesystem timestamp resolution.

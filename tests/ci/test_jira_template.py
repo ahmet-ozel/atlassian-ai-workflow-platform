@@ -1,4 +1,4 @@
-"""CI gate — Jira issue template (ops work).
+﻿"""CI gate - Jira issue template (ops work).
 
 
 The standard Jira issue template ships under

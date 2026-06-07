@@ -1,4 +1,4 @@
-"""Unit tests for the BootstrapTokenService class.
+﻿"""Unit tests for the BootstrapTokenService class.
 * : Token generation when no admin exists (stdout output).
 * : Token has 1-hour TTL; expired tokens are invalid.
 * : Valid token → consumed successfully.
@@ -222,7 +222,7 @@ class TestValidateAndConsume:
         result_first = await service.validate_and_consume("token-abc", pool_first)
         assert result_first is True
 
-        # Second call fails (no row returned — already consumed)
+        # Second call fails (no row returned - already consumed)
         pool_second = _make_mock_pool(consume_returns_row=False)
         result_second = await service.validate_and_consume("token-abc", pool_second)
         assert result_second is False

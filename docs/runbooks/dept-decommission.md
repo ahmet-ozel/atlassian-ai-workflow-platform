@@ -1,4 +1,4 @@
-# Runbook: Departman Decommission
+﻿# Runbook: Departman Decommission
 
 > **Audience:** Platform `admin` rolü; gerektiğinde DBA + DevSecOps eşliğinde.
 > **Scope:** Bir departmanın (`dept_id`) Compose stack'inden ve veri/kimlik altyapısından **kalıcı olarak** kaldırılması.
@@ -16,7 +16,7 @@ Bu runbook aşağıdaki durumlarda izlenir:
 
 | Öğe | Değer | Kaynak |
 |---|---|---|
-| Operatör rolü | `admin` (global) | OIDC IdP — `auth-shared.policy` |
+| Operatör rolü | `admin` (global) | OIDC IdP - `auth-shared.policy` |
 | Erişim | `automation-service` HTTP'si, Postgres `automation` DB, Vault root/admin token | `.env` veya 1Password vault |
 | Hedef departman | `dept_id` (örn. `marketing`) | `platform/config/departments.json` |
 | Iletişim | Departman temsilcisi onayı (Adım 4 öncesi yazılı) | Slack/E-posta arşiv |
@@ -37,7 +37,7 @@ Her adımdan sonra **doğrulama (verify)** alt-adımı **zorunludur**. Doğrulam
 
 ---
 
-## Adım 1 — `mode=disabled` set
+## Adım 1 - `mode=disabled` set
 
 **Amaç:** Departman için yeni workflow başlatılmasını durdur; mevcut açık workflow'ların doğal olarak tamamlanmasına izin ver. Bu adım **geri alınabilir**: `mode=active` yazılırsa departman tekrar aktif hale gelir.
 
@@ -102,7 +102,7 @@ curl -X POST "https://<automation-service>/admin/departments/<dept_id>/enable" \
 
 ---
 
-## Adım 2 — Açık workflow drain
+## Adım 2 - Açık workflow drain
 
 **Amaç:** Departmana ait Temporal workflow'larının (a) doğal olarak tamamlanmasını beklemek veya (b) zaman aşımına uğradıysa zorla iptal etmek. Hiçbir workflow `running` durumda bırakılmaz.
 
@@ -183,7 +183,7 @@ tctl --address <temporal_host>:7233 workflow list \
 
 ---
 
-## Adım 3 — Vault credential revoke
+## Adım 3 - Vault credential revoke
 
 **Amaç:** Departman bot'larına ait tüm Atlassian credential'larını ve webhook secret'larını Vault'tan **kalıcı olarak** silmek. Bu adımdan sonra credential `read(...) → not_found` döner; rotation overlap penceresi de geçersiz olur.
 
@@ -269,7 +269,7 @@ for path in \
   "webhooks/confluence/<dept_id>"; do
     echo "=== $path ==="
     vault kv get -mount=secret "$path" 2>&1 | grep -E "(No value|404|not found)" \
-      || echo "❌ STILL PRESENT — DO NOT PROCEED"
+      || echo "❌ STILL PRESENT - DO NOT PROCEED"
 done
 # beklenen: tüm path'ler için "No value found" / 404
 ```
@@ -285,7 +285,7 @@ kubectl logs deploy/automation-service --since=10m | grep -i "<dept_id>" | grep 
 
 ---
 
-## Adım 4 — DB kaydı silme
+## Adım 4 - DB kaydı silme
 
 **Amaç:** `departments` tablosundan kaydı kaldırmak. Audit izi (`audit_events`) **silinmez**; uyumluluk için saklanır.
 
@@ -403,11 +403,11 @@ curl -s "https://<automation-service>/healthz"
 
 ## Sonrası: temizlik kontrol listesi
 
-- [ ] `services.manifest.json` — eğer dept-bağlı bir entry varsa kaldırıldı.
-- [ ] `.env`, `.env.example` — `<DEPT>_*` placeholder'ları temizlendi (varsa).
+- [ ] `services.manifest.json` - eğer dept-bağlı bir entry varsa kaldırıldı.
+- [ ] `.env`, `.env.example` - `<DEPT>_*` placeholder'ları temizlendi (varsa).
 - [ ] Atlassian Admin: bot kullanıcısı suspended/deleted; webhook endpoint'leri Atlassian tarafında iptal edildi.
 - [ ] Slack/PagerDuty: departmana özel alert kanalları (varsa) arşivlendi.
-- [ ] OPS ticket (OPS-1234) — runbook'taki tüm Verify çıktıları PR/ticket comment'ine eklendi.
+- [ ] OPS ticket (OPS-1234) - runbook'taki tüm Verify çıktıları PR/ticket comment'ine eklendi.
 - [ ] Yedek dosyaları (`/tmp/dept-backup-*`, `/tmp/vault-backup-*`) güvenli arşive taşındı; lokal kopyalar shred ile silindi.
 
 ## Sorun giderme

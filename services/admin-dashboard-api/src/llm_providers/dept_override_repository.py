@@ -1,10 +1,10 @@
-"""asyncpg-backed repository for ``automation.dept_llm_provider_overrides``.
+﻿"""asyncpg-backed repository for ``automation.dept_llm_provider_overrides``.
 
 Single class with three methods (:meth:`get`, :meth:`upsert`,
 :meth:`delete`) that the
 :meth:`llm_providers.service.ProviderService.set_override` /
 :meth:`get_override` flows compose into the documented PUT / GET
-endpoint behaviour (Requirements 10.2 — 10.5).
+endpoint behaviour (Requirements 10.2 - 10.5).
 """
 
 from __future__ import annotations
@@ -58,7 +58,7 @@ class DeptOverrideRepository:
 
         The ON CONFLICT path swaps the ``provider_id`` and refreshes
         ``created_at`` so the read endpoint surfaces the moment the
-        operator pinned the *current* provider — not the first one
+        operator pinned the *current* provider - not the first one
         they ever assigned to the dept.
         """
 

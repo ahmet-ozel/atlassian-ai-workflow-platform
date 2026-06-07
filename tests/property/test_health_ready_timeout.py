@@ -1,4 +1,4 @@
-"""invariant P1 — ``/healthz`` becomes 200 within ``HEALTH_READY_TIMEOUT_SECONDS``.
+﻿"""invariant P1 - ``/healthz`` becomes 200 within ``HEALTH_READY_TIMEOUT_SECONDS``.
 
 
 
@@ -13,7 +13,7 @@ SHALL satisfy:
  ``HEALTH_READY_TIMEOUT_SECONDS`` (default ``60``, hard upper bound
  ``180``).
 * ``state == "failed"`` when the health probe stays ``unhealthy``
- beyond the clamped timeout — independent of how far out-of-range
+ beyond the clamped timeout - independent of how far out-of-range
  the operator-supplied ``timeout_input`` was.
 
 The property exercises both the normal case (``timeout_input`` inside
@@ -30,7 +30,7 @@ Strategy
  The "delay" in seconds before the stub ``HealthProbe.probe``
  starts returning ``healthy`` snapshots. The fake emits exactly
  ``2 * delay`` consecutive ``unhealthy`` snapshots (each polling
- step is:data:`_HEALTH_POLL_STEP_SECONDS` ``= 0.5`` seconds —
+ step is:data:`_HEALTH_POLL_STEP_SECONDS` ``= 0.5`` seconds -
  see:func:`_wait_for_healthy`) before flipping to ``healthy``.
  With this mapping the orchestrator's polling loop reaches the
  healthy snapshot at virtual elapsed-time ``delay`` seconds.
@@ -147,7 +147,7 @@ class _FakeAuditWriter:
 
 @dataclass
 class _FakeVaultClient:
-    """In-memory Vault stub — KV writes succeed unconditionally."""
+    """In-memory Vault stub - KV writes succeed unconditionally."""
 
     writes: list[tuple[str, str, str]] = field(default_factory=list)
     stored: dict[str, dict[str, str]] = field(default_factory=dict)
@@ -169,7 +169,7 @@ class _FakeVaultClient:
 
 @dataclass
 class _FakeComposeRunner:
-    """Compose stub — every ``up`` call exits 0 (the precondition for
+    """Compose stub - every ``up`` call exits 0 (the precondition for
  invariant). ``stop`` / ``logs`` / ``exec_test`` are not
  exercised by this property but are stubbed so the orchestrator
  can be constructed end-to-end."""
@@ -236,7 +236,7 @@ class _FakeHealthProbe:
  ``healthy`` snapshot or the timeout fires. Modelling the delay as
  "N unhealthy snapshots before the first healthy one" maps cleanly
  to the elapsed-time the loop reaches when it observes the healthy
- state — see the predicate analysis in the module docstring.
+ state - see the predicate analysis in the module docstring.
  """
 
     unhealthy_count: int
@@ -357,7 +357,7 @@ def _effective_timeout(timeout_input: float) -> float:
 
 
 # ---------------------------------------------------------------------------
-# invariant — invariant
+# invariant - invariant
 # ---------------------------------------------------------------------------
 
 
@@ -375,7 +375,7 @@ def test_health_ready_timeout_property(
     timeout_input: int,
     tmp_path_factory: Any,
 ) -> None:
-    """invariant — ``state`` flips to ``running`` iff ``delay`` ≤
+    """invariant - ``state`` flips to ``running`` iff ``delay`` ≤
  clamped ``HEALTH_READY_TIMEOUT_SECONDS``.
 
 
@@ -386,7 +386,7 @@ def test_health_ready_timeout_property(
     # The fake probe emits ``2 * delay`` unhealthy snapshots before
     # flipping to healthy; with the polling step at 0.5 s the
     # orchestrator's loop reaches the healthy snapshot at virtual
-    # elapsed-time ``delay`` seconds — see the module docstring's
+    # elapsed-time ``delay`` seconds - see the module docstring's
     # predicate derivation.
     unhealthy_count = 2 * delay
 
@@ -428,14 +428,14 @@ def test_health_ready_timeout_property(
             f"state={response.state!r} after {len(health.calls)} probe(s)"
         )
 
-    # The state cache always converges to the response's state — this
+    # The state cache always converges to the response's state - this
     # guards against a subtle bug where ``StartResponse.state`` is
     # built from a stale snapshot of the cache.
     assert svc.state_cache["automation-service"].state == response.state
 
 
 # ---------------------------------------------------------------------------
-# Concrete clamp anchors — clamp behaviour)
+# Concrete clamp anchors - clamp behaviour)
 # ---------------------------------------------------------------------------
 
 
@@ -521,7 +521,7 @@ def test_timeout_input_at_or_below_zero_clamps_up(tmp_path: Path) -> None:
 
 
 def test_within_default_timeout_succeeds(tmp_path: Path) -> None:
-    """Concrete sanity case — a probe that flips healthy after 30 s
+    """Concrete sanity case - a probe that flips healthy after 30 s
  must succeed against the default 60 s timeout."""
 
     workspace = _build_workspace(tmp_path)

@@ -118,7 +118,7 @@ services:
 
   admin-dashboard-ui:
     # Re-mount the whole project so Next.js can watch `app/`, `components/`,
-    # `lib/`, `next.config.mjs`, etc. The anonymous volume on `/app/node_modules`
+    # `lib/`, `next.config.mjs`, etc. The named volume on `/app/node_modules`
     # keeps the image-installed deps from being shadowed by an empty/host
     # node_modules folder on first boot.
     volumes:
@@ -130,10 +130,16 @@ services:
       # (``Module not found: @platform/web-shared``). Mount the built
       # lib at the path the symlink points to.
       - ../libs/web-shared:/app/libs/web-shared:ro
-      - /app/node_modules
-      - /app/.next
+      - admin_dashboard_ui_node_modules:/app/node_modules
+      - admin_dashboard_ui_next:/app/.next
     environment:
       NODE_ENV: development
       LOG_LEVEL: DEBUG
     command: ["npm", "run", "dev"]
     restart: unless-stopped
+
+volumes:
+  admin_dashboard_ui_node_modules:
+    name: infra_admin_dashboard_ui_node_modules
+  admin_dashboard_ui_next:
+    name: infra_admin_dashboard_ui_next

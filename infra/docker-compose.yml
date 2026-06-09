@@ -1043,8 +1043,11 @@ services:
 # ─────────────────────────────────────────────────────────────────────────────
 volumes:
   pg_data:
+    name: infra_pg_data
   minio_data:
+    name: infra_minio_data
   agent_workspace:
+    name: infra_agent_workspace
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Networks - Network Isolation

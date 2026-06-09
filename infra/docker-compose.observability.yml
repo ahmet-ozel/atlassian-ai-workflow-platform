@@ -123,6 +123,10 @@ services:
 
 volumes:
   prometheus_data:
+    name: infra_prometheus_data
   alertmanager_data:
+    name: infra_alertmanager_data
   loki_data:
+    name: infra_loki_data
   grafana_data:
+    name: infra_grafana_data

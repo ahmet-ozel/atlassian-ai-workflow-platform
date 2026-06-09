@@ -128,3 +128,4 @@ services:
 
 volumes:
   vault_data:
+    name: infra_vault_data

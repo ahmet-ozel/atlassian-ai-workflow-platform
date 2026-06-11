@@ -53,6 +53,7 @@ import base64
 from http.cookies import SimpleCookie
 import json
 import logging
+import os
 import secrets
 import time
 from collections.abc import Mapping
@@ -126,9 +127,20 @@ _DEFAULT_DC_SERVICE_URLS: Final[dict[str, str]] = {
     "bitbucket": "https://bitbucket.your-company.com",
 }
 
+_SERVICE_URL_ENV_KEYS: Final[dict[str, str]] = {
+    "jira": "JIRA_URL",
+    "confluence": "CONFLUENCE_URL",
+    "bitbucket": "BITBUCKET_URL",
+}
+
 _DEPLOYMENTS: Final[dict[str, str]] = {
     "Cloud": "cloud",
     "Server/Data Center": "server",
+}
+
+_DEPLOYMENT_LABELS: Final[dict[str, str]] = {
+    "cloud": "Cloud",
+    "server": "Local/DC",
 }
 
 #: Header name expected by the Streamlit page slot that owns the
@@ -226,11 +238,28 @@ def _bitbucket_cloud_api_base(url: str) -> str:
     return "https://api.bitbucket.org"
 
 
+def _runtime_deployment() -> str:
+    value = os.environ.get("ATLASSIAN_DEPLOYMENT", "cloud").strip().lower()
+    if value in {"server", "dc", "local", "local-dc", "datacenter", "data-center"}:
+        return "server"
+    return "cloud"
+
+
+def _default_urls_for_deployment(deployment: str) -> dict[str, str]:
+    fallback = (
+        _DEFAULT_SERVICE_URLS if deployment == "cloud" else _DEFAULT_DC_SERVICE_URLS
+    )
+    urls = dict(fallback)
+    for service, env_key in _SERVICE_URL_ENV_KEYS.items():
+        value = os.environ.get(env_key, "").strip().rstrip("/")
+        if value:
+            urls[service] = value
+    return urls
+
+
 def _bitbucket_cloud_headers(email: str, api_token: str) -> dict[str, str]:
-    # Bitbucket Cloud always authenticates with an Atlassian API token (ATATT...)
-    # plus the account email via Basic auth, exactly like Jira/Confluence Cloud.
-    # Workspace access tokens (ATCTT...) and app passwords are not used: Bitbucket
-    # Cloud rejects a Bearer/Personal-Token header and returns 401.
+    # Bitbucket Cloud authenticates with username/email + app password via
+    # Basic auth. Server/DC uses Personal Access Token instead.
     headers = {"Accept": "application/json"}
     raw = f"{email}:{api_token}".encode("utf-8")
     headers["Authorization"] = f"Basic {base64.b64encode(raw).decode('ascii')}"
@@ -244,7 +273,8 @@ def _validate_bitbucket_credential(
     credential: "StoredCredential | None",
 ) -> tuple[bool, str | None]:
     deployment = str(getattr(credential, "deployment", "cloud") or "cloud").lower()
-    url = str(getattr(credential, "url", "") or _DEFAULT_SERVICE_URLS["bitbucket"]).strip()
+    defaults = _default_urls_for_deployment(deployment)
+    url = str(getattr(credential, "url", "") or defaults["bitbucket"]).strip()
     workspace = str(getattr(credential, "workspace", "") or "").strip().strip("/")
 
     if deployment == "server" or not _is_bitbucket_cloud_url(url):
@@ -1019,19 +1049,10 @@ def _render_service_form(manager: CredentialManager, service: str) -> None:
                 else (" Doğrulanmadı" if cred.is_valid is None else " Reddedildi")
             )
             st.caption(f"Mevcut: `{cred.masked_email()}` - {status}")
-        deployment_label = st.radio(
-            f"{service.title()} deployment",
-            list(_DEPLOYMENTS.keys()),
-            horizontal=True,
-            key=f"_cred_mgr_deployment_{service}",
-            help=(
-                "Cloud icin Atlassian/Bitbucket Cloud tokenlari; "
-                "Server/Data Center icin Personal Access Token kullanilir."
-            ),
-        )
-        deployment = _DEPLOYMENTS[deployment_label]
+        deployment = _runtime_deployment()
+        st.caption(f"Deployment: `{_DEPLOYMENT_LABELS[deployment]}`")
         is_cloud = deployment == "cloud"
-        default_urls = _DEFAULT_SERVICE_URLS if is_cloud else _DEFAULT_DC_SERVICE_URLS
+        default_urls = _default_urls_for_deployment(deployment)
         email = ""
         if is_cloud:
             if service == "bitbucket":
@@ -1080,10 +1101,10 @@ def _render_service_form(manager: CredentialManager, service: str) -> None:
                 key=f"_cred_mgr_workspace_{service}",
             )
         if service == "bitbucket" and is_cloud:
-            token_label = "Bitbucket API token veya app password"
+            token_label = "Bitbucket app password"
             token_help = (
-                "BITBUCKET_API_TOKEN onerilir. Legacy app password da kabul edilir; "
-                "BITBUCKET_API_TOKEN veya BITBUCKET_APP_PASSWORD degerlerinden biri sarttir."
+                "Bitbucket Cloud icin app password girin. Bu deger MCP isteginde "
+                "Basic auth credential'i olarak gonderilir."
             )
         elif is_cloud:
             token_label = f"{service_label} API token"

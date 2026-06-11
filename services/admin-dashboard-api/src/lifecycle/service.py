@@ -128,6 +128,14 @@ LLM_PROVIDER_KEY = "LLM_PROVIDER"
 LLM_PROVIDER_DEFAULT = "openai"
 LLM_PROVIDERS = {"openai", "vllm", "anthropic"}
 LLM_SECRET_KEYS = {"OPENAI_API_KEY", "ANTHROPIC_API_KEY", "VLLM_API_KEY"}
+ATLASSIAN_MCP_SERVICE = "atlassian-mcp"
+STREAMLIT_UI_SERVICE = "streamlit-ui"
+ATLASSIAN_RUNTIME_KEYS = (
+    "ATLASSIAN_DEPLOYMENT",
+    "JIRA_URL",
+    "CONFLUENCE_URL",
+    "BITBUCKET_URL",
+)
 
 
 def _normalise_llm_provider(value: str | None, fallback: str = LLM_PROVIDER_DEFAULT) -> str:
@@ -1035,6 +1043,9 @@ class LifecycleService:
 
         # Step 2 + 3 - form schema check.
         self._validate_env_overrides(entry, env_overrides)
+        compose_env_overrides = await self._compose_env_overrides_for_start(
+            entry, env_overrides
+        )
 
         # Step 4 - audit precheck. Raises AuditUnreachableError on a
         # database outage; the router converts that into 502.
@@ -1078,7 +1089,7 @@ class LifecycleService:
             await self._compose.up(
                 profile=entry.compose_profile,
                 service_name=entry.compose_service_name,
-                env_overrides=env_overrides,
+                env_overrides=compose_env_overrides,
             )
         except ComposeFailureError:
             slot.state = "failed"
@@ -1947,6 +1958,34 @@ class LifecycleService:
         fields = parse_env_example(text)
         self._form_schema_cache[entry.env_example_path] = fields
         return fields
+
+    async def _compose_env_overrides_for_start(
+        self,
+        entry: ManagedServiceEntry,
+        env_overrides: Mapping[str, str],
+    ) -> dict[str, str]:
+        """Return compose-only env overrides for service start.
+
+        Streamlit must mirror the already-started Atlassian MCP runtime
+        target (cloud vs Local/DC and site URLs), but those values are not
+        Streamlit credentials and should not be repeated in the Streamlit
+        start form schema. They are passed only to the docker compose child
+        process so Compose interpolation can place them into the container
+        environment.
+        """
+
+        merged = dict(env_overrides)
+        if entry.name != STREAMLIT_UI_SERVICE:
+            return merged
+
+        atlassian_runtime = await self._vault.read_env_overrides(
+            service_name=ATLASSIAN_MCP_SERVICE
+        )
+        for key in ATLASSIAN_RUNTIME_KEYS:
+            value = atlassian_runtime.get(key, "")
+            if value and not merged.get(key):
+                merged[key] = value
+        return merged
 
     def _validate_env_overrides(
         self,

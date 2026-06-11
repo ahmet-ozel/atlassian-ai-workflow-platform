@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { isSensitiveEnvKey } from "@platform/web-shared";
 
 import { apiFetch } from "../../../lib/api-client";
 import type { FormSchemaField } from "./StartFormModal";
@@ -20,7 +19,7 @@ type Props = {
 type FieldConfig = {
   key: string;
   label: string;
-  kind?: "text" | "password" | "select";
+  kind?: "text" | "select";
   options?: Array<{ value: string; label: string }>;
 };
 
@@ -31,7 +30,6 @@ const runtimeFields: FieldConfig[] = [
     kind: "select",
     options: [
       { value: "streamable-http", label: "streamable-http" },
-      { value: "sse", label: "sse" },
     ],
   },
   {
@@ -52,82 +50,34 @@ const runtimeFields: FieldConfig[] = [
       { value: "false", label: "false" },
     ],
   },
-  { key: "MCP_ALLOWED_URL_DOMAINS", label: "MCP Allowed URL Domains" },
   { key: "TOOLSETS", label: "Toolsets" },
 ];
 
 const cloudFields: FieldConfig[] = [
   { key: "JIRA_URL", label: "Jira URL" },
-  { key: "JIRA_USERNAME", label: "Jira Email" },
-  { key: "JIRA_API_TOKEN", label: "Jira API Token", kind: "password" },
   { key: "CONFLUENCE_URL", label: "Confluence URL" },
-  { key: "CONFLUENCE_USERNAME", label: "Confluence Email" },
-  {
-    key: "CONFLUENCE_API_TOKEN",
-    label: "Confluence API Token",
-    kind: "password",
-  },
   { key: "BITBUCKET_URL", label: "Bitbucket URL" },
-  { key: "BITBUCKET_USERNAME", label: "Bitbucket Email" },
-  {
-    key: "BITBUCKET_API_TOKEN",
-    label: "Bitbucket API Token",
-    kind: "password",
-  },
-  {
-    key: "BITBUCKET_APP_PASSWORD",
-    label: "Bitbucket App Password",
-    kind: "password",
-  },
-  { key: "BITBUCKET_WORKSPACE", label: "Bitbucket Workspace" },
 ];
 
 const dcFields: FieldConfig[] = [
   { key: "JIRA_URL", label: "Jira URL" },
-  { key: "JIRA_PERSONAL_TOKEN", label: "Jira Personal Token", kind: "password" },
   { key: "CONFLUENCE_URL", label: "Confluence URL" },
-  {
-    key: "CONFLUENCE_PERSONAL_TOKEN",
-    label: "Confluence Personal Token",
-    kind: "password",
-  },
   { key: "BITBUCKET_URL", label: "Bitbucket URL" },
-  {
-    key: "BITBUCKET_PERSONAL_TOKEN",
-    label: "Bitbucket Personal Token",
-    kind: "password",
-  },
-  { key: "BITBUCKET_PROJECT_KEY", label: "Bitbucket Project Key" },
-  {
-    key: "BITBUCKET_SSL_VERIFY",
-    label: "Bitbucket SSL Verify",
-    kind: "select",
-    options: [
-      { value: "true", label: "true" },
-      { value: "false", label: "false" },
-    ],
-  },
-  { key: "BITBUCKET_TIMEOUT", label: "Bitbucket Timeout" },
 ];
 
-const cloudOnlyKeys = new Set([
+const credentialKeys = new Set([
   "JIRA_USERNAME",
   "JIRA_API_TOKEN",
+  "JIRA_PERSONAL_TOKEN",
   "CONFLUENCE_USERNAME",
   "CONFLUENCE_API_TOKEN",
+  "CONFLUENCE_PERSONAL_TOKEN",
   "BITBUCKET_USERNAME",
   "BITBUCKET_API_TOKEN",
   "BITBUCKET_APP_PASSWORD",
-  "BITBUCKET_WORKSPACE",
-]);
-
-const dcOnlyKeys = new Set([
-  "JIRA_PERSONAL_TOKEN",
-  "CONFLUENCE_PERSONAL_TOKEN",
   "BITBUCKET_PERSONAL_TOKEN",
+  "BITBUCKET_WORKSPACE",
   "BITBUCKET_PROJECT_KEY",
-  "BITBUCKET_SSL_VERIFY",
-  "BITBUCKET_TIMEOUT",
 ]);
 
 const fieldRowStyle: React.CSSProperties = {
@@ -187,7 +137,9 @@ export default function AtlassianMcpStartForm({
     () => new Set(fields.map((field) => field.key)),
     [fields],
   );
-  const [mode, setMode] = useState<DeploymentMode>("cloud");
+  const [mode, setMode] = useState<DeploymentMode>(() =>
+    modeFromFields(fields),
+  );
   const [values, setValues] = useState<Record<string, string>>(() =>
     buildInitialValues(fields),
   );
@@ -198,6 +150,7 @@ export default function AtlassianMcpStartForm({
 
   useEffect(() => {
     setValues(buildInitialValues(fields));
+    setMode(modeFromFields(fields));
   }, [fields]);
 
   function updateValue(key: string, value: string): void {
@@ -274,7 +227,11 @@ export default function AtlassianMcpStartForm({
           <span>Atlassian Deployment</span>
           <select
             value={mode}
-            onChange={(ev) => setMode(ev.currentTarget.value as DeploymentMode)}
+            onChange={(ev) => {
+              const nextMode = ev.currentTarget.value as DeploymentMode;
+              setMode(nextMode);
+              updateValue("ATLASSIAN_DEPLOYMENT", deploymentEnvValue(nextMode));
+            }}
             style={inputStyle}
           >
             <option value="cloud">Atlassian Cloud</option>
@@ -284,7 +241,7 @@ export default function AtlassianMcpStartForm({
       </div>
 
       <h3 style={sectionTitleStyle}>
-        {mode === "cloud" ? "Cloud Credentials" : "Local/DC Credentials"}
+        {mode === "cloud" ? "Cloud Connection" : "Local/DC Connection"}
       </h3>
       {authFields
         .filter((field) => availableKeys.has(field.key))
@@ -334,8 +291,6 @@ function FieldInput({
   value: string;
   onChange: (key: string, value: string) => void;
 }): JSX.Element {
-  const sensitive = field.kind === "password" || isSensitiveEnvKey(field.key);
-
   return (
     <div style={fieldRowStyle}>
       <label style={labelStyle}>
@@ -356,8 +311,8 @@ function FieldInput({
           <input
             value={value}
             onChange={(ev) => onChange(field.key, ev.currentTarget.value)}
-            type={sensitive ? "password" : "text"}
-            autoComplete={sensitive ? "new-password" : "off"}
+            type="text"
+            autoComplete="off"
             style={inputStyle}
           />
         )}
@@ -373,12 +328,27 @@ function buildInitialValues(fields: FormSchemaField[]): Record<string, string> {
 
   values.TRANSPORT ||= "streamable-http";
   values.STATELESS ||= "true";
+  values.ATLASSIAN_DEPLOYMENT ||= "cloud";
   values.ATLASSIAN_OAUTH_ENABLE ||= "true";
   values.MCP_ALLOWED_URL_DOMAINS ||= "true";
   values.TOOLSETS ||= "all";
-  values.BITBUCKET_SSL_VERIFY ||= "true";
 
   return values;
+}
+
+function modeFromFields(fields: FormSchemaField[]): DeploymentMode {
+  const raw = fields.find((field) => field.key === "ATLASSIAN_DEPLOYMENT")
+    ?.default_value;
+  return deploymentModeFromValue(raw);
+}
+
+function deploymentModeFromValue(value: string | undefined): DeploymentMode {
+  const normalized = (value ?? "").trim().toLowerCase();
+  return ["server", "dc", "local", "local-dc", "datacenter", "data-center"].includes(
+    normalized,
+  )
+    ? "dc"
+    : "cloud";
 }
 
 function buildEnvOverrides(
@@ -387,18 +357,49 @@ function buildEnvOverrides(
   mode: DeploymentMode,
 ): Record<string, string> {
   const envOverrides: Record<string, string> = {};
+  const deployment = deploymentEnvValue(mode);
+  const allowedDomains = buildAllowedDomains(values, mode);
   for (const field of fields) {
-    if (mode === "cloud" && dcOnlyKeys.has(field.key)) {
+    if (credentialKeys.has(field.key)) {
       envOverrides[field.key] = "";
       continue;
     }
-    if (mode === "dc" && cloudOnlyKeys.has(field.key)) {
-      envOverrides[field.key] = "";
+    if (field.key === "ATLASSIAN_DEPLOYMENT") {
+      envOverrides[field.key] = deployment;
+      continue;
+    }
+    if (field.key === "MCP_ALLOWED_URL_DOMAINS") {
+      envOverrides[field.key] = allowedDomains;
       continue;
     }
     envOverrides[field.key] = values[field.key] ?? field.default_value ?? "";
   }
   return envOverrides;
+}
+
+function deploymentEnvValue(mode: DeploymentMode): string {
+  return mode === "cloud" ? "cloud" : "server";
+}
+
+function buildAllowedDomains(
+  values: Record<string, string>,
+  mode: DeploymentMode,
+): string {
+  if (mode === "cloud") return "true";
+  const hosts = ["JIRA_URL", "CONFLUENCE_URL", "BITBUCKET_URL"]
+    .map((key) => hostFromUrl(values[key] ?? ""))
+    .filter((host): host is string => Boolean(host));
+  return Array.from(new Set(hosts)).join(",");
+}
+
+function hostFromUrl(value: string): string {
+  const raw = value.trim();
+  if (!raw) return "";
+  try {
+    return new URL(raw).hostname;
+  } catch {
+    return "";
+  }
 }
 
 async function handleFeatureFlag(

@@ -101,10 +101,7 @@ def _mcp_headers(credential_for: CredentialGetter) -> dict[str, str]:
             # Bitbucket Server/DC -> Personal Access Token (Bearer).
             headers["X-Atlassian-Bitbucket-Personal-Token"] = bitbucket.api_token
         else:
-            # Bitbucket Cloud -> Atlassian API token (ATATT...) + email via Basic
-            # auth, exactly like Jira/Confluence Cloud. App passwords and
-            # workspace access tokens (ATCTT...) are NOT used: the MCP truth-table
-            # discards a Personal-Token/Bearer header on a Cloud URL and returns 401.
+            # Bitbucket Cloud -> username/email + app password via Basic auth.
             headers["X-Atlassian-Bitbucket-Username"] = bitbucket.email
             headers["X-Atlassian-Bitbucket-App-Password"] = bitbucket.api_token
             headers["X-Atlassian-Bitbucket-Api-Token"] = bitbucket.api_token

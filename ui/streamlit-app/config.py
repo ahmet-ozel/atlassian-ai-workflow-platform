@@ -43,6 +43,9 @@ class Settings:
         self.mcp_base_url: str = os.environ.get(
             "MCP_BASE_URL", "http://atlassian-mcp:8090"
         )
+        self.atlassian_deployment: str = _normalize_atlassian_deployment(
+            os.environ.get("ATLASSIAN_DEPLOYMENT", "cloud")
+        )
         self.client_source: str = os.environ.get(
             "CLIENT_SOURCE", "streamlit-app"
         )
@@ -68,3 +71,10 @@ class Settings:
         self.default_language: str = os.environ.get(
             "DEFAULT_LANGUAGE", "tr"
         )
+
+
+def _normalize_atlassian_deployment(raw: str) -> str:
+    value = raw.strip().lower()
+    if value in {"server", "dc", "local", "local-dc", "datacenter", "data-center"}:
+        return "server"
+    return "cloud"

@@ -210,6 +210,7 @@ function sensitiveFieldRequired(
 ): boolean {
   if (!sensitive) return false;
   if (serviceName === "atlassian-mcp") return false;
+  if (serviceName === "streamlit-ui" && LLM_SECRET_KEYS.has(key)) return false;
   if (LLM_SECRET_KEYS.has(key)) return llmSecretRequired(key, provider);
   return true;
 }

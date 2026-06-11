@@ -24,7 +24,7 @@ from components import render_cost_widget, render_dept_switcher
 from components.theme import apply_theme, page_hero
 
 _inject_session_state()
-st.set_page_config(page_title="MCP Inspector", page_icon="", layout="wide")
+st.set_page_config(page_title="MCP Inspector", layout="wide")
 apply_theme()
 page_hero(
     "MCP Inspector",

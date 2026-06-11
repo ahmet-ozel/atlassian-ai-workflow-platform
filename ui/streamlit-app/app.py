@@ -813,6 +813,13 @@ _USER_NAV_PAGES: tuple[tuple[str, str, str], ...] = (
 )
 
 
+def _page_link(page: str, *, label: str, icon: str | None = None) -> None:
+    if icon:
+        st.page_link(page, label=label, icon=icon)
+    else:
+        st.page_link(page, label=label)
+
+
 def render_user_navigation() -> None:
     """Render the end-user sidebar navigation.
 
@@ -826,7 +833,7 @@ def render_user_navigation() -> None:
         page_link = getattr(st, "page_link", None)
         if callable(page_link):
             for icon, label, page in _USER_NAV_PAGES:
-                st.page_link(page, label=label, icon=icon)
+                _page_link(page, label=label, icon=icon)
         else:  # pragma: no cover - legacy Streamlit fallback
             for icon, label, page in _USER_NAV_PAGES:
                 st.markdown(f"{icon} `{page}`")
@@ -914,22 +921,19 @@ def _render_empty_credentials_banner() -> None:
 
     Streamlit ``st.page_link`` accepts a path relative to the entry
     script (``app.py``); ``pages/0_credentials.py`` is the canonical
-    target used by the credentials page flow (the legacy
-    ``pages/7_session_credentials.py`` was removed in task 9.2).
+    target used by the credentials page flow.
     """
 
     st.warning(
         " **Önce credential bağlamanız gerekiyor.**\n\n"
         "Token'lar yalnızca aktif Streamlit oturumunda Vault'ta saklanır. "
-        "Chat ve task creator credential bağlanmadan çalışmaz.",
-        icon="",
+        "Chat ve task creator credential bağlanmadan çalışmaz."
     )
     page_link = getattr(st, "page_link", None)
     if callable(page_link):
-        page_link(
+        _page_link(
             "pages/0_credentials.py",
             label="Credentials sayfasına git ",
-            icon="",
         )
     else:  # pragma: no cover - legacy Streamlit fallback
         st.markdown(
@@ -942,7 +946,7 @@ def main() -> None:
 
     st.set_page_config(
         page_title="AI Bot Platform",
-        page_icon=":robot_face:",
+        page_icon="🤖",
         layout="wide",
     )
 
@@ -1007,7 +1011,7 @@ def main() -> None:
                 )
                 page_link = getattr(st, "page_link", None)
                 if callable(page_link):
-                    page_link(page, label="Aç ", icon=None)
+                    _page_link(page, label="Aç ")
                 else:
                     st.markdown(f"`{page}`")
 

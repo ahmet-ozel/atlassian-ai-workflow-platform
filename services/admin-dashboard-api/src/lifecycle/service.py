@@ -1990,6 +1990,9 @@ class LifecycleService:
             value = atlassian_runtime.get(key, "")
             if value and not merged.get(key):
                 merged[key] = value
+        for key in LLM_SECRET_KEYS:
+            if merged.get(key, "") == "":
+                merged.pop(key, None)
         return merged
 
     def _validate_env_overrides(
@@ -2034,10 +2037,22 @@ class LifecycleService:
             if value == "":
                 if _llm_secret_can_be_empty(f.key, llm_provider):
                     continue
+                if entry.name == STREAMLIT_UI_SERVICE and self._root_env_default(f.key):
+                    continue
                 raise FormSchemaMismatchError(
                     f"sensitive value required for key {f.key!r} of "
                     f"service {entry.name!r}"
                 )
+
+    def _root_env_default(self, key: str) -> str:
+        if key not in LLM_SECRET_KEYS:
+            return ""
+        path = self._workspace_root / ".env"
+        if not path.is_file():
+            return ""
+        fields = parse_env_example(path.read_text(encoding="utf-8"))
+        defaults = {field.key: field.default_value for field in fields}
+        return defaults.get(key, "")
 
     async def run_connectivity_probe(
         self,

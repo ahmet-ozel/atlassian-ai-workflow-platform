@@ -1089,6 +1089,73 @@ def test_start_streamlit_inherits_atlassian_runtime_for_compose_only(
     assert "JIRA_URL" not in vault.stored["streamlit-ui"]
 
 
+def test_start_streamlit_uses_root_llm_secret_when_form_secret_is_blank(
+    tmp_path: Path,
+) -> None:
+    workspace = _build_workspace(tmp_path)
+    (workspace / ".env").write_text("OPENAI_API_KEY=root-openai\n", encoding="utf-8")
+    streamlit_dir = workspace / "ui" / "streamlit-app"
+    streamlit_dir.mkdir(parents=True)
+    (streamlit_dir / ".env").write_text(
+        "\n".join(
+            [
+                "PORT=8501",
+                "LLM_PROVIDER=openai",
+                "LLM_MODEL_NAME=gpt-4o-mini",
+                "OPENAI_API_KEY=",
+                "OPENAI_BASE_URL=https://api.openai.com/v1",
+                "VLLM_BASE_URL=http://host.docker.internal:8000/v1",
+                "VLLM_API_KEY=",
+                "ANTHROPIC_API_KEY=",
+                "ANTHROPIC_BASE_URL=https://api.anthropic.com/v1",
+                "CLIENT_SOURCE=streamlit-app",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    streamlit_entry = ManagedServiceEntry(
+        name="streamlit-ui",
+        kind="ui",
+        compose_service_name="streamlit-ui",
+        compose_profile="streamlit-ui",
+        env_example_path="ui/streamlit-app/.env",
+        health_endpoint="/_stcore/health",
+        test_command=None,
+    )
+    svc, _, vault, compose, _ = _make_service(
+        workspace_root=workspace,
+        manifest=_entries() + (streamlit_entry,),
+    )
+
+    env_overrides = {
+        "PORT": "8501",
+        "LLM_PROVIDER": "openai",
+        "LLM_MODEL_NAME": "gpt-4o-mini",
+        "OPENAI_API_KEY": "",
+        "OPENAI_BASE_URL": "https://api.openai.com/v1",
+        "VLLM_BASE_URL": "http://host.docker.internal:8000/v1",
+        "VLLM_API_KEY": "",
+        "ANTHROPIC_API_KEY": "",
+        "ANTHROPIC_BASE_URL": "https://api.anthropic.com/v1",
+        "CLIENT_SOURCE": "streamlit-app",
+    }
+
+    async def run() -> StartResponse:
+        return await svc.start(
+            name="streamlit-ui",
+            env_overrides=env_overrides,
+            actor="ops",
+        )
+
+    response = asyncio.run(run())
+
+    assert response.state == "running"
+    assert vault.stored["streamlit-ui"]["OPENAI_API_KEY"] == ""
+    compose_env = compose.up_calls[-1]["env_overrides"]
+    assert "OPENAI_API_KEY" not in compose_env
+
+
 def test_start_atlassian_mcp_stores_urls_but_does_not_boot_with_them(
     tmp_path: Path,
 ) -> None:

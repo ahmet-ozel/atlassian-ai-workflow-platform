@@ -946,7 +946,7 @@ def render_credential_warning() -> None:
     can render the warning without invoking the full manager
     panel.
     """
-    st.warning(CREDENTIAL_WARNING_TEXT, icon="")
+    st.warning(CREDENTIAL_WARNING_TEXT)
 
 
 def render_logout_button(*, key: str = "credential_manager_logout") -> bool:

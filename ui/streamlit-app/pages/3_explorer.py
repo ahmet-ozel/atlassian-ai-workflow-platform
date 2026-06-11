@@ -26,7 +26,7 @@ from components.theme import apply_theme, page_hero
 
 
 _inject_session_state()
-st.set_page_config(page_title="Explorer", page_icon="", layout="wide")
+st.set_page_config(page_title="Explorer", layout="wide")
 apply_theme()
 page_hero(
     "Explorer",

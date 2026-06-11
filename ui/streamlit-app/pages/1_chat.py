@@ -15,7 +15,7 @@ from components.theme import apply_theme, page_hero
 
 
 _inject_session_state()
-st.set_page_config(page_title="Chat", page_icon=":speech_balloon:", layout="wide")
+st.set_page_config(page_title="Chat", page_icon="💬", layout="wide")
 render_user_navigation()
 apply_theme()
 page_hero(

@@ -10,7 +10,7 @@ from components.theme import apply_theme, page_hero
 
 
 _inject_session_state()
-st.set_page_config(page_title="Credentials", page_icon=":key:")
+st.set_page_config(page_title="Credentials", page_icon="🔑")
 render_user_navigation()
 apply_theme()
 

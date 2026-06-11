@@ -22,6 +22,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { isSensitiveEnvKey } from "@platform/web-shared";
 
 import { apiFetch } from "../../../lib/api-client";
+import AtlassianMcpStartForm from "./AtlassianMcpStartForm";
 
 // ---------------------------------------------------------------------------
 // Wire types - kept in sync with services/admin-dashboard-api/src/routers/_models.py
@@ -31,7 +32,7 @@ import { apiFetch } from "../../../lib/api-client";
  * One row of ``form_schema.fields`` returned by ``GET /admin/services/{name}``.
  * Mirrors :class:`src.routers._models.FormSchemaField`.
  */
-type FormSchemaField = {
+export type FormSchemaField = {
   key: string;
   default_value: string;
   comment: string | null;
@@ -478,7 +479,18 @@ export default function StartFormModal({
           </p>
         )}
 
-        {fields != null && (
+        {fields != null && serviceName === "atlassian-mcp" && (
+          <AtlassianMcpStartForm
+            fields={fields}
+            submitting={submitting}
+            setSubmitting={setSubmitting}
+            onClose={onClose}
+            onStarted={onStarted}
+            onFeatureFlagDisabled={onFeatureFlagDisabled}
+          />
+        )}
+
+        {fields != null && serviceName !== "atlassian-mcp" && (
           <form ref={formRef} onSubmit={handleSubmit} noValidate>
             {submitError != null && (
               <div style={errorBoxStyle} role="alert">

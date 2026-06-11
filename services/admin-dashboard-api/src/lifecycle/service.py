@@ -108,6 +108,7 @@ MAX_HEALTH_READY_TIMEOUT_SECONDS: float = 180.0
 #: lifecycle handler writes a single ``health_streak_alert`` audit
 #: entry.
 DEFAULT_HEALTH_FAIL_STREAK_THRESHOLD: int = 3
+COMPOSE_FAILURE_TAIL_CHARS: int = 2000
 
 #: Maximum dependency-chain recursion depth (platform operations
 #: behavior 5.2 / Q11). The lifecycle service refuses to recurse
@@ -676,6 +677,29 @@ def _redact_log_line(line: str, pattern: re.Pattern[str] | None) -> str:
     return pattern.sub(lambda m: f"{m.group(1)}{m.group(2)}<redacted>", line)
 
 
+def _tail_text(text: str, limit: int = COMPOSE_FAILURE_TAIL_CHARS) -> str:
+    if len(text) <= limit:
+        return text
+    return text[-limit:]
+
+
+def _compose_failure_audit_details(
+    exc: ComposeFailureError,
+    *,
+    pattern: re.Pattern[str] | None,
+) -> dict[str, Any]:
+    result = exc.result
+    stderr_tail = _redact_log_line(_tail_text(result.stderr), pattern)
+    stdout_tail = _redact_log_line(_tail_text(result.stdout), pattern)
+    return {
+        "reason": "compose_up_nonzero",
+        "exit_code": result.exit_code,
+        "argv": list(result.argv),
+        "stderr_tail": stderr_tail,
+        "stdout_tail": stdout_tail,
+    }
+
+
 class LifecycleService:
     """Async orchestrator backing the ``/admin/services`` REST surface.
 
@@ -1092,8 +1116,9 @@ class LifecycleService:
                 service_name=entry.compose_service_name,
                 env_overrides=compose_env_overrides,
             )
-        except ComposeFailureError:
+        except ComposeFailureError as exc:
             slot.state = "failed"
+            pattern = self.build_log_redaction_pattern(entry)
             await self._audit.write_with_retry(
                 AuditEntry(
                     id=uuid4(),
@@ -1106,7 +1131,10 @@ class LifecycleService:
                     outcome="failed",
                     details_json=details_with_env_keys(
                         env_keys,
-                        extra={"reason": "compose_up_nonzero"},
+                        extra=_compose_failure_audit_details(
+                            exc,
+                            pattern=pattern,
+                        ),
                     ),
                 )
             )

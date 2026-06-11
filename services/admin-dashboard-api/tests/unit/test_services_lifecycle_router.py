@@ -721,12 +721,25 @@ def test_start_502_on_audit_unreachable_carries_correlation_id() -> None:
 
 
 def test_start_502_on_compose_failure_carries_correlation_id() -> None:
-    """Compose non-zero exit  502 + correlation_id."""
+    """Compose non-zero exit surfaces stderr + lifecycle correlation_id."""
 
+    entry = _entry()
+    cid = uuid4()
     failing_result = ComposeResult(
-        exit_code=1, stdout="", stderr="boom", argv=("docker", "compose", "up")
+        exit_code=1,
+        stdout="build output",
+        stderr="port is already allocated",
+        argv=("docker", "compose", "up", "-d", "automation-service"),
     )
     stub = _StubLifecycleService(
+        by_name={entry.name: entry},
+        state_cache={
+            entry.name: LifecycleStateCache(
+                name=entry.name,
+                state="failed",
+                last_correlation_id=cid,
+            )
+        },
         raise_on_start=ComposeFailureError(
             "docker compose up failed with exit code 1",
             result=failing_result,
@@ -741,8 +754,11 @@ def test_start_502_on_compose_failure_carries_correlation_id() -> None:
 
     assert response.status_code == 502
     body = response.json()
-    assert UUID(body["correlation_id"])
+    assert UUID(body["correlation_id"]) == cid
     assert "exit code 1" in body["detail"]
+    assert "port is already allocated" in body["detail"]
+    assert "stdout_tail" in body["detail"]
+    assert "docker compose up -d automation-service" in body["detail"]
 
 
 # ---------------------------------------------------------------------------

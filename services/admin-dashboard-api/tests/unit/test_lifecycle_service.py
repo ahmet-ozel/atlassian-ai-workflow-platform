@@ -1395,8 +1395,13 @@ def test_start_compose_up_fail_marks_failed_and_writes_failed_audit(
     assert audit.write_calls[0].outcome == "pending"
     # And a single failed write_with_retry row was emitted.
     assert len(audit.write_with_retry_calls) == 1
-    assert audit.write_with_retry_calls[0].outcome == "failed"
-    assert audit.write_with_retry_calls[0].action == "start"
+    failed_row = audit.write_with_retry_calls[0]
+    assert failed_row.outcome == "failed"
+    assert failed_row.action == "start"
+    assert failed_row.details_json["reason"] == "compose_up_nonzero"
+    assert failed_row.details_json["exit_code"] == 1
+    assert failed_row.details_json["stderr_tail"] == "image not found"
+    assert failed_row.details_json["argv"] == ["docker"]
 
 
 # ---------------------------------------------------------------------------

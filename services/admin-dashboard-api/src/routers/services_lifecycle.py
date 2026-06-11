@@ -38,6 +38,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import shlex
 from typing import Any, AsyncIterator
 from uuid import UUID, uuid4
 
@@ -56,6 +57,7 @@ from ..lifecycle.service import (
     MaxDependencyDepthExceededError,
     TestPreconditionError,
     UnknownServiceError,
+    _redact_log_line,
 )
 from ..lifecycle.vault_client import VaultWriteError
 from ._models import (
@@ -83,6 +85,7 @@ from ._models import (
 
 
 logger = logging.getLogger(__name__)
+_COMPOSE_FAILURE_TAIL_CHARS = 2000
 
 router = APIRouter(
     prefix="/admin/services",
@@ -160,6 +163,92 @@ def _gateway_failure_response(
             detail=detail,
             correlation_id=correlation_id,
         ).model_dump(mode="json"),
+    )
+
+
+def _tail_text(text: str, limit: int = _COMPOSE_FAILURE_TAIL_CHARS) -> str:
+    if len(text) <= limit:
+        return text
+    return text[-limit:]
+
+
+def _compose_failure_pattern(
+    svc: LifecycleService,
+    name: str,
+) -> Any | None:
+    try:
+        entry = svc.get_manifest_entry(name)
+        builder = getattr(svc, "build_log_redaction_pattern", None)
+        if callable(builder):
+            return builder(entry)
+    except Exception:  # noqa: BLE001 - diagnostics must not mask 502.
+        return None
+    return None
+
+
+def _redacted_compose_streams(
+    exc: ComposeFailureError,
+    pattern: Any | None,
+) -> tuple[str, str]:
+    stderr_tail = _redact_log_line(_tail_text(exc.result.stderr), pattern)
+    stdout_tail = _redact_log_line(_tail_text(exc.result.stdout), pattern)
+    return stderr_tail, stdout_tail
+
+
+def _compose_failure_detail(
+    exc: ComposeFailureError,
+    *,
+    pattern: Any | None,
+) -> str:
+    stderr_tail, stdout_tail = _redacted_compose_streams(exc, pattern)
+    argv = " ".join(shlex.quote(part) for part in exc.result.argv)
+    parts = [
+        str(exc),
+        f"exit_code={exc.result.exit_code}",
+        f"argv={argv}",
+    ]
+    if stderr_tail.strip():
+        parts.append(f"stderr_tail:\n{stderr_tail}")
+    if stdout_tail.strip():
+        parts.append(f"stdout_tail:\n{stdout_tail}")
+    return "\n".join(parts)
+
+
+def _failure_correlation_id(
+    svc: LifecycleService,
+    name: str,
+) -> UUID:
+    try:
+        slot = svc.state_cache.get(name)
+        if slot is not None and slot.last_correlation_id is not None:
+            return slot.last_correlation_id
+    except Exception:  # noqa: BLE001 - fallback keeps the error mappable.
+        pass
+    return uuid4()
+
+
+def _compose_failure_response(
+    *,
+    svc: LifecycleService,
+    name: str,
+    exc: ComposeFailureError,
+) -> JSONResponse:
+    pattern = _compose_failure_pattern(svc, name)
+    stderr_tail, stdout_tail = _redacted_compose_streams(exc, pattern)
+    correlation_id = _failure_correlation_id(svc, name)
+    logger.warning(
+        "compose failure service=%s correlation_id=%s exit_code=%s "
+        "argv=%s stderr_tail=%r stdout_tail=%r",
+        name,
+        correlation_id,
+        exc.result.exit_code,
+        list(exc.result.argv),
+        stderr_tail,
+        stdout_tail,
+    )
+    return _gateway_failure_response(
+        detail=_compose_failure_detail(exc, pattern=pattern),
+        correlation_id=correlation_id,
     )
 
 
@@ -411,10 +500,11 @@ async def start_service(
                 "detail": str(exc),
             },
         ) from exc
+    except ComposeFailureError as exc:
+        return _compose_failure_response(svc=svc, name=name, exc=exc)
     except (
         VaultWriteError,
         AuditUnreachableError,
-        ComposeFailureError,
         MaxDependencyDepthExceededError,
         DependencyStartFailedError,
     ) as exc:
@@ -525,7 +615,9 @@ async def stop_service(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(exc),
         ) from exc
-    except (AuditUnreachableError, ComposeFailureError) as exc:
+    except ComposeFailureError as exc:
+        return _compose_failure_response(svc=svc, name=name, exc=exc)
+    except AuditUnreachableError as exc:
         return _gateway_failure_response(
             detail=str(exc),
             correlation_id=uuid4(),
@@ -582,10 +674,11 @@ async def restart_service(
                 "detail": str(exc),
             },
         ) from exc
+    except ComposeFailureError as exc:
+        return _compose_failure_response(svc=svc, name=name, exc=exc)
     except (
         VaultWriteError,
         AuditUnreachableError,
-        ComposeFailureError,
         MaxDependencyDepthExceededError,
         DependencyStartFailedError,
     ) as exc:
@@ -649,7 +742,9 @@ async def run_service_tests(
             status_code=status.HTTP_409_CONFLICT,
             detail=exc.reason,
         ) from exc
-    except (AuditUnreachableError, ComposeFailureError) as exc:
+    except ComposeFailureError as exc:
+        return _compose_failure_response(svc=svc, name=name, exc=exc)
+    except AuditUnreachableError as exc:
         return _gateway_failure_response(
             detail=str(exc),
             correlation_id=uuid4(),
@@ -770,7 +865,9 @@ async def run_service_smoke_test(
             status_code=status.HTTP_409_CONFLICT,
             detail=exc.reason,
         ) from exc
-    except (AuditUnreachableError, ComposeFailureError) as exc:
+    except ComposeFailureError as exc:
+        return _compose_failure_response(svc=svc, name=name, exc=exc)
+    except AuditUnreachableError as exc:
         return _gateway_failure_response(
             detail=str(exc),
             correlation_id=uuid4(),
@@ -894,10 +991,7 @@ async def get_service_logs(
                 detail=str(exc),
             ) from exc
         except ComposeFailureError as exc:
-            return _gateway_failure_response(
-                detail=str(exc),
-                correlation_id=uuid4(),
-            )
+            return _compose_failure_response(svc=svc, name=name, exc=exc)
         return LogsResponse(lines=lines)
 
     # Streaming path - call ``compose.logs(follow=True)`` directly so

@@ -1970,9 +1970,9 @@ class LifecycleService:
         Streamlit must mirror the already-started Atlassian MCP runtime
         target (cloud vs Local/DC and site URLs), but those values are not
         Streamlit credentials and should not be repeated in the Streamlit
-        start form schema. They are passed only to the docker compose child
-        process so Compose interpolation can place them into the container
-        environment.
+        start form schema. Atlassian MCP stores request URLs for downstream
+        services, but it must not boot with those URLs because credentials are
+        supplied per request.
         """
 
         merged = dict(env_overrides)

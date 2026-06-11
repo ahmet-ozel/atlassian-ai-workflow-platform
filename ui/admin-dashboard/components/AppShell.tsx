@@ -13,7 +13,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { getStreamlitUrl } from "@/lib/config";
 
@@ -31,55 +31,60 @@ type NavGroup = {
   items: NavEntry[];
 };
 
-const STREAMLIT_URL = getStreamlitUrl();
+function buildNavGroups(streamlitUrl: string): NavGroup[] {
+  const groups: NavGroup[] = [
+    {
+      label: "Genel",
+      items: [
+        { href: "/", label: "Kurulum", icon: "ST" },
+        { href: "/operations", label: "Operasyonlar", icon: "OP", matchPrefix: true },
+      ],
+    },
+    {
+      label: "Yönetim",
+      items: [
+        { href: "/departments", label: "Departmanlar", icon: "DP", matchPrefix: true },
+        { href: "/services", label: "Servisler", icon: "SV", matchPrefix: true },
+        { href: "/workflows", label: "İş akışları", icon: "WF", matchPrefix: true },
+        { href: "/po-review", label: "PO Review", icon: "PO", matchPrefix: true },
+        { href: "/capabilities", label: "Yetenek matrisi", icon: "CP" },
+        { href: "/live-smoke", label: "Canlı test", icon: "LS" },
+      ],
+    },
+    {
+      label: "Gözlemlenebilirlik",
+      items: [
+        { href: "/costs", label: "Maliyetler", icon: "CO" },
+        { href: "/logs", label: "Loglar", icon: "LG" },
+        { href: "/audit", label: "Denetim kaydı", icon: "AL" },
+        { href: "/mcp-traffic", label: "MCP trafiği", icon: "MT" },
+        { href: "/notifications", label: "Bildirimler", icon: "NT" },
+      ],
+    },
+    {
+      label: "Yapılandırma",
+      items: [
+        { href: "/feature-flags", label: "Özellik bayrakları", icon: "FF" },
+        { href: "/llm-providers", label: "AI modelleri", icon: "AI" },
+        { href: "/firecrawl", label: "Firecrawl izin listesi", icon: "FC" },
+        { href: "/prompts", label: "Promptlar", icon: "PR", matchPrefix: true },
+        { href: "/security", label: "Güvenlik", icon: "SC", matchPrefix: true },
+      ],
+    },
+  ];
 
-const NAV_GROUPS: NavGroup[] = [
-  {
-    label: "Genel",
-    items: [
-      { href: "/", label: "Kurulum", icon: "ST" },
-      { href: "/operations", label: "Operasyonlar", icon: "OP", matchPrefix: true },
-    ],
-  },
-  {
-    label: "Yönetim",
-    items: [
-      { href: "/departments", label: "Departmanlar", icon: "DP", matchPrefix: true },
-      { href: "/services", label: "Servisler", icon: "SV", matchPrefix: true },
-      { href: "/workflows", label: "İş akışları", icon: "WF", matchPrefix: true },
-      { href: "/po-review", label: "PO Review", icon: "PO", matchPrefix: true },
-      { href: "/capabilities", label: "Yetenek matrisi", icon: "CP" },
-      { href: "/live-smoke", label: "Canlı test", icon: "LS" },
-    ],
-  },
-  {
-    label: "Gözlemlenebilirlik",
-    items: [
-      { href: "/costs", label: "Maliyetler", icon: "CO" },
-      { href: "/logs", label: "Loglar", icon: "LG" },
-      { href: "/audit", label: "Denetim kaydı", icon: "AL" },
-      { href: "/mcp-traffic", label: "MCP trafiği", icon: "MT" },
-      { href: "/notifications", label: "Bildirimler", icon: "NT" },
-    ],
-  },
-  {
-    label: "Yapılandırma",
-    items: [
-      { href: "/feature-flags", label: "Özellik bayrakları", icon: "FF" },
-      { href: "/llm-providers", label: "AI modelleri", icon: "AI" },
-      { href: "/firecrawl", label: "Firecrawl izin listesi", icon: "FC" },
-      { href: "/prompts", label: "Promptlar", icon: "PR", matchPrefix: true },
-      { href: "/security", label: "Güvenlik", icon: "SC", matchPrefix: true },
-    ],
-  },
-  {
-    label: "Hata Ayıklama",
-    items: [
-      { href: `${STREAMLIT_URL}/explorer`, label: "MCP Explorer", icon: "EX", external: true },
-      { href: `${STREAMLIT_URL}/mcp_inspector`, label: "MCP Inspector", icon: "MI", external: true },
-    ],
-  },
-];
+  if (streamlitUrl) {
+    groups.push({
+      label: "Hata Ayıklama",
+      items: [
+        { href: `${streamlitUrl}/explorer`, label: "MCP Explorer", icon: "EX", external: true },
+        { href: `${streamlitUrl}/mcp_inspector`, label: "MCP Inspector", icon: "MI", external: true },
+      ],
+    });
+  }
+
+  return groups;
+}
 
 const ROUTE_TITLE: Record<string, string> = {
   "/": "Kurulum sihirbazı",
@@ -121,6 +126,12 @@ function isActive(pathname: string, entry: NavEntry): boolean {
 export default function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? "/";
   const title = pickTitle(pathname);
+  const [streamlitUrl, setStreamlitUrl] = useState("");
+  const navGroups = buildNavGroups(streamlitUrl);
+
+  useEffect(() => {
+    setStreamlitUrl(getStreamlitUrl());
+  }, []);
 
   return (
     <div className="app-shell">
@@ -134,7 +145,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
         </div>
 
         <nav>
-          {NAV_GROUPS.map((group) => (
+          {navGroups.map((group) => (
             <div key={group.label} className="app-sidebar__group">
               <div className="app-sidebar__group-label">{group.label}</div>
               {group.items.map((entry) => {
@@ -186,9 +197,10 @@ export default function AppShell({ children }: { children: ReactNode }) {
         <div className="app-topbar__actions">
           <a
             className="btn btn--ghost btn--sm"
-            href={STREAMLIT_URL}
+            href={streamlitUrl || "#"}
             target="_blank"
             rel="noopener noreferrer"
+            aria-disabled={streamlitUrl ? undefined : true}
           >
             End-User UI
           </a>

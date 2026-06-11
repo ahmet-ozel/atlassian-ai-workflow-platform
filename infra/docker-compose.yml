@@ -706,11 +706,19 @@ services:
     build:
       context: ..
       dockerfile: ui/admin-dashboard/Dockerfile
+      args:
+        ADMIN_DASHBOARD_API_INTERNAL_URL: ${ADMIN_DASHBOARD_API_INTERNAL_URL:-http://admin-dashboard-api:8082}
+        NEXT_PUBLIC_ADMIN_API_BASE_URL: ""
+        NEXT_PUBLIC_STREAMLIT_URL: ""
+        NEXT_PUBLIC_STREAMLIT_HOST_PORT: ${STREAMLIT_HOST_PORT:-38501}
     env_file:
       - path: ../ui/admin-dashboard/.env
         required: false
     environment:
-      NEXT_PUBLIC_ADMIN_API_BASE_URL: ${NEXT_PUBLIC_ADMIN_API_BASE_URL:-http://localhost:38082}
+      ADMIN_DASHBOARD_API_INTERNAL_URL: ${ADMIN_DASHBOARD_API_INTERNAL_URL:-http://admin-dashboard-api:8082}
+      NEXT_PUBLIC_ADMIN_API_BASE_URL: ""
+      NEXT_PUBLIC_STREAMLIT_URL: ""
+      NEXT_PUBLIC_STREAMLIT_HOST_PORT: ${STREAMLIT_HOST_PORT:-38501}
     ports:
       - "${ADMIN_DASHBOARD_UI_HOST_PORT:-33000}:3000"
     depends_on:

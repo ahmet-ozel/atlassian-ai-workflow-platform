@@ -39,8 +39,6 @@ type AiModelState =
   | { kind: "configured"; provider: ExternalProvider }
   | { kind: "error" };
 
-const STREAMLIT_URL = getStreamlitUrl();
-
 const AI_PROVIDER_NAMES = new Set(["openai", "vllm", "anthropic"]);
 
 function findService(services: ServiceSummary[], name: string): ServiceSummary | null {
@@ -165,19 +163,21 @@ function ServiceActions({
   onStart,
   onRestart,
   chat,
+  streamlitUrl,
 }: {
   service: ServiceSummary | null;
   busy: boolean;
   onStart: () => void;
   onRestart: () => void;
   chat?: boolean;
+  streamlitUrl?: string;
 }) {
-  if (serviceReady(service) && chat) {
+  if (serviceReady(service) && chat && streamlitUrl) {
     return (
       <div className="row">
         <a
           className="btn btn--primary btn--sm"
-          href={`${STREAMLIT_URL}/chat`}
+          href={`${streamlitUrl}/chat`}
           target="_blank"
           rel="noopener noreferrer"
         >
@@ -185,7 +185,7 @@ function ServiceActions({
         </a>
         <a
           className="btn btn--sm"
-          href={`${STREAMLIT_URL}/credentials`}
+          href={`${streamlitUrl}/credentials`}
           target="_blank"
           rel="noopener noreferrer"
         >
@@ -225,10 +225,15 @@ export default function ServiceQuickStart({
   onRestart,
 }: ServiceQuickStartProps) {
   const [aiModel, setAiModel] = useState<AiModelState>({ kind: "loading" });
+  const [streamlitUrl, setStreamlitUrl] = useState("");
   const mcp = findService(services, "atlassian-mcp");
   const streamlit = findService(services, "streamlit-ui");
   const mcpBusy = busyServices.has("atlassian-mcp");
   const streamlitBusy = busyServices.has("streamlit-ui");
+
+  useEffect(() => {
+    setStreamlitUrl(getStreamlitUrl());
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -319,6 +324,7 @@ export default function ServiceQuickStart({
               busy={streamlitBusy}
               onStart={() => onStart("streamlit-ui")}
               onRestart={() => onRestart("streamlit-ui")}
+              streamlitUrl={streamlitUrl}
               chat
             />
           </div>

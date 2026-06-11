@@ -136,6 +136,7 @@ ATLASSIAN_RUNTIME_KEYS = (
     "CONFLUENCE_URL",
     "BITBUCKET_URL",
 )
+ATLASSIAN_MCP_REQUEST_URL_KEYS = {"JIRA_URL", "CONFLUENCE_URL", "BITBUCKET_URL"}
 
 
 def _normalise_llm_provider(value: str | None, fallback: str = LLM_PROVIDER_DEFAULT) -> str:
@@ -1975,6 +1976,10 @@ class LifecycleService:
         """
 
         merged = dict(env_overrides)
+        if entry.name == ATLASSIAN_MCP_SERVICE:
+            for key in ATLASSIAN_MCP_REQUEST_URL_KEYS:
+                merged.pop(key, None)
+            return merged
         if entry.name != STREAMLIT_UI_SERVICE:
             return merged
 

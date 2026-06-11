@@ -1089,6 +1089,84 @@ def test_start_streamlit_inherits_atlassian_runtime_for_compose_only(
     assert "JIRA_URL" not in vault.stored["streamlit-ui"]
 
 
+def test_start_atlassian_mcp_stores_urls_but_does_not_boot_with_them(
+    tmp_path: Path,
+) -> None:
+    workspace = _build_workspace(tmp_path)
+    mcp_dir = workspace / "services" / "atlassian_mcp_bitbucket"
+    mcp_dir.mkdir(parents=True)
+    (mcp_dir / ".env").write_text(
+        "\n".join(
+            [
+                "TRANSPORT=streamable-http",
+                "STATELESS=true",
+                "PORT=8090",
+                "STREAMABLE_HTTP_PATH=/mcp",
+                "READ_ONLY=false",
+                "READ_ONLY_MODE=false",
+                "ATLASSIAN_DEPLOYMENT=cloud",
+                "ATLASSIAN_OAUTH_ENABLE=true",
+                "MCP_ALLOWED_URL_DOMAINS=true",
+                "TOOLSETS=all",
+                "LOG_LEVEL=INFO",
+                "JIRA_URL=",
+                "CONFLUENCE_URL=",
+                "BITBUCKET_URL=",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    mcp_entry = ManagedServiceEntry(
+        name="atlassian-mcp",
+        kind="infra",
+        compose_service_name="atlassian-mcp",
+        compose_profile="atlassian-mcp",
+        env_example_path="services/atlassian_mcp_bitbucket/.env",
+        health_endpoint="/healthz",
+        test_command=None,
+    )
+    svc, _, vault, compose, _ = _make_service(
+        workspace_root=workspace,
+        manifest=_entries() + (mcp_entry,),
+    )
+
+    env_overrides = {
+        "TRANSPORT": "streamable-http",
+        "STATELESS": "true",
+        "PORT": "8090",
+        "STREAMABLE_HTTP_PATH": "/mcp",
+        "READ_ONLY": "false",
+        "READ_ONLY_MODE": "false",
+        "ATLASSIAN_DEPLOYMENT": "server",
+        "ATLASSIAN_OAUTH_ENABLE": "true",
+        "MCP_ALLOWED_URL_DOMAINS": "jira.sbm.org.tr,wiki.sbm.org.tr",
+        "TOOLSETS": "all",
+        "LOG_LEVEL": "INFO",
+        "JIRA_URL": "https://jira.sbm.org.tr/",
+        "CONFLUENCE_URL": "https://wiki.sbm.org.tr/",
+        "BITBUCKET_URL": "https://bitbucket.sbm.org.tr/",
+    }
+
+    async def run() -> StartResponse:
+        return await svc.start(
+            name="atlassian-mcp",
+            env_overrides=env_overrides,
+            actor="ops",
+        )
+
+    response = asyncio.run(run())
+
+    assert response.state == "running"
+    assert vault.stored["atlassian-mcp"]["JIRA_URL"] == "https://jira.sbm.org.tr/"
+    compose_env = compose.up_calls[-1]["env_overrides"]
+    assert compose_env["ATLASSIAN_DEPLOYMENT"] == "server"
+    assert compose_env["MCP_ALLOWED_URL_DOMAINS"] == "jira.sbm.org.tr,wiki.sbm.org.tr"
+    assert "JIRA_URL" not in compose_env
+    assert "CONFLUENCE_URL" not in compose_env
+    assert "BITBUCKET_URL" not in compose_env
+
+
 def test_start_llm_vllm_requires_vllm_api_key(tmp_path: Path) -> None:
     workspace = _build_workspace(tmp_path)
     streamlit_dir = workspace / "ui" / "streamlit-app"

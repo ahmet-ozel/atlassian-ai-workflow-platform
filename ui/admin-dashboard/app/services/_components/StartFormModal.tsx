@@ -205,8 +205,10 @@ function sensitiveFieldRequired(
   key: string,
   sensitive: boolean,
   provider: string,
+  serviceName?: string,
 ): boolean {
   if (!sensitive) return false;
+  if (serviceName === "atlassian-mcp") return false;
   if (LLM_SECRET_KEYS.has(key)) return llmSecretRequired(key, provider);
   return true;
 }
@@ -356,7 +358,7 @@ export default function StartFormModal({
 
       // Empty input.
       if (sensitive) {
-        if (!sensitiveFieldRequired(field.key, sensitive, effectiveProvider)) {
+        if (!sensitiveFieldRequired(field.key, sensitive, effectiveProvider, serviceName)) {
           envOverrides[field.key] = "";
           continue;
         }
@@ -499,6 +501,7 @@ export default function StartFormModal({
                 field.key,
                 sensitive,
                 selectedProvider,
+                serviceName,
               );
               const helpId = field.comment ? `${field.key}-help` : undefined;
               const errId = validationErrors[field.key]

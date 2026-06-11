@@ -1934,11 +1934,6 @@ class LifecycleService:
         if cached is not None:
             return cached
 
-        if entry.name == "atlassian-mcp":
-            # Stateless MCP receives Jira/Confluence/Bitbucket credentials per request.
-            self._form_schema_cache[entry.env_example_path] = []
-            return []
-
         path = self._workspace_root / entry.env_example_path
         try:
             text = path.read_text(encoding="utf-8")
@@ -1988,6 +1983,8 @@ class LifecycleService:
 
         for f in fields:
             if not f.is_sensitive:
+                continue
+            if entry.name == "atlassian-mcp":
                 continue
             value = env_overrides.get(f.key, "")
             if value == "":

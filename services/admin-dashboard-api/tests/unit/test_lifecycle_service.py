@@ -1052,9 +1052,9 @@ def test_start_streamlit_inherits_atlassian_runtime_for_compose_only(
     )
     vault.stored["atlassian-mcp"] = {
         "ATLASSIAN_DEPLOYMENT": "server",
-        "JIRA_URL": "https://jira.sbm.org.tr",
-        "CONFLUENCE_URL": "https://wiki.sbm.org.tr",
-        "BITBUCKET_URL": "https://bitbucket.sbm.org.tr",
+        "JIRA_URL": "https://jira.example.test",
+        "CONFLUENCE_URL": "https://wiki.example.test",
+        "BITBUCKET_URL": "https://bitbucket.example.test",
     }
 
     env_overrides = {
@@ -1082,9 +1082,9 @@ def test_start_streamlit_inherits_atlassian_runtime_for_compose_only(
     assert response.state == "running"
     compose_env = compose.up_calls[-1]["env_overrides"]
     assert compose_env["ATLASSIAN_DEPLOYMENT"] == "server"
-    assert compose_env["JIRA_URL"] == "https://jira.sbm.org.tr"
-    assert compose_env["CONFLUENCE_URL"] == "https://wiki.sbm.org.tr"
-    assert compose_env["BITBUCKET_URL"] == "https://bitbucket.sbm.org.tr"
+    assert compose_env["JIRA_URL"] == "https://jira.example.test"
+    assert compose_env["CONFLUENCE_URL"] == "https://wiki.example.test"
+    assert compose_env["BITBUCKET_URL"] == "https://bitbucket.example.test"
     assert "ATLASSIAN_DEPLOYMENT" not in vault.stored["streamlit-ui"]
     assert "JIRA_URL" not in vault.stored["streamlit-ui"]
 
@@ -1207,12 +1207,12 @@ def test_start_atlassian_mcp_stores_urls_but_does_not_boot_with_them(
         "READ_ONLY_MODE": "false",
         "ATLASSIAN_DEPLOYMENT": "server",
         "ATLASSIAN_OAUTH_ENABLE": "true",
-        "MCP_ALLOWED_URL_DOMAINS": "jira.sbm.org.tr,wiki.sbm.org.tr",
+        "MCP_ALLOWED_URL_DOMAINS": "jira.example.test,wiki.example.test",
         "TOOLSETS": "all",
         "LOG_LEVEL": "INFO",
-        "JIRA_URL": "https://jira.sbm.org.tr/",
-        "CONFLUENCE_URL": "https://wiki.sbm.org.tr/",
-        "BITBUCKET_URL": "https://bitbucket.sbm.org.tr/",
+        "JIRA_URL": "https://jira.example.test/",
+        "CONFLUENCE_URL": "https://wiki.example.test/",
+        "BITBUCKET_URL": "https://bitbucket.example.test/",
     }
 
     async def run() -> StartResponse:
@@ -1225,10 +1225,10 @@ def test_start_atlassian_mcp_stores_urls_but_does_not_boot_with_them(
     response = asyncio.run(run())
 
     assert response.state == "running"
-    assert vault.stored["atlassian-mcp"]["JIRA_URL"] == "https://jira.sbm.org.tr/"
+    assert vault.stored["atlassian-mcp"]["JIRA_URL"] == "https://jira.example.test/"
     compose_env = compose.up_calls[-1]["env_overrides"]
     assert compose_env["ATLASSIAN_DEPLOYMENT"] == "server"
-    assert compose_env["MCP_ALLOWED_URL_DOMAINS"] == "jira.sbm.org.tr,wiki.sbm.org.tr"
+    assert compose_env["MCP_ALLOWED_URL_DOMAINS"] == "jira.example.test,wiki.example.test"
     assert "JIRA_URL" not in compose_env
     assert "CONFLUENCE_URL" not in compose_env
     assert "BITBUCKET_URL" not in compose_env

@@ -67,7 +67,7 @@ const dcFields: FieldConfig[] = [
   {
     key: "MCP_ALLOWED_URL_DOMAINS",
     label: "Allowed URL domains",
-    help: "Use for Local/DC internal domains. Example: sbm.org.tr or jira.sbm.org.tr,wiki.sbm.org.tr",
+    help: "Use for Local/DC internal domains. Enter comma-separated domain suffixes.",
   },
 ];
 

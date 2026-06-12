@@ -19,6 +19,7 @@ type Props = {
 type FieldConfig = {
   key: string;
   label: string;
+  help?: string;
   kind?: "text" | "select";
   options?: Array<{ value: string; label: string }>;
 };
@@ -63,6 +64,11 @@ const dcFields: FieldConfig[] = [
   { key: "JIRA_URL", label: "Jira URL" },
   { key: "CONFLUENCE_URL", label: "Confluence URL" },
   { key: "BITBUCKET_URL", label: "Bitbucket URL" },
+  {
+    key: "MCP_ALLOWED_URL_DOMAINS",
+    label: "Allowed URL domains",
+    help: "Use for Local/DC internal domains. Example: sbm.org.tr or jira.sbm.org.tr,wiki.sbm.org.tr",
+  },
 ];
 
 const credentialKeys = new Set([
@@ -99,6 +105,13 @@ const inputStyle: React.CSSProperties = {
   border: "1px solid #ccc",
   borderRadius: 4,
   fontFamily: "monospace",
+};
+
+const helpTextStyle: React.CSSProperties = {
+  color: "#666",
+  fontSize: "0.78rem",
+  fontWeight: 400,
+  lineHeight: 1.35,
 };
 
 const sectionTitleStyle: React.CSSProperties = {
@@ -230,7 +243,21 @@ export default function AtlassianMcpStartForm({
             onChange={(ev) => {
               const nextMode = ev.currentTarget.value as DeploymentMode;
               setMode(nextMode);
-              updateValue("ATLASSIAN_DEPLOYMENT", deploymentEnvValue(nextMode));
+              setValues((current) => {
+                const nextValues: Record<string, string> = {
+                  ...current,
+                  ATLASSIAN_DEPLOYMENT: deploymentEnvValue(nextMode),
+                };
+                if (
+                  nextMode === "dc" &&
+                  (nextValues.MCP_ALLOWED_URL_DOMAINS ?? "")
+                    .trim()
+                    .toLowerCase() === "true"
+                ) {
+                  nextValues.MCP_ALLOWED_URL_DOMAINS = "";
+                }
+                return nextValues;
+              });
             }}
             style={inputStyle}
           >
@@ -316,6 +343,7 @@ function FieldInput({
             style={inputStyle}
           />
         )}
+        {field.help != null && <span style={helpTextStyle}>{field.help}</span>}
       </label>
     </div>
   );
@@ -332,6 +360,12 @@ function buildInitialValues(fields: FormSchemaField[]): Record<string, string> {
   values.ATLASSIAN_OAUTH_ENABLE ||= "true";
   values.MCP_ALLOWED_URL_DOMAINS ||= "true";
   values.TOOLSETS ||= "all";
+  if (
+    deploymentModeFromValue(values.ATLASSIAN_DEPLOYMENT) === "dc" &&
+    values.MCP_ALLOWED_URL_DOMAINS.trim().toLowerCase() === "true"
+  ) {
+    values.MCP_ALLOWED_URL_DOMAINS = "";
+  }
 
   return values;
 }
@@ -385,7 +419,9 @@ function buildAllowedDomains(
   values: Record<string, string>,
   mode: DeploymentMode,
 ): string {
-  if (mode === "cloud") return "true";
+  const explicit = (values.MCP_ALLOWED_URL_DOMAINS ?? "").trim();
+  if (mode === "cloud") return explicit || "true";
+  if (explicit && explicit.toLowerCase() !== "true") return explicit;
   const hosts = ["JIRA_URL", "CONFLUENCE_URL", "BITBUCKET_URL"]
     .map((key) => hostFromUrl(values[key] ?? ""))
     .filter((host): host is string => Boolean(host));

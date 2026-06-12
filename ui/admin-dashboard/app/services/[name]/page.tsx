@@ -32,7 +32,7 @@ import StateBadge, {
 // Wire types - kept in sync with src/routers/_models.py (Pydantic v2).
 // ---------------------------------------------------------------------------
 
-type ServiceKind = "http_service" | "worker" | "ui" | "infra";
+type ServiceKind = "http_service" | "worker" | "ui" | "infra" | "sidecar";
 
 type FormSchemaField = {
   key: string;
@@ -52,6 +52,14 @@ type HealthSnapshot = {
 
 type CredentialsStatus = "ok" | "failed" | "unknown" | null;
 
+type ServicePortBinding = {
+  internal_port: string;
+  external_port: string | null;
+  host_ip: string | null;
+  protocol: string;
+  raw: string | null;
+};
+
 type ServiceDetail = {
   name: string;
   kind: ServiceKind;
@@ -64,6 +72,7 @@ type ServiceDetail = {
   last_started_at: string | null;
   last_health_snapshot: HealthSnapshot | null;
   form_schema: { fields: FormSchemaField[] };
+  ports: ServicePortBinding[];
   credentials_status: CredentialsStatus;
   credentials_probe_at: string | null;
   credentials_probe_detail: string | null;
@@ -117,6 +126,20 @@ function extractServiceModel(
     provider: provider ?? "-",
     model: model ?? "-",
   };
+}
+
+function hostAddressForPort(port: ServicePortBinding): string {
+  if (!port.external_port) return "-";
+  if (typeof window === "undefined") return `:${port.external_port}`;
+  const host = window.location.hostname || "localhost";
+  return `${host}:${port.external_port}`;
+}
+
+function internalAddressForPort(
+  detail: ServiceDetail,
+  port: ServicePortBinding,
+): string {
+  return `${detail.compose_service_name}:${port.internal_port}`;
 }
 
 async function safeReadDetail(res: Response): Promise<string> {
@@ -473,6 +496,70 @@ export default function ServiceDetailPage({ params }: PageProps) {
             </dl>
           </section>
 
+          <section
+            style={{
+              background: "#ffffff",
+              border: "1px solid #e5e7eb",
+              borderRadius: "0.4rem",
+              padding: "1rem 1.25rem",
+              marginBottom: "1rem",
+            }}
+          >
+            <h2 style={{ marginTop: 0, fontSize: "1.05rem" }}>Ports</h2>
+            {state.detail.ports.length === 0 ? (
+              <p
+                style={{
+                  margin: 0,
+                  color: "#6b7280",
+                  fontSize: "0.9rem",
+                }}
+              >
+                Bu servis icin published host port yok.
+              </p>
+            ) : (
+              <div style={{ overflowX: "auto" }}>
+                <table
+                  style={{
+                    width: "100%",
+                    borderCollapse: "collapse",
+                    fontSize: "0.88rem",
+                  }}
+                >
+                  <thead>
+                    <tr>
+                      <th style={thStyle}>Internal</th>
+                      <th style={thStyle}>External</th>
+                      <th style={thStyle}>Protocol</th>
+                      <th style={thStyle}>Compose</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {state.detail.ports.map((port, index) => (
+                      <tr key={`${port.internal_port}-${port.external_port ?? index}`}>
+                        <td style={tdStyle}>
+                          <code>{internalAddressForPort(state.detail, port)}</code>
+                        </td>
+                        <td style={tdStyle}>
+                          {port.external_port ? (
+                            <code>{hostAddressForPort(port)}</code>
+                          ) : (
+                            <span style={{ color: "#9ca3af" }}>not published</span>
+                          )}
+                        </td>
+                        <td style={tdStyle}>
+                          <code>{port.protocol || "tcp"}</code>
+                        </td>
+                        <td style={tdStyle}>
+                          <code>{port.raw ?? "-"}</code>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+
           {(() => {
             const model = extractServiceModel(state.detail.form_schema.fields);
             if (!model) return null;
@@ -592,4 +679,19 @@ const dtStyle: React.CSSProperties = {
 const ddStyle: React.CSSProperties = {
   margin: 0,
   color: "#1f2937",
+};
+
+const thStyle: React.CSSProperties = {
+  textAlign: "left",
+  padding: "0.45rem 0.5rem",
+  borderBottom: "1px solid #e5e7eb",
+  color: "#6b7280",
+  fontWeight: 700,
+};
+
+const tdStyle: React.CSSProperties = {
+  padding: "0.5rem",
+  borderBottom: "1px solid #f3f4f6",
+  color: "#1f2937",
+  verticalAlign: "top",
 };

@@ -104,6 +104,16 @@ class FormSchema(BaseModel):
     fields: list[FormSchemaField] = Field(default_factory=list)
 
 
+class ServicePortBinding(BaseModel):
+    """One Compose port binding for a managed service."""
+
+    internal_port: str
+    external_port: str | None = None
+    host_ip: str | None = None
+    protocol: str = "tcp"
+    raw: str | None = None
+
+
 class ServiceDetail(BaseModel):
     """Body shape of ``GET /admin/services/{name}`` (behavior 6.2).
 
@@ -130,6 +140,7 @@ class ServiceDetail(BaseModel):
     last_started_at: datetime | None = None
     last_health_snapshot: HealthSnapshotModel | None = None
     form_schema: FormSchema
+    ports: list[ServicePortBinding] = Field(default_factory=list)
     credentials_status: Literal["ok", "failed", "unknown"] | None = None
     credentials_probe_at: datetime | None = None
     credentials_probe_detail: str | None = None
@@ -345,6 +356,7 @@ __all__ = (
     "RUNNING_UNMONITORED_TOOLTIP",
     "ServiceDetail",
     "ServiceKind",
+    "ServicePortBinding",
     "ServiceState",
     "ServiceSummary",
     "StartPlanResponse",

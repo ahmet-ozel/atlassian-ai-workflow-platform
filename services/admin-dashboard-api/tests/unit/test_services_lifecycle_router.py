@@ -134,6 +134,7 @@ class _StubLifecycleService:
     form_schema: dict[str, list[FormSchemaField]] = field(default_factory=dict)
     snapshot: HealthSnapshot | None = None
     logs_lines: list[str] = field(default_factory=list)
+    _workspace_root: Path | None = None
 
     start_response: StartResponse | None = None
     stop_response: StopResponse | None = None
@@ -481,6 +482,53 @@ def test_get_service_detail_returns_form_schema_and_snapshot() -> None:
     assert {f["key"] for f in fields} == {"PORT", "API_TOKEN"}
     assert any(f["is_sensitive"] for f in fields if f["key"] == "API_TOKEN")
     assert body["last_health_snapshot"]["state"] == "healthy"
+
+
+def test_get_service_detail_returns_compose_port_bindings(tmp_path: Path) -> None:
+    entry = _entry()
+    infra_dir = tmp_path / "infra"
+    infra_dir.mkdir()
+    (tmp_path / ".env").write_text(
+        "AUTOMATION_SERVICE_HOST_PORT=39080\n",
+        encoding="utf-8",
+    )
+    (infra_dir / "docker-compose.yml").write_text(
+        "\n".join(
+            [
+                "services:",
+                "  automation-service:",
+                "    image: example/automation",
+                "    ports:",
+                '      - "${AUTOMATION_SERVICE_HOST_PORT:-38080}:8080"',
+                '      - "127.0.0.1:19090:9090/udp"',
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    stub = _StubLifecycleService(
+        _workspace_root=tmp_path,
+        by_name={entry.name: entry},
+        state_cache={
+            entry.name: LifecycleStateCache(
+                name=entry.name,
+                state="running",
+            )
+        },
+    )
+    client = TestClient(_build_app(stub))
+
+    response = client.get(f"/admin/services/{entry.name}")
+
+    assert response.status_code == 200
+    ports = response.json()["ports"]
+    assert ports[0]["internal_port"] == "8080"
+    assert ports[0]["external_port"] == "39080"
+    assert ports[0]["protocol"] == "tcp"
+    assert ports[1]["internal_port"] == "9090"
+    assert ports[1]["external_port"] == "19090"
+    assert ports[1]["host_ip"] == "127.0.0.1"
+    assert ports[1]["protocol"] == "udp"
 
 
 def test_get_service_detail_404_when_unknown() -> None:

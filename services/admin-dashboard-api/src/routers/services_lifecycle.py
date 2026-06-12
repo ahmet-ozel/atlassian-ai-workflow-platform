@@ -38,6 +38,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 import shlex
 from typing import Any, AsyncIterator
 from uuid import UUID, uuid4
@@ -68,6 +69,7 @@ from ._models import (
     LogsResponse,
     ProbeResponse,
     ServiceDetail,
+    ServicePortBinding,
     ServiceSummary,
     StartPlanResponse,
     StartRequest,
@@ -86,6 +88,7 @@ from ._models import (
 
 logger = logging.getLogger(__name__)
 _COMPOSE_FAILURE_TAIL_CHARS = 2000
+_COMPOSE_VAR_PATTERN = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)(?::-([^}]*))?\}")
 
 router = APIRouter(
     prefix="/admin/services",
@@ -195,6 +198,140 @@ def _redacted_compose_streams(
     return stderr_tail, stdout_tail
 
 
+def _line_indent(line: str) -> int:
+    return len(line) - len(line.lstrip(" "))
+
+
+def _strip_yaml_scalar(value: str) -> str:
+    stripped = value.strip()
+    if (
+        len(stripped) >= 2
+        and stripped[0] == stripped[-1]
+        and stripped[0] in {"'", '"'}
+    ):
+        return stripped[1:-1]
+    return stripped
+
+
+def _read_root_env(workspace_root: Any) -> dict[str, str]:
+    path = workspace_root / ".env"
+    if not path.is_file():
+        return {}
+    values: dict[str, str] = {}
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        values[key.strip()] = _strip_yaml_scalar(value)
+    return values
+
+
+def _resolve_compose_vars(value: str, env_values: dict[str, str]) -> str:
+    def _replace(match: re.Match[str]) -> str:
+        key = match.group(1)
+        default = match.group(2) or ""
+        return env_values.get(key, default)
+
+    return _COMPOSE_VAR_PATTERN.sub(_replace, value)
+
+
+def _parse_port_spec(
+    raw_value: str,
+    env_values: dict[str, str],
+) -> ServicePortBinding | None:
+    raw = _strip_yaml_scalar(raw_value)
+    if not raw or raw.startswith("{"):
+        return None
+    resolved = _resolve_compose_vars(raw, env_values).strip()
+    if not resolved:
+        return None
+
+    protocol = "tcp"
+    if "/" in resolved:
+        resolved, protocol = resolved.rsplit("/", 1)
+        protocol = protocol or "tcp"
+
+    parts = [part.strip() for part in resolved.split(":")]
+    if len(parts) == 1:
+        host_ip = None
+        external_port = None
+        internal_port = parts[0]
+    elif len(parts) == 2:
+        host_ip = None
+        external_port, internal_port = parts
+    else:
+        host_ip = ":".join(parts[:-2]) or None
+        external_port = parts[-2]
+        internal_port = parts[-1]
+
+    if not internal_port:
+        return None
+    return ServicePortBinding(
+        internal_port=internal_port,
+        external_port=external_port or None,
+        host_ip=host_ip,
+        protocol=protocol,
+        raw=raw,
+    )
+
+
+def _compose_port_bindings(
+    *,
+    svc: LifecycleService,
+    compose_service_name: str,
+) -> list[ServicePortBinding]:
+    workspace_root = getattr(svc, "_workspace_root", None)
+    if workspace_root is None:
+        return []
+    compose_path = workspace_root / "infra" / "docker-compose.yml"
+    if not compose_path.is_file():
+        return []
+
+    env_values = _read_root_env(workspace_root)
+    in_services = False
+    in_target_service = False
+    in_ports = False
+    port_specs: list[str] = []
+
+    for raw_line in compose_path.read_text(encoding="utf-8").splitlines():
+        if not raw_line.strip() or raw_line.lstrip().startswith("#"):
+            continue
+        indent = _line_indent(raw_line)
+        stripped = raw_line.strip()
+
+        if indent == 0 and stripped == "services:":
+            in_services = True
+            continue
+        if not in_services:
+            continue
+        if indent == 0 and stripped.endswith(":"):
+            break
+        if indent == 2 and stripped.endswith(":"):
+            current_service = _strip_yaml_scalar(stripped[:-1])
+            in_target_service = current_service == compose_service_name
+            in_ports = False
+            continue
+        if not in_target_service:
+            continue
+        if indent == 4 and stripped == "ports:":
+            in_ports = True
+            continue
+        if in_ports:
+            if indent <= 4:
+                in_ports = False
+                continue
+            if stripped.startswith("-"):
+                port_specs.append(stripped[1:].strip())
+
+    bindings: list[ServicePortBinding] = []
+    for spec in port_specs:
+        binding = _parse_port_spec(spec, env_values)
+        if binding is not None:
+            bindings.append(binding)
+    return bindings
+
+
 def _compose_failure_detail(
     exc: ComposeFailureError,
     *,
@@ -295,6 +432,10 @@ def _detail_from_entry(
         last_started_at=slot.last_started_at,
         last_health_snapshot=snapshot_model,
         form_schema=FormSchema(fields=schema_rows),
+        ports=_compose_port_bindings(
+            svc=svc,
+            compose_service_name=entry.compose_service_name,
+        ),
         # Connectivity probe fields surfaced so the UI's
         # service detail page can render the credentials banner without
         # an extra round-trip. ``None`` when no probe is configured.

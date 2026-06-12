@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
+from uuid import uuid4
 
 import httpx
 import streamlit as st
@@ -13,6 +15,8 @@ from chat_runtime import ask_llm, friendly_http_error, plan_and_call_mcp
 from components.credential_manager import CredentialManager, restore_cached_credentials
 from components.theme import apply_theme, page_hero
 
+
+_LOG = logging.getLogger(__name__)
 
 _inject_session_state()
 st.set_page_config(page_title="Chat", page_icon="💬", layout="wide")
@@ -60,6 +64,14 @@ def _has_required_credentials() -> bool:
     )
 
 
+def _active_credential_services() -> list[str]:
+    return [
+        service
+        for service in ("jira", "confluence", "bitbucket")
+        if _credential(service) is not None
+    ]
+
+
 if not _has_required_credentials():
     st.warning(
         "Chat icin once Credentials sayfasinda en az bir Atlassian credential "
@@ -74,6 +86,14 @@ for item in history:
 user_message = st.chat_input("Jira, Confluence veya Bitbucket icin sorunuzu yazin...")
 
 if user_message:
+    trace_id = uuid4().hex[:12]
+    active_services = _active_credential_services()
+    _LOG.info(
+        "chat_request_started trace_id=%s active_credentials=%s message_chars=%s",
+        trace_id,
+        ",".join(active_services) or "-",
+        len(user_message),
+    )
     history.append({"role": "user", "text": user_message})
     with st.chat_message("user"):
         st.markdown(user_message)
@@ -87,15 +107,32 @@ if user_message:
             placeholder.markdown("LLM cevabi hazirlaniyor...")
             answer = ask_llm(user_message, tool_name, tool_result)
             placeholder.markdown(answer)
+            _LOG.info("chat_request_completed trace_id=%s tool=%s", trace_id, tool_name)
+        except ValueError as exc:
+            answer = str(exc)
+            _LOG.info(
+                "chat_request_rejected trace_id=%s reason=%s",
+                trace_id,
+                answer[:300],
+            )
+            placeholder.error(answer)
         except (PermissionError, httpx.HTTPStatusError) as exc:
             answer = (
                 friendly_http_error(exc)
                 if isinstance(exc, httpx.HTTPStatusError)
                 else str(exc)
             )
-            placeholder.error(answer)
+            _LOG.warning(
+                "chat_request_auth_or_http_error trace_id=%s error_type=%s error=%s",
+                trace_id,
+                exc.__class__.__name__,
+                answer[:500],
+                exc_info=exc,
+            )
+            placeholder.error(f"{answer}\n\nLog ID: `{trace_id}`")
         except Exception as exc:  # noqa: BLE001
-            answer = f"Istek tamamlanamadi: `{exc}`"
+            _LOG.exception("chat_request_failed trace_id=%s", trace_id)
+            answer = f"Istek tamamlanamadi (Log ID: `{trace_id}`): `{exc}`"
             placeholder.error(answer)
 
     history.append({"role": "assistant", "text": answer})

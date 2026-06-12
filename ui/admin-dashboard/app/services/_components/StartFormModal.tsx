@@ -192,8 +192,6 @@ const STREAMLIT_HIDDEN_KEYS = new Set([
   "CLIENT_SOURCE",
   "OPENAI_BASE_URL",
   "ANTHROPIC_BASE_URL",
-  "LLM_REASONING_EFFORT",
-  "LLM_VERBOSITY",
 ]);
 
 const PROVIDER_SPECIFIC_KEYS = new Set([
@@ -213,6 +211,32 @@ const LLM_PROVIDER_OPTIONS = [
   { value: "openai", label: "OpenAI" },
   { value: "anthropic", label: "Anthropic" },
   { value: "vllm", label: "vLLM" },
+];
+
+const OPENAI_REASONING_OPTIONS = [
+  { value: "", label: "Default" },
+  { value: "none", label: "none" },
+  { value: "minimal", label: "minimal" },
+  { value: "low", label: "low" },
+  { value: "medium", label: "medium" },
+  { value: "high", label: "high" },
+  { value: "xhigh", label: "xhigh" },
+];
+
+const ANTHROPIC_REASONING_OPTIONS = [
+  { value: "", label: "Default" },
+  { value: "low", label: "low" },
+  { value: "medium", label: "medium" },
+  { value: "high", label: "high" },
+  { value: "xhigh", label: "xhigh" },
+  { value: "max", label: "max" },
+];
+
+const VERBOSITY_OPTIONS = [
+  { value: "", label: "Default" },
+  { value: "low", label: "low" },
+  { value: "medium", label: "medium" },
+  { value: "high", label: "high" },
 ];
 
 const STREAMLIT_FIELD_COPY: Record<
@@ -239,6 +263,14 @@ const STREAMLIT_FIELD_COPY: Record<
   LLM_MODEL_NAME: {
     label: "Model name",
     help: "Model identifier sent to the selected provider.",
+  },
+  LLM_REASONING_EFFORT: {
+    label: "Reasoning effort",
+    help: "Controls how much the selected model reasons. Leave Default unless you need a specific latency/quality tradeoff.",
+  },
+  LLM_VERBOSITY: {
+    label: "Verbosity",
+    help: "OpenAI GPT-5 output length control. Ignored by non-OpenAI providers.",
   },
   OPENAI_API_KEY: {
     label: "OpenAI API key",
@@ -281,8 +313,25 @@ function providerDefaultFromFields(fields: FormSchemaField[] | null): string {
 
 function streamlitFieldVisible(key: string, provider: string): boolean {
   if (STREAMLIT_HIDDEN_KEYS.has(key)) return false;
+  if (key === "LLM_REASONING_EFFORT") {
+    return provider === "openai" || provider === "anthropic";
+  }
+  if (key === "LLM_VERBOSITY") return provider === "openai";
   if (!PROVIDER_SPECIFIC_KEYS.has(key)) return true;
   return PROVIDER_VISIBLE_KEYS[provider]?.has(key) ?? false;
+}
+
+function streamlitSelectOptions(
+  key: string,
+  provider: string,
+): Array<{ value: string; label: string }> | null {
+  if (key === "LLM_REASONING_EFFORT") {
+    return provider === "anthropic"
+      ? ANTHROPIC_REASONING_OPTIONS
+      : OPENAI_REASONING_OPTIONS;
+  }
+  if (key === "LLM_VERBOSITY") return VERBOSITY_OPTIONS;
+  return null;
 }
 
 function fieldLabel(field: FormSchemaField, serviceName: string): string {
@@ -648,6 +697,10 @@ export default function StartFormModal({
               const labelText = fieldLabel(field, serviceName);
               const helpText = fieldHelp(field, serviceName);
               const readOnly = fieldReadOnly(field, serviceName);
+              const selectOptions =
+                serviceName === "streamlit-ui"
+                  ? streamlitSelectOptions(field.key, selectedProvider)
+                  : null;
               const fieldRequired = sensitiveFieldRequired(
                 field.key,
                 sensitive,
@@ -692,6 +745,21 @@ export default function StartFormModal({
                         style={inputStyle}
                       >
                         {LLM_PROVIDER_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    ) : selectOptions != null ? (
+                      <select
+                        key={`${field.key}-${selectedProvider}`}
+                        name={field.key}
+                        defaultValue={field.default_value}
+                        aria-describedby={describedBy}
+                        aria-invalid={errId != null ? "true" : undefined}
+                        style={inputStyle}
+                      >
+                        {selectOptions.map((option) => (
                           <option key={option.value} value={option.value}>
                             {option.label}
                           </option>

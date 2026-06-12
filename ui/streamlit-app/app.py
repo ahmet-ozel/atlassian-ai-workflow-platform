@@ -30,12 +30,26 @@ crashing the whole UI.
 from __future__ import annotations
 
 import json
+import logging
 import os
 from typing import Any
 
 import streamlit as st
 
 from config import Settings
+
+
+def _configure_logging() -> None:
+    raw_level = os.environ.get("LOG_LEVEL", "INFO").strip().upper()
+    level = getattr(logging, raw_level, logging.INFO)
+    logging.basicConfig(
+        level=level,
+        format="%(asctime)s %(levelname)s %(name)s %(message)s",
+    )
+    logging.getLogger().setLevel(level)
+
+
+_configure_logging()
 
 
 def _settings() -> Settings:

@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import pytest
 
-from chat_planner import _is_jira_create_request, plan_and_call_mcp
+from chat_planner import (
+    MissingCredentialError,
+    _is_jira_create_request,
+    plan_and_call_mcp,
+)
 
 
 def test_jira_created_date_is_not_create_request() -> None:
@@ -29,6 +33,11 @@ def _capture_mcp(monkeypatch: pytest.MonkeyPatch) -> dict:
     return captured
 
 
+def _credential_for(expected_service: str):
+    credential = object()
+    return lambda service: credential if service == expected_service else None
+
+
 def test_jira_create_extracts_turkish_project_and_inline_fields(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -39,7 +48,7 @@ def test_jira_create_extracts_turkish_project_and_inline_fields(
         "Baslik: Streamlit reset E2E browser test, "
         "Aciklama: Admin dashboard boot ve Streamlit chat testi. "
         "Olusturdugun issue key'ini soyle.",
-        lambda service: None,
+        _credential_for("jira"),
     )
 
     assert tool_name == "jira_create_issue"
@@ -56,7 +65,7 @@ def test_jira_create_accepts_lowercase_explicit_project(
 
     plan_and_call_mcp(
         "jira task olustur proje kan, baslik: lowercase proje, aciklama: test",
-        lambda service: None,
+        _credential_for("jira"),
     )
 
     args = captured["candidates"][0][1]
@@ -70,7 +79,7 @@ def test_jira_create_accepts_project_suffix_variants(
 
     plan_and_call_mcp(
         "Jira'da KAN'da task olustur. Baslik: suffix test. Aciklama: test",
-        lambda service: None,
+        _credential_for("jira"),
     )
 
     args = captured["candidates"][0][1]
@@ -83,7 +92,7 @@ def test_jira_create_trims_summary_to_jira_limit(monkeypatch: pytest.MonkeyPatch
 
     plan_and_call_mcp(
         f"Jira task olustur project KAN, baslik: {long_title}, aciklama: test",
-        lambda service: None,
+        _credential_for("jira"),
     )
 
     args = captured["candidates"][0][1]
@@ -95,7 +104,7 @@ def test_jira_create_requires_project_key() -> None:
     with pytest.raises(ValueError, match="project key eksik"):
         plan_and_call_mcp(
             "Jira task olustur, baslik: Eksik proje, aciklama: test",
-            lambda service: None,
+            _credential_for("jira"),
         )
 
 
@@ -105,7 +114,7 @@ def test_jira_create_does_not_read_project_from_summary_text() -> None:
             "Jira da yeni task olustur. "
             "baslik: Browser smoke eksik proje testi. "
             "aciklama: Proje key bilincli olarak verilmedi.",
-            lambda service: None,
+            _credential_for("jira"),
         )
 
 
@@ -131,7 +140,15 @@ def test_bitbucket_explicit_repo_workspace_wins_over_credential(
 
 def test_bitbucket_pr_missing_repo_asks_for_repo() -> None:
     with pytest.raises(ValueError, match="repo belirtin"):
-        plan_and_call_mcp("Bitbucket acik pull request listesini getir.", lambda service: None)
+        plan_and_call_mcp(
+            "Bitbucket acik pull request listesini getir.",
+            _credential_for("bitbucket"),
+        )
+
+
+def test_bitbucket_missing_credential_stops_before_mcp() -> None:
+    with pytest.raises(MissingCredentialError, match="Bitbucket credential yok"):
+        plan_and_call_mcp("Bitbucket repolari listele.", lambda service: None)
 
 
 def test_confluence_space_and_limit_become_cql(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -139,7 +156,7 @@ def test_confluence_space_and_limit_become_cql(monkeypatch: pytest.MonkeyPatch) 
 
     plan_and_call_mcp(
         "Confluence E2ETEST space icindeki ilk 3 sayfayi listele.",
-        lambda service: None,
+        _credential_for("confluence"),
     )
 
     args = captured["candidates"][0][1]

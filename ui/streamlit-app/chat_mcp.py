@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import time
 from typing import Any, Callable, Sequence
 
@@ -14,6 +15,7 @@ from config import Settings
 CredentialGetter = Callable[[str], Any | None]
 
 _MCP_TIMEOUT_SECONDS = 75.0
+_LOG = logging.getLogger(__name__)
 
 
 def _model_supports_reasoning_effort(model: str) -> bool:
@@ -34,6 +36,21 @@ def _model_supports_reasoning_effort(model: str) -> bool:
 def _model_supports_verbosity(model: str) -> bool:
     """True when *model* accepts an output ``verbosity`` knob (gpt-5 family)."""
     return (model or "").strip().lower().startswith("gpt-5")
+
+
+def _anthropic_model_supports_reasoning_effort(model: str) -> bool:
+    norm = (model or "").strip().lower()
+    return (
+        norm.startswith("claude-opus-4")
+        or norm.startswith("claude-sonnet-4")
+        or norm.startswith("claude-fable-5")
+        or norm.startswith("claude-mythos-5")
+    )
+
+
+def _anthropic_model_uses_implicit_adaptive_thinking(model: str) -> bool:
+    norm = (model or "").strip().lower()
+    return norm.startswith("claude-fable-5") or norm.startswith("claude-mythos-5")
 
 
 _MCP_MAX_ATTEMPTS = 3
@@ -230,19 +247,41 @@ def _is_transient_failure(message: str) -> bool:
     return any(marker in lowered for marker in _TRANSIENT_ERROR_MARKERS)
 
 
-def _permission_denied_message(detail: str | None = None) -> str:
+def _service_label_from_tool(tool_name: str) -> str | None:
+    lowered = tool_name.lower()
+    if "bitbucket" in lowered:
+        return "Bitbucket"
+    if "confluence" in lowered or lowered in {"cql_search"}:
+        return "Confluence"
+    if "jira" in lowered or "issue" in lowered:
+        return "Jira"
+    return None
+
+
+def _permission_denied_message(
+    detail: str | None = None,
+    *,
+    service_label: str | None = None,
+) -> str:
+    target = service_label or "Atlassian/Bitbucket"
     message = (
-        "Yetkiniz yok. Bu islem icin token gecersiz, suresi dolmus "
-        "veya gerekli Atlassian/Bitbucket izni yok."
+        f"{target} credential reddedildi. Token gecersiz, suresi dolmus "
+        "veya gerekli izin/scope yok."
     )
     if detail:
         return f"{message} Detay: {detail[:300]}"
     return message
 
 
-def _raise_if_authorization_failure(message: str) -> None:
+def _raise_if_authorization_failure(
+    message: str,
+    *,
+    service_label: str | None = None,
+) -> None:
     if _is_authorization_failure(message):
-        raise PermissionError(_permission_denied_message(message))
+        raise PermissionError(
+            _permission_denied_message(message, service_label=service_label)
+        )
 
 
 def friendly_http_error(exc: httpx.HTTPStatusError) -> str:
@@ -308,15 +347,32 @@ def mcp_call_any(
     errors: list[str] = []
     unknown_tool_errors: list[str] = []
     for name, args in candidates:
+        service_label = _service_label_from_tool(name)
         for attempt in range(_MCP_MAX_ATTEMPTS):
             try:
+                _LOG.info(
+                    "mcp_tool_attempt tool=%s attempt=%s service=%s",
+                    name,
+                    attempt + 1,
+                    service_label or "-",
+                )
                 result = _mcp_call(name, credential_for, args)
                 failure_message = _failure_message_from_payload(result)
                 if not failure_message:
+                    _LOG.info("mcp_tool_success tool=%s attempt=%s", name, attempt + 1)
                     return name, result
 
-                _raise_if_authorization_failure(failure_message)
                 formatted = f"{name}: {failure_message}"
+                _LOG.warning(
+                    "mcp_tool_failure tool=%s attempt=%s error=%s",
+                    name,
+                    attempt + 1,
+                    failure_message[:500],
+                )
+                _raise_if_authorization_failure(
+                    failure_message,
+                    service_label=service_label,
+                )
                 if _is_unknown_tool_failure(failure_message):
                     unknown_tool_errors.append(formatted)
                     break
@@ -329,7 +385,18 @@ def mcp_call_any(
                 raise
             except httpx.HTTPStatusError as exc:
                 error_message = friendly_http_error(exc)
-                _raise_if_authorization_failure(error_message)
+                _LOG.warning(
+                    "mcp_tool_http_error tool=%s attempt=%s status=%s error=%s",
+                    name,
+                    attempt + 1,
+                    exc.response.status_code,
+                    error_message[:500],
+                    exc_info=exc,
+                )
+                _raise_if_authorization_failure(
+                    error_message,
+                    service_label=service_label,
+                )
                 if _is_transient_failure(error_message) and attempt < _MCP_MAX_ATTEMPTS - 1:
                     time.sleep(_retry_delay(attempt))
                     continue
@@ -337,7 +404,17 @@ def mcp_call_any(
                 break
             except Exception as exc:  # noqa: BLE001
                 error_message = _exception_message(exc)
-                _raise_if_authorization_failure(error_message)
+                _LOG.warning(
+                    "mcp_tool_exception tool=%s attempt=%s error=%s",
+                    name,
+                    attempt + 1,
+                    error_message[:500],
+                    exc_info=exc,
+                )
+                _raise_if_authorization_failure(
+                    error_message,
+                    service_label=service_label,
+                )
                 if _is_transient_failure(error_message) and attempt < _MCP_MAX_ATTEMPTS - 1:
                     time.sleep(_retry_delay(attempt))
                     continue
@@ -474,6 +551,15 @@ def ask_llm(user_text: str, tool_name: str, tool_result: Any) -> str:
             "temperature": 0.1,
             "max_tokens": 900,
         }
+        reasoning_effort = getattr(settings, "llm_reasoning_effort", "")
+        if (
+            reasoning_effort
+            and _anthropic_model_supports_reasoning_effort(model)
+        ):
+            if not _anthropic_model_uses_implicit_adaptive_thinking(model):
+                payload["thinking"] = {"type": "adaptive"}
+            payload["output_config"] = {"effort": reasoning_effort}
+            payload.pop("temperature", None)
     else:
         payload = {
             "model": model,

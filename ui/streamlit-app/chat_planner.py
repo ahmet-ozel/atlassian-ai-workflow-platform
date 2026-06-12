@@ -266,10 +266,31 @@ def _bitbucket_repository_query(text: str, lowered: str) -> str | None:
     return f'name ~ "{quoted}"'
 
 
+class MissingCredentialError(ValueError):
+    """Raised before MCP is called when the requested service has no credential."""
+
+
+def _require_credential(service: str, credential_for: CredentialGetter) -> Any:
+    credential = credential_for(service)
+    if credential is not None:
+        return credential
+    labels = {
+        "jira": "Jira",
+        "confluence": "Confluence",
+        "bitbucket": "Bitbucket",
+    }
+    label = labels.get(service, service)
+    raise MissingCredentialError(
+        f"{label} credential yok. Credentials sayfasinda {label} bilgisini "
+        "girip dogrulayin, sonra chat istegini tekrar gonderin."
+    )
+
+
 def plan_and_call_mcp(text: str, credential_for: CredentialGetter) -> tuple[str, Any]:
     lowered = _fold_text(text)
 
     if _is_jira_create_request(lowered):
+        _require_credential("jira", credential_for)
         project_key = _extract_jira_project_key(text)
         if not project_key:
             raise ValueError(
@@ -312,6 +333,7 @@ def plan_and_call_mcp(text: str, credential_for: CredentialGetter) -> tuple[str,
         )
 
     if "confluence" in lowered or "conf" in lowered or "sayfa" in lowered:
+        _require_credential("confluence", credential_for)
         topic = _extract_topic(text, "")
         limit = _extract_limit(text)
         space_key = _extract_confluence_space_key(text)
@@ -350,6 +372,7 @@ def plan_and_call_mcp(text: str, credential_for: CredentialGetter) -> tuple[str,
         or " pr " in f" {lowered} "
     )
     if asks_bitbucket:
+        _require_credential("bitbucket", credential_for)
         repo = _extract_bitbucket_repo(text)
         is_pr_request = "pull request" in lowered or " pr " in f" {lowered} "
         if is_pr_request and repo:
@@ -424,12 +447,14 @@ def plan_and_call_mcp(text: str, credential_for: CredentialGetter) -> tuple[str,
 
     issue_match = re.search(r"\b([A-Z][A-Z0-9_]+-\d+)\b", text, re.IGNORECASE)
     if issue_match:
+        _require_credential("jira", credential_for)
         issue_key = issue_match.group(1).upper()
         return mcp_call_any(
             [("jira_get_issue", {"issue_key": issue_key}), ("get_issue", {"issue_key": issue_key})],
             credential_for,
         )
 
+    _require_credential("jira", credential_for)
     project_key = _extract_jira_project_key(text)
     jql = f"project = {project_key.upper()}" if project_key else "assignee = currentUser()"
     if "acik" in lowered or "open" in lowered:

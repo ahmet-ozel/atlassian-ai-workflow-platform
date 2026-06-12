@@ -25,12 +25,11 @@ Lifecycle contract
   sekmesinde, bu oturum süresince saklanır. Sekme kapatıldığında
   veya 60 dakika işlem yapılmadığında otomatik silinir."*
 * :meth:`CredentialManager.validate` issues a single
-  authenticated request through an injectable validator (default:
-  HTTP GET to ``${MCP_BASE_URL}/healthz`` with the
-  ``Authorization: Basic <base64(email:token)>`` header attached so
-  the upstream auth chain is exercised end-to-end). Failures keep
-  the credential stored but mark ``is_valid=False`` so the UI can
-  surface the problem inline.
+  authenticated request through an injectable validator. The default
+  validator probes the selected Atlassian surface directly, so a green
+  state means that service accepted the token rather than only MCP
+  health responding. Failures keep the credential stored but mark
+  ``is_valid=False`` so the UI can surface the problem inline.
 * :meth:`CredentialManager.get_auth_header` returns the
   ``Authorization: Basic ...`` value callers should attach to MCP
   requests. The plain token never appears in the returned mapping
@@ -220,9 +219,8 @@ class StoredCredential:
 #: pair and returns ``(ok, error_message)``. Returning ``ok=True``
 #: with a ``None`` message is the success path; ``ok=False`` with a
 #: short human-readable string is the failure path. The default
-#: validator (:func:`_default_validator`) routes through the MCP
-#: ``/healthz`` endpoint with an ``Authorization: Basic`` header so
-#: the upstream auth chain is exercised end-to-end.
+#: validator (:func:`_default_validator`) talks to the requested
+#: Atlassian service directly.
 CredentialValidator = Callable[[str, str, str], tuple[bool, str | None]]
 
 
@@ -257,13 +255,82 @@ def _default_urls_for_deployment(deployment: str) -> dict[str, str]:
     return urls
 
 
-def _bitbucket_cloud_headers(email: str, api_token: str) -> dict[str, str]:
-    # Bitbucket Cloud authenticates with username/email + app password via
-    # Basic auth. Server/DC uses Personal Access Token instead.
+def _basic_auth_headers(email: str, api_token: str) -> dict[str, str]:
     headers = {"Accept": "application/json"}
     raw = f"{email}:{api_token}".encode("utf-8")
     headers["Authorization"] = f"Basic {base64.b64encode(raw).decode('ascii')}"
     return headers
+
+
+def _bearer_auth_headers(api_token: str) -> dict[str, str]:
+    return {
+        "Accept": "application/json",
+        "Authorization": f"Bearer {api_token.strip()}",
+    }
+
+
+def _bitbucket_cloud_headers(email: str, api_token: str) -> dict[str, str]:
+    # Bitbucket Cloud authenticates with username/email + app password via
+    # Basic auth. Server/DC uses Personal Access Token instead.
+    return _basic_auth_headers(email, api_token)
+
+
+def _confluence_cloud_current_user_endpoint(url: str) -> str:
+    base = url.rstrip("/")
+    path = urlparse(base).path.rstrip("/")
+    if path == "/wiki" or path.startswith("/wiki/"):
+        return f"{base}/rest/api/user/current"
+    return f"{base}/wiki/rest/api/user/current"
+
+
+def _validate_atlassian_credential(
+    httpx_module: Any,
+    service: str,
+    email: str,
+    api_token: str,
+    credential: "StoredCredential | None",
+) -> tuple[bool, str | None]:
+    deployment = str(getattr(credential, "deployment", "cloud") or "cloud").lower()
+    defaults = _default_urls_for_deployment(deployment)
+    url = str(getattr(credential, "url", "") or defaults[service]).strip()
+    label = service.title()
+
+    if deployment == "server":
+        if service == "jira":
+            endpoint = f"{url.rstrip('/')}/rest/api/2/myself"
+        else:
+            endpoint = f"{url.rstrip('/')}/rest/api/user/current"
+        headers = _bearer_auth_headers(api_token)
+    else:
+        if not email.strip():
+            return False, f"{label} Cloud icin e-posta zorunlu."
+        if service == "jira":
+            endpoint = f"{url.rstrip('/')}/rest/api/3/myself"
+        else:
+            endpoint = _confluence_cloud_current_user_endpoint(url)
+        headers = _basic_auth_headers(email, api_token)
+
+    request_error = getattr(httpx_module, "RequestError", Exception)
+    try:
+        with httpx_module.Client(timeout=8.0) as client:
+            resp = client.get(endpoint, headers=headers)
+    except request_error as exc:
+        return False, f"{label} API'ye ulasilamadi: {exc}"
+
+    if 200 <= resp.status_code < 300:
+        return True, None
+    if resp.status_code in (401, 403):
+        return (
+            False,
+            f"{label} credential reddedildi (HTTP {resp.status_code}). "
+            "Token gecersiz, suresi dolmus veya gerekli izin/scope yok.",
+        )
+    if resp.status_code == 404:
+        return (
+            False,
+            f"{label} URL bulunamadi veya bu kullanicinin yetkisi yok (HTTP 404).",
+        )
+    return False, f"{label} dogrulama hatasi (HTTP {resp.status_code})."
 
 
 def _validate_bitbucket_credential(
@@ -333,21 +400,7 @@ def _default_validator(
     *,
     credential: "StoredCredential | None" = None,
 ) -> tuple[bool, str | None]:
-    """Default validator - POSTs a credential probe to MCP.
-
-    The function is deliberately small and dependency-light so unit
-    tests can swap it for a stub. It uses the MCP base URL from the
-    Streamlit ``Settings`` reader and attaches the
-    ``Authorization: Basic`` header MCP's auth chain consumes
-    (``services/atlassian_mcp_bitbucket/.../main.py``).
-
-    The chosen probe endpoint is ``/healthz``: it is the cheapest
-    surface that still flows through the ``X-Client-Source`` /
-    ``X-Trace-Id`` middleware, so a misconfigured token is rejected
-    by the MCP auth chain before it can leak into a real Atlassian
-    call. Networking errors degrade gracefully into ``(False, msg)``
-    so the UI can surface a banner instead of crashing the page.
-    """
+    """Default validator that probes the requested Atlassian API directly."""
 
     try:  # pragma: no cover - exercised in integration only.
         import httpx  # type: ignore[import-not-found]
@@ -362,29 +415,16 @@ def _default_validator(
             credential=credential,
         )
 
-    try:
-        from config import Settings  # type: ignore[import-not-found]
+    if service in {"jira", "confluence"}:
+        return _validate_atlassian_credential(
+            httpx_module=httpx,
+            service=service,
+            email=email,
+            api_token=api_token,
+            credential=credential,
+        )
 
-        base_url = Settings().mcp_base_url
-    except Exception as exc:  # noqa: BLE001 - never crash the UI on import errors
-        return False, f"MCP yapılandırması okunamadı: {exc}"
-
-    auth = base64.b64encode(f"{email}:{api_token}".encode("utf-8")).decode("ascii")
-    headers = {
-        "Authorization": f"Basic {auth}",
-        "X-Client-Source": "streamlit-app",
-    }
-    try:
-        with httpx.Client(timeout=5.0) as client:
-            resp = client.get(f"{base_url.rstrip('/')}/healthz", headers=headers)
-    except httpx.RequestError as exc:
-        return False, f"MCP'ye ulaşılamadı: {exc}"
-
-    if 200 <= resp.status_code < 300:
-        return True, None
-    if resp.status_code in (401, 403):
-        return False, f"Credential reddedildi (HTTP {resp.status_code})."
-    return False, f"MCP doğrulama hatası (HTTP {resp.status_code})."
+    return False, f"Bilinmeyen servis: {service}"
 
 
 # ---------------------------------------------------------------------------

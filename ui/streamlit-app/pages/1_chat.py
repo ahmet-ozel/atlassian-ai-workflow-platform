@@ -88,7 +88,7 @@ user_message = st.chat_input("Jira, Confluence veya Bitbucket icin sorunuzu yazi
 if user_message:
     trace_id = uuid4().hex[:12]
     active_services = _active_credential_services()
-    _LOG.info(
+    _LOG.warning(
         "chat_request_started trace_id=%s active_credentials=%s message_chars=%s",
         trace_id,
         ",".join(active_services) or "-",
@@ -107,10 +107,14 @@ if user_message:
             placeholder.markdown("LLM cevabi hazirlaniyor...")
             answer = ask_llm(user_message, tool_name, tool_result)
             placeholder.markdown(answer)
-            _LOG.info("chat_request_completed trace_id=%s tool=%s", trace_id, tool_name)
+            _LOG.warning(
+                "chat_request_completed trace_id=%s tool=%s",
+                trace_id,
+                tool_name,
+            )
         except ValueError as exc:
             answer = str(exc)
-            _LOG.info(
+            _LOG.warning(
                 "chat_request_rejected trace_id=%s reason=%s",
                 trace_id,
                 answer[:300],

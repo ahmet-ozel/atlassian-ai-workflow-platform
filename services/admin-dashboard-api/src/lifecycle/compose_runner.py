@@ -254,11 +254,17 @@ class ComposeRunner:
         service_name: str,
         env_overrides: Mapping[str, str] | None = None,
     ) -> ComposeResult:
-        """Run ``docker compose -f F --profile P up -d S``.
+        """Run ``docker compose -f F --profile P up -d --build S``.
 
         ``env_overrides`` are placed into the subprocess environment.
         They are **never** written to a temporary ``.env`` file or
         any other on-disk artefact.
+
+        ``--build`` is intentional: operators start profiled services
+        from the dashboard after pulling repository updates, and Compose
+        otherwise reuses an old local image for services such as
+        ``streamlit-ui``. Rebuilding here keeps dashboard-launched
+        services aligned with the checked-out code.
         """
 
         argv: list[str] = [
@@ -267,6 +273,7 @@ class ComposeRunner:
             profile,
             "up",
             "-d",
+            "--build",
             service_name,
         ]
         env = self._build_env(env_overrides)

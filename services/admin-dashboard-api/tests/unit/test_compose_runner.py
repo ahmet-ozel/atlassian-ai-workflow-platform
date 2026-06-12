@@ -153,6 +153,7 @@ def test_up_argv_shape_uses_profile_and_service_name() -> None:
         "automation-service",
         "up",
         "-d",
+        "--build",
         "automation-service",
     )
 

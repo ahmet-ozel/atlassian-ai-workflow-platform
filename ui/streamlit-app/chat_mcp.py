@@ -350,7 +350,7 @@ def mcp_call_any(
         service_label = _service_label_from_tool(name)
         for attempt in range(_MCP_MAX_ATTEMPTS):
             try:
-                _LOG.info(
+                _LOG.warning(
                     "mcp_tool_attempt tool=%s attempt=%s service=%s",
                     name,
                     attempt + 1,
@@ -359,7 +359,11 @@ def mcp_call_any(
                 result = _mcp_call(name, credential_for, args)
                 failure_message = _failure_message_from_payload(result)
                 if not failure_message:
-                    _LOG.info("mcp_tool_success tool=%s attempt=%s", name, attempt + 1)
+                    _LOG.warning(
+                        "mcp_tool_success tool=%s attempt=%s",
+                        name,
+                        attempt + 1,
+                    )
                     return name, result
 
                 formatted = f"{name}: {failure_message}"

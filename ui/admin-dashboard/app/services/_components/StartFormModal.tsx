@@ -22,6 +22,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { isSensitiveEnvKey } from "@platform/web-shared";
 
 import { apiFetch } from "../../../lib/api-client";
+import { getStreamlitUrl } from "../../../lib/config";
 import AtlassianMcpStartForm from "./AtlassianMcpStartForm";
 
 // ---------------------------------------------------------------------------
@@ -169,17 +170,93 @@ const buttonRowStyle: React.CSSProperties = {
   marginTop: "1rem",
 };
 
+const infoBoxStyle: React.CSSProperties = {
+  background: "#eef6ff",
+  border: "1px solid #b8d8ff",
+  color: "#12324f",
+  padding: "0.65rem 0.75rem",
+  borderRadius: 4,
+  marginBottom: "0.9rem",
+  fontSize: "0.9rem",
+  lineHeight: 1.45,
+};
+
 const LLM_SECRET_KEYS = new Set([
   "OPENAI_API_KEY",
   "ANTHROPIC_API_KEY",
   "VLLM_API_KEY",
 ]);
 
+const STREAMLIT_HIDDEN_KEYS = new Set([
+  "LOG_LEVEL",
+  "CLIENT_SOURCE",
+  "OPENAI_BASE_URL",
+  "ANTHROPIC_BASE_URL",
+  "LLM_REASONING_EFFORT",
+  "LLM_VERBOSITY",
+]);
+
+const PROVIDER_SPECIFIC_KEYS = new Set([
+  "OPENAI_API_KEY",
+  "ANTHROPIC_API_KEY",
+  "VLLM_BASE_URL",
+  "VLLM_API_KEY",
+]);
+
+const PROVIDER_VISIBLE_KEYS: Record<string, Set<string>> = {
+  openai: new Set(["OPENAI_API_KEY"]),
+  anthropic: new Set(["ANTHROPIC_API_KEY"]),
+  vllm: new Set(["VLLM_BASE_URL", "VLLM_API_KEY"]),
+};
+
 const LLM_PROVIDER_OPTIONS = [
   { value: "openai", label: "OpenAI" },
   { value: "anthropic", label: "Anthropic" },
   { value: "vllm", label: "vLLM" },
 ];
+
+const STREAMLIT_FIELD_COPY: Record<
+  string,
+  { label: string; help: string; readOnly?: boolean }
+> = {
+  PORT: {
+    label: "Streamlit container port",
+    help: "Container listens on this port. Browser access uses the published host port shown above.",
+    readOnly: true,
+  },
+  ASSISTANT_BASE_URL: {
+    label: "Assistant service URL",
+    help: "Docker network address used by Streamlit. Leave this default unless the assistant service is external.",
+  },
+  MCP_BASE_URL: {
+    label: "Atlassian MCP URL",
+    help: "Docker network address of atlassian-mcp. This is not the browser URL.",
+  },
+  LLM_PROVIDER: {
+    label: "LLM provider",
+    help: "Choose the model backend. Credential fields below change with this selection.",
+  },
+  LLM_MODEL_NAME: {
+    label: "Model name",
+    help: "Model identifier sent to the selected provider.",
+  },
+  OPENAI_API_KEY: {
+    label: "OpenAI API key",
+    help: "Required when provider is OpenAI.",
+  },
+  ANTHROPIC_API_KEY: {
+    label: "Anthropic API key",
+    help: "Required when provider is Anthropic.",
+  },
+  VLLM_BASE_URL: {
+    label: "vLLM base URL",
+    help: "Required when provider is vLLM. Use the OpenAI-compatible /v1 endpoint.",
+  },
+  VLLM_API_KEY: {
+    label: "vLLM API key",
+    help: "Required when provider is vLLM. Use a placeholder only if your vLLM gateway does not enforce auth.",
+  },
+};
 
 function normalizeProvider(
   value: FormDataEntryValue | string | null,
@@ -202,6 +279,33 @@ function providerDefaultFromFields(fields: FormSchemaField[] | null): string {
   );
 }
 
+function streamlitFieldVisible(key: string, provider: string): boolean {
+  if (STREAMLIT_HIDDEN_KEYS.has(key)) return false;
+  if (!PROVIDER_SPECIFIC_KEYS.has(key)) return true;
+  return PROVIDER_VISIBLE_KEYS[provider]?.has(key) ?? false;
+}
+
+function fieldLabel(field: FormSchemaField, serviceName: string): string {
+  if (serviceName === "streamlit-ui") {
+    return STREAMLIT_FIELD_COPY[field.key]?.label ?? field.key;
+  }
+  return field.key;
+}
+
+function fieldHelp(field: FormSchemaField, serviceName: string): string | null {
+  if (serviceName === "streamlit-ui") {
+    return STREAMLIT_FIELD_COPY[field.key]?.help ?? field.comment;
+  }
+  return field.comment;
+}
+
+function fieldReadOnly(field: FormSchemaField, serviceName: string): boolean {
+  return Boolean(
+    serviceName === "streamlit-ui" &&
+      STREAMLIT_FIELD_COPY[field.key]?.readOnly,
+  );
+}
+
 function sensitiveFieldRequired(
   key: string,
   sensitive: boolean,
@@ -210,7 +314,6 @@ function sensitiveFieldRequired(
 ): boolean {
   if (!sensitive) return false;
   if (serviceName === "atlassian-mcp") return false;
-  if (serviceName === "streamlit-ui" && LLM_SECRET_KEYS.has(key)) return false;
   if (LLM_SECRET_KEYS.has(key)) return llmSecretRequired(key, provider);
   return true;
 }
@@ -236,6 +339,7 @@ export default function StartFormModal({
     Record<string, string>
   >({});
   const [selectedProviderInput, setSelectedProviderInput] = useState("");
+  const [streamlitPublicUrl, setStreamlitPublicUrl] = useState("");
   const formRef = useRef<HTMLFormElement | null>(null);
 
   // -------------------------------------------------------------------------
@@ -286,6 +390,12 @@ export default function StartFormModal({
     };
   }, [serviceName]);
 
+  useEffect(() => {
+    if (serviceName === "streamlit-ui") {
+      setStreamlitPublicUrl(getStreamlitUrl());
+    }
+  }, [serviceName]);
+
   // -------------------------------------------------------------------------
   // Escape-to-close (modal ergonomics; the operator can always also click
   // the Cancel button or the backdrop).
@@ -327,6 +437,13 @@ export default function StartFormModal({
     selectedProviderInput,
     providerDefault,
   );
+  const visibleFields = useMemo(() => {
+    if (fields == null) return [];
+    if (serviceName !== "streamlit-ui") return fields;
+    return fields.filter((field) =>
+      streamlitFieldVisible(field.key, selectedProvider),
+    );
+  }, [fields, selectedProvider, serviceName]);
 
   async function handleSubmit(
     ev: React.FormEvent<HTMLFormElement>,
@@ -367,7 +484,7 @@ export default function StartFormModal({
         // Sensitive_Env_Key default_value is *never* used - the
         // operator must explicitly type one.
         newValidationErrors[field.key] =
-          `${field.key} is required for LLM_PROVIDER=${effectiveProvider}.`;
+          `${fieldLabel(field, serviceName)} is required for ${effectiveProvider}.`;
         continue;
       }
       if (field.default_value.length > 0) {
@@ -493,6 +610,24 @@ export default function StartFormModal({
 
         {fields != null && serviceName !== "atlassian-mcp" && (
           <form ref={formRef} onSubmit={handleSubmit} noValidate>
+            {serviceName === "streamlit-ui" && (
+              <div style={infoBoxStyle}>
+                <div>
+                  <strong>Streamlit UI</strong>
+                  {streamlitPublicUrl ? (
+                    <>
+                      {" "}
+                      opens at <code>{streamlitPublicUrl}</code>.
+                    </>
+                  ) : null}
+                </div>
+                <div>
+                  The service and MCP URLs below are Docker-internal addresses
+                  used between containers.
+                </div>
+              </div>
+            )}
+
             {submitError != null && (
               <div style={errorBoxStyle} role="alert">
                 <div>{submitError}</div>
@@ -507,16 +642,19 @@ export default function StartFormModal({
               </div>
             )}
 
-            {fields.map((field) => {
+            {visibleFields.map((field) => {
               const sensitive = isFieldSensitive(field);
               const isProviderField = field.key === "LLM_PROVIDER";
+              const labelText = fieldLabel(field, serviceName);
+              const helpText = fieldHelp(field, serviceName);
+              const readOnly = fieldReadOnly(field, serviceName);
               const fieldRequired = sensitiveFieldRequired(
                 field.key,
                 sensitive,
                 selectedProvider,
                 serviceName,
               );
-              const helpId = field.comment ? `${field.key}-help` : undefined;
+              const helpId = helpText ? `${field.key}-help` : undefined;
               const errId = validationErrors[field.key]
                 ? `${field.key}-err`
                 : undefined;
@@ -527,7 +665,7 @@ export default function StartFormModal({
                 <div key={field.key} style={fieldRowStyle}>
                   <label style={labelStyle}>
                     <span>
-                      {field.key}
+                      {labelText}
                       {fieldRequired && (
                         <span
                           aria-label="sensitive"
@@ -537,9 +675,9 @@ export default function StartFormModal({
                           * </span>
                       )}
                     </span>
-                    {field.comment && (
+                    {helpText && (
                       <small id={helpId} style={helpStyle}>
-                        {field.comment}
+                        {helpText}
                       </small>
                     )}
                     {isProviderField ? (
@@ -563,11 +701,12 @@ export default function StartFormModal({
                       <input
                         name={field.key}
                         type={sensitive ? "password" : "text"}
-                      // Sensitive fields never display the .env.example
-                      // default - operator must type one explicitly
-                      // Non-sensitive fields show the
-                      // default as the placeholder so the operator can
-                      // submit blank to accept it.
+                        readOnly={readOnly}
+                        defaultValue={
+                          serviceName === "streamlit-ui" && !sensitive
+                            ? field.default_value
+                            : undefined
+                        }
                         placeholder={
                           sensitive
                             ? fieldRequired
@@ -576,14 +715,14 @@ export default function StartFormModal({
                             : field.default_value
                         }
                         autoComplete={sensitive ? "new-password" : "off"}
-                      // ``required`` here is for accessibility hints
-                      // only; the actual sensitive-empty check lives
-                      // in handleSubmit so we can show a proper inline
-                      // message instead of the browser's tooltip.
                         required={fieldRequired}
                         aria-describedby={describedBy}
                         aria-invalid={errId != null ? "true" : undefined}
-                        style={inputStyle}
+                        style={
+                          readOnly
+                            ? { ...inputStyle, background: "#f6f7f9", color: "#444" }
+                            : inputStyle
+                        }
                       />
                     )}
                   </label>

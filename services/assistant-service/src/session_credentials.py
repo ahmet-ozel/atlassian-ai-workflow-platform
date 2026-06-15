@@ -1,12 +1,17 @@
 ﻿"""Per-user session credential relay endpoint.
 
 The Streamlit UI (``platform/ui/streamlit-app/pages/0_credentials.py``)
-posts plain-text Atlassian credentials to this router so they land in
+posts plain-text service credentials to this router so they land in
 Vault under
 ``vault:atlassian/_user_session/<session_id>/<service>``. The router
 is the **only** place plain-text user-supplied tokens land on the
 server - they are forwarded to Vault and the in-memory bytearray is
 zeroed before the response is returned.
+
+Gmail/Outlook are accepted for route compatibility, but the MVP OAuth
+model keeps mail OAuth material inside the MCP services. Streamlit and
+assistant-service should normally call those MCP services without
+handling mail tokens directly.
 
 Lifecycle:
 
@@ -118,7 +123,7 @@ def _deps(request: Request) -> SessionCredentialDeps:
 router = APIRouter(prefix="/session", tags=["session-credentials"])
 
 
-_VALID_SERVICES = {"jira", "bitbucket", "confluence"}
+_VALID_SERVICES = {"jira", "bitbucket", "confluence", "gmail", "outlook"}
 
 
 def _to_vault_path(raw: str) -> Any:

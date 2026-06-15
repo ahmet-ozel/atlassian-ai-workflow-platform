@@ -51,6 +51,14 @@ class Settings(BaseSettings):
         default="http://atlassian-mcp:8090",
         description="Atlassian MCP base URL.",
     )
+    gmail_mcp_base_url: str = Field(
+        default="http://gmail-mcp:8110",
+        description="Gmail MCP base URL.",
+    )
+    outlook_mcp_base_url: str = Field(
+        default="http://outlook-mcp:8120",
+        description="Outlook MCP base URL.",
+    )
     temporal_host: str = Field(
         default="temporal:7233",
         description="Temporal frontend host:port (SDK kept for version parity even if unused).",

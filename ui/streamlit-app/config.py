@@ -12,6 +12,8 @@ injector and surfaces the URLs every page reaches out to:
   (workflow listing, costs, audit search).
 * ``MCP_BASE_URL`` - base URL of the read-only Atlassian MCP server
   used by the Explorer page.
+* ``GMAIL_MCP_BASE_URL`` / ``OUTLOOK_MCP_BASE_URL`` - optional mail
+  MCP endpoints used by the Mail Chat page.
 * ``CLIENT_SOURCE`` - value advertised in outgoing
   ``X-Client-Source`` headers.
 
@@ -42,6 +44,12 @@ class Settings:
         )
         self.mcp_base_url: str = os.environ.get(
             "MCP_BASE_URL", "http://atlassian-mcp:8090"
+        )
+        self.gmail_mcp_base_url: str = os.environ.get(
+            "GMAIL_MCP_BASE_URL", "http://gmail-mcp:8110"
+        )
+        self.outlook_mcp_base_url: str = os.environ.get(
+            "OUTLOOK_MCP_BASE_URL", "http://outlook-mcp:8120"
         )
         self.atlassian_deployment: str = _normalize_atlassian_deployment(
             os.environ.get("ATLASSIAN_DEPLOYMENT", "cloud")

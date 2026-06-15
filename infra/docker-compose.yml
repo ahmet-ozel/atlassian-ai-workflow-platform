@@ -325,6 +325,60 @@ services:
     restart: unless-stopped
     logging: *default-logging
 
+  # ─── Mail MCP placeholders (read-only Gmail / Outlook) ───
+  gmail-mcp:
+    build:
+      context: ../services/gmail-mcp
+      dockerfile: Dockerfile
+    env_file:
+      - path: ../services/gmail-mcp/.env
+        required: false
+    environment:
+      PORT: "8110"
+      MAIL_MCP_PROVIDER: gmail
+      MAIL_MCP_READ_ONLY: "true"
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-}
+    ports:
+      - "${GMAIL_MCP_HOST_PORT:-38110}:8110"
+    networks:
+      - internal
+      - default
+    profiles: ["gmail-mcp", "streamlit-ui", "assistant-service"]
+    healthcheck:
+      <<: *http-healthcheck
+      test: ["CMD", "python", "-c", "import urllib.request,sys; r=urllib.request.urlopen('http://localhost:8110/healthz', timeout=3); sys.exit(0 if 200 <= r.status < 300 else 1)"]
+    restart: unless-stopped
+    logging: *default-logging
+
+  outlook-mcp:
+    build:
+      context: ../services/outlook-mcp
+      dockerfile: Dockerfile
+    env_file:
+      - path: ../services/outlook-mcp/.env
+        required: false
+    environment:
+      PORT: "8120"
+      MAIL_MCP_PROVIDER: outlook
+      MAIL_MCP_READ_ONLY: "true"
+      MICROSOFT_TENANT_ID: ${MICROSOFT_TENANT_ID:-}
+      MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID:-}
+      MICROSOFT_CLIENT_SECRET: ${MICROSOFT_CLIENT_SECRET:-}
+      MICROSOFT_REDIRECT_URI: ${MICROSOFT_REDIRECT_URI:-}
+    ports:
+      - "${OUTLOOK_MCP_HOST_PORT:-38120}:8120"
+    networks:
+      - internal
+      - default
+    profiles: ["outlook-mcp", "streamlit-ui", "assistant-service"]
+    healthcheck:
+      <<: *http-healthcheck
+      test: ["CMD", "python", "-c", "import urllib.request,sys; r=urllib.request.urlopen('http://localhost:8120/healthz', timeout=3); sys.exit(0 if 200 <= r.status < 300 else 1)"]
+    restart: unless-stopped
+    logging: *default-logging
+
   # ─── firecrawl (egress-allowlisted scrape/search wrapper) ───
   # Built from `services/firecrawl/` rather than the upstream Mendable image
   # so the FIRECRAWL_EGRESS_ALLOWLIST contract
@@ -560,6 +614,8 @@ services:
       POSTGRES_DSN: ${POSTGRES_DSN:-postgresql://ai:ai_dev_only@postgres:5432/ai}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       MCP_BASE_URL: ${MCP_BASE_URL:-http://atlassian-mcp:8090}
+      GMAIL_MCP_BASE_URL: ${GMAIL_MCP_BASE_URL:-http://gmail-mcp:8110}
+      OUTLOOK_MCP_BASE_URL: ${OUTLOOK_MCP_BASE_URL:-http://outlook-mcp:8120}
       OPENCODE_ENDPOINT: ${OPENCODE_ENDPOINT:-http://opencode-sidecar:4096}
       AUTH_PROVIDER: ${AUTH_PROVIDER:-local}
       OIDC_ISSUER_URL: ${OIDC_ISSUER_URL:-}
@@ -586,6 +642,10 @@ services:
       redis:
         condition: service_healthy
       atlassian-mcp:
+        condition: service_healthy
+      gmail-mcp:
+        condition: service_healthy
+      outlook-mcp:
         condition: service_healthy
     ports:
       - "${ASSISTANT_SERVICE_HOST_PORT:-38081}:8081"
@@ -776,6 +836,8 @@ services:
       ASSISTANT_BASE_URL: ${ASSISTANT_BASE_URL:-http://assistant-service:8081}
       ASSISTANT_SERVICE_URL: ${ASSISTANT_SERVICE_URL:-http://assistant-service:8081}
       MCP_BASE_URL: ${MCP_BASE_URL:-http://atlassian-mcp:8090}
+      GMAIL_MCP_BASE_URL: ${GMAIL_MCP_BASE_URL:-http://gmail-mcp:8110}
+      OUTLOOK_MCP_BASE_URL: ${OUTLOOK_MCP_BASE_URL:-http://outlook-mcp:8120}
       ATLASSIAN_DEPLOYMENT: ${ATLASSIAN_DEPLOYMENT:-cloud}
       JIRA_URL: ${JIRA_URL:-}
       CONFLUENCE_URL: ${CONFLUENCE_URL:-}
@@ -796,6 +858,10 @@ services:
       - ../prompts:/app/prompts:ro
     depends_on:
       atlassian-mcp:
+        condition: service_healthy
+      gmail-mcp:
+        condition: service_healthy
+      outlook-mcp:
         condition: service_healthy
     networks:
       - internal

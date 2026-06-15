@@ -440,7 +440,7 @@ class _AssistantClient:
         headers = {"X-Client-Source": self._client_source}
         if dept_id:
             headers["X-Department-Id"] = dept_id
-        for candidate in ("jira", "bitbucket", "confluence"):
+        for candidate in ("jira", "bitbucket", "confluence", "gmail", "outlook"):
             ref = self._credential_ref(candidate)
             if ref:
                 headers[f"X-Credential-Ref-{candidate.capitalize()}"] = ref
@@ -479,6 +479,7 @@ class _AssistantClient:
         session_id: str,
         text: str,
         history: list[dict[str, str]],
+        mode: str = "atlassian",
     ) -> list[dict[str, Any]]:
         resp = self._http.post(
             "/api/chat/stream",
@@ -487,6 +488,7 @@ class _AssistantClient:
                 "history": history,
                 "dept_id": dept_id,
                 "session_id": session_id,
+                "mode": mode,
                 "capabilities": self._capabilities(),
             },
             headers=self._headers(dept_id=dept_id, service="jira"),
@@ -823,6 +825,7 @@ def _inject_session_state() -> None:
 _USER_NAV_PAGES: tuple[tuple[str, str, str], ...] = (
     ("", "Credentials", "pages/0_credentials.py"),
     ("", "Chat", "pages/1_chat.py"),
+    ("", "Mail Chat", "pages/4_mail_chat.py"),
     ("🆕", "Task Creator", "pages/2_task_creator.py"),
 )
 
@@ -1006,6 +1009,7 @@ def main() -> None:
     pages_data = [
         ("", "Credentials", "Atlassian token'larınızı bağlayın", "pages/0_credentials.py"),
         ("", "Chat", "AI ile konuşun, soru sorun", "pages/1_chat.py"),
+        ("", "Mail Chat", "Gmail ve Outlook MCP durumunu kontrol edin", "pages/4_mail_chat.py"),
         ("🆕", "Task Creator", "Jira task description taslağı hazırlayın", "pages/2_task_creator.py"),
     ]
 

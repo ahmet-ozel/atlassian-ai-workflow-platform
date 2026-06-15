@@ -27,6 +27,7 @@ _STREAMLIT_ROOT = (
 _REQUIRED_PAGES: tuple[str, ...] = (
     "1_chat.py",
     "2_task_creator.py",
+    "4_mail_chat.py",
 )
 
 _ADMIN_ONLY_PAGES: tuple[str, ...] = (

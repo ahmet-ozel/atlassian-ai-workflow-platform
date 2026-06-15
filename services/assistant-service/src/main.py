@@ -94,6 +94,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """
 
     app.state.chat_handler = None
+    app.state.mail_chat_handler = None
     app.state.prompt_loader = None
     app.state.poll_task = None
     app.state.audit_logger = None
@@ -237,11 +238,16 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             # state.
             tool_dispatch = McpToolDispatch(
                 mcp_base_url=settings.mcp_base_url,
+                gmail_mcp_base_url=settings.gmail_mcp_base_url,
+                outlook_mcp_base_url=settings.outlook_mcp_base_url,
                 session_deps=app.state.session_creds,
             )
 
             async def _list_tools_via_mcp():
                 return mcp_client.available_tools(await tool_dispatch.list_tools())
+
+            async def _list_mail_tools_via_mcp():
+                return await tool_dispatch.list_tools(services=("gmail", "outlook"))
 
             deps = ChatHandlerDeps(
                 prompt_loader=app.state.prompt_loader,
@@ -260,6 +266,24 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             )
             app.state.chat_handler = ChatHandler(deps)
             logger.info("chat_handler wired with AtlassianClient(client_source=%s)", settings.client_source)
+
+            mail_deps = ChatHandlerDeps(
+                prompt_loader=app.state.prompt_loader,
+                compress=compress,
+                summariser=_default_summariser,
+                capability_gate=_passthrough_capability_gate,
+                llm=llm,  # type: ignore[arg-type]
+                tool_dispatch=tool_dispatch,
+                audit=app.state.audit_logger,
+                token_cap=int(getattr(settings, "chat_token_cap", 100_000)),
+                sliding_window_n=20,
+                prompt_name="mail_assistant_chat",
+                list_tools=_list_mail_tools_via_mcp,
+                timeout_s=settings.llm_request_timeout_s,
+                max_tokens_output=settings.llm_max_tokens_output,
+            )
+            app.state.mail_chat_handler = ChatHandler(mail_deps)
+            logger.info("mail_chat_handler wired with Gmail/Outlook MCP routes")
     except Exception as exc:  # noqa: BLE001
         logger.warning("ChatHandler wiring failed: %s", exc)
 
@@ -441,17 +465,25 @@ async def chat_stream(request: Request) -> StreamingResponse:
     ``redirect_to_task_creator`` or ``error``.
     """
 
-    chat_handler = getattr(request.app.state, "chat_handler", None)
-    if chat_handler is None:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail={"status": "not_ready", "reason": "chat_handler_not_wired"},
-        )
-
     try:
         payload = await request.json()
     except Exception:  # noqa: BLE001
         raise HTTPException(status_code=400, detail="invalid JSON body")
+
+    chat_mode = str(payload.get("mode", "atlassian")).strip().lower()
+    if chat_mode not in {"atlassian", "mail"}:
+        raise HTTPException(status_code=400, detail="mode must be 'atlassian' or 'mail'")
+
+    chat_handler = getattr(
+        request.app.state,
+        "mail_chat_handler" if chat_mode == "mail" else "chat_handler",
+        None,
+    )
+    if chat_handler is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={"status": "not_ready", "reason": f"{chat_mode}_chat_handler_not_wired"},
+        )
 
     try:
         from messages import ChatRequest, Message
@@ -498,6 +530,8 @@ async def chat_stream(request: Request) -> StreamingResponse:
             or "",
             "bitbucket": request.headers.get("X-Credential-Ref-Bitbucket") or "",
             "confluence": request.headers.get("X-Credential-Ref-Confluence") or "",
+            "gmail": request.headers.get("X-Credential-Ref-Gmail") or "",
+            "outlook": request.headers.get("X-Credential-Ref-Outlook") or "",
         }
         session_id = str(payload.get("session_id") or "").strip()
         if session_id:

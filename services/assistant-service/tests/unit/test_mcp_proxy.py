@@ -25,7 +25,10 @@ if str(_SERVICE_ROOT) not in sys.path:
 
 from src.mcp_tool_dispatch import (  # noqa: E402
     McpToolDispatch,
+    _ensure_read_only_mail_tool,
+    _is_read_only_mail_tool,
     _mcp_headers,
+    _service_for_tool,
     _with_bitbucket_workspace,
     bind_credential_refs,
     reset_credential_refs,
@@ -121,6 +124,36 @@ def test_list_tools_skips_missing_inferred_session_credentials() -> None:
         reset_credential_refs(token)
 
     assert list(credentials) == ["jira"]
+
+
+def test_mail_tool_prefixes_route_to_mail_mcp_services() -> None:
+    dispatch = McpToolDispatch(
+        mcp_base_url="http://atlassian.test",
+        gmail_mcp_base_url="http://gmail.test",
+        outlook_mcp_base_url="http://outlook.test",
+        session_deps=SessionCredentialDeps(vault=_Vault()),
+    )
+
+    assert _service_for_tool("gmail_list_messages") == "gmail"
+    assert _service_for_tool("outlook_search_messages") == "outlook"
+    assert dispatch._base_url_for_service("gmail") == "http://gmail.test"
+    assert dispatch._base_url_for_service("outlook") == "http://outlook.test"
+    assert dispatch._base_url_for_service("jira") == "http://atlassian.test"
+
+
+def test_mail_dispatch_blocks_write_tools() -> None:
+    assert _is_read_only_mail_tool(
+        {"name": "gmail_search_messages", "annotations": {"readOnlyHint": True}}
+    )
+    assert not _is_read_only_mail_tool(
+        {"name": "gmail_send_email", "annotations": {"readOnlyHint": True}}
+    )
+    assert not _is_read_only_mail_tool(
+        {"name": "outlook_get_message", "annotations": {"readOnlyHint": False}}
+    )
+
+    with pytest.raises(RuntimeError, match="write tool blocked"):
+        _ensure_read_only_mail_tool("outlook_delete_message")
 
 
 def test_proxy_lists_tools(monkeypatch: pytest.MonkeyPatch) -> None:

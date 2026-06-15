@@ -99,6 +99,30 @@
       "feature_flag_dependency": []
     },
     {
+      "name": "gmail-mcp",
+      "kind": "infra",
+      "compose_service_name": "gmail-mcp",
+      "compose_profile": "gmail-mcp",
+      "env_example_path": "services/gmail-mcp/.env",
+      "health_endpoint": "/healthz",
+      "test_command": "docker compose -f infra/docker-compose.yml exec gmail-mcp python -c \"import urllib.request,sys; r=urllib.request.urlopen('http://localhost:8110/healthz', timeout=3); print(r.read().decode()); sys.exit(0 if 200 <= r.status < 300 else 1)\"",
+      "smoke_test_command": "wget -q -O - --timeout=5 http://gmail-mcp:8110/healthz",
+      "depends_on_services": [],
+      "feature_flag_dependency": []
+    },
+    {
+      "name": "outlook-mcp",
+      "kind": "infra",
+      "compose_service_name": "outlook-mcp",
+      "compose_profile": "outlook-mcp",
+      "env_example_path": "services/outlook-mcp/.env",
+      "health_endpoint": "/healthz",
+      "test_command": "docker compose -f infra/docker-compose.yml exec outlook-mcp python -c \"import urllib.request,sys; r=urllib.request.urlopen('http://localhost:8120/healthz', timeout=3); print(r.read().decode()); sys.exit(0 if 200 <= r.status < 300 else 1)\"",
+      "smoke_test_command": "wget -q -O - --timeout=5 http://outlook-mcp:8120/healthz",
+      "depends_on_services": [],
+      "feature_flag_dependency": []
+    },
+    {
       "name": "firecrawl",
       "kind": "infra",
       "compose_service_name": "firecrawl",

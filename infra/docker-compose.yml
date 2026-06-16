@@ -287,8 +287,8 @@ services:
       STATELESS: "true"
       PORT: "8090"
       STREAMABLE_HTTP_PATH: /mcp
-      READ_ONLY: "false"
-      READ_ONLY_MODE: "false"
+      READ_ONLY: ${READ_ONLY:-false}
+      READ_ONLY_MODE: ${READ_ONLY_MODE:-false}
       ATLASSIAN_DEPLOYMENT: ${ATLASSIAN_DEPLOYMENT:-cloud}
       ATLASSIAN_OAUTH_ENABLE: ${ATLASSIAN_OAUTH_ENABLE:-true}
       # SSRF guard allowlist for the upstream MCP. The gateway blocks any
@@ -301,7 +301,8 @@ services:
       # is the correct default for Atlassian Cloud. Set the real value in
       # infra/.env (MCP_ALLOWED_URL_DOMAINS); never hard-code a site domain here.
       MCP_ALLOWED_URL_DOMAINS: ${MCP_ALLOWED_URL_DOMAINS:-}
-      TOOLSETS: ${MCP_TOOLSETS:-all}
+      TOOLSETS: ${TOOLSETS:-all}
+      ENABLED_TOOLS: ${ENABLED_TOOLS:-}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
     ports:
       - "${ATLASSIAN_MCP_HOST_PORT:-38090}:8090"

@@ -163,10 +163,8 @@ A typical automation flow:
 
 - **Atlassian MCP gateway** - `services/atlassian_mcp_bitbucket/` builds the
   [`jellythomas/mcp-atlassian-with-bitbucket`](https://github.com/jellythomas/mcp-atlassian-with-bitbucket)
-  fork at a pinned commit. That fork extends
-  [`sooperset/mcp-atlassian`](https://github.com/sooperset/mcp-atlassian) (the
-  original Jira/Confluence MCP server) with Bitbucket support, so all three
-  Atlassian products share one stateless HTTP MCP surface.
+  fork at a pinned commit. It bundles Jira, Confluence and Bitbucket support
+  together, so all three Atlassian products share one stateless HTTP MCP surface.
 - **[Temporal](https://temporal.io/)** - durable workflow execution for the
   automation tier.
 - **[HashiCorp Vault](https://www.vaultproject.io/)** - secret storage for

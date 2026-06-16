@@ -3,6 +3,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 import chat_mcp
+from components.credential_manager import CredentialManager
 from chat_mcp import _mcp_headers, _post_llm_with_retry
 
 
@@ -59,6 +60,39 @@ def test_bitbucket_account_token_uses_basic_headers() -> None:
     assert headers["X-Atlassian-Bitbucket-App-Password"] == credential.api_token
     assert headers["X-Atlassian-Bitbucket-Api-Token"] == credential.api_token
     assert "X-Atlassian-Bitbucket-Personal-Token" not in headers
+
+
+def test_bitbucket_cloud_requires_account_email() -> None:
+    manager = CredentialManager(state={}, now=lambda: 100.0)
+
+    try:
+        manager.store(
+            "bitbucket",
+            email="bitbucket-user",
+            api_token="ATATT_account_api_token",
+            url="https://bitbucket.org",
+            deployment="cloud",
+        )
+    except ValueError as exc:
+        assert "e-posta" in str(exc)
+    else:
+        raise AssertionError("Bitbucket Cloud accepted a non-email username")
+
+
+def test_bitbucket_cloud_stores_account_api_token() -> None:
+    manager = CredentialManager(state={}, now=lambda: 100.0)
+
+    credential = manager.store(
+        "bitbucket",
+        email="user@example.com",
+        api_token="ATATT_account_api_token",
+        url="https://bitbucket.org",
+        deployment="cloud",
+    )
+
+    assert credential.deployment == "cloud"
+    assert credential.email == "user@example.com"
+    assert credential.api_token == "ATATT_account_api_token"
 
 
 def test_llm_post_retries_transient_transport_error(monkeypatch) -> None:

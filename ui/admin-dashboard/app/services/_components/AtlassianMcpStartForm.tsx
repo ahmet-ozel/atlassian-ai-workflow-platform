@@ -1,8 +1,8 @@
 "use client";
-
 import { useEffect, useMemo, useState } from "react";
 
 import { apiFetch } from "../../../lib/api-client";
+import { AtlassianMcpToolProfileFields, liteToolCsvForMode } from "./AtlassianMcpToolProfileFields";
 import type { FormSchemaField } from "./StartFormModal";
 
 type DeploymentMode = "cloud" | "dc";
@@ -29,29 +29,20 @@ const runtimeFields: FieldConfig[] = [
     key: "TRANSPORT",
     label: "Runtime Mode",
     kind: "select",
-    options: [
-      { value: "streamable-http", label: "streamable-http" },
-    ],
+    options: [{ value: "streamable-http", label: "streamable-http" }],
   },
   {
     key: "STATELESS",
     label: "Stateless",
     kind: "select",
-    options: [
-      { value: "true", label: "true" },
-      { value: "false", label: "false" },
-    ],
+    options: [{ value: "true", label: "true" }, { value: "false", label: "false" }],
   },
   {
     key: "ATLASSIAN_OAUTH_ENABLE",
     label: "Atlassian OAuth Enable",
     kind: "select",
-    options: [
-      { value: "true", label: "true" },
-      { value: "false", label: "false" },
-    ],
+    options: [{ value: "true", label: "true" }, { value: "false", label: "false" }],
   },
-  { key: "TOOLSETS", label: "Toolsets" },
 ];
 
 const cloudFields: FieldConfig[] = [
@@ -233,6 +224,12 @@ export default function AtlassianMcpStartForm({
             onChange={updateValue}
           />
         ))}
+      <AtlassianMcpToolProfileFields
+        availableKeys={availableKeys}
+        mode={mode}
+        values={values}
+        setValues={setValues}
+      />
 
       <h3 style={sectionTitleStyle}>Atlassian Type</h3>
       <div style={fieldRowStyle}>
@@ -360,6 +357,12 @@ function buildInitialValues(fields: FormSchemaField[]): Record<string, string> {
   values.ATLASSIAN_OAUTH_ENABLE ||= "true";
   values.MCP_ALLOWED_URL_DOMAINS ||= "true";
   values.TOOLSETS ||= "all";
+  if (!(values.ENABLED_TOOLS ?? "").trim()) {
+    const initialMode = deploymentModeFromValue(values.ATLASSIAN_DEPLOYMENT);
+    values.ENABLED_TOOLS = liteToolCsvForMode(initialMode);
+    values.READ_ONLY = "false";
+    values.READ_ONLY_MODE = "false";
+  }
   if (
     deploymentModeFromValue(values.ATLASSIAN_DEPLOYMENT) === "dc" &&
     values.MCP_ALLOWED_URL_DOMAINS.trim().toLowerCase() === "true"

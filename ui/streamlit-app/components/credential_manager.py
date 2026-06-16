@@ -270,8 +270,8 @@ def _bearer_auth_headers(api_token: str) -> dict[str, str]:
 
 
 def _bitbucket_cloud_headers(email: str, api_token: str) -> dict[str, str]:
-    # Bitbucket Cloud authenticates with username/email + app password via
-    # Basic auth. Server/DC uses Personal Access Token instead.
+    # Bitbucket Cloud authenticates with account email + Atlassian API token
+    # via Basic auth. Server/DC uses Personal Access Token instead.
     return _basic_auth_headers(email, api_token)
 
 
@@ -809,10 +809,8 @@ class CredentialManager:
         clean_workspace = workspace.strip().strip("/")
         if not (clean_url.startswith("https://") or clean_url.startswith("http://")):
             raise ValueError("Gecerli bir servis URL'i giriniz.")
-        if clean_deployment == "cloud" and service != "bitbucket" and "@" not in clean_email:
+        if clean_deployment == "cloud" and "@" not in clean_email:
             raise ValueError("Geçerli bir e-posta giriniz (örn: ad.soyad@firma.com).")
-        if service == "bitbucket" and clean_deployment == "cloud" and not clean_email:
-            raise ValueError("Bitbucket Cloud icin BITBUCKET_USERNAME zorunludur.")
         if not api_token.strip():
             raise ValueError("API token veya Personal Access Token bos olamaz.")
 
@@ -1097,11 +1095,12 @@ def _render_service_form(manager: CredentialManager, service: str) -> None:
         if is_cloud:
             if service == "bitbucket":
                 email = st.text_input(
-                    "Bitbucket username/e-posta (BITBUCKET_USERNAME)",
+                    "Bitbucket e-posta",
                     placeholder="your.email@company.com",
                     help=(
-                        "Zorunlu. API token kullanirken Atlassian e-postasi; "
-                        "app password kullanirken Bitbucket kullanici adi girilir."
+                        "Cloud icin Atlassian hesap e-postasi gerekir. "
+                        "Jira, Confluence ve Bitbucket Cloud ayni hesap "
+                        "e-postasi + API token ile dogrulanir."
                     ),
                     key=f"_cred_mgr_email_{service}",
                 )
@@ -1141,10 +1140,11 @@ def _render_service_form(manager: CredentialManager, service: str) -> None:
                 key=f"_cred_mgr_workspace_{service}",
             )
         if service == "bitbucket" and is_cloud:
-            token_label = "Bitbucket app password"
+            token_label = "Bitbucket API token"
             token_help = (
-                "Bitbucket Cloud icin app password girin. Bu deger MCP isteginde "
-                "Basic auth credential'i olarak gonderilir."
+                "Atlassian API token girin. Jira, Confluence ve Bitbucket Cloud "
+                "icin ayni ATATT token kullanilabilir; workspace access token "
+                "veya Server/DC PAT kullanmayin."
             )
         elif is_cloud:
             token_label = f"{service_label} API token"

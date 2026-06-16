@@ -187,9 +187,9 @@ const LLM_SECRET_KEYS = new Set([
   "VLLM_API_KEY",
 ]);
 
-const STREAMLIT_HIDDEN_KEYS = new Set([
-  "LOG_LEVEL",
-  "CLIENT_SOURCE",
+const LOW_LEVEL_LLM_KEYS = new Set(["LOG_LEVEL", "CLIENT_SOURCE"]);
+
+const MANAGED_PROVIDER_BASE_URL_KEYS = new Set([
   "OPENAI_BASE_URL",
   "ANTHROPIC_BASE_URL",
 ]);
@@ -239,23 +239,10 @@ const VERBOSITY_OPTIONS = [
   { value: "high", label: "high" },
 ];
 
-const STREAMLIT_FIELD_COPY: Record<
+const LLM_FIELD_COPY: Record<
   string,
   { label: string; help: string; readOnly?: boolean }
 > = {
-  PORT: {
-    label: "Streamlit container port",
-    help: "Container listens on this port. Browser access uses the published host port shown above.",
-    readOnly: true,
-  },
-  ASSISTANT_BASE_URL: {
-    label: "Assistant service URL",
-    help: "Docker network address used by Streamlit. Leave this default unless the assistant service is external.",
-  },
-  MCP_BASE_URL: {
-    label: "Atlassian MCP URL",
-    help: "Docker network address of atlassian-mcp. This is not the browser URL.",
-  },
   LLM_PROVIDER: {
     label: "LLM provider",
     help: "Choose the model backend. Credential fields below change with this selection.",
@@ -290,6 +277,25 @@ const STREAMLIT_FIELD_COPY: Record<
   },
 };
 
+const STREAMLIT_FIELD_COPY: Record<
+  string,
+  { label: string; help: string; readOnly?: boolean }
+> = {
+  PORT: {
+    label: "Streamlit container port",
+    help: "Container listens on this port. Browser access uses the published host port shown above.",
+    readOnly: true,
+  },
+  ASSISTANT_BASE_URL: {
+    label: "Assistant service URL",
+    help: "Docker network address used by Streamlit. Leave this default unless the assistant service is external.",
+  },
+  MCP_BASE_URL: {
+    label: "Atlassian MCP URL",
+    help: "Docker network address of atlassian-mcp. This is not the browser URL.",
+  },
+};
+
 function normalizeProvider(
   value: FormDataEntryValue | string | null,
   fallback = "openai",
@@ -311,8 +317,14 @@ function providerDefaultFromFields(fields: FormSchemaField[] | null): string {
   );
 }
 
-function streamlitFieldVisible(key: string, provider: string): boolean {
-  if (STREAMLIT_HIDDEN_KEYS.has(key)) return false;
+function llmFieldVisible(
+  key: string,
+  provider: string,
+  serviceName: string,
+): boolean {
+  if (LOW_LEVEL_LLM_KEYS.has(key)) return false;
+  if (MANAGED_PROVIDER_BASE_URL_KEYS.has(key)) return false;
+  if (serviceName === "streamlit-ui" && key === "PORT") return true;
   if (key === "LLM_REASONING_EFFORT") {
     return provider === "openai" || provider === "anthropic";
   }
@@ -321,7 +333,7 @@ function streamlitFieldVisible(key: string, provider: string): boolean {
   return PROVIDER_VISIBLE_KEYS[provider]?.has(key) ?? false;
 }
 
-function streamlitSelectOptions(
+function llmSelectOptions(
   key: string,
   provider: string,
 ): Array<{ value: string; label: string }> | null {
@@ -336,16 +348,24 @@ function streamlitSelectOptions(
 
 function fieldLabel(field: FormSchemaField, serviceName: string): string {
   if (serviceName === "streamlit-ui") {
-    return STREAMLIT_FIELD_COPY[field.key]?.label ?? field.key;
+    return (
+      STREAMLIT_FIELD_COPY[field.key]?.label ??
+      LLM_FIELD_COPY[field.key]?.label ??
+      field.key
+    );
   }
-  return field.key;
+  return LLM_FIELD_COPY[field.key]?.label ?? field.key;
 }
 
 function fieldHelp(field: FormSchemaField, serviceName: string): string | null {
   if (serviceName === "streamlit-ui") {
-    return STREAMLIT_FIELD_COPY[field.key]?.help ?? field.comment;
+    return (
+      STREAMLIT_FIELD_COPY[field.key]?.help ??
+      LLM_FIELD_COPY[field.key]?.help ??
+      field.comment
+    );
   }
-  return field.comment;
+  return LLM_FIELD_COPY[field.key]?.help ?? field.comment;
 }
 
 function fieldReadOnly(field: FormSchemaField, serviceName: string): boolean {
@@ -482,17 +502,21 @@ export default function StartFormModal({
     () => providerDefaultFromFields(fields),
     [fields],
   );
+  const isLlmForm = useMemo(
+    () => fields?.some((field) => field.key === "LLM_PROVIDER") ?? false,
+    [fields],
+  );
   const selectedProvider = normalizeProvider(
     selectedProviderInput,
     providerDefault,
   );
   const visibleFields = useMemo(() => {
     if (fields == null) return [];
-    if (serviceName !== "streamlit-ui") return fields;
+    if (!isLlmForm) return fields;
     return fields.filter((field) =>
-      streamlitFieldVisible(field.key, selectedProvider),
+      llmFieldVisible(field.key, selectedProvider, serviceName),
     );
-  }, [fields, selectedProvider, serviceName]);
+  }, [fields, isLlmForm, selectedProvider, serviceName]);
 
   async function handleSubmit(
     ev: React.FormEvent<HTMLFormElement>,
@@ -697,10 +721,9 @@ export default function StartFormModal({
               const labelText = fieldLabel(field, serviceName);
               const helpText = fieldHelp(field, serviceName);
               const readOnly = fieldReadOnly(field, serviceName);
-              const selectOptions =
-                serviceName === "streamlit-ui"
-                  ? streamlitSelectOptions(field.key, selectedProvider)
-                  : null;
+              const selectOptions = isLlmForm
+                ? llmSelectOptions(field.key, selectedProvider)
+                : null;
               const fieldRequired = sensitiveFieldRequired(
                 field.key,
                 sensitive,
@@ -771,7 +794,7 @@ export default function StartFormModal({
                         type={sensitive ? "password" : "text"}
                         readOnly={readOnly}
                         defaultValue={
-                          serviceName === "streamlit-ui" && !sensitive
+                          isLlmForm && !sensitive
                             ? field.default_value
                             : undefined
                         }

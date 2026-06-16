@@ -118,7 +118,7 @@ def _mcp_headers(credential_for: CredentialGetter) -> dict[str, str]:
             # Bitbucket Server/DC -> Personal Access Token (Bearer).
             headers["X-Atlassian-Bitbucket-Personal-Token"] = bitbucket.api_token
         else:
-            # Bitbucket Cloud -> username/email + app password via Basic auth.
+            # Bitbucket Cloud -> account email + Atlassian API token via Basic auth.
             headers["X-Atlassian-Bitbucket-Username"] = bitbucket.email
             headers["X-Atlassian-Bitbucket-App-Password"] = bitbucket.api_token
             headers["X-Atlassian-Bitbucket-Api-Token"] = bitbucket.api_token

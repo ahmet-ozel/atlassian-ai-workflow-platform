@@ -329,8 +329,9 @@ export function AtlassianMcpToolProfileFields({
                   type="checkbox"
                   checked={selectedToolNames.includes(tool.name)}
                   onChange={(ev) => {
+                    const isChecked = ev.currentTarget.checked;
                     setSelectedToolNames((current) =>
-                      ev.currentTarget.checked
+                      isChecked
                         ? sortedUnique([...current, tool.name])
                         : current.filter((name) => name !== tool.name),
                     );

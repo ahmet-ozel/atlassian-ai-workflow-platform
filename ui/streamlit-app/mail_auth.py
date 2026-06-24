@@ -1,9 +1,10 @@
 """Mail OAuth ownership model for Streamlit Mail Chat.
 
 Gmail and Outlook do not fit the Atlassian API-token form used by the
-existing credential manager. In the first supported shape, the mail MCP
-services own OAuth config and token refresh through their own ``.env`` files;
-Streamlit only talks to those MCP endpoints.
+existing credential manager. In the multi-user shape, each user connects a
+mail credential for their own session. The credential is stored in Vault and
+passed to mail MCP services by credential ref; mail user tokens and provider
+client secrets are not required in service-local .env files.
 """
 
 from __future__ import annotations
@@ -23,22 +24,14 @@ class MailAuthStatus:
     label: str
     owner: MailAuthOwner
     streamlit_handles_tokens: bool
+    token_storage: str
     required_env_keys: tuple[str, ...]
     future_streamlit_oauth_supported: bool = False
 
 
 _REQUIRED_ENV_KEYS: dict[MailProvider, tuple[str, ...]] = {
-    "gmail": (
-        "GOOGLE_CLIENT_ID",
-        "GOOGLE_CLIENT_SECRET",
-        "GOOGLE_REDIRECT_URI",
-    ),
-    "outlook": (
-        "MICROSOFT_TENANT_ID",
-        "MICROSOFT_CLIENT_ID",
-        "MICROSOFT_CLIENT_SECRET",
-        "MICROSOFT_REDIRECT_URI",
-    ),
+    "gmail": (),
+    "outlook": (),
 }
 
 _LABELS: dict[MailProvider, str] = {
@@ -55,6 +48,7 @@ def mail_auth_status(provider: MailProvider) -> MailAuthStatus:
         label=_LABELS[provider],
         owner="mcp-service",
         streamlit_handles_tokens=False,
+        token_storage="per-user-vault-credential-ref",
         required_env_keys=_REQUIRED_ENV_KEYS[provider],
     )
 
@@ -72,5 +66,6 @@ def assert_streamlit_oauth_not_enabled(provider: MailProvider) -> None:
     if not status.future_streamlit_oauth_supported:
         raise NotImplementedError(
             f"{status.label} Streamlit OAuth flow is not implemented. "
-            "OAuth config and refresh tokens must stay inside the mail MCP service."
+            "Use the per-user credential form so Vault stores only a credential ref "
+            "for the mail MCP services."
         )

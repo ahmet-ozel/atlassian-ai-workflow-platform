@@ -276,6 +276,8 @@ class ChatHandlerDeps:
             compressor; defaults to :data:`DEFAULT_SLIDING_WINDOW_N`.
         prompt_name: Name of the system prompt loaded for every chat
             (defaults to ``"assistant_chat"``).
+        chat_mode: Logical chat mode written to audit payloads. The default
+            keeps the existing Atlassian chat contract unchanged.
     """
 
     prompt_loader: PromptLoader
@@ -288,6 +290,7 @@ class ChatHandlerDeps:
     token_cap: int
     sliding_window_n: int = DEFAULT_SLIDING_WINDOW_N
     prompt_name: str = "assistant_chat"
+    chat_mode: str = "atlassian"
     # The MCP catalogue accessor - typed as a callable so the handler
     # is decoupled from the concrete client. ``list_tools()`` returns
     # the full tool descriptors before banned-tool / capability-gate
@@ -621,6 +624,8 @@ class ChatHandler:
         """
 
         payload: dict[str, Any] = {
+            "chat_mode": self._deps.chat_mode,
+            "prompt_name": self._deps.prompt_name,
             "prompt_version": prompt_version,
             "token_in": counters.token_in,
             "token_out": counters.token_out,
@@ -673,6 +678,8 @@ class ChatHandler:
         """
 
         payload: dict[str, Any] = {
+            "chat_mode": self._deps.chat_mode,
+            "prompt_name": self._deps.prompt_name,
             "prompt_version": prompt_version,
             "timeout_s": self._deps.timeout_s,
             "token_in": counters.token_in,

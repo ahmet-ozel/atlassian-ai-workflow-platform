@@ -414,6 +414,34 @@ class _CredentialApi:
             raise RuntimeError(getattr(resp, "text", f"HTTP {resp.status_code}"))
         return resp.json()
 
+    def post_mail_oauth(
+        self,
+        *,
+        session_id: str,
+        service: str,
+        email: str,
+        refresh_token: str,
+        client_id: str = "",
+        client_secret: str = "",
+        scopes: str = "",
+    ) -> dict[str, Any]:
+        payload: dict[str, Any] = {
+            "session_id": session_id,
+            "service": service,
+            "email": email,
+            "refresh_token": refresh_token,
+        }
+        if client_id:
+            payload["client_id"] = client_id
+        if client_secret:
+            payload["client_secret"] = client_secret
+        if scopes:
+            payload["scopes"] = scopes
+        resp = self._client.post("/session/credentials", json=payload)
+        if hasattr(resp, "status_code") and resp.status_code >= 400:
+            raise RuntimeError(getattr(resp, "text", f"HTTP {resp.status_code}"))
+        return resp.json()
+
 
 class _AssistantClient:
     """Synchronous assistant-service client used by Chat and Task Creator."""

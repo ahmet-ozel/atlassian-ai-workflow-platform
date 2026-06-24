@@ -328,20 +328,26 @@ services:
   # ─── Mail MCP placeholders (read-only Gmail / Outlook) ───
   gmail-mcp:
     build:
-      context: ../services/gmail-mcp
-      dockerfile: Dockerfile
-    env_file:
-      - path: ../services/gmail-mcp/.env
-        required: false
+      context: ..
+      dockerfile: services/gmail-mcp/Dockerfile
     environment:
       PORT: "8110"
       MAIL_MCP_PROVIDER: gmail
       MAIL_MCP_READ_ONLY: "true"
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
-      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-}
+      MAIL_MCP_OAUTH_MODEL: ${MAIL_MCP_OAUTH_MODEL:-per_user_vault}
+      MAIL_MCP_ALLOW_ENV_USER_TOKEN: ${MAIL_MCP_ALLOW_ENV_USER_TOKEN:-false}
+      GOOGLE_TOKEN_URI: ${GOOGLE_TOKEN_URI:-https://oauth2.googleapis.com/token}
+      GMAIL_API_BASE_URL: ${GMAIL_API_BASE_URL:-https://gmail.googleapis.com/gmail/v1}
+      VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
+      VAULT_TOKEN: ${VAULT_TOKEN:-dev-token-not-for-prod}
+      VAULT_KV_MOUNT: ${VAULT_KV_MOUNT:-secret}
+      VAULT_BACKEND: ${MAIL_SESSION_VAULT_BACKEND:-hashicorp}
+      VAULT_LOCAL_KEY: ${MAIL_SESSION_VAULT_LOCAL_KEY:-}
+      VAULT_LOCAL_STORE: ${MAIL_SESSION_VAULT_LOCAL_STORE:-/vault-local/vault.json}
     ports:
       - "${GMAIL_MCP_HOST_PORT:-38110}:8110"
+    volumes:
+      - local_vault_data:/vault-local
     networks:
       - internal
       - default
@@ -354,21 +360,26 @@ services:
 
   outlook-mcp:
     build:
-      context: ../services/outlook-mcp
-      dockerfile: Dockerfile
-    env_file:
-      - path: ../services/outlook-mcp/.env
-        required: false
+      context: ..
+      dockerfile: services/outlook-mcp/Dockerfile
     environment:
       PORT: "8120"
       MAIL_MCP_PROVIDER: outlook
       MAIL_MCP_READ_ONLY: "true"
-      MICROSOFT_TENANT_ID: ${MICROSOFT_TENANT_ID:-}
-      MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID:-}
-      MICROSOFT_CLIENT_SECRET: ${MICROSOFT_CLIENT_SECRET:-}
-      MICROSOFT_REDIRECT_URI: ${MICROSOFT_REDIRECT_URI:-}
+      MAIL_MCP_OAUTH_MODEL: ${MAIL_MCP_OAUTH_MODEL:-per_user_vault}
+      MAIL_MCP_ALLOW_ENV_USER_TOKEN: ${MAIL_MCP_ALLOW_ENV_USER_TOKEN:-false}
+      MICROSOFT_TOKEN_URI: ${MICROSOFT_TOKEN_URI:-}
+      MICROSOFT_GRAPH_API_BASE_URL: ${MICROSOFT_GRAPH_API_BASE_URL:-https://graph.microsoft.com/v1.0}
+      VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
+      VAULT_TOKEN: ${VAULT_TOKEN:-dev-token-not-for-prod}
+      VAULT_KV_MOUNT: ${VAULT_KV_MOUNT:-secret}
+      VAULT_BACKEND: ${MAIL_SESSION_VAULT_BACKEND:-hashicorp}
+      VAULT_LOCAL_KEY: ${MAIL_SESSION_VAULT_LOCAL_KEY:-}
+      VAULT_LOCAL_STORE: ${MAIL_SESSION_VAULT_LOCAL_STORE:-/vault-local/vault.json}
     ports:
       - "${OUTLOOK_MCP_HOST_PORT:-38120}:8120"
+    volumes:
+      - local_vault_data:/vault-local
     networks:
       - internal
       - default
@@ -607,6 +618,10 @@ services:
     env_file:
       - path: ../services/assistant-service/.env
         required: false
+      - path: ../.env
+        required: false
+      - path: ../.env.local
+        required: false
     environment:
       PORT: ${PORT:-8081}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
@@ -623,15 +638,16 @@ services:
       OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-}
       OIDC_AUDIENCE: ${OIDC_AUDIENCE:-}
       OIDC_JWKS_URL: ${OIDC_JWKS_URL:-}
-      VAULT_BACKEND: ${VAULT_BACKEND:-hashicorp}
+      VAULT_BACKEND: ${MAIL_SESSION_VAULT_BACKEND:-hashicorp}
       VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
       VAULT_TOKEN: ${VAULT_TOKEN:-dev-token-not-for-prod}
+      VAULT_LOCAL_KEY: ${MAIL_SESSION_VAULT_LOCAL_KEY:-}
+      VAULT_LOCAL_STORE: ${MAIL_SESSION_VAULT_LOCAL_STORE:-/vault-local/vault.json}
       LLM_PROVIDER: ${LLM_PROVIDER:-openai}
       LLM_MODEL_NAME: ${LLM_MODEL_NAME:-gpt-5.5}
       LLM_REASONING_EFFORT: ${LLM_REASONING_EFFORT:-}
       LLM_VERBOSITY: ${LLM_VERBOSITY:-}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       VLLM_BASE_URL: ${VLLM_BASE_URL:-http://host.docker.internal:8000/v1}
       VLLM_API_KEY: ${VLLM_API_KEY:-}
       ANTHROPIC_BASE_URL: ${ANTHROPIC_BASE_URL:-https://api.anthropic.com/v1}
@@ -649,6 +665,8 @@ services:
         condition: service_healthy
     ports:
       - "${ASSISTANT_SERVICE_HOST_PORT:-38081}:8081"
+    volumes:
+      - local_vault_data:/vault-local
     networks:
       - internal
       # default so the host bridge publishes 8081:8081 for E2E tests.
@@ -832,6 +850,10 @@ services:
     env_file:
       - path: ../ui/streamlit-app/.env
         required: false
+      - path: ../.env
+        required: false
+      - path: ../.env.local
+        required: false
     environment:
       ASSISTANT_BASE_URL: ${ASSISTANT_BASE_URL:-http://assistant-service:8081}
       ASSISTANT_SERVICE_URL: ${ASSISTANT_SERVICE_URL:-http://assistant-service:8081}
@@ -846,7 +868,6 @@ services:
       LLM_MODEL_NAME: ${LLM_MODEL_NAME:-gpt-5.5}
       LLM_REASONING_EFFORT: ${LLM_REASONING_EFFORT:-}
       LLM_VERBOSITY: ${LLM_VERBOSITY:-}
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
       VLLM_BASE_URL: ${VLLM_BASE_URL:-http://host.docker.internal:8000/v1}
       VLLM_API_KEY: ${VLLM_API_KEY:-}
@@ -1128,6 +1149,8 @@ volumes:
     name: infra_minio_data
   agent_workspace:
     name: infra_agent_workspace
+  local_vault_data:
+    name: infra_local_vault_data
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Networks - Network Isolation

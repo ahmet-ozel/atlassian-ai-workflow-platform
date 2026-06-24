@@ -38,6 +38,26 @@ def test_mail_chat_history_is_isolated_from_atlassian_chat() -> None:
     assert "'atlassian_chat_history'" not in page_source
 
 
+def test_mail_chat_prefers_assistant_service_mail_mode_with_mcp_fallback() -> None:
+    page_source = _source("pages/4_mail_chat.py")
+
+    assert "_assistant_mail_answer" in page_source
+    assert "_asks_for_message_id" in page_source
+    assert "_direct_mail_mcp_answer" in page_source
+    assert "assistant-service asked for message id" in page_source
+    assert 'mode="mail"' in page_source
+    assert "plan_and_call_mail_mcp" in page_source
+    assert "ask_mail_llm" in page_source
+
+
+def test_mail_chat_rehydrates_mail_credential_refs_from_session_id() -> None:
+    page_source = _source("pages/4_mail_chat.py")
+
+    assert "vault:atlassian/_user_session/{session_id}/{provider}" in page_source
+    assert "provider in bound" not in page_source
+    assert 'st.session_state[f"credential_{provider}"] = SimpleNamespace' in page_source
+
+
 def test_mail_chat_does_not_persist_mail_secrets_in_streamlit_state() -> None:
     checked_files = [
         "pages/4_mail_chat.py",
@@ -97,7 +117,22 @@ def test_mail_mcp_parser_accepts_plain_json_result() -> None:
 
 
 def test_mail_mcp_parser_raises_on_jsonrpc_error() -> None:
-    with pytest.raises(MailMcpError, match="invalid_token"):
+    with pytest.raises(MailMcpError, match="erisimi reddetti|erisimi"):
         mail_mcp._parse_mcp_response(
             '{"jsonrpc":"2.0","id":"x","error":{"code":401,"message":"invalid_token"}}'
         )
+
+
+@pytest.mark.parametrize(
+    ("raw_error", "expected"),
+    [
+        ("Gmail OAuth is not configured", "henuz baglanmamis"),
+        ("invalid_grant token expired", "suresi dolmus"),
+        ("HTTP 429 rate limit", "rate limit"),
+        ("HTTP 403 forbidden", "erisimi reddetti"),
+        ("request failed timeout", "ulasilamiyor"),
+        ("write tool blocked in read-only mode", "read-only"),
+    ],
+)
+def test_mail_mcp_errors_are_user_friendly(raw_error: str, expected: str) -> None:
+    assert expected in mail_mcp.user_friendly_mail_error(raw_error)

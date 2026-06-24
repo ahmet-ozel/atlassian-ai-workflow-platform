@@ -8,10 +8,13 @@ is the **only** place plain-text user-supplied tokens land on the
 server - they are forwarded to Vault and the in-memory bytearray is
 zeroed before the response is returned.
 
-Gmail/Outlook are accepted for route compatibility, but the MVP OAuth
-model keeps mail OAuth material inside the MCP services. Streamlit and
-assistant-service should normally call those MCP services without
-handling mail tokens directly.
+Gmail/Outlook are accepted for route compatibility. They use a mail
+OAuth payload instead of the Atlassian API-token shape. For shared
+deployments the per-user credential must contain either a short-lived
+access token or the full refresh flow material (refresh token plus
+provider client id/secret); mail user tokens are not sourced from
+service-local .env files by default. The mail MCP services own token
+refresh and read the stored material by credential ref.
 
 Lifecycle:
 
@@ -138,7 +141,7 @@ def _to_vault_path(raw: str) -> Any:
 
     try:
         from vault_client import VaultPath  # type: ignore[import-not-found]
-    except ModuleNotFoundError:
+    except Exception:  # noqa: BLE001 - optional local-dev deps may be absent
         return raw
     return VaultPath.parse(raw)
 
@@ -161,6 +164,21 @@ async def post_session_credential(
             "personal_token": "<plain-text-token>"
         }
 
+    Mail services use:
+
+    .. code-block:: json
+
+        {
+            "session_id": "<opaque-string>",
+            "service": "gmail" | "outlook",
+            "email": "user@example.com",
+            "refresh_token": "<oauth-refresh-token>",
+            "access_token": "<optional-short-lived-token>",
+            "client_id": "<provider-client-id-for-refresh>",
+            "client_secret": "<provider-client-secret-for-refresh>",
+            "scopes": "<optional-scope-string>"
+        }
+
     Returns ``{"vault_path": "vault:atlassian/_user_session/.../jira"}``
     on success.
     """
@@ -181,30 +199,19 @@ async def post_session_credential(
             detail=f"service must be one of {sorted(_VALID_SERVICES)}",
         )
 
-    url = body.get("url")
-    username = body.get("username")
-    personal_token = body.get("personal_token")
-    if not all(isinstance(v, str) and v for v in (url, username, personal_token)):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="url, username and personal_token are required",
-        )
-
     raw_path = build_user_session_path(session_id, service)
     path = _to_vault_path(raw_path)
 
-    # Hold token in a bytearray so we can scrub.
-    token_buf = bytearray(personal_token.encode("utf-8"))
+    if service in {"gmail", "outlook"}:
+        payload, token_to_scrub = _mail_oauth_payload(service, body)
+    else:
+        payload, token_to_scrub = _atlassian_payload(body)
+
+    # Hold token in a bytearray so we can scrub our local copy.
+    token_buf = bytearray(token_to_scrub.encode("utf-8"))
     try:
         try:
-            deps.vault.write(
-                path,
-                {
-                    "url": url,
-                    "username": username,
-                    "personal_token": personal_token,
-                },
-            )
+            deps.vault.write(path, payload)
         except Exception as exc:  # noqa: BLE001
             _LOG.warning(
                 "session_creds.write_failed session=%s service=%s err=%s",
@@ -218,12 +225,84 @@ async def post_session_credential(
         for i in range(len(token_buf)):
             token_buf[i] = 0
         del token_buf
-        del personal_token
+        del token_to_scrub
 
     return JSONResponse(
         status_code=status.HTTP_201_CREATED,
         content={"vault_path": raw_path, "service": service},
     )
+
+
+def _atlassian_payload(body: Mapping[str, Any]) -> tuple[dict[str, str], str]:
+    url = body.get("url")
+    username = body.get("username")
+    personal_token = body.get("personal_token")
+    if not all(isinstance(v, str) and v for v in (url, username, personal_token)):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="url, username and personal_token are required",
+        )
+    return (
+        {
+            "url": url,
+            "username": username,
+            "personal_token": personal_token,
+        },
+        personal_token,
+    )
+
+
+def _mail_oauth_payload(
+    service: str,
+    body: Mapping[str, Any],
+) -> tuple[dict[str, str], str]:
+    refresh_token = body.get("refresh_token") or body.get("personal_token")
+    access_token = body.get("access_token")
+    email = body.get("email") or body.get("username")
+    client_id = body.get("client_id")
+    client_secret = body.get("client_secret")
+    scopes = body.get("scopes") or body.get("scope")
+
+    if email is not None and not isinstance(email, str):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="email must be a string when provided",
+        )
+
+    has_access_token = isinstance(access_token, str) and bool(access_token)
+    has_refresh_flow = all(
+        isinstance(value, str) and bool(value)
+        for value in (refresh_token, client_id, client_secret)
+    )
+    if not has_access_token and not has_refresh_flow:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                "gmail/outlook credentials require refresh_token with "
+                "client_id/client_secret, or access_token"
+            ),
+        )
+
+    payload: dict[str, str] = {"provider": service}
+    if isinstance(refresh_token, str) and refresh_token:
+        payload["refresh_token"] = refresh_token
+    if has_access_token:
+        payload["access_token"] = access_token
+    if isinstance(email, str) and email:
+        payload["email"] = email
+        payload["username"] = email
+    if isinstance(client_id, str) and client_id:
+        payload["client_id"] = client_id
+    if isinstance(client_secret, str) and client_secret:
+        payload["client_secret"] = client_secret
+    if isinstance(scopes, str) and scopes:
+        payload["scopes"] = scopes
+    scrub_token = (
+        refresh_token
+        if isinstance(refresh_token, str) and refresh_token
+        else access_token
+    )
+    return payload, str(scrub_token)
 
 
 @router.delete("/credentials")

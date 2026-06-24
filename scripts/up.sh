@@ -105,6 +105,10 @@ ENV_FILE_ARGV=()
 if [[ -f "$ENV_FILE" ]]; then
     ENV_FILE_ARGV=( --env-file "$ENV_FILE" )
 fi
+LOCAL_ENV_FILE="${PLATFORM_DIR}/.env.local"
+if [[ -f "$LOCAL_ENV_FILE" ]]; then
+    ENV_FILE_ARGV+=( --env-file "$LOCAL_ENV_FILE" )
+fi
 # shellcheck disable=SC2206
 COMPOSE_BOOT_ARGV=( $COMPOSE "${ENV_FILE_ARGV[@]}" -f "$COMPOSE_BASE" -f "$COMPOSE_DEV" )
 # shellcheck disable=SC2206

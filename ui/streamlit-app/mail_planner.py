@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 import unicodedata
-from typing import Any, Sequence
+from typing import Any, Mapping, Sequence
 
 from mail_mcp import MailProvider, MailToolCandidate, mail_mcp_call_any
 
@@ -30,7 +30,13 @@ _FROM_RE = re.compile(
     re.IGNORECASE,
 )
 _DETAIL_RE = re.compile(
-    r"\b(?:detay\w*|detail\w*|ozet\w*|özet\w*|read)\b|\boku\b",
+    r"\b(?:detay\w*|detail\w*|ozet\w*|özet\w*|read|hakkinda|bilgi|anlat|incele)\b|\boku\b",
+    re.IGNORECASE,
+)
+
+
+_SENDER_FROM_PHRASE_RE = re.compile(
+    r"\b([A-Za-z0-9_.@+\-\s]{2,80}?)['’]?(?:den|dan|ten|tan)\s+gelen",
     re.IGNORECASE,
 )
 
@@ -79,6 +85,32 @@ def _extract_limit(text: str, default: int = _DEFAULT_LIMIT) -> int:
     return max(1, min(int(match.group(1)), _MAX_LIMIT))
 
 
+def _extract_offset(text: str) -> int:
+    folded = _fold_text(text)
+    ordinal_words = {
+        "ilk": 1,
+        "birinci": 1,
+        "ikinci": 2,
+        "ucuncu": 3,
+        "dorduncu": 4,
+        "besinci": 5,
+        "second": 2,
+        "third": 3,
+        "fourth": 4,
+        "fifth": 5,
+    }
+    for word, value in ordinal_words.items():
+        if re.search(rf"\b{re.escape(word)}(?:yi|i|nu|u)?\b", folded):
+            return value
+    match = re.search(
+        r"\b(\d{1,2})(?:\.|inci|nci|nd|rd|th)?\s*(?:son\s*)?(?:mail|email|mesaj|message)?",
+        folded,
+    )
+    if match:
+        return max(1, min(int(match.group(1)), _MAX_LIMIT))
+    return 1
+
+
 def _clean_query(value: str) -> str:
     value = re.split(
         r"\b(?:son|ilk|top|limit|ozetle|özetle|detay|oku|getir|listele|ara|search|bul)\b",
@@ -86,6 +118,12 @@ def _clean_query(value: str) -> str:
         maxsplit=1,
         flags=re.IGNORECASE,
     )[0]
+    value = re.sub(
+        r"\b(?:olan|olanlari|olanları|olanlar|mailleri|mailler|mail|email)\b",
+        " ",
+        value,
+        flags=re.IGNORECASE,
+    )
     return " ".join(value.strip(" \t\r\n,.;'\"").split())
 
 
@@ -94,7 +132,10 @@ def _extract_sender(text: str) -> str:
     if email_match:
         return email_match.group(0)
     match = _FROM_RE.search(text)
-    return _clean_query(match.group(1)) if match else ""
+    if match:
+        return _clean_query(match.group(1))
+    phrase_match = _SENDER_FROM_PHRASE_RE.search(_fold_text(text))
+    return _clean_query(phrase_match.group(1)) if phrase_match else ""
 
 
 def _extract_subject(text: str) -> str:
@@ -119,6 +160,29 @@ def _extract_message_id(text: str) -> str:
     return ""
 
 
+def _asks_latest_single_detail(text: str) -> bool:
+    folded = _fold_text(text)
+    if any(marker in folded for marker in ("liste", "list", "ara", "search", "bul")):
+        return False
+    if re.search(r"\b(?:son|ilk|top|limit)\s*[:=]?\s*\d{1,2}\b", folded):
+        return False
+    if any(marker in folded for marker in ("mailler", "emails", "messages", "mesajlar")):
+        return False
+    asks_latest = any(
+        marker in folded
+        for marker in ("son", "en son", "latest", "last", "recent", "yeni")
+    )
+    asks_mail = any(
+        marker in folded
+        for marker in ("mail", "email", "e-mail", "eposta", "e-posta", "mesaj", "message")
+    )
+    asks_open = any(
+        marker in folded
+        for marker in ("goster", "show", "ac", "open", "goruntule", "bak")
+    )
+    return asks_latest and asks_mail and asks_open
+
+
 def _search_query(text: str) -> str:
     folded = _fold_text(text)
     cleaned = re.sub(
@@ -135,30 +199,22 @@ def _candidate_names(provider: MailProvider, intent: str) -> tuple[str, ...]:
     names: dict[str, tuple[str, ...]] = {
         "list": (
             f"{provider}_list_messages",
-            f"{provider}_list_emails",
             f"{provider}_search_messages",
-            "list_messages",
-            "search_messages",
         ),
         "unread": (
             f"{provider}_list_unread_messages",
             f"{provider}_search_messages",
             f"{provider}_list_messages",
-            "list_unread_messages",
-            "search_messages",
         ),
         "search": (
             f"{provider}_search_messages",
-            f"{provider}_search_emails",
-            "search_messages",
-            "search_emails",
         ),
         "detail": (
             f"{provider}_get_message",
-            f"{provider}_get_email",
-            f"{provider}_read_message",
-            "get_message",
-            "read_message",
+        ),
+        "latest_detail": (
+            f"{provider}_get_latest_message",
+            f"{provider}_get_message",
         ),
     }
     return names[intent]
@@ -195,18 +251,45 @@ def plan_mail_mcp_candidates(
     folded = _fold_text(text)
     limit = _extract_limit(text)
 
-    if _DETAIL_RE.search(folded):
+    if _DETAIL_RE.search(folded) or _asks_latest_single_detail(text):
         message_id = _extract_message_id(text)
-        if not message_id:
-            raise ValueError(
-                "Mail detayini/ozetini getirmek icin message id gerekli. "
-                "Ornek: mail id: abc123 detayini getir."
+        if message_id:
+            return _expand(
+                provider_order,
+                "detail",
+                {"message_id": message_id, "id": message_id, "include_body": True},
             )
-        return _expand(
-            provider_order,
-            "detail",
-            {"message_id": message_id, "id": message_id, "include_body": True},
-        )
+
+        args: dict[str, Any] = {
+            "offset": _extract_offset(text),
+            "include_body": True,
+        }
+        if "okunmamis" in folded or "unread" in folded:
+            args["unread"] = True
+            args["query"] = "is:unread"
+        if any(
+            marker in folded
+            for marker in (
+                "gelen mail",
+                "gelen email",
+                "gelen mesaj",
+                "gelen kutusu",
+                "inbox",
+            )
+        ):
+            args["inbox"] = True
+
+        sender = _extract_sender(text)
+        if sender:
+            args["from"] = sender
+            args["query"] = f"from:{sender}"
+
+        subject = _extract_subject(text)
+        if subject:
+            args["subject"] = subject
+            args["query"] = f"subject:{subject}"
+
+        return _expand(provider_order, "latest_detail", args)
 
     sender = _extract_sender(text)
     if sender:
@@ -241,7 +324,11 @@ def plan_mail_mcp_candidates(
 def plan_and_call_mail_mcp(
     text: str,
     providers: Sequence[MailProvider] | None = None,
+    credential_refs: Mapping[MailProvider, str] | None = None,
 ) -> tuple[MailProvider, str, Any]:
     """Plan and execute a read-only mail MCP request."""
 
-    return mail_mcp_call_any(plan_mail_mcp_candidates(text, providers))
+    candidates = plan_mail_mcp_candidates(text, providers)
+    if credential_refs is None:
+        return mail_mcp_call_any(candidates)
+    return mail_mcp_call_any(candidates, credential_refs=credential_refs)

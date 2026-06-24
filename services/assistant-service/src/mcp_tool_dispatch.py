@@ -53,6 +53,16 @@ _MAIL_WRITE_TOKENS = frozenset(
         "update",
     }
 )
+_ERROR_TEXT_LIMIT = 500
+_SECRET_PATTERNS = (
+    re.compile(r"(?i)\bbearer\s+[A-Za-z0-9._~+/=-]{12,}"),
+    re.compile(
+        r"(?i)\b(api[_-]?key|access[_-]?token|refresh[_-]?token|client[_-]?secret|password)\s*[:=]\s*['\"]?[^\s'\"&]{8,}"
+    ),
+    re.compile(r"\bya29\.[A-Za-z0-9._-]{12,}"),
+    re.compile(r"\b1//[A-Za-z0-9._-]{12,}"),
+    re.compile(r"\b[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\b"),
+)
 
 
 class McpToolDispatch:
@@ -118,7 +128,11 @@ class McpToolDispatch:
         payload = _jsonrpc_payload(response)
         result = payload.get("result") if isinstance(payload, dict) else None
         tools = result.get("tools") if isinstance(result, dict) else None
-        return tools if isinstance(tools, list) else []
+        if not isinstance(tools, list):
+            return []
+        if service in _MAIL_SERVICES:
+            return [tool for tool in tools if _is_read_only_mail_tool(tool)]
+        return tools
 
     async def invoke(self, tool_call: Any) -> Any:
         name = _tool_name(tool_call)
@@ -127,7 +141,7 @@ class McpToolDispatch:
         base_url = self._base_url_for_service(service)
         if service in _MAIL_SERVICES:
             _ensure_read_only_mail_tool(name)
-            headers = _base_headers()
+            headers = _mail_headers(service)
         else:
             credential = self._read_credential(service)
             if service == "bitbucket":
@@ -145,7 +159,11 @@ class McpToolDispatch:
                 headers=headers,
             )
         if response.status_code >= 400:
-            return {"ok": False, "status": response.status_code, "body": response.text[:500]}
+            return {
+                "ok": False,
+                "status": response.status_code,
+                "body": _safe_error_text(response.text),
+            }
         return _jsonrpc_payload(response)
 
     def _base_url_for_service(self, service: str) -> str:
@@ -175,8 +193,10 @@ class McpToolDispatch:
     def _read_ref(self, ref: str) -> Mapping[str, str]:
         if self._session_deps is None or getattr(self._session_deps, "vault", None) is None:
             raise RuntimeError("session credential vault is not wired")
-        from vault_client import VaultPath
-
+        try:
+            from vault_client import VaultPath
+        except Exception:  # noqa: BLE001 - optional local-dev deps may be absent
+            return self._session_deps.vault.read(ref)
         return self._session_deps.vault.read(VaultPath.parse(ref))
 
 
@@ -296,6 +316,16 @@ def _base_headers() -> dict[str, str]:
     }
 
 
+def _mail_headers(service: str) -> dict[str, str]:
+    headers = _base_headers()
+    ref = _credential_refs.get().get(service) or ""
+    if ref:
+        header_name = f"X-Credential-Ref-{service.capitalize()}"
+        headers[header_name] = ref
+        headers["X-Credential-Ref-Mail"] = ref
+    return headers
+
+
 def _jsonrpc_payload(response: httpx.Response) -> dict[str, Any]:
     """Decode JSON-RPC payloads returned as JSON or SSE message data."""
 
@@ -319,6 +349,24 @@ def _jsonrpc_payload(response: httpx.Response) -> dict[str, Any]:
         if isinstance(parsed, dict):
             return parsed
     return {}
+
+
+def _safe_error_text(value: str) -> str:
+    text = value
+    for pattern in _SECRET_PATTERNS:
+        text = pattern.sub(_redaction_replacement, text)
+    if len(text) <= _ERROR_TEXT_LIMIT:
+        return text
+    return text[:_ERROR_TEXT_LIMIT].rstrip() + " ...[truncated]"
+
+
+def _redaction_replacement(match: re.Match[str]) -> str:
+    first_group = match.group(1) if match.groups() else ""
+    if first_group:
+        return f"{first_group}=[REDACTED_SECRET]"
+    if match.group(0).lower().startswith("bearer "):
+        return "Bearer [REDACTED_SECRET]"
+    return "[REDACTED_SECRET]"
 
 
 def _looks_like_cloud_atlassian(url: str, username: str) -> bool:

@@ -51,6 +51,38 @@ def test_mail_mcp_call_blocks_write_tool_before_http(monkeypatch) -> None:
     assert called["value"] is False
 
 
+def test_mail_mcp_call_forwards_optional_credential_ref(monkeypatch) -> None:
+    captured = {}
+
+    def fake_jsonrpc(provider, method, params=None, *, credential_ref=""):
+        captured["provider"] = provider
+        captured["method"] = method
+        captured["params"] = params
+        captured["credential_ref"] = credential_ref
+        return {"ok": True}
+
+    monkeypatch.setattr(mail_mcp, "_mail_mcp_jsonrpc", fake_jsonrpc)
+
+    result = mail_mcp.mail_mcp_call(
+        "gmail",
+        "gmail_list_messages",
+        {"limit": 1},
+        credential_ref="vault:atlassian/_user_session/s1/gmail",
+    )
+
+    assert result == {"ok": True}
+    assert captured["credential_ref"] == "vault:atlassian/_user_session/s1/gmail"
+
+
+def test_headers_include_credential_ref_only_when_provided() -> None:
+    assert all(not key.lower().startswith("x-credential-ref") for key in mail_mcp._headers())
+
+    headers = mail_mcp._headers("outlook", "vault:atlassian/_user_session/s1/outlook")
+
+    assert headers["X-Credential-Ref-Outlook"] == "vault:atlassian/_user_session/s1/outlook"
+    assert headers["X-Credential-Ref-Mail"] == "vault:atlassian/_user_session/s1/outlook"
+
+
 def test_mail_mcp_call_any_returns_first_success(monkeypatch) -> None:
     calls: list[tuple[str, str]] = []
 
@@ -77,6 +109,26 @@ def test_mail_mcp_call_any_returns_first_success(monkeypatch) -> None:
         ("gmail", "gmail_search_messages"),
         ("outlook", "outlook_search_messages"),
     ]
+
+
+def test_mail_mcp_call_any_prefers_meaningful_errors_over_unknown_tool(monkeypatch) -> None:
+    def fake_call(provider, tool_name, args=None):
+        del provider, args
+        if tool_name == "gmail_get_latest_message":
+            raise mail_mcp.MailMcpError("credential ref is required")
+        raise mail_mcp.MailMcpError('{"code": -32601, "message": "Unknown tool"}')
+
+    monkeypatch.setattr(mail_mcp, "mail_mcp_call", fake_call)
+
+    with pytest.raises(mail_mcp.MailMcpError, match="credential ref is required") as exc_info:
+        mail_mcp_call_any(
+            [
+                ("gmail", "gmail_get_latest_message", {}),
+                ("gmail", "get_latest_message", {}),
+            ]
+        )
+
+    assert "Unknown tool" not in str(exc_info.value)
 
 
 def test_parse_sse_jsonrpc_response() -> None:

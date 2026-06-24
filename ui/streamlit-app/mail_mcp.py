@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Any, Literal, Sequence
+from typing import Any, Literal, Mapping, Sequence
 
 import httpx
 
@@ -54,6 +54,37 @@ class MailMcpWriteBlockedError(PermissionError):
     """Raised when a caller tries to invoke a non-read-only mail tool."""
 
 
+def user_friendly_mail_error(error: Exception | str) -> str:
+    """Return a short Turkish message for common Mail MCP failure modes."""
+
+    text = str(error)
+    lowered = text.lower()
+    if "credential ref is required" in lowered or "not configured" in lowered:
+        return (
+            "Mail hesabi henuz baglanmamis gorunuyor. Credentials ekranindan "
+            "bu kullanici icin Gmail/Outlook credential kaydini ekle."
+        )
+    if "incomplete" in lowered or "client_id/client_secret" in lowered:
+        return (
+            "Mail credential kaydi eksik. Credentials ekraninda refresh token "
+            "ile birlikte client ID ve client secret bilgilerini gir."
+        )
+    if "invalid_grant" in lowered or "expired" in lowered or "refresh" in lowered:
+        return (
+            "Mail oturumu suresi dolmus veya refresh token gecersiz. Credentials "
+            "ekranindan bu kullanicinin mail credential kaydini yenile."
+        )
+    if "429" in lowered or "rate limit" in lowered or "too many requests" in lowered:
+        return "Mail provider rate limit'e takildi. Biraz bekleyip tekrar dene."
+    if "401" in lowered or "403" in lowered or "unauthorized" in lowered or "forbidden" in lowered:
+        return "Mail provider erisimi reddetti. OAuth izinlerini ve read-only scope'u kontrol et."
+    if "timeout" in lowered or "request failed" in lowered or "connect" in lowered:
+        return "Mail MCP servisine su an ulasilamiyor. Servis/port ve network durumunu kontrol et."
+    if "write tool blocked" in lowered or "read-only" in lowered:
+        return "Bu Mail Chat read-only calisiyor; gonderme, silme veya tasima islemi yapamam."
+    return f"Mail MCP istegi tamamlanamadi: {text}"
+
+
 def _provider_base_url(provider: MailProvider) -> str:
     settings = Settings()
     if provider == "gmail":
@@ -63,11 +94,19 @@ def _provider_base_url(provider: MailProvider) -> str:
     raise ValueError(f"Unknown mail MCP provider: {provider!r}")
 
 
-def _headers() -> dict[str, str]:
-    return {
+def _headers(
+    provider: MailProvider | None = None,
+    credential_ref: str = "",
+) -> dict[str, str]:
+    headers = {
         "Accept": "application/json, text/event-stream",
         "X-Client-Source": "streamlit-app:mail-chat",
     }
+    clean_ref = credential_ref.strip()
+    if provider and clean_ref:
+        headers[f"X-Credential-Ref-{provider.capitalize()}"] = clean_ref
+        headers["X-Credential-Ref-Mail"] = clean_ref
+    return headers
 
 
 def _parse_mcp_response(text: str) -> Any:
@@ -79,12 +118,14 @@ def _parse_mcp_response(text: str) -> Any:
             continue
         payload = json.loads(raw)
         if isinstance(payload, dict) and payload.get("error"):
-            raise MailMcpError(json.dumps(payload["error"], ensure_ascii=False))
+            error_text = json.dumps(payload["error"], ensure_ascii=False)
+            raise MailMcpError(user_friendly_mail_error(error_text))
         return payload.get("result", payload) if isinstance(payload, dict) else payload
 
     payload = json.loads(text)
     if isinstance(payload, dict) and payload.get("error"):
-        raise MailMcpError(json.dumps(payload["error"], ensure_ascii=False))
+        error_text = json.dumps(payload["error"], ensure_ascii=False)
+        raise MailMcpError(user_friendly_mail_error(error_text))
     return payload.get("result", payload) if isinstance(payload, dict) else payload
 
 
@@ -92,6 +133,8 @@ def _mail_mcp_jsonrpc(
     provider: MailProvider,
     method: str,
     params: dict[str, Any] | None = None,
+    *,
+    credential_ref: str = "",
 ) -> Any:
     base_url = _provider_base_url(provider)
     if not base_url:
@@ -109,14 +152,16 @@ def _mail_mcp_jsonrpc(
             response = client.post(
                 f"{base_url}/mcp",
                 json=payload,
-                headers=_headers(),
+                headers=_headers(provider, credential_ref),
             )
     except httpx.RequestError as exc:
-        raise MailMcpError(f"{provider} MCP request failed: {exc}") from exc
+        raise MailMcpError(user_friendly_mail_error(f"{provider} MCP request failed: {exc}")) from exc
 
     if response.status_code >= 400:
         raise MailMcpError(
-            f"{provider} MCP HTTP {response.status_code}: {response.text[:500]}"
+            user_friendly_mail_error(
+                f"{provider} MCP HTTP {response.status_code}: {response.text[:500]}"
+            )
         )
     try:
         return _parse_mcp_response(response.text)
@@ -183,6 +228,8 @@ def mail_mcp_call(
     provider: MailProvider,
     tool_name: str,
     args: dict[str, Any] | None = None,
+    *,
+    credential_ref: str = "",
 ) -> Any:
     """Call a read-only mail MCP tool."""
 
@@ -191,20 +238,37 @@ def mail_mcp_call(
         provider,
         "tools/call",
         {"name": tool_name, "arguments": args or {}},
+        credential_ref=credential_ref,
     )
 
 
 def mail_mcp_call_any(
     provider_candidates: Sequence[MailToolCandidate],
+    *,
+    credential_refs: Mapping[MailProvider, str] | None = None,
 ) -> tuple[MailProvider, str, Any]:
     """Try mail MCP tool candidates in order and return the first success."""
 
     errors: list[str] = []
     for provider, tool_name, args in provider_candidates:
         try:
-            return provider, tool_name, mail_mcp_call(provider, tool_name, args)
+            credential_ref = (credential_refs or {}).get(provider, "")
+            if not credential_ref:
+                return provider, tool_name, mail_mcp_call(provider, tool_name, args)
+            return provider, tool_name, mail_mcp_call(
+                provider,
+                tool_name,
+                args,
+                credential_ref=credential_ref,
+            )
         except MailMcpWriteBlockedError:
             raise
         except Exception as exc:  # noqa: BLE001
             errors.append(f"{provider}:{tool_name}: {exc}")
-    raise MailMcpError(" | ".join(errors[-3:]) or "No mail MCP candidates provided")
+    meaningful_errors = [
+        error
+        for error in errors
+        if "Unknown tool" not in error and '"code": -32601' not in error
+    ]
+    final_errors = meaningful_errors or errors
+    raise MailMcpError(" | ".join(final_errors[:3]) or "No mail MCP candidates provided")

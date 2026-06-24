@@ -218,6 +218,43 @@ def test_up_passes_workspace_env_file_when_present(tmp_path: Path) -> None:
     assert all("sk-test-value" not in token for token in argv)
 
 
+def test_up_layers_workspace_env_local_when_present(tmp_path: Path) -> None:
+    """Machine-local secrets can override tracked defaults without argv leaks."""
+
+    workspace = tmp_path
+    compose_file = workspace / "infra" / "docker-compose.yml"
+    compose_file.parent.mkdir()
+    compose_file.write_text("services: {}\n", encoding="utf-8")
+    env_file = workspace / ".env"
+    env_file.write_text("VAULT_BACKEND=hashicorp\n", encoding="utf-8")
+    local_env_file = workspace / ".env.local"
+    local_env_file.write_text("MAIL_SESSION_VAULT_LOCAL_KEY=secret\n", encoding="utf-8")
+    runner = ComposeRunner(compose_file=compose_file, workspace_root=workspace)
+
+    recorder = _make_recorder(_FakeProcess(returncode=0, stdout=b"ok"))
+    with patch("asyncio.create_subprocess_exec", recorder):
+        asyncio.run(
+            runner.up(
+                profile="assistant-service",
+                service_name="assistant-service",
+                env_overrides=None,
+            )
+        )
+
+    argv = recorder.calls[0]["argv"]
+    assert argv[:8] == (
+        "docker",
+        "compose",
+        "--env-file",
+        str(env_file),
+        "--env-file",
+        str(local_env_file),
+        "-f",
+        str(compose_file),
+    )
+    assert all("secret" not in token for token in argv)
+
+
 def test_stop_argv_shape() -> None:
     recorder = _make_recorder(_FakeProcess(returncode=0))
     with patch("asyncio.create_subprocess_exec", recorder):

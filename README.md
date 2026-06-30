@@ -10,10 +10,6 @@ It ships as a single Docker Compose stack: a stateless Atlassian MCP gateway, a
 webhook intake service, Temporal workers, an admin dashboard for governance, and
 a Streamlit chat front end for end users.
 
-**Keywords:** Atlassian automation, Jira bot, Confluence automation, Bitbucket
-pull request automation, MCP (Model Context Protocol) server, Temporal
-workflows, LLM agent, self-hosted, Docker Compose.
-
 ## Highlights
 
 - **Stateless, multi-tenant MCP gateway** - every request carries its own

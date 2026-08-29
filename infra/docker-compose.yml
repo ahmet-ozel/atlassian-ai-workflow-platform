@@ -326,6 +326,71 @@ services:
     restart: unless-stopped
     logging: *default-logging
 
+  # ─── Mail MCP placeholders (read-only Gmail / Outlook) ───
+  gmail-mcp:
+    build:
+      context: ..
+      dockerfile: services/gmail-mcp/Dockerfile
+    environment:
+      PORT: "8110"
+      MAIL_MCP_PROVIDER: gmail
+      MAIL_MCP_READ_ONLY: "true"
+      MAIL_MCP_OAUTH_MODEL: ${MAIL_MCP_OAUTH_MODEL:-per_user_vault}
+      MAIL_MCP_ALLOW_ENV_USER_TOKEN: ${MAIL_MCP_ALLOW_ENV_USER_TOKEN:-false}
+      GOOGLE_TOKEN_URI: ${GOOGLE_TOKEN_URI:-https://oauth2.googleapis.com/token}
+      GMAIL_API_BASE_URL: ${GMAIL_API_BASE_URL:-https://gmail.googleapis.com/gmail/v1}
+      VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
+      VAULT_TOKEN: ${VAULT_TOKEN:-dev-token-not-for-prod}
+      VAULT_KV_MOUNT: ${VAULT_KV_MOUNT:-secret}
+      VAULT_BACKEND: ${MAIL_SESSION_VAULT_BACKEND:-hashicorp}
+      VAULT_LOCAL_KEY: ${MAIL_SESSION_VAULT_LOCAL_KEY:-}
+      VAULT_LOCAL_STORE: ${MAIL_SESSION_VAULT_LOCAL_STORE:-/vault-local/vault.json}
+    ports:
+      - "${GMAIL_MCP_HOST_PORT:-38110}:8110"
+    volumes:
+      - local_vault_data:/vault-local
+    networks:
+      - internal
+      - default
+    profiles: ["gmail-mcp", "streamlit-ui", "assistant-service"]
+    healthcheck:
+      <<: *http-healthcheck
+      test: ["CMD", "python", "-c", "import urllib.request,sys; r=urllib.request.urlopen('http://localhost:8110/healthz', timeout=3); sys.exit(0 if 200 <= r.status < 300 else 1)"]
+    restart: unless-stopped
+    logging: *default-logging
+
+  outlook-mcp:
+    build:
+      context: ..
+      dockerfile: services/outlook-mcp/Dockerfile
+    environment:
+      PORT: "8120"
+      MAIL_MCP_PROVIDER: outlook
+      MAIL_MCP_READ_ONLY: "true"
+      MAIL_MCP_OAUTH_MODEL: ${MAIL_MCP_OAUTH_MODEL:-per_user_vault}
+      MAIL_MCP_ALLOW_ENV_USER_TOKEN: ${MAIL_MCP_ALLOW_ENV_USER_TOKEN:-false}
+      MICROSOFT_TOKEN_URI: ${MICROSOFT_TOKEN_URI:-}
+      MICROSOFT_GRAPH_API_BASE_URL: ${MICROSOFT_GRAPH_API_BASE_URL:-https://graph.microsoft.com/v1.0}
+      VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
+      VAULT_TOKEN: ${VAULT_TOKEN:-dev-token-not-for-prod}
+      VAULT_KV_MOUNT: ${VAULT_KV_MOUNT:-secret}
+      VAULT_BACKEND: ${MAIL_SESSION_VAULT_BACKEND:-hashicorp}
+      VAULT_LOCAL_KEY: ${MAIL_SESSION_VAULT_LOCAL_KEY:-}
+      VAULT_LOCAL_STORE: ${MAIL_SESSION_VAULT_LOCAL_STORE:-/vault-local/vault.json}
+    ports:
+      - "${OUTLOOK_MCP_HOST_PORT:-38120}:8120"
+    volumes:
+      - local_vault_data:/vault-local
+    networks:
+      - internal
+      - default
+    profiles: ["outlook-mcp", "streamlit-ui", "assistant-service"]
+    healthcheck:
+      <<: *http-healthcheck
+      test: ["CMD", "python", "-c", "import urllib.request,sys; r=urllib.request.urlopen('http://localhost:8120/healthz', timeout=3); sys.exit(0 if 200 <= r.status < 300 else 1)"]
+    restart: unless-stopped
+    logging: *default-logging
+
   # ─── firecrawl (egress-allowlisted scrape/search wrapper) ───
   # Built from `services/firecrawl/` rather than the upstream Mendable image
   # so the FIRECRAWL_EGRESS_ALLOWLIST contract
@@ -554,6 +619,10 @@ services:
     env_file:
       - path: ../services/assistant-service/.env
         required: false
+      - path: ../.env
+        required: false
+      - path: ../.env.local
+        required: false
     environment:
       PORT: ${PORT:-8081}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
@@ -561,6 +630,8 @@ services:
       POSTGRES_DSN: ${POSTGRES_DSN:-postgresql://ai:ai_dev_only@postgres:5432/ai}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       MCP_BASE_URL: ${MCP_BASE_URL:-http://atlassian-mcp:8090}
+      GMAIL_MCP_BASE_URL: ${GMAIL_MCP_BASE_URL:-http://gmail-mcp:8110}
+      OUTLOOK_MCP_BASE_URL: ${OUTLOOK_MCP_BASE_URL:-http://outlook-mcp:8120}
       OPENCODE_ENDPOINT: ${OPENCODE_ENDPOINT:-http://opencode-sidecar:4096}
       AUTH_PROVIDER: ${AUTH_PROVIDER:-local}
       OIDC_ISSUER_URL: ${OIDC_ISSUER_URL:-}
@@ -568,15 +639,16 @@ services:
       OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-}
       OIDC_AUDIENCE: ${OIDC_AUDIENCE:-}
       OIDC_JWKS_URL: ${OIDC_JWKS_URL:-}
-      VAULT_BACKEND: ${VAULT_BACKEND:-hashicorp}
+      VAULT_BACKEND: ${MAIL_SESSION_VAULT_BACKEND:-hashicorp}
       VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
       VAULT_TOKEN: ${VAULT_TOKEN:-dev-token-not-for-prod}
+      VAULT_LOCAL_KEY: ${MAIL_SESSION_VAULT_LOCAL_KEY:-}
+      VAULT_LOCAL_STORE: ${MAIL_SESSION_VAULT_LOCAL_STORE:-/vault-local/vault.json}
       LLM_PROVIDER: ${LLM_PROVIDER:-openai}
       LLM_MODEL_NAME: ${LLM_MODEL_NAME:-gpt-5.5}
       LLM_REASONING_EFFORT: ${LLM_REASONING_EFFORT:-}
       LLM_VERBOSITY: ${LLM_VERBOSITY:-}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       VLLM_BASE_URL: ${VLLM_BASE_URL:-http://host.docker.internal:8000/v1}
       VLLM_API_KEY: ${VLLM_API_KEY:-}
       ANTHROPIC_BASE_URL: ${ANTHROPIC_BASE_URL:-https://api.anthropic.com/v1}
@@ -588,8 +660,14 @@ services:
         condition: service_healthy
       atlassian-mcp:
         condition: service_healthy
+      gmail-mcp:
+        condition: service_healthy
+      outlook-mcp:
+        condition: service_healthy
     ports:
       - "${ASSISTANT_SERVICE_HOST_PORT:-38081}:8081"
+    volumes:
+      - local_vault_data:/vault-local
     networks:
       - internal
       # default so the host bridge publishes 8081:8081 for E2E tests.
@@ -773,10 +851,16 @@ services:
     env_file:
       - path: ../ui/streamlit-app/.env
         required: false
+      - path: ../.env
+        required: false
+      - path: ../.env.local
+        required: false
     environment:
       ASSISTANT_BASE_URL: ${ASSISTANT_BASE_URL:-http://assistant-service:8081}
       ASSISTANT_SERVICE_URL: ${ASSISTANT_SERVICE_URL:-http://assistant-service:8081}
       MCP_BASE_URL: ${MCP_BASE_URL:-http://atlassian-mcp:8090}
+      GMAIL_MCP_BASE_URL: ${GMAIL_MCP_BASE_URL:-http://gmail-mcp:8110}
+      OUTLOOK_MCP_BASE_URL: ${OUTLOOK_MCP_BASE_URL:-http://outlook-mcp:8120}
       ATLASSIAN_DEPLOYMENT: ${ATLASSIAN_DEPLOYMENT:-cloud}
       JIRA_URL: ${JIRA_URL:-}
       CONFLUENCE_URL: ${CONFLUENCE_URL:-}
@@ -785,7 +869,6 @@ services:
       LLM_MODEL_NAME: ${LLM_MODEL_NAME:-gpt-5.5}
       LLM_REASONING_EFFORT: ${LLM_REASONING_EFFORT:-}
       LLM_VERBOSITY: ${LLM_VERBOSITY:-}
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
       VLLM_BASE_URL: ${VLLM_BASE_URL:-http://host.docker.internal:8000/v1}
       VLLM_API_KEY: ${VLLM_API_KEY:-}
@@ -797,6 +880,10 @@ services:
       - ../prompts:/app/prompts:ro
     depends_on:
       atlassian-mcp:
+        condition: service_healthy
+      gmail-mcp:
+        condition: service_healthy
+      outlook-mcp:
         condition: service_healthy
     networks:
       - internal
@@ -1063,6 +1150,8 @@ volumes:
     name: infra_minio_data
   agent_workspace:
     name: infra_agent_workspace
+  local_vault_data:
+    name: infra_local_vault_data
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Networks - Network Isolation

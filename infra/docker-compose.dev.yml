@@ -60,6 +60,20 @@ services:
     command: ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8081", "--reload"]
     restart: unless-stopped
 
+  gmail-mcp:
+    environment:
+      VAULT_BACKEND: ${MAIL_SESSION_VAULT_BACKEND:-local-dev}
+      VAULT_LOCAL_KEY: ${MAIL_SESSION_VAULT_LOCAL_KEY:-${VAULT_LOCAL_KEY:-}}
+      VAULT_LOCAL_STORE: ${MAIL_SESSION_VAULT_LOCAL_STORE:-/vault-local/vault.json}
+    restart: unless-stopped
+
+  outlook-mcp:
+    environment:
+      VAULT_BACKEND: ${MAIL_SESSION_VAULT_BACKEND:-local-dev}
+      VAULT_LOCAL_KEY: ${MAIL_SESSION_VAULT_LOCAL_KEY:-${VAULT_LOCAL_KEY:-}}
+      VAULT_LOCAL_STORE: ${MAIL_SESSION_VAULT_LOCAL_STORE:-/vault-local/vault.json}
+    restart: unless-stopped
+
   admin-dashboard-api:
     volumes:
       # Preserve the docker-socket bind from the base file by re-declaring it

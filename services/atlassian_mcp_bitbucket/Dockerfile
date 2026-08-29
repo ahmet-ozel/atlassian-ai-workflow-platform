@@ -12,7 +12,7 @@ RUN git init . \
     && git remote add origin "${MCP_ATLASSIAN_REPO}" \
     && git fetch --depth 1 origin "${MCP_ATLASSIAN_REF}" \
     && git checkout FETCH_HEAD \
-    && git apply /tmp/compat_headers.patch \
+    && git apply --ignore-whitespace /tmp/compat_headers.patch \
     && rm -rf .git
 
 FROM ghcr.io/astral-sh/uv:python3.13-alpine AS uv

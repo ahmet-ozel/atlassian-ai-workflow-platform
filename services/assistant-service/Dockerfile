@@ -60,7 +60,9 @@ FROM python:3.12-slim AS runtime
 RUN apt-get update \
     && apt-get install -y --no-install-recommends curl ca-certificates \
     && rm -rf /var/lib/apt/lists/* \
-    && useradd -u 10001 -m appuser
+    && useradd -u 10001 -m appuser \
+    && mkdir -p /vault-local \
+    && chown appuser:appuser /vault-local
 
 WORKDIR /app
 

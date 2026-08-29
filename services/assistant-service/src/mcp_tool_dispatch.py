@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import contextvars
 import json
+import re
 from typing import Any, Mapping
 from urllib.parse import urlparse
 
@@ -25,14 +26,74 @@ def reset_credential_refs(token: contextvars.Token[dict[str, str]]) -> None:
     _credential_refs.reset(token)
 
 
-class McpToolDispatch:
-    """Invoke stateless Atlassian MCP tools with session credentials."""
+_ATLASSIAN_SERVICES = frozenset({"jira", "bitbucket", "confluence"})
+_MAIL_SERVICES = frozenset({"gmail", "outlook"})
+_DEFAULT_TOOL_SERVICES = ("jira", "bitbucket", "confluence")
+_MAIL_WRITE_TOKENS = frozenset(
+    {
+        "archive",
+        "compose",
+        "create",
+        "delete",
+        "draft",
+        "flag",
+        "forward",
+        "label",
+        "mark",
+        "modify",
+        "move",
+        "reply",
+        "send",
+        "star",
+        "trash",
+        "unarchive",
+        "unflag",
+        "unlabel",
+        "unstar",
+        "update",
+    }
+)
+_ERROR_TEXT_LIMIT = 500
+_SECRET_PATTERNS = (
+    re.compile(r"(?i)\bbearer\s+[A-Za-z0-9._~+/=-]{12,}"),
+    re.compile(
+        r"(?i)\b(api[_-]?key|access[_-]?token|refresh[_-]?token|client[_-]?secret|password)\s*[:=]\s*['\"]?[^\s'\"&]{8,}"
+    ),
+    re.compile(r"\bya29\.[A-Za-z0-9._-]{12,}"),
+    re.compile(r"\b1//[A-Za-z0-9._-]{12,}"),
+    re.compile(r"\b[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\b"),
+)
 
-    def __init__(self, *, mcp_base_url: str, session_deps: Any) -> None:
+
+class McpToolDispatch:
+    """Invoke stateless MCP tools with the correct provider route."""
+
+    def __init__(
+        self,
+        *,
+        mcp_base_url: str,
+        session_deps: Any,
+        gmail_mcp_base_url: str = "http://gmail-mcp:8110",
+        outlook_mcp_base_url: str = "http://outlook-mcp:8120",
+    ) -> None:
         self._mcp_base_url = mcp_base_url
+        self._gmail_mcp_base_url = gmail_mcp_base_url
+        self._outlook_mcp_base_url = outlook_mcp_base_url
         self._session_deps = session_deps
 
-    async def list_tools(self) -> list[dict[str, Any]]:
+    async def list_tools(
+        self,
+        services: tuple[str, ...] = _DEFAULT_TOOL_SERVICES,
+    ) -> list[dict[str, Any]]:
+        tools: list[dict[str, Any]] = []
+        if any(service in _ATLASSIAN_SERVICES for service in services):
+            tools.extend(await self._list_atlassian_tools())
+        for service in services:
+            if service in _MAIL_SERVICES:
+                tools.extend(await self._list_routed_tools(service))
+        return tools
+
+    async def _list_atlassian_tools(self) -> list[dict[str, Any]]:
         headers = {
             "X-Client-Source": "assistant-service",
             "Accept": _MCP_ACCEPT,
@@ -50,17 +111,43 @@ class McpToolDispatch:
         payload = _jsonrpc_payload(response)
         result = payload.get("result") if isinstance(payload, dict) else None
         tools = result.get("tools") if isinstance(result, dict) else None
-        return tools if isinstance(tools, list) else []
+        if not isinstance(tools, list):
+            return []
+        return [tool for tool in tools if _is_read_only_mail_tool(tool)]
+
+    async def _list_routed_tools(self, service: str) -> list[dict[str, Any]]:
+        base_url = self._base_url_for_service(service)
+        async with httpx.AsyncClient(base_url=base_url, timeout=15.0) as client:
+            response = await client.post(
+                "/mcp",
+                json={"jsonrpc": "2.0", "id": "tools", "method": "tools/list"},
+                headers=_base_headers(),
+            )
+        if response.status_code >= 400:
+            return []
+        payload = _jsonrpc_payload(response)
+        result = payload.get("result") if isinstance(payload, dict) else None
+        tools = result.get("tools") if isinstance(result, dict) else None
+        if not isinstance(tools, list):
+            return []
+        if service in _MAIL_SERVICES:
+            return [tool for tool in tools if _is_read_only_mail_tool(tool)]
+        return tools
 
     async def invoke(self, tool_call: Any) -> Any:
         name = _tool_name(tool_call)
         args = _tool_args(tool_call)
         service = _service_for_tool(name)
-        credential = self._read_credential(service)
-        if service == "bitbucket":
-            args = _with_bitbucket_workspace(name, args, credential)
-        headers = _mcp_headers(service, credential)
-        async with httpx.AsyncClient(base_url=self._mcp_base_url, timeout=30.0) as client:
+        base_url = self._base_url_for_service(service)
+        if service in _MAIL_SERVICES:
+            _ensure_read_only_mail_tool(name)
+            headers = _mail_headers(service)
+        else:
+            credential = self._read_credential(service)
+            if service == "bitbucket":
+                args = _with_bitbucket_workspace(name, args, credential)
+            headers = _mcp_headers(service, credential)
+        async with httpx.AsyncClient(base_url=base_url, timeout=30.0) as client:
             response = await client.post(
                 "/mcp",
                 json={
@@ -72,8 +159,19 @@ class McpToolDispatch:
                 headers=headers,
             )
         if response.status_code >= 400:
-            return {"ok": False, "status": response.status_code, "body": response.text[:500]}
+            return {
+                "ok": False,
+                "status": response.status_code,
+                "body": _safe_error_text(response.text),
+            }
         return _jsonrpc_payload(response)
+
+    def _base_url_for_service(self, service: str) -> str:
+        if service == "gmail":
+            return self._gmail_mcp_base_url
+        if service == "outlook":
+            return self._outlook_mcp_base_url
+        return self._mcp_base_url
 
     def _read_credential(self, service: str) -> Mapping[str, str]:
         ref = _credential_refs.get().get(service) or _credential_refs.get().get("jira")
@@ -84,7 +182,7 @@ class McpToolDispatch:
     def _read_bound_credentials(self) -> dict[str, Mapping[str, str]]:
         credentials: dict[str, Mapping[str, str]] = {}
         for service, ref in _credential_refs.get().items():
-            if service not in {"jira", "bitbucket", "confluence"} or not ref:
+            if service not in _ATLASSIAN_SERVICES or not ref:
                 continue
             try:
                 credentials[service] = self._read_ref(ref)
@@ -95,8 +193,10 @@ class McpToolDispatch:
     def _read_ref(self, ref: str) -> Mapping[str, str]:
         if self._session_deps is None or getattr(self._session_deps, "vault", None) is None:
             raise RuntimeError("session credential vault is not wired")
-        from vault_client import VaultPath
-
+        try:
+            from vault_client import VaultPath
+        except Exception:  # noqa: BLE001 - optional local-dev deps may be absent
+            return self._session_deps.vault.read(ref)
         return self._session_deps.vault.read(VaultPath.parse(ref))
 
 
@@ -115,11 +215,42 @@ def _tool_args(tool_call: Any) -> dict[str, Any]:
 
 
 def _service_for_tool(name: str) -> str:
+    if name.startswith("gmail_"):
+        return "gmail"
+    if name.startswith("outlook_"):
+        return "outlook"
     if name.startswith("bitbucket_"):
         return "bitbucket"
     if name.startswith("confluence_"):
         return "confluence"
     return "jira"
+
+
+def _tool_name_tokens(name: str) -> set[str]:
+    return {token for token in re.split(r"[^a-z0-9]+", name.lower()) if token}
+
+
+def _tool_annotations(tool: Any) -> Mapping[str, Any]:
+    if isinstance(tool, Mapping):
+        annotations = tool.get("annotations")
+        return annotations if isinstance(annotations, Mapping) else {}
+    annotations = getattr(tool, "annotations", None)
+    return annotations if isinstance(annotations, Mapping) else {}
+
+
+def _is_read_only_mail_tool(tool: Any) -> bool:
+    name = tool if isinstance(tool, str) else _tool_name(tool)
+    annotations = _tool_annotations(tool)
+    if annotations.get("readOnlyHint") is False:
+        return False
+    if annotations.get("read_only") is False:
+        return False
+    return not (_tool_name_tokens(name) & _MAIL_WRITE_TOKENS)
+
+
+def _ensure_read_only_mail_tool(name: str) -> None:
+    if not _is_read_only_mail_tool(name):
+        raise RuntimeError(f"Mail MCP write tool blocked in read-only mode: {name}")
 
 
 def _with_bitbucket_workspace(
@@ -178,6 +309,23 @@ def _mcp_headers(service: str, credential: Mapping[str, str]) -> dict[str, str]:
     return {k: v for k, v in headers.items() if v}
 
 
+def _base_headers() -> dict[str, str]:
+    return {
+        "X-Client-Source": "assistant-service",
+        "Accept": _MCP_ACCEPT,
+    }
+
+
+def _mail_headers(service: str) -> dict[str, str]:
+    headers = _base_headers()
+    ref = _credential_refs.get().get(service) or ""
+    if ref:
+        header_name = f"X-Credential-Ref-{service.capitalize()}"
+        headers[header_name] = ref
+        headers["X-Credential-Ref-Mail"] = ref
+    return headers
+
+
 def _jsonrpc_payload(response: httpx.Response) -> dict[str, Any]:
     """Decode JSON-RPC payloads returned as JSON or SSE message data."""
 
@@ -201,6 +349,24 @@ def _jsonrpc_payload(response: httpx.Response) -> dict[str, Any]:
         if isinstance(parsed, dict):
             return parsed
     return {}
+
+
+def _safe_error_text(value: str) -> str:
+    text = value
+    for pattern in _SECRET_PATTERNS:
+        text = pattern.sub(_redaction_replacement, text)
+    if len(text) <= _ERROR_TEXT_LIMIT:
+        return text
+    return text[:_ERROR_TEXT_LIMIT].rstrip() + " ...[truncated]"
+
+
+def _redaction_replacement(match: re.Match[str]) -> str:
+    first_group = match.group(1) if match.groups() else ""
+    if first_group:
+        return f"{first_group}=[REDACTED_SECRET]"
+    if match.group(0).lower().startswith("bearer "):
+        return "Bearer [REDACTED_SECRET]"
+    return "[REDACTED_SECRET]"
 
 
 def _looks_like_cloud_atlassian(url: str, username: str) -> bool:

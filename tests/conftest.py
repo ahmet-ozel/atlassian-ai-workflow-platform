@@ -591,6 +591,8 @@ EXPECTED_COMPOSE_SERVICES: frozenset[str] = frozenset(
         "temporal",
         "temporal-ui",
         "atlassian-mcp",
+        "gmail-mcp",
+        "outlook-mcp",
         "firecrawl",
         "opencode-sidecar",
         # Application services and workers
@@ -629,6 +631,8 @@ INFRA_PUBLISHED_PORTS: dict[str, tuple[int, ...]] = {
     "minio": (39000, 39001),
     "firecrawl": (33002,),
     "atlassian-mcp": (38090,),
+    "gmail-mcp": (38110,),
+    "outlook-mcp": (38120,),
 }
 
 

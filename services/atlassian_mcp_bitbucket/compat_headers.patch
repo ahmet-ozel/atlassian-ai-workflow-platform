@@ -38,7 +38,7 @@ index 25f07db..5301615 100644
 +                "header_basic",
 +                user_email=username_header_val,
 +            )
-
+ 
          # --- Branch 1: header-based PAT ---
          if (
 @@ -740,9 +772,32 @@ async def get_bitbucket_fetcher(ctx: Context) -> BitbucketClient:

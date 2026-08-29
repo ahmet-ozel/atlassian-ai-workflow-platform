@@ -146,6 +146,10 @@ def _heuristic_tool_call(
         return None
     allowed = {_tool_name(tool) for tool in tools if _tool_name(tool)}
 
+    mail_call = _mail_tool_call(last_user_raw, last_user_norm, allowed)
+    if mail_call is not None:
+        return mail_call
+
     asks_for_jira = any(
         marker in last_user
         for marker in ("jira", "issue", "issues", "task", "tasks")
@@ -269,6 +273,409 @@ def _heuristic_tool_call(
     return None
 
 
+def _mail_tool_call(
+    raw_text: str,
+    folded_text: str,
+    allowed: set[str],
+) -> dict[str, Any] | None:
+    providers = tuple(
+        provider
+        for provider in ("gmail", "outlook")
+        if any(name.startswith(f"{provider}_") for name in allowed)
+    )
+    if not providers:
+        return None
+
+    provider = _preferred_mail_provider(folded_text, providers)
+    prefix = f"{provider}_"
+    limit = _extract_requested_limit(folded_text)
+    offset = _extract_mail_offset(folded_text)
+
+    message_id = _extract_mail_message_id(raw_text)
+    get_tool = f"{prefix}get_message"
+    if message_id and get_tool in allowed:
+        return {
+            "tool_name": get_tool,
+            "arguments": {"message_id": message_id, "include_body": True},
+        }
+
+    priority_call = _priority_mail_tool_call(
+        raw_text=raw_text,
+        folded_text=folded_text,
+        allowed=allowed,
+        provider=provider,
+        prefix=prefix,
+        limit=limit,
+        offset=offset,
+    )
+    if priority_call is not None:
+        return priority_call
+
+    latest_tool = f"{prefix}get_latest_message"
+    asks_unread = any(
+        marker in folded_text
+        for marker in ("unread", "okunmamis", "okunmamislar", "okunmadi")
+    )
+    asks_inbox = _asks_mail_inbox(folded_text)
+    asks_detail = _asks_mail_detail(folded_text)
+    unread_tool = f"{prefix}list_unread_messages"
+    sender = _extract_mail_sender(raw_text)
+    subject = _extract_mail_subject(raw_text, folded_text)
+    asks_latest = any(
+        marker in folded_text
+        for marker in ("son", "en son", "latest", "last", "recent", "yeni", "guncel")
+    )
+    asks_bulk_list = any(
+        marker in folded_text
+        for marker in ("liste", "list", "mailler", "emails", "messages", "mesajlar")
+    ) or bool(re.search(r"\b\d{1,2}\s+(?:mail|email|e-mail|message|mesaj)", folded_text))
+    asks_open_by_position = offset > 1 and any(
+        marker in folded_text
+        for marker in ("ac", "aç", "open", "goster", "göster", "detay", "detail")
+    )
+    if latest_tool in allowed and (
+        asks_detail
+        or (asks_latest and not asks_bulk_list)
+        or asks_open_by_position
+        or ((sender or subject) and (asks_detail or asks_latest))
+        or (asks_unread and any(marker in folded_text for marker in ("son", "latest", "last")))
+    ):
+        arguments: dict[str, Any] = {
+            "offset": offset,
+            "include_body": True,
+        }
+        if asks_unread:
+            arguments["unread"] = True
+        if asks_inbox:
+            arguments["inbox"] = True
+        if sender:
+            arguments["from"] = sender
+        if subject:
+            arguments["subject"] = subject
+        if not sender and not subject and _asks_mail_search(folded_text):
+            query = _extract_search_query(raw_text)
+            if query:
+                arguments["query"] = query
+        return {"tool_name": latest_tool, "arguments": arguments}
+
+    if asks_unread and unread_tool in allowed:
+        return {"tool_name": unread_tool, "arguments": {"limit": limit}}
+
+    search_tool = f"{prefix}search_messages"
+    if (sender or subject or _asks_mail_search(folded_text)) and search_tool in allowed:
+        arguments: dict[str, Any] = {"limit": limit}
+        if sender:
+            arguments["from"] = sender
+        if subject:
+            arguments["subject"] = subject
+        if not sender and not subject:
+            query = _extract_search_query(raw_text)
+            if query:
+                arguments["query"] = query
+        return {"tool_name": search_tool, "arguments": arguments}
+
+    asks_mail = any(
+        marker in folded_text
+        for marker in (
+            "mail",
+            "email",
+            "e-mail",
+            "inbox",
+            "gelen kutusu",
+            "mesaj",
+            "message",
+        )
+    )
+    asks_list = any(
+        marker in folded_text
+        for marker in ("son", "latest", "last", "recent", "liste", "list", "getir", "show")
+    )
+    list_tool = f"{prefix}list_messages"
+    if asks_mail and asks_list and list_tool in allowed:
+        return {"tool_name": list_tool, "arguments": {"limit": limit}}
+    return None
+
+
+def _priority_mail_tool_call(
+    *,
+    raw_text: str,
+    folded_text: str,
+    allowed: set[str],
+    provider: str,
+    prefix: str,
+    limit: int,
+    offset: int,
+) -> dict[str, Any] | None:
+    latest_tool = f"{prefix}get_latest_message"
+    latest_draft_tool = f"{prefix}get_latest_draft"
+    list_drafts_tool = f"{prefix}list_drafts"
+    search_tool = f"{prefix}search_messages"
+
+    asks_detail = _asks_mail_detail(folded_text)
+    asks_latest = any(
+        marker in folded_text
+        for marker in ("son", "en son", "latest", "last", "recent", "yeni", "guncel")
+    )
+    asks_list = any(marker in folded_text for marker in ("liste", "list", "tum", "tüm"))
+    asks_existing_drafts = _asks_existing_mail_drafts(folded_text)
+    asks_reply_draft = _asks_reply_draft(folded_text)
+    query_filter = _mail_query_filter(folded_text, provider)
+
+    if asks_existing_drafts:
+        if latest_draft_tool in allowed and (asks_detail or asks_latest or not asks_list):
+            return {
+                "tool_name": latest_draft_tool,
+                "arguments": {"offset": offset, "include_body": True},
+            }
+        if list_drafts_tool in allowed:
+            return {"tool_name": list_drafts_tool, "arguments": {"limit": limit}}
+
+    if asks_reply_draft and latest_tool in allowed:
+        arguments: dict[str, Any] = {
+            "offset": offset,
+            "include_body": True,
+            "analysis_intent": "reply_draft",
+        }
+        if _asks_mail_inbox(folded_text):
+            arguments["inbox"] = True
+        if query_filter:
+            arguments["query"] = query_filter
+        return {"tool_name": latest_tool, "arguments": arguments}
+
+    if query_filter and asks_latest and latest_tool in allowed and not asks_list:
+        arguments = {"offset": offset, "include_body": True, "query": query_filter}
+        if _asks_mail_inbox(folded_text):
+            arguments["inbox"] = True
+        return {"tool_name": latest_tool, "arguments": arguments}
+
+    if query_filter and search_tool in allowed:
+        query = _extract_search_query(raw_text)
+        full_query = " ".join(part for part in (query_filter, query) if part)
+        return {
+            "tool_name": search_tool,
+            "arguments": {"limit": limit, "query": full_query},
+        }
+    return None
+
+
+def _preferred_mail_provider(text: str, providers: Sequence[str]) -> str:
+    if "outlook" in text and "outlook" in providers:
+        return "outlook"
+    if "gmail" in text and "gmail" in providers:
+        return "gmail"
+    return providers[0]
+
+
+def _extract_mail_message_id(text: str) -> str | None:
+    patterns = (
+        r"\b(?:message_id|message id|mail id|id)\s*[:=]\s*([A-Za-z0-9._%+/=-]{4,200})",
+        r"\b(?:detay|detail|ozet|summary)\s+([A-Za-z0-9._%+/=-]{8,200})\b",
+    )
+    for pattern in patterns:
+        match = re.search(pattern, text, flags=re.IGNORECASE)
+        if match:
+            return match.group(1).strip()
+    return None
+
+
+def _asks_mail_detail(text: str) -> bool:
+    detail_markers = (
+        "detay",
+        "detayli",
+        "detail",
+        "details",
+        "ozet",
+        "özet",
+        "summary",
+        "summarize",
+        "hakkinda",
+        "hakknida",
+        "bilgi",
+        "anlat",
+        "incele",
+        "icerik",
+        "içerik",
+        "body",
+        "tamamini",
+        "tamamını",
+        "ac",
+        "aç",
+        "goster",
+        "göster",
+        "show",
+        "open",
+        "oku",
+        "read",
+    )
+    mail_markers = (
+        "mail",
+        "email",
+        "e-mail",
+        "message",
+        "mesaj",
+        "inbox",
+        "gelen kutusu",
+    )
+    return any(marker in text for marker in detail_markers) and (
+        any(marker in text for marker in mail_markers)
+        or any(marker in text for marker in ("son", "latest", "last", "recent"))
+    )
+
+
+def _asks_mail_inbox(text: str) -> bool:
+    return any(
+        marker in text
+        for marker in (
+            "gelen mail",
+            "gelen email",
+            "gelen e-mail",
+            "gelen mesaj",
+            "gelen kutusu",
+            "inbox",
+            "received mail",
+            "received email",
+            "incoming mail",
+        )
+    )
+
+
+def _asks_existing_mail_drafts(text: str) -> bool:
+    if not any(marker in text for marker in ("taslak", "taslag", "draft")):
+        return False
+    return not _asks_reply_draft(text)
+
+
+def _asks_reply_draft(text: str) -> bool:
+    return any(
+        marker in text
+        for marker in (
+            "cevap taslagi",
+            "cevap taslag",
+            "cevap taslağı",
+            "yanit taslagi",
+            "yanit taslag",
+            "yanıt taslağı",
+            "reply draft",
+            "response draft",
+            "cevap yaz",
+            "yanit yaz",
+            "yanıt yaz",
+            "cevap hazirla",
+            "cevap hazırla",
+        )
+    )
+
+
+def _mail_query_filter(text: str, provider: str) -> str:
+    parts: list[str] = []
+    if any(marker in text for marker in ("bugun", "bugün", "today")):
+        parts.append("newer_than:1d" if provider == "gmail" else "today")
+    elif any(marker in text for marker in ("dun", "dün", "yesterday")):
+        parts.append("newer_than:2d older_than:1d" if provider == "gmail" else "yesterday")
+    elif any(marker in text for marker in ("bu hafta", "haftalik", "haftalık", "this week")):
+        parts.append("newer_than:7d" if provider == "gmail" else "this week")
+    elif any(marker in text for marker in ("bu ay", "this month")):
+        parts.append("newer_than:30d" if provider == "gmail" else "this month")
+
+    if any(marker in text for marker in ("ekli", "ek var", "attachment", "attached", "dosya")):
+        parts.append("has:attachment" if provider == "gmail" else "attachment")
+    if any(marker in text for marker in ("onemli", "önemli", "important", "kritik")):
+        parts.append("is:important" if provider == "gmail" else "important")
+    if any(marker in text for marker in ("guvenlik", "güvenlik", "security", "kod", "pin", "otp", "sifre", "şifre")):
+        parts.append("security OR code OR pin OR otp")
+    if (
+        any(marker in text for marker in ("fatura", "invoice", "receipt", "makbuz"))
+        and not any(marker in text for marker in ("konu", "subject", "baslik"))
+    ):
+        parts.append("invoice OR receipt OR fatura")
+    if any(marker in text for marker in ("is ilani", "iş ilanı", "kariyer", "career", "job")):
+        parts.append("job OR career OR kariyer")
+    return " ".join(parts)
+
+
+def _extract_mail_offset(text: str) -> int:
+    ordinal_words = {
+        "ilk": 1,
+        "birinci": 1,
+        "ikinci": 2,
+        "ucuncu": 3,
+        "üçüncü": 3,
+        "dorduncu": 4,
+        "dördüncü": 4,
+        "besinci": 5,
+        "beşinci": 5,
+        "second": 2,
+        "third": 3,
+        "fourth": 4,
+        "fifth": 5,
+    }
+    for word, value in ordinal_words.items():
+        if re.search(rf"\b{re.escape(word)}(?:yi|yı|nu|nü)?\b", text):
+            return value
+    match = re.search(r"\b(\d{1,2})(?:\.|inci|nci|nd|rd|th)?\s*(?:son\s*)?(?:mail|email|mesaj|message)?", text)
+    if match:
+        try:
+            return max(1, min(int(match.group(1)), 25))
+        except ValueError:
+            return 1
+    return 1
+
+
+def _extract_mail_sender(text: str) -> str | None:
+    email = re.search(r"[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}", text)
+    if email:
+        return email.group(0)
+    match = re.search(
+        r"\b(?:from|sender|gonderen|gonderenden)\s*[:=]?\s*([^\n,;]{2,80})",
+        text,
+        flags=re.IGNORECASE,
+    )
+    if match:
+        return _clean_mail_query(match.group(1))
+    phrase = re.search(
+        r"\b([A-Za-z0-9_.@+\-\s]{2,80}?)['’]?(?:den|dan|ten|tan)\s+gelen",
+        _fold_text(text),
+        flags=re.IGNORECASE,
+    )
+    if phrase:
+        return _clean_mail_query(phrase.group(1))
+    return None
+
+
+def _extract_mail_subject(raw_text: str, folded_text: str) -> str | None:
+    quoted = _extract_search_query(raw_text)
+    if quoted and any(marker in folded_text for marker in ("subject", "konu", "baslik")):
+        return quoted
+    match = re.search(
+        r"\b(?:subject|konu|baslik)\s*[:=]?\s*([^\n,;]{2,100})",
+        raw_text,
+        flags=re.IGNORECASE,
+    )
+    if match:
+        return _clean_mail_query(match.group(1))
+    return None
+
+
+def _clean_mail_query(value: str) -> str:
+    value = re.split(
+        r"\b(?:son|ilk|top|limit|ozetle|detay|oku|getir|listele|ara|search|bul|find)\b",
+        value,
+        maxsplit=1,
+        flags=re.IGNORECASE,
+    )[0]
+    value = re.sub(
+        r"\b(?:olan|olanlari|olanlar|mailleri|mailler|mail|email)\b",
+        " ",
+        value,
+        flags=re.IGNORECASE,
+    )
+    return " ".join(value.strip(" \t\r\n,.;'\"`").split())
+
+
+def _asks_mail_search(text: str) -> bool:
+    return any(marker in text for marker in ("ara", "search", "bul", "find"))
+
+
 def _fold_text(text: str) -> str:
     """Lowercase text and strip accents for route-keyword matching."""
 
@@ -323,7 +730,7 @@ def _extract_requested_limit(text: str) -> int:
     for pattern in (
         r"(?:ilk|first)\s+(\d+)",
         r"(?:en son|son|latest|last|recent)\s+(\d+)",
-        r"(\d+)\s+(?:task|tasks|issue|issues|gorev|görev|repo|repos|repository|repositories)",
+        r"(\d+)\s+(?:task|tasks|issue|issues|gorev|görev|repo|repos|repository|repositories|mail|email|e-mail|message|messages|mesaj)",
     ):
         match = re.search(pattern, text)
         if match:

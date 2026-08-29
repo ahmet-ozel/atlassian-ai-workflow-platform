@@ -185,6 +185,276 @@ async def test_tool_result_turn_is_answered_by_provider() -> None:
 
 
 @pytest.mark.asyncio
+async def test_mail_latest_question_routes_to_gmail_list_messages() -> None:
+    provider = _Provider("I cannot access mail")
+    adapter = StreamingProviderAdapter(provider)
+
+    chunks = await _collect_with_tools(
+        adapter,
+        [Message(role="user", text="Gmail son 5 maili listele.")],
+        [{"name": "gmail_list_messages"}, {"name": "gmail_search_messages"}],
+    )
+
+    assert provider.calls == []
+    assert chunks[0].kind == "tool_call"
+    assert chunks[0].call["tool_name"] == "gmail_list_messages"
+    assert chunks[0].call["arguments"] == {"limit": 5}
+
+
+@pytest.mark.asyncio
+async def test_mail_latest_detail_question_routes_to_gmail_get_latest_message() -> None:
+    provider = _Provider("I cannot access mail")
+    adapter = StreamingProviderAdapter(provider)
+
+    chunks = await _collect_with_tools(
+        adapter,
+        [Message(role="user", text="son mailimi goster detaylica")],
+        [
+            {"name": "gmail_list_messages"},
+            {"name": "gmail_get_latest_message"},
+        ],
+    )
+
+    assert provider.calls == []
+    assert chunks[0].kind == "tool_call"
+    assert chunks[0].call["tool_name"] == "gmail_get_latest_message"
+    assert chunks[0].call["arguments"] == {
+        "offset": 1,
+        "include_body": True,
+    }
+
+
+@pytest.mark.asyncio
+async def test_mail_about_latest_question_routes_to_gmail_get_latest_message() -> None:
+    provider = _Provider("Mail detayini getirmek icin message id gerekli.")
+    adapter = StreamingProviderAdapter(provider)
+
+    chunks = await _collect_with_tools(
+        adapter,
+        [Message(role="user", text="son mailim hakknida bilgi ver")],
+        [
+            {"name": "gmail_get_message"},
+            {"name": "gmail_get_latest_message"},
+        ],
+    )
+
+    assert provider.calls == []
+    assert chunks[0].kind == "tool_call"
+    assert chunks[0].call["tool_name"] == "gmail_get_latest_message"
+    assert chunks[0].call["arguments"] == {
+        "offset": 1,
+        "include_body": True,
+    }
+
+
+@pytest.mark.asyncio
+async def test_mail_second_latest_detail_sets_offset() -> None:
+    provider = _Provider("I cannot access mail")
+    adapter = StreamingProviderAdapter(provider)
+
+    chunks = await _collect_with_tools(
+        adapter,
+        [Message(role="user", text="Outlook ikinci son maili ac")],
+        [
+            {"name": "outlook_list_messages"},
+            {"name": "outlook_get_latest_message"},
+        ],
+    )
+
+    assert provider.calls == []
+    assert chunks[0].kind == "tool_call"
+    assert chunks[0].call["tool_name"] == "outlook_get_latest_message"
+    assert chunks[0].call["arguments"] == {
+        "offset": 2,
+        "include_body": True,
+    }
+
+
+@pytest.mark.asyncio
+async def test_mail_latest_incoming_detail_sets_inbox_filter() -> None:
+    provider = _Provider("I cannot access mail")
+    adapter = StreamingProviderAdapter(provider)
+
+    chunks = await _collect_with_tools(
+        adapter,
+        [Message(role="user", text="son gelen mailimi goster detaylica")],
+        [
+            {"name": "gmail_list_messages"},
+            {"name": "gmail_get_latest_message"},
+        ],
+    )
+
+    assert provider.calls == []
+    assert chunks[0].kind == "tool_call"
+    assert chunks[0].call["tool_name"] == "gmail_get_latest_message"
+    assert chunks[0].call["arguments"] == {
+        "offset": 1,
+        "include_body": True,
+        "inbox": True,
+    }
+
+
+@pytest.mark.asyncio
+async def test_mail_latest_unread_detail_sets_unread_filter() -> None:
+    provider = _Provider("I cannot access mail")
+    adapter = StreamingProviderAdapter(provider)
+
+    chunks = await _collect_with_tools(
+        adapter,
+        [Message(role="user", text="son okunmamis e-mailimi goster")],
+        [{"name": "gmail_get_latest_message"}],
+    )
+
+    assert provider.calls == []
+    assert chunks[0].kind == "tool_call"
+    assert chunks[0].call["tool_name"] == "gmail_get_latest_message"
+    assert chunks[0].call["arguments"]["unread"] is True
+
+
+@pytest.mark.asyncio
+async def test_mail_existing_draft_routes_to_latest_draft() -> None:
+    provider = _Provider("I cannot access mail")
+    adapter = StreamingProviderAdapter(provider)
+
+    chunks = await _collect_with_tools(
+        adapter,
+        [Message(role="user", text="son mail taslagimi goster")],
+        [{"name": "gmail_get_latest_draft"}, {"name": "gmail_list_drafts"}],
+    )
+
+    assert provider.calls == []
+    assert chunks[0].kind == "tool_call"
+    assert chunks[0].call["tool_name"] == "gmail_get_latest_draft"
+    assert chunks[0].call["arguments"] == {"offset": 1, "include_body": True}
+
+
+@pytest.mark.asyncio
+async def test_mail_reply_draft_reads_latest_message() -> None:
+    provider = _Provider("I cannot access mail")
+    adapter = StreamingProviderAdapter(provider)
+
+    chunks = await _collect_with_tools(
+        adapter,
+        [Message(role="user", text="son gelen mailime cevap taslagi hazirla")],
+        [{"name": "gmail_get_latest_message"}],
+    )
+
+    assert provider.calls == []
+    assert chunks[0].kind == "tool_call"
+    assert chunks[0].call["tool_name"] == "gmail_get_latest_message"
+    assert chunks[0].call["arguments"]["analysis_intent"] == "reply_draft"
+    assert chunks[0].call["arguments"]["inbox"] is True
+
+
+@pytest.mark.asyncio
+async def test_mail_today_filter_routes_to_search() -> None:
+    provider = _Provider("I cannot access mail")
+    adapter = StreamingProviderAdapter(provider)
+
+    chunks = await _collect_with_tools(
+        adapter,
+        [Message(role="user", text="bugun gelen mailleri listele")],
+        [{"name": "gmail_search_messages"}],
+    )
+
+    assert provider.calls == []
+    assert chunks[0].kind == "tool_call"
+    assert chunks[0].call["tool_name"] == "gmail_search_messages"
+    assert chunks[0].call["arguments"] == {"limit": 10, "query": "newer_than:1d"}
+
+
+@pytest.mark.asyncio
+async def test_mail_unread_question_routes_to_outlook_unread_messages() -> None:
+    provider = _Provider("I cannot access mail")
+    adapter = StreamingProviderAdapter(provider)
+
+    chunks = await _collect_with_tools(
+        adapter,
+        [Message(role="user", text="Outlook okunmamis mailleri getir.")],
+        [
+            {"name": "outlook_list_messages"},
+            {"name": "outlook_list_unread_messages"},
+        ],
+    )
+
+    assert provider.calls == []
+    assert chunks[0].kind == "tool_call"
+    assert chunks[0].call["tool_name"] == "outlook_list_unread_messages"
+    assert chunks[0].call["arguments"] == {"limit": 10}
+
+
+@pytest.mark.asyncio
+async def test_mail_sender_search_routes_to_search_messages() -> None:
+    provider = _Provider("I cannot access mail")
+    adapter = StreamingProviderAdapter(provider)
+
+    chunks = await _collect_with_tools(
+        adapter,
+        [Message(role="user", text="gonderen ali@example.com olan mailleri ara")],
+        [{"name": "gmail_search_messages"}],
+    )
+
+    assert provider.calls == []
+    assert chunks[0].kind == "tool_call"
+    assert chunks[0].call["tool_name"] == "gmail_search_messages"
+    assert chunks[0].call["arguments"] == {"limit": 10, "from": "ali@example.com"}
+
+
+@pytest.mark.asyncio
+async def test_mail_turkish_sender_phrase_routes_to_search_messages() -> None:
+    provider = _Provider("I cannot access mail")
+    adapter = StreamingProviderAdapter(provider)
+
+    chunks = await _collect_with_tools(
+        adapter,
+        [Message(role="user", text="Ahmet'ten gelenleri bul")],
+        [{"name": "gmail_search_messages"}],
+    )
+
+    assert provider.calls == []
+    assert chunks[0].kind == "tool_call"
+    assert chunks[0].call["tool_name"] == "gmail_search_messages"
+    assert chunks[0].call["arguments"] == {"limit": 10, "from": "ahmet"}
+
+
+@pytest.mark.asyncio
+async def test_mail_subject_phrase_routes_to_search_messages() -> None:
+    provider = _Provider("I cannot access mail")
+    adapter = StreamingProviderAdapter(provider)
+
+    chunks = await _collect_with_tools(
+        adapter,
+        [Message(role="user", text="Konu: fatura olanlari ara")],
+        [{"name": "outlook_search_messages"}],
+    )
+
+    assert provider.calls == []
+    assert chunks[0].kind == "tool_call"
+    assert chunks[0].call["tool_name"] == "outlook_search_messages"
+    assert chunks[0].call["arguments"] == {"limit": 10, "subject": "fatura"}
+
+
+@pytest.mark.asyncio
+async def test_mail_detail_question_routes_to_get_message() -> None:
+    provider = _Provider("I cannot access mail")
+    adapter = StreamingProviderAdapter(provider)
+
+    chunks = await _collect_with_tools(
+        adapter,
+        [Message(role="user", text="mail id: abc123XYZ detayini getir")],
+        [{"name": "gmail_get_message"}],
+    )
+
+    assert provider.calls == []
+    assert chunks[0].kind == "tool_call"
+    assert chunks[0].call["tool_name"] == "gmail_get_message"
+    assert chunks[0].call["arguments"] == {
+        "message_id": "abc123XYZ",
+        "include_body": True,
+    }
+
+
+@pytest.mark.asyncio
 async def test_orchestrator_runs_second_provider_turn_after_tool_result() -> None:
     provider = _Provider("ABC-1 is open.")
     adapter = StreamingProviderAdapter(provider)

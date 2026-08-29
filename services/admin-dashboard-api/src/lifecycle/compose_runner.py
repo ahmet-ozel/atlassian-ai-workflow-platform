@@ -145,13 +145,17 @@ class ComposeRunner:
         The dashboard runs inside a container with ``WORKSPACE_ROOT=/app``.
         Mounting and passing ``/app/.env`` explicitly keeps Compose variable
         interpolation aligned with ``scripts/up.ps1`` without inheriting
-        arbitrary host environment secrets.
+        arbitrary host environment secrets. ``.env.local`` is layered after it
+        when present so machine-local secrets stay out of tracked defaults.
         """
 
         argv = ["docker", "compose"]
         env_file = self._workspace_root / ".env"
         if env_file.is_file():
             argv.extend(["--env-file", str(env_file)])
+        local_env_file = self._workspace_root / ".env.local"
+        if local_env_file.is_file():
+            argv.extend(["--env-file", str(local_env_file)])
         argv.extend(["-f", str(self._compose_file)])
         return argv
 

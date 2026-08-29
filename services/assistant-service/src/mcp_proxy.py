@@ -24,6 +24,12 @@ def _refs_from_headers(request: Request) -> dict[str, str]:
         or "",
         "bitbucket": request.headers.get("X-Credential-Ref-Bitbucket") or "",
         "confluence": request.headers.get("X-Credential-Ref-Confluence") or "",
+        "gmail": request.headers.get("X-Credential-Ref-Gmail")
+        or request.headers.get("X-Credential-Ref-Mail")
+        or "",
+        "outlook": request.headers.get("X-Credential-Ref-Outlook")
+        or request.headers.get("X-Credential-Ref-Mail")
+        or "",
     }
     return {key: value for key, value in refs.items() if value}
 

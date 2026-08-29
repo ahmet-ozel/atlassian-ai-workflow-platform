@@ -87,6 +87,7 @@ $envFile     = Join-Path $platformDir '.env'
 # never reaches the containers. Pass it explicitly so values resolve while the
 # computed project name stays `infra`.
 $envFile     = Join-Path $platformDir '.env'
+$localEnvFile = Join-Path $platformDir '.env.local'
 
 if (-not (Test-Path -LiteralPath $manifest)) {
     Write-Error "up.ps1: manifest not found: $manifest"
@@ -144,7 +145,9 @@ $composeHead = if ($composeArgv.Length -gt 1) { $composeArgv[1..($composeArgv.Le
 
 # Boot bundle prefix: base + dev override, NO --profile flags.
 # --env-file MUST precede the -f flags so the root .env resolves (see above).
-$envFileArgs = if (Test-Path -LiteralPath $envFile) { @('--env-file', $envFile) } else { @() }
+$envFileArgs = @()
+if (Test-Path -LiteralPath $envFile) { $envFileArgs += @('--env-file', $envFile) }
+if (Test-Path -LiteralPath $localEnvFile) { $envFileArgs += @('--env-file', $localEnvFile) }
 $bootPrefixArgs = @() + $composeHead + $envFileArgs + @('-f', $composeBase, '-f', $composeDev)
 
 # Full-stack prefix: same plus every manifest profile.

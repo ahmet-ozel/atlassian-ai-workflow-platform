@@ -369,15 +369,28 @@ pre {
 /* Chat message bubbles */
 [data-testid="stChatMessageContent"] {
   background: var(--bg-elev) !important;
+  color: var(--fg) !important;
   border: 1px solid var(--border) !important;
   border-radius: var(--radius-lg) !important;
   padding: 0.85rem 1rem !important;
   box-shadow: var(--shadow-sm) !important;
 }
 
+[data-testid="stChatMessageContent"] [data-testid="stMarkdownContainer"],
+[data-testid="stChatMessageContent"] p,
+[data-testid="stChatMessageContent"] li,
+[data-testid="stChatMessageContent"] span {
+  color: var(--fg) !important;
+}
+
+[data-testid="stChatMessageContent"] a {
+  color: var(--brand-700) !important;
+}
+
 [data-testid="stChatMessage"][data-testid*="user"] [data-testid="stChatMessageContent"] {
   background: var(--brand-50) !important;
   border-color: var(--brand-100) !important;
+  color: var(--fg) !important;
 }
 
 [data-testid="stChatMessage"] [data-testid="stChatMessageAvatar"] {

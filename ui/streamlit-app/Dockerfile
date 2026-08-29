@@ -56,6 +56,7 @@ COPY --from=builder /install /usr/local
 # made each page crash at import with ``ModuleNotFoundError: No module
 # named 'components'``.
 COPY app.py chat_mcp.py chat_planner.py chat_runtime.py config.py mcp_client.py ./
+COPY mail_auth.py mail_llm.py mail_mcp.py mail_planner.py ./
 COPY pages/ ./pages/
 COPY config/ ./config/
 COPY .streamlit/ ./.streamlit/

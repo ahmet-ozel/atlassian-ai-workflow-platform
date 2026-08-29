@@ -274,6 +274,8 @@ def _build_handler(
     prompt_loader: _RecordingPromptLoader | None = None,
     sliding_window_n: int = DEFAULT_SLIDING_WINDOW_N,
     token_cap: int = 10_000,
+    prompt_name: str = "assistant_chat",
+    chat_mode: str = "atlassian",
 ) -> tuple[ChatHandler, _RecordingAudit, _RecordingDispatch, _RecordingPromptLoader]:
     audit = audit or _RecordingAudit()
     dispatch = dispatch or _RecordingDispatch()
@@ -298,6 +300,8 @@ def _build_handler(
         audit=audit,  # type: ignore[arg-type]
         token_cap=token_cap,
         sliding_window_n=sliding_window_n,
+        prompt_name=prompt_name,
+        chat_mode=chat_mode,
         list_tools=list_tools,
     )
     handler = ChatHandler(deps)
@@ -573,9 +577,26 @@ class TestAuditWrite:
         assert event.payload["token_out"] == 2
         assert event.payload["cost_usd"] == pytest.approx(0.00015)
         # Ops bonus fields.
+        assert event.payload["chat_mode"] == "atlassian"
+        assert event.payload["prompt_name"] == "assistant_chat"
         assert event.payload["pii_matches_count"] == 0
         assert event.payload["tool_calls"] == 0
         assert event.payload["write_intent_redirected"] is False
+
+    def test_mail_mode_audit_payload_identifies_mail_prompt(self) -> None:
+        orch = _ScriptedOrchestrator([SseEvent("done", {})])
+        handler, audit, _, loader = _build_handler(
+            orchestrator=orch,
+            prompt_name="mail_assistant_chat",
+            chat_mode="mail",
+            list_tools=lambda: ({"name": "gmail_list_messages"},),
+        )
+
+        asyncio.run(_drain(handler, _build_request("son mailleri getir"), _build_dept()))
+
+        assert loader.version_calls == ["mail_assistant_chat"]
+        assert audit.events[0].payload["chat_mode"] == "mail"
+        assert audit.events[0].payload["prompt_name"] == "mail_assistant_chat"
 
     def test_pii_match_count_is_recorded(self) -> None:
         """The audit row carries the *count* of PII matches but never
